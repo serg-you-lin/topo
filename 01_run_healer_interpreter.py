@@ -9,7 +9,7 @@ Produce un file healed.dxf nella cartella di output.
 import ezdxf
 import dxf_forge as forge
 from dxf_forge.dxf_inspect import DxfInspector
-from dxf_forge.rules.classifier import GeometricInterpreter
+from dxf_forge.rules.interpreter import GeometricInterpreter
 import os
 
 # ← CAMBIA QUI
@@ -32,15 +32,15 @@ output_dxf = os.path.join(base_dir, f"{base_name}_healed.dxf")
 tolerance = 2
 print("tolleranza:", tolerance)
 
-# inspector = DxfInspector(
-#     summary=False,
-#     lines=False,
-#     arcs=False,
-#     polylines=True,
-#     circles=False,
-#     splines=True,
-#     graph=False,
-# )
+inspector = DxfInspector(
+    summary=False,
+    lines=True,
+    arcs=False,
+    polylines=True,
+    circles=False,
+    splines=True,
+    graph=False,
+)
 
 # ---------------------------------------------------------------------------
 
@@ -68,7 +68,8 @@ for e in check.errors:
 if not check.errors:
     print("  OK: nessun errore bloccante")
 
-# HEAL — genera i part e scrive i layer speciali su msp
+
+# Dopo
 result = forge.heal(
     msp,
     tolerance=tolerance,
@@ -76,14 +77,18 @@ result = forge.heal(
     write_to_msp=True,
     label=base_name,
     source_file=file_name,
-    interpreter = GeometricInterpreter(),  # ← classe che intepreta la geometria per classificare fori, contorni, ecc. (opzionale, ma se presente arricchisce le metriche)
+    special_layers={
+        "MARK": "engrave",
+        },
 )
 
-# INJECT — inserisce dati custom e metriche da classified_entities 
-forge.inject(
-    msp,
-    result,
-)
+# forge.classify(
+#     result,
+#     msp,
+#     interpreter=GeometricInterpreter(),
+# )
+
+forge.inject(msp, result)
 
 # ---------------------------------------------------------------------------
 # REPORT
