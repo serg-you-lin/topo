@@ -13,7 +13,7 @@ from dxf_forge.rules.interpreter import GeometricInterpreter
 import os
 
 # ← CAMBIA QUI
-input_dxf = r"LOCAL_DRAWING.dxf"
+input_dxf = r"tests/examples/example_15_flattener.dxf"
 
 # percorso assoluto
 input_dxf = os.path.abspath(input_dxf)
@@ -47,6 +47,7 @@ inspector = DxfInspector(
 print(f"Apertura: {input_dxf}")
 
 doc = ezdxf.readfile(input_dxf)
+
 msp = doc.modelspace()
 
 #inspector.analyze(msp, title=input_dxf)
