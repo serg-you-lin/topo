@@ -13,7 +13,6 @@ import re
 import json
 from dxf_forge.io.text_utils import clean_mtext
 from dxf_forge.io.exporter import build_metadata
-from dxf_forge.rules.interpreter import GeometricInterpreter
 import sys
 
 sys.path.insert(
@@ -41,6 +40,12 @@ PATTERNS = {
     "quantity": r'pez(?:zi)[^\d]*([\d]+)',
 }
 
+MATERIAL_MAP = {
+    "s235": "FE-DECAPATO",
+    "aisi 304": "I304",
+    "aisi304": "I304",
+    # Puoi aggiungere altre conversioni qui in futuro
+}
 
 def sanitize_filename(name: str) -> str:
     name = name.strip()
@@ -48,6 +53,19 @@ def sanitize_filename(name: str) -> str:
     name = re.sub(r'_+', '_', name)
     return name.strip('_.') or "UNNAMED"
 
+def normalizza_materiale(raw_material: str) -> str:
+    """Semplifica e mappa il nome del materiale in base alla tabella aziendale."""
+    if not raw_material:
+        return "N/D"
+    
+    mat_clean = raw_material.strip().lower()
+    
+    # Controlla se il testo contiene una delle chiavi della mappa
+    for chiave, valore_mappato in MATERIAL_MAP.items():
+        if chiave in mat_clean:
+            return valore_mappato
+            
+    return raw_material.strip() # Ritorna l'originale pulito se non trova corrispondenze
 
 def estrai_materiale(doc) -> str:
     for block in doc.blocks:
@@ -56,7 +74,8 @@ def estrai_materiale(doc) -> str:
                 if e.dxftype() == 'MTEXT':
                     txt = clean_mtext(e.text)
                     if 'materiale' in txt.lower():
-                        return txt.split(':', 1)[-1].strip()
+                        raw_mat = txt.split(':', 1)[-1].strip()
+                        return normalizza_materiale(raw_mat) # ← Modificato qui
     return "N/D"
 
 
@@ -73,7 +92,7 @@ def parse_testi(testi: list[str]) -> dict:
             elif key == "spessore":
                 info["thickness"] = float(val.replace(',', '.').split()[0])
             elif key == "materiale":
-                info["material"] = val
+                info["material"] = normalizza_materiale(val)
             elif key == "quantity":
                 info["quantity"] = int(val)
     return info
@@ -197,8 +216,8 @@ def post_process(part, doc_out, path):
         text_color=3,
     ).execute_on_doc(doc_out, file_name=file_name, folder=output_dir)
 
-    sm.TrimBendingLines(
-        layer="Bending",
+    sm.TrimBendLines(
+        layers="Bending",
         start_length=25,
         end_length=25,
     ).execute_on_doc(
