@@ -13,9 +13,9 @@ import os
 # CAMBIA QUI
 # ---------------------------------------------------------------------------
 
-input_dxf = r"LOCAL_DRAWING.dxf"
+input_dxf = r"d:\Freecad\lamiera-Body_Unfold.dxf"
 
-tolerance = 1
+tolerance = .01
 
 special_layers = {
     "MARK"      : "engrave",
