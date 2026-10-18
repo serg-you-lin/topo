@@ -574,11 +574,11 @@ Rombi, trapezi e ogni altra forma con lati dritti sono un `polygon`.
 I fatti geometrici stanno tutti in `topo.geometry` (il package
 `topo/core/geometry/`, D95) e si chiamano per intero,
 `topo.geometry.<nome>(...)`, senza importare il nome da solo (D119). Nomi
-geometrici: "cerchio", mai "foro". I mattoni non esportati in `topo.geometry`
-(gli helper di `measure`, `points`, `lines`, `axis`) stanno ancora nei
-sottomoduli di `topo.core.geometry`: interni, senza garanzie finché non c'è
-la superficie pubblica della 1.0 (TODO.md); l'elenco con `file:riga` è in
-`docs/INDEX.md`.
+geometrici: "cerchio", mai "foro". Le misure di base (lunghezza di un
+segmento, tracce aperte, tratti sugli assi, intervalli) sono pubbliche dalla
+D122; quello che resta nei sottomoduli di `topo.core.geometry` (arrotondamento
+dei nodi, sequenze di punti, `circular_geometry`, …) è interno, senza
+garanzie. L'elenco con `file:riga` è in `docs/INDEX.md`.
 
 ### `contour_shape`
 
@@ -814,11 +814,103 @@ topo.geometry.axis_aligned_share(segments, angle_tolerance) -> float | None
 ```
 
 Frazione della lunghezza dei `LineSeg` orizzontale o verticale entro
-`angle_tolerance` gradi; `None` senza `LineSeg`. Gli altri fatti del modulo
-(`merge_intervals`, `interval_coverage`, `cluster_values`, `axis_lines`,
-`items_inside`) si importano da `topo.core.geometry.axis`.
+`angle_tolerance` gradi; `None` senza `LineSeg`.
 
 **Non muta** niente.
+
+---
+
+### `axis_lines`
+
+```python
+topo.geometry.axis_lines(items, eps=0.5) -> (list[AxisLine], list[AxisLine])
+```
+
+`(orizzontali, verticali)`: i tratti (`items`, oggetti con `start`/`end`) che
+si scostano dall'asse al più di `eps`; gli altri non compaiono.
+`AxisLine`: `item` (il tratto ricevuto), `lo`, `hi` (l'intervallo lungo il suo
+asse: x per un orizzontale), `at` (la coordinata costante, media dei due capi).
+
+**Non muta** niente.
+
+---
+
+### `items_inside`
+
+```python
+topo.geometry.items_inside(bounds, items, margin=0.0) -> list
+```
+
+I tratti con entrambi i capi dentro `bounds` = `(xmin, ymin, xmax, ymax)`
+allargato di `margin`, nell'ordine dato.
+
+**Non muta** niente.
+
+---
+
+### `merge_intervals`
+
+```python
+topo.geometry.merge_intervals(intervals, tolerance=0.0) -> list[tuple[float, float]]
+```
+
+Gli intervalli `(a, b)` uniti dove si sovrappongono o distano al più
+`tolerance`, in ordine crescente.
+
+**Non muta** niente.
+
+---
+
+### `group_collinear_lines`
+
+```python
+topo.geometry.group_collinear_lines(lines, tolerance=COLLINEAR_TOLERANCE, angle_tolerance=COLLINEAR_ANGLE_TOLERANCE) -> list[list]
+```
+
+I tratti (`start`/`end`) raggruppati per retta: `[[L1, L2], [L3], ...]`. Ogni
+gruppo prende la retta del suo primo tratto, nell'ordine dato; non guarda se i
+tratti si toccano (per le file attraverso dei vuoti: `bridged_runs`).
+
+**Non muta** niente.
+
+---
+
+### `segment_length`, `length_inside`, `chord_angle_deg`
+
+```python
+topo.geometry.segment_length(segment) -> float
+topo.geometry.length_inside(segment, bounds) -> float
+topo.geometry.chord_angle_deg(a, b) -> float
+```
+
+- `segment_length`: la lunghezza di una primitiva nativa. Esatta per
+  `LineSeg`, `ArcSeg`, `CircleSeg`; per `SplineSeg` ed `EllipseSeg` è la
+  polilinea di `discretize()`.
+- `length_inside`: quanta parte di `segment` sta dentro il rettangolo
+  `bounds` = `(xmin, ymin, xmax, ymax)`, bordo compreso (le curve sulla
+  polilinea di `discretize()`).
+- `chord_angle_deg`: l'angolo in gradi, in `[0, 180)`, della corda da `a` a
+  `b`; modulo 180 perché una linea non ha verso.
+
+**Non mutano** niente.
+
+---
+
+### `track_points`, `track_length`, `track_shape_type`
+
+```python
+topo.geometry.track_points(segments, tolerance=None) -> list[Point]
+topo.geometry.track_length(pts) -> float
+topo.geometry.track_shape_type(pts) -> str
+```
+
+Una traccia aperta (piega, incisione, frammento non chiuso) è una catena di
+segmenti nativi. `track_points` ne dà i vertici (il `discretize()` di ogni
+segmento, senza ripetere il punto di giunzione); `track_length` la lunghezza
+della polilinea; `track_shape_type` dice `"line"` se è un solo tratto dritto
+(2 vertici), altrimenti `"curve"`.
+
+**Non mutano** niente.
 
 ---
 
@@ -1318,7 +1410,7 @@ topo.inspect_file("pezzo.dxf", role_rules=[topo.RoleRule("bending", dashed=True)
 ## 7. Tipi di dominio
 
 Oltre alla top-level ci sono tre namespace pubblici (MAP.md D120); quello che
-sta sotto `topo.core` è interno, senza garanzie:
+sta sotto `topo.core` e `topo.adapters` è interno, senza garanzie:
 
 - **`topo.primitives`** — i segmenti nativi `LineSeg`, `ArcSeg`, `CircleSeg`,
   `SplineSeg`, `EllipseSeg` (math puro, nessun ruolo) e

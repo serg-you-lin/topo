@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`77` modules · `405` module-level functions · `57` classes · `14190` lines of code.
+`77` modules · `405` module-level functions · `57` classes · `14204` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -689,7 +689,7 @@ _Contratto base per gli adapter di input di Topo._
 - **class** `Adapter(ABC)` — L23
   - methods: `__init__`, `to_edges`, `source_context`
 
-#### `topo/core/geometry/__init__.py` — 42 lines
+#### `topo/core/geometry/__init__.py` — 56 lines
 
 _topo/core/geometry/__init__.py_
 
@@ -1428,7 +1428,7 @@ Which `topo` modules each module imports — "what works with what". Modules wit
 | `topo/adapters/pdf/loader.py` | `topo.adapters.pdf.extractor_adapter` · `topo.adapters.pdf.graph_adapter` · `topo.adapters.pdf.sanitize` |
 | `topo/adapters/pdf/sanitize.py` | `topo.adapters.pdf.geometry_adapter` · `topo.core.geometry.measure` |
 | `topo/core/adapter_base.py` | `topo.core.geometry.measure` · `topo.core.topology.edge` · `topo.model.document` |
-| `topo/core/geometry/__init__.py` | `topo.core.geometry.axis` · `topo.core.geometry.build` · `topo.core.geometry.intersections` · `topo.core.geometry.lines` · `topo.core.geometry.regions` · `topo.core.geometry.shape` |
+| `topo/core/geometry/__init__.py` | `topo.core.geometry.axis` · `topo.core.geometry.build` · `topo.core.geometry.intersections` · `topo.core.geometry.lines` · `topo.core.geometry.measure` · `topo.core.geometry.regions` · `topo.core.geometry.shape` |
 | `topo/core/geometry/axis.py` | `topo.core.primitives.segments` |
 | `topo/core/geometry/build.py` | `topo.core.primitives.segments` |
 | `topo/core/geometry/intersections.py` | `topo.core.primitives.segments` |
