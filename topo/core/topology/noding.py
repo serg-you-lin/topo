@@ -95,6 +95,36 @@ def split_at_crossings(edges: List[Edge], tolerance: float,
     return noded
 
 
+def interior_crossings(edges: List[Edge], tolerance: float) -> List[tuple]:
+    """
+    I punti dove due edge si attraversano senza che nessuno dei due finisca
+    lì: un taglio interno a tutti e due (D132). Un contatto a T (il capo di
+    uno sulla curva dell'altro) non conta. Fra lati di contorno è un disegno
+    con lati accavallati, che il grafo di heal non vede.
+    """
+    noded = split_at_crossings(edges, tolerance)
+    cuts: Dict[int, set] = {}   # id(edge) -> tagli interni
+    for piece in noded.pieces:
+        parent = noded.parent_of(piece)
+        ends = {parent.start, parent.end}
+        cuts.setdefault(id(parent), set()).update(p for p in (piece.start, piece.end) if p not in ends)
+    # celle di lato GRAPH_EPSILON: due tagli dello stesso incrocio stanno in
+    # celle vicine
+    cells: Dict[tuple, list] = {}
+    for key, points in cuts.items():
+        for p in points:
+            cells.setdefault((round(p[0] / GRAPH_EPSILON), round(p[1] / GRAPH_EPSILON)), []).append((p, key))
+    found: List[tuple] = []
+    for (cx, cy), here in cells.items():
+        near = [item for dx in (-1, 0, 1) for dy in (-1, 0, 1) for item in cells.get((cx + dx, cy + dy), [])]
+        for p, key in here:
+            if any(math.dist(p, f) <= GRAPH_EPSILON for f in found):
+                continue
+            if any(other != key and math.dist(p, q) <= GRAPH_EPSILON for q, other in near):
+                found.append(p)
+    return sorted(found)
+
+
 # ---------------------------------------------------------------------------
 # Parametrizzazione: LineSeg in t ∈ [0, 1], ArcSeg in s ∈ [0, sweep]
 # ---------------------------------------------------------------------------
