@@ -83,9 +83,10 @@ class Annotation:
     ``"part_code"``, ...), come per un edge: topo non lo legge e non lo
     decide (D20, D43). Lo assegna il consumer, o le sue ``RoleRule`` al load
     sul nome del gruppo sorgente (D127); ``unknown`` se nessuno l'ha detto.
+    Il gruppo sorgente (il layer di un DXF) non resta nel modello: l'adapter
+    lo legge per il ruolo e lo lascia lì, come per un edge (D128).
     """
     position:    Point
-    group:       str           = ""     # nome del gruppo sorgente (il layer di un DXF, D126)
     role:        str           = ContourRole.UNKNOWN.value   # del consumer o delle sue RoleRule (D127)
     origin:      Optional[str]  = None   # provenienza nella sorgente — diagnostica
     cluster_ref:    Optional[int]  = None   # indice in result.clusters della parte che la contiene (fase anchor)

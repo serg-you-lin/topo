@@ -1,9 +1,10 @@
 """
 test_annotation_role.py
 -----------------------
-Il ruolo di un'annotazione (MAP.md D127): lo scrive il consumer, o le sue
-RoleRule al load sul nome del gruppo sorgente; topo lo conserva e, in un DXF
-scritto con `annotation_layer=None`, mette l'annotazione sul layer del ruolo.
+Il ruolo di un'annotazione (MAP.md D127, D128): lo scrive il consumer, o le
+sue RoleRule al load sul nome del gruppo sorgente; topo lo conserva e un DXF
+mette l'annotazione sul layer del suo ruolo, come un edge. Una senza ruolo va
+su `annotation_layer`.
 """
 
 import sys
@@ -35,25 +36,30 @@ class TestAnnotationRole(unittest.TestCase):
         msp = _drawing_with_text("Testi")
         doc = topo.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
         self.assertEqual([a.role for a in doc.annotations], ["part_code"])
-        self.assertEqual(doc.annotations[0].group, "Testi")
 
     def test_regola_sull_aspetto_non_tocca_le_annotazioni(self):
         msp = _drawing_with_text("Testi")
         doc = topo.document_from_msp(msp, role_rules=[topo.RoleRule("cut", dashed=False)])
         self.assertEqual([a.role for a in doc.annotations], ["unknown"])
 
+    def _text_layers(self, doc, **kwargs) -> set:
+        out = topo.to_dxf(topo.heal(doc), **kwargs)
+        return {e.dxf.layer for e in out.modelspace().query("TEXT MTEXT")}
+
     def test_dxf_sul_layer_del_ruolo(self):
         msp = _drawing_with_text("Testi")
         doc = topo.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
-        out = topo.to_dxf(topo.heal(doc), annotation_layer=None)
-        layers = {e.dxf.layer for e in out.modelspace().query("TEXT MTEXT")}
-        self.assertEqual(layers, {"part_code"})
+        self.assertEqual(self._text_layers(doc), {"part_code"})
 
-    def test_dxf_senza_ruolo_torna_al_layer_d_origine(self):
+    def test_dxf_sul_layer_scelto_per_il_ruolo(self):
+        msp = _drawing_with_text("Testi")
+        doc = topo.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
+        self.assertEqual(self._text_layers(doc, layers={"part_code": "Codice"}), {"Codice"})
+
+    def test_dxf_senza_ruolo_sul_layer_delle_annotazioni(self):
         doc = topo.document_from_msp(_drawing_with_text("Testi"))
-        out = topo.to_dxf(topo.heal(doc), annotation_layer=None)
-        layers = {e.dxf.layer for e in out.modelspace().query("TEXT MTEXT")}
-        self.assertEqual(layers, {"Testi"})
+        self.assertEqual(self._text_layers(doc), {"Annotation"})
+        self.assertEqual(self._text_layers(doc, annotation_layer="Note"), {"Note"})
 
 
 if __name__ == "__main__":

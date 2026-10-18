@@ -1,92 +1,89 @@
 """
 adapters/dxf/layers.py
 ----------------------
-Nomi layer DXF e mapping semantica→DXF per il formato DXF.
+Dove l'adapter DXF scrive un ruolo quando il chiamante non lo dice, e come
+traduce in DXF il colore della palette di topo (MAP.md D123, D128).
 
-Appartiene all'adapter DXF — NON al core. Conosce solo i tre ruoli del
-motore (outer/inner/unknown); qualunque altro ruolo di un consumatore
-(snapbend, snapdraw, ...) prende nome e
-colore dal registro di `rules/palette.py` (`register_role_style`) se
-qualcuno l'ha registrato, altrimenti dallo slug grezzo e dal grigio
-"consumatore" (D31). Questo file non distingue i due casi: stesso
-trattamento, nessuna eccezione (MAP.md, "roles out of core").
+topo non ha layer: i nomi qui sono il default dell'adapter DXF, non una
+regola di topo. Il chiamante sceglie i layer con `to_dxf(layers=...)`. Il
+colore non è dell'adapter: è la palette di topo (`topo.model.role_style`),
+qui solo scritta come indice ACI quando ne ha uno esatto.
 
-I colori vengono da rules/palette.py — qui li mappiamo solo ai layer DXF.
-
-Se domani scrivi un SvgAdapter, avrà il suo svg/layers.py con
-data-role, classi CSS, colori fill hex — indipendente da questo file.
+Un ruolo che il default non nomina va su un layer col nome del suo slug: la
+sua geometria non è spazzatura e resta distinta (D31). `unknown` va su
+`Trash`.
 """
 
-from topo.model import ContourRole, role_str
-from ...rules.palette import (
-    COLOR_OUTER, COLOR_INNER, COLOR_TRASH,
-    COLOR_ANNOTATION, COLOR_CONSUMER,
-    registered_role_styles,
-)
+from typing import Callable, Mapping, Optional, Union
+
+from ezdxf.colors import aci2rgb
+
+from topo.model import ContourRole, role_str, role_style
+
+# Testi e quote senza ruolo: il "foreground" del DXF (bianco su fondo scuro,
+# nero su fondo chiaro) — un colore che esiste solo in DXF, non un ruolo
+COLOR_ANNOTATION = 7
 
 # ---------------------------------------------------------------------------
-# Nomi layer DXF — prodotti da topo in output
+# Nomi di layer di default
 # ---------------------------------------------------------------------------
 LAYER_OUTER      = "OuterContour"
 LAYER_INNER      = "InnerContour"
 LAYER_ANNOTATION = "Annotation"
 TRASH_LAYER      = "Trash"
 
-# ---------------------------------------------------------------------------
-# Tutti i layer DXF topo → colore canonico
-# Single source of truth per write.py, split.py, test.
-# ---------------------------------------------------------------------------
+
+# ruolo → layer di default
+DEFAULT_LAYERS: dict[str, str] = {
+    ContourRole.OUTER.value:   LAYER_OUTER,
+    ContourRole.INNER.value:   LAYER_INNER,
+    ContourRole.UNKNOWN.value: TRASH_LAYER,
+}
+
+# Il layer di un ruolo come lo dà il chiamante: un nome, o una funzione
+# dell'elemento scritto (un Contour, un elemento di `cluster.detected`,
+# un'entità trash, un'Annotation) che ne ritorna il nome — così le entità
+# di un ruolo possono dividersi su più layer (una piega "up" e una "down").
+LayerChoice = Union[str, Callable[[object], str]]
+LayerMap = Mapping[str, LayerChoice]
+
+
+def role_to_dxf_layer(role, element: object = None, layers: Optional[LayerMap] = None) -> str:
+    """
+    Nome del layer DXF per `role`. La scelta del chiamante (`layers`, chiavi
+    già normalizzate a slug) vince: un nome, o la funzione chiamata con
+    `element`. Altrimenti il default: `OuterContour`/`InnerContour`/`Trash`
+    per i ruoli del motore, lo slug stesso per ogni altro ruolo (D31).
+    """
+    slug = _slug(role)
+    choice = (layers or {}).get(slug)
+    if callable(choice):
+        return choice(element)
+    if choice:
+        return choice
+    return DEFAULT_LAYERS.get(slug, slug)
+
+
+# RGB → indice ACI, solo per i colori che hanno un indice esatto
+_ACI_BY_RGB: dict[tuple, int] = {}
+for _aci in range(255, 0, -1):          # a parità di RGB vince l'indice più basso
+    _ACI_BY_RGB[tuple(aci2rgb(_aci))] = _aci
+
+
+def color_for_role(role) -> Optional[int]:
+    """Il colore della palette di topo per `role` (D128) come indice ACI:
+    verde 3, giallo 2, rosso 1, grigio 8. None se non ne ha uno esatto."""
+    return _ACI_BY_RGB.get(tuple(role_style(role).color or ()))
+
+
+def _slug(role) -> str:
+    return role_str(role) if role else ContourRole.UNKNOWN.value
+
+
+# I layer di default col loro colore — creati in ogni documento scritto
 ALL_LAYERS: dict[str, int] = {
-    LAYER_OUTER:      COLOR_OUTER,
-    LAYER_INNER:      COLOR_INNER,
+    LAYER_OUTER:      color_for_role(ContourRole.OUTER),
+    LAYER_INNER:      color_for_role(ContourRole.INNER),
     LAYER_ANNOTATION: COLOR_ANNOTATION,
-    TRASH_LAYER:      COLOR_TRASH,
+    TRASH_LAYER:      color_for_role(ContourRole.UNKNOWN),
 }
-
-# ---------------------------------------------------------------------------
-# ContourRole → nome layer DXF — solo i ruoli che il motore conosce.
-# Usato da write.py e hierarchy.py per assegnare layer alle entità in output.
-# ---------------------------------------------------------------------------
-ROLE_TO_LAYER: dict[ContourRole, str] = {
-    ContourRole.OUTER: LAYER_OUTER,
-    ContourRole.INNER: LAYER_INNER,
-}
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-def color_for_layer(layer_name: str) -> int:
-    """
-    Colore DXF canonico per un layer.
-
-    Layer topo → il suo colore semantico. Layer col nome di uno slug di un
-    consumatore (`frame`, `title_block`, ...) → `COLOR_CONSUMER` (grigio scuro).
-    Fallback: `COLOR_TRASH` (rosso).
-    """
-    if layer_name in ALL_LAYERS:
-        return ALL_LAYERS[layer_name]
-    if layer_name and layer_name != TRASH_LAYER:
-        return COLOR_CONSUMER
-    return COLOR_TRASH
-
-
-def role_to_dxf_layer(role) -> str:
-    """
-    Nome layer DXF per un ruolo.
-
-    Ruolo noto al motore → il suo layer dedicato (`OuterContour`/
-    `InnerContour`). Ruolo registrato (`register_role_style(role,
-    RoleStyle(layer_name=...))` — detect lo fa per i suoi, un consumatore
-    esterno può fare lo stesso) → il nome registrato. Altrimenti: un layer
-    **col nome dello slug** stesso (`normalize_role`) — la sua geometria non
-    è spazzatura e va tenuta distinta (D31). `unknown` → `Trash`.
-    """
-    if role in ROLE_TO_LAYER:
-        return ROLE_TO_LAYER[role]
-    slug = role_str(role)
-    style = registered_role_styles().get(slug)
-    if style is not None and style.layer_name:
-        return style.layer_name
-    if slug and slug != ContourRole.UNKNOWN.value:
-        return slug
-    return TRASH_LAYER

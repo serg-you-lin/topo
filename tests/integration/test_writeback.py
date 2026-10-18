@@ -199,7 +199,7 @@ class TestWritebackTrash(unittest.TestCase):
 # Cluster E — linetype della sorgente sempre ripristinato in output. Le linee
 # tratteggiate non devono uscire continue. Il colore invece non si tocca mai:
 # resta quello del layer topo di destinazione (semantico per ruolo — verde
-# outer, rosso trash, ... — rules/palette.py), mai quello della sorgente.
+# outer, rosso trash, ... — adapters/dxf/layers.py), mai quello della sorgente.
 # ---------------------------------------------------------------------------
 
 class TestWritebackStyle(unittest.TestCase):
@@ -241,7 +241,7 @@ class TestWritebackStyle(unittest.TestCase):
     def test_004_structural_color_stays_bylayer_despite_source_color(self):
         # outer/inner restano BYLAYER anche quando la sorgente aveva un
         # colore esplicito diverso: il colore è una decisione di dominio per
-        # ruolo (rules/palette.py), non un attributo da riportare fedele.
+        # ruolo (adapters/dxf/layers.py), non un attributo da riportare fedele.
         result, msp = _pipeline("rect_with_circle_hole.dxf")
         for e in msp.query("LWPOLYLINE"):
             if e.dxf.layer == LAYER_OUTER:
@@ -295,13 +295,16 @@ class TestWritebackAnnotations(unittest.TestCase):
         self.assertEqual(len(texts), 1)
         self.assertEqual(texts[0].dxf.layer, LAYER_ANNOTATION)
 
-    def test_005_annotation_layer_none_keeps_source_layer(self):
-        doc = topo.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf")
+    def test_005_annotation_with_role_goes_on_its_role_layer(self):
+        # Il layer d'origine non resta nel modello (D128): un testo che il
+        # chiamante vuole distinto gli dà un ruolo, e va sul layer del ruolo.
+        doc = topo.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf",
+                            role_rules=topo.name_rules({"TESTO": "note"}))
         result = topo.heal(doc)
-        msp = topo.to_dxf(result, doc, annotation_layer=None).modelspace()
+        msp = topo.to_dxf(result, doc).modelspace()
         texts = list(msp.query("TEXT"))
         self.assertEqual(len(texts), 1)
-        self.assertEqual(texts[0].dxf.layer, "TESTO")
+        self.assertEqual(texts[0].dxf.layer, "note")
 
     def test_006_annotation_layer_custom_routes_there(self):
         doc = topo.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf")

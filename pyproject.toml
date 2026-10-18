@@ -41,9 +41,9 @@ include = ["topo*"]
 [tool.gen_index.layers]
 core  = ["adapters", "tools", "io"]
 model = ["adapters", "tools", "io"]
-# Un adapter è un consumer: solo i nomi pubblici di topo (D125). `rules` si
-# aggiunge col passo 3 di D123 (la palette diventa il default dell'adapter DXF).
-adapters = ["core", "tools", "io"]
+# Un adapter è un consumer: solo i nomi pubblici di topo (D125); la palette
+# di `rules` è diventata il default dell'adapter DXF (D128).
+adapters = ["core", "tools", "io", "rules"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

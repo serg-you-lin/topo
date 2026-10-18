@@ -177,12 +177,16 @@ The model is the product. `to_dxf` never re-reads the source file — every rend
 
 ## Output DXF layers
 
+topo has no layers: the DXF adapter writes each role to the layer the caller
+chooses (`to_dxf(layers=..., role_styles=...)`, a name or a function of the
+element per role). When the caller says nothing, these are its defaults:
+
 | Layer          | Meaning                                    |
 |----------------|--------------------------------------------|
 | `OuterContour` | outer profile of the part                  |
 | `InnerContour` | closed contour inside the outer             |
 | `Annotation`   | source texts and dimensions (not a cut layer) |
-| *role name*    | geometry with a consumer's role (`frame`, `hole`, `bending`, …): its own layer, named and coloured by `register_role_style` if the consumer registered one |
+| *role name*    | geometry with a consumer's role (`frame`, `hole`, `bending`, …): a layer named by the role, gray — or the name and colour the caller passes |
 | `Trash`        | everything `topo` could not classify — kept, never dropped |
 
 Nothing from the source is silently lost: unclassified geometry goes to `Trash`,

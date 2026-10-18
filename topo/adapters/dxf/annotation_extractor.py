@@ -25,10 +25,11 @@ così ``write()`` la ri-materializza fedele all'originale.
 from __future__ import annotations
 
 import re
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from topo.model import (
     Annotation, Note, Dimension, Leader, RenderedGeometry, RenderedText,
+    RoleRule, resolve_role,
 )
 from ezdxf.tools.text import plain_mtext
 
@@ -43,23 +44,27 @@ _ARC_SAGITTA = 0.1
 class DxfAnnotationExtractor:
     """Traduce le entità di annotazione di un msp in list[Annotation]."""
 
-    def __init__(self, msp):
+    def __init__(self, msp, role_rules: Sequence[RoleRule] = ()):
         self.msp = msp
+        self.role_rules = list(role_rules)
 
     def extract(self) -> List[Annotation]:
         out: List[Annotation] = []
         for entity in self.msp:
             if entity.dxftype() not in ANNOTATION_TYPES:
                 continue
-            ann = _to_annotation(entity)
+            ann = _to_annotation(entity, self.role_rules)
             if ann is not None:
                 out.append(ann)
         return out
 
 
-def _to_annotation(entity) -> Optional[Annotation]:
+def _to_annotation(entity, role_rules: Sequence[RoleRule] = ()) -> Optional[Annotation]:
     kind = entity.dxftype()
-    layer = entity.dxf.get("layer", "0")
+    # Il ruolo dalle stesse regole degli edge, sul nome del layer: contano
+    # solo quelle sul nome, di un testo non si legge l'aspetto (D127). Il
+    # layer resta qui (D128).
+    role = resolve_role(role_rules, entity.dxf.get("layer", "0"))
     pos = annotation_anchor(entity)
 
     if kind in ("TEXT", "MTEXT"):
@@ -70,7 +75,7 @@ def _to_annotation(entity) -> Optional[Annotation]:
         raw_h = dxf.get("char_height", 2.5) if kind == "MTEXT" else dxf.get("height", 2.5)
         return Note(
             position=pos,
-            group=layer,
+            role=role,
             text=content,
             height=_f(raw_h) or 2.5,
             rotation=_f(dxf.get("rotation", 0.0)) or 0.0,
@@ -79,10 +84,10 @@ def _to_annotation(entity) -> Optional[Annotation]:
         )
 
     if kind == "DIMENSION":
-        return _dimension_annotation(entity, pos, layer)
+        return _dimension_annotation(entity, pos, role)
 
     if kind in ("LEADER", "MULTILEADER"):
-        return _leader_annotation(entity, pos, layer, kind)
+        return _leader_annotation(entity, pos, role, kind)
 
     return None
 
@@ -186,7 +191,7 @@ def _width_factor(entity) -> float:
 # DIMENSION
 # ---------------------------------------------------------------------------
 
-def _dimension_annotation(entity, pos, layer) -> Optional[Dimension]:
+def _dimension_annotation(entity, pos, role: str) -> Optional[Dimension]:
     rendered = _render_block(entity)
 
     if rendered.is_empty():
@@ -216,7 +221,7 @@ def _dimension_annotation(entity, pos, layer) -> Optional[Dimension]:
 
     return Dimension(
         position=pos,
-        group=layer,
+        role=role,
         source_kind="DIMENSION",
         measured_value=measured,
         dim_type=dim_type,
@@ -345,7 +350,7 @@ def _synthesize_dimension(entity):
 # LEADER / MULTILEADER
 # ---------------------------------------------------------------------------
 
-def _leader_annotation(entity, pos, layer, source_kind) -> Optional[Leader]:
+def _leader_annotation(entity, pos, role: str, source_kind) -> Optional[Leader]:
     rendered = _render_block(entity)
     if rendered.is_empty():
         return None
@@ -374,7 +379,7 @@ def _leader_annotation(entity, pos, layer, source_kind) -> Optional[Leader]:
 
     return Leader(
         position=pos,
-        group=layer,
+        role=role,
         source_kind=source_kind,
         text=text,
         vertices=vertices,

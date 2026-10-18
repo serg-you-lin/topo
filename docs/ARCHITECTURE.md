@@ -109,7 +109,7 @@ topo/
 │   ├── text.py       to_text(), save_text()  (sperimentale, D84)
 │   └── exporter.py   save_json / save_xml / XDATA
 │
-├── rules/        REGOLE di dominio                     (palette, schema, validazione)
+├── rules/        REGOLE di dominio                     (schema, validazione)
 ├── recipes.py    split_to_files()  — heal + split + salvataggio
 └── inspect.py    strumento di ispezione a 3 livelli
 ```

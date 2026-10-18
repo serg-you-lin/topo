@@ -14,27 +14,20 @@ wrapper sottile attorno a `split()`.
 
 from __future__ import annotations
 
-from typing import Callable, Dict, List, Optional, Set
+from typing import Callable, List, Mapping, Optional, Set
 
 import ezdxf
 
-from ..model import Result, Cluster
+from ..model import Result, Cluster, RoleStyle, role_style
 from ..model.document import Document
 from ..model.annotation import Annotation, Note, Dimension, Leader
-from ..model.role import ContourRole, feature_role
+from ..model.role import ContourRole, feature_role, role_str
 from ..adapters.dxf.exporter import (
-    ensure_linetype, write_segments, write_open_segments, write_native_segments,
+    dxf_pattern, ensure_linetype, write_segments, write_open_segments, write_native_segments,
 )
 from ..adapters.dxf.layers import (
-    LAYER_OUTER, LAYER_INNER,
-    LAYER_ANNOTATION,
-    TRASH_LAYER,
-    ALL_LAYERS,
-    ROLE_TO_LAYER,
-    role_to_dxf_layer,
-    color_for_layer,
+    COLOR_ANNOTATION, LAYER_ANNOTATION, LayerMap, color_for_role, role_to_dxf_layer,
 )
-from ..rules.palette import RoleStyle, registered_role_styles
 
 DEFAULT_MIN_CLUSTER_AREA = 50.0  # mm²
 
@@ -51,8 +44,9 @@ def to_dxf(
     filter_cluster: Optional[Callable[[Cluster], bool]] = None,
     include_annotations: bool = True,
     include_trash: bool = True,
-    annotation_layer: Optional[str] = LAYER_ANNOTATION,
-    role_styles: Optional[Dict[str, RoleStyle]] = None,
+    annotation_layer: str = LAYER_ANNOTATION,
+    role_styles: Optional[Mapping[str, RoleStyle]] = None,
+    layers: Optional[LayerMap] = None,
     allow_invalid: bool = True,
 ) -> "ezdxf.document.Drawing":
     """
@@ -69,20 +63,22 @@ def to_dxf(
     partenza, anche archi spuri, frammenti di profilo, centerline. Ometterle
     silenziosamente è una regressione.
 
-    `annotation_layer` decide dove finiscono testi e quote della sorgente:
-      - `"Annotation"` (default) → layer topo dedicato, non di taglio
-      - `"Trash"` (o altro nome)  → quel layer
-      - `None`                    → il layer originale della sorgente
-    In ogni caso nessuna annotazione viene scartata: quelle non coperte da
-    alcuna parte vengono comunque scritte (in `split()` assegnate alla parte
-    più vicina, come il trash).
-
-    `role_styles` (D37, `rules.palette.RoleStyle`) fa override di colore/
-    linetype/lineweight per ruolo — noto a topo o slug di un consumatore
-    (`{"frame": RoleStyle(color=(0, 0, 0))}`). Agisce sul LAYER, non
-    sull'entità: tutto ciò che topo scrive è BYLAYER, quindi l'override si
-    propaga a ogni entità di quel ruolo. Campi lasciati a `None` in un
-    `RoleStyle` restano il default di topo.
+    Layer e aspetto sono del chiamante (D123, D128); quello che non dice è il
+    default dell'adapter (`adapters/dxf/layers.py`):
+      - `layers` → `{ruolo: "Nome"}` o `{ruolo: funzione(elemento) -> nome}`:
+        con una funzione le entità di un ruolo si dividono su più layer
+        (l'elemento è il Contour, l'elemento di `cluster.detected`, l'entità
+        trash o l'Annotation che si sta scrivendo). Default: `OuterContour`,
+        `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo.
+      - `role_styles` → `{ruolo: RoleStyle}`: colore, tratto, spessore.
+        Agisce sul LAYER, non sull'entità: tutto ciò che si scrive è BYLAYER,
+        quindi vale per ogni entità del ruolo; su un layer condiviso da più
+        ruoli vince il primo scritto. Un campo a `None` resta il default.
+      - `annotation_layer` → il layer di testi e quote senza ruolo; uno con
+        un ruolo va sul layer del suo ruolo, come un edge (D127, D128).
+    Nessuna annotazione viene scartata: quelle non coperte da alcuna parte
+    vengono comunque scritte (in `split()` assegnate alla parte più vicina,
+    come il trash).
 
     Restituisce il documento ezdxf: sta al chiamante fare doc.saveas(...).
 
@@ -108,10 +104,8 @@ def to_dxf(
         doc_out.header["$MEASUREMENT"] = source_doc.source_meta.get("$MEASUREMENT", 1)
 
     msp = doc_out.modelspace()
-    _setup_layers(doc_out)
-    if annotation_layer and annotation_layer not in doc_out.layers:
-        doc_out.layers.new(annotation_layer)
-    _apply_role_styles(doc_out, role_styles)
+    book = _Layers(doc_out, layers, role_styles)
+    book.setup(annotation_layer)
 
     written_clusters: List[Cluster] = []
 
@@ -120,34 +114,33 @@ def to_dxf(
             continue
         written_clusters.append(cluster)
 
-        # Contorno esterno
+        # Contorno esterno e interni: un contorno si scrive col ruolo di
+        # contorno che ha nel grafo (outer o inner), anche se ne porta un altro
         write_segments(
             cluster.outer.segments, msp,
-            ROLE_TO_LAYER.get(cluster.outer.role, LAYER_OUTER),
+            book.for_role(_contour_role(cluster.outer, ContourRole.OUTER), cluster.outer),
             styles=cluster.outer.styles,
         )
-
-        # Contorni interni
         for inner in cluster.inners:
             write_segments(
                 inner.segments, msp,
-                ROLE_TO_LAYER.get(inner.role, LAYER_INNER),
+                book.for_role(_contour_role(inner, ContourRole.INNER), inner),
                 styles=inner.styles,
             )
 
         # L'overlay di un consumatore (fori, pieghe, ...: D70, D90)
-        _write_attached_features(msp, cluster)
+        _write_attached_features(msp, cluster, book)
 
     if include_trash and result.trash_entities:
         _write_trash(
-            msp, result, written_clusters, result.clusters,
+            msp, result, written_clusters, result.clusters, book,
             restrict_to_written=filter_cluster is not None,
         )
 
     if include_annotations and result.annotations:
         _write_annotations(
             msp, result.annotations, written_clusters, result.clusters,
-            annotation_layer,
+            book, annotation_layer,
             restrict_to_written=filter_cluster is not None,
         )
 
@@ -167,8 +160,9 @@ def split(
     min_area: float = DEFAULT_MIN_CLUSTER_AREA,
     exclude_types: Set[str] = None,
     on_part: Optional[Callable] = None,
-    annotation_layer: Optional[str] = LAYER_ANNOTATION,
-    role_styles: Optional[Dict[str, RoleStyle]] = None,
+    annotation_layer: str = LAYER_ANNOTATION,
+    role_styles: Optional[Mapping[str, RoleStyle]] = None,
+    layers: Optional[LayerMap] = None,
 ) -> List["ezdxf.document.Drawing"]:
     """
     Materializza un Result in un Drawing per parte.
@@ -210,6 +204,7 @@ def split(
             include_annotations=include_annotations,
             annotation_layer=annotation_layer,
             role_styles=role_styles,
+            layers=layers,
         )
 
         if exclude_types:
@@ -232,7 +227,8 @@ def _write_annotations(
     annotations: List[Annotation],
     written_clusters: List[Cluster],
     all_clusters: List[Cluster],
-    annotation_layer: Optional[str],
+    book: "_Layers",
+    annotation_layer: str,
     restrict_to_written: bool,
 ) -> None:
     """
@@ -244,8 +240,8 @@ def _write_annotations(
     più vicina, e scritta solo nel file di quella parte (stessa logica del
     trash).
 
-    Il layer di destinazione è `annotation_layer`; se `None` si tiene il layer
-    originale della sorgente.
+    Un'annotazione con un ruolo va sul layer del suo ruolo, una senza su
+    `annotation_layer` (D128).
     """
     from shapely.geometry import Point
 
@@ -262,18 +258,14 @@ def _write_annotations(
             if id(target) not in written_set:
                 continue
 
-        _emit_annotation(msp, ann, annotation_layer)
+        if ann.role != ContourRole.UNKNOWN:
+            layer = book.for_role(ann.role, ann)
+        else:
+            layer = annotation_layer
+        _emit_annotation(msp, ann, layer)
 
 
-def _emit_annotation(msp, ann: Annotation, annotation_layer: Optional[str]) -> None:
-    # `annotation_layer=None`: un'annotazione con un ruolo va sul layer del
-    # suo ruolo, come un edge (D127); senza, torna sul suo layer d'origine
-    if annotation_layer is not None:
-        layer = annotation_layer
-    elif ann.role != ContourRole.UNKNOWN:
-        layer = role_to_dxf_layer(ann.role)
-    else:
-        layer = ann.group or "0"
+def _emit_annotation(msp, ann: Annotation, layer: str) -> None:
     attribs = {"layer": layer, "color": 256}
 
     if isinstance(ann, Note):
@@ -358,15 +350,15 @@ def _write_trash(
     result: Result,
     written_clusters: List[Cluster],
     all_clusters: List[Cluster],
+    book: "_Layers",
     restrict_to_written: bool,
 ) -> None:
     """
     Materializza `result.trash_entities`.
 
-    Ogni entità va sul layer del suo ruolo (`role_to_dxf_layer`): `Trash` se il
-    ruolo è `unknown`, un layer col nome dello slug se un consumatore l'ha
-    marcata (`frame`, `title_block`, ...) — D31. Il layer viene creato al volo
-    col suo colore canonico.
+    Ogni entità va sul layer del suo ruolo (`book.for_role`): di default
+    `Trash` se il ruolo è `unknown`, un layer col nome dello slug se un
+    consumatore l'ha marcata (`frame`, `title_block`, ...) — D31.
 
     In `to_dxf()` (documento intero) le riporta tutte. In `split()` — un file
     per parte — assegna ogni entità trash alla parte più vicina fra TUTTE le
@@ -392,8 +384,7 @@ def _write_trash(
         segments = list(getattr(trash, "segments", []) or [])
         if segments:
             styles = list(getattr(trash, "styles", []) or [])
-            layer = role_to_dxf_layer(getattr(trash, "role", ContourRole.UNKNOWN))
-            _ensure_layer(msp.doc, layer)
+            layer = book.for_role(getattr(trash, "role", ContourRole.UNKNOWN), trash)
             # Il colore resta quello del layer — solo il linetype (tratteggio)
             # della sorgente viene ripristinato fedele.
             write_open_segments(segments, msp, layer, styles)
@@ -403,7 +394,7 @@ def _write_trash(
 # Helpers interni
 # ---------------------------------------------------------------------------
 
-def _write_attached_features(msp, cluster: Cluster) -> None:
+def _write_attached_features(msp, cluster: Cluster, book: "_Layers") -> None:
     """
     Ogni collezione di `cluster.detected` (D70, D90): topo non sa cosa siano.
     Di un elemento legge solo `role` e geometria — i suoi `contours`, se li
@@ -411,6 +402,8 @@ def _write_attached_features(msp, cluster: Cluster) -> None:
     chiuso, uno senza come una entità per primitiva. Il ruolo di un contorno
     vince su quello dell'elemento solo se non è un ruolo del motore
     (`feature_role`). Un elemento senza ruolo o senza segmenti si salta.
+    La scelta del layer riceve l'elemento, non il suo contorno: è l'elemento
+    che porta l'informazione (una piega "up" o "down").
     """
     if cluster.detected is None:
         return
@@ -425,8 +418,7 @@ def _write_attached_features(msp, cluster: Cluster) -> None:
                 segments = getattr(contour, "segments", None)
                 if not c_role or not segments:
                     continue
-                layer = role_to_dxf_layer(c_role)
-                _ensure_layer(msp.doc, layer)
+                layer = book.for_role(c_role, item)
                 styles = getattr(contour, "styles", None)
                 if getattr(contour, "polygon", None) is not None:
                     write_segments(segments, msp, layer, styles=styles)
@@ -440,24 +432,6 @@ def _remove_excluded_entities(msp, excluded_upper: Set[str]) -> None:
         msp.delete_entity(e)
 
 
-def _setup_layers(doc) -> None:
-    for name, color in ALL_LAYERS.items():
-        if name not in doc.layers:
-            layer = doc.layers.new(name)
-        else:
-            layer = doc.layers.get(name)
-        layer.color = color
-
-
-def _ensure_layer(doc, name: str) -> None:
-    """
-    Crea il layer `name` col suo colore canonico se non esiste già. Serve per i
-    layer dei ruoli di consumatore (`frame`, ...), non noti a `_setup_layers`.
-    """
-    if name and name not in doc.layers:
-        doc.layers.new(name).color = color_for_layer(name)
-
-
 def _outer_polygons(clusters) -> list:
     """(cluster, poligono dell'outer) per ogni cluster che ne ha uno."""
     return [
@@ -467,35 +441,89 @@ def _outer_polygons(clusters) -> list:
     ]
 
 
-def _apply_role_styles(doc, role_styles: Optional[Dict[str, "RoleStyle"]]) -> None:
-    """
-    Applica gli override di `role_styles` (D37) ai layer DXF: crea il layer
-    del ruolo se non esiste ancora (uno slug di consumatore usato solo più
-    avanti, es. dal trash) e vi imposta colore/linetype/lineweight. Un campo
-    lasciato a `None` in un `RoleStyle` non viene toccato — resta il default
-    già impostato da `_setup_layers`/`_ensure_layer`.
+def _contour_role(contour, default: ContourRole):
+    """Il ruolo di contorno nel grafo: outer/inner se lo porta, `default` se
+    il contorno ha un ruolo di consumatore."""
+    role = getattr(contour, "role", None)
+    return role if role in (ContourRole.OUTER, ContourRole.INNER) else default
 
-    Parte dal registro globale (`register_role_style`, valido per ogni
-    render finché non lo si ri-registra) e ci sovrappone `role_styles`: un
-    override passato qui, per questa sola chiamata, vince su quanto
-    registrato per lo stesso ruolo.
+
+class _Layers:
     """
-    merged = {**registered_role_styles(), **(role_styles or {})}
-    if not merged:
-        return
-    for role, style in merged.items():
-        layer_name = role_to_dxf_layer(role)
-        _ensure_layer(doc, layer_name)
-        layer = doc.layers.get(layer_name)
-        if style.color is not None:
-            layer.rgb = style.color
-        if style.linetype is not None:
-            linetype = ensure_linetype(doc, style.linetype)
-            if linetype is None:
-                raise ValueError(
-                    f"RoleStyle per {role!r}: linetype {style.linetype!r} sconosciuto "
-                    "(né nel documento né tra gli standard)"
-                )
-            layer.dxf.linetype = linetype
-        if style.lineweight is not None:
-            layer.dxf.lineweight = round(style.lineweight * 100)
+    I layer di un documento in scrittura (D128): il nome viene dalla scelta
+    del chiamante (`layers`) o dal default dell'adapter; un layer nuovo
+    nasce col colore della palette di topo per il ruolo e prende il
+    `RoleStyle` del chiamante una volta sola — su un layer di più ruoli vince
+    il primo.
+    """
+
+    def __init__(self, doc, layers: Optional[LayerMap], role_styles: Optional[Mapping[str, RoleStyle]]):
+        self.doc = doc
+        self.layers = dict(layers or {})
+        self.role_styles = dict(role_styles or {})
+        self._ready: Set[str] = set()
+
+    def setup(self, annotation_layer: str) -> None:
+        """I layer di ogni documento: quelli dei ruoli del motore e delle
+        annotazioni, poi quelli di ogni ruolo con un `RoleStyle` (anche senza
+        entità, così il chiamante ci scrive sopra a mano). Un ruolo il cui
+        layer è una funzione dell'elemento nasce solo quando si scrive."""
+        for role in (ContourRole.OUTER, ContourRole.INNER):
+            self._setup_role(role)
+        self.ensure(annotation_layer, color=COLOR_ANNOTATION)
+        self._setup_role(ContourRole.UNKNOWN)
+        for role in self.role_styles:
+            self._setup_role(role)
+
+    def _setup_role(self, role) -> None:
+        if not callable(self.layers.get(role_str(role))):
+            self.for_role(role)
+
+    def for_role(self, role, element: object = None) -> str:
+        """Il layer di `role` per `element`, creato se serve."""
+        name = role_to_dxf_layer(role, element, self.layers)
+        self.ensure(name, role)
+        return name
+
+    def ensure(self, name: str, role=None, color: Optional[int] = None) -> None:
+        if not name or name in self._ready:
+            return
+        self._ready.add(name)
+        if name not in self.doc.layers:
+            layer = self.doc.layers.new(name)
+            # la palette di topo (D128): indice ACI se ne ha uno esatto, così
+            # il default resta un colore DXF "di serie"; il colore del
+            # chiamante arriva sotto, in true color
+            aci = color if color is not None else color_for_role(role)
+            if aci is not None:
+                layer.color = aci
+            else:
+                layer.rgb = role_style(role).color
+        style = self.role_styles.get(role_str(role)) if role else None
+        if style is not None:
+            _apply_role_style(self.doc, self.doc.layers.get(name), role, style)
+
+
+def _apply_role_style(doc, layer, role, style: RoleStyle) -> None:
+    """
+    Un `RoleStyle` (D37, D128) sul layer: colore in true color (l'ACI non ha
+    un nero puro), tratto registrato al volo, spessore in centesimi di mm.
+    Un tratto senza nome prende il nome del ruolo; un nome senza tratto è un
+    tipo standard. Un campo a `None` non si tocca.
+    """
+    if style.color is not None:
+        layer.rgb = style.color
+    if style.linetype is not None or style.dash is not None:
+        if style.dash == ():
+            name = style.linetype or "CONTINUOUS"
+        else:
+            name = style.linetype or f"{role_str(role).upper()}_DASH"
+        linetype = ensure_linetype(doc, name, dxf_pattern(style.dash))
+        if linetype is None:
+            raise ValueError(
+                f"RoleStyle per {role_str(role)!r}: linetype {name!r} sconosciuto "
+                "(né nel documento né tra gli standard) e senza tratto"
+            )
+        layer.dxf.linetype = linetype
+    if style.lineweight is not None:
+        layer.dxf.lineweight = round(style.lineweight * 100)

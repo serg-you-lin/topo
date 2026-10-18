@@ -46,7 +46,7 @@ def ensure_linetype(
     return None
 
 
-def _dxf_pattern(dash: Optional[Tuple[float, ...]]) -> Optional[Tuple[float, ...]]:
+def dxf_pattern(dash: Optional[Tuple[float, ...]]) -> Optional[Tuple[float, ...]]:
     """Il tratto di topo (segni con segno) nel pattern della tabella DXF, che
     apre con la lunghezza totale (MAP.md D126)."""
     if not dash:
@@ -58,8 +58,8 @@ def _style_attribs(doc, layer: str, style: Optional[EdgeStyle] = None) -> dict:
     """
     dxfattribs per una entità in output: layer + linetype della sorgente, se
     noto. Il colore resta SEMPRE BYLAYER (256) — anche per il trash: il
-    colore è una decisione di dominio per layer (verde outer, rosso trash,
-    ... — `rules/palette.py`), mai quello, eventualmente diverso, della
+    colore lo decide il ruolo, sul layer (la mappa del chiamante o il default
+    di `layers.py`, D128), mai quello, eventualmente diverso, della
     sorgente. Solo l'aspetto del tratto (continuo/tratteggiato/...) va
     ripristinato fedele.
     """
@@ -71,7 +71,7 @@ def _style_attribs(doc, layer: str, style: Optional[EdgeStyle] = None) -> dict:
     # portava, non è un errore di nessuno.
     name = style.linetype or "BYLAYER"
     linetype = None if doc is None else ensure_linetype(
-        doc, name, _dxf_pattern(style.dash), style.linetype_desc or "")
+        doc, name, dxf_pattern(style.dash), style.linetype_desc or "")
     if linetype is not None and linetype.upper() != "BYLAYER":
         attribs["linetype"] = linetype
 
@@ -209,7 +209,7 @@ def write_segments(segments: List, msp, layer: str, styles: Optional[List] = Non
     `styles` (allineata a `segments`, opzionale) porta il linetype grezzo
     della sorgente: un contorno strutturale (outer/inner/hole) è una geometria
     già classificata, quindi il colore resta sempre BYLAYER (colore semantico
-    di ruolo, `rules/palette.py`) — solo il linetype viene ripristinato, preso
+    del ruolo, sul layer) — solo il linetype viene ripristinato, preso
     dal primo segmento come rappresentante dell'intero contorno (un contorno
     di taglio reale non mischia mai tratteggi diversi al suo interno).
 

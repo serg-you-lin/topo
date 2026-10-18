@@ -57,7 +57,6 @@ def _actual_dict(a) -> dict:
         "kind": a.kind,
         "position": [round(a.position[0], 3), round(a.position[1], 3)],
         "display_text": a.display_text,
-        "group": a.group,
         "cluster_ref": a.cluster_ref,
     }
     if isinstance(a, Note):
@@ -117,7 +116,6 @@ def _make_test(path: Path):
             self.assertEqual(act["type"], exp["type"], msg=f"{ctx}: type")
             self.assertEqual(act["kind"], exp["kind"], msg=f"{ctx}: kind")
             self.assertEqual(act["display_text"], exp["display_text"], msg=f"{ctx}: display_text")
-            self.assertEqual(act["group"], exp["group"], msg=f"{ctx}: group")
             self.assertAlmostEqual(act["position"][0], exp["position"][0], delta=TOL_POS, msg=f"{ctx}: x")
             self.assertAlmostEqual(act["position"][1], exp["position"][1], delta=TOL_POS, msg=f"{ctx}: y")
             self.assertEqual(act["cluster_ref"], exp.get("cluster_ref"), msg=f"{ctx}: cluster_ref")

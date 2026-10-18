@@ -20,12 +20,17 @@ l'alto). Un renderer SVG deve ribaltare la Y (lo fa `to_svg`).
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Mapping, Optional
 
-from ..model import Result
+from ..model import Result, RoleStyle, role_style
 from ..model.role import ContourRole, feature_role, role_str as _role_str
-from ..rules.palette import role_to_hex
 from ..core.geometry.measure import track_points
+
+def _color(role, role_styles: Mapping[str, RoleStyle]) -> str:
+    """Hex CSS di un ruolo: la palette di topo con sopra la mappa del
+    chiamante (`role_style`, D128) — qui solo tradotta."""
+    r, g, b = role_style(role, role_styles).color
+    return f"#{r:02x}{g:02x}{b:02x}"
 
 
 def _round_points(seq) -> list:
@@ -45,15 +50,15 @@ def _track(segments, tolerance: float) -> list:
     return _round_points(track_points(segments, tolerance))
 
 
-def _contour_entry(contour, tolerance: float) -> dict:
+def _contour_entry(contour, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict:
     role = getattr(contour, "role", ContourRole.UNKNOWN)
     pts = _poly_points(getattr(contour, "polygon", None)) or _track(
         getattr(contour, "segments", []), tolerance
     )
-    return {"role": _role_str(role), "color": role_to_hex(role), "points": pts, "closed": True}
+    return {"role": _role_str(role), "color": _color(role, role_styles), "points": pts, "closed": True}
 
 
-def _feature_entries(item, tolerance: float) -> list:
+def _feature_entries(item, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> list:
     """
     Un elemento dell'overlay (MAP.md D90) → una voce per contorno: ruolo,
     colore, punti, `closed` (ha un `polygon`), più i campi scalari del suo
@@ -78,29 +83,29 @@ def _feature_entries(item, tolerance: float) -> list:
         pts = _poly_points(polygon) if polygon is not None else _track(
             getattr(contour, "segments", []) or [], tolerance
         )
-        entries.append({**extra, "role": _role_str(c_role), "color": role_to_hex(c_role),
+        entries.append({**extra, "role": _role_str(c_role), "color": _color(c_role, role_styles),
                         "points": pts, "closed": polygon is not None})
     return entries
 
 
-def _features(cluster, tolerance: float) -> dict:
+def _features(cluster, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict:
     """`cluster.detected` per nome → lista di voci disegnabili."""
     if cluster.detected is None:
         return {}
     return {
-        name: [e for item in items for e in _feature_entries(item, tolerance)]
+        name: [e for item in items for e in _feature_entries(item, tolerance, role_styles)]
         for name, items in cluster.detected.items()
     }
 
 
-def _trash_entry(trash, tolerance: float) -> dict:
+def _trash_entry(trash, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict:
     role = getattr(trash, "role", ContourRole.UNKNOWN)
     poly = getattr(trash, "polygon", None)
     if poly is not None:
         pts, closed = _poly_points(poly), True
     else:
         pts, closed = _track(getattr(trash, "segments", []), tolerance), False
-    return {"role": _role_str(role), "color": role_to_hex(role), "points": pts, "closed": closed}
+    return {"role": _role_str(role), "color": _color(role, role_styles), "points": pts, "closed": closed}
 
 
 def _annotation_entry(ann) -> dict:
@@ -130,6 +135,7 @@ def to_view_model(
     tolerance: float = 0.05,
     include_trash: bool = True,
     include_annotations: bool = True,
+    role_styles: Optional[Mapping[str, RoleStyle]] = None,
 ) -> dict:
     """
     `Result` → dizionario JSON-ready con la geometria di ogni feature.
@@ -141,21 +147,24 @@ def to_view_model(
                              il polygon già discretizzato al load).
         include_trash:       includi `result.trash_entities`.
         include_annotations: includi `result.annotations`.
+        role_styles:         `{ruolo: RoleStyle}` del chiamante (D128),
+                             sopra la palette di topo: ne legge il colore.
 
     Non muta `result`. Non solleva su `result` non valido — ritorna comunque il
     dizionario con `is_valid=False` e le parti che ci sono (utile per debuggare
     un file che non healizza).
     """
+    role_styles = dict(role_styles or {})
     parts_out = []
     for cluster in result.clusters:
         parts_out.append({
             "label":  cluster.label,
             "bbox":   list(cluster.bbox),
             "area":   round(cluster.area, 4),
-            "outer":  _contour_entry(cluster.outer, tolerance),
-            "inners": [_contour_entry(i, tolerance) for i in cluster.inners],
+            "outer":  _contour_entry(cluster.outer, tolerance, role_styles),
+            "inners": [_contour_entry(i, tolerance, role_styles) for i in cluster.inners],
             # l'overlay di un consumatore, per nome (MAP.md D44, D90)
-            "features": _features(cluster, tolerance),
+            "features": _features(cluster, tolerance, role_styles),
             "summary": cluster.summary,
             "custom":  cluster.custom,
         })
@@ -168,24 +177,20 @@ def to_view_model(
         "warnings":    list(result.warnings),
         "errors":      list(result.errors),
         "clusters":       parts_out,
-        "palette":     _palette_dict(),
+        "palette":     _palette_dict(role_styles),
     }
     if include_trash:
-        vm["trash"] = [_trash_entry(t, tolerance) for t in result.trash_entities]
+        vm["trash"] = [_trash_entry(t, tolerance, role_styles) for t in result.trash_entities]
     if include_annotations:
         vm["annotations"] = [_annotation_entry(a) for a in result.annotations]
     return vm
 
 
-def _palette_dict() -> dict:
+def _palette_dict(role_styles: Mapping[str, RoleStyle]) -> dict:
     """
-    role (stringa) → colore hex, per la legenda di un renderer.
-
-    I tre ruoli del motore + ogni ruolo registrato (`register_role_style`) —
-    detect registra i suoi allo stesso modo di un consumatore esterno, quindi
-    compaiono qui senza che questo file sappia cosa sia un foro o una piega.
+    role (stringa) → colore hex, per la legenda di un renderer: i tre ruoli
+    del motore e ogni ruolo a cui il chiamante dà un colore.
     """
-    from ..rules.palette import registered_role_styles
-    base = {r.value: role_to_hex(r) for r in ContourRole}
-    registered = {role: role_to_hex(role) for role in registered_role_styles()}
-    return {**base, **registered}
+    engine = [r.value for r in ContourRole]
+    roles = engine + [r for r in role_styles if r not in engine]
+    return {role: _color(role, role_styles) for role in roles}
