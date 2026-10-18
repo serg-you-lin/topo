@@ -1,19 +1,17 @@
 """
 model/style.py
 ---------------
-Aspetto visivo grezzo di un'entità sorgente — linetype e colore.
+Aspetto visivo grezzo di un'entità sorgente — tipo di linea, tratto e colore.
 
-Dato di dominio puro, zero riferimenti a ezdxf: il pattern del linetype (se
-non è uno dei tre standard BYLAYER/BYBLOCK/CONTINUOUS) è già risolto in una
-tupla di lunghezze (`linetype_pattern`), pronta per essere ri-registrata in un
-documento di output senza mai riaprire la sorgente. Captato dall'adapter al
-load (`Edge.style`), sopravvive nel modello come `styles` — lista parallela a
-`segments` su ClosedCurve/OpenCurve — fino a write(), che ripristina
-sempre il linetype (Cluster E). Il colore NON viene mai riapplicato in
-output: resta quello del layer topo di destinazione, una decisione di
-dominio per ruolo (`rules/palette.py`) — trash compreso. `color`/`true_color`
-restano comunque catturati qui perché `detect_flat()` potrà usarli in futuro come
-segnale addizionale per dedurre il ruolo, insieme al linetype.
+Dato di dominio puro, in un vocabolario che nessun formato possiede (MAP.md
+D126): niente indici colore ACI, niente BYLAYER/BYBLOCK, niente pattern nella
+forma della tabella DXF. Ogni adapter traduce il suo formato in questi campi
+al load, risolvendo l'ereditarietà (uno stile "del layer" è lo stile che la
+linea ha davvero) e lo ritraduce in uscita. Captato al load (`Edge.style`),
+sopravvive nel modello come `styles` — lista parallela a `segments` su
+ClosedCurve/OpenCurve — e un exporter ne ripristina il tratto (Cluster E).
+Il colore no: quello in uscita lo decide il ruolo, con la mappa del
+chiamante (D123); qui resta perché `RoleRule(color=...)` lo legge.
 """
 
 from __future__ import annotations
@@ -36,27 +34,34 @@ _MARK_REL_TOL = 0.05
 
 @dataclass
 class EdgeStyle:
-    linetype:         str                          = "BYLAYER"
-    linetype_desc:    str                           = ""
-    linetype_pattern: Optional[Tuple[float, ...]]   = None
-    color:            int                           = 256   # ACI, 256 = BYLAYER
-    true_color:       Optional[int]                 = None  # 24-bit RGB, None = non impostato
+    """
+    Campi (tutti opzionali: un `EdgeStyle()` vuoto è "la sorgente non lo dice"):
+        linetype      : nome del tipo di linea nella sorgente ("HIDDEN",
+                        "CENTER", "CONTINUOUS"), "" se non ne ha uno
+        linetype_desc : la sua descrizione, se la sorgente la porta
+        dash          : il tratto, come segni con segno ripetuti — `> 0`
+                        tratto, `0` punto, `< 0` vuoto (mm). `()` = continuo
+                        dichiarato, `None` = non noto. Un dash-array PDF/SVG
+                        `[3, 1]` è `(3, -1)`.
+        color         : colore effettivo (r, g, b) 0–255, None se non noto
+    """
+    linetype:      str                          = ""
+    linetype_desc: str                          = ""
+    dash:          Optional[Tuple[float, ...]]  = None
+    color:         Optional[Tuple[int, int, int]] = None
 
     @property
     def is_dashed(self) -> bool:
-        """True se il pattern ha almeno un vuoto (elemento negativo, D63)."""
-        if not self.linetype_pattern:
-            return False
-        return any(element < 0 for element in self.linetype_pattern[1:])
+        """True se il tratto ha almeno un vuoto (D63)."""
+        return any(element < 0 for element in self.dash or ())
 
     @property
     def dash_kind(self) -> str:
         """Forma del tratto: `continuous`, `uniform` o `chain` (D64)."""
         if not self.is_dashed:
             return DASH_CONTINUOUS
-        elements = self.linetype_pattern[1:]
-        marks = [e for e in elements if e >= 0]    # tratti (> 0) e punti (= 0)
-        total = self.linetype_pattern[0] or sum(abs(e) for e in elements)
+        marks = [e for e in self.dash if e >= 0]    # tratti (> 0) e punti (= 0)
+        total = sum(abs(e) for e in self.dash)
         if max(marks, default=0.0) - min(marks, default=0.0) > _MARK_REL_TOL * total:
             return DASH_CHAIN
         return DASH_UNIFORM

@@ -70,7 +70,7 @@ def _to_annotation(entity) -> Optional[Annotation]:
         raw_h = dxf.get("char_height", 2.5) if kind == "MTEXT" else dxf.get("height", 2.5)
         return Note(
             position=pos,
-            layer=layer,
+            group=layer,
             text=content,
             height=_f(raw_h) or 2.5,
             rotation=_f(dxf.get("rotation", 0.0)) or 0.0,
@@ -216,7 +216,7 @@ def _dimension_annotation(entity, pos, layer) -> Optional[Dimension]:
 
     return Dimension(
         position=pos,
-        layer=layer,
+        group=layer,
         source_kind="DIMENSION",
         measured_value=measured,
         dim_type=dim_type,
@@ -374,7 +374,7 @@ def _leader_annotation(entity, pos, layer, source_kind) -> Optional[Leader]:
 
     return Leader(
         position=pos,
-        layer=layer,
+        group=layer,
         source_kind=source_kind,
         text=text,
         vertices=vertices,

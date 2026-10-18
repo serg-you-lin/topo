@@ -334,7 +334,8 @@ seconda è di snapbend, D88):
   vocabolario di nomi vive in topo. Il nome resta nell'adapter, l'`Edge`
   riceve solo il ruolo. Tratteggio e colore sono quelli **effettivi**: un'entità
   `ByLayer` eredita lo stile dal layer che la contiene, e `DxfAdapter` lo
-  risolve prima del confronto. "Tratteggiata" vuol dire che il pattern ha
+  risolve prima di consegnare un `EdgeStyle`, che non conosce parole di un
+  formato (D126): tratto come segni con segno, colore in RGB. "Tratteggiata" vuol dire che il pattern ha
   almeno un vuoto — un fatto del pattern, non del nome del linetype.
 - **inferenza geometrica**: il consumatore riconosce la feature dalla forma
   (`source="geometric"`, `confidence < 1.0`) — per fori e pieghe, snapbend.

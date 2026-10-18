@@ -78,7 +78,7 @@ class Annotation:
     reale: cartigli SolidWorks, stile a 0.6, riscritti su "Standard" a 1.0).
     """
     position:    Point
-    layer:       str           = "0"
+    group:       str           = ""     # nome del gruppo sorgente (il layer di un DXF, D126)
     origin:      Optional[str]  = None   # provenienza nella sorgente — diagnostica
     cluster_ref:    Optional[int]  = None   # indice in result.clusters della parte che la contiene (fase anchor)
     source_kind: str            = ""

@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from typing import List, Optional, Sequence, Tuple
 
+from ezdxf.colors import aci2rgb, int2rgb
+
 # Solo nomi pubblici di topo: l'adapter è un consumer come un altro (MAP.md D125)
 from topo.primitives import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg
 from topo.model import Edge, EdgeStyle, RoleRule, resolve_role
@@ -60,6 +62,17 @@ def _raw_linetype_pattern(lt_entry) -> Optional[Tuple[float, ...]]:
     if len(elements) < 2:
         return None
     return (pattern_length, *elements)
+
+
+def _color_rgb(aci: int, true_color: Optional[int]) -> Optional[Tuple[int, int, int]]:
+    """Il colore effettivo in RGB: il true color se c'è, altrimenti l'indice
+    ACI (1–255) col suo RGB canonico. BYBLOCK (0) e un BYLAYER non risolto
+    (256) non dicono un colore: None (MAP.md D126)."""
+    if true_color is not None:
+        return tuple(int2rgb(true_color))
+    if 1 <= aci <= 255:
+        return tuple(aci2rgb(aci))
+    return None
 
 
 def _entity_style(entity) -> EdgeStyle:
@@ -131,12 +144,21 @@ def _entity_style(entity) -> EdgeStyle:
         except Exception:
             pass
 
+    # BYLAYER/BYBLOCK sono parole del DXF, non tipi di linea: se restano dopo
+    # la risoluzione la sorgente non dice niente (D126)
+    upper = linetype.upper()
+    if upper in ("BYLAYER", "BYBLOCK"):
+        linetype, dash = "", None
+    elif upper == "CONTINUOUS":
+        dash = ()
+    else:
+        # il pattern DXF apre con la lunghezza totale: il tratto sono i segni
+        dash = tuple(pattern[1:]) if pattern else None
     return EdgeStyle(
         linetype=linetype,
         linetype_desc=desc,
-        linetype_pattern=pattern,
-        color=color,
-        true_color=true_color,
+        dash=dash,
+        color=_color_rgb(color, true_color),
     )
 
 

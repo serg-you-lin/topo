@@ -266,7 +266,7 @@ def _write_annotations(
 
 
 def _emit_annotation(msp, ann: Annotation, annotation_layer: Optional[str]) -> None:
-    layer = annotation_layer if annotation_layer is not None else ann.layer
+    layer = annotation_layer if annotation_layer is not None else (ann.group or "0")
     attribs = {"layer": layer, "color": 256}
 
     if isinstance(ann, Note):

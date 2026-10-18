@@ -16,7 +16,7 @@
         135.305
       ],
       "display_text": "80",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 80.0,
@@ -35,7 +35,7 @@
         175.305
       ],
       "display_text": "25",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 25.0,
@@ -54,7 +54,7 @@
         150.305
       ],
       "display_text": "25",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 25.0,
@@ -73,7 +73,7 @@
         192.805
       ],
       "display_text": "15",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 15.0,
@@ -92,7 +92,7 @@
         209.305
       ],
       "display_text": "R6",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": 0,
       "dim_type": "radius",
       "measured_value": 6.0,
@@ -111,7 +111,7 @@
         225.305
       ],
       "display_text": "8.5",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 8.5,
@@ -130,7 +130,7 @@
         245.305
       ],
       "display_text": "11.25",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 11.25,
@@ -149,7 +149,7 @@
         96.91
       ],
       "display_text": "",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "vertices": 2,
       "rendered": {
@@ -166,7 +166,7 @@
         115.305
       ],
       "display_text": "32",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 32.0,
@@ -185,7 +185,7 @@
         115.305
       ],
       "display_text": "42",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 42.0,
@@ -204,7 +204,7 @@
         255.516
       ],
       "display_text": "",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "vertices": 2,
       "rendered": {
@@ -221,7 +221,7 @@
         125.305
       ],
       "display_text": "50",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 50.0,
@@ -240,7 +240,7 @@
         89.41
       ],
       "display_text": "B",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "height": 5.0,
       "rotation": 0.0
@@ -253,7 +253,7 @@
         258.016
       ],
       "display_text": "B",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "height": 5.0,
       "rotation": 0.0
@@ -266,7 +266,7 @@
         179.057
       ],
       "display_text": "M8",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": 0,
       "dim_type": "diameter",
       "measured_value": 8.0,
@@ -285,7 +285,7 @@
         125.305
       ],
       "display_text": "20",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 20.0,
@@ -304,7 +304,7 @@
         125.305
       ],
       "display_text": "20",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 20.0,
@@ -323,7 +323,7 @@
         96.122
       ],
       "display_text": "",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "vertices": 2,
       "rendered": {
@@ -340,7 +340,7 @@
         235.305
       ],
       "display_text": "109.5",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 109.5,
@@ -359,7 +359,7 @@
         255.718
       ],
       "display_text": "",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "vertices": 2,
       "rendered": {
@@ -376,7 +376,7 @@
         88.622
       ],
       "display_text": "A",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "height": 5.0,
       "rotation": 0.0
@@ -389,7 +389,7 @@
         258.218
       ],
       "display_text": "A",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "height": 5.0,
       "rotation": 0.0
@@ -402,7 +402,7 @@
         245.305
       ],
       "display_text": "127.5",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 127.5,
@@ -421,7 +421,7 @@
         193.305
       ],
       "display_text": "36",
-      "layer": "0",
+      "group": "0",
       "cluster_ref": 0,
       "dim_type": "linear",
       "measured_value": 36.0,

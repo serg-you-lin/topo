@@ -61,7 +61,7 @@ def _annotation_dict(a) -> dict:
         "kind": a.kind,
         "position": [round(a.position[0], 3), round(a.position[1], 3)],
         "display_text": a.display_text,
-        "layer": a.layer,
+        "group": a.group,
         "cluster_ref": a.cluster_ref,
     }
     if isinstance(a, Note):

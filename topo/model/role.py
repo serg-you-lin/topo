@@ -9,19 +9,19 @@ incisione, marcatura, ...) — quella è vocabolario di un consumatore
 (snapbend, MAP.md D88): topo non sa cosa sia un foro, sa solo distinguere un
 contorno da un altro (MAP.md, "roles out of core").
 
-``ContourRole`` NON è un universo chiuso: un consumatore (un layer sopra
+``ContourRole`` NON è un universo chiuso: un consumatore (una libreria sopra
 topo, snapbend, snapdraw, un agente — nessuno è privilegiato) può assegnare un ruolo che core non conosce —
 ``"hole"``, ``"frame"``, ``"title_block"``, qualunque slug — e topo lo
-conserva, lo tratta come non strutturale di default e in output lo scrive su
-un layer col nome dello slug (non su ``Trash``: quella geometria non è
-spazzatura). Chi vuole che un ruolo che core non conosce sia trattato come
+conserva e lo tratta come non strutturale di default. Come si disegna in
+uscita lo decide un exporter dal ruolo, con la mappa del chiamante (MAP.md
+D123) — non come spazzatura: quella geometria non è trash. Chi vuole che un ruolo che core non conosce sia trattato come
 strutturale (un foro è un vero contorno di pezzo, non decorazione) passa il
 proprio predicato a ``heal(doc, is_structural=...)``. Vedi MAP.md D27 e D31.
 
 ``normalize_role()`` è l'unico punto in cui una stringa-ruolo che arriva dal
 chiamante entra nel modello: la ripulisce una volta sola in uno slug sicuro,
-così tutto il codice a valle (nomi layer DXF, chiavi/valori serializzati,
-attributi SVG) se ne può fidare senza ri-validarla.
+così tutto il codice a valle (chiavi e valori serializzati, nomi e attributi
+di qualunque formato in uscita) se ne può fidare senza ri-validarla.
 
 Le regole con cui il chiamante assegna un ruolo al load vivono in
 ``model/role_rule.py`` (D63).
@@ -35,7 +35,8 @@ from typing import Dict
 
 # Slug ruolo: minuscole, cifre, _ e -. Tutto il resto viene collassato in "_"
 # da normalize_role — è quello che neutralizza i payload di injection
-# (`"</cluster>"`, newline, caratteri vietati nei nomi layer DXF).
+# (`"</cluster>"`, newline, caratteri che un formato in uscita non accetta in
+# un nome): una scelta di sicurezza, non di un formato (D126).
 _MAX_ROLE_LEN = 64
 _ROLE_SLUG_RE = re.compile(r"[^a-z0-9_-]+")
 
@@ -123,7 +124,7 @@ def normalize_role(value) -> str:
     - caratteri fuori da ``[a-z0-9_-]`` collassati in ``_``
     - troncata a 64 caratteri
     - se è un ruolo noto → la costante canonica di ``ContourRole``
-    - altrimenti → lo slug così com'è (ruolo di un layer sopra topo)
+    - altrimenti → lo slug così com'è (ruolo di un consumatore)
 
     Non fare mai lookup dinamici sull'enum (``ContourRole[s]``, ``getattr``,
     ``ContourRole(s)``): sollevano o raggiungono attributi di classe. Qui si
