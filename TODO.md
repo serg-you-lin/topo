@@ -18,10 +18,37 @@ dimenticando quella prima. Il dettaglio di ognuno sta più sotto o in `MAP.md`.
 ## APERTO (17 ottobre) — la strada verso la 1.0.0
 
 Obiettivo: API stabili su cui un terzo costruisce i suoi algoritmi con le
-primitive di topo. **Data: 1.0.0 pubblicata entro il 31 dicembre 2026**
-(Federico, 18 ottobre), e solo con il motore robusto: la fedeltà (punto 7)
-non si taglia. In ordine (i passi che rompono vanno tutti in una minor):
+primitive di topo.
 
+0. **topo non ha un formato** (D123) — per primo, il resto viene dopo.
+   topo conosce geometria e ruoli; i layer non esistono, li sceglie un
+   exporter dai ruoli. Gli adapter DXF e PDF escono da topo come pacchetti
+   separati; `ezdxf` non è più una dipendenza di topo. In ordine:
+   1. **Il contratto di un adapter, pubblico.** Quello che
+      `adapters/dxf` prende oggi da `topo.core` (segmenti, normalizer,
+      `adapter_base`, `polygon_builder`, misure, …) diventa nome pubblico o
+      sparisce dall'adapter. Prova: il codice dell'adapter importa solo
+      `topo.<pubblico>`. È lo stesso lavoro che serve al PDF.
+   2. **Vocabolario neutro in `core/`, `model/`, `rules/`.** `EdgeStyle`
+      senza ACI/`BYLAYER` (lo stile della sorgente come dato dell'adapter);
+      `Trash` è un ruolo, non un layer; un ruolo non vincolato ai caratteri
+      di un nome layer; via `LAYER_*` da `recipes.py` e `io/exporter.py`.
+   3. **Uscita per ruolo.** Un exporter riceve una mappa ruolo → stile che
+      possiede il chiamante (spessore, colore, tipo linea, e per il DXF uno
+      o più layer); la palette di oggi diventa il default dell'adapter DXF,
+      non una regola di topo.
+   4. **Il trasloco.** `adapters/dxf` + `io/dxf.py` (`to_dxf`, `split`) +
+      metadati in XDATA + la parte DXF di `inspect` + `split_to_files` in un
+      pacchetto DXF; `adapters/pdf` (e il lavoro fermo in
+      `forge-pdf-adapter`) in un pacchetto PDF. `load_geometry` /
+      `load_segments` restano in topo. `gen_index`: `ezdxf` vietato in
+      tutto topo.
+   5. **I consumer.** snapbend (`io/dxf.py`, `flat/`), snapdraw, smoother e
+      i test di topo (l'adapter DXF come dipendenza di sviluppo, le fixture
+      DXF restano).
+   6. Docs (README, API, ARCHITECTURE, LLM) e una minor che rompe.
+   Da decidere con Federico prima del passo 4: nome dei pacchetti, un repo
+   per adapter o uno solo per tutti gli adapter.
 1. ~~**Rename `forge` → `topo` / `g-topo`**~~ — fatto, D119 (0.17.0), insieme
    a D117: via i prefissi `Forge*`, i passi di heal/island in `topo.steps`.
    Restano a Federico: la cartella locale `GitHub/forge` → `GitHub/topo` e il
@@ -32,7 +59,7 @@ non si taglia. In ordine (i passi che rompono vanno tutti in una minor):
    seconda metà D122 (0.19.0). Misure e fatti sugli assi in `topo.geometry`;
    `"*"` attivo in snapbend e snapdraw. Fuori dalla 1.0 stabile, apposta: le
    linguette (`tools.tabs`, in sviluppo, cambieranno) e la tabella dei layer
-   DXF (un `topo.layers` pubblico provato e tolto: non piace a Federico).
+   DXF (un `topo.layers` pubblico provato e tolto: topo non ha layer, D123).
    Restano: `gen_index` in smoother (non ce l'ha), i lab di snapdraw come
    richieste (sotto).
 3. ~~**Le primitive di D109**~~ — fatte, D118. Criterio: un algoritmo esterno
@@ -113,9 +140,6 @@ Richieste aperte:
   fatto il lab stava ricostruendo (il giro esterno di un grafo? le facce?) e
   se diventa un passo di `topo.steps` o un fatto di `topo.geometry`. Va
   insieme alle ricette (filo sotto).
-- **I layer DXF in uscita** (D122): i test di snapbend li prendono da
-  `adapters.dxf.layers`. Come un consumatore debba nominare i layer che topo
-  scrive è da decidere con Federico (non con un modulo `topo.layers`).
 - **Due misure del cerchio** (D122): `circular_geometry` (bounding box del
   poligono discretizzato) resta interna e la usa `healing/hierarchy.py`;
   `contour_shape` dà quella esatta. Da unificare su `contour_shape`, provando

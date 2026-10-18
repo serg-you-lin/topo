@@ -4304,9 +4304,9 @@ got a decision (D120's list):
   is a thread (TODO.md).
 - **Not public, on purpose** (Federico, 18 October):
   - the DXF layer table (`adapters.dxf.layers`). A public `topo.layers` was
-    tried and dropped the same day: Federico does not want it. Only
-    snapbend's tests use it, and tests are outside the `"*"` rule; how a
-    consumer should name topo's output layers is still open (TODO.md).
+    tried and dropped the same day: topo has no layers, it has roles (D123).
+    Only snapbend's tests use the table, and tests are outside the `"*"`
+    rule.
   - the tabs (`tools.tabs`: `bridge_tabs`, `bridge_nested_tabs`). In
     development and certain to change: **not in the stable 1.0 API**.
     smoother keeps calling `topo.tools.tabs.bridge_nested_tabs` as a
@@ -4321,4 +4321,38 @@ what it was rebuilding is decided when the idea is stable, never by moving the
 name as it is.
 
 `main` → **0.19.0** (new public names; nothing removed).
+
+### D123 — topo has no file format: geometry and roles, never layers
+Federico, 18 October, after D122 tried a public `topo.layers`: possibly the
+most important point of 1.0, and the one without which the rest is worthless.
+
+topo's model is geometry plus roles. There is no "topo DXF": DXF, PDF, SVG are
+adapters at the edges, a way in and a way out, and none of them is topo's.
+Layers do not exist in topo. An exporter maps a role to how it is drawn —
+line weight, colour, linetype — and, when it writes a DXF, to a layer; or to
+two different layers, if a consumer's recipe says so. Which mapping is the
+caller's choice; topo may ship a default, never impose one.
+
+What it implies (TODO.md, road to 1.0, point 0, to be planned): `ezdxf`
+becomes an optional dependency like PyMuPDF; no DXF vocabulary in `core/`,
+`model/`, `rules/` (today: ACI/`BYLAYER` in `EdgeStyle`, a palette that
+speaks of "the topo layer", role slugs constrained by DXF layer-name
+characters, `Trash` treated as a layer, `LAYER_ANNOTATION` in `recipes.py`);
+the output style per role is a map the caller owns and hands to an exporter.
+Real imports of `ezdxf` outside `adapters/` are already only two
+(`io/dxf.py`, `inspect.py`): the coupling is in the vocabulary and the public
+surface more than in the code.
+
+**The adapters leave topo entirely** (Federico, same day): DXF and PDF become
+separate packages, consumers of topo like any other, and `ezdxf` is not a
+dependency of topo at all. An optional extra was proposed and set aside:
+keeping the code inside keeps the temptation to reach into it, and a second
+adapter (PDF, half done) is easier to write against a topo that knows no
+format. An adapter may use only topo's public names: what the DXF adapter
+takes from `topo.core` today (segments, the normalizer, `adapter_base`, …)
+is the list of what the public surface still lacks for anyone writing an
+adapter. The pure-geometry entry (`load_geometry`, `load_segments`) is no
+format and stays. Tests may keep DXF fixtures, read through the adapter as a
+development dependency. It is first on the road to 1.0: everything else
+comes after.
 
