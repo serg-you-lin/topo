@@ -64,10 +64,10 @@ primitive di topo.
       un `Document` come ogni adapter (oggi `list[Edge]`, D10).
 1. ~~**Rename `forge` → `topo` / `g-topo`**~~ — fatto, D119 (0.17.0), insieme
    a D117: via i prefissi `Forge*`, i passi di heal/island in `topo.steps`.
-   Restano a Federico: la cartella locale `GitHub/forge` → `GitHub/topo` e il
-   repo GitHub `forge` → `topo`; dopo, reinstallare l'editable
-   (`pip install -e ../topo --no-deps`), `git remote set-url` e
-   `git worktree repair` per `forge-pdf-adapter`.
+   Il repo GitHub è già `topo` e `origin` punta lì (18 ottobre). Resta la
+   cartella locale `GitHub/forge` → `GitHub/topo`; dopo, reinstallare
+   l'editable (`pip install -e ../topo --no-deps`) e `git worktree repair`
+   per `forge-pdf-adapter`.
 2. ~~**Superficie pubblica esplicita**~~ — fatta: prima metà D120 (0.18.0),
    seconda metà D122 (0.19.0). Misure e fatti sugli assi in `topo.geometry`;
    `"*"` attivo in snapbend e snapdraw. Fuori dalla 1.0 stabile, apposta: le
