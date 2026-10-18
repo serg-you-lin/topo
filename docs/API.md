@@ -1081,6 +1081,11 @@ topo.save_xml(
 Stessi campi di `save_json` (`extra_metadata` incluso), in XML
 (`<topo><clusters><cluster>…`).
 
+> **Il viewer** — `to_view_model`, `to_svg`, `save_svg` — è **fuori dalla
+> 1.0 stabile** (MAP.md D133): si importa come `topo.<nome>` ma non è in
+> `__all__`, e verrà rifatto (TODO, "Rifare il viewer"). Le firme qui sotto
+> valgono oggi, senza garanzia che restino.
+
 ### `to_view_model`
 
 ```python

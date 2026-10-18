@@ -71,6 +71,8 @@ from .io.exporter         import (
 # importabile come topo.to_nester_input, ma non è in __all__ né documentato.
 # Per serializzare la geometria a un renderer/tool usa topo.to_view_model().
 from .io.exporter         import to_nester_input
+# Il viewer (to_view_model, to_svg, save_svg): importabile come topo.<nome>,
+# fuori da __all__ e dalla 1.0 stabile finché non è rifatto (MAP.md D133).
 from .io.view_model       import to_view_model
 from .io.svg              import to_svg, save_svg
 # to_text/save_text: SPERIMENTALI (MAP.md D84) — la lettura per un agente AI.
@@ -147,9 +149,6 @@ __all__ = [
     "to_json",
     "save_json",
     "save_xml",
-    "to_view_model",
-    "to_svg",
-    "save_svg",
     # Metadati (gli stessi come XDATA DXF: topo_dxf.write_metadata_to_dxf)
     "build_metadata",
     "set_schema",

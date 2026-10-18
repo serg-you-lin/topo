@@ -122,8 +122,8 @@ topo/
 │   └── tabs.py           bridge_tabs() (D40)
 │
 ├── io/           RENDERER del modello senza dipendenze di formato
-│   ├── svg.py        to_svg(), save_svg()
-│   ├── view_model.py to_view_model()
+│   ├── svg.py        to_svg(), save_svg()  (fuori dalla 1.0 stabile, D133)
+│   ├── view_model.py to_view_model()  (fuori dalla 1.0 stabile, D133)
 │   ├── text.py       to_text(), save_text()  (sperimentale, D84)
 │   └── exporter.py   build_metadata / save_json / save_xml
 │
