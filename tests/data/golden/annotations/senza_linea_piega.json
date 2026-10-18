@@ -16,7 +16,7 @@
         46.663
       ],
       "display_text": "Materiale: S235JR EN 10025",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 5,
       "height": 4.0,
       "rotation": 0.0
@@ -29,7 +29,7 @@
         56.719
       ],
       "display_text": "Codice Articolo: ARTX",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 5,
       "height": 4.0,
       "rotation": 0.0
@@ -42,7 +42,7 @@
         98.387
       ],
       "display_text": "MARCARE I PRIMI 25 mm\nPER TUTTI I RIFERIMENTI PIEGA",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": null,
       "vertices": 0,
       "rendered": {
@@ -59,7 +59,7 @@
         134.868
       ],
       "display_text": "20",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": null,
       "dim_type": "aligned",
       "measured_value": 20.0,
@@ -78,7 +78,7 @@
         38.663
       ],
       "display_text": "I profili rappresentati sono comprensivi di sovrametallo",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 5,
       "height": 2.5,
       "rotation": 0.0
@@ -91,7 +91,7 @@
         211.883
       ],
       "display_text": "PEZZI N°: 1",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 3,
       "vertices": 0,
       "rendered": {
@@ -108,7 +108,7 @@
         247.162
       ],
       "display_text": "SPESSORE: 2,00 mm",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 3,
       "vertices": 0,
       "rendered": {
@@ -125,7 +125,7 @@
         289.445
       ],
       "display_text": "CODICE: ARTX_5",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 3,
       "vertices": 0,
       "rendered": {
@@ -142,7 +142,7 @@
         25.733
       ],
       "display_text": "245",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": null,
       "dim_type": "aligned",
       "measured_value": 245.0,
@@ -161,7 +161,7 @@
         87.103
       ],
       "display_text": "SPESSORE: 2,00 mm",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 0,
       "vertices": 0,
       "rendered": {
@@ -178,7 +178,7 @@
         92.447
       ],
       "display_text": "PEZZI N°: 1",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 0,
       "vertices": 0,
       "rendered": {
@@ -195,7 +195,7 @@
         81.527
       ],
       "display_text": "CODICE: ARTX_1",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 0,
       "vertices": 0,
       "rendered": {
@@ -212,7 +212,7 @@
         88.566
       ],
       "display_text": "SPESSORE: 2,00 mm",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 1,
       "vertices": 0,
       "rendered": {
@@ -229,7 +229,7 @@
         93.91
       ],
       "display_text": "PEZZI N°: 2",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 1,
       "vertices": 0,
       "rendered": {
@@ -246,7 +246,7 @@
         82.99
       ],
       "display_text": "CODICE: ARTX_2",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 1,
       "vertices": 0,
       "rendered": {
@@ -263,7 +263,7 @@
         589.727
       ],
       "display_text": "SPESSORE: 4,00 mm",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 2,
       "vertices": 0,
       "rendered": {
@@ -280,7 +280,7 @@
         595.071
       ],
       "display_text": "PEZZI N°: 2",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 2,
       "vertices": 0,
       "rendered": {
@@ -297,7 +297,7 @@
         584.15
       ],
       "display_text": "CODICE: ARTX_4",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 2,
       "vertices": 0,
       "rendered": {
@@ -314,7 +314,7 @@
         782.208
       ],
       "display_text": "SPESSORE: 2,00 mm",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 4,
       "vertices": 0,
       "rendered": {
@@ -331,7 +331,7 @@
         787.552
       ],
       "display_text": "PEZZI N°: 2",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 4,
       "vertices": 0,
       "rendered": {
@@ -348,7 +348,7 @@
         776.631
       ],
       "display_text": "CODICE: ARTX_3",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": 4,
       "vertices": 0,
       "rendered": {
@@ -365,7 +365,7 @@
         673.267
       ],
       "display_text": "100",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 100.0,
@@ -384,7 +384,7 @@
         760.469
       ],
       "display_text": "36,5",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 36.4694,
@@ -403,7 +403,7 @@
         521.727
       ],
       "display_text": "479,1",
-      "layer": "Default",
+      "group": "Default",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 479.1075,

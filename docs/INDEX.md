@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`75` modules · `404` module-level functions · `56` classes · `14043` lines of code.
+`75` modules · `406` module-level functions · `56` classes · `14090` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -22,8 +22,8 @@ Every module-level name in the package, alphabetically. **Search here before wri
 |---|---|---|---|
 | `_adaptive_polyline` | func | `topo/core/primitives/segments.py:317` | Discretizza una curva parametrica valutata da `evaluate(t) -> Point` fra |
 | `_add` | func | `topo/tools/tabs.py:55` |  |
-| `_add_ellipse` | func | `topo/adapters/dxf/exporter.py:161` | Materializza una EllipseSeg come ELLIPSE nativa — mai una spline: topo |
-| `_add_spline` | func | `topo/adapters/dxf/exporter.py:116` | Materializza una SplineSeg come SPLINE nativa, ricostruita dalla primitiva |
+| `_add_ellipse` | func | `topo/adapters/dxf/exporter.py:169` | Materializza una EllipseSeg come ELLIPSE nativa — mai una spline: topo |
+| `_add_spline` | func | `topo/adapters/dxf/exporter.py:124` | Materializza una SplineSeg come SPLINE nativa, ricostruita dalla primitiva |
 | `AddSegment` | class | `topo/core/healing/gap_solver.py:84` | Istruzione: aggiungi un segmento retto tra pt_a e pt_b. |
 | `anchor_annotations` | func | `topo/tools/anchor.py:34` | Assegna ``cluster_ref`` a ogni annotazione di ``result.annotations``. |
 | `_angle_diff` | func | `topo/core/geometry/shape.py:158` | Differenza fra due direzioni modulo 180, in [0, 90]. |
@@ -44,7 +44,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_arc_key` | func | `topo/core/healing/normalizer.py:336` | Chiave del cerchio (centro+raggio) a precisione fissa — v. `_line_key`. |
 | `_arc_point` | func | `topo/core/healing/outer_scan.py:131` |  |
 | `_arc_s` | func | `topo/core/topology/noding.py:102` |  |
-| `arc_seg_to_bulge` | func | `topo/adapters/dxf/exporter.py:77` |  |
+| `arc_seg_to_bulge` | func | `topo/adapters/dxf/exporter.py:85` |  |
 | `ArcAround` | class | `topo/core/geometry/shape.py:215` | Un arco concentrico a un cerchio e più grande di lui. |
 | `arcs_around` | func | `topo/core/geometry/shape.py:228` | Gli archi di `arcs` col centro entro `tolerance` da `center` e raggio |
 | `ArcSeg` | class | `topo/core/primitives/segments.py:129` |  |
@@ -93,7 +93,8 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_collect_inners` | func | `topo/core/healing/hierarchy.py:112` | Appiattisce l'albero di contenimento in `cluster.inners` (ogni discendente |
 | `CollinearRun` | class | `topo/core/geometry/lines.py:94` | Tratti sulla stessa retta, in fila lungo di essa. |
 | `color_for_layer` | func | `topo/adapters/dxf/layers.py:58` | Colore DXF canonico per un layer. |
-| `_color_index` | func | `topo/model/role_rule.py:105` | Intero ACI da intero, stringa numerica ("4") o nome standard ("cyan"). |
+| `_color_rgb` | func | `topo/adapters/dxf/adapter.py:67` | Il colore effettivo in RGB: il true color se c'è, altrimenti l'indice |
+| `_color_rgb` | func | `topo/model/role_rule.py:112` | (r, g, b) da una tupla, da "#rrggbb" o da un nome di base ("cyan"). |
 | `compute_gap_fixes` | func | `topo/core/healing/gap_solver.py:174` | Calcola i GapFix fra gli endpoint liberi entro tolerance. I due capi |
 | `concentric_groups` | func | `topo/core/geometry/shape.py:192` | Partizione dei contorni circolari di `items` per centro: ogni cerchio sta |
 | `ConcentricGroup` | class | `topo/core/geometry/shape.py:175` | Contorni circolari con lo stesso centro, dal raggio minore al maggiore. |
@@ -105,7 +106,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `contour_minus` | func | `topo/core/geometry/regions.py:307` | L'anello `contour` meno la regione chiusa `region` (tutti e due anelli di |
 | `contour_shape` | func | `topo/core/geometry/shape.py:63` | Forma di un contorno chiuso (`Contour`, o qualunque oggetto con |
 | `ContourPoint` | class | `topo/core/geometry/regions.py:214` | Dove cade un punto su un contorno. |
-| `ContourRole` | class | `topo/model/role.py:43` | I tre ruoli che il motore topologico conosce. **Non esaustivo** — un |
+| `ContourRole` | class | `topo/model/role.py:44` | I tre ruoli che il motore topologico conosce. **Non esaustivo** — un |
 | `ContourShape` | class | `topo/core/geometry/shape.py:36` | kind:   circle \| stadium \| rectangle \| polygon \| other |
 | `_covered_at` | func | `topo/core/geometry/axis.py:100` |  |
 | `covered_rectangles` | func | `topo/core/geometry/axis.py:144` | I rettangoli allineati agli assi con ogni lato coperto almeno per |
@@ -141,7 +142,8 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_drop_boundary_duplicates` | func | `topo/core/island.py:213` | Scarta un giro chiuso il cui intero bordo sta entro `band` dal bordo di |
 | `drop_duplicate_points` | func | `topo/core/geometry/points.py:75` | Rimuove punti consecutivi coincidenti entro `tolerance`. |
 | `_drop_redundant_meets` | func | `topo/core/island.py:257` | Scarta un fix "incontro" (due `MoveEndpoint` sullo stesso punto, la |
-| `DxfAdapter` | class | `topo/adapters/dxf/adapter.py:206` | Adapter DXF che traduce entità DXF in Edge del dominio Topo. |
+| `_dxf_pattern` | func | `topo/adapters/dxf/exporter.py:49` | Il tratto di topo (segni con segno) nel pattern della tabella DXF, che |
+| `DxfAdapter` | class | `topo/adapters/dxf/adapter.py:228` | Adapter DXF che traduce entità DXF in Edge del dominio Topo. |
 | `DxfAnnotationExtractor` | class | `topo/adapters/dxf/annotation_extractor.py:43` | Traduce le entità di annotazione di un msp in list[Annotation]. |
 | `DxfEntityDispatcher` | class | `topo/adapters/dxf/parser.py:24` | Centralizza il routing per tipo di entità DXF. |
 | `Edge` | class | `topo/core/topology/edge.py:31` | Layer intermedio tra l'entità sorgente grezza (di qualsiasi formato) e il |
@@ -149,7 +151,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `edge_geometry` | func | `topo/core/topology/noding.py:261` | L'edge come geometria shapely: LineString discretizzata, Point se degenere. |
 | `edge_styles_from_loop` | func | `topo/core/topology/loop_finder.py:187` | Stili grezzi (linetype/colore) di un loop, allineati 1:1 con |
 | `edges_to_open_curves` | func | `topo/core/topology/loop_finder.py:220` | Converte gli Edge non assorbiti da un loop strutturale in OpenCurve. |
-| `EdgeStyle` | class | `topo/model/style.py:38` |  |
+| `EdgeStyle` | class | `topo/model/style.py:36` | Campi (tutti opzionali: un `EdgeStyle()` vuoto è "la sorgente non lo dice"): |
 | `_elements` | func | `topo/tools/anchor.py:147` | (percorso, geometria shapely, è chiuso) per contorni e feature di ogni cluster. |
 | `EllipseSeg` | class | `topo/core/primitives/segments.py:600` | Ellisse (o arco ellittico) geometrico puro — stessa parametrizzazione del |
 | `_emit` | func | `topo/adapters/dxf/loader.py:98` | Aggiunge `msg` al canale warnings; lo stampa solo se verbose. |
@@ -161,7 +163,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_ends` | func | `topo/core/geometry/regions.py:110` |  |
 | `_ensure_layer` | func | `topo/io/dxf.py:445` | Crea il layer `name` col suo colore canonico se non esiste già. Serve per i |
 | `ensure_linetype` | func | `topo/adapters/dxf/exporter.py:23` | Garantisce che il linetype `name` esista in `doc` e ne ritorna il nome; |
-| `_entity_style` | func | `topo/adapters/dxf/adapter.py:65` | Cattura l'aspetto EFFETTIVO (linetype/colore) di un'entità DXF in un |
+| `_entity_style` | func | `topo/adapters/dxf/adapter.py:78` | Cattura l'aspetto EFFETTIVO (linetype/colore) di un'entità DXF in un |
 | `_exact_parts` | func | `topo/core/geometry/intersections.py:146` | Retta, arco, cerchio restano se stessi; spline ed ellisse diventano |
 | `_explode_inserts` | func | `topo/adapters/dxf/sanitize.py:106` | Esplode tutti gli INSERT (blocchi) nel modelspace in entità primitive. |
 | `_extent` | func | `topo/core/healing/outer_scan.py:135` | (min, max) del pezzo lungo la coordinata `a` (0 = x, 1 = y). |
@@ -174,7 +176,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_faces_union_loop` | func | `topo/core/topology/outer_face.py:176` | (loop, segments, styles, polygon) sul bordo dell'unione delle facce |
 | `_fallback_anchor` | func | `topo/adapters/dxf/annotation_extractor.py:133` | Cerca un qualsiasi attributo-punto usabile. |
 | `_feature_entries` | func | `topo/io/view_model.py:56` | Un elemento dell'overlay (MAP.md D90) → una voce per contorno: ruolo, |
-| `feature_role` | func | `topo/model/role.py:90` | Il ruolo con cui si disegna un contorno di un elemento dell'overlay (D90): |
+| `feature_role` | func | `topo/model/role.py:91` | Il ruolo con cui si disegna un contorno di un elemento dell'overlay (D90): |
 | `_features` | func | `topo/io/view_model.py:86` | `cluster.detected` per nome → lista di voci disegnabili. |
 | `_find_duplicates` | func | `topo/adapters/dxf/sanitize.py:216` | Restituisce i ref delle entità duplicate (seconda occorrenza in poi). |
 | `find_joining_edges` | func | `topo/core/healing/steps.py:168` | Gli Edge fra `candidate_ids` (di solito i non-contorno) che uniscono due |
@@ -219,7 +221,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_intersections` | func | `topo/core/healing/outer_scan.py:150` | Punti del pezzo con coordinata `a` == level. |
 | `interval_coverage` | func | `topo/core/geometry/axis.py:47` | Frazione di [lo, hi] coperta dall'unione degli intervalli. |
 | `_is_near_full_arc` | func | `topo/core/healing/steps.py:119` |  |
-| `is_structural_role` | func | `topo/model/role.py:78` | True se ``role`` è OUTER o INNER per il motore (vedi ``STRUCTURAL_ROLES``). |
+| `is_structural_role` | func | `topo/model/role.py:79` | True se ``role`` è OUTER o INNER per il motore (vedi ``STRUCTURAL_ROLES``). |
 | `Island` | class | `topo/core/healing/islands.py:36` | Gruppo di Edge vicini, con la bbox che li contiene tutti. |
 | `island` | func | `topo/core/island.py:75` | Legge `doc` per isole. Un Cluster per ogni contorno esterno che non |
 | `IslandReading` | class | `topo/core/island.py:57` | Cosa island() ha deciso su un'isola, pezzo per pezzo. |
@@ -276,7 +278,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `mleader_text` | func | `topo/adapters/dxf/mtext.py:37` | Testo grezzo di un MULTILEADER (prima della pulizia), None se assente. |
 | `_moved_segment` | func | `topo/core/healing/gap_solver.py:322` | Nuovo segmento con l'endpoint `role` spostato su `new_pt`. None se non gestito. |
 | `MoveEndpoint` | class | `topo/core/healing/gap_solver.py:73` | Istruzione: sposta l'endpoint role di ref al punto new_pt. |
-| `name_rules` | func | `topo/model/role_rule.py:96` | Scorciatoia: {nome: ruolo} → una RoleRule(name=...) per voce. |
+| `name_rules` | func | `topo/model/role_rule.py:103` | Scorciatoia: {nome: ruolo} → una RoleRule(name=...) per voce. |
 | `_nearest_within` | func | `topo/tools/anchor.py:184` | L'indice della parte più vicina a ``probe``, se entro ``snap_distance`` (> 0). |
 | `NestedBridgeResult` | class | `topo/tools/tabs.py:208` | Risultato per UNA coppia isola/genitore-diretto trovata nella gerarchia. |
 | `NodedEdges` | class | `topo/core/topology/noding.py:51` | La rete piana: i pezzi, e per ognuno l'Edge da cui viene. |
@@ -284,7 +286,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `NonContourEdgeDetector` | class | `topo/core/topology/non_contour_edges.py:44` |  |
 | `_normalize` | func | `topo/core/island.py:241` | Stessi passi di heal, ma sulla griglia fine della rete piana: prima i |
 | `normalize_ocs` | func | `topo/adapters/dxf/sanitize.py:19` | Normalizza il vettore di estrusione di tutte le entità OCS nel modelspace. |
-| `normalize_role` | func | `topo/model/role.py:112` | Ripulisce una stringa-ruolo che arriva dal chiamante (``RoleRule``, |
+| `normalize_role` | func | `topo/model/role.py:113` | Ripulisce una stringa-ruolo che arriva dal chiamante (``RoleRule``, |
 | `Note` | class | `topo/model/annotation.py:99` | Testo libero: TEXT o MTEXT. |
 | `num_segments_for_bulge` | func | `topo/core/geometry/measure.py:33` | Numero di segmenti per discretizzare un arco dato il suo bulge. |
 | `_off_faces` | func | `topo/core/island.py:341` | I tratti degli edge di `loop` lontani più di `band` dal bordo di ogni |
@@ -335,7 +337,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_polyline` | func | `topo/core/geometry/regions.py:47` |  |
 | `polyline_line_intersections` | func | `topo/core/geometry/intersections.py:102` | Intersezioni fra la retta infinita (p1, p2) e la spezzata `points` (ogni |
 | `_polyline_points` | func | `topo/adapters/dxf/annotation_extractor.py:487` |  |
-| `_raw_linetype_pattern` | func | `topo/adapters/dxf/adapter.py:42` | Pattern grezzo (lunghezza totale + tratti con segno, `+` = tratto, |
+| `_raw_linetype_pattern` | func | `topo/adapters/dxf/adapter.py:44` | Pattern grezzo (lunghezza totale + tratti con segno, `+` = tratto, |
 | `_ray_exit_point` | func | `topo/tools/tabs.py:225` | Punto in cui il raggio da `center` verso `direction` esce dal contorno chiuso `points`. |
 | `_read_dwg` | func | `topo/adapters/dxf/loader.py:147` | Legge un file DWG usando ezdxf.addons.odafc (wrapper di ODA File Converter). |
 | `read_island` | func | `topo/core/island.py:164` | Un'isola: normalizza (nodi dagli estremi reali, tassellature rifittate, |
@@ -354,7 +356,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `RenderedText` | class | `topo/model/annotation.py:37` | Un testo dentro l'immagine appiattita di una quota/direttrice. |
 | `renode` | func | `topo/core/topology/noding.py:64` | Nodi di ogni Edge ricalcolati dal punto reale del segmento a |
 | `repair_merged_corners` | func | `topo/core/healing/steps.py:216` | Chiude gli angoli che il grafo esatto vede aperti e il clustering degli |
-| `resolve_role` | func | `topo/model/role_rule.py:88` | Ruolo della prima regola che matcha, in ordine; `unknown` se nessuna. |
+| `resolve_role` | func | `topo/model/role_rule.py:95` | Ruolo della prima regola che matcha, in ordine; `unknown` se nessuna. |
 | `resolve_target` | func | `topo/tools/anchor.py:126` | L'oggetto (contorno o feature) a cui punta un ``target``, o ``None``. |
 | `Result` | class | `topo/model/result.py:11` | Risultato completo di una sessione topo su un file DXF. |
 | `_result_bbox_center` | func | `topo/tools/rotate.py:224` | Centro del bbox unito degli outer di tutti i cluster — vedi `rotate_to_longest`. |
@@ -363,11 +365,11 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_ring_segments` | func | `topo/core/healing/steps.py:395` |  |
 | `_role` | func | `topo/inspect.py:53` | Nome del ruolo come stringa piatta ('outer'), non 'ContourRole.OUTER'. |
 | `_role_from` | func | `topo/core/geometry_input.py:38` | work_type stringa (stesso vocabolario di RoleRule.role) → ruolo. Un work_type |
-| `role_str` | func | `topo/model/role.py:142` | Valore stringa di un ruolo, che sia una costante ``ContourRole`` o una |
+| `role_str` | func | `topo/model/role.py:143` | Valore stringa di un ruolo, che sia una costante ``ContourRole`` o una |
 | `role_to_color` | func | `topo/rules/palette.py:74` | Colore ACI di un ruolo. Ruolo noto → il suo colore semantico; |
 | `role_to_dxf_layer` | func | `topo/adapters/dxf/layers.py:73` | Nome layer DXF per un ruolo. |
 | `role_to_hex` | func | `topo/rules/palette.py:88` | Colore hex CSS di un ruolo. Un colore registrato (`register_role_style`) |
-| `RoleRule` | class | `topo/model/role_rule.py:35` | Una regola: se TUTTE le condizioni date sono vere, la linea prende `role`. |
+| `RoleRule` | class | `topo/model/role_rule.py:41` | Una regola: se TUTTE le condizioni date sono vere, la linea prende `role`. |
 | `RoleStyle` | class | `topo/rules/palette.py:107` | Override, indipendente dal formato, dell'aspetto visivo di un ruolo in |
 | `rotate_cluster` | func | `topo/tools/rotate.py:117` | Nuovo `Cluster` con `outer`/`inners` ruotati di `angle_rad` (radianti, |
 | `_rotate_contour` | func | `topo/tools/rotate.py:108` |  |
@@ -389,13 +391,13 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_scan_axis` | func | `topo/core/healing/outer_scan.py:184` |  |
 | `_scan_bbox` | func | `topo/io/svg.py:175` | bbox da tutti i punti del view model — fallback quando vm['bbox'] è None. |
 | `_search_warnings` | func | `topo/core/heal.py:205` | Cosa racconta heal() dei gradini della scala di find_loops(). |
-| `_seg_end_point` | func | `topo/adapters/dxf/exporter.py:93` |  |
+| `_seg_end_point` | func | `topo/adapters/dxf/exporter.py:101` |  |
 | `segment_endpoints` | func | `topo/core/primitives/segments.py:506` | (start, end) di un segmento primitivo, in coordinate XY non arrotondate. |
 | `segment_is_closed` | func | `topo/core/primitives/segments.py:542` | True se gli endpoint del segmento coincidono entro ``tolerance``. |
-| `_segment_key` | func | `topo/adapters/dxf/adapter.py:151` | Chiave univoca per deduplicazione. |
+| `_segment_key` | func | `topo/adapters/dxf/adapter.py:173` | Chiave univoca per deduplicazione. |
 | `segment_length` | func | `topo/core/geometry/measure.py:86` | Lunghezza reale di una primitiva nativa singola (`LineSeg`/`ArcSeg`/ |
 | `segments_from_loop` | func | `topo/core/topology/loop_finder.py:161` | Segmenti nativi di un loop, orientati nel verso di percorrenza. |
-| `segments_to_pts_with_bulge` | func | `topo/adapters/dxf/exporter.py:101` |  |
+| `segments_to_pts_with_bulge` | func | `topo/adapters/dxf/exporter.py:109` |  |
 | `_sense` | func | `topo/core/topology/rim.py:77` | +1 se il lato p→q va nel verso di `geom` vicino a `mid`, -1 se contro. |
 | `set_schema` | func | `topo/io/exporter.py:100` | Imposta uno schema esterno come schema attivo. |
 | `_setup_layers` | func | `topo/io/dxf.py:436` |  |
@@ -435,7 +437,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_stadium` | func | `topo/core/geometry/shape.py:96` |  |
 | `structural_loops` | func | `topo/core/healing/steps.py:286` | I loop in cui ogni edge con ruolo deciso è strutturale: un solo edge non |
 | `structural_segments` | func | `topo/tools/rotate.py:73` | Segmenti nativi dei contorni strutturali di ogni cluster: sempre |
-| `_style_attribs` | func | `topo/adapters/dxf/exporter.py:49` | dxfattribs per una entità in output: layer + linetype della sorgente, se |
+| `_style_attribs` | func | `topo/adapters/dxf/exporter.py:57` | dxfattribs per una entità in output: layer + linetype della sorgente, se |
 | `_sub` | func | `topo/tools/tabs.py:51` |  |
 | `_sub_angular` | func | `topo/core/primitives/trim.py:61` |  |
 | `_sub_part` | func | `topo/inspect.py:277` |  |
@@ -474,9 +476,9 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_write_annotations` | func | `topo/io/dxf.py:230` | Riscrive le annotazioni testuali della sorgente nel documento di output. |
 | `_write_attached_features` | func | `topo/io/dxf.py:399` | Ogni collezione di `cluster.detected` (D70, D90): topo non sa cosa siano. |
 | `write_metadata_to_dxf` | func | `topo/io/exporter.py:278` | Scrive i metadati come XDATA sull'entità OuterContour. |
-| `write_native_segments` | func | `topo/adapters/dxf/exporter.py:267` | Materializza segmenti aperti come geometria NATIVA, una entità DXF per |
-| `write_open_segments` | func | `topo/adapters/dxf/exporter.py:325` | Materializza una lista di segmenti puri come geometria APERTA su msp. |
-| `write_segments` | func | `topo/adapters/dxf/exporter.py:188` | Materializza una lista di segmenti puri su msp. |
+| `write_native_segments` | func | `topo/adapters/dxf/exporter.py:275` | Materializza segmenti aperti come geometria NATIVA, una entità DXF per |
+| `write_open_segments` | func | `topo/adapters/dxf/exporter.py:333` | Materializza una lista di segmenti puri come geometria APERTA su msp. |
+| `write_segments` | func | `topo/adapters/dxf/exporter.py:196` | Materializza una lista di segmenti puri su msp. |
 | `_write_trash` | func | `topo/io/dxf.py:349` | Materializza `result.trash_entities`. |
 | `_Writer` | class | `topo/io/text.py:43` | Numeri arrotondati e id dei contorni per una sola chiamata di `to_text`. |
 | `_xy` | func | `topo/adapters/dxf/annotation_extractor.py:475` |  |
@@ -488,6 +490,7 @@ Same name defined at module level in different modules. Not automatically a bug 
 | name | defined in |
 |---|---|
 | `_chain` | `topo/core/geometry/regions.py:290` · `topo/core/healing/normalizer.py:234` |
+| `_color_rgb` | `topo/adapters/dxf/adapter.py:67` · `topo/model/role_rule.py:112` |
 | `_ends` | `topo/core/geometry/lines.py:27` · `topo/core/geometry/regions.py:110` |
 | `_length` | `topo/core/geometry/regions.py:102` · `topo/core/geometry/shape.py:154` |
 | `_on_arc` | `topo/core/geometry/intersections.py:164` · `topo/core/healing/outer_scan.py:127` |
@@ -518,14 +521,15 @@ No module-level function or class.
 
 ### `topo/adapters/`
 
-#### `topo/adapters/dxf/adapter.py` — 295 lines
+#### `topo/adapters/dxf/adapter.py` — 317 lines
 
 _topo/adapters/dxf/adapter.py_
 
-- `_raw_linetype_pattern(lt_entry) -> Optional[Tuple[float, ...]]` — L42 — Pattern grezzo (lunghezza totale + tratti con segno, `+` = tratto,
-- `_entity_style(entity) -> EdgeStyle` — L65 — Cattura l'aspetto EFFETTIVO (linetype/colore) di un'entità DXF in un
-- `_segment_key(segment) -> tuple` — L151 — Chiave univoca per deduplicazione.
-- **class** `DxfAdapter` — L206 — Adapter DXF che traduce entità DXF in Edge del dominio Topo.
+- `_raw_linetype_pattern(lt_entry) -> Optional[Tuple[float, ...]]` — L44 — Pattern grezzo (lunghezza totale + tratti con segno, `+` = tratto,
+- `_color_rgb(aci: int, true_color: Optional[int]) -> Optional[Tuple[int, int, int]]` — L67 — Il colore effettivo in RGB: il true color se c'è, altrimenti l'indice
+- `_entity_style(entity) -> EdgeStyle` — L78 — Cattura l'aspetto EFFETTIVO (linetype/colore) di un'entità DXF in un
+- `_segment_key(segment) -> tuple` — L173 — Chiave univoca per deduplicazione.
+- **class** `DxfAdapter` — L228 — Adapter DXF che traduce entità DXF in Edge del dominio Topo.
   - methods: `__init__`, `to_edges`
 
 #### `topo/adapters/dxf/annotation_extractor.py` — 544 lines
@@ -560,20 +564,21 @@ _adapters/dxf/annotation_extractor.py_
 - `_dimension_measurement(entity) -> str` — L530
 - `_f(value) -> Optional[float]` — L540
 
-#### `topo/adapters/dxf/exporter.py` — 395 lines
+#### `topo/adapters/dxf/exporter.py` — 403 lines
 
 _adapters/dxf/exporter.py_
 
 - `ensure_linetype(doc, name: str, pattern: Optional[Tuple[float, ...]]=None, description: str='') -> Optional[str]` — L23 — Garantisce che il linetype `name` esista in `doc` e ne ritorna il nome;
-- `_style_attribs(doc, layer: str, style: Optional[EdgeStyle]=None) -> dict` — L49 — dxfattribs per una entità in output: layer + linetype della sorgente, se
-- `arc_seg_to_bulge(arc: ArcSeg) -> float` — L77
-- `_seg_end_point(seg) -> Optional[tuple]` — L93
-- `segments_to_pts_with_bulge(segments: list) -> list` — L101
-- `_add_spline(spline: SplineSeg, msp, layer: str, style: Optional[EdgeStyle]=None) -> object` — L116 — Materializza una SplineSeg come SPLINE nativa, ricostruita dalla primitiva
-- `_add_ellipse(ellipse: EllipseSeg, msp, layer: str, style: Optional[EdgeStyle]=None) -> object` — L161 — Materializza una EllipseSeg come ELLIPSE nativa — mai una spline: topo
-- `write_segments(segments: List, msp, layer: str, styles: Optional[List]=None) -> Optional[object]` — L188 — Materializza una lista di segmenti puri su msp.
-- `write_native_segments(segments: List, msp, layer: str, styles: Optional[List]=None) -> List[object]` — L267 — Materializza segmenti aperti come geometria NATIVA, una entità DXF per
-- `write_open_segments(segments: List, msp, layer: str, styles: Optional[List]=None) -> List[object]` — L325 — Materializza una lista di segmenti puri come geometria APERTA su msp.
+- `_dxf_pattern(dash: Optional[Tuple[float, ...]]) -> Optional[Tuple[float, ...]]` — L49 — Il tratto di topo (segni con segno) nel pattern della tabella DXF, che
+- `_style_attribs(doc, layer: str, style: Optional[EdgeStyle]=None) -> dict` — L57 — dxfattribs per una entità in output: layer + linetype della sorgente, se
+- `arc_seg_to_bulge(arc: ArcSeg) -> float` — L85
+- `_seg_end_point(seg) -> Optional[tuple]` — L101
+- `segments_to_pts_with_bulge(segments: list) -> list` — L109
+- `_add_spline(spline: SplineSeg, msp, layer: str, style: Optional[EdgeStyle]=None) -> object` — L124 — Materializza una SplineSeg come SPLINE nativa, ricostruita dalla primitiva
+- `_add_ellipse(ellipse: EllipseSeg, msp, layer: str, style: Optional[EdgeStyle]=None) -> object` — L169 — Materializza una EllipseSeg come ELLIPSE nativa — mai una spline: topo
+- `write_segments(segments: List, msp, layer: str, styles: Optional[List]=None) -> Optional[object]` — L196 — Materializza una lista di segmenti puri su msp.
+- `write_native_segments(segments: List, msp, layer: str, styles: Optional[List]=None) -> List[object]` — L275 — Materializza segmenti aperti come geometria NATIVA, una entità DXF per
+- `write_open_segments(segments: List, msp, layer: str, styles: Optional[List]=None) -> List[object]` — L333 — Materializza una lista di segmenti puri come geometria APERTA su msp.
 
 #### `topo/adapters/dxf/layers.py` — 92 lines
 
@@ -1255,31 +1260,31 @@ _model/document.py_
 - **class** `Result` — L11 — Risultato completo di una sessione topo su un file DXF.
   - methods: `cluster_count`, `has_issues`, `to_dict`
 
-#### `topo/model/role.py` — 149 lines
+#### `topo/model/role.py` — 150 lines
 
 _model/role.py_
 
-- **class** `ContourRole(str, Enum)` — L43 — I tre ruoli che il motore topologico conosce. **Non esaustivo** — un
-- `is_structural_role(role) -> bool` — L78 — True se ``role`` è OUTER o INNER per il motore (vedi ``STRUCTURAL_ROLES``).
-- `feature_role(contour, item_role)` — L90 — Il ruolo con cui si disegna un contorno di un elemento dell'overlay (D90):
-- `normalize_role(value) -> str` — L112 — Ripulisce una stringa-ruolo che arriva dal chiamante (``RoleRule``,
-- `role_str(role) -> str` — L142 — Valore stringa di un ruolo, che sia una costante ``ContourRole`` o una
+- **class** `ContourRole(str, Enum)` — L44 — I tre ruoli che il motore topologico conosce. **Non esaustivo** — un
+- `is_structural_role(role) -> bool` — L79 — True se ``role`` è OUTER o INNER per il motore (vedi ``STRUCTURAL_ROLES``).
+- `feature_role(contour, item_role)` — L91 — Il ruolo con cui si disegna un contorno di un elemento dell'overlay (D90):
+- `normalize_role(value) -> str` — L113 — Ripulisce una stringa-ruolo che arriva dal chiamante (``RoleRule``,
+- `role_str(role) -> str` — L143 — Valore stringa di un ruolo, che sia una costante ``ContourRole`` o una
 
-#### `topo/model/role_rule.py` — 114 lines
+#### `topo/model/role_rule.py` — 125 lines
 
 _model/role_rule.py_
 
-- **class** `RoleRule` — L35 — Una regola: se TUTTE le condizioni date sono vere, la linea prende `role`.
+- **class** `RoleRule` — L41 — Una regola: se TUTTE le condizioni date sono vere, la linea prende `role`.
   - methods: `matches`
-- `resolve_role(rules: Sequence[RoleRule], name: str, style: EdgeStyle) -> str` — L88 — Ruolo della prima regola che matcha, in ordine; `unknown` se nessuna.
-- `name_rules(mapping: Dict[str, str]) -> List[RoleRule]` — L96 — Scorciatoia: {nome: ruolo} → una RoleRule(name=...) per voce.
-- `_color_index(value: Union[int, str]) -> int` — L105 — Intero ACI da intero, stringa numerica ("4") o nome standard ("cyan").
+- `resolve_role(rules: Sequence[RoleRule], name: str, style: EdgeStyle) -> str` — L95 — Ruolo della prima regola che matcha, in ordine; `unknown` se nessuna.
+- `name_rules(mapping: Dict[str, str]) -> List[RoleRule]` — L103 — Scorciatoia: {nome: ruolo} → una RoleRule(name=...) per voce.
+- `_color_rgb(value: Union[RGB, str]) -> RGB` — L112 — (r, g, b) da una tupla, da "#rrggbb" o da un nome di base ("cyan").
 
-#### `topo/model/style.py` — 62 lines
+#### `topo/model/style.py` — 67 lines
 
 _model/style.py_
 
-- **class** `EdgeStyle` — L38
+- **class** `EdgeStyle` — L36 — Campi (tutti opzionali: un `EdgeStyle()` vuoto è "la sorgente non lo dice"):
   - methods: `is_dashed`, `dash_kind`
 
 ### `topo/` (root)

@@ -4423,3 +4423,38 @@ turns into the DXF adapter's own default; `rules` joins the forbidden list
 then. The version stays 0.19.0 until point 0 closes with one breaking minor
 (step 6).
 
+### D126 — a neutral vocabulary in the model: style, colour, annotation group
+Step 2 of D123. Outside `adapters/`, the DXF words left in the model were the
+fields of `EdgeStyle`, the colour of `RoleRule` and `Annotation.layer`.
+
+- **`EdgeStyle(linetype="", linetype_desc="", dash=None, color=None)`.**
+  `linetype_pattern` was the DXF table's own form (total length first, then
+  signed marks); `dash` keeps only the signed marks (`> 0` dash, `0` dot,
+  `< 0` gap), with `()` for a declared continuous line and `None` for "the
+  source does not say". A PDF/SVG dash array `[3, 1]` is `(3, -1)`; the DXF
+  exporter adds the total back (the sum of the marks). `BYLAYER`/`BYBLOCK`
+  are not linetypes: what stays of them after the adapter resolves the layer
+  becomes `""`. `color` was an ACI index (256 = BYLAYER) next to a 24-bit
+  `true_color`: it is one effective `(r, g, b)` or `None`; the DXF adapter
+  reads true colour first, then ACI 1–255 through ezdxf's canonical table.
+- **`RoleRule(color=...)`** takes `(r, g, b)`, `"#rrggbb"` or a base colour
+  name; an int is an error, because an index belongs to one format. The
+  names keep the RGB a CAD gives its indexed colours, so `"cyan"` still
+  matches an ACI-4 line. One deliberate break: `"black"` is `(0, 0, 0)`, and a
+  DXF ACI-7 line is white `(255, 255, 255)` — it used to match `"black"`
+  because 7 is "white/black" in AutoCAD. No caller used it.
+- **`Annotation.layer` → `Annotation.group`**, default `""` instead of the
+  DXF `"0"`: the name of the source group, as `RoleRule.name` already called
+  it. The DXF writer still writes an annotation on its source layer (or
+  `"0"`); the annotation goldens changed in the key only, checked file by
+  file. snapdraw passes a role there (`group=TITLE_BLOCK`): whether an
+  annotation should carry a role, as an edge does since D63, is a question
+  for step 3.
+- **Role slugs** keep `[a-z0-9_-]`: the reason is safety in any output
+  (keys, XML, names), not DXF layer-name characters; the docstrings say so.
+
+Left on purpose: the palette's ACI colours and the `Trash` layer are the DXF
+adapter's default role → style map (step 3); `LAYER_*` in `recipes.py` and
+`io/exporter.py` sit in DXF code (`split_to_files`, XDATA) that moves with
+step 4. Suites of topo, snapbend and snapdraw unchanged.
+

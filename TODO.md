@@ -31,14 +31,16 @@ primitive di topo.
       `Adapter`, `load_geometry` fuori da `adapters/`; gli adapter importano
       solo `topo.model`/`topo.primitives` (regola `adapters` in pyproject).
       Resta `layers.py` → `rules.palette`: si chiude col passo 3.
-   2. **Vocabolario neutro in `core/`, `model/`, `rules/`.** `EdgeStyle`
-      senza ACI/`BYLAYER` (lo stile della sorgente come dato dell'adapter);
-      `Trash` è un ruolo, non un layer; un ruolo non vincolato ai caratteri
-      di un nome layer; via `LAYER_*` da `recipes.py` e `io/exporter.py`.
+   2. ~~**Vocabolario neutro nel modello.**~~ — fatto, D126: `EdgeStyle`
+      con `dash` (segni con segno) e `color` RGB, `RoleRule(color=)` in RGB,
+      `Annotation.layer` → `group`. `LAYER_*` in `recipes.py`/`io/exporter.py`
+      vanno via col trasloco (passo 4), palette e `Trash` col passo 3.
    3. **Uscita per ruolo.** Un exporter riceve una mappa ruolo → stile che
       possiede il chiamante (spessore, colore, tipo linea, e per il DXF uno
       o più layer); la palette di oggi diventa il default dell'adapter DXF,
-      non una regola di topo.
+      non una regola di topo; dopo, `rules` entra nella regola `adapters`.
+      Da decidere con Federico: un'annotazione ha un ruolo come un edge
+      (D63)? Oggi snapdraw mette un ruolo in `Annotation.group` (D126).
    4. **Il trasloco.** `adapters/dxf` + `io/dxf.to_dxf` + metadati in
       XDATA + la parte DXF di `inspect` in `topo_dxf`; `adapters/pdf` (e il
       lavoro fermo in `forge-pdf-adapter`) in `topo_pdf`. `split` resta in

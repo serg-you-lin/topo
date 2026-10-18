@@ -12,18 +12,24 @@ e consegna al core solo il ruolo risultante (MAP.md D63).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 from .role import ContourRole, normalize_role
 from .style import VALID_DASH_KINDS, EdgeStyle
 
-# Nomi colore ACI standard (1-9 + "pink" di rules/palette.py) → indice.
-_ACI_NAME_TO_INT = {
-    "red": 1, "yellow": 2, "green": 3, "cyan": 4, "blue": 5,
-    "magenta": 6, "white": 7, "black": 7,
-    "gray": 8, "grey": 8, "darkgray": 8, "darkgrey": 8,
-    "lightgray": 9, "lightgrey": 9,
-    "pink": 11,
+RGB = Tuple[int, int, int]
+
+# I colori di base per nome, con i valori RGB che un CAD dà ai suoi colori
+# indicizzati (MAP.md D126). Il nero è il nero: una linea "bianca/nera" di un
+# DXF (indice 7) è bianca, la legge così l'adapter.
+_COLOR_NAMES: Dict[str, RGB] = {
+    "red": (255, 0, 0), "yellow": (255, 255, 0), "green": (0, 255, 0),
+    "cyan": (0, 255, 255), "blue": (0, 0, 255), "magenta": (255, 0, 255),
+    "white": (255, 255, 255), "black": (0, 0, 0),
+    "gray": (128, 128, 128), "grey": (128, 128, 128),
+    "darkgray": (128, 128, 128), "darkgrey": (128, 128, 128),
+    "lightgray": (192, 192, 192), "lightgrey": (192, 192, 192),
+    "pink": (255, 127, 127),
 }
 
 
@@ -43,14 +49,15 @@ class RoleRule:
         name_contains : sottostringa del nome del gruppo (maiuscole ignorate)
         dashed        : True = solo tratteggiate, False = solo continue
         dash          : forma del tratto, "continuous" / "uniform" / "chain"
-        color         : colore ACI, intero o nome standard ("cyan")
+        color         : colore effettivo, (r, g, b), "#rrggbb" o un nome
+                        di base ("cyan", "red", ...)
     """
     role:          str
     name:          Optional[str]              = None
     name_contains: Optional[str]              = None
     dashed:        Optional[bool]             = None
     dash:          Optional[str]              = None
-    color:         Optional[Union[int, str]]  = None
+    color:         Optional[Union[RGB, str]]  = None
 
     def __post_init__(self):
         if (self.name is None and self.name_contains is None
@@ -67,7 +74,7 @@ class RoleRule:
                 raise ValueError(f"RoleRule({self.role!r}): dash {self.dash!r} non valido, "
                                  f"attesi {sorted(VALID_DASH_KINDS)}")
         if self.color is not None:
-            self.color = _color_index(self.color)
+            self.color = _color_rgb(self.color)
 
     def matches(self, name: str, style: EdgeStyle) -> bool:
         """True se la linea (nome del gruppo sorgente + aspetto) soddisfa la regola."""
@@ -102,13 +109,17 @@ def name_rules(mapping: Dict[str, str]) -> List[RoleRule]:
 # Helper
 # ---------------------------------------------------------------------------
 
-def _color_index(value: Union[int, str]) -> int:
-    """Intero ACI da intero, stringa numerica ("4") o nome standard ("cyan")."""
-    if isinstance(value, int):
-        return value
+def _color_rgb(value: Union[RGB, str]) -> RGB:
+    """(r, g, b) da una tupla, da "#rrggbb" o da un nome di base ("cyan")."""
+    if isinstance(value, (tuple, list)) and len(value) == 3:
+        return tuple(int(c) for c in value)
     key = str(value).strip().lower()
-    if key.lstrip("-").isdigit():
-        return int(key)
-    if key in _ACI_NAME_TO_INT:
-        return _ACI_NAME_TO_INT[key]
-    raise ValueError(f"colore non riconosciuto: {value!r}")
+    if key.startswith("#") and len(key) == 7:
+        try:
+            return tuple(int(key[k:k + 2], 16) for k in (1, 3, 5))
+        except ValueError:
+            pass
+    if key in _COLOR_NAMES:
+        return _COLOR_NAMES[key]
+    raise ValueError(f"colore non riconosciuto: {value!r} — attesi (r, g, b), "
+                     f"'#rrggbb' o uno di {sorted(_COLOR_NAMES)}")

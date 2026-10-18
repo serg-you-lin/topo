@@ -17,12 +17,12 @@ from topo.model.role_rule import resolve_role
 from topo.model.style import EdgeStyle
 
 CONTINUA    = EdgeStyle()
-TRATTEGGIATA = EdgeStyle(linetype="DASHED", linetype_pattern=(0.75, 0.5, -0.25))
-PUNTINATA   = EdgeStyle(linetype="DOT", linetype_pattern=(4.0, 0.0, -4.0))
-CIANO       = EdgeStyle(color=4)
+TRATTEGGIATA = EdgeStyle(linetype="DASHED", dash=(0.5, -0.25))
+PUNTINATA   = EdgeStyle(linetype="DOT", dash=(0.0, -4.0))
+CIANO       = EdgeStyle(color=(0, 255, 255))
 # catene: segni diversi alternati (tratto lungo + tratto corto / punto)
-TRATTO_PUNTO = EdgeStyle(linetype="Qualunque", linetype_pattern=(1.0, 0.5, -0.25, 0.0, -0.25))
-DUE_TRATTI   = EdgeStyle(linetype="Qualunque", linetype_pattern=(2.0, 1.25, -0.25, 0.25, -0.25))
+TRATTO_PUNTO = EdgeStyle(linetype="Qualunque", dash=(0.5, -0.25, 0.0, -0.25))
+DUE_TRATTI   = EdgeStyle(linetype="Qualunque", dash=(1.25, -0.25, 0.25, -0.25))
 
 
 class TestIsDashed(unittest.TestCase):
@@ -33,13 +33,13 @@ class TestIsDashed(unittest.TestCase):
 
     def test_senza_pattern_o_senza_vuoti_e_continua(self):
         self.assertFalse(CONTINUA.is_dashed)
-        self.assertFalse(EdgeStyle(linetype_pattern=(1.0, 1.0, 0.0)).is_dashed)
+        self.assertFalse(EdgeStyle(dash=(1.0, 0.0)).is_dashed)
 
     def test_conta_il_pattern_non_il_nome(self):
         # D63: "tratteggiata" è un fatto del pattern; il nome non dice nulla
         self.assertFalse(EdgeStyle(linetype="DASHED").is_dashed)
         self.assertTrue(EdgeStyle(linetype="Qualunque",
-                                  linetype_pattern=(2.0, 1.0, -1.0)).is_dashed)
+                                  dash=(1.0, -1.0)).is_dashed)
 
 
 class TestDashKind(unittest.TestCase):
@@ -47,35 +47,31 @@ class TestDashKind(unittest.TestCase):
 
     def test_continua(self):
         self.assertEqual(CONTINUA.dash_kind, "continuous")
-        self.assertEqual(EdgeStyle(linetype_pattern=(1.0, 1.0, 0.0)).dash_kind, "continuous")
+        self.assertEqual(EdgeStyle(dash=(1.0, 0.0)).dash_kind, "continuous")
 
     def test_tratteggio_uniforme(self):
         self.assertEqual(TRATTEGGIATA.dash_kind, "uniform")
         self.assertEqual(PUNTINATA.dash_kind, "uniform")      # solo punti
         # stesso tratto ripetuto più volte nel pattern: resta uniforme
-        self.assertEqual(EdgeStyle(linetype_pattern=(1.5, 0.5, -0.25, 0.5, -0.25)).dash_kind,
+        self.assertEqual(EdgeStyle(dash=(0.5, -0.25, 0.5, -0.25)).dash_kind,
                          "uniform")
 
     def test_catena(self):
         self.assertEqual(TRATTO_PUNTO.dash_kind, "chain")
         self.assertEqual(DUE_TRATTI.dash_kind, "chain")
         # tratto lungo + due corti
-        self.assertEqual(EdgeStyle(linetype_pattern=(0.8, 0.45, -0.05, 0.1, -0.05, 0.1, -0.05))
+        self.assertEqual(EdgeStyle(dash=(0.45, -0.05, 0.1, -0.05, 0.1, -0.05))
                          .dash_kind, "chain")
 
     def test_tolleranza_relativa_alla_scala(self):
         # stessi rapporti a scale diverse → stessa forma
         for k in (0.01, 1.0, 100.0):
-            pattern = tuple(x * k for x in (2.0, 1.25, -0.25, 0.25, -0.25))
-            self.assertEqual(EdgeStyle(linetype_pattern=pattern).dash_kind, "chain", msg=k)
+            dash = tuple(x * k for x in (1.25, -0.25, 0.25, -0.25))
+            self.assertEqual(EdgeStyle(dash=dash).dash_kind, "chain", msg=k)
         # tratti diversi per un arrotondamento non fanno una catena
-        self.assertEqual(EdgeStyle(linetype_pattern=(1.5, 0.5, -0.25, 0.501, -0.25)).dash_kind,
+        self.assertEqual(EdgeStyle(dash=(0.5, -0.25, 0.501, -0.25)).dash_kind,
                          "uniform")
 
-    def test_lunghezza_totale_zero(self):
-        # pattern senza lunghezza totale dichiarata: si usa la somma dei segni
-        self.assertEqual(EdgeStyle(linetype_pattern=(0.0, 1.25, -0.25, 0.25, -0.25)).dash_kind,
-                         "chain")
 
 
 class TestRoleRule(unittest.TestCase):
@@ -119,14 +115,16 @@ class TestRoleRule(unittest.TestCase):
         with self.assertRaises(ValueError):
             topo.RoleRule("construction", dash="dashdot")
 
-    def test_colore_per_nome_intero_o_stringa(self):
-        for key in ("cyan", 4, "4"):
+    def test_colore_per_nome_rgb_o_hex(self):
+        for key in ("cyan", "CYAN", (0, 255, 255), "#00ffff"):
             self.assertTrue(topo.RoleRule("engrave", color=key).matches("", CIANO), msg=repr(key))
         self.assertFalse(topo.RoleRule("engrave", color="red").matches("", CIANO))
 
     def test_colore_sconosciuto_solleva(self):
         with self.assertRaises(ValueError):
             topo.RoleRule("engrave", color="viola")
+        with self.assertRaises(ValueError):
+            topo.RoleRule("engrave", color=4)     # un indice ACI è del DXF (D126)
 
     def test_regola_senza_condizioni_solleva(self):
         with self.assertRaises(ValueError):

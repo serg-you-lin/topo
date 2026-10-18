@@ -46,6 +46,14 @@ def ensure_linetype(
     return None
 
 
+def _dxf_pattern(dash: Optional[Tuple[float, ...]]) -> Optional[Tuple[float, ...]]:
+    """Il tratto di topo (segni con segno) nel pattern della tabella DXF, che
+    apre con la lunghezza totale (MAP.md D126)."""
+    if not dash:
+        return None
+    return (sum(abs(e) for e in dash), *dash)
+
+
 def _style_attribs(doc, layer: str, style: Optional[EdgeStyle] = None) -> dict:
     """
     dxfattribs per una entità in output: layer + linetype della sorgente, se
@@ -63,7 +71,7 @@ def _style_attribs(doc, layer: str, style: Optional[EdgeStyle] = None) -> dict:
     # portava, non è un errore di nessuno.
     name = style.linetype or "BYLAYER"
     linetype = None if doc is None else ensure_linetype(
-        doc, name, style.linetype_pattern, style.linetype_desc or "")
+        doc, name, _dxf_pattern(style.dash), style.linetype_desc or "")
     if linetype is not None and linetype.upper() != "BYLAYER":
         attribs["linetype"] = linetype
 

@@ -113,7 +113,7 @@ ruolo) lo scrive il chiamante (MAP.md D63).
 | `name_contains` | sottostringa del nome del gruppo (maiuscole ignorate). |
 | `dashed` | `True` solo tratteggiate, `False` solo continue. Tratteggiata = il pattern del linetype ha almeno un vuoto (`EdgeStyle.is_dashed`), non il nome del linetype. Vale anche per le catene. |
 | `dash` | forma del tratto (`EdgeStyle.dash_kind`), letta dai segni del pattern: `"continuous"` nessun vuoto; `"uniform"` un solo segno ripetuto (tratti tutti uguali, o solo punti); `"chain"` segni diversi alternati (tratto lungo + tratto corto o punto). Due segni sono diversi se differiscono più del 5% della lunghezza del pattern. Valore sconosciuto → `ValueError`. |
-| `color` | colore ACI: intero, stringa numerica (`"4"`) o nome standard (`red`, `yellow`, `green`, `cyan`, `blue`, `magenta`, `white`/`black`, `gray`/`grey`, `lightgray`/`lightgrey`, `pink`). |
+| `color` | colore effettivo in RGB: `(r, g, b)`, `"#rrggbb"` o un nome di base (`red`, `yellow`, `green`, `cyan`, `blue`, `magenta`, `white`, `black`, `gray`/`grey`, `lightgray`/`lightgrey`, `pink`). Ogni adapter legge il colore della sorgente in RGB: per un DXF un indice ACI diventa il suo RGB canonico (il 7 è bianco) (MAP.md D126). Un intero è un errore. |
 
 Metodo `matches(name, style) -> bool`. Condizioni lasciate a `None` non
 contano.
@@ -290,10 +290,10 @@ solo nomi pubblici e consegna un `Document` (MAP.md D125). Quello che gli serve:
 |---|---|
 | `topo.primitives.LineSeg` … `EllipseSeg` | la geometria letta dalla sorgente, nativa (mai discretizzata dall'adapter) |
 | `topo.model.Edge.of(segment, role, style=None) -> Edge` | l'`Edge` di un segmento: estremi sulla griglia dei nodi di topo (D113), che l'adapter non deve conoscere; un cerchio, una spline o un'ellisse chiusi hanno un nodo solo |
-| `topo.model.EdgeStyle` | l'aspetto grezzo dell'entità sorgente, se il formato ne ha uno |
+| `topo.model.EdgeStyle(linetype="", linetype_desc="", dash=None, color=None)` | l'aspetto effettivo dell'entità sorgente, senza parole di un formato (D126): `dash` sono segni con segno (`> 0` tratto, `0` punto, `< 0` vuoto; `()` continuo, `None` non noto — un dash-array `[3, 1]` è `(3, -1)`), `color` è `(r, g, b)`. L'adapter risolve l'ereditarietà (uno stile "del layer") prima di consegnarlo |
 | `topo.model.RoleRule`, `topo.model.resolve_role(rules, name, style) -> str` | il ruolo di un'entità dalle regole del chiamante: la prima che matcha, altrimenti `unknown` |
 | `topo.model.Document`, `topo.model.DEFAULT_NODE_TOLERANCE` | il risultato dell'adapter e la tolleranza di default che `heal()` chiuderà |
-| `topo.model.Annotation`, `Note`, `Dimension`, `Leader`, `RenderedGeometry`, `RenderedText` | le annotazioni lette dalla sorgente |
+| `topo.model.Annotation`, `Note`, `Dimension`, `Leader`, `RenderedGeometry`, `RenderedText` | le annotazioni lette dalla sorgente; `group` è il nome del gruppo sorgente (il layer di un DXF) |
 
 Per riscrivere in un formato: `topo.primitives.segment_endpoints(segment)` dà i
 due estremi di un segmento, `topo.model.feature_role(contour, item_role)` il
