@@ -10,8 +10,8 @@ from __future__ import annotations
 import math
 from typing import List, Optional, Tuple
 
-from ...core.primitives import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg, segment_endpoints
-from ...model.style import EdgeStyle
+from topo.primitives import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg, segment_endpoints
+from topo.model import EdgeStyle
 
 _STANDARD_LINETYPES = frozenset({"BYLAYER", "BYBLOCK", "CONTINUOUS"})
 

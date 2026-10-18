@@ -133,8 +133,10 @@ adapters/dxf/dedup_adapter.py
 ------------------------------
 Normalizzazione entità DXF — traduzione formato → normalizer.
 
-Unico punto che conosce sia ezdxf che find_duplicates.
-Il core (normalizer) non importa mai ezdxf.
+Due entità DXF con la stessa geometria sono una copia: si tiene la prima.
+La chiave la calcola questo modulo dal formato nativo; il confronto è suo
+anche lui (era in core/healing/normalizer, D125: un adapter usa solo i nomi
+pubblici di topo).
 
 Funzioni pubbliche:
     extract_keyed_entities — msp → List[(key, entity)]
@@ -142,9 +144,7 @@ Funzioni pubbliche:
     deduplicate            — shortcut: extract + find + delete → int
 """
 
-from typing import Any, Hashable, List, Optional, Tuple
-
-from ...core.healing.normalizer import find_duplicates
+from typing import Any, Hashable, Iterable, List, Optional, Tuple
 
 
 # ---------------------------------------------------------------------------
@@ -202,7 +202,7 @@ def extract_keyed_entities(msp) -> List[Tuple[Hashable, Any]]:
     """
     Produce la lista (key, entity) per tutte le entità del msp.
     Le entità con tipo non gestito producono key=None e vengono
-    ignorate da find_duplicates.
+    ignorate da _find_duplicates.
     """
     return [(_key_for(entity), entity) for entity in msp]
 
@@ -213,6 +213,33 @@ def delete_entities(refs: List[Any], msp) -> None:
         msp.delete_entity(entity)
 
 
+def _find_duplicates(
+    keyed_entities: Iterable[Tuple[Hashable, Any]],
+) -> List[Any]:
+    """
+    Restituisce i ref delle entità duplicate (seconda occorrenza in poi).
+
+    Parametri:
+        keyed_entities : iterabile di (key, ref) — l'adapter produce le chiavi,
+                         ref è opaco (l'adapter sa come eliminarlo)
+
+    Restituisce:
+        Lista di ref da eliminare. L'ordine riflette l'ordine di input.
+    """
+    seen:      set       = set()
+    to_delete: List[Any] = []
+
+    for key, ref in keyed_entities:
+        if key is None:
+            continue
+        if key in seen:
+            to_delete.append(ref)
+        else:
+            seen.add(key)
+
+    return to_delete
+
+
 def deduplicate(msp) -> int:
     """
     Shortcut: estrae chiavi, trova duplicati, li elimina.
@@ -220,6 +247,6 @@ def deduplicate(msp) -> int:
     Restituisce il numero di entità eliminate.
     """
     keyed    = extract_keyed_entities(msp)
-    to_delete = find_duplicates(keyed)
+    to_delete = _find_duplicates(keyed)
     delete_entities(to_delete, msp)
     return len(to_delete)

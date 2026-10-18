@@ -9,23 +9,13 @@ UNICO punto di conversione DXF → primitive.
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
-from shapely.geometry import Polygon
-
-from ...core.primitives.segments import (
-    LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg, DEFAULT_TOLERANCE,
-    segment_endpoints, segment_is_closed,
-)
-from ...core.primitives.polygon_builder import build_polygon
-from ...core.adapter_base import Adapter
-from ...core.geometry.measure import round_point
-from ...core.topology.edge import Edge, Segment
-from ...model.role_rule import RoleRule, resolve_role
-from ...model.style import EdgeStyle
+# Solo nomi pubblici di topo: l'adapter è un consumer come un altro (MAP.md D125)
+from topo.primitives import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg
+from topo.model import Edge, EdgeStyle, RoleRule, resolve_role
 
 from .parser import DxfEntityDispatcher
-from ...model.document import DEFAULT_NODE_TOLERANCE
 
 
 # ---------------------------------------------------------------------------
@@ -158,7 +148,7 @@ def _entity_style(entity) -> EdgeStyle:
 # due copie quasi identiche — una qui (`entity_to_primitive`), una in parser.py.
 
 
-def _segment_key(segment: Segment) -> tuple:
+def _segment_key(segment) -> tuple:
     """Chiave univoca per deduplicazione."""
     if isinstance(segment, LineSeg):
         pts = tuple(sorted((
@@ -209,24 +199,11 @@ def _segment_key(segment: Segment) -> tuple:
     return (type(segment).__name__, repr(segment))
 
 
-def entity_to_polygon(entity, tolerance: float = DEFAULT_TOLERANCE) -> Optional[Polygon]:
-    """
-    Converte un'entità DXF chiusa in un `Polygon` shapely, passando per le
-    primitive del core (parser + `build_polygon`). None se l'entità non è
-    parsabile o non forma un poligono valido.
-    """
-    prim = DxfEntityDispatcher(entity).parse()
-    if prim is None:
-        return None
-    primitives = prim if isinstance(prim, list) else [prim]
-    return build_polygon(primitives, tolerance)
-
-
 # ---------------------------------------------------------------------------
 # DxfAdapter
 # ---------------------------------------------------------------------------
 
-class DxfAdapter(Adapter):
+class DxfAdapter:
     """
     Adapter DXF che traduce entità DXF in Edge del dominio Topo.
 
@@ -238,20 +215,14 @@ class DxfAdapter(Adapter):
     def __init__(
         self,
         msp,
-        tolerance: float = DEFAULT_NODE_TOLERANCE,
         exclude_ids: Optional[set] = None,
         ignore_layers: Optional[set] = None,
         role_rules: Sequence[RoleRule] = (),
     ):
-        super().__init__(tolerance)
         self.msp = msp
         self.exclude_ids = exclude_ids or set()
         self.ignore_layers = ignore_layers or set()
         self.role_rules = list(role_rules)
-
-    # ------------------------------------------------------------------
-    # Adapter contract
-    # ------------------------------------------------------------------
 
     def to_edges(self) -> List[Edge]:
         """Traduce entità DXF in Edge."""
@@ -279,18 +250,7 @@ class DxfAdapter(Adapter):
             if key in seen_segment_keys:
                 return
             seen_segment_keys.add(key)
-            start, end = segment_endpoints(segment)
-            start_r = round_point(start, self.node_decimals)
-            end_r = round_point(end, self.node_decimals)
-            if start_r is None or end_r is None:
-                return
-            edges.append(Edge(
-                role=role,
-                start=start_r,
-                end=end_r,
-                segment=segment,
-                style=style or EdgeStyle(),
-            ))
+            edges.append(Edge.of(segment, role, style))
 
         for entity in self.msp:
             if _is_excluded(entity):
@@ -309,38 +269,8 @@ class DxfAdapter(Adapter):
             if dtype == "CIRCLE":
                 prim = DxfEntityDispatcher(entity).parse()
                 if isinstance(prim, CircleSeg):
-                    start, end = segment_endpoints(prim)
-                    pt = round_point(start, self.node_decimals)
-                    if pt is not None:
-                        edges.append(Edge(
-                            role=role,
-                            start=pt,
-                            end=pt,
-                            segment=prim,
-                            style=style,
-                        ))
+                    edges.append(Edge.of(prim, role, style))
                 continue
-
-            # SPLINE / ELLIPSE: parse una volta sola, poi distingui chiusa
-            # (loop degenere, come CIRCLE) da aperta (gestita più sotto come
-            # LINE/ARC) — a differenza di CIRCLE, che in DXF è sempre chiuso,
-            # sia SPLINE che ELLIPSE possono essere l'una o l'altra a seconda
-            # dell'entità, quindi la si scopre solo dopo averla parsata.
-            curved_prim: Optional[Segment] = None
-            if dtype in ("SPLINE", "ELLIPSE"):
-                curved_prim = DxfEntityDispatcher(entity).parse()
-                if curved_prim is not None and segment_is_closed(curved_prim):
-                    start, _ = segment_endpoints(curved_prim)
-                    pt = round_point(start, self.node_decimals)
-                    if pt is not None:
-                        edges.append(Edge(
-                            role=role,
-                            start=pt,
-                            end=pt,
-                            segment=curved_prim,
-                            style=style,
-                        ))
-                    continue
 
             # LWPOLYLINE / POLYLINE → segmenti
             if dtype in ("LWPOLYLINE", "POLYLINE"):
@@ -351,40 +281,15 @@ class DxfAdapter(Adapter):
                     _append_edge(role, segment, style=style)
                 continue
 
-            # LINE / ARC / SPLINE / ELLIPSE aperta
+            # LINE / ARC / SPLINE / ELLIPSE: una SPLINE o un'ELLIPSE chiusa è un
+            # loop degenere come CIRCLE, e lo decide Edge.of, non il tipo DXF
             if dtype not in _SUPPORTED_TYPES:
                 continue
 
-            prim = curved_prim if curved_prim is not None else DxfEntityDispatcher(entity).parse()
+            prim = DxfEntityDispatcher(entity).parse()
             if prim is None:
                 continue
 
-            start, end = segment_endpoints(prim)
-            start_r = round_point(start, self.node_decimals)
-            end_r = round_point(end, self.node_decimals)
-            if start_r is None or end_r is None:
-                continue
-
-            edges.append(Edge(
-                role=role,
-                start=start_r,
-                end=end_r,
-                segment=prim,
-                style=style,
-            ))
+            edges.append(Edge.of(prim, role, style))
 
         return edges
-
-    def source_context(self, ref: Any) -> str:
-        """Layer dell'entità sorgente."""
-        if isinstance(ref, str):
-            return ref
-        try:
-            return (
-                ref.dxf.layer
-                if ref.dxf.hasattr("layer")
-                else ""
-            )
-        except AttributeError:
-            return ""
-

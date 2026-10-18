@@ -60,9 +60,9 @@ perdita silenziosa.
 ```
 topo/
 ├── adapters/     TRADUZIONE formato → primitive       (conosce ezdxf)
+│   │                 consumer di topo: solo nomi pubblici, mai topo.core (D125)
 │   ├── dxf/          load_dxf, DxfAdapter, exporter, annotation_extractor, layers
-│   ├── pdf/          load_pdf — sperimentale, congelato
-│   └── geometry/     load_geometry — sperimentale (geometria pura, non un file)
+│   └── pdf/          load_pdf — sperimentale, congelato
 │
 ├── core/         MOTORE geometrico puro               (zero ezdxf, zero formato)
 │   ├── primitives/   LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg + discretizzazione;
@@ -75,6 +75,8 @@ topo/
 │   │                 — shape (forma, cerchi concentrici, archi attorno), lines
 │   │                 (corde, file collineari), axis (rettangoli coperti) — e i
 │   │                 mattoni measure / points / intersections
+│   ├── geometry_input.py load_geometry / load_segments — geometria pura, non un
+│   │                 formato: un ingresso di topo, non un adapter (D123, D125)
 │   ├── heal.py       heal()             — lettura dall'interno: file → modello
 │   └── island.py     island()           — lettura per isole, dall'esterno
 │

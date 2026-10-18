@@ -17,7 +17,7 @@ Se domani scrivi un SvgAdapter, avrà il suo svg/layers.py con
 data-role, classi CSS, colori fill hex — indipendente da questo file.
 """
 
-from ...model.role import ContourRole, role_str
+from topo.model import ContourRole, role_str
 from ...rules.palette import (
     COLOR_OUTER, COLOR_INNER, COLOR_TRASH,
     COLOR_ANNOTATION, COLOR_CONSUMER,

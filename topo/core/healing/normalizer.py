@@ -5,11 +5,8 @@ Normalizzazione geometrica format-agnostic.
 
 Zero dipendenze da ezdxf, PDF, SVG o qualsiasi formato.
 
-Due normalizzazioni distinte, entrambe sotto "due entità non dovrebbero
-contare come due":
-    find_duplicates       — uguaglianza esatta di chiave opaca (l'adapter
-                             decide come calcolare la chiave dal formato
-                             nativo). Colpisce solo la copia identica.
+Normalizzazioni sotto "due entità non dovrebbero contare come due" (la copia
+identica, entità per entità, la toglie l'adapter DXF prima: D125):
     merge_collinear_overlaps — sovrapposizione geometrica reale: due o più
                              LineSeg sulla stessa retta infinita che si
                              coprono almeno in parte (anche a catena — il
@@ -35,7 +32,6 @@ refit_tessellations      — una catena di tanti LineSeg corti è una curva scri
                              (fitting.simplify_points).
 
 Funzioni pubbliche:
-    find_duplicates           — dato un iterabile di (key, ref), i ref duplicati
     merge_collinear_overlaps  — dato un iterabile di Edge, i gruppi LineSeg da fondere
     merge_cocircular_overlaps — dato un iterabile di Edge, i gruppi ArcSeg da fondere
     weld_degenerate_linesegs  — dato un iterabile di Edge, i LineSeg degeneri da saldare
@@ -52,33 +48,6 @@ from ..primitives.fitting import simplify_points
 from ..topology.graph import build_node_graph
 from ..topology.edge import Edge
 from ...model.role import ContourRole
-
-
-def find_duplicates(
-    keyed_entities: Iterable[Tuple[Hashable, Any]],
-) -> List[Any]:
-    """
-    Restituisce i ref delle entità duplicate (seconda occorrenza in poi).
-
-    Parametri:
-        keyed_entities : iterabile di (key, ref) — l'adapter produce le chiavi,
-                         ref è opaco (l'adapter sa come eliminarlo)
-
-    Restituisce:
-        Lista di ref da eliminare. L'ordine riflette l'ordine di input.
-    """
-    seen:      set       = set()
-    to_delete: List[Any] = []
-
-    for key, ref in keyed_entities:
-        if key is None:
-            continue
-        if key in seen:
-            to_delete.append(ref)
-        else:
-            seen.add(key)
-
-    return to_delete
 
 
 # ---------------------------------------------------------------------------

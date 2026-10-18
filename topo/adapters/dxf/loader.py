@@ -23,8 +23,7 @@ from ezdxf.addons import odafc
 from .sanitize import sanitize, _explode_inserts, deduplicate
 from .adapter import DxfAdapter
 from .annotation_extractor import DxfAnnotationExtractor
-from ...model.document import DEFAULT_NODE_TOLERANCE, Document
-from ...model.role_rule import RoleRule
+from topo.model import DEFAULT_NODE_TOLERANCE, Document, RoleRule
 
 # Percorso dell'eseguibile ODA File Converter. `topo` NON legge i DWG da solo:
 # il supporto DWG di ezdxf È l'addon `odafc`, che è un wrapper attorno a ODA
@@ -312,7 +311,6 @@ def load_dxf(
 
     edges = DxfAdapter(
         msp,
-        tolerance=tolerance,
         ignore_layers=ignore,
         role_rules=role_rules,
     ).to_edges()
@@ -359,7 +357,7 @@ def document_from_msp(
     ignore = {s.lower() for s in (ignore_layers or [])}
 
     edges = DxfAdapter(
-        msp, tolerance=tolerance, ignore_layers=ignore, role_rules=role_rules,
+        msp, ignore_layers=ignore, role_rules=role_rules,
     ).to_edges()
     annotations = DxfAnnotationExtractor(msp).extract()
 

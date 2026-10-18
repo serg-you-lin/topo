@@ -10,8 +10,11 @@ from __future__ import annotations
 import math
 from typing import List
 
-from ...core.primitives import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg
-from ...core.primitives.segments import DEFAULT_TOLERANCE
+from topo.primitives import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg
+
+# Scarto massimo (mm) dei punti con cui ezdxf approssima una SPLINE: una scelta
+# del lettore DXF, non una tolleranza di topo.
+_FLATTENING_TOLERANCE = 0.01
 
 
 # ---------------------------------------------------------------------------
@@ -73,7 +76,7 @@ def _parse_arc(entity, rev) -> ArcSeg:
 def _parse_spline(entity, rev) -> SplineSeg:
     try:
         cps = [(float(p[0]), float(p[1]), float(p[2] if len(p) > 2 else 0.0)) for p in entity.control_points]
-        approx_points = [(float(p[0]), float(p[1])) for p in entity.flattening(DEFAULT_TOLERANCE)]
+        approx_points = [(float(p[0]), float(p[1])) for p in entity.flattening(_FLATTENING_TOLERANCE)]
         knots = [float(k) for k in entity.knots]
         weights = [float(w) for w in entity.weights] if len(entity.weights) else None
         fit_points = [
