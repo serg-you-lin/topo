@@ -26,12 +26,15 @@ def split_to_files(doc: Document, output_folder, label="", source_file="",
                    min_area=DEFAULT_MIN_CLUSTER_AREA,
                    exclude_types=None,
                    annotation_layer=LAYER_ANNOTATION,
-                   is_structural=None) -> Result:
+                   is_structural=None,
+                   role_styles=None,
+                   layers=None) -> Result:
     """
     Pipeline multi-pezzo + salvataggio su disco: heal → split → `.saveas()` per
     cluster. È l'unica funzione che tocca il filesystem: `split()` resta puro.
     Il nome file è `f"{cluster.label}.dxf"` (cluster.label lo assegna `namer`).
-    `is_structural` passa a `heal()` (vedi lì).
+    `is_structural` passa a `heal()` (vedi lì); `role_styles` e `layers`, le
+    mappe del chiamante, a `split()` (D128).
     """
     result = heal(doc, tolerance=tolerance, label=label, source_file=source_file,
                   is_structural=is_structural)
@@ -42,7 +45,8 @@ def split_to_files(doc: Document, output_folder, label="", source_file="",
     drawings = split(result, doc, namer=namer,
                      include_annotations=include_annotations,
                      min_area=min_area, exclude_types=exclude_types,
-                     annotation_layer=annotation_layer)
+                     annotation_layer=annotation_layer,
+                     role_styles=role_styles, layers=layers)
 
     os.makedirs(output_folder, exist_ok=True)
     kept = [c for c in result.clusters if cluster_passes_min_area(c, min_area)]

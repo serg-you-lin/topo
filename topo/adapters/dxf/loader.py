@@ -23,7 +23,7 @@ from ezdxf.addons import odafc
 from .sanitize import sanitize, _explode_inserts, deduplicate
 from .adapter import DxfAdapter
 from .annotation_extractor import DxfAnnotationExtractor
-from topo.model import DEFAULT_NODE_TOLERANCE, Document, RoleRule, resolve_role
+from topo.model import DEFAULT_NODE_TOLERANCE, Document, RoleRule
 
 # Percorso dell'eseguibile ODA File Converter. `topo` NON legge i DWG da solo:
 # il supporto DWG di ezdxf È l'addon `odafc`, che è un wrapper attorno a ODA
@@ -215,14 +215,6 @@ def _upgrade_to_r2010(doc, sink: list = None, verbose: bool = False) -> object:
 # Entry point pubblico
 # ---------------------------------------------------------------------------
 
-def _assign_annotation_roles(annotations, role_rules: Sequence[RoleRule]) -> None:
-    """Il ruolo di ogni annotazione dalle stesse regole degli edge, sul nome del
-    suo layer. Contano solo le regole sul nome: di un testo non si legge
-    l'aspetto (D127)."""
-    for ann in annotations:
-        ann.role = resolve_role(role_rules, ann.group)
-
-
 def load_dxf(
     path: str,
     upgrade: bool = False,
@@ -283,7 +275,7 @@ def load_dxf(
     # (dims salvate senza pre-rendering) — sono comunque annotazioni valide da
     # riportare in output. `_dimension_text()` / `virtual_entities()` non hanno
     # bisogno del documento auditato.
-    annotations = DxfAnnotationExtractor(doc.modelspace()).extract()
+    annotations = DxfAnnotationExtractor(doc.modelspace(), role_rules).extract()
 
     auditor = doc.audit()
     if auditor.errors:
@@ -326,10 +318,9 @@ def load_dxf(
     # Dopo explode possono affiorare TEXT/MTEXT che stavano dentro i blocchi:
     # le aggiungiamo a quelle catturate pre-audit, senza duplicare.
     if inserts_found and explode_inserts:
-        _merge_annotations(annotations, DxfAnnotationExtractor(msp).extract())
+        _merge_annotations(annotations, DxfAnnotationExtractor(msp, role_rules).extract())
 
     _warn_non_roundtrip_types(msp, warnings, verbose)
-    _assign_annotation_roles(annotations, role_rules)
 
     meta = {
         "$INSUNITS":     doc.header.get("$INSUNITS", 4),
@@ -368,8 +359,7 @@ def document_from_msp(
     edges = DxfAdapter(
         msp, ignore_layers=ignore, role_rules=role_rules,
     ).to_edges()
-    annotations = DxfAnnotationExtractor(msp).extract()
-    _assign_annotation_roles(annotations, role_rules)
+    annotations = DxfAnnotationExtractor(msp, role_rules).extract()
 
     header = getattr(getattr(msp, "doc", None), "header", None)
     meta = {

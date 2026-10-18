@@ -7,16 +7,17 @@ SVG **solo in uscita**: è una rappresentazione visiva del `Result`, per una
 UI, un report, un'anteprima rapida. Non serve al taglio — archi, cerchi e spline
 sono discretizzati a polilinea (via `to_view_model`).
 
-Un colore per ruolo (stessa palette semantica del DXF di output). La Y viene
+Un colore per ruolo: la palette di topo, con sopra `role_styles` del
+chiamante (D128). La Y viene
 ribaltata (il modello ha Y verso l'alto, SVG verso il basso).
 """
 
 from __future__ import annotations
 
 import html
-from typing import Optional
+from typing import Mapping, Optional
 
-from ..model import Result
+from ..model import Result, RoleStyle
 from .view_model import to_view_model
 
 
@@ -54,6 +55,7 @@ def to_svg(
     size: Optional[str] = None,
     units: Optional[str] = None,
     allow_invalid: bool = True,
+    role_styles: Optional[Mapping[str, RoleStyle]] = None,
 ) -> str:
     """
     `Result` → stringa SVG completa (`<svg>…</svg>`).
@@ -80,6 +82,8 @@ def to_svg(
                              NB: archi/cerchi/spline restano discretizzati (D12) —
                              per il taglio ad alta fedeltà usa `to_dxf`, non
                              l'SVG. `None` = SVG per visualizzazione.
+        role_styles:         `{ruolo: RoleStyle}` del chiamante: il colore
+                             di ogni ruolo (D128), come in `to_dxf`.
 
     Un `result` non valido viene disegnato lo stesso (vuoto o con la sola
     trash); `allow_invalid=False` → `ValueError`, per chi consegna a una
@@ -97,6 +101,7 @@ def to_svg(
     vm = to_view_model(
         result, tolerance=tolerance,
         include_trash=include_trash, include_annotations=include_annotations,
+        role_styles=role_styles,
     )
 
     bbox = vm.get("bbox") or _scan_bbox(vm)

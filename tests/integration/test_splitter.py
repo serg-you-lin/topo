@@ -29,7 +29,7 @@ Filosofia
   segnale chiaro per aggiungerlo.
 
 - ALL_LAYERS deve essere esportato da dxf_forge.rules.layers come:
-      ALL_LAYERS = {LAYER_OUTER: COLOR_OUTER, LAYER_INNER: COLOR_INNER, ...}
+      ALL_LAYERS = {LAYER_OUTER: 3, LAYER_INNER: 2, ...} (la palette di topo in ACI)
   Se manca, TestUnitSplitLayers.test_002 e TestIntegrationLayers.test_003
   falliscono con ImportError — segnale chiaro per aggiungerlo.
 
@@ -296,7 +296,7 @@ class TestUnitSplitLayers(unittest.TestCase):
     Verifica layer e colori canonici nei documenti figli prodotti da split().
 
     NOTA: ALL_LAYERS deve esistere in dxf_forge.rules.layers come:
-        ALL_LAYERS = {LAYER_OUTER: COLOR_OUTER, LAYER_INNER: COLOR_INNER, ...}
+        ALL_LAYERS = {LAYER_OUTER: 3, LAYER_INNER: 2, ...} (la palette di topo in ACI)
     """
 
     def setUp(self):
@@ -587,9 +587,10 @@ class TestIntegrationLayers(unittest.TestCase):
                         "setUp: nessun file generato da two_parts.dxf")
 
     def test_001_outer_layer_colore_canonico(self):
-        """LAYER_OUTER ha COLOR_OUTER in ogni file figlio."""
+        """LAYER_OUTER ha il verde della palette di topo in ogni file figlio."""
         from topo.adapters.dxf.layers import LAYER_OUTER
-        from topo.rules.palette import COLOR_OUTER
+        from topo.adapters.dxf.layers import color_for_role
+        COLOR_OUTER = color_for_role("outer")
         for f in self.files:
             child_doc = ezdxf.readfile(str(f))
             layer = child_doc.layers.get(LAYER_OUTER)

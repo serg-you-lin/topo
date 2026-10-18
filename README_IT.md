@@ -182,12 +182,17 @@ Il prodotto è il modello. `to_dxf` non rilegge mai il file sorgente — ogni re
 
 ## Layer del DXF in uscita
 
+topo non ha layer: l'adapter DXF scrive ogni ruolo sul layer che sceglie il
+chiamante (`to_dxf(layers=..., role_styles=...)`, un nome o una funzione
+dell'elemento per ruolo). Quando il chiamante non dice niente, questi sono i
+suoi default:
+
 | Layer          | Significato                                 |
 |----------------|---------------------------------------------|
 | `OuterContour` | profilo esterno del pezzo                   |
 | `InnerContour` | contorno chiuso dentro l'outer              |
 | `Annotation`   | testi e quote della sorgente (non è un layer di taglio) |
-| *nome del ruolo* | geometria con il ruolo di un consumatore (`frame`, `hole`, `bending`, …): un layer suo, nome e colore da `register_role_style` se il consumatore l'ha registrato |
+| *nome del ruolo* | geometria con il ruolo di un consumatore (`frame`, `hole`, `bending`, …): un layer col nome del ruolo, grigio — o nome e colore che passa il chiamante |
 | `Trash`        | tutto ciò che `topo` non ha saputo classificare — tenuto, mai buttato |
 
 Niente della sorgente si perde in silenzio: la geometria non classificata va in

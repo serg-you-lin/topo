@@ -30,17 +30,20 @@ primitive di topo.
       `Edge.of` al posto di quattro copie dell'arrotondamento, via
       `Adapter`, `load_geometry` fuori da `adapters/`; gli adapter importano
       solo `topo.model`/`topo.primitives` (regola `adapters` in pyproject).
-      Resta `layers.py` → `rules.palette`: si chiude col passo 3.
+      `layers.py` → `rules.palette` chiuso col passo 3 (D128).
    2. ~~**Vocabolario neutro nel modello.**~~ — fatto, D126: `EdgeStyle`
       con `dash` (segni con segno) e `color` RGB, `RoleRule(color=)` in RGB,
       `Annotation.layer` → `group`. `LAYER_*` in `recipes.py`/`io/exporter.py`
       vanno via col trasloco (passo 4), palette e `Trash` col passo 3.
-   3. **Uscita per ruolo.** Un exporter riceve una mappa ruolo → stile che
-      possiede il chiamante (spessore, colore, tipo linea, e per il DXF uno
-      o più layer); la palette di oggi diventa il default dell'adapter DXF,
-      non una regola di topo; dopo, `rules` entra nella regola `adapters`.
-      Le annotazioni hanno un ruolo (D127, A + B); resta C: togliere
-      `Annotation.group` quando l'uscita per ruolo c'è.
+   3. ~~**Uscita per ruolo.**~~ — fatto, D128: `RoleStyle` neutro nel
+      modello; `to_dxf(layers={ruolo: nome | funzione(elemento)})`, un ruolo
+      su più layer se il chiamante lo chiede; la palette è di topo, una
+      per ogni formato (`topo.model.role_style`), la mappa del chiamante ci
+      va sopra; i nomi dei layer (`Trash` compreso) sono il default
+      dell'adapter DXF; via il registro globale (riaperto D47),
+      snapbend e snapdraw pubblicano `ROLE_STYLES`/`LAYERS`; via
+      `Annotation.group` (C di D127). Resta per il passo 4: il lettore salta
+      da sé i layer `trash`/`annotation` (`_NON_STRUCTURAL_LAYERS`).
    4. **Il trasloco.** `adapters/dxf` + `io/dxf.to_dxf` + metadati in
       XDATA + la parte DXF di `inspect` in `topo_dxf`; `adapters/pdf` (e il
       lavoro fermo in `forge-pdf-adapter`) in `topo_pdf`. `split` resta in

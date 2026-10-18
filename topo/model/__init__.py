@@ -15,7 +15,7 @@ from .contour import Contour
 from .cluster import Cluster
 from .result import Result
 from .curve import Curve, ClosedCurve, OpenCurve
-from .style import EdgeStyle
+from .style import EdgeStyle, RoleStyle, DEFAULT_ROLE_STYLES, CONSUMER_ROLE_STYLE, role_style
 from .detected import DetectedFeature, DetectedFeatures
 from .role import ContourRole, role_str, normalize_role, is_structural_role, feature_role
 from .role_rule import RoleRule, resolve_role, name_rules
@@ -36,6 +36,10 @@ __all__ = [
     "ClosedCurve",
     "OpenCurve",
     "EdgeStyle",
+    "RoleStyle",
+    "DEFAULT_ROLE_STYLES",
+    "CONSUMER_ROLE_STYLE",
+    "role_style",
     "DetectedFeature",
     "DetectedFeatures",
     "ContourRole",

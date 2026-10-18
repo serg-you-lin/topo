@@ -4494,3 +4494,78 @@ Decision (A + B of the discussion; C deferred):
 Additive. Suites of topo, snapbend and snapdraw unchanged; the text budget
 readings are byte-identical.
 
+
+### D128 — output by role: topo's palette, the caller's maps on top, the adapter's layers; no registry; no annotation group
+Step 3 of D123 (TODO road to 1.0, point 0), Federico, 18 October.
+
+- **`RoleStyle` is neutral and lives in the model** (`topo.model.RoleStyle`,
+  still `topo.RoleStyle`): `color` (RGB), `linetype` (a name), `dash` (the
+  signed marks of `EdgeStyle.dash`, D126), `lineweight` (mm). `layer_name`
+  leaves it: where a role goes is not how it looks, and it is the exporter's
+  question.
+- **The DXF layer of a role is `to_dxf(layers=...)`** (also `split`,
+  `split_to_files`): `{role: "Name"}`, or `{role: fn(element) -> name}`.
+  Federico asked that a role can produce two layers when the caller wants
+  it — a role's entities may split by information they carry (a bend "up"
+  and a bend "down"). The function receives the element being written: the
+  `Contour`, the `cluster.detected` item (not its contour: the item carries
+  the information), the trash entity, the `Annotation`. A role's
+  `RoleStyle` lands on every layer it produces; on a layer shared by several
+  roles the first written wins.
+- **The palette is topo's, in the model, one for every format.**
+  `topo.model.DEFAULT_ROLE_STYLES`: `outer` green, `inner` yellow, `unknown`
+  red, in RGB; `CONSUMER_ROLE_STYLE` gray for any other role.
+  `topo.model.role_style(role, role_styles)` resolves a style: the palette,
+  with the non-`None` fields of the caller's map on top — a consumer adds
+  its roles without rewriting topo's, and may change one. Every exporter
+  (DXF, SVG/view model, PDF tomorrow) calls it and only translates.
+  *First draft, corrected the same day:* I had followed the TODO line "the
+  palette becomes the DXF adapter's default" literally and given each
+  exporter its own copy (ACI in the DXF adapter, hex in `view_model`).
+  Federico: "I want a standard green outer, yellow inner, red trash,
+  extendable for the consumers — if it is not in the core, how do I extend
+  the colours?". The colour choice is neutral, only its encoding (ACI, true
+  color, hex) is a format's; and the colours belong to the roles topo
+  produces (heal, island), so they sit next to `ContourRole`, as
+  `DEFAULT_NODE_TOLERANCE` sits in the model. heal does not paint: the colour
+  is looked up by role at export, so roles given after heal (`detect_flat`)
+  get theirs the same way and a palette change needs no re-heal.
+  `rules/palette.py` is deleted (it spoke ACI); `rules` joins the `adapters`
+  forbidden list in `gen_index` (D125: adapters use public names only).
+- **The DXF adapter keeps layer names, not colours.** `OuterContour`/
+  `InnerContour`/`Trash`/`Annotation` are its default layers; a palette
+  colour is written as its exact ACI index (3, 2, 1, 8 — checked against
+  ezdxf), a caller's colour as true color, as before: so no DXF changes,
+  neither topo's nor the consumers' (snapbend's magenta (255, 0, 255) is ACI 6
+  exactly and would otherwise have turned from true color into an index).
+  The annotation layer keeps ACI 7, the DXF "foreground", which is no role's
+  colour. Colours are chosen by role, not by layer name, so
+  `layers={"outer": "Cut"}` gives a green `Cut` and no empty `OuterContour`.
+- **Reopening D47: the global registry goes** (`register_role_style`,
+  `registered_role_styles`). D47 added it so a consumer would not re-pass
+  its styles on every call, mirroring `set_schema`. It is global state in a
+  library: importing snapbend changed the colours of anyone's `to_dxf` in the
+  same process, and two consumers registering one slug silently let the last
+  import win — snapdraw's docstring said so of its violet hole overriding
+  snapbend's magenta. With layers out of `RoleStyle` it would also need a
+  twin in the adapter. Now a consumer publishes its maps (`snapbend.flat.
+  ROLE_STYLES`/`LAYERS`, `snapdraw.ROLE_STYLES`/`LAYERS`) and its own exports
+  pass them; a caller composes them (`{**ROLE_STYLES, "hole": ...}`). The
+  cost is the one D47 saw: whoever calls `topo.to_dxf` directly passes the
+  maps. Federico: fine, as long as consumers can make their own rules.
+- **C of D127: `Annotation.group` goes.** The DXF annotation extractor reads
+  the layer to resolve the role with the name rules and leaves it there, as
+  for edges. An annotation with a role goes on its role's layer; one without,
+  on `annotation_layer` (now a `str`; `None` no longer means "the source
+  layer"). Who wants a text kept apart gives it a role. The annotation
+  goldens lose the `group` key and nothing else (66 lines removed, no value
+  touched).
+- **Left as it is:** the reader still skips the layers `trash`/`annotation`
+  (`_NON_STRUCTURAL_LAYERS`) on its own. Turning it into a visible default of
+  `ignore_layers` changes semantics (`ignore_layers` matches by substring and
+  a caller passing their own would lose it): to decide with step 4.
+
+Output with no maps is unchanged except for consumer-role annotations, which
+now land on their role's layer. Suites: topo unchanged (only `anch_02`/
+`anch_06`, as before), snapbend all green, snapdraw only `regr_03`/
+`regr_05`, as before.

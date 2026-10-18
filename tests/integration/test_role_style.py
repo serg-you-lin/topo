@@ -1,10 +1,11 @@
 """
 test_role_style.py
 -------------------
-Test per RoleStyle (MAP.md D37): override esplicito di colore/linetype/
-lineweight per ruolo in to_dxf()/split(), noto a topo o assegnato da un
-consumatore (role_rules). L'override agisce sul layer, non sull'entità —
-tutto ciò che topo scrive è BYLAYER.
+Test per l'uscita per ruolo in to_dxf() (MAP.md D37, D128): il chiamante
+sceglie il layer di un ruolo (`layers`, un nome o una funzione
+dell'elemento) e il suo aspetto (`role_styles`). L'aspetto agisce sul layer,
+non sull'entità — tutto ciò che si scrive è BYLAYER. Nessuno stato fra una
+chiamata e l'altra.
 """
 
 import unittest
@@ -17,15 +18,15 @@ project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
-from topo import RoleStyle, register_role_style
-from topo.adapters.dxf.layers import TRASH_LAYER
+from topo import RoleStyle
+from topo.adapters.dxf.layers import LAYER_OUTER, TRASH_LAYER, color_for_role
 
 
 def _rect_with_hole_and_frame():
     """
-    Rettangolo 100x50 con un cerchio dentro + una LINE su layer STAMP dentro
-    (ruolo 'stamp_d90', registrato dai test) + una LINE su layer FRAME fuori
-    (ruolo consumatore 'frame', mai registrato — D31).
+    Rettangolo 100x50 con un cerchio dentro + due LINE su layer STAMP dentro
+    (ruolo 'stamp_d90', una a sinistra e una a destra) + una LINE su layer
+    FRAME fuori (ruolo consumatore 'frame', D31).
     """
     doc = ezdxf.new('R2010')
     msp = doc.modelspace()
@@ -37,6 +38,7 @@ def _rect_with_hole_and_frame():
     msp.add_circle((50, 25), 5)
 
     msp.add_line((10, 10), (30, 10), dxfattribs={'layer': 'STAMP'})
+    msp.add_line((70, 40), (90, 40), dxfattribs={'layer': 'STAMP'})
     msp.add_line((200, 200), (220, 200), dxfattribs={'layer': 'FRAME'})
 
     doc_in = topo.document_from_msp(
@@ -45,49 +47,93 @@ def _rect_with_hole_and_frame():
     return result, doc_in
 
 
-class TestRoleStyleRegisteredRole(unittest.TestCase):
+def _entities_on(doc, layer: str) -> int:
+    return len(doc.modelspace().query(f'*[layer=="{layer}"]'))
+
+
+class TestLayerByName(unittest.TestCase):
     """
-    Un ruolo di consumatore registrato con `register_role_style` ha il suo
-    colore sul layer col nome registrato; uno mai registrato (`frame`) prende
-    il grigio consumatore, senza `true_color` (D31, D37).
+    `layers={ruolo: nome}` manda un ruolo di consumatore sul layer scelto, e
+    il suo `RoleStyle` va su quel layer; un ruolo senza scelta (`frame`) va
+    sul layer col nome dello slug, grigio, senza `true_color` (D31).
     """
 
     def setUp(self):
-        register_role_style("stamp_d90", RoleStyle(color=(255, 0, 255), layer_name="StampD90"))
         self.result, self.doc_in = _rect_with_hole_and_frame()
-        self.doc_out = topo.to_dxf(self.result, self.doc_in)
+        self.doc_out = topo.to_dxf(
+            self.result, self.doc_in,
+            layers={"stamp_d90": "StampD90"},
+            role_styles={"stamp_d90": RoleStyle(color=(255, 0, 255))},
+        )
 
-    def test_001_registered_layer_has_true_color(self):
+    def test_001_chosen_layer_has_true_color(self):
         layer = self.doc_out.layers.get("StampD90")
         self.assertTrue(layer.dxf.hasattr("true_color"))
         self.assertEqual(layer.rgb, (255, 0, 255))
 
-    def test_002_frame_layer_created_with_consumer_color(self):
-        # Layer creato al volo col nome dello slug (D31), colore di default
-        # (grigio consumatore), nessun override richiesto.
+    def test_002_role_entities_on_chosen_layer(self):
+        self.assertEqual(_entities_on(self.doc_out, "StampD90"), 2)
+        self.assertNotIn("stamp_d90", self.doc_out.layers)
+
+    def test_003_frame_layer_created_with_consumer_color(self):
         self.assertIn('frame', self.doc_out.layers)
         layer = self.doc_out.layers.get('frame')
         self.assertFalse(layer.dxf.hasattr("true_color"))
 
 
-class TestRoleStyleColorOverride(unittest.TestCase):
-    """role_styles fa override del colore di un ruolo registrato."""
+class TestLayerSplitByElement(unittest.TestCase):
+    """
+    Una funzione in `layers` divide le entità di un ruolo su due layer
+    guardando l'elemento scritto (come una piega "up" e una "down"); lo
+    stile del ruolo va su entrambi.
+    """
 
     def setUp(self):
-        register_role_style("stamp_d90", RoleStyle(color=(255, 0, 255), layer_name="StampD90"))
+        def side(element) -> str:
+            x = element.segments[0].start[0]
+            return "StampLeft" if x < 50 else "StampRight"
+
         self.result, self.doc_in = _rect_with_hole_and_frame()
         self.doc_out = topo.to_dxf(
             self.result, self.doc_in,
-            role_styles={"stamp_d90": RoleStyle(color=(0, 0, 0))},
+            layers={"stamp_d90": side},
+            role_styles={"stamp_d90": RoleStyle(color=(0, 0, 255))},
         )
 
-    def test_001_registered_layer_true_color_is_black(self):
-        layer = self.doc_out.layers.get("StampD90")
-        self.assertEqual(layer.rgb, (0, 0, 0))
+    def test_001_one_line_per_layer(self):
+        self.assertEqual(_entities_on(self.doc_out, "StampLeft"), 1)
+        self.assertEqual(_entities_on(self.doc_out, "StampRight"), 1)
 
-    def test_002_other_layers_untouched(self):
-        outer_layer = self.doc_out.layers.get("OuterContour")
-        self.assertFalse(outer_layer.dxf.hasattr("true_color"))
+    def test_002_style_on_both_layers(self):
+        for name in ("StampLeft", "StampRight"):
+            self.assertEqual(self.doc_out.layers.get(name).rgb, (0, 0, 255))
+
+
+class TestEngineRoleRemapped(unittest.TestCase):
+    """Anche un ruolo del motore si sposta: outer su `Cut`, verde di default,
+    e il layer di default non nasce."""
+
+    def setUp(self):
+        self.result, self.doc_in = _rect_with_hole_and_frame()
+        self.doc_out = topo.to_dxf(self.result, self.doc_in, layers={"outer": "Cut"})
+
+    def test_001_outer_on_cut(self):
+        self.assertGreater(len(self.doc_out.modelspace().query('*[layer=="Cut"]')), 0)
+        self.assertEqual(self.doc_out.layers.get("Cut").color, color_for_role("outer"))
+
+    def test_002_no_default_outer_layer(self):
+        self.assertNotIn(LAYER_OUTER, self.doc_out.layers)
+
+
+class TestNoStateBetweenCalls(unittest.TestCase):
+    """La mappa vale per la sua chiamata: la successiva, senza, torna al
+    default (D128 — niente registro globale)."""
+
+    def test_001_second_call_is_default(self):
+        result, doc_in = _rect_with_hole_and_frame()
+        topo.to_dxf(result, doc_in, role_styles={"outer": RoleStyle(color=(0, 0, 0))})
+        doc_out = topo.to_dxf(result, doc_in)
+        self.assertFalse(doc_out.layers.get(LAYER_OUTER).dxf.hasattr("true_color"))
 
 
 class TestRoleStyleConsumerRole(unittest.TestCase):
@@ -125,6 +171,25 @@ class TestRoleStyleLinetypeOverride(unittest.TestCase):
     def test_002_trash_layer_uses_dashed(self):
         layer = self.doc_out.layers.get(TRASH_LAYER)
         self.assertEqual(layer.dxf.linetype, "DASHED")
+
+
+class TestRoleStyleDash(unittest.TestCase):
+    """Un tratto senza nome (`dash`, D126) si registra col nome del ruolo e
+    il pattern DXF che apre con la lunghezza totale."""
+
+    def setUp(self):
+        self.result, self.doc_in = _rect_with_hole_and_frame()
+        self.doc_out = topo.to_dxf(
+            self.result, self.doc_in,
+            role_styles={"unknown": RoleStyle(dash=(5.0, -2.0))},
+        )
+
+    def test_001_trash_layer_uses_role_dash(self):
+        self.assertEqual(self.doc_out.layers.get(TRASH_LAYER).dxf.linetype, "UNKNOWN_DASH")
+
+    def test_002_pattern_has_total_length(self):
+        pattern = self.doc_out.linetypes.get("UNKNOWN_DASH").pattern_tags.tags
+        self.assertEqual([t.value for t in pattern if t.code == 40], [7.0])
 
 
 class TestRoleStyleUnknownLinetypeRaises(unittest.TestCase):

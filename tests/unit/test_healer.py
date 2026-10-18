@@ -23,7 +23,6 @@ sys.path.insert(0, str(project_root))
 
 import topo
 from topo.adapters.dxf.layers import LAYER_OUTER, LAYER_INNER
-from topo.rules.palette import COLOR_OUTER, COLOR_INNER
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "data"
 

@@ -293,11 +293,14 @@ solo nomi pubblici e consegna un `Document` (MAP.md D125). Quello che gli serve:
 | `topo.model.EdgeStyle(linetype="", linetype_desc="", dash=None, color=None)` | l'aspetto effettivo dell'entità sorgente, senza parole di un formato (D126): `dash` sono segni con segno (`> 0` tratto, `0` punto, `< 0` vuoto; `()` continuo, `None` non noto — un dash-array `[3, 1]` è `(3, -1)`), `color` è `(r, g, b)`. L'adapter risolve l'ereditarietà (uno stile "del layer") prima di consegnarlo |
 | `topo.model.RoleRule`, `topo.model.resolve_role(rules, name, style) -> str` | il ruolo di un'entità dalle regole del chiamante: la prima che matcha, altrimenti `unknown` |
 | `topo.model.Document`, `topo.model.DEFAULT_NODE_TOLERANCE` | il risultato dell'adapter e la tolleranza di default che `heal()` chiuderà |
-| `topo.model.Annotation`, `Note`, `Dimension`, `Leader`, `RenderedGeometry`, `RenderedText` | le annotazioni lette dalla sorgente; `group` è il nome del gruppo sorgente (il layer di un DXF) |
+| `topo.model.Annotation`, `Note`, `Dimension`, `Leader`, `RenderedGeometry`, `RenderedText` | le annotazioni lette dalla sorgente, ognuna col suo `role` (D127; il gruppo sorgente non resta nel modello, D128) |
 
 Per riscrivere in un formato: `topo.primitives.segment_endpoints(segment)` dà i
 due estremi di un segmento, `topo.model.feature_role(contour, item_role)` il
-ruolo con cui si disegna un contorno di un elemento rilevato.
+ruolo con cui si disegna un contorno di un elemento rilevato,
+`topo.model.role_style(role, role_styles)` come si disegna: la palette di
+topo con sopra la mappa del chiamante (D128). Un exporter non sceglie colori,
+traduce quello che `role_style` gli dà nella codifica del suo formato.
 
 ```python
 edges = [topo.model.Edge.of(seg, topo.model.resolve_role(rules, name, style), style)
@@ -950,6 +953,7 @@ topo.to_dxf(
     include_trash=True,
     annotation_layer="Annotation",
     role_styles: dict[str, RoleStyle] = None,
+    layers: dict[str, str | Callable[[object], str]] = None,
     allow_invalid: bool = True,
 ) -> ezdxf.document.Drawing
 ```
@@ -963,12 +967,22 @@ entità dalla sorgente: `source_doc` serve solo a riportare gli header
 | `filter_cluster` | `callable(Cluster) -> bool` — scrive solo le parti che passano. |
 | `include_trash` | `True` (default): la geometria non classificata va sul layer `Trash`. Chi apre il file deve poter vedere ogni entità del disegno di partenza. |
 | `allow_invalid` | `True` (default): un `result` non valido viene scritto lo stesso (trash e annotazioni), come fa `to_svg`. `False` → `ValueError`: per il chiamante che consegna il file a una macchina (D83). |
-| `annotation_layer` | `"Annotation"` → layer topo dedicato; `"Trash"` o altro nome → quel layer; `None` → layer originale della sorgente. Nessuna annotazione viene mai scartata. |
-| `role_styles` | override esplicito, per ruolo, di colore/linetype/lineweight (vedi `RoleStyle` sotto). Agisce sul layer — tutto ciò che topo scrive è BYLAYER. `None` (default) = nessun cambiamento rispetto alla palette di `rules/palette.py`. |
+| `layers` | dove va ogni ruolo: `{ruolo: "Nome"}`, o `{ruolo: funzione(elemento) -> nome}` per dividere le entità di un ruolo su più layer guardando l'elemento scritto (il `Contour`, l'elemento di `cluster.detected`, l'entità trash o l'`Annotation`). Un ruolo che non nomini resta al default dell'adapter: `OuterContour`, `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo (D31, D128). |
+| `role_styles` | come si disegna ogni ruolo: `{ruolo: RoleStyle}` (vedi sotto). Agisce sul layer — tutto si scrive BYLAYER — e su un layer di più ruoli vince il primo scritto. Un ruolo con uno stile ha il suo layer anche senza entità. Sotto c'è sempre la palette di topo (`DEFAULT_ROLE_STYLES`): la mappa aggiunge i ruoli del chiamante e cambia solo i campi che dà. |
+| `annotation_layer` | il layer di testi e quote **senza ruolo** (default `"Annotation"`). Un'annotazione con un ruolo va sul layer del suo ruolo, come un edge (D127, D128). Nessuna annotazione viene mai scartata. |
+
+Le mappe sono del chiamante e valgono per la sua chiamata: topo non ne tiene
+nessuna (D128). Un consumatore pubblica le sue (`snapbend.flat.ROLE_STYLES`,
+`snapbend.flat.LAYERS`) e chi esporta le passa, o le compone:
 
 ```python
-# la cornice (ruolo "frame", assegnato da un consumatore come snapdraw) in nero
-topo.to_dxf(result, doc, role_styles={"frame": topo.RoleStyle(color=(0, 0, 0))})
+# la cornice (ruolo "frame", assegnato da un consumatore come snapdraw) in nero, su "Cornice"
+topo.to_dxf(result, doc,
+            layers={"frame": "Cornice"},
+            role_styles={"frame": topo.RoleStyle(color=(0, 0, 0))})
+
+# le pieghe su due layer, secondo il verso (un'informazione dell'elemento)
+topo.to_dxf(result, doc, layers={"bending": lambda bend: "BendUp" if is_up(bend) else "BendDown"})   # is_up: del chiamante
 ```
 
 **L'overlay** (D70, D90): scrive ogni collezione di `cluster.detected`,
@@ -1006,6 +1020,7 @@ topo.split(
     on_part=None,
     annotation_layer="Annotation",
     role_styles: dict[str, RoleStyle] = None,
+    layers: dict[str, str | Callable[[object], str]] = None,
 ) -> list[ezdxf.document.Drawing]
 ```
 
@@ -1034,50 +1049,50 @@ for d, cluster in zip(docs, [p for p in result.clusters if p.outer.polygon.area 
 
 ```python
 @dataclass(frozen=True)
-class RoleStyle:
-    color:      tuple[int, int, int] | None = None   # RGB 0-255, canonico
-    linetype:   str | None = None                     # nome standard ezdxf, es. "DASHED"; ignoto → ValueError (D85)
+class RoleStyle:                                          # topo.RoleStyle, topo.model.RoleStyle
+    color:      tuple[int, int, int] | None = None   # RGB 0-255
+    linetype:   str | None = None                     # nome del tipo di linea; da solo, un tipo standard ("DASHED")
+    dash:       tuple[float, ...] | None = None       # il tratto, segni con segno come EdgeStyle.dash
     lineweight: float | None = None                   # mm
-    layer_name: str | None = None                     # nome layer/gruppo di output
 ```
 
-Override, indipendente dal formato, dell'aspetto visivo di un ruolo in
-output — noto al motore (`"outer"`, `"inner"`) o assegnato da chiunque
-altro — snapbend (`"hole"`, ...), snapdraw (`"frame"`, `"title_block"`,
-...) — nessuno è privilegiato. Ogni
-campo lasciato `None` resta il default di topo per quel ruolo. Passato a
-`to_dxf`/`split` come `role_styles={ruolo: RoleStyle(...)}` — dizionario
-esplicito del chiamante, stesso idioma di `role_rules`, riusabile su più
-chiamate/formati; vince sempre su un eventuale stile registrato (sotto).
+Come il chiamante vuole disegnato un ruolo in uscita, nello stesso vocabolario
+di `EdgeStyle` e senza formato (D37, D128). Vale per un ruolo del motore
+(`"outer"`, `"inner"`, `"unknown"`) come per uno di un consumatore — snapbend
+(`"hole"`, ...), snapdraw (`"frame"`, `"title_block"`, ...) — nessuno è
+privilegiato. Il dizionario `{ruolo: RoleStyle}` è del chiamante e lo passa a
+ogni exporter: `to_dxf`, `split`, `split_to_files`, `to_svg`,
+`to_view_model`. Sotto c'è sempre la palette di topo; un campo `None` resta
+quello della palette. Dove finisce un ruolo (un layer DXF) non è qui: è
+`to_dxf(layers=...)`.
 
-Pensato per crescere per aggiunta: un futuro campo si aggiunge alla
-dataclass senza toccare la firma di `to_dxf`/`split` né rompere chi già
-passa un `RoleStyle` con meno campi.
+**La palette di topo** (`topo.model.DEFAULT_ROLE_STYLES`, D128) dà il colore
+ai ruoli che heal e island producono, uguale per ogni formato: `outer` verde
+(0, 255, 0), `inner` giallo (255, 255, 0), `unknown` rosso (255, 0, 0); ogni
+altro ruolo è grigio (`CONSUMER_ROLE_STYLE`, (128, 128, 128)) finché il
+chiamante non gli dà un colore. `topo.model.role_style(ruolo, role_styles)`
+risolve uno stile: la palette, con sopra i campi non `None` della mappa del
+chiamante. Ogni exporter la chiama e traduce soltanto (ACI o true color in
+DXF, hex in SVG): chi scrive un adapter non sceglie colori.
+
+```python
+topo.model.role_style("outer")                                   # verde
+topo.model.role_style("hole", snapbend.flat.ROLE_STYLES)         # magenta di snapbend
+topo.model.role_style("outer", {"outer": topo.RoleStyle(lineweight=0.3)})   # verde, 0.3 mm
+```
+
+In DXF: un colore della palette diventa il suo indice ACI esatto (3, 2, 1, 8);
+`color` del chiamante → true color del layer; `dash` → un tipo di linea registrato
+col nome `linetype` o, senza, `<RUOLO>_DASH`; un `linetype` senza `dash` deve
+essere nel documento o fra gli standard, altrimenti `ValueError` (D85);
+`lineweight` → centesimi di mm.
 
 ```python
 topo.to_dxf(result, doc, role_styles={
     "frame":   topo.RoleStyle(color=(0, 0, 0)),          # cornice: nero
     "unknown": topo.RoleStyle(lineweight=0.05),          # trash: linea sottilissima
+    "bending": topo.RoleStyle(dash=(5.0, -2.0)),         # pieghe: tratto 5, vuoto 2
 })
-```
-
-### `register_role_style`
-
-```python
-topo.register_role_style(role, style: RoleStyle) -> None
-```
-
-Registra uno `RoleStyle` per `role` **una volta sola**, valido per ogni
-`to_dxf`/`split` successivo senza doverlo ripassare — stesso idioma di
-`topo.set_schema()` per i metadati. Un consumatore lo chiama una volta al
-proprio setup invece di ricostruire `role_styles=` a ogni chiamata —
-`snapbend.flat` lo fa per i suoi colori (`hole` magenta, `bending` rosa, ...).
-`role_styles=` passato a una singola chiamata resta possibile e
-vince comunque su quanto registrato qui.
-
-```python
-topo.register_role_style("frame", topo.RoleStyle(color=(0, 0, 0)))
-# ogni to_dxf/split successivo applica il nero al layer "frame" da solo
 ```
 
 ---
@@ -1097,11 +1112,14 @@ topo.split_to_files(
     exclude_types=None,
     annotation_layer="Annotation",
     is_structural=None,
+    role_styles=None,
+    layers=None,
 ) -> Result
 ```
 
 Flusso multi-pezzo + salvataggio su disco: `heal → split → .saveas()` per
-cluster (`is_structural` passa a `heal`). Una lettura di processo (fori,
+cluster (`is_structural` passa a `heal`; `role_styles` e `layers`, come in
+`to_dxf`, a `split`). Una lettura di processo (fori,
 pieghe) si fa sul result con `heal` + la detection + `split`, non qui. **È l'unica funzione di topo che scrive su disco.**
 Il nome file è `f"{cluster.label}.dxf"`, dove `cluster.label` è quello che assegna
 `namer(i, cluster)`; senza `namer` diventa `f"{label}_P{i+1}"` (es. `batch_P1.dxf`).
@@ -1303,10 +1321,10 @@ scalari del `to_dict()` dell'elemento — chi porta `center` + `diameter` si pu�
 disegnare come cerchio vero. Coordinate nel sistema del sorgente (Y in alto).
 
 ```python
-vm = topo.to_view_model(result)
+vm = topo.to_view_model(result, role_styles=None)   # {ruolo: RoleStyle} del chiamante: ne legge il colore
 vm["clusters"][0]["outer"]        # {"role": "outer", "color": "#00ff00", "points": [...], "closed": true}
 vm["clusters"][0]["features"]     # {"holes": [{"role": "hole", "points": [...], "diameter": ..., ...}], ...}
-vm["palette"]                  # {"outer": "#00ff00", ...} + i ruoli registrati
+vm["palette"]                  # {"outer": "#00ff00", ...} + i ruoli che role_styles colora
 ```
 
 Non muta `result`, non solleva su `result` non valido (torna il dict con
@@ -1327,12 +1345,14 @@ topo.to_svg(
     size=None,                # None = niente width/height → scala al contenitore
     units=None,               # "mm" = SVG in scala reale, 1 unità = 1 mm
     allow_invalid=True,       # False → ValueError su un result non valido
+    role_styles=None,         # {ruolo: RoleStyle}: il colore di ogni ruolo, come in to_dxf
 ) -> str
 topo.save_svg(result, path, **kwargs) -> None
 ```
 
 Renderer SVG del modello (MAP.md D12) — per visualizzazione (UI/report/
-anteprima) o per una macchina che importa SVG. Un colore per ruolo (stessa palette semantica del DXF di output). La
+anteprima) o per una macchina che importa SVG. Un colore per ruolo: la palette di topo, con sopra `role_styles` del
+chiamante (D128). La
 Y viene ribaltata (modello Y-su → SVG Y-giù). Una parte = un `<g data-cluster="…">`.
 Costruito sopra `to_view_model`.
 
@@ -1477,18 +1497,18 @@ che usano `heal`, `island` e `validate` quando `tolerance` non è passata (D86).
 
 `Note` / `Dimension` / `Leader`. Comuni: `kind` (`"TEXT"` | `"MTEXT"` |
 `"DIMENSION"` | `"LEADER"` | `"MULTILEADER"`), `position` `(x, y)`,
-`cluster_ref`, `display_text`, `group` (il gruppo sorgente: il layer di un
-DXF), `role`.
+`cluster_ref`, `display_text`, `role`.
 
 `role` dice cosa è l'annotazione per chi la usa (`"title_block"`,
 `"part_code"`, ...), come il ruolo di un edge (MAP.md D127). topo non lo legge
 e non lo decide: lo scrive il consumer (`Note(..., role="title_block")`,
 ripulito da `normalize_role`), oppure le sue `role_rules` al load, sul nome
-del gruppo. Su un'annotazione contano solo le regole sul nome (`name`,
-`name_contains`): una regola su tratto o colore non la tocca. `unknown` se
-nessuno l'ha detto. `to_dxf(..., annotation_layer=None)` scrive
-un'annotazione con un ruolo sul layer del suo ruolo, come un edge; senza
-ruolo, sul suo layer d'origine.
+del gruppo sorgente (il layer di un DXF). Su un'annotazione contano solo le
+regole sul nome (`name`, `name_contains`): una regola su tratto o colore non
+la tocca. `unknown` se nessuno l'ha detto. Il gruppo sorgente serve solo a
+questo e non resta nel modello (D128): chi vuole un testo distinto in uscita
+gli dà un ruolo. `to_dxf` scrive un'annotazione con un ruolo sul layer del suo
+ruolo, come un edge; senza ruolo, su `annotation_layer`.
 
 - `Note`: `text`, `height`, `rotation`.
 - `Dimension`: `measured_value`, `dim_type`, `text_override` (testo
@@ -1558,9 +1578,9 @@ Il motore conosce solo tre ruoli: `unknown`, `outer`, `inner` (MAP.md D47,
 **Non è un universo chiuso**: chiunque può assegnare un ruolo che il motore non conosce (`hole`,
 `frame`, `title_block`, `section`, …). Passa per `normalize_role()` — ripulito
 in uno slug `[a-z0-9_-]` ≤ 64 char — e topo lo conserva senza sollevare; in
-output lo scrive su un layer DXF **col nome dello slug** (o quello registrato
-con `register_role_style`), colore grigio salvo override (`unknown` →
-`Trash`, rosso). `role_str(role)` dà il valore stringa che il ruolo sia una
+output l'adapter DXF lo scrive di default su un layer **col nome dello slug**,
+grigio (`unknown` → `Trash`, rosso), salvo la scelta del chiamante
+(`to_dxf(layers=..., role_styles=...)`, D128). `role_str(role)` dà il valore stringa che il ruolo sia una
 costante o uno slug (MAP.md D27 / D31).
 
 **`topo.normalize_role(value) -> str`** e **`topo.is_structural_role(role) ->

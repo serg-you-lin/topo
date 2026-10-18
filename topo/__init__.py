@@ -101,12 +101,9 @@ from .model         import (
 from .model.role      import normalize_role, is_structural_role
 # Regole del chiamante che assegnano il ruolo al load (D63).
 from .model.role_rule import RoleRule, name_rules
-# RoleStyle (D37): override esplicito colore/linetype/lineweight per ruolo,
-# indipendente dal formato — vedi rules/palette.py. Passato a to_dxf()/split()
-# via role_styles={ruolo: RoleStyle(...)}, oppure registrato una volta sola
-# con register_role_style() (stesso idioma di set_schema per i metadati) e
-# applicato automaticamente a ogni render successivo senza ripassarlo.
-from .rules.palette   import RoleStyle, register_role_style
+# RoleStyle (D37, D128): come il chiamante vuole disegnato un ruolo, senza
+# formato. Il dizionario {ruolo: RoleStyle} è suo e lo passa a ogni exporter.
+from .model.style     import RoleStyle
 # Stesso criterio che heal() usa internamente per escludere un edge dal grafo
 # dei contorni (branching + centroide fuori dal hull, D49) — senza dire cosa
 # sia quell'edge. Un consumatore che vuole decidere `edge.role` prima di
@@ -203,6 +200,5 @@ __all__ = [
     "RoleRule",
     "name_rules",
     "RoleStyle",
-    "register_role_style",
     "non_contour_candidates",
 ]

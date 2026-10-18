@@ -14,7 +14,6 @@
         99.872
       ],
       "display_text": "68",
-      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 68.0,
@@ -33,7 +32,6 @@
         269.83
       ],
       "display_text": "1",
-      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 1.0,
@@ -52,7 +50,6 @@
         116.891
       ],
       "display_text": "120",
-      "group": "0",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 120.0,

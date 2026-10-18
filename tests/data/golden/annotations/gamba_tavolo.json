@@ -15,7 +15,6 @@
         181.534
       ],
       "display_text": "50",
-      "group": "2D$quote",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 50.0,
@@ -34,7 +33,6 @@
         122.84
       ],
       "display_text": "40",
-      "group": "2D$quote",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 40.0,
@@ -53,7 +51,6 @@
         221.534
       ],
       "display_text": "90",
-      "group": "2D$quote",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 90.0,
@@ -72,7 +69,6 @@
         122.84
       ],
       "display_text": "50",
-      "group": "2D$quote",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 50.0,
@@ -91,7 +87,6 @@
         239.813
       ],
       "display_text": "SPESSORE 8mm",
-      "group": "2D$quote",
       "cluster_ref": null,
       "height": 10.0,
       "rotation": 0.0
@@ -104,7 +99,6 @@
         122.84
       ],
       "display_text": "50",
-      "group": "2D$quote",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 50.0,
@@ -123,7 +117,6 @@
         122.84
       ],
       "display_text": "50",
-      "group": "2D$quote",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 50.0,
@@ -142,7 +135,6 @@
         223.172
       ],
       "display_text": "91.6",
-      "group": "2D$quote",
       "cluster_ref": null,
       "dim_type": "linear",
       "measured_value": 91.6381,
