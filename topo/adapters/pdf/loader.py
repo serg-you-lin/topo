@@ -19,7 +19,7 @@ from .sanitize import sanitize_pdf_geometries
 from .graph_adapter import map_sanitized_item_to_edge
 
 
-def load_pdf(path: str, node_decimals: int = 3, snap_tolerance: float = 0.15) -> list:
+def load_pdf(path: str, snap_tolerance: float = 0.15) -> list:
     """
     Apre un documento PDF, estrae le geometrie vettoriali da tutte le pagine,
     applica una sanificazione pesante (snap geometrico dei nodi vicini),
@@ -28,7 +28,6 @@ def load_pdf(path: str, node_decimals: int = 3, snap_tolerance: float = 0.15) ->
 
     Args:
         path:           percorso del file .pdf
-        node_decimals:  cifre decimali per l'arrotondamento dei nodi del grafo
         snap_tolerance: distanza massima in mm sotto la quale due nodi vicini vengono fusi
 
     Returns:
@@ -67,11 +66,14 @@ def load_pdf(path: str, node_decimals: int = 3, snap_tolerance: float = 0.15) ->
 
             # 5. Mappatura finale degli elementi puliti in Edge topologici
             for item in sanitized_items:
-                edge = map_sanitized_item_to_edge(item, node_decimals, page_idx)
-                
-                if edge is not None:
-                    all_edges.append(edge)
-                    page_edges_count += 1
+                # i nodi stanno sulla griglia di topo (Edge.of, D113): niente
+                # cifre decimali proprie dell'adapter (D125)
+                mapped = map_sanitized_item_to_edge(item, page_idx)
+                if mapped is None:
+                    continue
+                new_edges = mapped if isinstance(mapped, list) else [mapped]
+                all_edges.extend(new_edges)
+                page_edges_count += len(new_edges)
 
             print(f"  [page {page_idx}] Estratti e sanificati {page_edges_count} elementi grafici convertiti in mm")
 

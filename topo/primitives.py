@@ -2,7 +2,8 @@
 topo/primitives.py
 ------------------
 Le primitive geometriche native, pubbliche (MAP.md D120): i cinque segmenti
-che un disegno contiene davvero e `sub_segment`, il tratto di uno di loro.
+che un disegno contiene davvero, `sub_segment` (il tratto di uno di loro) e
+`segment_endpoints` (i suoi due estremi, per chi lo riscrive in un formato).
 Math puro, nessun ruolo: un `Edge` (in `topo.model`) ne avvolge uno con ruolo
 e stile.
 
@@ -13,7 +14,10 @@ e stile.
 
 Quello che sta sotto `topo.core` è interno, senza garanzie.
 """
-from .core.primitives.segments import LineSeg, ArcSeg, CircleSeg, SplineSeg, EllipseSeg
+from .core.primitives.segments import (
+    LineSeg, ArcSeg, CircleSeg, SplineSeg, EllipseSeg, segment_endpoints,
+)
 from .core.primitives.trim import sub_segment
 
-__all__ = ["LineSeg", "ArcSeg", "CircleSeg", "SplineSeg", "EllipseSeg", "sub_segment"]
+__all__ = ["LineSeg", "ArcSeg", "CircleSeg", "SplineSeg", "EllipseSeg", "sub_segment",
+           "segment_endpoints"]

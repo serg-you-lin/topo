@@ -27,7 +27,7 @@ from __future__ import annotations
 import re
 from typing import List, Optional, Tuple
 
-from ...model.annotation import (
+from topo.model import (
     Annotation, Note, Dimension, Leader, RenderedGeometry, RenderedText,
 )
 from ezdxf.tools.text import plain_mtext

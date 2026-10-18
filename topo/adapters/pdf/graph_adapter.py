@@ -4,53 +4,28 @@ adapters/pdf/graph_adapter.py
 Traduce entità vettoriali sanificate del PDF in Edge topologici per il core.
 """
 
-from ...core.topology.edge import Edge
-from ...core.geometry.measure import round_point
-from ...core.primitives.segments import LineSeg, SplineSeg
-from ...model.role import ContourRole
+# Solo nomi pubblici di topo: l'adapter è un consumer come un altro (MAP.md D125)
+from topo.model import ContourRole, Edge
+from topo.primitives import LineSeg, SplineSeg
 
 
-def map_sanitized_item_to_edge(item: tuple, decimals: int, page_idx: int) -> Edge | None:
+def map_sanitized_item_to_edge(item: tuple, page_idx: int) -> Edge | list[Edge] | None:
     cmd = item[0]
 
     if cmd == "l":
         p1, p2 = item[1], item[2]
-        s = round_point(p1, decimals)
-        e = round_point(p2, decimals)
-        return Edge(
-            role=ContourRole.UNKNOWN,
-            start=s,
-            end=e,
-            segment=LineSeg(start=p1, end=p2),
-        )
+        return Edge.of(LineSeg(start=p1, end=p2), ContourRole.UNKNOWN)
 
     elif cmd in ("re", "qu"):
         pts = item[1]
-        pt = round_point(pts[0], decimals)
         # poligono chiuso → segmenti separati
-        edges = []
-        for i in range(len(pts)):
-            s = pts[i]
-            e = pts[(i + 1) % len(pts)]
-            s_r = round_point(s, decimals)
-            e_r = round_point(e, decimals)
-            edges.append(Edge(
-                role=ContourRole.UNKNOWN,
-                start=s_r,
-                end=e_r,
-                segment=LineSeg(start=s, end=e),
-            ))
-        return edges
+        return [
+            Edge.of(LineSeg(start=pts[i], end=pts[(i + 1) % len(pts)]), ContourRole.UNKNOWN)
+            for i in range(len(pts))
+        ]
 
     elif cmd == "c_poly":
         pts = item[1]
-        s = round_point(pts[0], decimals)
-        e = round_point(pts[-1], decimals)
-        return Edge(
-            role=ContourRole.UNKNOWN,
-            start=s,
-            end=e,
-            segment=SplineSeg(degree=3, control_points=pts, knots=[]),
-        )
+        return Edge.of(SplineSeg(degree=3, control_points=pts, knots=[]), ContourRole.UNKNOWN)
 
     return None

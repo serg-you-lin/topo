@@ -25,7 +25,7 @@ Tutti gli esempi di questo documento sono scritti così (MAP.md D119).
 
 ## Indice
 
-1. [Apertura file](#1-apertura-file) — `load_dxf`, `document_from_msp`, `load_geometry`
+1. [Apertura file](#1-apertura-file) — `load_dxf`, `document_from_msp`, `load_geometry`, scrivere un adapter
 2. [Validazione](#2-validazione) — `validate`, `validate_result`
 3. [Elaborazione e render](#3-elaborazione-e-render) — `heal` / `island` e i suoi mattoni (core), `anchor_annotations` / `inject` (tools), `to_dxf` / `split` (io), `split_to_files` (recipes)
 4. [Export](#4-export) — `save_json`, `to_json`, `save_xml`, `to_view_model`, `to_svg`, `save_svg`
@@ -280,6 +280,30 @@ genera a `Document` senza passare da un file — vedi MAP.md D32; il tipo
 vedi MAP.md D35). Il tipo `ellipse` (MAP.md D45) esiste perché `EllipseSeg`
 è una primitiva di topo come le altre — non serve un caso reale a parte,
 segue lo stesso schema di `spline`/`circle`.
+
+### Scrivere un adapter
+
+Un adapter (DXF, PDF, un formato tuo) è un consumer di topo come un altro: usa
+solo nomi pubblici e consegna un `Document` (MAP.md D125). Quello che gli serve:
+
+| nome | a cosa serve |
+|---|---|
+| `topo.primitives.LineSeg` … `EllipseSeg` | la geometria letta dalla sorgente, nativa (mai discretizzata dall'adapter) |
+| `topo.model.Edge.of(segment, role, style=None) -> Edge` | l'`Edge` di un segmento: estremi sulla griglia dei nodi di topo (D113), che l'adapter non deve conoscere; un cerchio, una spline o un'ellisse chiusi hanno un nodo solo |
+| `topo.model.EdgeStyle` | l'aspetto grezzo dell'entità sorgente, se il formato ne ha uno |
+| `topo.model.RoleRule`, `topo.model.resolve_role(rules, name, style) -> str` | il ruolo di un'entità dalle regole del chiamante: la prima che matcha, altrimenti `unknown` |
+| `topo.model.Document`, `topo.model.DEFAULT_NODE_TOLERANCE` | il risultato dell'adapter e la tolleranza di default che `heal()` chiuderà |
+| `topo.model.Annotation`, `Note`, `Dimension`, `Leader`, `RenderedGeometry`, `RenderedText` | le annotazioni lette dalla sorgente |
+
+Per riscrivere in un formato: `topo.primitives.segment_endpoints(segment)` dà i
+due estremi di un segmento, `topo.model.feature_role(contour, item_role)` il
+ruolo con cui si disegna un contorno di un elemento rilevato.
+
+```python
+edges = [topo.model.Edge.of(seg, topo.model.resolve_role(rules, name, style), style)
+         for seg, name, style in read_my_format(path)]
+doc = topo.model.Document(edges=edges, source_path=str(path))
+```
 
 ---
 

@@ -4343,7 +4343,7 @@ Real imports of `ezdxf` outside `adapters/` are already only two
 (`io/dxf.py`, `inspect.py`): the coupling is in the vocabulary and the public
 surface more than in the code.
 
-**The adapters leave topo entirely** (Federico, same day): DXF and PDF become
+**The adapters leave topo entirely** (Federico, same day; the packaging reopened in D124): DXF and PDF become
 separate packages, consumers of topo like any other, and `ezdxf` is not a
 dependency of topo at all. An optional extra was proposed and set aside:
 keeping the code inside keeps the temptation to reach into it, and a second
@@ -4355,4 +4355,71 @@ adapter. The pure-geometry entry (`load_geometry`, `load_segments`) is no
 format and stays. Tests may keep DXF fixtures, read through the adapter as a
 development dependency. It is first on the road to 1.0: everything else
 comes after.
+
+### D124 — adapters in topo's repo as separate packages; `split` is topo's
+Reopening D123, the part on separate packages (Federico, 18 October). He
+already looks after four repos; what D123 needs is a boundary, not a repo.
+
+**One repo, one distribution, several importable packages.** `g-topo` ships
+`topo/` next to `topo_dxf/`, `topo_pdf/` (and `topo_svg/`, when SVG leaves
+`topo.io`). The heavy dependencies become extras: `g-topo[dxf]` brings
+`ezdxf`, `g-topo[pdf]` brings PyMuPDF; plain `g-topo` brings neither. D123
+set an extra aside because code that lives inside keeps the temptation to
+reach into it; that reason falls once the reach is checked mechanically:
+`gen_index` forbids `topo` from importing any adapter, `ezdxf` or `fitz`, and
+forbids the adapters from importing anything but topo's public names. The
+index test goes red at the first breach, as it already does in snapbend.
+Moving `topo_dxf/` to a repo of its own one day is a folder move, because the
+boundary will already be clean.
+
+**`split` is format-agnostic and stays in topo.** Today's `io/dxf.split` does
+two jobs. Choosing the parts — which clusters (`min_area`, `exclude_types`),
+their names (`namer` → `cluster.label`), which annotations travel with each,
+`on_part` — is a decision on the model. Turning one part into an ezdxf
+`Drawing` (with `annotation_layer`, `role_styles`) is the adapter's. So
+`topo.split(result, ...)` returns one model object per part, and each adapter
+writes one part in its format: the same split exports parts to DXF, SVG or
+PDF. `split_to_files` becomes a loop in the caller or in an adapter.
+
+### D125 — the adapter contract: what an adapter takes from topo, in public names
+Step 1 of D123 (TODO road to 1.0, point 0). The adapters took from
+`topo.core` segments, node rounding, a base class, the polygon builder,
+the dedup of opaque keys. Item by item:
+
+- **Segment → `Edge`, written four times** (DXF adapter, geometry loader,
+  PDF graph adapter): endpoints, `round_point` on the node grid, start = end
+  for a closed curve. It becomes one public constructor,
+  `topo.model.Edge.of(segment, role, style=None)`. The node grid (D113) is
+  topo's and an adapter no longer knows it: `load_pdf(node_decimals=)` goes.
+  A curve that can close (circle, spline, ellipse) and is closed within the
+  segment tolerance gets one node — what the DXF adapter already did for
+  SPLINE/ELLIPSE, now also for `load_geometry` and PDF; a very short line or
+  arc stays two nodes (a side, not a loop). Suites unchanged.
+- **`core.adapter_base.Adapter`**: deleted. Its `source_context` was never
+  called and `tolerance` was stored and never read: an adapter is whatever
+  returns a `Document`, no base class to inherit.
+- **`segment_endpoints`** public in `topo.primitives` (an exporter rewriting
+  a segment needs its ends); `segment_is_closed` stays inside `Edge.of`.
+- **`RoleRule`, `resolve_role`, `name_rules`, `feature_role`,
+  `DEFAULT_NODE_TOLERANCE`** public in `topo.model`, next to `Document`,
+  `Edge`, `EdgeStyle` and the annotations that already were.
+- **`build_polygon` / `entity_to_polygon`**: out of the adapter. Only a test
+  used it; it now reads the written entity with the adapter's parser and
+  takes the area of a public `Contour.from_segments`.
+- **`find_duplicates`**: moved from `core/healing/normalizer` into the DXF
+  `sanitize` as a private helper. Only the DXF dedup used it, and the key
+  is the format's anyway.
+- **`DEFAULT_TOLERANCE` in the DXF parser**: it was the flattening of a
+  SPLINE by ezdxf, a reader's choice; the parser has its own constant.
+- **`load_geometry` / `load_segments`** are no format (D123): out of
+  `adapters/geometry/` into `core/geometry_input.py`, `GeometryAdapter` →
+  `GeometryReader`. Same public names.
+
+Proof: `[tool.gen_index.layers]` gains `adapters = ["core", "tools", "io"]`,
+and the adapters' imports are `topo.model` / `topo.primitives` only (checked
+by a planted forbidden import that turned the index red). One exception left
+on purpose: `adapters/dxf/layers.py` reads `rules.palette`, which step 3
+turns into the DXF adapter's own default; `rules` joins the forbidden list
+then. The version stays 0.19.0 until point 0 closes with one breaking minor
+(step 6).
 

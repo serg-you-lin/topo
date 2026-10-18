@@ -1,7 +1,7 @@
 """
 test_geometry_loader.py
 ------------------------
-Test unitari per adapters/geometry/loader.py (topo.load_geometry).
+Test unitari per core/geometry_input.py (topo.load_geometry).
 
 Verifica il contratto: dict puri Python → Document → heal() →
 to_dxf(), esattamente come load_dxf, ma senza file sorgente. Copre i due casi
@@ -15,14 +15,14 @@ import unittest
 import ezdxf
 
 import topo
-from topo.adapters.geometry.loader import GeometryAdapter, load_geometry
+from topo.core.geometry_input import GeometryReader, load_geometry
 from topo.model.role import ContourRole
 
 
-class TestGeometryAdapter(unittest.TestCase):
+class TestGeometryReader(unittest.TestCase):
 
     def test_line_edge_roundtrips_coordinates(self):
-        edge = GeometryAdapter([], tolerance=0.05)._line_edge(
+        edge = GeometryReader([])._line_edge(
             {"start": (0, 0), "end": (10, 0), "role": "outer"}, ContourRole.OUTER
         )
         self.assertEqual(edge.start, (0.0, 0.0))
@@ -30,7 +30,7 @@ class TestGeometryAdapter(unittest.TestCase):
         self.assertEqual(edge.role, ContourRole.OUTER)
 
     def test_arc_angles_are_degrees_not_radians(self):
-        edge = GeometryAdapter([], tolerance=0.05)._arc_edge(
+        edge = GeometryReader([])._arc_edge(
             {"center": (0, 0), "radius": 10, "start_angle": 0, "end_angle": 90},
             ContourRole.OUTER,
         )
@@ -40,12 +40,12 @@ class TestGeometryAdapter(unittest.TestCase):
 
     def test_unknown_type_raises(self):
         with self.assertRaises(ValueError):
-            GeometryAdapter([{"type": "hexagon"}]).to_edges()
+            GeometryReader([{"type": "hexagon"}]).to_edges()
 
     def test_spline_edge_endpoints_from_control_points(self):
         # senza fit_points/approx_points, segment_endpoints ricade sui
         # control_points: primo e ultimo control point sono gli estremi.
-        edge = GeometryAdapter([], tolerance=0.05)._spline_edge(
+        edge = GeometryReader([])._spline_edge(
             {
                 "control_points": [(0, 0), (5, 10), (10, 0)],
                 "knots": [0, 0, 0, 1, 1, 1],

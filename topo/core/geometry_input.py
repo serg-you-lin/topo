@@ -1,6 +1,6 @@
 """
-adapters/geometry/loader.py
-----------------------------
+topo/core/geometry_input.py
+---------------------------
 Punto di ingresso per costruire un Document da geometria già nota — non da
 un file. Stesso contratto di load_dxf/load_pdf (produce un Document, non
 tipi interni), ma la "sorgente" è chi chiama: un generatore parametrico (es. uno
@@ -9,8 +9,9 @@ punti (es. un contorno da computer vision già vettorializzato).
 
 Chi chiama non importa NESSUN tipo interno di topo: le entità sono dict Python
 puri. La traduzione in Edge (arrotondamento nodi, ruolo semantico) è identica
-nello spirito a quella di DxfAdapter — stessa tolleranza, stessa logica di
-arrotondamento — cambia solo la sorgente da tradurre.
+a quella di ogni adapter (`Edge.of`, la griglia dei nodi di topo) — cambia
+solo la sorgente da tradurre. Non è un formato, quindi non sta tra gli
+adapter: è un ingresso di topo (MAP.md D123, D125).
 
 Pubblico da MAP.md D32 — provato da un caso reale (`bendly`, che lo usa in
 `io/dxf.py` per portare uno sviluppo generato a `Document`).
@@ -23,17 +24,13 @@ Funzioni pubbliche:
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
-from ...core.adapter_base import Adapter
-from ...core.geometry.build import polygon
-from ...core.geometry.measure import round_point
-from ...core.primitives.segments import (
-    LineSeg, ArcSeg, CircleSeg, SplineSeg, EllipseSeg, segment_endpoints,
-)
-from ...core.topology.edge import Edge
-from ...model.document import DEFAULT_NODE_TOLERANCE, Document
-from ...model.role import normalize_role
+from .geometry.build import polygon
+from .primitives.segments import LineSeg, ArcSeg, CircleSeg, SplineSeg, EllipseSeg
+from .topology.edge import Edge
+from ..model.document import DEFAULT_NODE_TOLERANCE, Document
+from ..model.role import normalize_role
 
 _SUPPORTED_TYPES = frozenset({"line", "arc", "circle", "polygon", "spline", "ellipse"})
 
@@ -46,7 +43,7 @@ def _role_from(entity: Dict[str, Any]) -> str:
     return normalize_role(entity.get("role"))
 
 
-class GeometryAdapter(Adapter):
+class GeometryReader:
     """
     Traduce descrizioni geometriche pure (dict) in Edge del dominio topo.
 
@@ -89,13 +86,8 @@ class GeometryAdapter(Adapter):
     (1.0 / 0.0 / 2π).
     """
 
-    def __init__(self, entities: List[Dict[str, Any]], tolerance: float = DEFAULT_NODE_TOLERANCE):
-        super().__init__(tolerance)
+    def __init__(self, entities: List[Dict[str, Any]]):
         self.entities = entities
-
-    # ------------------------------------------------------------------
-    # Adapter contract
-    # ------------------------------------------------------------------
 
     def to_edges(self) -> List[Edge]:
         edges: List[Edge] = []
@@ -122,25 +114,8 @@ class GeometryAdapter(Adapter):
                 )
         return edges
 
-    def source_context(self, ref: Any) -> str:
-        return "load_geometry"
-
-    # ------------------------------------------------------------------
-    # Costruzione dei singoli Edge
-    # ------------------------------------------------------------------
-
-    def _round(self, pt: Tuple[float, float]) -> Tuple[float, float]:
-        return round_point(pt, self.node_decimals)
-
     def _line_edge(self, entity: Dict[str, Any], role: str) -> Edge:
-        start = tuple(entity["start"])
-        end = tuple(entity["end"])
-        return Edge(
-            role=role,
-            start=self._round(start),
-            end=self._round(end),
-            segment=LineSeg(start=start, end=end),
-        )
+        return Edge.of(LineSeg(start=tuple(entity["start"]), end=tuple(entity["end"])), role)
 
     def _arc_edge(self, entity: Dict[str, Any], role: str) -> Edge:
         seg = ArcSeg(
@@ -150,18 +125,10 @@ class GeometryAdapter(Adapter):
             end_angle=math.radians(float(entity["end_angle"])),
             ccw=bool(entity.get("ccw", True)),
         )
-        return self._edge(seg, role)
-
-    def _edge(self, seg, role: str) -> Edge:
-        """Edge di `seg`, con gli estremi arrotondati alla griglia dei nodi."""
-        start, end = segment_endpoints(seg)
-        return Edge(role=role, start=self._round(start), end=self._round(end), segment=seg)
+        return Edge.of(seg, role)
 
     def _circle_edge(self, entity: Dict[str, Any], role: str) -> Edge:
-        seg = CircleSeg(center=tuple(entity["center"]), radius=float(entity["radius"]))
-        start, _ = segment_endpoints(seg)
-        pt = self._round(start)
-        return Edge(role=role, start=pt, end=pt, segment=seg)
+        return Edge.of(CircleSeg(center=tuple(entity["center"]), radius=float(entity["radius"])), role)
 
     def _spline_edge(self, entity: Dict[str, Any], role: str) -> Edge:
         weights = entity.get("weights")
@@ -174,7 +141,7 @@ class GeometryAdapter(Adapter):
             fit_points=[tuple(p) for p in fit_points_raw] if fit_points_raw else None,
             closed=bool(entity.get("closed", False)),
         )
-        return self._edge(seg, role)
+        return Edge.of(seg, role)
 
     def _ellipse_edge(self, entity: Dict[str, Any], role: str) -> Edge:
         seg = EllipseSeg(
@@ -185,10 +152,10 @@ class GeometryAdapter(Adapter):
             end_param=float(entity.get("end_param", math.tau)),
             ccw=bool(entity.get("ccw", True)),
         )
-        return self._edge(seg, role)
+        return Edge.of(seg, role)
 
     def _polygon_edges(self, entity: Dict[str, Any], role: str) -> List[Edge]:
-        return [self._edge(seg, role) for seg in polygon(entity["points"])]
+        return [Edge.of(seg, role) for seg in polygon(entity["points"])]
 
 
 # ---------------------------------------------------------------------------
@@ -206,7 +173,7 @@ def load_geometry(
     calcolata o ricostruita altrove (generatori parametrici, contorni
     vettorializzati da immagine, ...).
 
-    Vedi GeometryAdapter per lo schema di ogni "type" di entità supportato
+    Vedi GeometryReader per lo schema di ogni "type" di entità supportato
     (line / arc / circle / polygon / spline / ellipse).
 
     Esempio — settore anulare di uno sviluppo di cono:
@@ -222,7 +189,7 @@ def load_geometry(
         topo.to_dxf(result)
 
     Args:
-        entities:    lista di dict geometrici (vedi GeometryAdapter)
+        entities:    lista di dict geometrici (vedi GeometryReader)
         tolerance:   tolleranza di arrotondamento dei nodi topologici — stesso
                      significato di load_dxf(tolerance=...); passala identica
                      a heal() se la personalizzi
@@ -232,7 +199,7 @@ def load_geometry(
     Returns:
         Document (edges + source_meta), pronto per heal().
     """
-    edges = GeometryAdapter(entities, tolerance=tolerance).to_edges()
+    edges = GeometryReader(entities).to_edges()
     return Document(
         edges=edges,
         source_path=source_path or "<load_geometry>",
@@ -257,12 +224,11 @@ def load_segments(
         doc = topo.load_segments(fg.rectangle(200, 100) + fg.circle(10))
         result = topo.heal(doc)
     """
-    adapter = GeometryAdapter([], tolerance=tolerance)
     role = normalize_role(role)
     flat = []
     for item in segments:
         flat.extend(item if isinstance(item, (list, tuple)) else [item])
-    edges = [adapter._edge(seg, role) for seg in flat]
+    edges = [Edge.of(seg, role) for seg in flat]
     return Document(
         edges=edges,
         source_path=source_path or "<load_segments>",

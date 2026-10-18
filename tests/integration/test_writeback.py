@@ -28,7 +28,7 @@ project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
-from topo.adapters.dxf.adapter import entity_to_polygon
+from topo.adapters.dxf.parser import DxfEntityDispatcher
 from topo.adapters.dxf.layers import LAYER_OUTER, LAYER_INNER
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -379,9 +379,14 @@ class TestWritebackArcRoundTrip(unittest.TestCase):
                 continue
             if e.dxftype() not in ("LWPOLYLINE", "POLYLINE", "CIRCLE"):
                 continue
-            poly = entity_to_polygon(e)
-            if poly is not None:
-                area += poly.area
+            prim = DxfEntityDispatcher(e).parse()
+            if prim is None:
+                continue
+            try:
+                ring = prim if isinstance(prim, list) else [prim]
+                area += topo.Contour.from_segments(ring, role="outer").area
+            except ValueError:
+                continue
         return area
 
     def test_outer_area_matches_model(self):

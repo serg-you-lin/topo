@@ -22,13 +22,15 @@ primitive di topo.
 
 0. **topo non ha un formato** (D123) — per primo, il resto viene dopo.
    topo conosce geometria e ruoli; i layer non esistono, li sceglie un
-   exporter dai ruoli. Gli adapter DXF e PDF escono da topo come pacchetti
-   separati; `ezdxf` non è più una dipendenza di topo. In ordine:
-   1. **Il contratto di un adapter, pubblico.** Quello che
-      `adapters/dxf` prende oggi da `topo.core` (segmenti, normalizer,
-      `adapter_base`, `polygon_builder`, misure, …) diventa nome pubblico o
-      sparisce dall'adapter. Prova: il codice dell'adapter importa solo
-      `topo.<pubblico>`. È lo stesso lavoro che serve al PDF.
+   exporter dai ruoli. Gli adapter DXF e PDF diventano pacchetti separati
+   nello stesso repo (`topo_dxf`, `topo_pdf`, extra `g-topo[dxf]`/`[pdf]`,
+   confine controllato da `gen_index`, D124); `ezdxf` non è più una
+   dipendenza di `topo`. In ordine:
+   1. ~~**Il contratto di un adapter, pubblico.**~~ — fatto, D125:
+      `Edge.of` al posto di quattro copie dell'arrotondamento, via
+      `Adapter`, `load_geometry` fuori da `adapters/`; gli adapter importano
+      solo `topo.model`/`topo.primitives` (regola `adapters` in pyproject).
+      Resta `layers.py` → `rules.palette`: si chiude col passo 3.
    2. **Vocabolario neutro in `core/`, `model/`, `rules/`.** `EdgeStyle`
       senza ACI/`BYLAYER` (lo stile della sorgente come dato dell'adapter);
       `Trash` è un ruolo, non un layer; un ruolo non vincolato ai caratteri
@@ -37,18 +39,18 @@ primitive di topo.
       possiede il chiamante (spessore, colore, tipo linea, e per il DXF uno
       o più layer); la palette di oggi diventa il default dell'adapter DXF,
       non una regola di topo.
-   4. **Il trasloco.** `adapters/dxf` + `io/dxf.py` (`to_dxf`, `split`) +
-      metadati in XDATA + la parte DXF di `inspect` + `split_to_files` in un
-      pacchetto DXF; `adapters/pdf` (e il lavoro fermo in
-      `forge-pdf-adapter`) in un pacchetto PDF. `load_geometry` /
-      `load_segments` restano in topo. `gen_index`: `ezdxf` vietato in
-      tutto topo.
+   4. **Il trasloco.** `adapters/dxf` + `io/dxf.to_dxf` + metadati in
+      XDATA + la parte DXF di `inspect` in `topo_dxf`; `adapters/pdf` (e il
+      lavoro fermo in `forge-pdf-adapter`) in `topo_pdf`. `split` resta in
+      topo, agnostico: restituisce un oggetto del modello per parte, ogni
+      adapter ne scrive una (D124); `split_to_files` diventa un ciclo.
+      `load_geometry` / `load_segments` restano in topo. `gen_index`:
+      `ezdxf`/`fitz`/adapter vietati in `topo`, gli adapter solo nomi
+      pubblici.
    5. **I consumer.** snapbend (`io/dxf.py`, `flat/`), snapdraw, smoother e
       i test di topo (l'adapter DXF come dipendenza di sviluppo, le fixture
       DXF restano).
    6. Docs (README, API, ARCHITECTURE, LLM) e una minor che rompe.
-   Da decidere con Federico prima del passo 4: nome dei pacchetti, un repo
-   per adapter o uno solo per tutti gli adapter.
 1. ~~**Rename `forge` → `topo` / `g-topo`**~~ — fatto, D119 (0.17.0), insieme
    a D117: via i prefissi `Forge*`, i passi di heal/island in `topo.steps`.
    Restano a Federico: la cartella locale `GitHub/forge` → `GitHub/topo` e il

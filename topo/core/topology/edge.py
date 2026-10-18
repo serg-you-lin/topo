@@ -16,9 +16,12 @@ il core a definirne la forma, esattamente come per le primitive.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
-from ..primitives.segments import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg
+from ..primitives.segments import (
+    LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg, segment_endpoints, segment_is_closed,
+)
+from ..geometry.measure import round_point
 from ...model.style import EdgeStyle
 
 Segment = Union[LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg]
@@ -55,3 +58,22 @@ class Edge:
     end:     Tuple[float, float]
     segment: Segment
     style:   EdgeStyle = field(default_factory=EdgeStyle)
+
+    @classmethod
+    def of(cls, segment: Segment, role: str, style: Optional[EdgeStyle] = None) -> "Edge":
+        """
+        L'Edge di `segment`: gli estremi sulla griglia dei nodi di topo (D113),
+        che un adapter non deve conoscere. Una curva chiusa (cerchio, spline o
+        ellisse con gli estremi entro la tolleranza) ha un nodo solo: è un loop
+        degenere, che il grafo riconosce da sé. Una linea o un arco cortissimi
+        restano due nodi — sono lati, non loop.
+
+        È il modo in cui un adapter costruisce un Edge (MAP.md D125).
+        """
+        start, end = segment_endpoints(segment)
+        start = round_point(start)
+        if isinstance(segment, (CircleSeg, SplineSeg, EllipseSeg)) and segment_is_closed(segment):
+            end = start
+        else:
+            end = round_point(end)
+        return cls(role=role, start=start, end=end, segment=segment, style=style or EdgeStyle())
