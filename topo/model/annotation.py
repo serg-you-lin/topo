@@ -28,6 +28,8 @@ import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
+from .role import ContourRole, normalize_role
+
 Point = Tuple[float, float]
 
 _NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
@@ -76,13 +78,22 @@ class Annotation:
     Senza, un consumatore che riscrive il testo su uno stile generico perde la
     condensazione dell'originale e il testo sborda dalla sua cella (caso
     reale: cartigli SolidWorks, stile a 0.6, riscritti su "Standard" a 1.0).
+
+    ``role`` è il posto dove un consumer scrive cosa è l'annotazione (``"title_block"``,
+    ``"part_code"``, ...), come per un edge: topo non lo legge e non lo
+    decide (D20, D43). Lo assegna il consumer, o le sue ``RoleRule`` al load
+    sul nome del gruppo sorgente (D127); ``unknown`` se nessuno l'ha detto.
     """
     position:    Point
     group:       str           = ""     # nome del gruppo sorgente (il layer di un DXF, D126)
+    role:        str           = ContourRole.UNKNOWN.value   # del consumer o delle sue RoleRule (D127)
     origin:      Optional[str]  = None   # provenienza nella sorgente — diagnostica
     cluster_ref:    Optional[int]  = None   # indice in result.clusters della parte che la contiene (fase anchor)
     source_kind: str            = ""
     width_factor: float         = 1.0
+
+    def __post_init__(self):
+        self.role = normalize_role(self.role)
 
     @property
     def kind(self) -> str:

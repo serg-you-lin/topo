@@ -39,8 +39,8 @@ primitive di topo.
       possiede il chiamante (spessore, colore, tipo linea, e per il DXF uno
       o più layer); la palette di oggi diventa il default dell'adapter DXF,
       non una regola di topo; dopo, `rules` entra nella regola `adapters`.
-      Da decidere con Federico: un'annotazione ha un ruolo come un edge
-      (D63)? Oggi snapdraw mette un ruolo in `Annotation.group` (D126).
+      Le annotazioni hanno un ruolo (D127, A + B); resta C: togliere
+      `Annotation.group` quando l'uscita per ruolo c'è.
    4. **Il trasloco.** `adapters/dxf` + `io/dxf.to_dxf` + metadati in
       XDATA + la parte DXF di `inspect` in `topo_dxf`; `adapters/pdf` (e il
       lavoro fermo in `forge-pdf-adapter`) in `topo_pdf`. `split` resta in

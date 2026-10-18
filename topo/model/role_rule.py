@@ -76,8 +76,19 @@ class RoleRule:
         if self.color is not None:
             self.color = _color_rgb(self.color)
 
-    def matches(self, name: str, style: EdgeStyle) -> bool:
-        """True se la linea (nome del gruppo sorgente + aspetto) soddisfa la regola."""
+    @property
+    def reads_style(self) -> bool:
+        """True se la regola guarda l'aspetto (tratto o colore), non solo il nome."""
+        return self.dashed is not None or self.dash is not None or self.color is not None
+
+    def matches(self, name: str, style: Optional[EdgeStyle] = None) -> bool:
+        """
+        True se l'elemento (nome del gruppo sorgente + aspetto) soddisfa la
+        regola. `style=None` = la sorgente non ha un aspetto da confrontare
+        (un'annotazione, D127): una regola che guarda l'aspetto non matcha.
+        """
+        if style is None and self.reads_style:
+            return False
         name = (name or "").lower()
         if self.name is not None and name != self.name:
             return False
@@ -92,7 +103,7 @@ class RoleRule:
         return True
 
 
-def resolve_role(rules: Sequence[RoleRule], name: str, style: EdgeStyle) -> str:
+def resolve_role(rules: Sequence[RoleRule], name: str, style: Optional[EdgeStyle] = None) -> str:
     """Ruolo della prima regola che matcha, in ordine; `unknown` se nessuna."""
     for rule in rules:
         if rule.matches(name, style):

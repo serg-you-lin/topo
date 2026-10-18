@@ -164,5 +164,23 @@ class TestResolveRole(unittest.TestCase):
         self.assertEqual(resolve_role(rules, "MARK", CONTINUA), "engrave")
 
 
+class TestSenzaAspetto(unittest.TestCase):
+    # D127: un'annotazione non ha un aspetto da confrontare (style=None)
+
+    def test_regola_sul_nome_matcha(self):
+        self.assertTrue(topo.RoleRule("note", name="testo").matches("TESTO"))
+
+    def test_regola_sull_aspetto_non_matcha(self):
+        for rule in (topo.RoleRule("x", dashed=False), topo.RoleRule("x", dash="continuous"),
+                     topo.RoleRule("x", color="cyan"),
+                     topo.RoleRule("x", name="testo", dashed=False)):
+            self.assertTrue(rule.reads_style)
+            self.assertFalse(rule.matches("testo"), msg=repr(rule))
+
+    def test_resolve_senza_stile(self):
+        rules = [topo.RoleRule("cut", dashed=False), topo.RoleRule("note", name="testo")]
+        self.assertEqual(resolve_role(rules, "TESTO"), "note")
+
+
 if __name__ == "__main__":
     unittest.main()

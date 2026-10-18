@@ -4458,3 +4458,39 @@ adapter's default role → style map (step 3); `LAYER_*` in `recipes.py` and
 `io/exporter.py` sit in DXF code (`split_to_files`, XDATA) that moves with
 step 4. Suites of topo, snapbend and snapdraw unchanged.
 
+### D127 — an annotation has a role, the consumer's, as an edge does
+Federico, 18 October, from the question D126 left open: snapdraw was writing
+a role (`title_block`) into `Annotation.group`, the source group, because an
+annotation had nowhere else to say what it is. For topo the question is not
+what an annotation means, but whether a consumer that needs to say it can.
+
+Why it was not there. D20 made annotations a faithful transcription of the
+source (the adapter reads them, the writer puts them back where they were —
+hence the layer in the model), and kept their meaning out of topo, in a
+phase of its own; D43 renamed that phase `anchor_annotations` exactly
+because it is pure geometry. Edges got a role (D63) because `heal()` needs
+one to tell structural from not; annotations never enter the graph, so the
+engine never needed one and nobody added it. D53 had already taken "layer"
+out of core names; `Annotation.layer` survived because of the transcription.
+
+Decision (A + B of the discussion; C deferred):
+- **A.** `Annotation.role: str = "unknown"`, cleaned by `normalize_role`. topo
+  holds the slot and never reads it or decides it: the meaning stays the
+  consumer's, as D20 wanted. snapdraw now passes `role=TITLE_BLOCK`.
+- **B.** The same `role_rules` of `load_dxf` / `document_from_msp` give an
+  annotation its role from its source group name. Only the rules on the name
+  count: a text has no style topo compares, so `RoleRule.matches(name,
+  style=None)` (and `resolve_role`) never match a rule that reads the style
+  (`RoleRule.reads_style`). Otherwise `RoleRule("cut", dashed=False)` would
+  tag every text.
+- **Output.** `to_dxf(..., annotation_layer=None)` writes an annotation with a
+  role on its role's layer, as an edge; without one, on its source layer.
+  The default `annotation_layer="Annotation"` is unchanged, so no output
+  changes today. `to_text` shows a role when there is one.
+- **C** (drop `group`, the layer never leaving the adapter, as for edges) is
+  left for step 3 of D123: without output by role through the caller's map,
+  it would only lose the faithful return.
+
+Additive. Suites of topo, snapbend and snapdraw unchanged; the text budget
+readings are byte-identical.
+
