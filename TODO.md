@@ -128,8 +128,12 @@ primitive di topo.
    mano in `rules/read_section.py` (forge-free per D43, "da riguardare quando
    l'interprete è vero"): coppie di rette parallele (distanza, sovrapposizione
    delle proiezioni, angolo) e coppie di archi concentrici fra loro (differenza
-   di raggio, sovrapposizione angolare). Sono geometria, quindi `topo.geometry`
-   (D93-D95); lo spessore dalla tabella e "è piegata" restano di snapbend.
+   di raggio, sovrapposizione angolare). Sono geometria, quindi prima o poi
+   `topo.geometry` (D93-D95); lo spessore dalla tabella e "è piegata" restano
+   di snapbend. Non bloccano niente: si promuovono in una minor quando un
+   secondo consumer ne ha bisogno (snapdraw, lo spessore in una vista), così
+   il fatto si disegna su due usi veri. Vale per ogni fatto nuovo dopo la
+   1.0 (i dischi di cogo, D118, sono il precedente).
 9. **Dopo la 1.0, additivo (non blocca):** curve da equazione. Una `Curve`
    costruita da una parametrizzazione esatta (`x(t), y(t)` su `[t0, t1]`)
    che ricorda la sua origine (`curve.source`: "generata da questa
