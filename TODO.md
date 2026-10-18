@@ -18,7 +18,9 @@ dimenticando quella prima. Il dettaglio di ognuno sta più sotto o in `MAP.md`.
 ## APERTO (17 ottobre) — la strada verso la 1.0.0
 
 Obiettivo: API stabili su cui un terzo costruisce i suoi algoritmi con le
-primitive di topo. In ordine (i passi che rompono vanno tutti in una minor):
+primitive di topo. **Data: 1.0.0 pubblicata entro il 31 dicembre 2026**
+(Federico, 18 ottobre), e solo con il motore robusto: la fedeltà (punto 7)
+non si taglia. In ordine (i passi che rompono vanno tutti in una minor):
 
 1. ~~**Rename `forge` → `topo` / `g-topo`**~~ — fatto, D119 (0.17.0), insieme
    a D117: via i prefissi `Forge*`, i passi di heal/island in `topo.steps`.
@@ -26,22 +28,13 @@ primitive di topo. In ordine (i passi che rompono vanno tutti in una minor):
    repo GitHub `forge` → `topo`; dopo, reinstallare l'editable
    (`pip install -e ../topo --no-deps`), `git remote set-url` e
    `git worktree repair` per `forge-pdf-adapter`.
-2. **Superficie pubblica esplicita** — prima metà fatta, D120 (0.18.0):
-   `topo.primitives` (segmenti, `sub_segment`), `topo.model` completo (ruoli,
-   `Edge`), consumer migrati alla forma intera di D119, `gen_index` sa vietare
-   `topo.core` (layer `"*"`, nomi col punto).
-   **Seconda metà (da fare, 18 ottobre)**: per ogni nome che un consumer
-   prende ancora da dentro, decidere — nome pubblico, nome esistente, o una
-   primitiva che manca. Lista in D120: helper di `core.geometry.measure`
-   (track_*, `circular_geometry`, `chord_angle_deg`, `length_inside`,
-   `segment_length`), `group_collinear_lines`, `merge_intervals`,
-   `items_inside`, `axis_lines`; la tabella dei layer DXF
-   (`adapters.dxf.layers`: `role_to_dxf_layer`, `LAYER_*`, `TRASH_LAYER`,
-   `ALL_LAYERS`, `ROLE_TO_LAYER`); nel lab di snapdraw `edge_geometry`,
-   `build_node_graph`, `LoopFinder`, `segments_from_loop`,
-   `edge_styles_from_loop` e la privata `_outer_face_walk` (prima questa);
-   in smoother `tools.tabs.bridge_nested_tabs`. Poi
-   `"*" = ["topo.core", "topo.adapters"]` nel pyproject di ogni consumer.
+2. ~~**Superficie pubblica esplicita**~~ — fatta: prima metà D120 (0.18.0),
+   seconda metà D122 (0.19.0). Misure e fatti sugli assi in `topo.geometry`;
+   `"*"` attivo in snapbend e snapdraw. Fuori dalla 1.0 stabile, apposta: le
+   linguette (`tools.tabs`, in sviluppo, cambieranno) e la tabella dei layer
+   DXF (un `topo.layers` pubblico provato e tolto: non piace a Federico).
+   Restano: `gen_index` in smoother (non ce l'ha), i lab di snapdraw come
+   richieste (sotto).
 3. ~~**Le primitive di D109**~~ — fatte, D118. Criterio: un algoritmo esterno
    (le scantonature a disco del prototipo) tiene private solo le scelte di
    processo — quali spigoli, che raggio, come raggruppare — e nessuna
@@ -53,8 +46,96 @@ primitive di topo. In ordine (i passi che rompono vanno tutti in una minor):
    permutazioni), non solo il contrario.
 5. **Viewer** (punto 9 dei vecchi fili): rifatto prima, o fuori dall'API stabile.
 6. **Audit dati cliente della 1.0** (più sotto): i blocchi nei commit vecchi.
+7. **Fedeltà a due vie** (D121) — la condizione perché il tool sia
+   affidabile: il pezzo prodotto da topo è sovrapponibile all'originale.
+   Oggi `TestNothingDropped` prova solo un verso (ogni ingresso sta entro la
+   tolleranza da un'uscita), e solo sul modello. Manca l'altro verso (ogni
+   uscita sta entro la tolleranza da un ingresso: niente geometria inventata
+   o spostata più del dovuto) e la prova sul DXF scritto e riletto, non sul
+   modello in memoria. Distanza di Hausdorff nei due versi ≤ tolleranza di
+   heal; dove heal non è intervenuto, coefficienti identici (stesso centro,
+   raggio, punti di controllo). Più un DXF di overlay (originale + uscita +
+   punti oltre soglia) da guardare a occhio.
+   Non solo test: `heal()` misura e riporta nel risultato lo scostamento
+   massimo che ha introdotto e dove (per entità), così su un disegno
+   disastrato nessuno deve verificare a mano — il file dice di quanto è
+   stato toccato. Le spline non toccate escono con gli stessi punti di
+   controllo (lo stesso problema già visto in D41, reso invariante).
+8. **Modello `Curve` e firma dei contorni** (D121) — cambia nomi pubblici,
+   quindi prima della 1.0: protocollo comune per le cinque primitive
+   (`point_at`, `tangent_at`, `length`, `bbox`, `reversed`, `sub_curve`,
+   `closest_point`, `discretize(tol)`), `as_analytic(tol)` (riconoscimento
+   come domanda, la geometria originale resta la verità), `SplineSeg` →
+   nome matematico (`BSpline`, con pesi opzionali), `to_biarcs(tol)` solo
+   predisposto (oggi biarchi li fa il CAM). Firma pubblica di un contorno:
+   sequenza canonica di primitive con misure, invariante a punto di
+   partenza e verso — primo candidato `_canonical` di
+   `snapbend/rules/read_section.py`. I pattern (svasature, sezioni, …)
+   restano codice nei consumer.
+9. **Dopo la 1.0, additivo (non blocca):** curve da equazione. Una `Curve`
+   costruita da una parametrizzazione esatta (`x(t), y(t)` su `[t0, t1]`)
+   che ricorda la sua origine (`curve.source`: "generata da questa
+   equazione"), valutata esatta nel modello; nel DXF esce come LINE/ARC
+   quando lo è, altrimenti come spline o polilinea entro `tol` — il CAD
+   resta solo al confine, nello scrittore. Primo cliente vero: sviluppi
+   che non sono archi (cilindro tagliato obliquo → sinusoide, innesti tra
+   tubi) in snapbend.
 
 Poi topo 1.0.0, e snapbend 1.0.0 dietro.
+
+## APERTO (17 ottobre) — richieste dalla superficie
+
+Un prototipo (script, lab, pipeline di terzi) può importare da `topo.core`
+mentre esplora; un pacchetto pubblicato no (regola `"*" = ["topo.core"]` di
+`gen_index` nel suo pyproject). Ogni import dal core di un prototipo è una
+richiesta: una riga qui (chi, cosa, perché). Quando l'idea è stabile si
+smista, mai in automatico:
+
+- **fatto geometrico** (esisterebbe anche in un topo riscritto, anche in
+  Rust) → nome pubblico in topo, con docs, test e un D##;
+- **pezzo dell'algoritmo** (`LoopFinder`, `_outer_face_walk`, …) → capire
+  cosa il prototipo stava ricostruendo e offrire quello, al livello giusto;
+- **processo o scelta del chiamante** → resta nel prototipo.
+
+Dopo la 1.0, un nome utile ma non ancora sicuro può passare da
+`topo.experimental` (pubblico, dichiarato instabile, come le API
+"provisional" di PEP 411) prima del suo posto definitivo.
+
+Richieste aperte:
+
+- **snapdraw `lab/`** (D122): `LoopFinder`, `segments_from_loop`,
+  `edge_styles_from_loop`, `build_node_graph`, `split_at_crossings`,
+  `edge_geometry`, `_outer_face_walk`, `_normalize`/`GRAPH_EPSILON`
+  (`core.island`), i pezzi di `healing/outer_scan` (`_pieces`, `_extent`,
+  `_intersections`), `HealStep`/`_loop_is_structural`,
+  `loop_to_closed_feature`, `build_polygon`, `DEFAULT_TOLERANCE`,
+  `_configure_odafc`. Quasi tutti sono il grafo e i giri: la domanda è quale
+  fatto il lab stava ricostruendo (il giro esterno di un grafo? le facce?) e
+  se diventa un passo di `topo.steps` o un fatto di `topo.geometry`. Va
+  insieme alle ricette (filo sotto).
+- **I layer DXF in uscita** (D122): i test di snapbend li prendono da
+  `adapters.dxf.layers`. Come un consumatore debba nominare i layer che topo
+  scrive è da decidere con Federico (non con un modulo `topo.layers`).
+- **Due misure del cerchio** (D122): `circular_geometry` (bounding box del
+  poligono discretizzato) resta interna e la usa `healing/hierarchy.py`;
+  `contour_shape` dà quella esatta. Da unificare su `contour_shape`, provando
+  i golden come in snapbend D66.
+
+## APERTO (18 ottobre) — tre fili da ragionare con Federico
+
+- **Datum** (riferimenti di un pezzo: origine e assi da cui si misura). Il
+  fatto geometrico è di topo — un sistema di riferimento attaccato a un
+  contorno (uno spigolo, il centro di un foro, un lato) e le coordinate
+  espresse in quel riferimento; quale datum scegliere (A/B/C, "si quota dalla
+  piega") è del consumatore (framer). Additivo: può arrivare in una 1.x,
+  purché la 1.0 non leghi niente al solo sistema mondo.
+- **La scansione** (`healing/outer_scan`, i raggi del lab `island_rays`):
+  come farla completa, e a cosa serve oltre al giro esterno — da capire
+  prima di decidere se diventa pubblica.
+- **Ricette di ricomposizione topologica**: oggi `heal` (un pezzo piano,
+  geometria da riparare) e `island` (un disegno con più viste, per isole). Se
+  ce ne possono essere altre e che senso hanno; sono la cosa che i lab di
+  snapdraw stanno già provando a comporre con i pezzi interni.
 
 ## APERTO (16 ottobre, MAP.md D111) — invarianti di heal: cosa resta
 

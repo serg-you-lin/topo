@@ -4246,3 +4246,79 @@ Then the `"*"` rule in every consumer.
 
 `main` → **0.18.0** (new public namespaces; `topo.model.Edge` unchanged).
 
+### D121 — what makes topo trustworthy is two-way fidelity; one `Curve` protocol; a contour's signature is public, patterns stay with the caller
+Talked through with Federico (18 October), before the second half of D120.
+Direction decided, not built yet (TODO.md, road to 1.0, points 7 and 8).
+
+**Fidelity first.** The question that decides whether topo can go into
+production: is the part topo writes overlayable on the original, everywhere?
+`TestNothingDropped` (D107) proves one direction only — every input lies
+within heal's tolerance of some output — and only on the in-memory model.
+Missing: the other direction (every output lies within tolerance of some
+input: nothing invented, nothing moved further than a gap closure allows),
+and the proof on the DXF actually written and read back. The invariant is a
+two-way Hausdorff distance ≤ heal's tolerance; where heal did not touch an
+entity, its coefficients come out identical. An overlay DXF (original,
+output, points over threshold) is produced for the eye.
+
+**Curves.** Line, arc, circle, ellipse and spline are all mathematical
+curves; the real split is analytic form vs free form. Every serious kernel
+(OpenCASCADE, Parasolid, openNURBS) keeps analytic types where it can and a
+B-spline/NURBS as the universal fallback, and answers "are you an arc within
+`tol`?" as a query (`TryGetArc`). topo does the same: one `Curve` protocol over
+the five primitives, `as_analytic(tol)` returning a `Line`/`Arc`/`Ellipse`
+or `None` — recognition is a question, the original geometry stays the
+truth, never silently replaced (a false positive would change the part).
+`SplineSeg` gets its mathematical name (`BSpline`, optional weights so conics
+stay exact). No exotic families (clothoid, involute, spiral): recovering
+them from samples is ill-conditioned, and no real part has asked. Production
+speaks lines and arcs (G1/G2/G3) and today the CAM makes the biarcs, so
+`to_biarcs(tol)` is only provisioned. These rename public names, so they land
+before 1.0.
+
+**Shapes.** `ContourShape`'s closed list (circle, stadium, rectangle,
+polygon, other) cannot hold what consumers recognise (countersinks, bent
+sections). The geometric fact is the contour's *signature*: the canonical
+sequence of its primitives with their measures, independent of start point
+and direction (snapbend's private `_canonical` in `rules/read_section.py` is
+the first candidate to move here, D91). Arrangements of several contours
+already exist (`concentric_groups`, `arcs_around`). The patterns built on
+top — a countersink, a section, the match between a countersink and its
+section view — are the caller's algorithm and stay in the caller: this is
+what "every caller builds its own algorithm on topo's primitives" means. A
+declarative pattern language is extracted only if two consumers converge.
+
+### D122 — the public surface, second half: measures and axis facts in `topo.geometry`; layers and tabs stay inside ✅
+Every name a published consumer still took from `topo.core` / `topo.adapters`
+got a decision (D120's list):
+
+- **Public facts in `topo.geometry`**: `segment_length`, `length_inside`,
+  `chord_angle_deg`, `track_points`, `track_length`, `track_shape_type`
+  (measure), `group_collinear_lines` (lines), `axis_lines`, `AxisLine`,
+  `items_inside`, `merge_intervals` (axis). They would exist in any rewrite
+  of topo; unchanged, now with cards in `docs/API.md`.
+- **Replaced by an existing name**: `circular_geometry` (bounding box of the
+  discretized polygon) → `contour_shape` in snapbend (exact radius and centre;
+  snapbend D66, proved on its goldens). It stays internal, used by
+  `healing/hierarchy.py`; two answers to "how big is this circle" inside topo
+  is a thread (TODO.md).
+- **Not public, on purpose** (Federico, 18 October):
+  - the DXF layer table (`adapters.dxf.layers`). A public `topo.layers` was
+    tried and dropped the same day: Federico does not want it. Only
+    snapbend's tests use it, and tests are outside the `"*"` rule; how a
+    consumer should name topo's output layers is still open (TODO.md).
+  - the tabs (`tools.tabs`: `bridge_tabs`, `bridge_nested_tabs`). In
+    development and certain to change: **not in the stable 1.0 API**.
+    smoother keeps calling `topo.tools.tabs.bridge_nested_tabs` as a
+    prototype does.
+
+`"*" = ["topo.core", "topo.adapters"]` is on in snapbend and snapdraw;
+smoother has no `gen_index` yet. Not decided here, left as requests (TODO.md,
+"richieste dalla superficie"): the imports of snapdraw's `lab/` (`LoopFinder`,
+`build_node_graph`, `edge_geometry`, `_outer_face_walk`, `outer_scan`'s
+pieces, `_configure_odafc`, …). A lab is a prototype and may reach inside;
+what it was rebuilding is decided when the idea is stable, never by moving the
+name as it is.
+
+`main` → **0.19.0** (new public names; nothing removed).
+
