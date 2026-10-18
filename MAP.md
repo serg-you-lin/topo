@@ -4731,3 +4731,13 @@ written decision.
 
 The new warning appears on no heal golden and no snapbend test DXF. Suite
 1333 passed; snapbend green; snapdraw's `regr_03`/`regr_05` red as before.
+
+### D133 — the viewer stays outside the 1.0 stable API
+Road to 1.0, point 5, Federico, 18 October: the viewer can stay out for now.
+`to_view_model`, `to_svg` and `save_svg` leave `__all__` and stay importable
+as `topo.<name>`, the same treatment as `to_text` (D84) and the rotations.
+They are known to need a rewrite (TODO, "Rifare il viewer": it discretizes
+arcs and circles, and on a sheet of views it outweighs the source DXF), so
+1.0 must not freeze their signatures or output. API.md keeps their cards
+under a note; LLM.md, ARCHITECTURE.md and the READMEs mark them. Callers
+(smoother, snapbend's tests) use `topo.to_svg`, which still works.

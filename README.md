@@ -187,8 +187,8 @@ topo.load_segments(segs)  ──►  Document   the adapter is the only code tha
                           ▼
    split(result)                 ──►  list[Result]     one per part, no format
    topo_dxf.to_dxf(result, doc)  ──►  ezdxf Drawing    render — a whole Result or one part
-   to_svg(result)                ──►  SVG string       render — for a UI / report
-   to_view_model(result)         ──►  dict (full geometry) for an external renderer
+   to_svg(result)                ──►  SVG string       render — for a UI / report (outside the 1.0 stable API, D133)
+   to_view_model(result)         ──►  dict (full geometry) for an external renderer (outside the 1.0 stable API)
    to_text(result)               ──►  Markdown         experimental: a reading for a language model (D84)
    save_json / save_xml                                export the model (metadata)
    inject(result, ...)                                 optional enrichment from texts

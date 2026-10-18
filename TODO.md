@@ -83,7 +83,9 @@ primitive di topo.
    non-contorno giudica la catena fra due nodi di branching, non l'edge;
    `TestEdgeOrder` prova il contrario e 5 rimescolamenti a seed fisso,
    `KNOWN_ORDER_DEPENDENT` vuota.
-5. **Viewer** (punto 9 dei vecchi fili): rifatto prima, o fuori dall'API stabile.
+5. ~~**Viewer**~~ — deciso, D133: fuori dalla 1.0 stabile (`to_view_model`,
+   `to_svg`, `save_svg` importabili ma non in `__all__`); il rifacimento resta
+   il punto 9 dei vecchi fili, dopo.
 6. **Audit dati cliente della 1.0** (più sotto): i blocchi nei commit vecchi.
 7. **Fedeltà a due vie** (D121) — la condizione perché il tool sia
    affidabile: il pezzo prodotto da topo è sovrapponibile all'originale.
