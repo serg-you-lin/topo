@@ -20,7 +20,7 @@ dimenticando quella prima. Il dettaglio di ognuno sta più sotto o in `MAP.md`.
 Obiettivo: API stabili su cui un terzo costruisce i suoi algoritmi con le
 primitive di topo.
 
-0. **topo non ha un formato** (D123) — per primo, il resto viene dopo.
+0. ~~**topo non ha un formato** (D123)~~ — chiuso con D129–D130 (0.20.0).
    topo conosce geometria e ruoli; i layer non esistono, li sceglie un
    exporter dai ruoli. Gli adapter DXF e PDF diventano pacchetti separati
    nello stesso repo (`topo_dxf`, `topo_pdf`, extra `g-topo[dxf]`/`[pdf]`,
@@ -54,11 +54,9 @@ primitive di topo.
       script di topo. smoother: riscritto nel suo lavoro in corso (non
       committato, `pipeline.py`, `webui/`, `00_image_to_dxf.py`) — va
       committato con quello.
-   6. **Docs e una minor che rompe.** README/README_IT, API, ARCHITECTURE,
-      LLM di topo dicono ancora `topo.load_dxf`/`topo.to_dxf`/`topo.split →
-      Drawing`: vanno riscritti per i tre pacchetti, con le card di
-      `topo_dxf`/`topo_pdf`; poi 0.20.0. Anche i README/API di snapbend e
-      snapdraw nominano ancora `topo.load_dxf` negli esempi.
+   6. ~~**Docs e una minor che rompe.**~~ — fatto, D130: 0.20.0; README,
+      API (§9 `topo_dxf`, §10 `topo_pdf`), ARCHITECTURE, LLM per i tre
+      pacchetti; i README/API di snapbend e snapdraw allineati.
    7. **Il PDF, da riprendere per bene.** Il lavoro fermo nella cartella
       sorella `forge-pdf-adapter` (worktree a 0.13.1, nomi `forge`, modifiche
       non committate) non è stato portato: quando si riprende il PDF si

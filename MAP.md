@@ -18,25 +18,31 @@ reopening, say so explicitly — "reopening decision N".
 ## The public API contract
 
 ```python
-doc    = forge.load_dxf("file.dxf")        # the only point that touches ezdxf for reading
-result = forge.heal(doc)                   # topology — zero DXF
-result = forge.detect_flat(result, "all")  # features of a flat part — zero DXF
-doc_out = forge.to_dxf(result, doc)        # a new document — no source_ref
+import topo, topo_dxf                       # g-topo[dxf]: topo + the DXF adapter
+
+doc    = topo_dxf.load_dxf("file.dxf")      # the adapter: the only code that reads a format
+result = topo.heal(doc)                     # topology — no format
+# a process reading on top (snapbend.flat.detect_flat) — outside topo
+doc_out = topo_dxf.to_dxf(result, doc)      # a new document — never the source's entities
 doc_out.saveas("output.dxf")
 
-# multi-part
-forge.split_to_files(doc, "output/")       # the only function that writes to disk
+# multi-part: a decision on the model, then any writer
+for part in topo.split(result):             # one Result per part
+    topo_dxf.to_dxf(part, doc).saveas(f"{part.clusters[0].label}.dxf")
+topo_dxf.split_to_files(doc, "output/")     # the only function that writes to disk
 
-# future: same contract, a different adapter
-doc = forge.load_svg("file.svg")
+# no file at all
+doc = topo.load_segments(topo.geometry.rectangle(200, 100))
 ```
 
-**Guiding principle:** `load_*` produces a `ForgeDocument` of pure data (edges
-+ annotations). After loading, the source `ezdxf` document disappears.
-`heal`/`detect_flat` never see a format. `to_dxf` builds a **new** document from the
-model's own segments — it never copies entities from the source, never carries
-`source_ref`. The model is the product; DXF is only one of its
-representations.
+**Guiding principle:** topo has no file format (D123): geometry and roles,
+never layers. `topo` never imports `ezdxf`, PyMuPDF or an adapter; the
+adapters (`topo_dxf`, `topo_pdf`, sibling packages in the same distribution,
+D124, D129) use topo's public names only — checked by `gen_index --check`.
+An adapter produces a `Document` of pure data (edges + annotations); after
+loading, the source document disappears. `heal`/`island`/`split` never see a
+format. `to_dxf` builds a **new** document from the model's own segments.
+The model is the product; DXF is only one of its representations.
 
 Full detail of every function in `docs/API.md`.
 
@@ -82,26 +88,22 @@ Full detail of every function in `docs/API.md`.
 
 ## Current status
 
-Branch: `main` — **0.9.0** (D90). Suite: 746 passed + 8 subtests, golden all
-green (geometry halves on `heal()` alone, D89).
+Branch: `main` — **0.20.0** (D129). Suite: 1318 passed, 13 xfailed, 49
+skipped; only the two text budgets `anch_02`/`anch_06` red, as before D123 (MAP
+notes them from D109 on).
 
-0.9.0 breaks the API on purpose: `heal_and_detect`, `detect_flat`,
-`describe_features`, `ALL_FEATURES` and `forge.tools.manufacturing_role` are
-gone — the process reading lives in `snapbend.flat` (D88, D90). forge reads
-structure; the overlay (`forge.DetectedFeatures`) is rendered by role and
-geometry only. Also since 0.8.0: `contour_shape` (D68), `Dimension.references`
-(D69), `allow_invalid` (D83), `to_text` (D84), `cluster.area` by depth parity
-(D89).
+0.20.0 breaks the API on purpose: the DXF and PDF names left `topo`
+(`topo.load_dxf` → `topo_dxf.load_dxf`, and `document_from_msp`, `to_dxf`,
+`split_to_files`, the XDATA pair, `inspect_dxf`/`inspect_file`;
+`topo.load_pdf` → `topo_pdf.load_pdf`), `topo.split` returns
+`list[Result]`, and `ezdxf` is the `[dxf]` extra (D129). Since 0.19.0 also:
+a neutral vocabulary in the model (D126), annotations with a role (D127),
+output by role with no registry (D128).
 
-Still genuinely open:
-- A dashboard is designed as its own repo (D16) but not started.
-- Whether forge keeps load-time `role_rules` (Federico's notes below).
-
-Everything else that used to sit in an old to-do list here has been resolved
-or turned moot: the script rewrite and `to_view_model`/`to_svg` shipped, the
-`refactor/structure` branch merged into `main` long ago, and the planned
-reorganization of `io/text_utils.py` became moot once D20 deleted that file
-outright.
+Still open, in order: the road to 1.0 in `TODO.md` (point 0 closed with
+D129; then edge order, the viewer, the client-data audit, two-way fidelity,
+`Curve` and the contour signature), and the PDF adapter to be picked up in
+`topo_pdf`.
 
 ---
 
@@ -4626,3 +4628,19 @@ Suites: topo as before (only `anch_02`/`anch_06`) plus the new tests,
 snapbend all green, snapdraw only `regr_03`/`regr_05`. The editable install
 must be redone once (`pip install -e`) so that `topo_dxf`/`topo_pdf` are
 found. Docs (README, API, ARCHITECTURE, LLM) and the breaking minor: step 6.
+
+
+### D130 — point 0 closed: 0.20.0, the docs speak of three packages ✅
+Step 6 of D123 (TODO road to 1.0, point 0), Federico, 18 October. The
+breaking minor that D125 announced: **0.20.0**. The docs follow D129:
+README/README_IT install with `[dxf]`, a table of the three packages, the
+multi-part example as `topo.split` + a writer per part; `docs/API.md` keeps
+§1–§8 for `topo` (§1 is now "geometry in", the `split` card rewritten, a
+`build_metadata` card) and gains §9 `topo_dxf` (every DXF card moved there,
+with `skip_layers`, `exclude_types` and the default layers) and §10
+`topo_pdf`; `docs/LLM.md` gets an adapters table and a hard rule naming the
+removed `topo.*` names; `docs/ARCHITECTURE.md` draws three packages and states
+the boundary rule as `gen_index` checks it. Every name in the three
+`__all__` is in API.md and LLM.md (checked by script). The contract and the
+current status at the top of this file, frozen at forge 0.9.0, are rewritten.
+Suite: 1318 passed, only `anch_02`/`anch_06` red.

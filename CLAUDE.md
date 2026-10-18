@@ -51,7 +51,7 @@ snapbend's `tests/gen_index.py` — change it in one, copy to the other.
    domain truth. Test before writing any rule: would it still make sense if the
    same geometry arrived from a PDF or SVG adapter with no layers at all? If not,
    translate it into a real domain concept or drop it.
-2. **Build test fixtures with topo's own API** (`topo.load_dxf`, `Edge`,
+2. **Build test fixtures with topo's own API** (`topo_dxf.load_dxf`, `Edge`,
    `LineSeg`, …), never with `ezdxf` directly. topo exists so that is unnecessary.
 3. **Dependency rule:** `core` and `model` never import `adapters`, `tools` or `io`
    (MAP.md D44). `model` may annotate a `tools` type only under `TYPE_CHECKING`.
@@ -103,5 +103,6 @@ snapbend's `tests/gen_index.py` — change it in one, copy to the other.
 Identifiers, function and class names in English; docstrings and comments in
 Italian. Every module docstring opens with the file's path. Type hints everywhere.
 Dataclasses for the domain; results are queryable typed objects, not loose dicts.
-Format reading is isolated in `adapters/`, everything downstream is pure. No
+Formats live in the sibling packages `topo_dxf/` and `topo_pdf/` (MAP.md D129);
+`topo` never imports them, and they use topo's public names only. No
 shebang lines. `README.md` in English with `README_IT.md` as its Italian twin.

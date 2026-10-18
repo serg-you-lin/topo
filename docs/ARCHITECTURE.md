@@ -7,30 +7,34 @@ dell'API vedi [`API.md`](API.md).
 
 ## L'idea in una frase
 
-`topo` non è una libreria DXF. È un **motore di ricostruzione topologica** con
-un adapter DXF davanti. Prende geometria 2D rumorosa e produce un modello
+`topo` non è una libreria DXF. È un **motore di ricostruzione topologica**
+che non conosce alcun formato di file: geometria e ruoli, mai layer (MAP.md
+D123). I formati entrano ed escono da adapter, pacchetti fratelli nella stessa
+distribuzione (`topo_dxf`, `topo_pdf`). Prende geometria 2D rumorosa e produce un modello
 geometrico consistente e senza perdite: contorni chiusi, gerarchia di
 contenimento, annotazioni, e un overlay aperto per le feature rilevate. Non sa
 cosa sia la lamiera né alcun processo: leggere un contorno come "foro" o una linea
 come "piega" è un'interpretazione, e sta nei consumatori (`snapbend` per fori,
 pieghe e incisioni; `snapdraw` per la notazione del disegno — MAP.md D88).
 
-Il DXF è solo il primo formato di ingresso implementato. Il core non sa cosa sia
-un DXF, né cosa sia un arco o una spline in quanto entità di CAD — lavora su
-primitive geometriche pure.
+Il DXF è solo il primo formato implementato, e sta fuori da topo: `topo`
+non importa `ezdxf` né un adapter, e si installa senza (`pip install g-topo`;
+`g-topo[dxf]` porta `topo_dxf` con `ezdxf`). Il core non sa cosa sia un arco o
+una spline in quanto entità di CAD — lavora su primitive geometriche pure.
 
 ---
 
 ## Il principio: il prodotto è il modello
 
 ```
-                    ┌─────────────────┐
-   DXF / DWG  ──────►                 ├──────►  DXF (to_dxf, split)
-   PDF (sperim.) ───►   Result   ├──────►  JSON / XML (save_json, save_xml)
-   SVG (futuro) ─────►   il modello   ├──────►  view model JSON (to_view_model)
-                    │                 ├──────►  SVG (to_svg, save_svg)
-                    │                 ├──────►  testo per un agente AI (to_text, sperim.)
-                    └─────────────────┘
+                                  ┌──────────────┐
+  DXF / DWG ── topo_dxf ─────────►│              ├── topo_dxf ──► DXF (to_dxf)
+  PDF ──────── topo_pdf (sperim.)►│    Result    ├──────────────► JSON / XML (save_json, save_xml)
+  geometria ── load_segments ────►│  il modello  ├──────────────► view model (to_view_model)
+                                  │              ├──────────────► SVG (to_svg, save_svg)
+                                  │              ├──────────────► testo per un agente AI (to_text)
+                                  └──────┬───────┘
+                                         └── split ──► un Result per parte, poi uno qualunque dei render
 ```
 
 Il `Result` è **il prodotto**. Tutti i `to_*` sono renderer del modello.
@@ -57,14 +61,28 @@ perdita silenziosa.
 
 ## La struttura
 
+Una distribuzione (`g-topo`), tre pacchetti importabili nella radice del repo
+(MAP.md D124, D129):
+
+```
+topo/             IL MOTORE — nessun formato, nessun ezdxf / PyMuPDF
+topo_dxf/         ADAPTER DXF/DWG                      (conosce ezdxf; extra [dxf])
+│                     consumer di topo: solo nomi pubblici, mai topo.core (D125)
+├── loader.py         load_dxf, document_from_msp       (+ adapter, parser, sanitize,
+│                                                         annotation_extractor, mtext)
+├── writer.py         to_dxf                            (+ exporter: segmenti → entità)
+├── layers.py         i layer di default, SKIP_LAYERS, role_to_dxf_layer
+├── xdata.py          write/read_metadata_to_dxf
+├── recipes.py        split_to_files — heal + split + to_dxf + salvataggio
+└── inspect.py        inspect_dxf, inspect_file
+topo_pdf/         ADAPTER PDF — sperimentale, congelato (conosce fitz; extra [pdf])
+```
+
+Dentro `topo/`:
+
 ```
 topo/
-├── adapters/     TRADUZIONE formato → primitive       (conosce ezdxf)
-│   │                 consumer di topo: solo nomi pubblici, mai topo.core (D125)
-│   ├── dxf/          load_dxf, DxfAdapter, exporter, annotation_extractor, layers
-│   └── pdf/          load_pdf — sperimentale, congelato
-│
-├── core/         MOTORE geometrico puro               (zero ezdxf, zero formato)
+├── core/         MOTORE geometrico puro               (zero formato)
 │   ├── primitives/   LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg + discretizzazione;
 │   │                 fitting.py: primitive da una sequenza di punti (simplify_points)
 │   ├── topology/     edge.py, grafo dei nodi, ricerca loop, detection pieghe;
@@ -100,44 +118,57 @@ topo/
 │   │                     di heal() (D49), esposto per decidere `edge.role`
 │   │                     PRIMA di heal() (D55) — lavora su Document
 │   ├── rotate.py         rotate_*() (sperimentale, D46)
+│   ├── split.py          split() — un Result per parte, senza formato (D129)
 │   └── tabs.py           bridge_tabs() (D40)
 │
-├── io/           RENDERER del modello + serializzazione
-│   ├── dxf.py        to_dxf(), split()       (ex pipeline/write.py)
+├── io/           RENDERER del modello senza dipendenze di formato
 │   ├── svg.py        to_svg(), save_svg()
 │   ├── view_model.py to_view_model()
 │   ├── text.py       to_text(), save_text()  (sperimentale, D84)
-│   └── exporter.py   save_json / save_xml / XDATA
+│   └── exporter.py   build_metadata / save_json / save_xml
 │
 ├── rules/        REGOLE di dominio                     (schema, validazione)
-├── recipes.py    split_to_files()  — heal + split + salvataggio
-└── inspect.py    strumento di ispezione a 3 livelli
+└── inspect.py    ispezione: inspect_document, inspect_result (il livello del
+                  file è dell'adapter: topo_dxf.inspect_dxf)
 ```
 
 `pipeline/` non esiste più (MAP.md D22): metteva insieme tre cose diverse —
 `heal` (ora in `core/`), gli stadi opzionali (`tools/`) e i renderer
-(`to_dxf`/`split`, ora in `io/` accanto a `to_svg`/`to_json`). D22 diceva anche
+(`to_dxf`, poi in `io/` e oggi in `topo_dxf`; `split`, oggi in `tools/`). D22 diceva anche
 che `heal` è "l'atto unico del motore": non è più vero (D58) — il motore ha due
 letture, `heal()` e `island()`, che compongono gli stessi ingredienti del core
 in modo diverso e riempiono lo stesso modello. Il prodotto è il modello, non
 una delle due ricette.
 
-**Regola di dipendenza:** `core` e `model` non importano mai `adapters` **né
-`tools`** (D44 — stesso principio, `tools` è un pacchetto pari-grado di
-`adapters`/`io`, mai sotto `model`). `adapters`, `tools` e `io` importano
-`core` / `model` / `rules`. Quando `model/` deve comunque annotare un tipo che
-vive in `tools/` (es. `Cluster.detected`), lo fa solo sotto
-`TYPE_CHECKING` — zero import a runtime, `from __future__ import annotations`
-rende l'annotazione una stringa pigra. `recipes` mette in fila `core.heal` +
-`tools` + `io`. Il core non sa da dove viene la geometria.
+**Regola di dipendenza** (controllata da `scripts/gen_index.py --check`,
+in `pyproject.toml`):
+
+- `topo` non importa mai `ezdxf`, `fitz`/`pymupdf`, `topo_dxf`, `topo_pdf`:
+  non sa che gli adapter esistono (D123, D129). Un test lo prova anche a
+  runtime: `import topo`, `heal`, `split` in un processo dove ezdxf e PyMuPDF
+  non si possono importare.
+- un adapter non importa `topo.core`/`tools`/`io`/`rules`, né l'altro
+  adapter: solo i nomi pubblici (`topo`, `topo.model`, `topo.primitives`,
+  D125). Quello che un adapter si trova a dover prendere da dentro è un nome
+  pubblico che manca.
+- dentro `topo`, `core` e `model` non importano mai `tools` né `io` (D44).
+  Quando `model/` deve comunque annotare un tipo che vive in `tools/` (es.
+  `Cluster.detected`), lo fa solo sotto `TYPE_CHECKING` — zero import a
+  runtime, `from __future__ import annotations` rende l'annotazione una
+  stringa pigra.
+
+Il core non sa da dove viene la geometria. Spostare un adapter in un repo suo,
+un giorno, è spostare una cartella: il confine è già pulito.
 
 ---
 
 ## Il flusso, passo per passo
 
-### 1. `load_dxf` → `Document`
+### 1. `topo_dxf.load_dxf` → `Document`
 
-Unico punto che legge `ezdxf`. In ordine:
+L'adapter DXF, unico codice che legge `ezdxf`; un `Document` può venire anche
+da `topo.load_segments`/`load_geometry` (geometria in mano, nessun formato).
+In ordine:
 
 1. se `.dwg` → conversione via ODA File Converter
 2. `readfile`
@@ -147,7 +178,10 @@ Unico punto che legge `ezdxf`. In ordine:
 5. explode degli `INSERT` (default `True` — un blocco non esploso fa sparire la
    sua geometria)
 6. sanitize: normalizzazione OCS, appiattimento Z ≠ 0, deduplica
-7. traduzione: ogni entità → uno o più `Edge`; ogni testo/quota → un `Annotation`
+7. traduzione: ogni entità → uno o più `Edge`; ogni testo/quota → un
+   `Annotation`. I layer che il writer usa per trash e annotazioni
+   (`SKIP_LAYERS`) si saltano, così un file già passato da topo si rilegge
+   pulito (D129)
 
 Dopo questa funzione l'oggetto `ezdxf` sorgente **sparisce**. Tutto il resto
 lavora sul `Document`.
@@ -202,7 +236,7 @@ consumatore (snapdraw) compone gli stessi passi come gli serve.
    `cluster.inners`.
 
 Se non si forma **nessun** contorno esterno chiuso, il risultato è dichiarato
-**non valido** (`is_valid = False`) — come il modelspace vuoto. `to_dxf` e
+**non valido** (`is_valid = False`) — come il modelspace vuoto. `topo_dxf.to_dxf` e
 `to_svg` lo disegnano lo stesso (tutto in trash) per farti vedere cosa ha capito
 topo; rifiutarlo è scelta del chiamante che consegna a una macchina
 (`allow_invalid=False`, D83).
@@ -236,7 +270,7 @@ come contorno. `island` parte da un fatto globale, cosa sta fuori:
    interno della più esterna che la contiene
 
 Stesso contratto di `heal`: un `Result`, un `Cluster` per isola, e
-`to_dxf` / `split` non sanno quale lettura l'ha prodotto. Cosa sia
+`split` e i renderer non sanno quale lettura l'ha prodotto. Cosa sia
 un'isola (vista, pezzo, cornice) lo decide chi chiama (D21). `island` non
 chiama mai `heal`.
 
@@ -250,11 +284,20 @@ nome, `[]` se `detected` è `None` o quel nome non è stato scritto. I renderer
 disegnano ogni elemento dal suo `role` e dalla sua geometria (D90), e l'area
 netta toglie gli elementi che si dichiarano vuoti del pezzo (`is_void`).
 
-### 4. render — `to_dxf` / `split`
+### 4. un Result per parte — `split`
 
-Costruiscono un documento `ezdxf` **nuovo** (mai il sorgente) e ci scrivono i
-segmenti puri del modello, ognuno sul suo layer topo (vedi tabella in
-[`API.md`](API.md#output-dxf-layers) e nel README). Regole di fedeltà:
+`topo.split(result)` sceglie le parti sul modello (`min_area`, `namer`) e dà
+un `Result` per parte, con il trash e le annotazioni che le appartengono: la
+parte che li contiene o, se nessuna, la più vicina fra tutte — niente
+duplicato, niente perso (D124, D129). Nessun formato: ogni renderer prende un
+`Result`, quindi una parte va in DXF, SVG o testo allo stesso modo.
+
+### 5. render — `topo_dxf.to_dxf`
+
+Costruisce un documento `ezdxf` **nuovo** (mai il sorgente) e ci scrive i
+segmenti puri del modello, ognuno sul layer che il chiamante sceglie per il
+suo ruolo, o su quello di default dell'adapter (vedi la tabella nel README e
+`API.md` §9). Regole di fedeltà:
 
 - **le spline** si riemettono come `SPLINE` native, ricostruite da control points
   / knots / weights / degree / tangenti — **mai discretizzate a polilinea**
@@ -262,10 +305,10 @@ segmenti puri del modello, ognuno sul suo layer topo (vedi tabella in
   entità native (`LINE`/`ARC`/`SPLINE`/`CIRCLE`), **mai come `LWPOLYLINE`**
   (D90) — così esce un'incisione di snapbend
 - **il trash** si materializza sempre sul layer `Trash`
-- **le annotazioni** si riscrivono tutte; in `split` ognuna va nel file della
-  parte che la contiene (o della più vicina)
+- **le annotazioni** si riscrivono tutte, quelle del `Result` che riceve: in
+  un file per parte, quelle che `split` ha dato alla parte
 
-### 5. export / inject
+### 6. export / inject
 
 `save_json` / `save_xml` scrivono i metadati per parte secondo lo schema
 (`rules/metadata_schema.py`), fondendo tre livelli (D44): `cluster.summary`
@@ -347,8 +390,11 @@ seconda è di snapbend, D88):
 Onestà sullo stato — dettagli e motivazioni sono in `MAP.md` (sezione
 "Closed decisions"), non ripetuti qui:
 
-- **`load_pdf`** ritorna `list[Edge]` invece di un `Document` → non si
-  aggancia a `heal()`. Congelato (MAP.md D10).
+- **`topo_pdf.load_pdf`** ritorna `list[Edge]` invece di un `Document` → non
+  si aggancia a `heal()`. Congelato (MAP.md D10); il lavoro fermo nella
+  cartella sorella `forge-pdf-adapter` si riprende qui (TODO, punto 0.7).
+- **Il DWG** passa da ODA File Converter, un eseguibile esterno: `topo_dxf`
+  lo chiama via l'addon `odafc` di `ezdxf`.
 - **`heal()` con solo edge etichettati** (tutti con ruolo non strutturale):
   errore "Nessuna geometria chiusa trovata" e `trash_entities` **vuota** — gli
   etichettati non ci arrivano, a differenza di ogni altro caso invalido.
