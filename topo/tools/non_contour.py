@@ -3,8 +3,9 @@ topo/tools/non_contour.py
 ---------------------------
 Espone a un consumatore lo stesso criterio topologico che `heal()` usa
 internamente per decidere "questo edge non chiude un contorno" —
-`NonContourEdgeDetector` (branching, e non sul bordo della faccia esterna
-della sua componente connessa, MAP.md D111).
+`NonContourEdgeDetector` (catene fra due nodi di branching distinti, e non
+sul bordo della faccia esterna della loro componente connessa, MAP.md D111,
+D131).
 
 `heal()` non assegna mai un significato a questi edge: li esclude dal grafo e
 basta, restano in `trash_entities` col ruolo che avevano (`unknown` se nessuno

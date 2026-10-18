@@ -157,8 +157,9 @@ def dangling_splines(edges: List[Edge]) -> List[Edge]:
 
 def find_non_contour_edges(edges: List[Edge], tolerance: float) -> Set[int]:
     """
-    id(edge) degli Edge che non chiudono un contorno (branching, e non sul
-    bordo della faccia esterna della componente, D111). heal() li tiene fuori
+    id(edge) degli Edge che non chiudono un contorno (catene fra due nodi di
+    branching, e non sul bordo della faccia esterna della componente, D111,
+    D131). heal() li tiene fuori
     dal grafo della ricerca loop. `tolerance`: due tagli più vicini sono un
     contatto solo, nella rete piana su cui si percorre la faccia esterna.
     """

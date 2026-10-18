@@ -28,8 +28,9 @@ class TestNonContourEdgeDetector(unittest.TestCase):
         #    |    /    |
         #  (0,0)-----(1,0)
         #
-        # la diagonale (0,0)-(1,2) ha entrambi gli endpoint su nodi branching
-        # e il centroide è interno al convex hull → esclusa dal grafo dei contorni
+        # la diagonale (0,0)-(1,2) è una catena di un edge fra due nodi
+        # branching e il bordo della faccia esterna non la percorre → esclusa
+        # dal grafo dei contorni
 
         edges = [
             _make_edge((0.0, 0.0), (1.0, 0.0)),
@@ -72,7 +73,8 @@ class TestNonContourEdgeDetector(unittest.TestCase):
         # hull calcolato su TUTTI i nodi del foglio è dominato da A, quindi
         # anche i lati veri del contorno di B (non solo la sua diagonale)
         # risultano "interni" a quell'hull enorme e finiscono esclusi per
-        # errore. L'hull va calcolato per componente connessa.
+        # errore. Oggi vale per la faccia esterna (D111): si percorre per
+        # componente connessa.
         a = [
             _make_edge((0.0, 0.0), (100.0, 0.0)),
             _make_edge((100.0, 0.0), (100.0, 50.0)),
