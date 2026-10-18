@@ -113,6 +113,14 @@ primitive di topo.
    partenza e verso — primo candidato `_canonical` di
    `snapbend/rules/read_section.py`. I pattern (svasature, sezioni, …)
    restano codice nei consumer.
+   Da fissare insieme (18 ottobre): l'elenco di `contour_shape.kind`
+   (circle/stadium/rectangle/polygon/other). Aggiungere un tipo dopo la 1.0
+   cambia il risultato di chi oggi conta su `other` (snapdraw). Proposta:
+   chiuso a quelle forme elementari, dichiarato stabile; ogni forma in più
+   arriva dalla firma, nel consumer. Oggi costruire una forma è già del
+   chiamante (`topo.geometry.rectangle`/…/`polygon`, `Contour.from_segments`);
+   riconoscerla no: si rifà a mano la ricomposizione dei lati e il punto di
+   partenza, che è proprio quello che la firma deve dare.
 9. **Dopo la 1.0, additivo (non blocca):** curve da equazione. Una `Curve`
    costruita da una parametrizzazione esatta (`x(t), y(t)` su `[t0, t1]`)
    che ricorda la sua origine (`curve.source`: "generata da questa
