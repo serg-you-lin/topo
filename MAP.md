@@ -88,7 +88,7 @@ Full detail of every function in `docs/API.md`.
 
 ## Current status
 
-Branch: `main` — **0.20.0** (D129). Suite: 1318 passed, 13 xfailed, 49
+Branch: `main` — **0.20.1** (D131). Suite: 1325 passed, 12 xfailed, 49
 skipped; only the two text budgets `anch_02`/`anch_06` red, as before D123 (MAP
 notes them from D109 on).
 
@@ -4644,3 +4644,52 @@ the boundary rule as `gen_index` checks it. Every name in the three
 `__all__` is in API.md and LLM.md (checked by script). The contract and the
 current status at the top of this file, frozen at forge 0.9.0, are rewritten.
 Suite: 1318 passed, only `anch_02`/`anch_06` red.
+
+### D131 — the non-contour criterion judges a chain, not an edge; edge order no longer changes `heal()` ✅
+Road to 1.0, point 4 (TODO), Federico, 18 October. Closes the defect D111
+left open (`KNOWN_ORDER_DEPENDENT`).
+
+**The defect.** On `linee_di_piegatura_interne` three bends run from one
+vertex of a quadrilateral to the opposite one, through two points that lie
+on the top and bottom sides. `heal()`'s graph never nodes a T-junction, so
+those two points have degree 2 there. D111's criterion 1 asked of each
+*edge* that both its ends be branching nodes. No piece of the chain
+qualified, so the chain stayed in the graph. The graph is then a theta (two
+nodes joined by three paths), and `LoopFinder` takes the first loop its
+greedy walk closes: in file order that was the outer, reversed it was not,
+and `polygonize` gave 4 faces.
+
+**The criterion now.** A node of degree 2 is not a fork: the edges through
+it are one arc of the graph, cut into pieces. `Graph.chains()` returns the
+maximal chains (edges in a row through degree-2 nodes, with the two nodes
+they end on). The candidate is the chain whose two ends are *distinct*
+branching nodes. It is judged whole, by D111's rule summed over its pieces
+(on the boundary of the outer face for more than half its length), and kept
+or excluded whole: a degree-2 path is either all in a loop or in none, so
+judging its pieces apart could only leave stubs. A chain closed on one node
+is already a loop, never a chord between two points of a boundary, so it is
+never a candidate (a hole touching the outer at one node stays a hole). A
+single edge between two branching nodes is a chain of one: the same as
+before.
+
+**The ambiguity this extends, on purpose.** Topology alone says only that
+the outer face is empty. A line between two closed faces is either contour
+(material on one side) or chord (material on both), and D111 chose chord
+for whatever does not border the outer face. That now reaches chains too:
+a closed face that touches the outer face only across a contour edge, and
+the rest of the part through a chain, now reads as material, and the chain
+goes to the trash, recoverable.
+
+**Effect.** Old vs new `heal()` on the 782 DXF under topo/ and snapbend/
+`tests/`: 85 change. `linee_di_piegatura_interne` is now right in every
+order. All the others are drawing sheets read with `heal()`, where its
+output means nothing (non-negotiable 5); Federico judged them by eye
+(`tests/lab/chain_candidates/`, not in git). No golden changes; `island()`
+uses the detector only to sort its leftovers, and its goldens and
+invariants are unchanged. snapbend green; snapdraw's red `regr_03`/`regr_05`
+were red before.
+
+**Tests.** `TestEdgeOrder` now tries the reversed order plus 5 shuffles with
+fixed seeds (`SHUFFLES`), every golden; `KNOWN_ORDER_DEPENDENT` is empty.
+`TestChainCandidates` and `TestGraphChains` in `test_non_contour_edges.py`.
+`main` → **0.20.1** (`heal()` output changes, no signature change).

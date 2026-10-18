@@ -64,10 +64,9 @@ primitive di topo.
       un `Document` come ogni adapter (oggi `list[Edge]`, D10).
 1. ~~**Rename `forge` → `topo` / `g-topo`**~~ — fatto, D119 (0.17.0), insieme
    a D117: via i prefissi `Forge*`, i passi di heal/island in `topo.steps`.
-   Il repo GitHub è già `topo` e `origin` punta lì (18 ottobre). Resta la
-   cartella locale `GitHub/forge` → `GitHub/topo`; dopo, reinstallare
-   l'editable (`pip install -e ../topo --no-deps`) e `git worktree repair`
-   per `forge-pdf-adapter`.
+   Il repo GitHub è già `topo` e `origin` punta lì; la cartella locale è
+   `GitHub/topo`, editable reinstallato e worktree `forge-pdf-adapter`
+   riparato (18 ottobre).
 2. ~~**Superficie pubblica esplicita**~~ — fatta: prima metà D120 (0.18.0),
    seconda metà D122 (0.19.0). Misure e fatti sugli assi in `topo.geometry`;
    `"*"` attivo in snapbend e snapdraw. Fuori dalla 1.0 stabile, apposta: le
@@ -80,10 +79,10 @@ primitive di topo.
    processo — quali spigoli, che raggio, come raggruppare — e nessuna
    geometria che un altro consumer riscriverebbe uguale (cerchio × arco
    esatto, contorno meno disco, anello di segmenti).
-4. **Ordine degli edge** (D111, qui sotto): `TestEdgeOrder` prova solo gli
-   edge al contrario, e `linee_di_piegatura_interne` è `expectedFailure`.
-   Per la 1.0: il caso noto risolto e un rimescolamento (seed fisso, più
-   permutazioni), non solo il contrario.
+4. ~~**Ordine degli edge**~~ — fatto, D131 (0.20.1): il criterio
+   non-contorno giudica la catena fra due nodi di branching, non l'edge;
+   `TestEdgeOrder` prova il contrario e 5 rimescolamenti a seed fisso,
+   `KNOWN_ORDER_DEPENDENT` vuota.
 5. **Viewer** (punto 9 dei vecchi fili): rifatto prima, o fuori dall'API stabile.
 6. **Audit dati cliente della 1.0** (più sotto): i blocchi nei commit vecchi.
 7. **Fedeltà a due vie** (D121) — la condizione perché il tool sia
@@ -174,19 +173,12 @@ Richieste aperte:
   ce ne possono essere altre e che senso hanno; sono la cosa che i lab di
   snapdraw stanno già provando a comporre con i pezzi interni.
 
-## APERTO (16 ottobre, MAP.md D111) — invarianti di heal: cosa resta
+## CHIUSO (18 ottobre, MAP.md D111, D131) — invarianti di heal
 
 D111 ha chiuso il criterio non-contorno sui lati concavi e il crash su NaN, e
 messo le invarianti di `heal()` (`tests/unit/core/test_heal_invariants.py`).
-Restano:
-
-- **L'ordine degli edge cambia il risultato** (`KNOWN_ORDER_DEPENDENT`,
-  `linee_di_piegatura_interne`): quadrilatero + catena di 3 pieghe da vertice
-  a vertice passando per due punti a metà lato (nodi di grado 2). Edge in
-  ordine: 1 pezzo; al contrario: il cercatore di loop non trova il giro
-  esterno e `polygonize` dà 4 facce. Non è D111 (nessun candidato: i tratti
-  della catena non hanno entrambi gli estremi a grado > 2): è la scelta del
-  giro in `LoopFinder` quando una catena divide il pezzo.
+L'ultimo filo, l'ordine degli edge su `linee_di_piegatura_interne`, è chiuso
+da D131: il criterio giudica la catena, non l'edge.
 
 ## CHIUSO (17 ottobre, MAP.md D118) — contorno meno regione, traccia × contorno
 

@@ -133,5 +133,80 @@ class TestNonContourEdgeDetector(unittest.TestCase):
         self.assertEqual(result, {id(e) for e in bends})
 
 
+# un rettangolo 40 × 20 coi lati in basso e in alto non spezzati
+_RECT = [((0.0, 0.0), (40.0, 0.0)), ((40.0, 0.0), (40.0, 20.0)),
+         ((40.0, 20.0), (0.0, 20.0)), ((0.0, 20.0), (0.0, 0.0))]
+
+
+class TestChainCandidates(unittest.TestCase):
+    """Si giudica la catena fra due nodi di diramazione, non l'edge (D131):
+    i nodi di grado 2 non sono bivi."""
+
+    def test_catena_a_t_sui_lati(self):
+        # pieghe da vertice a vertice per due punti a metà lato, che il grafo
+        # di heal non spezza: (10,0) e (30,20) hanno grado 2 lì
+        #
+        #  (0,20)-----(30,20)--(40,20)
+        #    |       /             |
+        #  (0,0)--(10,0)--------(40,0)
+        outline = [_make_edge(a, b) for a, b in _RECT]
+        chain = [_make_edge((0.0, 20.0), (10.0, 0.0)), _make_edge((10.0, 0.0), (30.0, 20.0)),
+                 _make_edge((30.0, 20.0), (40.0, 0.0))]
+        edges = outline + chain
+        result = NonContourEdgeDetector(tolerance=0.01).detect(build_node_graph(edges), edges)
+        self.assertEqual(result, {id(e) for e in chain})
+
+    def test_catena_con_vertice_interno(self):
+        # una corda spezzata in (20,10), un punto libero dentro il pezzo
+        outline = [_make_edge(a, b) for a, b in _RECT]
+        chain = [_make_edge((0.0, 0.0), (20.0, 10.0)), _make_edge((20.0, 10.0), (40.0, 20.0))]
+        edges = outline + chain
+        result = NonContourEdgeDetector(tolerance=0.01).detect(build_node_graph(edges), edges)
+        self.assertEqual(result, {id(e) for e in chain})
+
+    def test_lato_spezzato_resta_contorno(self):
+        # il lato in basso in due tratti, una diagonale dai suoi due capi: i
+        # due tratti sono una catena candidata, ma sul bordo esterno
+        outline = [_make_edge(a, b) for a, b in [
+            ((0.0, 0.0), (20.0, 0.0)), ((20.0, 0.0), (40.0, 0.0)), ((40.0, 0.0), (40.0, 20.0)),
+            ((40.0, 20.0), (0.0, 20.0)), ((0.0, 20.0), (0.0, 0.0))]]
+        chord = _make_edge((0.0, 0.0), (40.0, 20.0))
+        edges = outline + [chord]
+        result = NonContourEdgeDetector(tolerance=0.01).detect(build_node_graph(edges), edges)
+        self.assertEqual(result, {id(chord)})
+
+    def test_foro_che_tocca_il_contorno_resta(self):
+        # un giro chiuso attaccato al contorno in un nodo solo (0,0): una
+        # catena coi due capi uguali è già un giro, mai una corda
+        outline = [_make_edge(a, b) for a, b in _RECT]
+        lobe = [_make_edge((0.0, 0.0), (10.0, 5.0)), _make_edge((10.0, 5.0), (5.0, 10.0)),
+                _make_edge((5.0, 10.0), (0.0, 0.0))]
+        edges = outline + lobe
+        result = NonContourEdgeDetector(tolerance=0.01).detect(build_node_graph(edges), edges)
+        self.assertEqual(result, set())
+
+
+class TestGraphChains(unittest.TestCase):
+
+    def test_ogni_edge_in_una_catena_sola(self):
+        outline = [_make_edge(a, b) for a, b in _RECT]
+        chain = [_make_edge((0.0, 20.0), (10.0, 0.0)), _make_edge((10.0, 0.0), (30.0, 20.0)),
+                 _make_edge((30.0, 20.0), (40.0, 0.0))]
+        chains = build_node_graph(outline + chain).chains()
+        # theta: tre catene fra (0,20) e (40,0)
+        self.assertEqual(len(chains), 3)
+        self.assertEqual(sorted(len(run) for run, _, _ in chains), [2, 2, 3])
+        for _, a, b in chains:
+            self.assertEqual({a, b}, {(0.0, 20.0), (40.0, 0.0)})
+        ids = [id(e) for run, _, _ in chains for e in run]
+        self.assertEqual(sorted(ids), sorted(id(e) for e in outline + chain))
+
+    def test_anello_senza_diramazioni(self):
+        chains = build_node_graph([_make_edge(a, b) for a, b in _RECT]).chains()
+        self.assertEqual(len(chains), 1)
+        run, a, b = chains[0]
+        self.assertEqual((len(run), a), (4, b))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

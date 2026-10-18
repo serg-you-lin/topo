@@ -13,6 +13,7 @@ stato scritto; queste no (MAP.md D111).
 
 import json
 import math
+import random
 import unittest
 from dataclasses import replace
 from functools import lru_cache
@@ -41,7 +42,8 @@ ROTATION = 0.7                        # radianti, un angolo qualunque: i nodi to
 GAP_AT_TOLERANCE = {"Multipolis"}
 # difetti veri trovati da queste invarianti, aperti in TODO.md: quando sono
 # risolti la lista si svuota
-KNOWN_ORDER_DEPENDENT = {"linee_di_piegatura_interne"}
+KNOWN_ORDER_DEPENDENT: set = set()
+SHUFFLES = 5                          # rimescolamenti per disegno, seed 0..SHUFFLES-1
 CHORDS_PER_CLUSTER = 6
 # due letture dello stesso contorno possono differire della freccia della
 # discretizzazione lungo tutto il bordo: area di scarto ammessa per mm di perimetro
@@ -329,19 +331,32 @@ _register(TestQuarterTurn, _make_rotation_test(QUARTER))
 
 class TestEdgeOrder(unittest.TestCase):
     """L'ordine in cui il file elenca le entità non conta: gli edge al
-    contrario danno gli stessi pezzi."""
+    contrario, e rimescolati con seed fissi, danno gli stessi pezzi."""
+
+
+def _orders(edges: list) -> list:
+    """(nome, edge) per ogni ordine provato: al contrario, più SHUFFLES
+    rimescolamenti riproducibili."""
+    orders = [("reversed", list(reversed(edges)))]
+    for seed in range(SHUFFLES):
+        shuffled = list(edges)
+        random.Random(seed).shuffle(shuffled)
+        orders.append((f"seed {seed}", shuffled))
+    return orders
 
 
 def _make_order_test(dxf: Path):
     def test(self):
         doc, result = _read(dxf)
         tol = _tolerance(dxf)
-        flipped = Document(edges=list(reversed(doc.edges)), source_path=doc.source_path,
-                                source_meta=doc.source_meta)
-        again = topo.heal(flipped, tolerance=tol)
-        self.assertEqual(again.cluster_count, result.cluster_count, f"{dxf.stem}: l'ordine cambia i pezzi")
-        self.assertEqual(_shape_differences(_outers(result), _outers(again)), [],
-                         f"{dxf.stem}: l'ordine cambia gli outer")
+        for name, edges in _orders(doc.edges):
+            with self.subTest(order=name):
+                again = topo.heal(Document(edges=edges, source_path=doc.source_path,
+                                           source_meta=doc.source_meta), tolerance=tol)
+                self.assertEqual(again.cluster_count, result.cluster_count,
+                                 f"{dxf.stem}, {name}: l'ordine cambia i pezzi")
+                self.assertEqual(_shape_differences(_outers(result), _outers(again)), [],
+                                 f"{dxf.stem}, {name}: l'ordine cambia gli outer")
     return test
 
 

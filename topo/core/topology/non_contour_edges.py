@@ -10,10 +10,11 @@ una linea che attraversa il pezzo da parte a parte (spesso una linea di piega,
 ma anche un asse, una mezzeria, una tracciatura passante). La semantica vera
 sta in un consumatore (snapbend `detect_flat`), che li ripesca dalla trash.
 
-Un edge è escluso se:
-  1. Entrambi gli endpoint sono nodi branching nel grafo (degree > 2)
+Si giudica la catena (`Graph.chains`, D131): gli edge di fila attraverso
+nodi di grado 2. Una catena è esclusa, tutta intera, se:
+  1. I suoi due capi sono nodi branching distinti (degree > 2)
   2. Non confina con la faccia esterna della SUA componente connessa da un
-     lato solo: il bordo di quella faccia non lo percorre, o lo percorre
+     lato solo: il bordo di quella faccia non la percorre, o la percorre
      andata e ritorno (MAP.md D111, riapre D49)
 
 Il criterio 2 è topologico: un lato vero di contorno ha il materiale da una
@@ -26,7 +27,7 @@ Da dove viene l'edge nel formato sorgente non è mai un criterio.
 La faccia esterna si percorre sulla rete piana (`split_at_crossings`, la
 stessa di island(), D101): due lati che nel file si incrociano senza un
 nodo — una tacca coi fianchi accavallati di un decimo — ingannerebbero il
-percorso, che passerebbe sull'incrocio. Un edge è sul bordo se lo sono
+percorso, che passerebbe sull'incrocio. Una catena è sul bordo se lo sono
 pezzi suoi per più di metà della lunghezza. I tagli entro `tolerance` sono un contatto solo: una corda
 che arriva nel nodo arrotondato di fine raccordo non apre una faccia di
 qualche centesimo.
@@ -50,8 +51,14 @@ class NonContourEdgeDetector:
         branching = set(graph.branching_nodes())
         if not branching:
             return set()
-        candidates = [e for e in edges
-                      if graph.canonical(e.start) in branching and graph.canonical(e.end) in branching]
+        given = {id(e) for e in edges}
+        # candidata è la catena (D131), non l'edge: i suoi nodi interni hanno
+        # grado 2, quindi o sta tutta in un giro o in nessuno. Una catena
+        # chiusa su un nodo solo è già un giro, mai una corda fra due punti
+        chains = [run for run, a, b in graph.chains()
+                  if a != b and a in branching and b in branching
+                  and all(id(e) in given for e in run)]
+        candidates = [e for run in chains for e in run]
         if not candidates:
             return set()
 
@@ -72,4 +79,9 @@ class NonContourEdgeDetector:
         # bordo = confina con l'esterno per più di metà della sua lunghezza: un
         # lato vero lo fa per intero, una corda al più per un tratto sfiorato
         # (quasi tangente a un raccordo, sotto la tolleranza di spessore)
-        return {id(e) for e in candidates if outside.get(id(e), 0.0) <= edge_geometry(e).length / 2}
+        excluded: set[int] = set()
+        for run in chains:
+            border = sum(outside.get(id(e), 0.0) for e in run)
+            if border <= sum(edge_geometry(e).length for e in run) / 2:
+                excluded |= {id(e) for e in run}
+        return excluded

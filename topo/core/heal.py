@@ -109,7 +109,7 @@ def heal(doc: Document, tolerance: Optional[float] = None, label: str = "",
     if non_contour_ids:
         result.warnings.append(
             f"{len(non_contour_ids)} edge non di contorno "
-            f"esclusi dal grafo (entrambi gli endpoint su nodi di branching)."
+            f"esclusi dal grafo (catene fra due nodi di branching, non sul bordo esterno)."
         )
 
     search = find_loops(edges, non_contour_ids, tol)
