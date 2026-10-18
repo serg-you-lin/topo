@@ -143,6 +143,15 @@ primitive di topo.
    che non sono archi (cilindro tagliato obliquo → sinusoide, innesti tra
    tubi) in snapbend.
 
+10. **snapfence, in beta, prima della release** (Federico, 18 ottobre): un
+    nuovo consumer che genera cancelli velocemente "da varie cose". Scopo per
+    topo: vedere se un terzo consumer chiede qualcosa che la superficie
+    pubblica non dà (ogni richiesta va in "richieste dalla superficie"). Beta,
+    senza esagerare: progetto a parte accanto a snapbend/snapdraw, setup come
+    gli altri (`python-project-setup`, `gen_index`). Da chiarire all'avvio: da
+    quali ingressi (misure? uno schizzo? un DXF?) e che uscita (DXF di taglio
+    dei pezzi?).
+
 Poi topo 1.0.0, e snapbend 1.0.0 dietro.
 
 ## APERTO (17 ottobre) — richieste dalla superficie
