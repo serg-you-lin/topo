@@ -13,6 +13,7 @@ Copre:
 import unittest
 
 import topo
+import topo_dxf
 from topo.model.role import (
     ContourRole, normalize_role, role_str,
     is_structural_role, STRUCTURAL_ROLES,
@@ -140,7 +141,7 @@ class TestConsumerRolesSurviveDetect(unittest.TestCase):
         # fedele lo slug che il consumatore ha assegnato.
         doc = self._framed_doc()
         result = topo.heal(doc)
-        out = topo.to_dxf(result, doc)
+        out = topo_dxf.to_dxf(result, doc)
 
         layers = {e.dxf.layer for e in out.modelspace()}
         self.assertIn("frame", layers)

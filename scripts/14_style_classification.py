@@ -27,6 +27,7 @@ import _paths  # noqa: F401  — chdir alla radice del repo
 import os
 
 import topo
+import topo_dxf
 
 # --- CONFIG ------------------------------------------------------------
 INPUT     = r"tests/examples/lynetype-color-maps.dxf"
@@ -54,8 +55,8 @@ def show(tag, result):
 
 
 for i, (tag, rules) in enumerate(STEPS, start=1):
-    doc = topo.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=rules)
+    doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=rules)
     result = topo.heal(doc, tolerance=TOLERANCE)
     show(tag, result)
     out = os.path.join(OUTDIR, f"14_style_classification_{i}.dxf")
-    topo.to_dxf(result, doc, include_trash=True).saveas(out)
+    topo_dxf.to_dxf(result, doc, include_trash=True).saveas(out)

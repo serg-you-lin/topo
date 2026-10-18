@@ -4569,3 +4569,60 @@ Output with no maps is unchanged except for consumer-role annotations, which
 now land on their role's layer. Suites: topo unchanged (only `anch_02`/
 `anch_06`, as before), snapbend all green, snapdraw only `regr_03`/
 `regr_05`, as before.
+
+
+### D129 — the move: `topo_dxf` and `topo_pdf` next to `topo`, the boundary checked
+Step 4 of D123 (TODO road to 1.0, point 0), with step 5 in the same session
+so no consumer stays red in between. Federico, 18 October.
+
+- **Three packages, one distribution.** `topo/adapters/dxf/*`, the DXF writer
+  (`io/dxf.py` → `topo_dxf/writer.py`), the XDATA metadata (out of
+  `io/exporter.py` → `topo_dxf/xdata.py`), `inspect_dxf`/`inspect_file` and
+  `split_to_files` (`recipes.py`, gone) live in `topo_dxf/`;
+  `topo/adapters/pdf/*` in `topo_pdf/`. `ezdxf` leaves topo's dependencies:
+  extras `g-topo[dxf]` (ezdxf), `g-topo[pdf]` (PyMuPDF), `dev` brings ezdxf
+  because the tests read DXF fixtures. `import topo_dxf` without ezdxf says
+  which extra to install. Clean break, no aliases: `topo.load_dxf` →
+  `topo_dxf.load_dxf`, and so `document_from_msp`, `to_dxf`,
+  `split_to_files`, `write/read_metadata_to_dxf`, `inspect_dxf`,
+  `inspect_file`; `topo.load_pdf` → `topo_pdf.load_pdf`. `topo.inspect_document`
+  takes a `Document` only (a path meant opening a DXF).
+- **`topo.split(result, namer=None, min_area=50) -> list[Result]`**, in
+  `topo/tools/split.py`. One `Result` per kept part, with its one cluster and
+  the trash and annotations that belong to it — the part that contains them
+  or the nearest of all parts, the same rule the DXF writer applied before,
+  now on the model; nothing duplicated. No new type: every writer already
+  takes a `Result`. The DXF writer lost its "only this part" filtering; the
+  writing options (`include_annotations`, `annotation_layer`, `role_styles`,
+  `layers`) and `exclude_types` (DXF entity types) are `to_dxf`'s.
+  `on_part` is gone: the caller's loop is the hook. The split goldens are
+  unchanged, which is the proof the assignment moved without changing.
+- **`skip_layers`** (the thread left by D128): the reader's hidden skip of
+  `trash`/`annotation` becomes `load_dxf(skip_layers=SKIP_LAYERS)` /
+  `document_from_msp(skip_layers=...)`, `SKIP_LAYERS = ("Trash",
+  "Annotation")`, the writer's own default layers; exact name, any case, so
+  `Trash_old` is read. `()` reads everything. `ignore_layers` keeps its
+  substring match and stays separate.
+- **Public names an adapter needed**: `topo.build_metadata` (the XDATA writer
+  uses the same schema as `save_json`) and `topo.DEFAULT_MIN_CLUSTER_AREA`.
+- **`gen_index` indexes every package in the repo root** and a rule key that
+  names a package applies to all its modules: `topo` never imports `ezdxf`,
+  `fitz`, `pymupdf`, `topo_dxf`, `topo_pdf`; each adapter never imports
+  `topo.core`/`tools`/`io`/`rules` nor the other adapter. Checked by
+  planting three forbidden imports: all three reported. With one package the
+  output is unchanged (checked on snapbend's index before any other edit); the copy is the same in snapbend, snapdraw and the
+  `code-guardrails` skill. `tests/unit/test_no_format.py` proves it at run
+  time: `import topo`, `heal`, `split` in a process where ezdxf/fitz/pymupdf
+  cannot be imported.
+- **Consumers.** snapbend (`io/dxf.py`, tests) and snapdraw (docstrings,
+  tests, scripts, lab) moved to `topo_dxf`; their rules drop `topo.adapters`
+  and snapbend's calculation layers forbid `topo_dxf` too. smoother's use is
+  all in uncommitted work in progress: rewritten there, not committed.
+  The stalled PDF work in the sibling folder `forge-pdf-adapter` (at 0.13.1,
+  uncommitted) is not ported: it is picked up in `topo_pdf` when PDF is
+  worked on again.
+
+Suites: topo as before (only `anch_02`/`anch_06`) plus the new tests,
+snapbend all green, snapdraw only `regr_03`/`regr_05`. The editable install
+must be redone once (`pip install -e`) so that `topo_dxf`/`topo_pdf` are
+found. Docs (README, API, ARCHITECTURE, LLM) and the breaking minor: step 6.

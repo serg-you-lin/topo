@@ -4,7 +4,7 @@ generate_golden_annotations.py
 Genera i golden file per il test di regressione sulle annotazioni
 (model/annotation.py: Note / Dimension / Leader prodotti dall'adapter DXF).
 
-Snapshot di `topo.load_dxf(...).annotations` — l'estrazione grezza, prima di
+Snapshot di `topo_dxf.load_dxf(...).annotations` — l'estrazione grezza, prima di
 heal() e prima di anchor_annotations(). Se un domani serve anche cluster_ref /
 target / references nel golden, questo script si estende.
 
@@ -31,6 +31,7 @@ project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
+import topo_dxf
 from topo.model.annotation import Note, Dimension, Leader
 from topo.tools.anchor import anchor_annotations
 
@@ -106,7 +107,7 @@ def generate(force: bool = False, only: str = None) -> None:
             skipped += 1
             continue
         try:
-            doc = topo.load_dxf(dxf_path, explode_inserts=True, flatten_z_flag=True,
+            doc = topo_dxf.load_dxf(dxf_path, explode_inserts=True, flatten_z_flag=True,
                                  verbose=False)
             result = topo.heal(doc)
             anchor_annotations(result)

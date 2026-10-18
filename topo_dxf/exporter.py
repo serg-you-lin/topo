@@ -1,6 +1,6 @@
 """
-adapters/dxf/exporter.py
-------------------------
+topo_dxf/exporter.py
+--------------------
 Esporta primitive geometriche pure (LineSeg, ArcSeg, SplineSeg) in formato DXF.
 Unico file che tocca ezdxf per il write-back.
 """

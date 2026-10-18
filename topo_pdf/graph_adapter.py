@@ -1,6 +1,6 @@
 """
-adapters/pdf/graph_adapter.py
-------------------------------
+topo_pdf/graph_adapter.py
+-------------------------
 Traduce entità vettoriali sanificate del PDF in Edge topologici per il core.
 """
 

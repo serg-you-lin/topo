@@ -21,6 +21,7 @@ project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
+import topo_dxf
 
 # max_gap non ha default (D98); island_gap non esiste più (D99)
 MAX_GAP = 0.5
@@ -31,7 +32,7 @@ FILES = [f"anch_{i:02d}.dxf" for i in range(1, 9)]
 
 
 def reading(dxf_path: Path) -> str:
-    result = topo.anchor_annotations(topo.island(topo.load_dxf(str(dxf_path)), max_gap=MAX_GAP), snap_distance=5.0)
+    result = topo.anchor_annotations(topo.island(topo_dxf.load_dxf(str(dxf_path)), max_gap=MAX_GAP), snap_distance=5.0)
     return topo.to_text(result, dxf_path.name)
 
 

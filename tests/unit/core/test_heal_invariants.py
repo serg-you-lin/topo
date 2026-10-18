@@ -23,6 +23,7 @@ from shapely.geometry import LineString, MultiPoint, Point
 from shapely.ops import unary_union
 
 import topo
+import topo_dxf
 from topo.core.primitives import LineSeg
 from topo.core.primitives.segments import DEFAULT_TOLERANCE
 from topo.model.document import Document
@@ -66,7 +67,7 @@ def _read(dxf: Path):
     """(documento, risultato di heal) come in test_golden."""
     rules = topo.name_rules({**GLOBAL_NAME_ROLES, **_config(dxf).get("name_roles", {})})
     tol = _tolerance(dxf)
-    doc = topo.load_dxf(str(dxf), upgrade=True, explode_inserts=True, flatten_z_flag=True,
+    doc = topo_dxf.load_dxf(str(dxf), upgrade=True, explode_inserts=True, flatten_z_flag=True,
                          tolerance=tol, role_rules=rules)
     return doc, topo.heal(doc, tolerance=tol)
 

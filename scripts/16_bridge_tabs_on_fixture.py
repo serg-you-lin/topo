@@ -20,6 +20,7 @@ import os
 import ezdxf
 
 import topo
+import topo_dxf
 from topo.tools.tabs import bridge_nested_tabs
 
 # --- CONFIG ------------------------------------------------------------
@@ -47,7 +48,7 @@ def write_native(msp, seg):
         raise TypeError(f"tipo non gestito in questo script: {type(seg)}")
 
 
-doc = topo.load_dxf(INPUT)
+doc = topo_dxf.load_dxf(INPUT)
 result = topo.heal(doc)
 cluster = result.clusters[0]
 

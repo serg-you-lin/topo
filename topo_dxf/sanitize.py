@@ -1,6 +1,6 @@
 """
-adapters/dxf/sanitize.py
--------------------------
+topo_dxf/sanitize.py
+--------------------
 Corregge dati DXF corrotti prima di qualsiasi processing geometrico.
 
 Questo modulo opera su entità ezdxf grezze — non conosce il core.

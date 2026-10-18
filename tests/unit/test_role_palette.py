@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import topo
 from topo.model import CONSUMER_ROLE_STYLE, DEFAULT_ROLE_STYLES, RoleStyle, role_style
-from topo.adapters.dxf.layers import color_for_role
+from topo_dxf.layers import color_for_role
 
 
 class TestRoleStyle(unittest.TestCase):

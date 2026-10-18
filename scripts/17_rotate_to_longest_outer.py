@@ -28,6 +28,7 @@ import _paths  # noqa: F401  — chdir alla radice del repo
 
 import os
 import topo
+import topo_dxf
 from topo.tools.rotate import longest_structural_segment
 
 # --- CONFIG ------------------------------------------------------------
@@ -36,7 +37,7 @@ TOLERANCE = 0.5
 OUTDIR = "pipeline_output"
 # -------------------------------------------------------------------------
 
-doc = topo.load_dxf(INPUT, tolerance=TOLERANCE)
+doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE)
 result = topo.heal(doc, tolerance=TOLERANCE)  # unico heal() di tutto lo script
 
 _, length, angle_deg = longest_structural_segment(result)  # include_inners=False
@@ -49,7 +50,7 @@ _, length2, angle_deg2 = longest_structural_segment(rotated_result)
 print(f"outer più lungo DOPO  : {length2:.1f}mm a {angle_deg2:.1f}°  (atteso ~0°)")
 
 os.makedirs(OUTDIR, exist_ok=True)
-out = topo.to_dxf(rotated_result, source_doc=doc, include_trash=True)
+out = topo_dxf.to_dxf(rotated_result, source_doc=doc, include_trash=True)
 path = os.path.join(OUTDIR, "try_for_rotation_rotated.dxf")
 out.saveas(path)
 print(f"scritto               -> {path}")

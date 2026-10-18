@@ -1,6 +1,6 @@
 """
-adapters/dxf/parser.py
-----------------------
+topo_dxf/parser.py
+------------------
 Traduce entità ezdxf in primitive geometriche pure (LineSeg, ArcSeg, SplineSeg).
 Unico file che conosce ezdxf e il formato bulge DXF per il parsing.
 """

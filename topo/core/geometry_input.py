@@ -186,7 +186,7 @@ def load_geometry(
             {"type": "line", "start": p_int_2, "end": p_est_2, "role": "outer"},
         ])
         result = topo.heal(doc, label="sviluppo_cono")
-        topo.to_dxf(result)
+        topo_dxf.to_dxf(result)
 
     Args:
         entities:    lista di dict geometrici (vedi GeometryReader)

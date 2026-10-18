@@ -25,6 +25,7 @@ derivata dal modello).
 import _paths  # noqa: F401  — chdir alla radice del repo
 
 import topo
+import topo_dxf
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT     = r"tests/data/Multifeature.dxf"
@@ -33,7 +34,7 @@ NAME_ROLES = {"Filettati": "threaded_hole", "Svasati": "countersink",
              "Piega": "bending", "MARK": "engrave"}
 # -------------------------------------------------------------------------
 
-doc = topo.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
+doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
 result = topo.heal(doc, label="P-1024")
 
 # Le annotazioni sono già nel modello, tipate e con posizione. `display_text` è

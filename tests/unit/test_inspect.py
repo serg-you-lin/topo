@@ -12,6 +12,7 @@ from contextlib import redirect_stdout
 import ezdxf
 
 import topo
+import topo_dxf
 
 
 def _square_msp(side: float = 100.0):
@@ -27,7 +28,7 @@ class TestInspectLevels(unittest.TestCase):
 
     def test_level2_document(self):
         _, msp = _square_msp()
-        doc = topo.document_from_msp(msp, tolerance=0.5)
+        doc = topo_dxf.document_from_msp(msp, tolerance=0.5)
         buf = io.StringIO()
         with redirect_stdout(buf):
             topo.inspect_document(doc)
@@ -38,7 +39,7 @@ class TestInspectLevels(unittest.TestCase):
 
     def test_level3_result(self):
         _, msp = _square_msp()
-        doc = topo.document_from_msp(msp, tolerance=0.5)
+        doc = topo_dxf.document_from_msp(msp, tolerance=0.5)
         result = topo.heal(doc, tolerance=0.5)
         buf = io.StringIO()
         with redirect_stdout(buf):
@@ -49,9 +50,13 @@ class TestInspectLevels(unittest.TestCase):
         self.assertIn("role=outer", out)
 
     def test_inspect_functions_exported(self):
-        for name in ("inspect_dxf", "inspect_document", "inspect_result", "inspect_file"):
-            self.assertIn(name, topo.__all__)
-            self.assertTrue(callable(getattr(topo, name)))
+        # i livelli di topo in topo, quello del file nell'adapter (D129)
+        for module, names in ((topo, ("inspect_document", "inspect_result")),
+                              (topo_dxf, ("inspect_dxf", "inspect_file"))):
+            for name in names:
+                self.assertIn(name, module.__all__)
+                self.assertTrue(callable(getattr(module, name)))
+        self.assertNotIn("inspect_dxf", topo.__all__)
 
 
 if __name__ == "__main__":

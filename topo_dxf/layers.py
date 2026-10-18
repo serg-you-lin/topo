@@ -1,6 +1,6 @@
 """
-adapters/dxf/layers.py
-----------------------
+topo_dxf/layers.py
+------------------
 Dove l'adapter DXF scrive un ruolo quando il chiamante non lo dice, e come
 traduce in DXF il colore della palette di topo (MAP.md D123, D128).
 
@@ -31,6 +31,12 @@ LAYER_OUTER      = "OuterContour"
 LAYER_INNER      = "InnerContour"
 LAYER_ANNOTATION = "Annotation"
 TRASH_LAYER      = "Trash"
+
+# I layer che il writer usa per ciò che non è geometria di parte: rileggendo
+# un file già passato da topo (round-trip, ri-heal) il lettore li salta,
+# senza doverlo chiedere al chiamante — `load_dxf(skip_layers=...)`, `()`
+# per leggere tutto (D129)
+SKIP_LAYERS: tuple[str, ...] = (TRASH_LAYER, LAYER_ANNOTATION)
 
 
 # ruolo → layer di default

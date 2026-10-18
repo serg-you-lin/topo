@@ -15,6 +15,7 @@ project_root = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(project_root))
 
 import topo
+import topo_dxf
 from topo.model.document import Document
 from topo.model.curve import ClosedCurve, OpenCurve
 from topo.model.role import ContourRole
@@ -363,7 +364,7 @@ class TestComposition(unittest.TestCase):
     def test_001_stessi_cluster_di_heal(self):
         for name in ("rect_with_circle_hole.dxf", "flangia con fori.DXF", "two_parts.dxf"):
             with self.subTest(name=name):
-                doc = topo.load_dxf(str(EXAMPLES / name))
+                doc = topo_dxf.load_dxf(str(EXAMPLES / name))
                 expected = topo.heal(doc).clusters
                 got = self._compose(doc, doc.source_meta.get("tolerance", 0.05))
                 self.assertEqual([c.outer.polygon.wkt for c in got],

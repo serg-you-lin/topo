@@ -1,7 +1,7 @@
 
 """
-adapters/dxf/loader.py
------------------------
+topo_dxf/loader.py
+------------------
 Punto di ingresso unico per aprire un file DXF o DWG.
 
 Funzioni pubbliche:
@@ -23,6 +23,7 @@ from ezdxf.addons import odafc
 from .sanitize import sanitize, _explode_inserts, deduplicate
 from .adapter import DxfAdapter
 from .annotation_extractor import DxfAnnotationExtractor
+from .layers import SKIP_LAYERS
 from topo.model import DEFAULT_NODE_TOLERANCE, Document, RoleRule
 
 # Percorso dell'eseguibile ODA File Converter. `topo` NON legge i DWG da solo:
@@ -224,6 +225,7 @@ def load_dxf(
     tolerance: float = DEFAULT_NODE_TOLERANCE,
     role_rules: Sequence[RoleRule] = (),
     ignore_layers=None,
+    skip_layers: Sequence[str] = SKIP_LAYERS,
 ) -> Document:
     """
     Apre un documento DXF o DWG e lo traduce in un Document.
@@ -251,7 +253,12 @@ def load_dxf(
         role_rules:      regole del chiamante che assegnano il ruolo agli
                          Edge in fase di traduzione (RoleRule, D63); il nome
                          valutato da `name`/`name_contains` è il layer
-        ignore_layers:   layer da escludere dalla geometria
+        ignore_layers:   layer da escludere dalla geometria (per sottostringa,
+                         senza distinguere maiuscole)
+        skip_layers:     layer da saltare per nome esatto (senza distinguere
+                         maiuscole): di default `SKIP_LAYERS`, quelli che il
+                         writer usa per trash e annotazioni, così un file
+                         scritto da topo si rilegge pulito; `()` legge tutto
 
     Returns:
         Document (edges + annotations + source_meta + warnings) — pronto
@@ -313,6 +320,7 @@ def load_dxf(
         msp,
         ignore_layers=ignore,
         role_rules=role_rules,
+        skip_layers=skip_layers,
     ).to_edges()
 
     # Dopo explode possono affiorare TEXT/MTEXT che stavano dentro i blocchi:
@@ -344,6 +352,7 @@ def document_from_msp(
     role_rules: Sequence[RoleRule] = (),
     ignore_layers=None,
     source_path: str = "",
+    skip_layers: Sequence[str] = SKIP_LAYERS,
 ) -> Document:
     """
     Costruisce un Document da un modelspace ezdxf già aperto.
@@ -352,12 +361,12 @@ def document_from_msp(
     o è già stato preparato altrove. Non fa audit/upgrade/sanitize: si assume
     che il msp sia già pronto.
 
-    `role_rules`: vedi `load_dxf()`.
+    `role_rules`, `ignore_layers`, `skip_layers`: vedi `load_dxf()`.
     """
     ignore = {s.lower() for s in (ignore_layers or [])}
 
     edges = DxfAdapter(
-        msp, ignore_layers=ignore, role_rules=role_rules,
+        msp, ignore_layers=ignore, role_rules=role_rules, skip_layers=skip_layers,
     ).to_edges()
     annotations = DxfAnnotationExtractor(msp, role_rules).extract()
 

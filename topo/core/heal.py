@@ -58,7 +58,7 @@ def heal(doc: Document, tolerance: Optional[float] = None, label: str = "",
     """
     if not isinstance(doc, Document):
         raise TypeError(
-            "topo.heal() richiede un Document da topo.load_dxf(); "
+            "topo.heal() richiede un Document da topo_dxf.load_dxf(); "
             f"ricevuto {type(doc).__name__}"
         )
     tol = doc.node_tolerance(tolerance)

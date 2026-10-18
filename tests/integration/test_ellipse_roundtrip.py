@@ -16,6 +16,7 @@ import unittest
 import ezdxf
 
 import topo
+import topo_dxf
 
 
 class TestFullEllipseOuter(unittest.TestCase):
@@ -25,7 +26,7 @@ class TestFullEllipseOuter(unittest.TestCase):
         doc = ezdxf.new()
         msp = doc.modelspace()
         msp.add_ellipse(center=(5, 5), major_axis=(10, 0), ratio=0.5)
-        self.fdoc = topo.document_from_msp(msp)
+        self.fdoc = topo_dxf.document_from_msp(msp)
         self.result = topo.heal(self.fdoc)
 
     def test_001_one_valid_cluster(self):
@@ -39,7 +40,7 @@ class TestFullEllipseOuter(unittest.TestCase):
         self.assertAlmostEqual(area, expected, delta=1.0)
 
     def test_003_writes_native_ellipse(self):
-        doc_out = topo.to_dxf(self.result, self.fdoc)
+        doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
         ellipses = list(doc_out.modelspace().query("ELLIPSE"))
         self.assertEqual(len(ellipses), 1)
         e = ellipses[0]
@@ -52,13 +53,13 @@ class TestFullEllipseOuter(unittest.TestCase):
     def test_004_no_spline_written(self):
         """Un'ellisse non deve mai uscire come SPLINE — è una conica esatta,
         non un'approssimazione (stesso principio delle spline mai discretizzate)."""
-        doc_out = topo.to_dxf(self.result, self.fdoc)
+        doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
         self.assertEqual(len(list(doc_out.modelspace().query("SPLINE"))), 0)
 
     def test_005_roundtrip_area_stable(self):
         """Ricaricando l'output con topo stesso si ritrova la stessa area."""
-        doc_out = topo.to_dxf(self.result, self.fdoc)
-        reloaded = topo.heal(topo.document_from_msp(doc_out.modelspace()))
+        doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
+        reloaded = topo.heal(topo_dxf.document_from_msp(doc_out.modelspace()))
         self.assertEqual(reloaded.cluster_count, 1)
         self.assertAlmostEqual(
             reloaded.clusters[0].outer.area,
@@ -78,7 +79,7 @@ class TestEllipticalArcMixedWithLines(unittest.TestCase):
                          start_param=0.0, end_param=math.pi / 2)
         msp.add_line((0, 10), (0, 0))
         msp.add_line((0, 0), (20, 0))
-        self.fdoc = topo.document_from_msp(msp)
+        self.fdoc = topo_dxf.document_from_msp(msp)
         self.result = topo.heal(self.fdoc)
 
     def test_001_closes_into_one_valid_cluster(self):
@@ -93,14 +94,14 @@ class TestEllipticalArcMixedWithLines(unittest.TestCase):
         self.assertAlmostEqual(area, expected, delta=1.0)
 
     def test_003_writes_native_ellipse_not_spline(self):
-        doc_out = topo.to_dxf(self.result, self.fdoc)
+        doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
         msp_out = doc_out.modelspace()
         self.assertEqual(len(list(msp_out.query("ELLIPSE"))), 1)
         self.assertEqual(len(list(msp_out.query("SPLINE"))), 0)
 
     def test_004_roundtrip_area_stable(self):
-        doc_out = topo.to_dxf(self.result, self.fdoc)
-        reloaded = topo.heal(topo.document_from_msp(doc_out.modelspace()))
+        doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
+        reloaded = topo.heal(topo_dxf.document_from_msp(doc_out.modelspace()))
         self.assertEqual(reloaded.cluster_count, 1)
         self.assertAlmostEqual(
             reloaded.clusters[0].outer.area,

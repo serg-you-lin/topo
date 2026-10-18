@@ -1,53 +1,41 @@
 """
 topo
----------
-DXF geometry preprocessor for manufacturing pipelines.
+----
+Motore deterministico di geometria 2D per disegni tecnici: geometria e ruoli,
+nessun formato di file (MAP.md D123). DXF e PDF entrano ed escono dagli
+adapter, pacchetti fratelli nella stessa distribuzione: `topo_dxf`
+(`pip install g-topo[dxf]`) e `topo_pdf` (`g-topo[pdf]`) — D124, D129.
 
 API pubblica — tutto quello che serve è qui.
 Non devi importare i moduli interni direttamente.
 
 Workflow consigliato (file singolo):
-    import topo
+    import topo, topo_dxf
 
     rules = [
         topo.RoleRule("construction", name_contains="constr", dashed=True),
     ]
-    doc = topo.load_dxf("pezzo.dxf", role_rules=rules)
+    doc = topo_dxf.load_dxf("pezzo.dxf", role_rules=rules)
     # regole in ordine, vince la prima che matcha (D63);
     # topo.name_rules({"Costruzione": "construction"}) per le sole regole sul nome
 
     result = topo.heal(doc, label="pezzo", source_file="pezzo.dxf")
     # fori, pieghe, incisioni: lettura di processo, in snapbend (MAP.md D88)
 
-    doc_out = topo.to_dxf(result, doc)
     topo.inject(result)
-    doc_out.saveas("pezzo_healed.dxf")
+    topo_dxf.to_dxf(result, doc).saveas("pezzo_healed.dxf")
     topo.save_json(result, "pezzo.json")
 
-Workflow multi-pezzo:
-    doc = topo.load_dxf("batch.dxf", upgrade=True)
-    result = topo.split_to_files(
-        doc, "output/",
-        label="batch",
-        source_file="batch.dxf",
-    )
-    topo.save_json(result, "batch.json")
+Un Result per parte, per ogni formato:
+    parts = topo.split(result)                      # puro, senza formato
+    for part in parts:
+        topo_dxf.to_dxf(part, doc).saveas(f"{part.clusters[0].label}.dxf")
+    topo_dxf.split_to_files(doc, "output/")         # heal + split + saveas
 
-load_dxf() restituisce un Document (edges + annotations + source_meta):
-dopo di essa ezdxf non viene più toccato fino a to_dxf().
-
-Materializzazione in DXF:
-    doc_out       = topo.to_dxf(result, doc)      # un Drawing, tutte le parti
-    docs          = topo.split(result, doc)       # un Drawing per parte (puro)
-    topo.split_to_files(doc, "output/")           # split + saveas su disco
+Senza file: `topo.load_geometry` / `topo.load_segments` costruiscono un
+Document dalla geometria.
 """
 
-from .adapters.dxf.loader import load_dxf, document_from_msp
-# load_pdf: SPERIMENTALE, fuori dal contratto pubblico (vedi MAP.md D10).
-# Ritorna list[Edge], non un Document — NON passabile a topo.heal().
-# Resta importabile come topo.load_pdf per chi ci lavora sopra, ma non è in
-# __all__ e non è documentato: l'API può cambiare o sparire senza preavviso.
-from .adapters.pdf.loader import load_pdf
 from .core.geometry_input import load_geometry, load_segments
 # simplify_points: SPERIMENTALE, fuori dal contratto pubblico (vedi MAP.md D33).
 # Ricostruisce linee/spline da una sequenza di punti densa e ordinata (spigoli
@@ -66,18 +54,17 @@ from .core.primitives.fitting import simplify_points
 # accessibili da topo.tools.rotate per chi vuole comporli.
 from .tools.rotate import rotate_result, rotate_cluster, rotate_document, rotate_to_longest
 from .core.heal          import heal
-from .recipes            import split_to_files
 from .tools.inject       import inject
 from .tools.anchor       import anchor_annotations, dimension_references, leader_target, resolve_target
-from .io.dxf             import to_dxf, split
+# Un Result per parte, senza formato: ogni exporter ne scrive una (D124, D129)
+from .tools.split        import split, DEFAULT_MIN_CLUSTER_AREA
 from .rules.validator     import validate, validate_result
 from .io.exporter         import (
     to_json,
     save_json,
     save_xml,
-    write_metadata_to_dxf,
-    read_metadata_from_dxf,
     set_schema,
+    build_metadata,
 )
 # to_nester_input: SPERIMENTALE, fuori dal contratto pubblico (vedi MAP.md D18).
 # Scritto per un nester mai realizzato — topo non fa nesting. Resta
@@ -124,9 +111,7 @@ from . import steps
 # Le primitive geometriche e i tipi del modello, pubblici: `topo.primitives`,
 # `topo.model`. Sotto `topo.core` è interno (MAP.md D120).
 from . import primitives, model
-from .inspect             import (
-    inspect_dxf, inspect_document, inspect_result, inspect_file,
-)
+from .inspect             import inspect_document, inspect_result
 
 try:
     from importlib.metadata import version as _pkg_version, PackageNotFoundError
@@ -138,9 +123,7 @@ except ImportError:  # pragma: no cover
     __version__ = "0.0.0+dev"
 
 __all__ = [
-    # Apertura file
-    "load_dxf",
-    "document_from_msp",
+    # Geometria in ingresso (i file entrano dagli adapter: topo_dxf, topo_pdf)
     "load_geometry",
     "load_segments",
     # Validazione
@@ -149,8 +132,8 @@ __all__ = [
     # Workflow
     "heal",
     "island",
-    "to_dxf",
     "split",
+    "DEFAULT_MIN_CLUSTER_AREA",
     "inject",
     "anchor_annotations",
     "leader_target",
@@ -160,7 +143,6 @@ __all__ = [
     "steps",
     "primitives",
     "model",
-    "split_to_files",
     # Export
     "to_json",
     "save_json",
@@ -168,9 +150,8 @@ __all__ = [
     "to_view_model",
     "to_svg",
     "save_svg",
-    # Metadati DXF
-    "write_metadata_to_dxf",
-    "read_metadata_from_dxf",
+    # Metadati (gli stessi come XDATA DXF: topo_dxf.write_metadata_to_dxf)
+    "build_metadata",
     "set_schema",
     # Lettura per isole: i mattoni di island()
     "read_islands",
@@ -178,11 +159,9 @@ __all__ = [
     "IslandReading",
     # I passi di heal()
     # Utilità
-    # Ispezione / debug (3 livelli: DXF grezzo → Document → Result)
-    "inspect_dxf",
+    # Ispezione / debug (Document → Result; il file grezzo: topo_dxf.inspect_dxf)
     "inspect_document",
     "inspect_result",
-    "inspect_file",
     # Modelli
     "Result",
     "Cluster",

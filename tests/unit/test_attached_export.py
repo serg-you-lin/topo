@@ -11,6 +11,7 @@ import unittest
 from dataclasses import dataclass, field
 
 import topo
+import topo_dxf
 from topo.model import DetectedFeatures
 
 
@@ -56,7 +57,7 @@ class TestAttachedExport(unittest.TestCase):
         single = next(i for i in cluster.inners if abs(i.polygon.area - 3.1416 * 16) < 1)
         cluster.detected = DetectedFeatures()
         cluster.detected.attach("my_marks", [_Mark(role="my_role", segments=single.segments)])
-        layers = _layers(topo.to_dxf(result, doc))
+        layers = _layers(topo_dxf.to_dxf(result, doc))
         self.assertEqual(layers.count("my_role"), 1)
 
     def test_elemento_con_contours_scrive_ogni_contorno(self):
@@ -66,16 +67,16 @@ class TestAttachedExport(unittest.TestCase):
         self.assertEqual(len(pair), 2)
         cluster.detected = DetectedFeatures()
         cluster.detected.attach("my_marks", [_Composite(role="my_seat", contours=pair)])
-        self.assertEqual(_layers(topo.to_dxf(result, doc)).count("my_seat"), 2)
+        self.assertEqual(_layers(topo_dxf.to_dxf(result, doc)).count("my_seat"), 2)
 
     def test_senza_ruolo_o_senza_geometria_si_salta(self):
         doc, result = _plate()
         cluster = result.clusters[0]
-        before = len(_layers(topo.to_dxf(result, doc)))
+        before = len(_layers(topo_dxf.to_dxf(result, doc)))
         cluster.detected = DetectedFeatures()
         cluster.detected.attach("my_marks", [_Mark(role="", segments=cluster.inners[0].segments),
                                              _Mark(role="my_role"), object()])
-        self.assertEqual(len(_layers(topo.to_dxf(result, doc))), before)
+        self.assertEqual(len(_layers(topo_dxf.to_dxf(result, doc))), before)
 
 
 if __name__ == "__main__":

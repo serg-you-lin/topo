@@ -14,9 +14,9 @@ from types import SimpleNamespace
 
 from topo.core.primitives import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg
 from topo.core.topology.edge import Edge
-from topo.adapters.dxf.parser import DxfEntityDispatcher
+from topo_dxf.parser import DxfEntityDispatcher
 from topo.core.topology.loop_finder import segments_from_loop
-from topo.adapters.dxf.exporter import (
+from topo_dxf.exporter import (
     arc_seg_to_bulge,
     segments_to_pts_with_bulge,
     write_segments,

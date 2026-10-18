@@ -1,6 +1,6 @@
 """
-adapters/pdf/loader.py
------------------------
+topo_pdf/loader.py
+------------------
 Punto di ingresso unico per aprire, estrarre e convertire geometrie da un file PDF.
 
 Funzioni pubbliche:

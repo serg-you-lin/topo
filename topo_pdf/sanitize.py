@@ -1,6 +1,6 @@
 """
-adapters/pdf/sanitize.py
--------------------------
+topo_pdf/sanitize.py
+--------------------
 Sanitizzazione geometrica dei dati estratti dal PDF prima della conversione in Edge.
 
 Funzioni pubbliche:

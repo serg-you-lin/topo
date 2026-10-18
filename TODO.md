@@ -42,20 +42,28 @@ primitive di topo.
       va sopra; i nomi dei layer (`Trash` compreso) sono il default
       dell'adapter DXF; via il registro globale (riaperto D47),
       snapbend e snapdraw pubblicano `ROLE_STYLES`/`LAYERS`; via
-      `Annotation.group` (C di D127). Resta per il passo 4: il lettore salta
-      da sé i layer `trash`/`annotation` (`_NON_STRUCTURAL_LAYERS`).
-   4. **Il trasloco.** `adapters/dxf` + `io/dxf.to_dxf` + metadati in
-      XDATA + la parte DXF di `inspect` in `topo_dxf`; `adapters/pdf` (e il
-      lavoro fermo in `forge-pdf-adapter`) in `topo_pdf`. `split` resta in
-      topo, agnostico: restituisce un oggetto del modello per parte, ogni
-      adapter ne scrive una (D124); `split_to_files` diventa un ciclo.
-      `load_geometry` / `load_segments` restano in topo. `gen_index`:
-      `ezdxf`/`fitz`/adapter vietati in `topo`, gli adapter solo nomi
-      pubblici.
-   5. **I consumer.** snapbend (`io/dxf.py`, `flat/`), snapdraw, smoother e
-      i test di topo (l'adapter DXF come dipendenza di sviluppo, le fixture
-      DXF restano).
-   6. Docs (README, API, ARCHITECTURE, LLM) e una minor che rompe.
+      `Annotation.group` (C di D127). Il salto dei layer `trash`/`annotation`
+      nel lettore è diventato `skip_layers` col passo 4.
+   4. ~~**Il trasloco.**~~ — fatto, D129: `topo_dxf/` e `topo_pdf/` accanto
+      a `topo/`, extra `g-topo[dxf]`/`[pdf]`, `ezdxf` fuori dalle
+      dipendenze; `topo.split` → `list[Result]` in `tools/split.py`;
+      `load_dxf(skip_layers=SKIP_LAYERS)`; `gen_index` indicizza ogni
+      package e vieta formati e adapter a `topo`, gli interni di topo agli
+      adapter.
+   5. ~~**I consumer.**~~ — fatto, D129: snapbend, snapdraw, i test e gli
+      script di topo. smoother: riscritto nel suo lavoro in corso (non
+      committato, `pipeline.py`, `webui/`, `00_image_to_dxf.py`) — va
+      committato con quello.
+   6. **Docs e una minor che rompe.** README/README_IT, API, ARCHITECTURE,
+      LLM di topo dicono ancora `topo.load_dxf`/`topo.to_dxf`/`topo.split →
+      Drawing`: vanno riscritti per i tre pacchetti, con le card di
+      `topo_dxf`/`topo_pdf`; poi 0.20.0. Anche i README/API di snapbend e
+      snapdraw nominano ancora `topo.load_dxf` negli esempi.
+   7. **Il PDF, da riprendere per bene.** Il lavoro fermo nella cartella
+      sorella `forge-pdf-adapter` (worktree a 0.13.1, nomi `forge`, modifiche
+      non committate) non è stato portato: quando si riprende il PDF si
+      parte da `topo_pdf/` e lo si porta lì, con `load_pdf` che restituisce
+      un `Document` come ogni adapter (oggi `list[Edge]`, D10).
 1. ~~**Rename `forge` → `topo` / `g-topo`**~~ — fatto, D119 (0.17.0), insieme
    a D117: via i prefissi `Forge*`, i passi di heal/island in `topo.steps`.
    Restano a Federico: la cartella locale `GitHub/forge` → `GitHub/topo` e il

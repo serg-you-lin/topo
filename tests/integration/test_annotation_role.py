@@ -16,6 +16,7 @@ import ezdxf
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import topo
+import topo_dxf
 
 
 def _drawing_with_text(layer: str):
@@ -34,30 +35,30 @@ class TestAnnotationRole(unittest.TestCase):
 
     def test_regola_sul_nome_al_load(self):
         msp = _drawing_with_text("Testi")
-        doc = topo.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
+        doc = topo_dxf.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
         self.assertEqual([a.role for a in doc.annotations], ["part_code"])
 
     def test_regola_sull_aspetto_non_tocca_le_annotazioni(self):
         msp = _drawing_with_text("Testi")
-        doc = topo.document_from_msp(msp, role_rules=[topo.RoleRule("cut", dashed=False)])
+        doc = topo_dxf.document_from_msp(msp, role_rules=[topo.RoleRule("cut", dashed=False)])
         self.assertEqual([a.role for a in doc.annotations], ["unknown"])
 
     def _text_layers(self, doc, **kwargs) -> set:
-        out = topo.to_dxf(topo.heal(doc), **kwargs)
+        out = topo_dxf.to_dxf(topo.heal(doc), **kwargs)
         return {e.dxf.layer for e in out.modelspace().query("TEXT MTEXT")}
 
     def test_dxf_sul_layer_del_ruolo(self):
         msp = _drawing_with_text("Testi")
-        doc = topo.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
+        doc = topo_dxf.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
         self.assertEqual(self._text_layers(doc), {"part_code"})
 
     def test_dxf_sul_layer_scelto_per_il_ruolo(self):
         msp = _drawing_with_text("Testi")
-        doc = topo.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
+        doc = topo_dxf.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
         self.assertEqual(self._text_layers(doc, layers={"part_code": "Codice"}), {"Codice"})
 
     def test_dxf_senza_ruolo_sul_layer_delle_annotazioni(self):
-        doc = topo.document_from_msp(_drawing_with_text("Testi"))
+        doc = topo_dxf.document_from_msp(_drawing_with_text("Testi"))
         self.assertEqual(self._text_layers(doc), {"Annotation"})
         self.assertEqual(self._text_layers(doc, annotation_layer="Note"), {"Note"})
 

@@ -3,7 +3,8 @@
 =======================================================
 
 API topo usate:
-    split    Result -> list[Drawing], uno per parte. NON tocca il disco.
+    split    Result -> list[Result], uno per parte (senza formato). NON tocca il disco;
+             topo_dxf.to_dxf ne scrive uno.
 
 Per salvare davvero: itera il risultato e chiama .saveas(), oppure usa
 split_to_files() (vedi 07). Le parti sotto min_area (mm²) vengono scartate.
@@ -15,6 +16,7 @@ import _paths  # noqa: F401  — chdir alla radice del repo
 
 import os
 import topo
+import topo_dxf
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT     = r"tests/data/golden/example_4_polylines.dxf"   # 4 parti
@@ -25,7 +27,7 @@ MIN_AREA  = 50.0
 
 os.makedirs(OUTDIR, exist_ok=True)
 
-doc = topo.load_dxf(INPUT, tolerance=TOLERANCE)
+doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE)
 result = topo.heal(doc, label="batch")
 if not result.is_valid:
     raise SystemExit(f"non valido: {result.errors}")
@@ -37,26 +39,21 @@ def namer(i, cluster):
     return f"pezzo_{i + 1:02d}"
 
 
-# on_part: hook per parte, callable(cluster, doc_out), prima che il Drawing
-# entri nella lista — utile per scrivere metadati / marcature sul doc figlio
-def on_part(cluster, doc_out):
-    topo.write_metadata_to_dxf(doc_out, cluster)
+# topo.split: un Result per parte, senza formato (D129) — il trash e le
+# annotazioni vanno alla parte che li contiene o alla più vicina
+parts = topo.split(result, namer=namer, min_area=MIN_AREA)
 
-
-docs = topo.split(
-    result,
-    source_doc=doc,
-    namer=namer,
-    min_area=MIN_AREA,
-    exclude_types={"TEXT"},     # rimuove i TEXT da ogni documento figlio
-    on_part=on_part,
-    include_annotations=True,
-)
-
-kept = [p for p in result.clusters if p.outer.polygon.area >= MIN_AREA]
-for d, cluster in zip(docs, kept):
+for part in parts:
+    cluster = part.clusters[0]
+    doc_out = topo_dxf.to_dxf(
+        part, doc,
+        exclude_types={"TEXT"},     # rimuove i TEXT dal documento figlio
+        include_annotations=True,
+    )
+    # quello che faceva on_part: metadati / marcature sul doc figlio
+    topo_dxf.write_metadata_to_dxf(doc_out, cluster)
     path = os.path.join(OUTDIR, f"{cluster.label}.dxf")
-    d.saveas(path)
+    doc_out.saveas(path)
     print(f"   {path}  (area {cluster.outer.polygon.area:.0f} mm²)")
 
 for w in result.warnings:

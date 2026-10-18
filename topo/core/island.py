@@ -95,7 +95,7 @@ def island(doc: Document, *, max_gap: float,
     """
     if not isinstance(doc, Document):
         raise TypeError(
-            "topo.island() richiede un Document da topo.load_dxf(); "
+            "topo.island() richiede un Document da topo_dxf.load_dxf(); "
             f"ricevuto {type(doc).__name__}"
         )
     tol = doc.node_tolerance(tolerance)

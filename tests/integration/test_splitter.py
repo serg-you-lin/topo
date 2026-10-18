@@ -52,10 +52,10 @@ project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
-from topo.io.dxf import (
-    split, ANNOTATION_TYPES, DEFAULT_MIN_CLUSTER_AREA, cluster_passes_min_area,
-)
-from topo.adapters.dxf.layers import (
+import topo_dxf
+from topo import DEFAULT_MIN_CLUSTER_AREA
+from topo_dxf.writer import ANNOTATION_TYPES
+from topo_dxf.layers import (
     LAYER_OUTER, LAYER_INNER, TRASH_LAYER,
     ALL_LAYERS,
 )
@@ -84,7 +84,7 @@ def _make_via_heal(points: list[tuple], extra_entities=None):
     if extra_entities:
         for fn in extra_entities:
             fn(msp)
-    doc = topo.document_from_msp(msp)
+    doc = topo_dxf.document_from_msp(msp)
     result = topo.heal(doc, label="fixture")
     return doc, result
 
@@ -103,15 +103,15 @@ def _read_children(out_dir: str) -> dict[str, object]:
 
 
 
-def _split_files(result, source_doc, out_dir, *, min_area=DEFAULT_MIN_CLUSTER_AREA, **kwargs):
-    """split() puro + saveas su disco — riproduce a path il vecchio contratto."""
+def _split_files(result, source_doc, out_dir, *, min_area=DEFAULT_MIN_CLUSTER_AREA,
+                 namer=None, **write_kwargs):
+    """topo.split() puro, poi to_dxf + saveas per parte (D129): le opzioni di
+    scrittura (`include_annotations`, `exclude_types`, ...) vanno a to_dxf."""
     os.makedirs(out_dir, exist_ok=True)
-    drawings = split(result, source_doc, min_area=min_area, **kwargs)
-    kept = [p for p in result.clusters if cluster_passes_min_area(p, min_area)]
     paths = []
-    for cluster, drawing in zip(kept, drawings):
-        path = os.path.join(out_dir, f"{cluster.label}.dxf")
-        drawing.saveas(path)
+    for part in topo.split(result, namer=namer, min_area=min_area):
+        path = os.path.join(out_dir, f"{part.clusters[0].label}.dxf")
+        topo_dxf.to_dxf(part, source_doc, **write_kwargs).saveas(path)
         paths.append(path)
     return paths
 
@@ -207,8 +207,8 @@ class TestUnitSplitFilters(unittest.TestCase):
     La fixture aggiunge un TEXT e un CIRCLE dentro l'area del rettangolo,
     così i filtri hanno qualcosa su cui agire.
 
-    NOTA: exclude_types deve essere aggiunto a writeback.split() e propagato
-    in split_to_files(). Se manca, i test 004/005 falliscono con TypeError.
+    `exclude_types` è un'opzione di `topo_dxf.to_dxf` (D129), propagata da
+    `split_to_files()`.
     """
 
     def setUp(self):
@@ -286,8 +286,8 @@ class TestUnitSplitFilters(unittest.TestCase):
         self.assertEqual(len(list(out_msp.query("CIRCLE"))), 0)
 
     def test_006_split_senza_source_doc(self):
-        """split() materializza anche senza source_doc (modello puro)."""
-        drawings = split(self.result, None)
+        """Una parte si scrive anche senza source_doc (modello puro)."""
+        drawings = [topo_dxf.to_dxf(part) for part in topo.split(self.result)]
         self.assertGreater(len(drawings), 0)
 
 
@@ -313,7 +313,7 @@ class TestUnitSplitLayers(unittest.TestCase):
 
     def test_001_tutti_i_layer_presenti(self):
         """Tutti i layer topo standard sono presenti nel documento figlio."""
-        from topo.adapters.dxf.layers import LAYER_OUTER, LAYER_INNER, TRASH_LAYER
+        from topo_dxf.layers import LAYER_OUTER, LAYER_INNER, TRASH_LAYER
         expected = {LAYER_OUTER, LAYER_INNER, TRASH_LAYER}
         for path in self.generated:
             child_doc = ezdxf.readfile(path)
@@ -324,7 +324,7 @@ class TestUnitSplitLayers(unittest.TestCase):
 
     def test_002_colori_canonici(self):
         """Ogni layer topo ha il colore canonico definito in layers.py."""
-        from topo.adapters.dxf.layers import ALL_LAYERS
+        from topo_dxf.layers import ALL_LAYERS
         for path in self.generated:
             child_doc = ezdxf.readfile(path)
             for layer_name, expected_color in ALL_LAYERS.items():
@@ -353,8 +353,8 @@ class TestIntegrationPipeline(unittest.TestCase):
     def _run(self, dxf_name, label, **kwargs):
         out_dir = tempfile.mkdtemp()
         doc = ezdxf.readfile(str(EXAMPLES_DIR / dxf_name))
-        result = topo.split_to_files(
-            topo.document_from_msp(doc.modelspace()),
+        result = topo_dxf.split_to_files(
+            topo_dxf.document_from_msp(doc.modelspace()),
             output_folder=out_dir, label=label, **kwargs
         )
         return result, out_dir
@@ -397,7 +397,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         msp.add_text("NOTA", dxfattribs={
             "insert": (50, 50), "height": 5, "layer": "0"
         })
-        topo.split_to_files(topo.document_from_msp(msp), output_folder=out_dir, label="test",
+        topo_dxf.split_to_files(topo_dxf.document_from_msp(msp), output_folder=out_dir, label="test",
                              include_annotations=False)
         for f in Path(out_dir).glob("*.dxf"):
             out_msp = ezdxf.readfile(str(f)).modelspace()
@@ -409,7 +409,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         out_dir = tempfile.mkdtemp()
         doc = ezdxf.readfile(str(EXAMPLES_DIR / "two_parts.dxf"))
         namer = lambda i, cluster: f"custom_{i + 1:02d}"
-        topo.split_to_files(topo.document_from_msp(doc.modelspace()), output_folder=out_dir,
+        topo_dxf.split_to_files(topo_dxf.document_from_msp(doc.modelspace()), output_folder=out_dir,
                              label="two_parts", namer=namer)
         names = {f.stem for f in Path(out_dir).glob("*.dxf")}
         self.assertIn("custom_01", names,
@@ -419,7 +419,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         """msp vuoto → nessun file generato."""
         out_dir = tempfile.mkdtemp()
         doc = ezdxf.new("R2010")
-        topo.split_to_files(topo.document_from_msp(doc.modelspace()), output_folder=out_dir,
+        topo_dxf.split_to_files(topo_dxf.document_from_msp(doc.modelspace()), output_folder=out_dir,
                              label="empty")
         files = list(Path(out_dir).glob("*.dxf"))
         self.assertEqual(len(files), 0,
@@ -436,7 +436,7 @@ class TestIntegrationContours(unittest.TestCase):
         out_dir = tempfile.mkdtemp()
         doc = ezdxf.readfile(str(EXAMPLES_DIR / dxf_name))
         print([ (e.dxftype(), e.dxf.layer) for e in doc.modelspace() ])
-        topo.split_to_files(topo.document_from_msp(doc.modelspace()), output_folder=out_dir,
+        topo_dxf.split_to_files(topo_dxf.document_from_msp(doc.modelspace()), output_folder=out_dir,
                              label=label, **kwargs)
         return _read_children(out_dir)
 
@@ -474,7 +474,7 @@ class TestIntegrationContours(unittest.TestCase):
 
     def test_001_lwpolyline_outer_chiusa(self):
         """LWPOLYLINE su OuterContour nei figli è closed=True."""
-        from topo.adapters.dxf.layers import LAYER_OUTER
+        from topo_dxf.layers import LAYER_OUTER
         children = self._children("two_parts.dxf", "two_parts")
         self.assertGreater(len(children), 0)
         for fname, msp in children.items():
@@ -486,7 +486,7 @@ class TestIntegrationContours(unittest.TestCase):
 
     def test_002_lwpolyline_inner_chiusa(self):
         """LWPOLYLINE su InnerContour/Hole nei figli è closed=True."""
-        from topo.adapters.dxf.layers import LAYER_INNER
+        from topo_dxf.layers import LAYER_INNER
         children = self._children("pline_with_hole.dxf", "pline_with_hole")
         for fname, msp in children.items():
             for e in msp.query("LWPOLYLINE"):
@@ -497,7 +497,7 @@ class TestIntegrationContours(unittest.TestCase):
 
     def test_003_circle_outer_esportato(self):
         """CIRCLE su OuterContour viene esportato nel file figlio."""
-        from topo.adapters.dxf.layers import LAYER_OUTER
+        from topo_dxf.layers import LAYER_OUTER
         children = self._children("cerchi_ciambella.dxf", "cerchi_ciambella")
         self.assertGreater(len(children), 0,
                            "Nessun file figlio da cerchi_ciambella.dxf")
@@ -510,7 +510,7 @@ class TestIntegrationContours(unittest.TestCase):
 
     def test_004_spline_outer_esportato(self):
         """File con SPLINE: almeno un figlio contiene SPLINE strutturale su OuterContour."""
-        from topo.adapters.dxf.layers import LAYER_OUTER
+        from topo_dxf.layers import LAYER_OUTER
         children = self._children("intricato_doppio.dxf", "intricato_doppio")
         figli_con_outer = [
             fname for fname, msp in children.items()
@@ -523,7 +523,7 @@ class TestIntegrationContours(unittest.TestCase):
 
     def test_006_spline_parametri_preservati(self):
         """Le SPLINE scritte nei figli preservano i parametri chiave della sorgente."""
-        from topo.adapters.dxf.layers import LAYER_OUTER
+        from topo_dxf.layers import LAYER_OUTER
         src_doc = ezdxf.readfile(str(EXAMPLES_DIR / "intricato_doppio.dxf"))
         src_splines = list(src_doc.modelspace().query("SPLINE"))
         self.assertGreater(len(src_splines), 0, "La fixture sorgente non contiene SPLINE")
@@ -548,7 +548,7 @@ class TestIntegrationContours(unittest.TestCase):
         Regressione: per ogni file in examples/, ogni LWPOLYLINE strutturale
         nei figli è closed=True. File non splittabili ignorati silenziosamente.
         """
-        from topo.adapters.dxf.layers import LAYER_OUTER, LAYER_INNER
+        from topo_dxf.layers import LAYER_OUTER, LAYER_INNER
         structural = {LAYER_OUTER, LAYER_INNER}
         for src in Path(EXAMPLES_DIR).glob("*.dxf"):
             if src.stem.endswith("_healed"):
@@ -556,7 +556,7 @@ class TestIntegrationContours(unittest.TestCase):
             out_dir = tempfile.mkdtemp()
             try:
                 doc = ezdxf.readfile(str(src))
-                topo.split_to_files(topo.document_from_msp(doc.modelspace()),
+                topo_dxf.split_to_files(topo_dxf.document_from_msp(doc.modelspace()),
                                      output_folder=out_dir, label=src.stem)
                 for child in Path(out_dir).glob("*.dxf"):
                     child_doc = ezdxf.readfile(str(child))
@@ -580,7 +580,7 @@ class TestIntegrationLayers(unittest.TestCase):
     def setUp(self):
         self.out_dir = tempfile.mkdtemp()
         doc = ezdxf.readfile(str(EXAMPLES_DIR / "two_parts.dxf"))
-        topo.split_to_files(topo.document_from_msp(doc.modelspace()),
+        topo_dxf.split_to_files(topo_dxf.document_from_msp(doc.modelspace()),
                              output_folder=self.out_dir, label="test")
         self.files = list(Path(self.out_dir).glob("*.dxf"))
         self.assertTrue(len(self.files) > 0,
@@ -588,8 +588,8 @@ class TestIntegrationLayers(unittest.TestCase):
 
     def test_001_outer_layer_colore_canonico(self):
         """LAYER_OUTER ha il verde della palette di topo in ogni file figlio."""
-        from topo.adapters.dxf.layers import LAYER_OUTER
-        from topo.adapters.dxf.layers import color_for_role
+        from topo_dxf.layers import LAYER_OUTER
+        from topo_dxf.layers import color_for_role
         COLOR_OUTER = color_for_role("outer")
         for f in self.files:
             child_doc = ezdxf.readfile(str(f))
@@ -601,7 +601,7 @@ class TestIntegrationLayers(unittest.TestCase):
 
     def test_002_tutti_i_layer_topo_presenti(self):
         """Tutti i layer topo standard sono presenti in ogni file figlio."""
-        from topo.adapters.dxf.layers import LAYER_OUTER, LAYER_INNER, TRASH_LAYER
+        from topo_dxf.layers import LAYER_OUTER, LAYER_INNER, TRASH_LAYER
         expected = {LAYER_OUTER, LAYER_INNER, TRASH_LAYER}
         for f in self.files:
             child_doc = ezdxf.readfile(str(f))
@@ -612,7 +612,7 @@ class TestIntegrationLayers(unittest.TestCase):
 
     def test_003_tutti_i_colori_canonici(self):
         """Ogni layer topo ha il colore canonico definito in layers.py."""
-        from topo.adapters.dxf.layers import ALL_LAYERS
+        from topo_dxf.layers import ALL_LAYERS
         for f in self.files:
             child_doc = ezdxf.readfile(str(f))
             for layer_name, expected_color in ALL_LAYERS.items():

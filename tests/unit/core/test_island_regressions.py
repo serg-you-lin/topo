@@ -12,6 +12,7 @@ import unittest
 from pathlib import Path
 
 import topo
+import topo_dxf
 from topo.core.island import read_island
 
 FIXTURES = Path(__file__).resolve().parent.parent.parent / "data" / "regressions"
@@ -26,7 +27,7 @@ class TestGhostLoop(unittest.TestCase):
     PDF né da D98-D101 (bisecato su 1b5b02e, D99: identico)."""
 
     def test_un_foro_non_ha_un_giro_fantasma_annidato(self):
-        doc = topo.load_dxf(str(FIXTURES / "island_ghost_loop.dxf"), tolerance=TOLERANCE)
+        doc = topo_dxf.load_dxf(str(FIXTURES / "island_ghost_loop.dxf"), tolerance=TOLERANCE)
         reading = read_island(doc.edges, tolerance=TOLERANCE, max_gap=MAX_GAP)
         self.assertIsNotNone(reading.outer)
         self.assertAlmostEqual(reading.outer.polygon.area, 16.247, places=2)
@@ -43,7 +44,7 @@ class TestTangentSpike(unittest.TestCase):
     su questo caso."""
 
     def test_la_punta_arrotondata_non_ha_una_spike(self):
-        doc = topo.load_dxf(str(FIXTURES / "island_tangent_spike.dxf"), tolerance=TOLERANCE)
+        doc = topo_dxf.load_dxf(str(FIXTURES / "island_tangent_spike.dxf"), tolerance=TOLERANCE)
         reading = read_island(doc.edges, tolerance=TOLERANCE, max_gap=MAX_GAP)
         self.assertIsNotNone(reading.outer)
         self.assertAlmostEqual(reading.outer.polygon.area, 1011.27, places=1)

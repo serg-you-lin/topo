@@ -17,6 +17,7 @@ stampa tutto su stdout.
 import _paths  # noqa: F401  — chdir alla radice del repo
 
 import topo
+import topo_dxf
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT     = r"tests/data/Multifeature.dxf"   # non tracciato: usa un tuo file se manca
@@ -32,7 +33,7 @@ NAME_ROLES = {
 print("#" * 70)
 print("# inspect_file — i 3 livelli in fila")
 print("#" * 70)
-topo.inspect_file(
+topo_dxf.inspect_file(
     INPUT,
     tolerance=TOLERANCE,
     role_rules=topo.name_rules(NAME_ROLES),
@@ -43,9 +44,9 @@ topo.inspect_file(
 
 # I tre livelli si possono anche chiamare uno per volta, su oggetti diversi:
 #
-#   topo.inspect_dxf(INPUT, entities=True, limit=40)
+#   topo_dxf.inspect_dxf(INPUT, entities=True, limit=40)
 #
-#   doc = topo.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
+#   doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
 #   topo.inspect_document(doc, graph=True, limit=60)
 #
 #   result = topo.heal(doc)

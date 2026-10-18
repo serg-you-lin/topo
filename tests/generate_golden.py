@@ -34,6 +34,7 @@ project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
+import topo_dxf
 
 EXAMPLES_DIR      = project_root / "tests" / "data"
 GOLDEN_DXF_DIR    = EXAMPLES_DIR / "golden"
@@ -110,7 +111,7 @@ def generate(force: bool = False, only: str = None):
             name_roles = {**GLOBAL_NAME_ROLES, **config.get("name_roles", {})}
 
             def _load():
-                return topo.load_dxf(
+                return topo_dxf.load_dxf(
                     dxf_path, upgrade=True, explode_inserts=True, flatten_z_flag=True,
                     tolerance=tolerance, verbose=False, role_rules=topo.name_rules(name_roles),
                 )

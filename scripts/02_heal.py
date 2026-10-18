@@ -16,13 +16,14 @@ consegna Cluster(outer, inners=[Contour...]).
 import _paths  # noqa: F401  — chdir alla radice del repo
 
 import topo
+import topo_dxf
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT     = r"tests/data/Linee_piegatura.dxf"
 TOLERANCE = 0.5
 # -------------------------------------------------------------------------
 
-doc = topo.load_dxf(INPUT, tolerance=TOLERANCE)
+doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE)
 
 result = topo.heal(
     doc,

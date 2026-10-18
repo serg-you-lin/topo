@@ -28,6 +28,7 @@ project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
+import topo_dxf
 
 MAX_GAP = 0.5    # quello di snapdraw (SHEET_MAX_GAP)
 TOL = 0.01       # mm
@@ -38,7 +39,7 @@ GOLDEN_DIR = SOURCE_DIR / "json"
 
 def snapshot(dxf_path: Path) -> dict:
     """Le isole in ordine di riquadro (due isole di area uguale non scambiano il golden)."""
-    result = topo.island(topo.load_dxf(str(dxf_path)), max_gap=MAX_GAP)
+    result = topo.island(topo_dxf.load_dxf(str(dxf_path)), max_gap=MAX_GAP)
     islands = sorted([round(float(v), 3) for v in c.outer.polygon.bounds] + [len(c.inners)]
                      for c in result.clusters)
     return {"source_file": dxf_path.name,
