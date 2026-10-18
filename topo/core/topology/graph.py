@@ -84,6 +84,39 @@ class Graph:
     def branching_nodes(self) -> list:
         return [n for n, conn in self.nodes.items() if len(conn) > 2]
 
+    def chains(self) -> List[Tuple[List[Edge], Tuple, Tuple]]:
+        """
+        Le catene massimali del grafo: edge consecutivi attraverso nodi di
+        grado 2, con i due nodi dove finiscono (diramazione o capo libero).
+        Un nodo di grado 2 non è un bivio: per la topologia la catena è un
+        arco solo, spezzato in tratti. Un anello di soli nodi di grado 2 ha i
+        due capi uguali. Ogni edge del grafo sta in una catena sola.
+        """
+        seen: set = set()
+        chains: List[Tuple[List[Edge], Tuple, Tuple]] = []
+
+        def follow(start: Tuple, edge: Edge, node: Tuple) -> None:
+            run = [edge]
+            seen.add(id(edge))
+            while len(self.nodes[node]) == 2 and node != start:
+                nxt = next(((e, n) for e, n in self.nodes[node] if id(e) not in seen), None)
+                if nxt is None:
+                    break
+                run.append(nxt[0])
+                seen.add(id(nxt[0]))
+                node = nxt[1]
+            chains.append((run, start, node))
+
+        # prima dai nodi che non sono di grado 2, poi gli anelli rimasti
+        for wanted_inner in (False, True):
+            for node, conn in self.nodes.items():
+                if (len(conn) == 2) != wanted_inner:
+                    continue
+                for edge, other in conn:
+                    if id(edge) not in seen:
+                        follow(node, edge, other)
+        return chains
+
     def merged_clusters(self) -> list:
         """
         Cluster in cui il clustering ha fuso più endpoint distinti.

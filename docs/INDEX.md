@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`78` modules · `407` module-level functions · `57` classes · `14130` lines of code.
+`78` modules · `407` module-level functions · `57` classes · `14175` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -30,7 +30,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `angle_from_start` | func | `topo/core/primitives/segments.py:102` | Angolo, in [0, 2π), da percorrere partendo da `start_angle` nel verso |
 | `_angle_of` | func | `topo/core/primitives/trim.py:93` | Angolo (o parametro dell'ellisse) di `pt` visto dal centro della curva. |
 | `_angular` | func | `topo/core/primitives/trim.py:104` |  |
-| `_angular_deviation` | func | `topo/core/topology/graph.py:345` |  |
+| `_angular_deviation` | func | `topo/core/topology/graph.py:378` |  |
 | `_angular_sweep` | func | `topo/core/primitives/segments.py:83` | Angolo spazzato in radianti, sempre positivo, percorrendo da `start` a |
 | `Annotation` | class | `topo/model/annotation.py:65` | Base di ogni annotazione. ``position`` è il punto d'ancoraggio XY — dove |
 | `annotation_anchor` | func | `topo_dxf/annotation_extractor.py:99` | Punto d'ancoraggio XY di un'entità di annotazione. |
@@ -49,7 +49,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `arcs_around` | func | `topo/core/geometry/shape.py:228` | Gli archi di `arcs` col centro entro `tolerance` da `center` e raggio |
 | `ArcSeg` | class | `topo/core/primitives/segments.py:129` |  |
 | `are_collinear` | func | `topo/core/geometry/lines.py:45` | I tratti `a` e `b` stanno sulla stessa retta infinita: direzioni uguali |
-| `_arrival_direction` | func | `topo/core/topology/graph.py:336` |  |
+| `_arrival_direction` | func | `topo/core/topology/graph.py:369` |  |
 | `_assign` | func | `topo/tools/anchor.py:175` |  |
 | `_assign` | func | `topo/tools/split.py:84` | id(cluster) → gli elementi che gli appartengono. Con `covering` vince la |
 | `_at` | func | `topo/core/geometry/regions.py:85` |  |
@@ -66,7 +66,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_bspline_find_span` | func | `topo/core/primitives/segments.py:258` | Indice `i` tale che `knots[i] <= t < knots[i+1]` (ricerca binaria, "The |
 | `build_hierarchy` | func | `topo/core/healing/steps.py:372` | Albero di contenimento sui ClosedCurve: ogni radice è un Cluster |
 | `build_metadata` | func | `topo/io/exporter.py:24` | Costruisce il dict dei metadati per un Cluster |
-| `build_node_graph` | func | `topo/core/topology/graph.py:268` | Costruisce il Graph da list[Edge]. |
+| `build_node_graph` | func | `topo/core/topology/graph.py:301` | Costruisce il Graph da list[Edge]. |
 | `build_polygon` | func | `topo/core/primitives/polygon_builder.py:19` | Costruisce un Polygon shapely da una lista di primitive geometriche. |
 | `_build_tree` | func | `topo/core/healing/hierarchy.py:78` |  |
 | `_chain` | func | `topo/core/geometry/regions.py:290` | Pezzi orientati incatenati testa-coda in anelli chiusi. |
@@ -83,13 +83,13 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `clean_mtext` | func | `topo_dxf/mtext.py:18` | Testo semplice da una stringa MTEXT grezza: rimuove i codici di |
 | `close_free_gaps` | func | `topo/core/healing/steps.py:134` | Chiude i gap fra estremi liberi entro `tolerance` col gap solver |
 | `close_near_full_arcs` | func | `topo/core/healing/steps.py:97` | Un ArcSeg coi due capi liberi diventa CircleSeg (stesso centro e raggio) |
-| `_close_self_loop` | func | `topo/core/topology/graph.py:252` | ArcSeg il cui sviluppo (raggio*sweep) supera epsilon -> CircleSeg (loop degenere vero). Altrimenti `None` (sl… |
+| `_close_self_loop` | func | `topo/core/topology/graph.py:285` | ArcSeg il cui sviluppo (raggio*sweep) supera epsilon -> CircleSeg (loop degenere vero). Altrimenti `None` (sl… |
 | `ClosedCurve` | class | `topo/model/curve.py:48` | Curva chiusa: ha un polygon e una lista di segmenti. |
 | `_closest_to` | func | `topo/core/geometry/intersections.py:95` | Restituisce il punto più vicino a ref tra i candidati. |
 | `_cluster` | func | `topo/core/island.py:287` |  |
 | `Cluster` | class | `topo/model/cluster.py:15` |  |
 | `cluster_passes_min_area` | func | `topo/tools/split.py:79` | True se la parte supera la soglia di area minima (min_area <= 0 = nessun filtro). |
-| `cluster_points` | func | `topo/core/topology/graph.py:189` | Raggruppa punti 2D entro `epsilon` e restituisce {punto -> rappresentante}. |
+| `cluster_points` | func | `topo/core/topology/graph.py:222` | Raggruppa punti 2D entro `epsilon` e restituisce {punto -> rappresentante}. |
 | `cluster_values` | func | `topo/core/geometry/axis.py:55` | I valori ordinati, tenendo per ogni gruppo il più piccolo: un valore entro |
 | `_collect_inners` | func | `topo/core/healing/hierarchy.py:112` | Appiattisce l'albero di contenimento in `cluster.inners` (ogni discendente |
 | `CollinearRun` | class | `topo/core/geometry/lines.py:94` | Tratti sulla stessa retta, in fila lungo di essa. |
@@ -150,7 +150,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `DxfAnnotationExtractor` | class | `topo_dxf/annotation_extractor.py:44` | Traduce le entità di annotazione di un msp in list[Annotation]. |
 | `DxfEntityDispatcher` | class | `topo_dxf/parser.py:24` | Centralizza il routing per tipo di entità DXF. |
 | `Edge` | class | `topo/core/topology/edge.py:31` | Layer intermedio tra l'entità sorgente grezza (di qualsiasi formato) e il |
-| `_edge_coords` | func | `topo/core/topology/graph.py:322` |  |
+| `_edge_coords` | func | `topo/core/topology/graph.py:355` |  |
 | `edge_geometry` | func | `topo/core/topology/noding.py:261` | L'edge come geometria shapely: LineString discretizzata, Point se degenere. |
 | `edge_styles_from_loop` | func | `topo/core/topology/loop_finder.py:187` | Stili grezzi (linetype/colore) di un loop, allineati 1:1 con |
 | `edges_to_open_curves` | func | `topo/core/topology/loop_finder.py:220` | Converte gli Edge non assorbiti da un loop strutturale in OpenCurve. |
@@ -184,7 +184,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `find_joining_edges` | func | `topo/core/healing/steps.py:168` | Gli Edge fra `candidate_ids` (di solito i non-contorno) che uniscono due |
 | `find_loops` | func | `topo/core/healing/steps.py:242` | La scala di heal() per chiudere i giri, esclusi `non_contour_ids`: |
 | `find_non_contour_edges` | func | `topo/core/healing/steps.py:158` | id(edge) degli Edge che non chiudono un contorno (branching, e non sul |
-| `_first_coord` | func | `topo/core/topology/graph.py:329` |  |
+| `_first_coord` | func | `topo/core/topology/graph.py:362` |  |
 | `_first_point` | func | `topo/io/text.py:153` | Un punto che sta sul segmento, per dire in quale pezzo cade. |
 | `_first_step` | func | `topo/core/topology/outer_face.py:133` | L'edge che contiene il punto più a sinistra del componente, percorso |
 | `fit_circle_kasa` | func | `topo/core/geometry/points.py:89` | Fit algebrico (Kasa) ai minimi quadrati di un cerchio su `points`: minimizza |
@@ -287,7 +287,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `NestedBridgeResult` | class | `topo/tools/tabs.py:208` | Risultato per UNA coppia isola/genitore-diretto trovata nella gerarchia. |
 | `NodedEdges` | class | `topo/core/topology/noding.py:51` | La rete piana: i pezzi, e per ognuno l'Edge da cui viene. |
 | `non_contour_candidates` | func | `topo/tools/non_contour.py:40` | Edge di `doc.edges` che il criterio topologico di `heal()` escluderebbe dal |
-| `NonContourEdgeDetector` | class | `topo/core/topology/non_contour_edges.py:44` |  |
+| `NonContourEdgeDetector` | class | `topo/core/topology/non_contour_edges.py:45` |  |
 | `_normalize` | func | `topo/core/island.py:241` | Stessi passi di heal, ma sulla griglia fine della rete piana: prima i |
 | `normalize_ocs` | func | `topo_dxf/sanitize.py:19` | Normalizza il vettore di estrusione di tutte le entità OCS nel modelspace. |
 | `normalize_role` | func | `topo/model/role.py:113` | Ripulisce una stringa-ruolo che arriva dal chiamante (``RoleRule``, |
@@ -879,19 +879,19 @@ _core/topology/edge.py_
 - **class** `Edge` — L31 — Layer intermedio tra l'entità sorgente grezza (di qualsiasi formato) e il
   - methods: `of`
 
-#### `topo/core/topology/graph.py` — 355 lines
+#### `topo/core/topology/graph.py` — 388 lines
 
 _graph.py_
 
 - **class** `Graph` — L59 — Grafo topologico interrogabile.
-  - methods: `canonical`, `degree`, `branching_nodes`, `merged_clusters`, `connected_components`, `open_nodes`, `pruned`, `items`, `get`
-- `cluster_points(points: list, epsilon: float) -> Dict[Tuple, Tuple]` — L189 — Raggruppa punti 2D entro `epsilon` e restituisce {punto -> rappresentante}.
-- `_close_self_loop(edge: Edge, epsilon: float)` — L252 — ArcSeg il cui sviluppo (raggio*sweep) supera epsilon -> CircleSeg (loop degenere vero). Altrimenti `None` (sl…
-- `build_node_graph(edges: list, epsilon: float=0.0) -> Graph` — L268 — Costruisce il Graph da list[Edge].
-- `_edge_coords(edge: Edge, reversed_flag: bool) -> list` — L322
-- `_first_coord(edge: Edge)` — L329
-- `_arrival_direction(edge: Edge, rev: bool)` — L336
-- `_angular_deviation(arrival_dir, edge: Edge, rev: bool)` — L345
+  - methods: `canonical`, `degree`, `branching_nodes`, `chains`, `merged_clusters`, `connected_components`, `open_nodes`, `pruned`, `items`, `get`
+- `cluster_points(points: list, epsilon: float) -> Dict[Tuple, Tuple]` — L222 — Raggruppa punti 2D entro `epsilon` e restituisce {punto -> rappresentante}.
+- `_close_self_loop(edge: Edge, epsilon: float)` — L285 — ArcSeg il cui sviluppo (raggio*sweep) supera epsilon -> CircleSeg (loop degenere vero). Altrimenti `None` (sl…
+- `build_node_graph(edges: list, epsilon: float=0.0) -> Graph` — L301 — Costruisce il Graph da list[Edge].
+- `_edge_coords(edge: Edge, reversed_flag: bool) -> list` — L355
+- `_first_coord(edge: Edge)` — L362
+- `_arrival_direction(edge: Edge, rev: bool)` — L369
+- `_angular_deviation(arrival_dir, edge: Edge, rev: bool)` — L378
 
 #### `topo/core/topology/loop_finder.py` — 253 lines
 
@@ -925,11 +925,11 @@ _core/topology/noding.py_
 - `_split_circle(edge, near, tol, decimals)` — L240
 - `edge_geometry(edge: Edge)` — L261 — L'edge come geometria shapely: LineString discretizzata, Point se degenere.
 
-#### `topo/core/topology/non_contour_edges.py` — 75 lines
+#### `topo/core/topology/non_contour_edges.py` — 87 lines
 
 _non_contour_edges.py_
 
-- **class** `NonContourEdgeDetector` — L44
+- **class** `NonContourEdgeDetector` — L45
   - methods: `__init__`, `detect`
 
 #### `topo/core/topology/outer_face.py` — 210 lines

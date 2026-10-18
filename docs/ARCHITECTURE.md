@@ -210,10 +210,11 @@ consumatore (snapdraw) compone gli stessi passi come gli serve.
    accoppiati due a due per vicinanza, portati alla loro intersezione reale.
    La tolleranza misura un gap, non un lato: un elemento più corto di lei
    resta (D112)
-4. **detection non-contorno** (`find_non_contour_edges`): gli `Edge` con
-   entrambi gli endpoint su nodi di branching (grado > 2) che il bordo della
-   faccia esterna della loro componente non percorre una volta sola (una
-   corda, un ponte) non sono contorno (D111, riapre D49) — escono dal grafo
+4. **detection non-contorno** (`find_non_contour_edges`): le catene di
+   `Edge` attraverso nodi di grado 2 (`Graph.chains`, D131) che finiscono su
+   due nodi di branching distinti (grado > 2) e che il bordo della faccia
+   esterna della loro componente non percorre una volta sola (una corda, un
+   ponte) non sono contorno (D111, riapre D49) — escono dal grafo, intere,
    per non rompere la ricerca dei loop. `heal` non
    decide cosa siano: resta a un consumatore (snapbend li interpreta come
    piega; snapdraw può decidere da sé)
