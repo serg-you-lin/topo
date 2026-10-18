@@ -22,6 +22,7 @@ from ..model.result import Result
 from ..model.role import is_structural_role
 from .primitives.segments import ArcSeg
 from .topology.loop_finder import edges_to_open_curves
+from .topology.noding import interior_crossings
 from .healing.normalizer import (
     merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
 )
@@ -128,6 +129,7 @@ def heal(doc: Document, tolerance: Optional[float] = None, label: str = "",
         kept = structural_loops(search.loops, structural)
         loop_edge_ids = {id(e) for loop in kept for e, _ in loop}
         closed = loops_to_curves(kept)
+        result.warnings += _crossing_warnings([e for e in edges if id(e) in loop_edge_ids], tol)
     elif edges:
         result.warnings.append("Nessun loop trovato via grafo, uso polygonize come fallback.")
         polygons = polygonize_edges(edges, tol)
@@ -200,6 +202,18 @@ def _loose_ends_warnings(edges: list, non_contour_ids: set, epsilon: float) -> l
         warnings.append(f"{len(joining)} edge uniscono due forme altrimenti staccate: esclusi dal "
                         f"contorno, ogni forma è letta per conto suo ({first}).")
     return warnings
+
+
+def _crossing_warnings(contour: list, tolerance: float) -> list[str]:
+    """Lati di contorno che si attraversano senza un nodo (D132): il disegno è
+    rotto lì, e heal() non lo ripara, lo dice."""
+    points = interior_crossings(contour, tolerance)
+    if not points:
+        return []
+    first = ", ".join(f"({p[0]:.2f}, {p[1]:.2f})" for p in points[:4])
+    return [f"{len(points)} incroci fra lati di contorno senza un nodo in comune ({first}): "
+            f"lati accavallati nel disegno. Da correggere nel disegno: spezzare i lati "
+            f"nell'incrocio, o accorciarli fino a farli toccare."]
 
 
 def _search_warnings(search: LoopSearch, tolerance: float) -> list[str]:

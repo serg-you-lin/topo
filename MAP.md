@@ -4693,3 +4693,41 @@ were red before.
 fixed seeds (`SHUFFLES`), every golden; `KNOWN_ORDER_DEPENDENT` is empty.
 `TestChainCandidates` and `TestGraphChains` in `test_non_contour_edges.py`.
 `main` → **0.20.1** (`heal()` output changes, no signature change).
+
+### D132 — the non-contour choices, each pinned by an edge case; crossing sides are reported, not repaired
+Federico, 18 October, after D131 (a page drawing each choice). The criterion
+has facts (the chain is the unit; a candidate ends on two distinct branching
+nodes; the passes of the outer face are a count) and choices. Each choice now
+has its minimal drawing in `tests/unit/core/test_non_contour_choices.py`,
+which states the default. A default changes there, on purpose and by a
+written decision.
+
+- **A. An interior chain (0 passes) is a chord.** Rectangle + inner square +
+  4 corner-to-corner diagonals reads as one solid part, 8 lines in the trash.
+  On sheet metal those diagonals cannot be bends (a flat like that does not
+  fold); the only sensible reading is stiffening creases, so solid is right
+  there. Federico wants "chord, and optionally hole" for readings where a
+  closed interior face is empty (a future mesh reading, a consumer that
+  knows from another view). The rule for which faces the option empties is
+  not decided: open in TODO.
+- **B. A bridge (2 passes) splits the parts:** two parts and the joining-edge
+  warning, unchanged. A consumer that wants them as one (smoother building
+  ribs by hand) does so itself.
+- **C. A chain on the outer boundary for half its length or less is a chord.**
+  A chord grazing the outline goes to the trash; a bend line drawn a little
+  long or short ends there too (spur or free end), and `detect_flat` reads it
+  with its own bending tolerance, not heal's. Unchanged.
+- **D. Sides that cross without a node are judged on the planar network and
+  reported.** The planar copy is only how the detector counts passes; it never
+  changes the delivered geometry. A drawing whose contour sides cross is
+  broken, and the caller must hear it: `heal()` now warns with the points and
+  what to fix (`interior_crossings` in `topology/noding.py`: a cut interior to
+  two edges; a T contact does not count). No repair by default: a family of
+  bad drawings gets its own algorithm, as an explicit step.
+- **E. A chain closed on one node is never a candidate**, so a hole sharing a
+  vertex with the outer stays a hole today. Federico's view is that it is
+  trash; no golden of heal and no snapbend DXF has one (counted), so it stays
+  open in TODO until a real drawing shows it.
+
+The new warning appears on no heal golden and no snapbend test DXF. Suite
+1333 passed; snapbend green; snapdraw's `regr_03`/`regr_05` red as before.

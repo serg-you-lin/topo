@@ -171,7 +171,24 @@ Richieste aperte:
 - **Ricette di ricomposizione topologica**: oggi `heal` (un pezzo piano,
   geometria da riparare) e `island` (un disegno con più viste, per isole). Se
   ce ne possono essere altre e che senso hanno; sono la cosa che i lab di
-  snapdraw stanno già provando a comporre con i pezzi interni.
+  snapdraw stanno già provando a comporre con i pezzi interni. Candidata
+  emersa il 18 ottobre: una lettura "mesh" dove una faccia interna chiusa è
+  vuota per default (scelta A qui sotto).
+- **Scelta A: faccia interna chiusa, materiale o foro?** (D131, pagina dei
+  criteri). Oggi le catene interne a 0 passaggi sono corde: rettangolo +
+  quadrato interno + 4 diagonali angolo-angolo → 1 pezzo pieno, 8 linee nel
+  trash, e `detect_flat` non ci trova niente (le diagonali non hanno i due
+  capi sul contorno esterno). Federico: su una lamiera quelle diagonali non
+  possono essere pieghe (un flat così non si piega); l'unica lettura sensata
+  è irrigidimento (le crocette di pressione su pannelli larghi e sottili,
+  cancelli, sponde), quindi pieno. Federico: "corda e opzionalmente
+  foro", ma la regola per l'opzione (quali facce sono vuote: proposta
+  "nessun lato sul contorno esterno") non è decisa. DXF locali in
+  `tests/lab/caso_A/` (fuori da git).
+- **Scelta E: un foro con un vertice in comune col contorno esterno** (D132).
+  Oggi resta un foro (la sua catena è chiusa su un nodo, mai corda).
+  Federico: per lui è trash (con warning). Nessun golden di heal e nessun
+  DXF di snapbend lo contiene: si decide quando arriva un disegno vero.
 
 ## CHIUSO (18 ottobre, MAP.md D111, D131) — invarianti di heal
 
