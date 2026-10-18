@@ -121,6 +121,15 @@ primitive di topo.
    chiamante (`topo.geometry.rectangle`/…/`polygon`, `Contour.from_segments`);
    riconoscerla no: si rifà a mano la ricomposizione dei lati e il punto di
    partenza, che è proprio quello che la firma deve dare.
+   Accanto, additivo (può essere 1.x): i **fatti di riconoscimento** che un
+   consumer usa per dire "questa è roba mia", come già `concentric_groups`
+   (svasature) e `arcs_around` (filetti), D91. Federico, 18 ottobre: non dime
+   (la L, l'omega), ma i segnali di una lamiera. Oggi snapbend li calcola a
+   mano in `rules/read_section.py` (forge-free per D43, "da riguardare quando
+   l'interprete è vero"): coppie di rette parallele (distanza, sovrapposizione
+   delle proiezioni, angolo) e coppie di archi concentrici fra loro (differenza
+   di raggio, sovrapposizione angolare). Sono geometria, quindi `topo.geometry`
+   (D93-D95); lo spessore dalla tabella e "è piegata" restano di snapbend.
 9. **Dopo la 1.0, additivo (non blocca):** curve da equazione. Una `Curve`
    costruita da una parametrizzazione esatta (`x(t), y(t)` su `[t0, t1]`)
    che ricorda la sua origine (`curve.source`: "generata da questa
