@@ -10,8 +10,12 @@ one doesn't answer the question.
 ## What it is
 
 Deterministic 2D-geometry reconstruction engine for technical drawings.
-Not a DXF library — DXF is just the first input adapter. Takes messy CAD
-geometry (DXF/DWG, experimental PDF, or raw point/primitive dicts) and
+Not a DXF library: `topo` knows no file format (D123). One distribution
+(`g-topo`), three packages: `topo` (the engine; `shapely`, `numpy`),
+`topo_dxf` (DXF/DWG adapter, `g-topo[dxf]`, brings `ezdxf`), `topo_pdf`
+(experimental, `g-topo[pdf]`). `topo` never imports an adapter; an adapter
+uses topo's public names only (D129, checked by `gen_index --check`). Takes messy CAD
+geometry (DXF/DWG via `topo_dxf`, experimental PDF, or raw point/primitive dicts) and
 produces a lossless domain model: healed closed contours, a containment
 hierarchy, annotations, an open overlay for features a consumer detects
 (snapbend's `detect_flat()` attaches holes/bends/engraving; topo itself knows
@@ -28,11 +32,12 @@ process or product.
 ## Pipeline
 
 ```
-load_dxf / document_from_msp / load_geometry   →  Document   (edges + annotations, zero topology)
+topo_dxf.load_dxf / load_geometry / load_segments  →  Document   (edges + annotations, zero topology)
 heal(doc)                                       →  Result     (topology only: closed contours, outer/inner tree — NO hole/bend classification)
 island(doc, max_gap=)                           →  Result     (alternative to heal for drawings of VIEWS: one cluster per outer contour not inside another, outer = outer face of its planar network)
 (a consumer's reading, e.g. snapbend.flat.detect_flat)  →  writes cluster.detected (the open overlay)
-to_dxf / split / to_json / save_json / to_svg / to_view_model  →  render from the model (never re-reads source)
+split(result)                                   →  list[Result], one per part (no format)
+topo_dxf.to_dxf / to_json / save_json / to_svg / to_view_model  →  render from the model (never re-reads source)
 ```
 
 ### Which output gives you what
@@ -44,18 +49,18 @@ it directly and render only what you hand on.
 | output | what is in it | exact curves | coordinates | annotations | `detected` | weight | use it when |
 |---|---|---|---|---|---|---|---|
 | `Result` (in memory) | everything: contours, segments, roles, trash, annotations with `references`/`target`, `detected` | yes (native primitives) | full precision | yes | yes | — | you can run code: ask the model, don't parse an export |
-| `to_dxf` / `split` | the geometry back as CAD, one layer per role | **yes** (arcs, circles, native `SPLINE`) | full precision | yes (opt.) | written per item (D70) | like a DXF | a machine or a CAD user needs the file |
+| `topo_dxf.to_dxf` | the geometry back as CAD, one layer per role | **yes** (arcs, circles, native `SPLINE`) | full precision | yes (opt.) | written per item (D70) | like a DXF | a machine or a CAD user needs the file |
 | `to_json` / `save_json` / `save_xml` | per-part metadata (counts, areas, bbox, custom fields) | — | **none** | no | counts only | tiny | a business system needs numbers about parts |
 | `to_view_model` | every feature as polylines + role + colour | no (discretized) | full precision | yes | every collection drawn under `features` (D90) | can exceed the DXF on sheets of views | an external renderer draws it |
 | `to_svg` | the view model as an image | no (discretized) | full precision | yes | as the view model | like the view model | a person looks at it |
 | `to_text` *(experimental, D84)* | contours named by shape with ids (`C1.3`), unnamed ones side by side, open edges inside clusters, dimensions/leaders by id, texts, `detected` generically, what was not understood | splines described (ends, bbox, length); exact data with `spline_data=True` | rounded (`decimals=3`) | yes, by id | yes, generically | a fraction of the DXF; size watched by `tests/real/test_text_budget.py` | a language model has to answer questions about the drawing |
 
-`split_to_files(doc, folder)` = `heal` + `split` + `.saveas()` per part — the only function that writes to disk on its own.
+`topo_dxf.split_to_files(doc, folder)` = `heal` + `split` + `to_dxf` + `.saveas()` per part — the only function that writes to disk on its own.
 
 ## How to write a call
 
-One `import topo`, then every name with its full path: `topo.heal(...)`,
-`topo.Result`, `topo.geometry.contour_shape(...)`, `topo.steps.find_loops(...)`.
+`import topo` (plus `import topo_dxf` to read or write DXF), then every name
+with its full path: `topo.heal(...)`, `topo_dxf.load_dxf(...)`, `topo.Result`, `topo.geometry.contour_shape(...)`, `topo.steps.find_loops(...)`.
 Never `from topo.steps import find_loops` or `from topo import steps`: a name
 read alone in the middle of a script doesn't say whose it is;
 `topo.steps.find_loops` does. Every example in this file follows it — write
@@ -64,14 +69,16 @@ your code the same way (D119).
 ## Golden path
 
 ```python
-import topo
+import topo, topo_dxf
 
-doc = topo.load_dxf("part.dxf", tolerance=0.5)
+doc = topo_dxf.load_dxf("part.dxf", tolerance=0.5)
 check = topo.validate(doc)                      # input validation, optional
 result = topo.heal(doc, label="P-1024")
 if not result.is_valid:                           # check before handing output to a machine
     raise SystemExit(result.errors)
-topo.to_dxf(result, doc).saveas("out.dxf")
+topo_dxf.to_dxf(result, doc).saveas("out.dxf")
+for part in topo.split(result):                   # one Result per part, any format
+    topo_dxf.to_dxf(part, doc).saveas(f"{part.clusters[0].label}.dxf")
 topo.save_json(result, "out.json")
 ```
 
@@ -79,10 +86,8 @@ topo.save_json(result, "out.json")
 
 | name | signature (defaults trimmed) | does |
 |---|---|---|
-| `load_dxf` | `(path, upgrade=False, explode_inserts=True, flatten_z_flag=True, verbose=False, tolerance=0.05, role_rules=(), ignore_layers=None) -> Document` | reads DXF/DWG via ezdxf (once), audits, upgrades legacy, explodes INSERTs, translates to pure `Edge`/`Annotation`. `role_rules` assign `Edge.role` at load — in order, first match wins, none → `unknown` — and `Annotation.role` from the rules on the name only (D127; the source layer itself is not kept, D128); unknown roles become consumer role slugs, not errors. DWG needs ODA File Converter (`ODA_PATH` env var). |
 | `RoleRule` | `(role, name=None, name_contains=None, dashed=None, dash=None, color=None)` | a rule: all given conditions true → `role`. `name`/`name_contains` = source group name (the DXF layer, case-insensitive); `dashed` = linetype pattern has a gap (`EdgeStyle.is_dashed`), not the linetype name (chains included); `dash` = `"continuous"`/`"uniform"`/`"chain"` (`EdgeStyle.dash_kind`: chain = marks of different lengths alternate, e.g. long dash + dot; uniform = one mark repeated), unknown value → `ValueError`; `color` = effective RGB: `(r, g, b)`, `"#rrggbb"` or a base name (`cyan`, ...); a DXF ACI index is read as its canonical RGB (7 is white), an int is an error (D126). No condition, or unknown colour name → `ValueError`. topo ships no vocabulary: the caller writes the rules (D63). |
 | `name_rules` | `(mapping: dict[str, str]) -> list[RoleRule]` | `{name: role}` → one `RoleRule(role, name=...)` per entry. |
-| `document_from_msp` | `(msp, tolerance=0.05, role_rules=(), ignore_layers=None, source_path="") -> Document` | same as `load_dxf` but from an already-open ezdxf `modelspace`; no audit/upgrade/sanitize. |
 | `load_geometry` | `(entities: list[dict], tolerance=0.05, source_path="") -> Document` | builds a `Document` from pure geometry, no file. Entity `type`: `line`(start,end) / `arc`(center,radius,start_angle,end_angle deg,ccw) / `circle`(center,radius) / `polygon`(points; always closed, D96) / `spline`(control_points,knots,degree,weights?,fit_points?,closed?) / `ellipse`(center,major_axis vector,ratio?,start_param?,end_param?,ccw?). Optional `role` per entity, same open vocabulary as `RoleRule.role`. |
 | `load_segments` | `(segments, tolerance=0.05, role="unknown", source_path="") -> Document` | a `Document` from topo segments (or lists of them, e.g. the `topo.geometry` builders); every edge gets `role`. The way to draw with topo in hand: `topo.load_segments(fg.rectangle(200, 100) + fg.circle(5))` (D96). |
 | `validate` | `(doc: Document) -> Result` | input validation, no mutation. `is_valid=False` = unworkable (no geometry / NaN / all-degenerate). Warnings = workable but flagged. |
@@ -96,8 +101,7 @@ topo.save_json(result, "out.json")
 | `steps.outer_face` | `(edges, epsilon=0.0) -> OuterFace\|None` | outer contour of a planar network: walk of its outer face starting from the leftmost geometric point, per connected component, largest area wins. `OuterFace`: `polygon`, `segments`, `styles`, `loop`, `.edges`, `spurs` (walked there and back — axes, marks). |
 | `steps.refit_tessellations` | `(edges, max_segment=0.1, min_run=10, arc_fit_tolerance=0.02, node_decimals=3) -> list[Edge]` | a chain of ≥`min_run` short `LineSeg`s (a curve written as points) is refitted as arc/circle/spline; chain ends keep their original nodes. |
 | heal steps, all in `topo.steps` (D117) | `merge_collinear_overlaps`, `merge_cocircular_overlaps`, `weld_degenerate_linesegs`, `split_non_finite(edges) -> (finite, broken)`, `split_labeled(edges, is_structural=None) -> (kept, labeled)`, `close_near_full_arcs(edges, tolerance, max_missing_angle=NEAR_FULL_ARC_MISSING) -> (edges, n)` (arc → circle only if the gap is within `tolerance` AND at most 2° are missing; `tolerance=math.inf` for angle only, D112), `close_free_gaps(edges, tolerance)` (free ends paired two by two by nearness, never an edge with itself: a side shorter than the tolerance stays, D112), `dangling_splines(edges)`, `find_non_contour_edges(edges, tolerance) -> set[id]`, `find_joining_edges(edges, candidate_ids)`, `free_ends(edges, epsilon=0.0) -> [(point, mm)]`, `find_loops(edges, non_contour_ids, tolerance) -> LoopSearch`, `repair_merged_corners(edges, tolerance, exclude_ids) -> (edges, n, skipped)`, `structural_loops(loops, is_structural=None)`, `loops_to_curves(loops)`, `polygonize_edges(edges, tolerance) -> list[Polygon]`, `polygons_to_curves(polygons)`, `edges_to_open_curves(edges, exclude_ids)`, `labeled_curves(edges)`, `build_hierarchy(features, label="", source_file="", is_structural=None) -> (clusters, trash)` | `heal()` is a recipe composing these, in this order (D62); compose your own (e.g. stop before `build_hierarchy`). None mutates its input. `LoopSearch`: `edges` (after corner repair — use these downstream), `loops`, `method` (`"exact"`/`"corner_repair"`/`"tolerant"`/`"none"`), `repaired`, `skipped_corners`, `unrepaired_corners`, `open_nodes`. When `method == "none"`, `heal()` falls back to `polygonize_edges` + `polygons_to_curves`. |
-| `to_dxf` | `(result, source_doc=None, filter_cluster=None, include_annotations=True, include_trash=True, annotation_layer="Annotation", role_styles=None, layers=None, allow_invalid=True) -> ezdxf.Drawing` | renders the model to a **new** DXF (R2010), never rereads source. Layers and looks are the caller's (D128): `layers={role: "Name"}` or `{role: fn(element) -> name}` (a function splits one role over several layers — the element is the Contour, `cluster.detected` item, trash entity or Annotation being written); `role_styles={role: RoleStyle}`, applied on the layer. Unnamed roles keep the adapter's default layer: `OuterContour`/`InnerContour`/`Trash` for `unknown`/the slug for any other role. Colours are topo's palette (`role_style`), written as the exact ACI index (3/2/1/8); a caller's colour is true color. An annotation with a role goes on its role's layer, one without on `annotation_layer`. topo keeps no map between calls. `source_doc` only for header vars (`$INSUNITS`...). An invalid result is rendered anyway (trash + annotations), like `to_svg`; `allow_invalid=False` → `ValueError` (for a caller feeding a machine, D83). Writes **every collection attached to `cluster.detected`**, none known by name (D70, D90): an item with a `role` goes on its role's layer, geometry from `item.contours` (each with `segments`/`styles`/`polygon` and optionally its own consumer role) or the item itself; with `polygon` → closed entity, without → one entity per primitive. |
-| `split` | `(result, source_doc=None, namer=None, include_annotations=True, min_area=50.0, exclude_types=None, on_part=None, annotation_layer="Annotation", role_styles=None, layers=None) -> list[ezdxf.Drawing]` | like `to_dxf` but one `Drawing` per part; pure, doesn't touch disk. Parts under `min_area` mm² dropped (warning). Always raises `ValueError` if invalid (no parts, nothing to split). |
+| `split` | `(result, namer=None, min_area=50.0) -> list[Result]` (`DEFAULT_MIN_CLUSTER_AREA`) | one `Result` per kept part, no format (D124, D129): its one cluster plus the trash entities and annotations that belong to it — the part that contains them, else the nearest of **all** parts; nothing duplicated or lost; other fields copied. `namer(i, cluster)` sets `cluster.label` (default `f"{label}_P{i+1}"`). Parts under `min_area` mm² dropped with a warning. **Mutates** labels and `result.warnings`. Raises `ValueError` if `result` is invalid. Write each part with any renderer: `topo_dxf.to_dxf(part, doc)`, `topo.to_svg(part)`. No `on_part`: your loop is the hook. |
 | `inject` | `(result, data_injector=None, snap_distance=0.0) -> Result` | optional enrichment from texts. **Mutates** `cluster.custom`. `data_injector(cluster, list[str]) -> dict` receives the texts of `result.annotations` inside each part's outer; `snap_distance > 0` also hands a text outside every part to the nearest one within that distance (same rule as `anchor_annotations`, D82). No-op without `data_injector`. |
 | `anchor_annotations` | `(result, snap_distance=0.0, leader_distance=0.5) -> Result` | assigns `Annotation.cluster_ref` — which cluster an annotation belongs to, by containment (+ optional snap distance for annotations just outside) — `Leader.target` via `leader_target`, and `Dimension.references` via `dimension_references`. **Mutates** annotations in place, also returns. Run it after a consumer has chosen its features (a detection that moves holes from `inners` to `holes` makes targets computed before go stale). |
 | `leader_target` | `(result, leader, distance=0.5) -> str\|None` | element the arrow tip (`leader.vertices[0]`) lands on, as a path in `result`: `"clusters[0].outer"`, `"clusters[0].inners[3]"`, `"clusters[1].holes[2]"` (any `cluster.detected` collection). Nearest boundary within `distance` (tie → smaller element); else smallest closed non-outer element covering the tip; else `None` (e.g. section arrows outside the view). Geometry only, never reads the text (D66). |
@@ -119,27 +123,44 @@ topo.save_json(result, "out.json")
 | `geometry.spanning_lines` | `(bounds, items, coverage=0.85, eps=0.5, cluster_tolerance=1.5) -> (ys, xs)` | lines strictly inside `bounds` crossing ≥ `coverage` of its width (horizontal) / height (vertical). |
 | `geometry.sides_on_border` | `(bounds, border, tolerance) -> list[str]` | sides of `bounds` (`left`/`bottom`/`right`/`top`) lying on the same side of `border` within `tolerance`. |
 | `geometry.axis_aligned_share` | `(segments, angle_tolerance) -> float\|None` | share of `LineSeg` length within `angle_tolerance` degrees of horizontal/vertical; `None` with no `LineSeg`. Also in `topo.core.geometry.axis`: `merge_intervals`, `interval_coverage`, `cluster_values`, `axis_lines`, `items_inside`. |
-| `split_to_files` | `(doc, output_folder, label="", source_file="", tolerance=None, namer=None, include_annotations=True, min_area=50.0, exclude_types=None, annotation_layer="Annotation", is_structural=None, role_styles=None, layers=None) -> Result` | multi-part flow + disk write: `heal → split → .saveas()`. Filename `f"{cluster.label}.dxf"`. **Only** topo function that writes to disk. |
 | `to_json` / `save_json` | `(result, indent=2, extra_metadata: Callable[[Cluster], dict]=None) -> str / None(writes path)` | per-part metadata per `rules/metadata_schema.py`, no coordinates. `extra_metadata(cluster)` called once per cluster, result merged in outside the schema. |
 | `save_xml` | `(result, path, extra_metadata=None) -> None` | same fields as `save_json`, XML. |
 | `to_view_model` | `(result, tolerance=0.05, include_trash=True, include_annotations=True, role_styles=None) -> dict` | render-oriented JSON: every feature's coordinates + role + hex color (topo's palette with `role_styles` on top), **discretized to polylines**; the overlay under `cluster["features"][name]`, one entry per contour plus the scalar fields of the item's `to_dict()` (D90). Feeds `to_svg`; usable by an external renderer. |
 | `to_svg` / `save_svg` | `(result, tolerance=0.05, include_trash=True, include_annotations=True, padding=0.03, background="#1e1e1e", true_circles=True, stroke_width=None, size=None, units=None, allow_invalid=True, role_styles=None) -> str / None(writes path)` | SVG render, one `<g data-cluster>` per part, Y flipped. `units="mm"` = true scale (1 unit = 1 mm), e.g. for a machine that imports SVG. Geometry still discretized — use `to_dxf` when exact curves matter. Invalid result rendered anyway; `allow_invalid=False` → `ValueError` (D83). |
-| `write_metadata_to_dxf` / `read_metadata_from_dxf` | `(doc, cluster, extra=None) -> None` / `(doc) -> dict` | writes/reads the `save_json` fields as `TOPO` XDATA on the `OuterContour`-layer entity. |
+| `build_metadata` | `(cluster, schema=None, extra=None) -> dict` | one cluster's metadata per the active schema: the single source of `save_json`, `save_xml` and `topo_dxf.write_metadata_to_dxf`. |
 | `set_schema` | `(schema: dict) -> None` | replaces the active metadata schema at runtime (for pip-installed use where you can't edit `metadata_schema.py`). |
-| `inspect_dxf` / `inspect_document` / `inspect_result` / `inspect_file` | see below | 3-level debug print, stdout only. |
+| `inspect_document` / `inspect_result` | see below | debug print of levels 2–3, stdout only; level 1 (the raw file) is `topo_dxf.inspect_dxf`. |
 | `normalize_role` / `is_structural_role` | `(value) -> str` / `(role) -> bool` | role-vocabulary primitives (see below). `is_structural_role` is the engine's own minimal predicate (outer/inner only) — a consumer passes its own extended one to `heal(is_structural=...)`. |
 | `RoleStyle` | `dataclass(color: tuple[int,int,int]|None, linetype: str|None, dash: tuple[float,...]|None, lineweight: float|None)` (`topo.RoleStyle`, `topo.model.RoleStyle`) | how the caller wants a role drawn, no format (D37, D128): passed as `role_styles={role: RoleStyle(...)}` to `to_dxf`/`split`/`split_to_files`/`to_svg`/`to_view_model`. Always on top of topo's palette: `None` fields keep the palette's. `dash` uses `EdgeStyle.dash` signs; in DXF it is registered as `linetype` or `<ROLE>_DASH`. A `linetype` with no `dash`, neither in the output document nor in ezdxf's standard table → `ValueError` (D85). Where a role goes is not here: `to_dxf(layers=...)`. |
 | `DEFAULT_ROLE_STYLES` / `CONSUMER_ROLE_STYLE` / `role_style` | `topo.model`; `role_style(role, role_styles=None) -> RoleStyle` | topo's palette (D128), one for every format: `outer` green (0,255,0), `inner` yellow (255,255,0), `unknown` red (255,0,0), any other role gray (128,128,128). `role_style` = palette with the non-`None` fields of the caller's map on top. Every exporter calls it and only translates; an adapter author picks no colours. |
 | `non_contour_candidates` | `(doc, tolerance=None) -> list[Edge]` | same topological criterion `heal()` uses internally to exclude an edge from the contour graph (both endpoints on branching nodes, and not on the boundary of its connected component's outer face, D111) — asserts **no** meaning (not "bending", not anything). snapbend's bend detection is just one interpretation of these candidates. A consumer (snapdraw, the interpreter) that wants a different interpretation (a raised-feature edge in a plan view is not a bend line) calls this to get the same candidate set without re-deriving the criterion, then sets `edge.role` on the returned `Edge`s (references into `doc.edges` — mutation is reflected there) **before** `heal()`. Runs on `doc.edges` as-is, before `heal()`'s own merge/gap-closing preprocessing — meant to decide roles pre-`heal()`, not to predict its exact excluded set to the edge case. |
 
+## Adapters — `topo_dxf.<name>`, `topo_pdf.<name>`
+
+`import topo_dxf` needs `ezdxf` (`pip install g-topo[dxf]`); without it the
+import error names the extra. Layer names and colours are the caller's
+(`layers=`, `role_styles=`); the rest is the adapter's default.
+
+| name | signature (defaults trimmed) | does |
+|---|---|---|
+| `topo_dxf.load_dxf` | `(path, upgrade=False, explode_inserts=True, flatten_z_flag=True, verbose=False, tolerance=0.05, role_rules=(), ignore_layers=None, skip_layers=SKIP_LAYERS) -> Document` | reads DXF/DWG via ezdxf (once), audits, upgrades legacy, explodes INSERTs, translates to pure `Edge`/`Annotation`. `role_rules` assign `Edge.role` at load — in order, first match wins, none → `unknown` — and `Annotation.role` from the rules on the name only (D127; the source layer itself is not kept, D128); unknown roles become consumer role slugs, not errors. `ignore_layers`: substring match; `skip_layers`: exact name, any case, default `("Trash", "Annotation")` — the writer's own layers, so a file topo wrote reads back clean; `()` reads everything (D129). DWG needs ODA File Converter (`ODA_PATH` env var). |
+| `topo_dxf.document_from_msp` | `(msp, tolerance=0.05, role_rules=(), ignore_layers=None, source_path="", skip_layers=SKIP_LAYERS) -> Document` | same as `load_dxf` but from an already-open ezdxf `modelspace`; no audit/upgrade/sanitize. |
+| `topo_dxf.to_dxf` | `(result, source_doc=None, filter_cluster=None, include_annotations=True, include_trash=True, annotation_layer="Annotation", role_styles=None, layers=None, allow_invalid=True, exclude_types=None) -> ezdxf.Drawing` | renders the model to a **new** DXF (R2010), never rereads source. Layers and looks are the caller's (D128): `layers={role: "Name"}` or `{role: fn(element) -> name}` (a function splits one role over several layers — the element is the Contour, `cluster.detected` item, trash entity or Annotation being written); `role_styles={role: RoleStyle}`, applied on the layer. Unnamed roles keep the adapter's default layer: `OuterContour`/`InnerContour`/`Trash` for `unknown`/the slug for any other role. Colours are topo's palette (`role_style`), written as the exact ACI index (3/2/1/8); a caller's colour is true color. An annotation with a role goes on its role's layer, one without on `annotation_layer`. topo keeps no map between calls. `source_doc` only for header vars (`$INSUNITS`...). Writes everything the `Result` holds (trash, annotations): for one file per part pass a part from `topo.split`. `filter_cluster(cluster)` skips clusters only; `exclude_types={"TEXT"}` removes those DXF entity types. An invalid result is rendered anyway (trash + annotations), like `to_svg`; `allow_invalid=False` → `ValueError` (for a caller feeding a machine, D83). Writes **every collection attached to `cluster.detected`**, none known by name (D70, D90): an item with a `role` goes on its role's layer, geometry from `item.contours` (each with `segments`/`styles`/`polygon` and optionally its own consumer role) or the item itself; with `polygon` → closed entity, without → one entity per primitive. |
+| `topo_dxf.split_to_files` | `(doc, output_folder, label="", source_file="", tolerance=None, namer=None, include_annotations=True, min_area=50.0, exclude_types=None, annotation_layer="Annotation", is_structural=None, role_styles=None, layers=None) -> Result` | multi-part flow + disk write: `topo.heal → topo.split → to_dxf + .saveas()` per part; writing options go to `to_dxf`. Filename `f"{cluster.label}.dxf"`. The **only** function that writes to disk. |
+| `topo_dxf.write_metadata_to_dxf` / `read_metadata_from_dxf` | `(doc, cluster, extra=None) -> None` / `(doc) -> dict` | writes/reads the `save_json` fields (`topo.build_metadata`) as `TOPO` XDATA on the `OuterContour`-layer entity. |
+| `topo_dxf.inspect_dxf` / `inspect_file` | see below | level 1 debug (raw DXF entities); `inspect_file` prints all three levels for a file. |
+| `topo_dxf.LAYER_OUTER` / `LAYER_INNER` / `TRASH_LAYER` / `LAYER_ANNOTATION` / `DEFAULT_LAYERS` / `SKIP_LAYERS` | `"OuterContour"` / `"InnerContour"` / `"Trash"` / `"Annotation"` / `{role: layer}` / `("Trash", "Annotation")` | the adapter's default layers (topo has none, D123). |
+| `topo_dxf.role_to_dxf_layer` | `(role, element=None, layers: LayerMap=None) -> str` | the layer `to_dxf` writes a role on: the caller's map (a name, or the function called with `element`), else the default, else the role slug (D31). `LayerMap = Mapping[str, str \| Callable[[object], str]]`. |
+| `topo_pdf.load_pdf` | `(path, snap_tolerance=0.15) -> list[Edge]` | **experimental** (D10): PDF vector geometry in mm, Y up, nodes snapped. Returns edges, not a `Document`: does not feed `heal()` yet. |
+
 ### Debug/inspect (stdout only, 3 levels in order)
 
 ```python
-topo.inspect_dxf(path, entities=True, limit=40)          # L1: raw DXF entities, no topo
+topo_dxf.inspect_dxf(path, entities=True, limit=40)      # L1: raw DXF entities, no topo
 topo.inspect_document(doc, graph=True, limit=60)         # L2: Document — what the adapter understood
 topo.inspect_result(result, coords=False)                # L3: Result — what topo produced
-topo.inspect_file(path, tolerance=0.05, role_rules=(),
-                    run_heal=True, entities=True, coords=False)  # orchestrates all three
+topo_dxf.inspect_file(path, tolerance=0.05, role_rules=(),
+                      run_heal=True, entities=True, coords=False)  # orchestrates all three
 ```
 
 ## Domain types
@@ -218,12 +239,12 @@ LAYERS = {FLANGE_UP: "FlangeUp"}
 Then, in your pipeline:
 
 ```python
-import topo
+import topo, topo_dxf
 import your_tool.roles as roles
 
-doc = topo.load_dxf("part.dxf", role_rules=topo.name_rules({"FlangeMarks": roles.FLANGE_UP}))
+doc = topo_dxf.load_dxf("part.dxf", role_rules=topo.name_rules({"FlangeMarks": roles.FLANGE_UP}))
 result = topo.heal(doc, is_structural=roles.is_structural)   # only if FLANGE_UP is structural
-topo.to_dxf(result, doc, role_styles=roles.ROLE_STYLES, layers=roles.LAYERS)   # FlangeUp layer, orange
+topo_dxf.to_dxf(result, doc, role_styles=roles.ROLE_STYLES, layers=roles.LAYERS)   # FlangeUp layer, orange
 ```
 
 That assumes the source already groups flange edges under their own name
@@ -278,9 +299,9 @@ frame is the only outer and every view becomes its interior.
 ### Consumer recipe (snapdraw / a drawing reader)
 
 ```python
-import topo
+import topo, topo_dxf
 
-doc = topo.load_dxf("sheet.dxf")
+doc = topo_dxf.load_dxf("sheet.dxf")
 
 # 1. your own semantics: mark what is not part geometry, by role
 for edge in doc.edges:
@@ -311,15 +332,16 @@ decided by outer contours and containment, not by spacing.
 ## Hard rules (violate these = broken output)
 
 - `heal()` never classifies holes/bends — that is a consumer's reading (snapbend `detect_flat`, D88).
-- **Check `result.is_valid`** before using output for anything but looking at it. `to_dxf`/`to_svg` render an invalid result anyway (default `allow_invalid=True`); pass `allow_invalid=False` to get `ValueError` instead. `split` always raises on invalid (D83).
+- **Check `result.is_valid`** before using output for anything but looking at it. `topo_dxf.to_dxf`/`to_svg` render an invalid result anyway (default `allow_invalid=True`); pass `allow_invalid=False` to get `ValueError` instead. `split` always raises on invalid (D83).
 - `tolerance` default `0.05`; a gap ≥ 4× tolerance is **not** auto-closed (deliberate — raise `tolerance` or fix the source).
 - `tolerance` is the widest gap topo may close, never a node snap: every endpoint sits on one grid, `NODE_DECIMALS = 3` (`topo.core.geometry.measure`), whatever the tolerance or the reading (D113). Two ends are one node only if they coincide on that grid.
-- `role_rules` is a `load_dxf`/`document_from_msp` param, **not** a `heal` param.
+- `role_rules` is a `topo_dxf.load_dxf`/`document_from_msp` param, **not** a `heal` param.
+- `topo.load_dxf`, `topo.to_dxf`, `topo.split_to_files`, `topo.inspect_dxf`/`inspect_file`, `topo.write/read_metadata_*`, `topo.load_pdf` **no longer exist** (D129, clean break): they are `topo_dxf.<name>` / `topo_pdf.load_pdf`. `topo.split` returns `list[Result]`, not drawings.
 - `label_map`/`linetype_map`/`color_map` **no longer exist** (D63, clean break). Migration: `label_map=m` → `role_rules=topo.name_rules(m)`; `linetype_map={"DASHED": r}` → `topo.RoleRule(r, dashed=True)` (dash is read from the pattern, not the linetype name); `color_map={"cyan": r}` → `topo.RoleRule(r, color="cyan")`. The old fixed priority (name, then linetype, then colour) is gone: put the rules in the order you want, first match wins. `Result.label_map` and `doc.source_meta["label_map"]` are gone too.
-- `to_dxf`/`split` never re-read the source file — they render from the model only.
+- `topo_dxf.to_dxf` never re-reads the source file — it renders from the model only.
 - Splines are re-emitted as native `SPLINE`, open overlay geometry (e.g. a consumer's engraving) as native per-primitive entities — **never** discretized to `LWPOLYLINE` in DXF output. `to_svg`/`to_view_model` **do** discretize everything (visualization, not exact curves).
 - Nothing is silently dropped: unclassified geometry → `trash_entities`/`Trash` layer, unmodeled DXF types (`HATCH`,`IMAGE`,`TABLE`,`3DFACE`,`XLINE`...) → warning in `doc.warnings`.
-- `island()` and `heal()` are two readings, not two steps: never chain them on the same document. Both return a `Result`; `to_dxf()`/`split()` work on either.
+- `island()` and `heal()` are two readings, not two steps: never chain them on the same document. Both return a `Result`; `split()` and every renderer work on either.
 - snapbend's `detect_flat()` assumes a **flat part seen from its face** (cutting file, sheet development). **Never run it on `island()` views**: it finds "bends" in isometrics and assembly views and "holes" in logo letters — meaningless by construction. Feature reading on views is snapdraw's: in topo use the geometry — `inners` + `contour_shape` (circle, stadium, rectangle...), `concentric_groups`, `arcs_around` — and say so; calling a circle a hole is the reader's call, not topo's. The name states the precondition (renamed from `detect`, D67).
 - `island()` puts closed loops inside an outer in `inners` without saying hole or face — same as `heal()` (D15).
 
@@ -343,14 +365,14 @@ Also recent but stable/documented already: `EllipseSeg` (5th primitive, `"ellips
 ## Module layout (only if you need to import something not re-exported)
 
 ```
-topo/adapters/   format → primitive translation (dxf, pdf[frozen], geometry)
-topo/core/       pure geometry engine: primitives (+ fitting: simplify_points), topology (+ noding, outer_face),
+topo_dxf/        DXF/DWG adapter (loader, writer, layers, xdata, recipes: split_to_files, inspect)
+topo_pdf/        PDF adapter (experimental, frozen)
+topo/core/       pure geometry engine (+ geometry_input: load_geometry / load_segments): primitives (+ fitting: simplify_points), topology (+ noding, outer_face),
                   healing (+ islands), heal(), island()
 topo/model/      the domain: Document, Result, Cluster, Annotation, role.py, detected.py (overlay)
-topo/tools/      optional Result stages: anchor, inject, rotate, tabs, non_contour
-topo/io/         renderers: dxf.py, svg.py, view_model.py, exporter.py (json/xml/xdata)
+topo/tools/      optional Result stages: split, anchor, inject, rotate, tabs, non_contour
+topo/io/         renderers with no format dependency: svg.py, view_model.py, text.py, exporter.py (json/xml)
 topo/rules/      metadata schema, validator
-topo/recipes.py  split_to_files
-topo/inspect.py  3-level debug
+topo/inspect.py  debug levels 2-3
 ```
-Dependency rule: `core`/`model` never import `adapters`/`tools`/`io`. Everything else imports `core`/`model`/`rules`.
+Dependency rule: `topo` never imports `ezdxf`/`fitz`/`pymupdf`/`topo_dxf`/`topo_pdf`; an adapter never imports `topo.core`/`tools`/`io`/`rules` nor the other adapter; inside `topo`, `core`/`model` never import `tools`/`io`.

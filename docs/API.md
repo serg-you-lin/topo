@@ -1,7 +1,11 @@
 # topo — riferimento API
 
-Tutto quello che serve è in `import topo`. I moduli interni non si importano
-direttamente. Questo documento copre ogni nome esportato in `topo.__all__`.
+Una distribuzione (`g-topo`), tre pacchetti (MAP.md D123, D124, D129):
+`topo`, il motore, che non conosce alcun formato di file; `topo_dxf`, l'adapter
+DXF (`pip install g-topo[dxf]`); `topo_pdf`, l'adapter PDF sperimentale
+(`g-topo[pdf]`). I moduli interni non si importano direttamente. Questo
+documento copre ogni nome esportato in `topo.__all__` (§1–§8),
+`topo_dxf.__all__` (§9) e `topo_pdf.__all__` (§10).
 
 Convenzioni di questo documento:
 
@@ -14,8 +18,9 @@ Convenzioni di questo documento:
 I tipi di dominio (`Document`, `Result`, `Cluster`, …) sono descritti
 in fondo.
 
-**Come si scrive una chiamata.** Un solo `import topo`, poi ogni nome con il
-suo percorso intero: `topo.heal(...)`, `topo.Result`,
+**Come si scrive una chiamata.** `import topo` (e `import topo_dxf` se leggi o
+scrivi DXF), poi ogni nome con il suo percorso intero: `topo.heal(...)`,
+`topo_dxf.load_dxf(...)`, `topo.Result`,
 `topo.geometry.contour_shape(...)`, `topo.steps.find_loops(...)`. Mai
 `from topo.steps import find_loops` o `from topo import steps`: un nome letto
 da solo a metà di uno script non dice di chi è, `topo.steps.find_loops` sì.
@@ -25,76 +30,25 @@ Tutti gli esempi di questo documento sono scritti così (MAP.md D119).
 
 ## Indice
 
-1. [Apertura file](#1-apertura-file) — `load_dxf`, `document_from_msp`, `load_geometry`, scrivere un adapter
+1. [Geometria in ingresso](#1-geometria-in-ingresso) — `load_segments`, `load_geometry`, `RoleRule`, `name_rules`, scrivere un adapter
 2. [Validazione](#2-validazione) — `validate`, `validate_result`
-3. [Elaborazione e render](#3-elaborazione-e-render) — `heal` / `island` e i suoi mattoni (core), `anchor_annotations` / `inject` (tools), `to_dxf` / `split` (io), `split_to_files` (recipes)
+3. [Elaborazione](#3-elaborazione) — `heal` / `island` e i suoi mattoni (core), `split`, `anchor_annotations` / `inject` (tools)
 4. [Export](#4-export) — `save_json`, `to_json`, `save_xml`, `to_view_model`, `to_svg`, `save_svg`
-5. [Metadati XDATA](#5-metadati-xdata) — `write_metadata_to_dxf`, `read_metadata_from_dxf`, `set_schema`
-6. [Ispezione / debug](#6-ispezione--debug) — `inspect_dxf`, `inspect_document`, `inspect_result`, `inspect_file`
+5. [Metadati](#5-metadati) — `build_metadata`, `set_schema`
+6. [Ispezione / debug](#6-ispezione--debug) — `inspect_document`, `inspect_result`
 7. [Tipi di dominio](#7-tipi-di-dominio)
 8. [Il flusso completo, in ordine](#8-il-flusso-completo-in-ordine)
+9. [`topo_dxf` — l'adapter DXF](#9-topo_dxf--ladapter-dxf) — `load_dxf`, `document_from_msp`, `to_dxf`, `split_to_files`, XDATA, `inspect_dxf` / `inspect_file`, i layer di default
+10. [`topo_pdf` — l'adapter PDF](#10-topo_pdf--ladapter-pdf) — `load_pdf` (sperimentale)
 
 ---
 
-## 1. Apertura file
+## 1. Geometria in ingresso
 
-### `load_dxf`
-
-```python
-topo.load_dxf(
-    path,
-    upgrade=False,
-    explode_inserts=True,
-    flatten_z_flag=True,
-    verbose=False,
-    tolerance=0.05,
-    role_rules=(),
-    ignore_layers=None,
-) -> Document
-```
-
-Unico punto in cui `ezdxf` viene usato per **leggere**. Apre un `.dxf` o `.dwg`,
-lo audita, lo porta a R2010 se legacy, esplode gli `INSERT`, sanifica (OCS, Z≠0),
-traduce le entità in `Edge` puri e le annotazioni in `Annotation`. Dopo questa
-funzione il documento `ezdxf` sorgente sparisce.
-
-| parametro | significato |
-|---|---|
-| `path` | percorso `.dxf` o `.dwg`. Per il `.dwg` vedi la sezione **DWG** qui sotto. |
-| `upgrade` | forza l'upgrade a R2010 anche se non necessario. |
-| `explode_inserts` | `True` (default): esplode i blocchi in primitive. **Metti `False` solo se vuoi ignorare i blocchi di proposito** — un `INSERT` non esploso viene scartato e la sua geometria sparisce. |
-| `flatten_z_flag` | riporta sul piano le entità con Z ≠ 0. |
-| `tolerance` | tolleranza di arrotondamento dei nodi topologici. Viene salvata in `source_meta` e riletta da `heal()` se non gliela ripassi. |
-| `role_rules` | lista di `RoleRule` — assegnano il **ruolo** agli `Edge` già in fase di traduzione. Valutate in ordine, vince la prima che matcha, nessuna → `unknown`. Il nome valutato da `name`/`name_contains` è il layer; `dashed` e `color` guardano l'aspetto **effettivo** (un'entità `ByLayer` viene risolta al linetype/colore del suo layer). Il layer non esce dall'adapter: l'`Edge` porta solo il ruolo (MAP.md D63). Vedi **`RoleRule`** sotto. |
-| `ignore_layers` | lista di layer da escludere dalla geometria. |
-
-**Ritorna** un `Document`. La diagnostica sul file grezzo (audit, INSERT non
-esplosi, Z≠0, duplicati rimossi, tipi non ri-materializzabili in output) finisce
-in `doc.warnings`; `topo.validate(doc)` la rilancia.
-
-**Solleva** `FileNotFoundError`, `EnvironmentError` (DWG senza `ODA_PATH`),
-`RuntimeError` (conversione DWG fallita), o le eccezioni di lettura di `ezdxf`.
-
-```python
-doc = topo.load_dxf("pezzo.dxf", tolerance=0.5,
-                     role_rules=topo.name_rules({"Piega": "bending", "MARK": "engrave"}))
-for w in doc.warnings:
-    print("loader:", w)
-```
-
-Quando l'intenzione sta nello stile della linea, o in una combinazione di
-nome e stile:
-
-```python
-doc = topo.load_dxf("pezzo.dxf", role_rules=[
-    topo.RoleRule("construction", name_contains="constr", dashed=True),
-    topo.RoleRule("bending", dashed=True),
-    topo.RoleRule("engrave", color="cyan"),
-])
-```
-
-Vedi `14_style_classification.py` per un esempio completo (una regola per
-step, su un file reale in `tests/examples/`).
+topo non apre file: un file entra da un adapter (`topo_dxf.load_dxf`, §9;
+`topo_pdf.load_pdf`, §10), la geometria che hai già in mano da qui. Le
+regole di ruolo (`RoleRule`, `name_rules`) sono di topo e ogni adapter le
+applica.
 
 ### `RoleRule`
 
@@ -142,67 +96,6 @@ rules = topo.name_rules({"Piega": "bending", "MARK": "engrave"})
 rules.append(topo.RoleRule("bending", dashed=True))   # dopo i nomi
 ```
 
-#### DWG
-
-**`topo` non legge il DWG da solo, e nemmeno `ezdxf`.** Il DWG è un formato
-chiuso: il "supporto DWG" di `ezdxf` è l'addon `odafc`, che è un wrapper attorno
-a **ODA File Converter** — converte il `.dwg` in un `.dxf` temporaneo e `ezdxf`
-rilegge quello. `topo` usa esattamente questo (`adapters/dxf/loader.py`).
-
-Per aprire un `.dwg` serve quindi:
-
-1. **ODA File Converter** installato — download gratuito:
-   <https://www.opendesign.com/guestfiles/oda_file_converter>
-2. `topo` deve trovare l'eseguibile. Due modi:
-   - variabile d'ambiente **`ODA_PATH`** = *full path dell'eseguibile*
-     (non la cartella — se ODA è in `ODAFileConverter X.Y.Z\`, il path deve
-     includere `\ODAFileConverter.exe`);
-   - oppure `ODAFileConverter` raggiungibile dal `PATH` di sistema.
-
-Impostare `ODA_PATH`:
-
-| SO | comando |
-|---|---|
-| Windows, permanente | `setx ODA_PATH "C:\Program Files\ODA\ODAFileConverter X.Y.Z\ODAFileConverter.exe"` — poi **riapri il terminale** |
-| Windows, solo sessione (PowerShell) | `$env:ODA_PATH = "C:\...\ODAFileConverter.exe"` |
-| Windows, GUI | Impostazioni → *Modifica le variabili di ambiente relative al sistema* → *Variabili d'ambiente…* → *Nuova* |
-| Linux / macOS, permanente | `export ODA_PATH="/opt/ODAFileConverter/ODAFileConverter"` in `~/.bashrc` o `~/.zshrc`, poi riapri la shell |
-| Linux / macOS, solo sessione | `export ODA_PATH="/opt/ODAFileConverter/ODAFileConverter"` |
-
-Guide di riferimento per le variabili d'ambiente:
-[Windows](https://learn.microsoft.com/windows/win32/procthread/environment-variables) ·
-[Linux/macOS (`export`)](https://www.gnu.org/software/bash/manual/bash.html#Environment).
-
-Se manca tutto, `load_dxf` su un `.dwg` solleva `EnvironmentError` con il link e
-questa stessa guida nel messaggio.
-
----
-
-### `document_from_msp`
-
-```python
-topo.document_from_msp(
-    msp,
-    tolerance=0.05,
-    role_rules=(),
-    ignore_layers=None,
-    source_path="",
-) -> Document
-```
-
-Costruisce un `Document` da un `modelspace` `ezdxf` **già aperto**. Utile per
-i test o per geometria generata a mano. **Non** fa audit / upgrade / sanitize: si
-assume che il `msp` sia già pronto. `role_rules` funziona come in `load_dxf()`
-— vedi sopra.
-
-```python
-import ezdxf
-doc_ez = ezdxf.new("R2010"); msp = doc_ez.modelspace()
-msp.add_line((0, 0), (100, 0)); msp.add_line((100, 0), (100, 50))
-# ...
-document = topo.document_from_msp(msp, tolerance=0.5)
-```
-
 ### `load_segments`
 
 ```python
@@ -233,7 +126,7 @@ topo.load_geometry(
 ```
 
 Costruisce un `Document` da geometria pura — dict Python, non un file.
-Stesso contratto di ritorno di `load_dxf`/`document_from_msp`, ma la sorgente è
+Stesso contratto di ritorno di `topo_dxf.load_dxf`, ma la sorgente è
 chi chiama: un generatore parametrico (uno sviluppo cono/cilindro calcolato
 altrove) o un ricostruttore di contorni da punti (una traccia vettorializzata da
 computer vision). Chi chiama non importa nessun tipo interno di topo.
@@ -241,7 +134,7 @@ computer vision). Chi chiama non importa nessun tipo interno di topo.
 | parametro | significato |
 |---|---|
 | `entities` | lista di dict, uno per entità geometrica. `type` supportati: `line` (`start`, `end`), `arc` (`center`, `radius`, `start_angle`/`end_angle` **in gradi**, `ccw`), `circle` (`center`, `radius`), `polygon` (`points` — sempre chiuso, D96), `spline` (`control_points`, `knots`, `degree`, più `weights`/`fit_points`/`closed` opzionali — stessi campi di `SplineSeg`), `ellipse` (`center`, `major_axis` come **vettore** dal centro, più `ratio`/`start_param`/`end_param`/`ccw` opzionali — stessi campi di `EllipseSeg`, stessa parametrizzazione del gruppo DXF ELLIPSE; default = ellisse piena). `role` è opzionale su ogni entità — stesso vocabolario di `RoleRule.role` (`outer`, `hole`, `bending`, …); un valore diverso è conservato come slug di consumatore, non un errore. |
-| `tolerance` | tolleranza di arrotondamento dei nodi topologici — stesso significato di `load_dxf(tolerance=...)`. |
+| `tolerance` | tolleranza di arrotondamento dei nodi topologici — stesso significato di `topo_dxf.load_dxf(tolerance=...)`. |
 | `source_path` | etichetta libera per `Document.source_path`; non è un file, serve solo per diagnostica. |
 
 ```python
@@ -254,7 +147,7 @@ doc = topo.load_geometry([
     {"type": "line", "start": (34.6, 20.0), "end": (43.3, 25.0), "role": "outer"},
 ])
 result = topo.heal(doc, label="sviluppo_cono")
-topo.to_dxf(result)
+topo_dxf.to_dxf(result)
 ```
 
 ```python
@@ -284,7 +177,9 @@ segue lo stesso schema di `spline`/`circle`.
 ### Scrivere un adapter
 
 Un adapter (DXF, PDF, un formato tuo) è un consumer di topo come un altro: usa
-solo nomi pubblici e consegna un `Document` (MAP.md D125). Quello che gli serve:
+solo nomi pubblici e consegna un `Document` (MAP.md D125). `topo_dxf` e
+`topo_pdf` sono scritti così, e il controllo dell'indice lo fa rispettare:
+non importano `topo.core`/`tools`/`io`/`rules` (D129). Quello che gli serve:
 
 | nome | a cosa serve |
 |---|---|
@@ -352,14 +247,14 @@ costruisci un `Result` per altre vie.
 
 ---
 
-## 3. Elaborazione e render
+## 3. Elaborazione
 
 `heal` e `island` sono le due letture del motore (`topo/core/`), una
 dall'interno e una dall'esterno — il chiamante sceglie quella adatta al
-disegno; `anchor_annotations` / `inject` sono stadi opzionali su un
-`Result` (`topo/tools/`, il caller sceglie quali e in che ordine);
-`to_dxf` / `split` sono renderer del modello (`topo/io/`); `split_to_files` è
-la scorciatoia multi-pezzo (`topo/recipes.py`). Fori, pieghe, incisioni sono
+disegno; `split`, `anchor_annotations` / `inject` sono stadi opzionali su un
+`Result` (`topo/tools/`, il caller sceglie quali e in che ordine). Scrivere
+in un formato è di un adapter: `topo_dxf.to_dxf` e `topo_dxf.split_to_files`
+(§9); `to_svg`/`to_view_model`/`to_text` sono in §4. Fori, pieghe, incisioni sono
 una lettura di processo, in snapbend (`snapbend.flat`, MAP.md D88). Tutto resta accessibile come `topo.<nome>`.
 
 ### `heal`
@@ -380,12 +275,12 @@ inners=[Contour...])`. Chiamare foro un cerchio è una lettura di processo (snap
 
 | parametro | significato |
 |---|---|
-| `tolerance` | se `None`, ripresa da `doc.source_meta["tolerance"]` (quella passata a `load_dxf`). |
+| `tolerance` | se `None`, ripresa da `doc.source_meta["tolerance"]` (quella passata a `topo_dxf.load_dxf`). |
 | `label` | etichetta del pezzo, finisce in `cluster.label` e nei metadati. |
 | `source_file` | nome file sorgente, finisce nei metadati. |
 | `is_structural` | `Callable[[str], bool] \| None` — "questo ruolo è topologia di contorno di pezzo?", usato per decidere quali `Edge` già etichettati (da `role_rules`) restano nel grafo prima della ricerca loop. `heal()` da solo conosce solo `outer`/`inner`; senza questo parametro un ruolo di consumatore (`"hole"`, ...) è trattato come non strutturale ed **esce** dal grafo (heal lo segnala con un warning). Il consumatore passa il suo (snapbend: `snapbend.flat.is_structural`). |
 
-`role_rules` **non è un parametro di `heal`** — va passato a `load_dxf()`, che
+`role_rules` **non è un parametro di `heal`** — va passato a `topo_dxf.load_dxf()`, che
 assegna i ruoli agli `Edge`.
 
 **Ritorna** un `Result`. Se non si forma nessun contorno esterno chiuso,
@@ -532,7 +427,7 @@ ordinati per area del contorno esterno. Nessun giro chiuso in nessuna isola →
 `max_gap`.
 
 ```python
-doc = topo.load_dxf("tavola.dxf")
+doc = topo_dxf.load_dxf("tavola.dxf")
 result = topo.island(doc, max_gap=0.5)
 for cluster in result.clusters:          # una vista / un pezzo per cluster
     print(cluster.outer.polygon.area, len(cluster.inners))
@@ -942,105 +837,40 @@ della polilinea; `track_shape_type` dice `"line"` se è un solo tratto dritto
 ---
 
 
-### `to_dxf`
-
-```python
-topo.to_dxf(
-    result: Result,
-    source_doc: Document = None,
-    filter_cluster=None,
-    include_annotations=True,
-    include_trash=True,
-    annotation_layer="Annotation",
-    role_styles: dict[str, RoleStyle] = None,
-    layers: dict[str, str | Callable[[object], str]] = None,
-    allow_invalid: bool = True,
-) -> ezdxf.document.Drawing
-```
-
-Materializza il modello in un **documento DXF nuovo** (R2010). Non rilegge mai
-entità dalla sorgente: `source_doc` serve solo a riportare gli header
-(`$INSUNITS`, `$MEASUREMENT`). Testi e quote arrivano da `result.annotations`.
-
-| parametro | significato |
-|---|---|
-| `filter_cluster` | `callable(Cluster) -> bool` — scrive solo le parti che passano. |
-| `include_trash` | `True` (default): la geometria non classificata va sul layer `Trash`. Chi apre il file deve poter vedere ogni entità del disegno di partenza. |
-| `allow_invalid` | `True` (default): un `result` non valido viene scritto lo stesso (trash e annotazioni), come fa `to_svg`. `False` → `ValueError`: per il chiamante che consegna il file a una macchina (D83). |
-| `layers` | dove va ogni ruolo: `{ruolo: "Nome"}`, o `{ruolo: funzione(elemento) -> nome}` per dividere le entità di un ruolo su più layer guardando l'elemento scritto (il `Contour`, l'elemento di `cluster.detected`, l'entità trash o l'`Annotation`). Un ruolo che non nomini resta al default dell'adapter: `OuterContour`, `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo (D31, D128). |
-| `role_styles` | come si disegna ogni ruolo: `{ruolo: RoleStyle}` (vedi sotto). Agisce sul layer — tutto si scrive BYLAYER — e su un layer di più ruoli vince il primo scritto. Un ruolo con uno stile ha il suo layer anche senza entità. Sotto c'è sempre la palette di topo (`DEFAULT_ROLE_STYLES`): la mappa aggiunge i ruoli del chiamante e cambia solo i campi che dà. |
-| `annotation_layer` | il layer di testi e quote **senza ruolo** (default `"Annotation"`). Un'annotazione con un ruolo va sul layer del suo ruolo, come un edge (D127, D128). Nessuna annotazione viene mai scartata. |
-
-Le mappe sono del chiamante e valgono per la sua chiamata: topo non ne tiene
-nessuna (D128). Un consumatore pubblica le sue (`snapbend.flat.ROLE_STYLES`,
-`snapbend.flat.LAYERS`) e chi esporta le passa, o le compone:
-
-```python
-# la cornice (ruolo "frame", assegnato da un consumatore come snapdraw) in nero, su "Cornice"
-topo.to_dxf(result, doc,
-            layers={"frame": "Cornice"},
-            role_styles={"frame": topo.RoleStyle(color=(0, 0, 0))})
-
-# le pieghe su due layer, secondo il verso (un'informazione dell'elemento)
-topo.to_dxf(result, doc, layers={"bending": lambda bend: "BendUp" if is_up(bend) else "BendDown"})   # is_up: del chiamante
-```
-
-**L'overlay** (D70, D90): scrive ogni collezione di `cluster.detected`,
-senza conoscerne nessuna per nome. Di un elemento legge solo `role` e
-geometria: `item.contours` se c'è (ognuno con `segments`/`styles`/`polygon`
-ed eventualmente un suo `role`), altrimenti l'elemento stesso. Un contorno
-con `polygon` si scrive chiuso (LWPOLYLINE/CIRCLE), uno senza come una entità
-per primitiva (LINE/ARC/SPLINE). Il `role` di un contorno vince su quello
-dell'elemento solo se non è un ruolo del motore (`outer`/`inner`/`unknown`).
-Senza ruolo o senza geometria si salta.
-
-**Ritorna** un `Drawing` `ezdxf`. Sta a te fare `doc_out.saveas(...)`.
-
-**Solleva `ValueError`** solo con `allow_invalid=False` e `result.is_valid`
-`False`. Il rifiuto non è del formato, è di chi consegna il file a una macchina:
-quel chiamante lo chiede esplicitamente.
-
-```python
-topo.to_dxf(result, doc).saveas("guarda.dxf")                         # sempre
-topo.to_dxf(result, doc, allow_invalid=False).saveas("macchina.dxf")  # solo se valido
-```
-
----
-
 ### `split`
 
 ```python
 topo.split(
     result: Result,
-    source_doc: Document = None,
     namer=None,
-    include_annotations=True,
-    min_area=50.0,
-    exclude_types=None,
-    on_part=None,
-    annotation_layer="Annotation",
-    role_styles: dict[str, RoleStyle] = None,
-    layers: dict[str, str | Callable[[object], str]] = None,
-) -> list[ezdxf.document.Drawing]
+    min_area=50.0,               # topo.DEFAULT_MIN_CLUSTER_AREA, mm²
+) -> list[Result]
 ```
 
-Come `to_dxf` ma produce **un `Drawing` per parte**. Funzione **pura**: non tocca
-il disco. Le parti sotto `min_area` (mm²) vengono scartate (con warning nel
-`result`).
+**Un `Result` per parte**, senza formato (D124, D129): scegliere le parti è
+una decisione sul modello, scriverle è di un adapter. Ogni parte è un
+`Result` con un solo cluster, più le entità trash e le annotazioni che le
+appartengono: quelle che contiene o, se nessuna parte le contiene, quelle più
+vicine al suo contorno esterno fra **tutte** le parti (anche quelle scartate
+da `min_area`). Niente viene duplicato, niente perso. Gli altri campi
+(sorgente, avvisi) sono copiati. Ogni writer prende un `Result`, quindi una
+parte va in DXF, SVG o testo allo stesso modo.
 
 | parametro | significato |
 |---|---|
-| `namer` | `callable(i, cluster) -> str` — assegna `cluster.label`, così il nome file resta `f"{cluster.label}.dxf"` a valle. |
-| `exclude_types` | set di `dxftype` da rimuovere dal documento di ogni parte (es. `{"TEXT"}`). |
-| `on_part` | `callable(cluster, doc_out)` — hook per parte, prima che il `Drawing` entri nella lista. |
+| `namer` | `callable(i, cluster) -> str` — assegna `cluster.label`, così il nome di un file resta ricavabile (`f"{cluster.label}.dxf"`). Senza, `f"{label}_P{i+1}"`. |
+| `min_area` | le parti con area sotto soglia (mm²) sono scartate con un avviso in `result.warnings`; `<= 0` nessun filtro. |
 
-**Ritorna** la lista dei `Drawing` nell'ordine delle parti tenute.
-**Solleva `ValueError`** se `result.is_valid` è `False`.
+**Muta** `cluster.label` di ogni parte tenuta e `result.warnings`.
+**Ritorna** le parti nell'ordine dei cluster tenuti.
+**Solleva `ValueError`** se `result.is_valid` è `False`: un file per parte
+non ha senso senza parti.
 
 ```python
-docs = topo.split(result, doc, min_area=100.0)
-for d, cluster in zip(docs, [p for p in result.clusters if p.outer.polygon.area >= 100]):
-    d.saveas(f"{cluster.label}.dxf")
+for part in topo.split(result, min_area=100.0):
+    name = part.clusters[0].label
+    topo_dxf.to_dxf(part, doc).saveas(f"{name}.dxf")
+    topo.save_svg(part, f"{name}.svg")
 ```
 
 ---
@@ -1061,10 +891,10 @@ di `EdgeStyle` e senza formato (D37, D128). Vale per un ruolo del motore
 (`"outer"`, `"inner"`, `"unknown"`) come per uno di un consumatore — snapbend
 (`"hole"`, ...), snapdraw (`"frame"`, `"title_block"`, ...) — nessuno è
 privilegiato. Il dizionario `{ruolo: RoleStyle}` è del chiamante e lo passa a
-ogni exporter: `to_dxf`, `split`, `split_to_files`, `to_svg`,
-`to_view_model`. Sotto c'è sempre la palette di topo; un campo `None` resta
-quello della palette. Dove finisce un ruolo (un layer DXF) non è qui: è
-`to_dxf(layers=...)`.
+ogni exporter: `to_svg`, `to_view_model`, `topo_dxf.to_dxf`,
+`topo_dxf.split_to_files`. Sotto c'è sempre la palette di topo; un campo
+`None` resta quello della palette. Dove finisce un ruolo (un layer DXF) non è
+qui: è `topo_dxf.to_dxf(layers=...)`.
 
 **La palette di topo** (`topo.model.DEFAULT_ROLE_STYLES`, D128) dà il colore
 ai ruoli che heal e island producono, uguale per ogni formato: `outer` verde
@@ -1088,48 +918,11 @@ essere nel documento o fra gli standard, altrimenti `ValueError` (D85);
 `lineweight` → centesimi di mm.
 
 ```python
-topo.to_dxf(result, doc, role_styles={
+topo_dxf.to_dxf(result, doc, role_styles={
     "frame":   topo.RoleStyle(color=(0, 0, 0)),          # cornice: nero
     "unknown": topo.RoleStyle(lineweight=0.05),          # trash: linea sottilissima
     "bending": topo.RoleStyle(dash=(5.0, -2.0)),         # pieghe: tratto 5, vuoto 2
 })
-```
-
----
-
-### `split_to_files`
-
-```python
-topo.split_to_files(
-    doc: Document,
-    output_folder,
-    label="",
-    source_file="",
-    tolerance=None,
-    namer=None,
-    include_annotations=True,
-    min_area=50.0,
-    exclude_types=None,
-    annotation_layer="Annotation",
-    is_structural=None,
-    role_styles=None,
-    layers=None,
-) -> Result
-```
-
-Flusso multi-pezzo + salvataggio su disco: `heal → split → .saveas()` per
-cluster (`is_structural` passa a `heal`; `role_styles` e `layers`, come in
-`to_dxf`, a `split`). Una lettura di processo (fori,
-pieghe) si fa sul result con `heal` + la detection + `split`, non qui. **È l'unica funzione di topo che scrive su disco.**
-Il nome file è `f"{cluster.label}.dxf"`, dove `cluster.label` è quello che assegna
-`namer(i, cluster)`; senza `namer` diventa `f"{label}_P{i+1}"` (es. `batch_P1.dxf`).
-
-**Ritorna** il `Result` (per poterci fare `save_json` dopo). Se il risultato
-non è valido, ritorna il result senza scrivere niente.
-
-```python
-result = topo.split_to_files(doc, "output/", label="batch")
-topo.save_json(result, "batch.json")
 ```
 
 ---
@@ -1345,7 +1138,7 @@ topo.to_svg(
     size=None,                # None = niente width/height → scala al contenitore
     units=None,               # "mm" = SVG in scala reale, 1 unità = 1 mm
     allow_invalid=True,       # False → ValueError su un result non valido
-    role_styles=None,         # {ruolo: RoleStyle}: il colore di ogni ruolo, come in to_dxf
+    role_styles=None,         # {ruolo: RoleStyle}: il colore di ogni ruolo, come in topo_dxf.to_dxf
 ) -> str
 topo.save_svg(result, path, **kwargs) -> None
 ```
@@ -1363,10 +1156,10 @@ zoomi quanto vuoi. Passa `size="800"` per fissare la larghezza in px.
 `units="mm"` produce un SVG **in scala reale** (`width="…mm"`, padding e sfondo a
 zero) per chi importa SVG in un software che vuole 1 unità = 1 mm.
 **Attenzione:** archi, cerchi e spline restano discretizzati a polilinea — quando
-conta la curva esatta (cerchi lisci, quote a tolleranza) usa `to_dxf`, non l'SVG.
+conta la curva esatta (cerchi lisci, quote a tolleranza) usa `topo_dxf.to_dxf`, non l'SVG.
 
 Un `result` non valido viene disegnato lo stesso. `allow_invalid=False` →
-`ValueError`, stesso contratto di `to_dxf` (D83).
+`ValueError`, stesso contratto di `topo_dxf.to_dxf` (D83).
 
 ```python
 topo.save_svg(result, "pezzo.svg")
@@ -1374,28 +1167,18 @@ topo.save_svg(result, "pezzo.svg")
 
 ---
 
-## 5. Metadati XDATA
+## 5. Metadati
 
-### `write_metadata_to_dxf` / `read_metadata_from_dxf`
-
-```python
-topo.write_metadata_to_dxf(doc, cluster: Cluster, extra: dict = None) -> None
-topo.read_metadata_from_dxf(doc) -> dict
-```
-
-Scrive / rilegge i metadati (stessi campi di `save_json`, `extra` incluso —
-un dict diretto qui, non una callback, perché opera già su un singolo
-cluster) come XDATA `TOPO` sull'entità del layer `OuterContour`. `doc` è un
-`Drawing` `ezdxf` (tipicamente quello restituito da `to_dxf`). `read_`
-ritorna `{}` se non trova niente.
+### `build_metadata`
 
 ```python
-doc_out = topo.to_dxf(result, doc)
-topo.write_metadata_to_dxf(doc_out, result.clusters[0])
-doc_out.saveas("out.dxf")
-# più tardi:
-meta = topo.read_metadata_from_dxf(ezdxf.readfile("out.dxf"))
+topo.build_metadata(cluster: Cluster, schema: dict = None, extra: dict = None) -> dict
 ```
+
+I metadati di un cluster secondo lo schema attivo (`metadata_schema.py`, o
+quello di `set_schema`): la fonte unica che usano `save_json`, `save_xml` e,
+come XDATA in un DXF, `topo_dxf.write_metadata_to_dxf` (§9). `extra` aggiunge
+campi del chiamante. Non muta niente.
 
 ### `set_schema`
 
@@ -1412,18 +1195,14 @@ installato con pip e non puoi editare `metadata_schema.py`. Struttura:
 
 ## 6. Ispezione / debug
 
-Tre livelli, in ordine di elaborazione. Tutti stampano su stdout.
-
-```python
-topo.inspect_dxf(path, entities=True, limit=40) -> None
-```
-**Livello 1** — entità DXF grezze: versione, header, conteggio per tipo e per
-layer, dettaglio di ogni entità. Non tocca `topo`.
+I due livelli di topo, in ordine di elaborazione; il primo, le entità grezze
+di un file, è dell'adapter (`topo_dxf.inspect_dxf`, e `topo_dxf.inspect_file`
+che stampa i tre in fila, §9). Tutti stampano su stdout.
 
 ```python
 topo.inspect_document(doc, graph=True, limit=60) -> None
 ```
-**Livello 2** — un `Document` (o un path): `source_meta`, warning del loader,
+**Livello 2** — un `Document`: `source_meta`, warning del loader,
 gli `Edge` (ruolo, primitiva, endpoint), le annotazioni, e il
 grafo dei nodi (nodi totali, loop degeneri, nodi di branching, estremi liberi).
 "Cosa ha capito l'adapter."
@@ -1436,25 +1215,13 @@ outer/inner, le collezioni di `cluster.detected` (quello che un consumatore ha
 attaccato), custom, più `trash_entities`,
 `classified_entities`, annotazioni. "Cosa ha prodotto topo."
 
-```python
-topo.inspect_file(path, tolerance=0.05, role_rules=(),
-                   run_heal=True, entities=True, coords=False) -> None
-```
-Orchestratore: apre il file e stampa i tre livelli in fila. `run_heal=False` per
-fermarti al `Document`. `role_rules` come in
-`load_dxf()`.
-
-```python
-topo.inspect_file("pezzo.dxf", role_rules=topo.name_rules({"Piega": "bending"}))
-topo.inspect_file("pezzo.dxf", role_rules=[topo.RoleRule("bending", dashed=True)])
-```
-
 ---
 
 ## 7. Tipi di dominio
 
 Oltre alla top-level ci sono tre namespace pubblici (MAP.md D120); quello che
-sta sotto `topo.core` e `topo.adapters` è interno, senza garanzie:
+sta sotto `topo.core`, `topo.tools`, `topo.io`, `topo.rules` è interno, senza
+garanzie. Gli adapter sono pacchetti a parte (§9, §10):
 
 - **`topo.primitives`** — i segmenti nativi `LineSeg`, `ArcSeg`, `CircleSeg`,
   `SplineSeg`, `EllipseSeg` (math puro, nessun ruolo) e
@@ -1477,7 +1244,7 @@ class Hole(topo.model.ClosedCurve): ...
 
 ### `Document`
 
-Prodotto da `load_dxf` / `document_from_msp`. È il contratto tra l'adapter e il
+Prodotto da `topo_dxf.load_dxf` / `topo_dxf.document_from_msp`. È il contratto tra l'adapter e il
 core: dopo di lui, `ezdxf` non si tocca più.
 
 | campo | tipo | contenuto |
@@ -1507,7 +1274,7 @@ del gruppo sorgente (il layer di un DXF). Su un'annotazione contano solo le
 regole sul nome (`name`, `name_contains`): una regola su tratto o colore non
 la tocca. `unknown` se nessuno l'ha detto. Il gruppo sorgente serve solo a
 questo e non resta nel modello (D128): chi vuole un testo distinto in uscita
-gli dà un ruolo. `to_dxf` scrive un'annotazione con un ruolo sul layer del suo
+gli dà un ruolo. `topo_dxf.to_dxf` scrive un'annotazione con un ruolo sul layer del suo
 ruolo, come un edge; senza ruolo, su `annotation_layer`.
 
 - `Note`: `text`, `height`, `rotation`.
@@ -1525,7 +1292,7 @@ Prodotto da `heal()`, arricchito da un consumatore / `inject()`.
 | campo | tipo | contenuto |
 |---|---|---|
 | `clusters` | `list[Cluster]` | un elemento per contorno esterno chiuso |
-| `is_valid` | `bool` | **controllalo prima di `to_dxf` / `split`** |
+| `is_valid` | `bool` | **controllalo prima di `split` o di scrivere (`topo_dxf.to_dxf`)** |
 | `warnings` / `errors` | `list[str]` | diagnostica |
 | `trash_entities` | `list` | geometria non classificata (proxy con `segments`, formato-indipendenti) |
 | `annotations` | `list[Annotation]` | copiate da `heal()` dal `Document` |
@@ -1580,7 +1347,7 @@ Il motore conosce solo tre ruoli: `unknown`, `outer`, `inner` (MAP.md D47,
 in uno slug `[a-z0-9_-]` ≤ 64 char — e topo lo conserva senza sollevare; in
 output l'adapter DXF lo scrive di default su un layer **col nome dello slug**,
 grigio (`unknown` → `Trash`, rosso), salvo la scelta del chiamante
-(`to_dxf(layers=..., role_styles=...)`, D128). `role_str(role)` dà il valore stringa che il ruolo sia una
+(`topo_dxf.to_dxf(layers=..., role_styles=...)`, D128). `role_str(role)` dà il valore stringa che il ruolo sia una
 costante o uno slug (MAP.md D27 / D31).
 
 **`topo.normalize_role(value) -> str`** e **`topo.is_structural_role(role) ->
@@ -1638,10 +1405,10 @@ result = topo.heal(doc)   # "flange_up" è già fuori dal grafo, mai indovinato 
 ## 8. Il flusso completo, in ordine
 
 ```python
-import topo, ezdxf
+import topo, topo_dxf
 
-# 1. apri — unico punto che legge ezdxf
-doc = topo.load_dxf("pezzo.dxf", tolerance=0.5)
+# 1. apri — l'adapter è l'unico che legge un formato
+doc = topo_dxf.load_dxf("pezzo.dxf", tolerance=0.5)
 
 # 2. valida l'input (opzionale ma consigliato)
 check = topo.validate(doc)
@@ -1662,13 +1429,342 @@ if not result.is_valid:
 result = topo.inject(result, data_injector=leggi_cartiglio, snap_distance=5.0)
 
 # 7a. render — un documento con tutte le parti
-topo.to_dxf(result, doc).saveas("pezzo_healed.dxf")
+topo_dxf.to_dxf(result, doc).saveas("pezzo_healed.dxf")
 
 # 7b. oppure render — un file per parte
-result2 = topo.split_to_files(doc, "output/", label="P-1024")
+for part in topo.split(result):
+    topo_dxf.to_dxf(part, doc).saveas(f"output/{part.clusters[0].label}.dxf")
 
 # 8. metadati
 topo.save_json(result, "pezzo.json")
 ```
 
-Se qualcosa non torna su un file reale: `topo.inspect_file("pezzo.dxf")`.
+Se qualcosa non torna su un file reale: `topo_dxf.inspect_file("pezzo.dxf")`.
+
+---
+
+## 9. `topo_dxf` — l'adapter DXF
+
+```python
+import topo, topo_dxf          # pip install g-topo[dxf]
+```
+
+Un consumer di topo come un altro, nella stessa distribuzione: legge DXF/DWG
+in un `Document`, scrive un `Result` in un `Drawing` `ezdxf`. Usa solo i nomi
+pubblici di topo (D125, D129); senza `ezdxf` installato `import topo_dxf`
+dice quale extra manca. Layer e colori sono scelte del chiamante; quello che
+non dice è il default di questo adapter.
+
+### `load_dxf`
+
+```python
+topo_dxf.load_dxf(
+    path,
+    upgrade=False,
+    explode_inserts=True,
+    flatten_z_flag=True,
+    verbose=False,
+    tolerance=0.05,
+    role_rules=(),
+    ignore_layers=None,
+    skip_layers=SKIP_LAYERS,          # ("Trash", "Annotation")
+) -> Document
+```
+
+Unico punto in cui `ezdxf` viene usato per **leggere**. Apre un `.dxf` o `.dwg`,
+lo audita, lo porta a R2010 se legacy, esplode gli `INSERT`, sanifica (OCS, Z≠0),
+traduce le entità in `Edge` puri e le annotazioni in `Annotation`. Dopo questa
+funzione il documento `ezdxf` sorgente sparisce.
+
+| parametro | significato |
+|---|---|
+| `path` | percorso `.dxf` o `.dwg`. Per il `.dwg` vedi la sezione **DWG** qui sotto. |
+| `upgrade` | forza l'upgrade a R2010 anche se non necessario. |
+| `explode_inserts` | `True` (default): esplode i blocchi in primitive. **Metti `False` solo se vuoi ignorare i blocchi di proposito** — un `INSERT` non esploso viene scartato e la sua geometria sparisce. |
+| `flatten_z_flag` | riporta sul piano le entità con Z ≠ 0. |
+| `tolerance` | tolleranza di arrotondamento dei nodi topologici. Viene salvata in `source_meta` e riletta da `heal()` se non gliela ripassi. |
+| `role_rules` | lista di `RoleRule` — assegnano il **ruolo** agli `Edge` già in fase di traduzione. Valutate in ordine, vince la prima che matcha, nessuna → `unknown`. Il nome valutato da `name`/`name_contains` è il layer; `dashed` e `color` guardano l'aspetto **effettivo** (un'entità `ByLayer` viene risolta al linetype/colore del suo layer). Il layer non esce dall'adapter: l'`Edge` porta solo il ruolo (MAP.md D63). Vedi **`RoleRule`** sotto. |
+| `ignore_layers` | lista di layer da escludere dalla geometria (per sottostringa, maiuscole ignorate). |
+| `skip_layers` | layer da saltare per **nome esatto** (maiuscole ignorate). Di default `topo_dxf.SKIP_LAYERS`, i layer che il writer usa per trash e annotazioni: un file scritto da topo si rilegge pulito, e `Trash_old` si legge. `()` legge tutto (D129). |
+
+**Ritorna** un `Document`. La diagnostica sul file grezzo (audit, INSERT non
+esplosi, Z≠0, duplicati rimossi, tipi non ri-materializzabili in output) finisce
+in `doc.warnings`; `topo.validate(doc)` la rilancia.
+
+**Solleva** `FileNotFoundError`, `EnvironmentError` (DWG senza `ODA_PATH`),
+`RuntimeError` (conversione DWG fallita), o le eccezioni di lettura di `ezdxf`.
+
+```python
+doc = topo_dxf.load_dxf("pezzo.dxf", tolerance=0.5,
+                     role_rules=topo.name_rules({"Piega": "bending", "MARK": "engrave"}))
+for w in doc.warnings:
+    print("loader:", w)
+```
+
+Quando l'intenzione sta nello stile della linea, o in una combinazione di
+nome e stile:
+
+```python
+doc = topo_dxf.load_dxf("pezzo.dxf", role_rules=[
+    topo.RoleRule("construction", name_contains="constr", dashed=True),
+    topo.RoleRule("bending", dashed=True),
+    topo.RoleRule("engrave", color="cyan"),
+])
+```
+
+Vedi `14_style_classification.py` per un esempio completo (una regola per
+step, su un file reale in `tests/examples/`).
+
+#### DWG
+
+**`topo` non legge il DWG da solo, e nemmeno `ezdxf`.** Il DWG è un formato
+chiuso: il "supporto DWG" di `ezdxf` è l'addon `odafc`, che è un wrapper attorno
+a **ODA File Converter** — converte il `.dwg` in un `.dxf` temporaneo e `ezdxf`
+rilegge quello. `topo` usa esattamente questo (`topo_dxf/loader.py`).
+
+Per aprire un `.dwg` serve quindi:
+
+1. **ODA File Converter** installato — download gratuito:
+   <https://www.opendesign.com/guestfiles/oda_file_converter>
+2. `topo` deve trovare l'eseguibile. Due modi:
+   - variabile d'ambiente **`ODA_PATH`** = *full path dell'eseguibile*
+     (non la cartella — se ODA è in `ODAFileConverter X.Y.Z\`, il path deve
+     includere `\ODAFileConverter.exe`);
+   - oppure `ODAFileConverter` raggiungibile dal `PATH` di sistema.
+
+Impostare `ODA_PATH`:
+
+| SO | comando |
+|---|---|
+| Windows, permanente | `setx ODA_PATH "C:\Program Files\ODA\ODAFileConverter X.Y.Z\ODAFileConverter.exe"` — poi **riapri il terminale** |
+| Windows, solo sessione (PowerShell) | `$env:ODA_PATH = "C:\...\ODAFileConverter.exe"` |
+| Windows, GUI | Impostazioni → *Modifica le variabili di ambiente relative al sistema* → *Variabili d'ambiente…* → *Nuova* |
+| Linux / macOS, permanente | `export ODA_PATH="/opt/ODAFileConverter/ODAFileConverter"` in `~/.bashrc` o `~/.zshrc`, poi riapri la shell |
+| Linux / macOS, solo sessione | `export ODA_PATH="/opt/ODAFileConverter/ODAFileConverter"` |
+
+Guide di riferimento per le variabili d'ambiente:
+[Windows](https://learn.microsoft.com/windows/win32/procthread/environment-variables) ·
+[Linux/macOS (`export`)](https://www.gnu.org/software/bash/manual/bash.html#Environment).
+
+Se manca tutto, `load_dxf` su un `.dwg` solleva `EnvironmentError` con il link e
+questa stessa guida nel messaggio.
+
+---
+
+
+### `document_from_msp`
+
+```python
+topo_dxf.document_from_msp(
+    msp,
+    tolerance=0.05,
+    role_rules=(),
+    ignore_layers=None,
+    source_path="",
+    skip_layers=SKIP_LAYERS,
+) -> Document
+```
+
+Costruisce un `Document` da un `modelspace` `ezdxf` **già aperto**. Utile per
+i test o per geometria generata a mano. **Non** fa audit / upgrade / sanitize: si
+assume che il `msp` sia già pronto. `role_rules`, `ignore_layers`,
+`skip_layers` funzionano come in `load_dxf()` — vedi sopra.
+
+```python
+import ezdxf
+doc_ez = ezdxf.new("R2010"); msp = doc_ez.modelspace()
+msp.add_line((0, 0), (100, 0)); msp.add_line((100, 0), (100, 50))
+# ...
+document = topo_dxf.document_from_msp(msp, tolerance=0.5)
+```
+
+### `to_dxf`
+
+```python
+topo_dxf.to_dxf(
+    result: Result,
+    source_doc: Document = None,
+    filter_cluster=None,
+    include_annotations=True,
+    include_trash=True,
+    annotation_layer="Annotation",
+    role_styles: dict[str, RoleStyle] = None,
+    layers: dict[str, str | Callable[[object], str]] = None,
+    allow_invalid: bool = True,
+    exclude_types: set[str] = None,
+) -> ezdxf.document.Drawing
+```
+
+Materializza il modello in un **documento DXF nuovo** (R2010). Non rilegge mai
+entità dalla sorgente: `source_doc` serve solo a riportare gli header
+(`$INSUNITS`, `$MEASUREMENT`). Testi e quote arrivano da `result.annotations`.
+
+| parametro | significato |
+|---|---|
+| `filter_cluster` | `callable(Cluster) -> bool` — scrive solo i cluster che passano; trash e annotazioni si scrivono tutti. Per un file per parte la parte viene da `topo.split` (§3), che li ha già divisi. |
+| `exclude_types` | set di `dxftype` da togliere dal documento (es. `{"TEXT"}`). |
+| `include_trash` | `True` (default): la geometria non classificata va sul layer `Trash`. Chi apre il file deve poter vedere ogni entità del disegno di partenza. |
+| `allow_invalid` | `True` (default): un `result` non valido viene scritto lo stesso (trash e annotazioni), come fa `to_svg`. `False` → `ValueError`: per il chiamante che consegna il file a una macchina (D83). |
+| `layers` | dove va ogni ruolo: `{ruolo: "Nome"}`, o `{ruolo: funzione(elemento) -> nome}` per dividere le entità di un ruolo su più layer guardando l'elemento scritto (il `Contour`, l'elemento di `cluster.detected`, l'entità trash o l'`Annotation`). Un ruolo che non nomini resta al default dell'adapter: `OuterContour`, `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo (D31, D128). |
+| `role_styles` | come si disegna ogni ruolo: `{ruolo: RoleStyle}` (vedi sotto). Agisce sul layer — tutto si scrive BYLAYER — e su un layer di più ruoli vince il primo scritto. Un ruolo con uno stile ha il suo layer anche senza entità. Sotto c'è sempre la palette di topo (`DEFAULT_ROLE_STYLES`): la mappa aggiunge i ruoli del chiamante e cambia solo i campi che dà. |
+| `annotation_layer` | il layer di testi e quote **senza ruolo** (default `"Annotation"`). Un'annotazione con un ruolo va sul layer del suo ruolo, come un edge (D127, D128). Nessuna annotazione viene mai scartata. |
+
+Le mappe sono del chiamante e valgono per la sua chiamata: topo non ne tiene
+nessuna (D128). Un consumatore pubblica le sue (`snapbend.flat.ROLE_STYLES`,
+`snapbend.flat.LAYERS`) e chi esporta le passa, o le compone:
+
+```python
+# la cornice (ruolo "frame", assegnato da un consumatore come snapdraw) in nero, su "Cornice"
+topo_dxf.to_dxf(result, doc,
+            layers={"frame": "Cornice"},
+            role_styles={"frame": topo.RoleStyle(color=(0, 0, 0))})
+
+# le pieghe su due layer, secondo il verso (un'informazione dell'elemento)
+topo_dxf.to_dxf(result, doc, layers={"bending": lambda bend: "BendUp" if is_up(bend) else "BendDown"})   # is_up: del chiamante
+```
+
+**L'overlay** (D70, D90): scrive ogni collezione di `cluster.detected`,
+senza conoscerne nessuna per nome. Di un elemento legge solo `role` e
+geometria: `item.contours` se c'è (ognuno con `segments`/`styles`/`polygon`
+ed eventualmente un suo `role`), altrimenti l'elemento stesso. Un contorno
+con `polygon` si scrive chiuso (LWPOLYLINE/CIRCLE), uno senza come una entità
+per primitiva (LINE/ARC/SPLINE). Il `role` di un contorno vince su quello
+dell'elemento solo se non è un ruolo del motore (`outer`/`inner`/`unknown`).
+Senza ruolo o senza geometria si salta.
+
+**Ritorna** un `Drawing` `ezdxf`. Sta a te fare `doc_out.saveas(...)`.
+
+**Solleva `ValueError`** solo con `allow_invalid=False` e `result.is_valid`
+`False`. Il rifiuto non è del formato, è di chi consegna il file a una macchina:
+quel chiamante lo chiede esplicitamente.
+
+```python
+topo_dxf.to_dxf(result, doc).saveas("guarda.dxf")                         # sempre
+topo_dxf.to_dxf(result, doc, allow_invalid=False).saveas("macchina.dxf")  # solo se valido
+```
+
+---
+
+### `split_to_files`
+
+```python
+topo_dxf.split_to_files(
+    doc: Document,
+    output_folder,
+    label="",
+    source_file="",
+    tolerance=None,
+    namer=None,
+    include_annotations=True,
+    min_area=50.0,
+    exclude_types=None,
+    annotation_layer="Annotation",
+    is_structural=None,
+    role_styles=None,
+    layers=None,
+) -> Result
+```
+
+Flusso multi-pezzo + salvataggio su disco: `topo.heal → topo.split →
+to_dxf + .saveas()` per parte (`is_structural` passa a `heal`;
+`include_annotations`, `annotation_layer`, `role_styles`, `layers`,
+`exclude_types` a `to_dxf`). È un ciclo che puoi scrivere tu (§3, `split`).
+Una lettura di processo (fori, pieghe) si fa sul result con `heal` + la
+detection + `split`, non qui. **È l'unica funzione che scrive su disco.**
+Il nome file è `f"{cluster.label}.dxf"`, dove `cluster.label` è quello che assegna
+`namer(i, cluster)`; senza `namer` diventa `f"{label}_P{i+1}"` (es. `batch_P1.dxf`).
+
+**Ritorna** il `Result` (per poterci fare `save_json` dopo). Se il risultato
+non è valido, ritorna il result senza scrivere niente.
+
+```python
+result = topo_dxf.split_to_files(doc, "output/", label="batch")
+topo.save_json(result, "batch.json")
+```
+
+---
+
+### `inspect_dxf` / `inspect_file`
+
+```python
+topo_dxf.inspect_dxf(path, entities=True, limit=40) -> None
+```
+**Livello 1** — entità DXF grezze: versione, header, conteggio per tipo e per
+layer, dettaglio di ogni entità. Non tocca `topo`.
+
+```python
+topo_dxf.inspect_file(path, tolerance=0.05, role_rules=(),
+                   run_heal=True, entities=True, coords=False) -> None
+```
+Orchestratore: apre il file e stampa i tre livelli in fila. `run_heal=False` per
+fermarti al `Document`. `role_rules` come in
+`load_dxf()`.
+
+```python
+topo_dxf.inspect_file("pezzo.dxf", role_rules=topo.name_rules({"Piega": "bending"}))
+topo_dxf.inspect_file("pezzo.dxf", role_rules=[topo.RoleRule("bending", dashed=True)])
+```
+
+### `write_metadata_to_dxf` / `read_metadata_from_dxf`
+
+```python
+topo_dxf.write_metadata_to_dxf(doc, cluster: Cluster, extra: dict = None) -> None
+topo_dxf.read_metadata_from_dxf(doc) -> dict
+```
+
+Scrive / rilegge i metadati (stessi campi di `save_json`, `extra` incluso —
+un dict diretto qui, non una callback, perché opera già su un singolo
+cluster; sotto c'è `topo.build_metadata`) come XDATA `TOPO` sull'entità del
+layer `OuterContour`. `doc` è un
+`Drawing` `ezdxf` (tipicamente quello restituito da `to_dxf`). `read_`
+ritorna `{}` se non trova niente.
+
+```python
+doc_out = topo_dxf.to_dxf(result, doc)
+topo_dxf.write_metadata_to_dxf(doc_out, result.clusters[0])
+doc_out.saveas("out.dxf")
+# più tardi:
+meta = topo_dxf.read_metadata_from_dxf(ezdxf.readfile("out.dxf"))
+```
+
+### I layer di default
+
+topo non ha layer (D123); questi sono i default dell'adapter, quando il
+chiamante non passa `layers=`:
+
+| nome | valore | |
+|---|---|---|
+| `topo_dxf.LAYER_OUTER` | `"OuterContour"` | ruolo `outer` |
+| `topo_dxf.LAYER_INNER` | `"InnerContour"` | ruolo `inner` |
+| `topo_dxf.TRASH_LAYER` | `"Trash"` | ruolo `unknown` |
+| `topo_dxf.LAYER_ANNOTATION` | `"Annotation"` | testi e quote senza ruolo |
+| `topo_dxf.DEFAULT_LAYERS` | `{ruolo: layer}` | i tre ruoli del motore |
+| `topo_dxf.SKIP_LAYERS` | `("Trash", "Annotation")` | quelli che `load_dxf` salta rileggendo |
+
+```python
+topo_dxf.role_to_dxf_layer(role, element=None, layers: LayerMap = None) -> str
+```
+
+Il layer di un ruolo come lo sceglie `to_dxf`: la mappa del chiamante (un
+nome, o la funzione chiamata con `element`), altrimenti il default, altrimenti
+lo slug del ruolo (D31). `LayerMap` è il tipo di quella mappa:
+`Mapping[str, str | Callable[[object], str]]`.
+
+```python
+topo_dxf.role_to_dxf_layer("hole", layers=snapbend.flat.LAYERS)   # "Hole"
+topo_dxf.role_to_dxf_layer("frame")                               # "frame"
+```
+
+---
+
+## 10. `topo_pdf` — l'adapter PDF
+
+```python
+topo_pdf.load_pdf(path, snap_tolerance=0.15) -> list[Edge]     # pip install g-topo[pdf]
+```
+
+**Sperimentale** (MAP.md D10): apre un PDF, estrae le geometrie vettoriali
+di ogni pagina, le porta in mm con l'asse Y cartesiano e le ripulisce con uno
+snap dei nodi vicini. Ritorna una lista di `Edge`, **non un `Document`**:
+non si passa ancora a `topo.heal()`, e l'API può cambiare o sparire. Il lavoro
+sul PDF si riprende qui (TODO.md, strada verso la 1.0, punto 0.7).

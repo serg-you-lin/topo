@@ -56,7 +56,7 @@ immagine (PNG/JPG)
 [C] topo.simplify_points()          → LineSeg / SplineSeg per contorno
    │
    ▼
-topo.load_geometry("spline") → topo.heal() → topo.to_dxf()
+topo.load_geometry("spline") → topo.heal() → topo_dxf.to_dxf()
 
 NON SO SE è CHIARO, IO CARICO L'IMMAGINEE HO GIà LA SPLINE OTTENUTA, RITOCCO A MATITA E LA SPLINE SI AGGIORNA VIA VIA. 
 ON DICO CHE DOBBIAMO AVERE LA POSSIBILITà DI RITOCCAE ANCHE GLI ENDPOINT DELLA LWPLINE, MA SAREBBE BELLO AVERE TUTTO NELL''INTERFACIA. SE è TROPPO, LASCIAMO STARE.
@@ -78,7 +78,7 @@ Uso previsto anche standalone, fuori dalla pipeline immagine→DXF completa:
 caricare un contorno (da immagine o da un DXF esistente), estrarne solo la
 polyline, editarla liberamente, poi normalizzare e trasformare in spline. Le
 tappe [3]-[5]-[7] sopra sono le stesse; cambia solo cosa entra al passo [2]
-(un DXF via `topo.load_dxf()` invece di un'immagine).
+(un DXF via `topo_dxf.load_dxf()` invece di un'immagine).
 
 ## Fase futura — sito multi-tool (esplorativo, non iniziato)
 

@@ -8,9 +8,11 @@ annotazioni del disegno, e un overlay aperto dove si attaccano le feature
 rilevate — poi lo riscrive in DXF (un documento, o uno per pezzo), JSON/XML, SVG,
 un view model per una UI, o (sperimentale) una lettura testuale compatta per un
 modello linguistico. Il prodotto è il
-modello; un formato CAD è solo una porta di entrata o di uscita. Oggi quella porta
-è il DXF (DWG via ODA), gestita da un solo adapter — tutto ciò che sta a valle
-lavora sul modello neutro rispetto al formato.
+modello; un formato CAD è solo una porta di entrata o di uscita. **topo stesso
+non conosce alcun formato di file**: geometria e ruoli, mai layer. Le porte sono
+adapter, pacchetti fratelli nella stessa distribuzione — `topo_dxf` (DXF, DWG
+via ODA) e `topo_pdf` (sperimentale) — che usano solo i nomi pubblici di topo;
+tutto ciò che sta a valle lavora sul modello neutro rispetto al formato.
 
 La parte che nessun altro strumento fa per te è l'**healing**: ricucire la
 geometria rotta — matasse di `LINE`/`ARC` da un export CAM, il DXF di un cliente,
@@ -32,27 +34,38 @@ attraverso un overlay aperto (`cluster.detected`).
 ## Installazione
 
 ```bash
-pip install -e .            # da un clone
-pip install -e ".[pdf]"     # + input PDF sperimentale
+pip install -e ".[dxf]"     # da un clone: topo + topo_dxf (DXF/DWG in entrata e in uscita)
+pip install -e .            # topo da solo: geometria in entrata, SVG / JSON / testo in uscita
+pip install -e ".[pdf]"     # + topo_pdf, input PDF sperimentale
 ```
 
-Dipendenze: `ezdxf`, `shapely`, `numpy` (Python ≥ 3.10).
+Una distribuzione (`g-topo`), tre pacchetti importabili:
+
+| pacchetto  | cosa                                   | extra   | porta   |
+|------------|----------------------------------------|---------|---------|
+| `topo`     | il motore: modello, heal, island, split, SVG/JSON/testo | —       | `shapely`, `numpy` |
+| `topo_dxf` | lettore e scrittore DXF/DWG, XDATA, `inspect_dxf` | `[dxf]` | `ezdxf` |
+| `topo_pdf` | lettore PDF (sperimentale)             | `[pdf]` | `PyMuPDF` |
+
+`topo` non importa mai un adapter, e un adapter solo i nomi pubblici di topo —
+un confine che fa rispettare il controllo dell'indice (`scripts/gen_index.py
+--check`). Python ≥ 3.10.
 
 ---
 
 ## Esempio — file singolo
 
 ```python
-import topo
+import topo, topo_dxf
 
-doc    = topo.load_dxf("pezzo.dxf", tolerance=0.5)   # -> Document
-result = topo.heal(doc)                              # topologia: contorni chiusi, outer/inner
+doc    = topo_dxf.load_dxf("pezzo.dxf", tolerance=0.5)   # -> Document
+result = topo.heal(doc)                                  # topologia: contorni chiusi, outer/inner
 #   fori, pieghe, incisioni sono una lettura di processo sopra: snapbend.flat.detect_flat
 
-if not result.is_valid:                              # nessun contorno esterno chiuso
-    print(result.errors)                              # si disegna lo stesso, vedi "Limiti noti"
+if not result.is_valid:                                  # nessun contorno esterno chiuso
+    print(result.errors)                                  # si disegna lo stesso, vedi "Limiti noti"
 
-doc_out = topo.to_dxf(result, doc)                   # -> ezdxf Drawing
+doc_out = topo_dxf.to_dxf(result, doc)                   # -> ezdxf Drawing
 doc_out.saveas("pezzo_healed.dxf")
 
 topo.save_json(result, "pezzo.json")                 # metadati
@@ -64,21 +77,30 @@ print(f"{result.cluster_count} cluster, {len(cerchi)} cerchi interni")
 ## File multi-pezzo
 
 ```python
-import topo
+import topo, topo_dxf
 
-doc    = topo.load_dxf("batch.dxf")
-result = topo.split_to_files(doc, "output/", label="batch")
-# scrive output/batch_P1.dxf, output/batch_P2.dxf, ... uno per pezzo
-# (namer=lambda i, cluster: "..." per scegliere i nomi dei file)
+doc    = topo_dxf.load_dxf("batch.dxf")
+result = topo.heal(doc, label="batch")
+
+for part in topo.split(result):                 # un Result per pezzo, senza formato
+    name = part.clusters[0].label               # batch_P1, batch_P2, ... (o namer=...)
+    topo_dxf.to_dxf(part, doc).saveas(f"output/{name}.dxf")
+    topo.save_svg(part, f"output/{name}.svg")   # lo stesso pezzo, un altro formato
+
+topo_dxf.split_to_files(doc, "output/", label="batch")   # heal + split + salvataggio, in una chiamata
 topo.save_json(result, "batch.json")
 ```
+
+`split` è una decisione sul modello: quali pezzi (`min_area`), come si chiamano
+(`namer`), quale trash e quali testi viaggiano con ognuno (il pezzo che li
+contiene, o il più vicino). Ogni adapter scrive poi un pezzo nel suo formato.
 
 ## Un disegno di viste (più viste, isometrica)
 
 ```python
-import topo
+import topo, topo_dxf
 
-doc    = topo.load_dxf("tavola.dxf")       # cornice / cartiglio marcati per ruolo, o tolti
+doc    = topo_dxf.load_dxf("tavola.dxf")   # cornice / cartiglio marcati per ruolo, o tolti
 result = topo.island(doc, max_gap=0.5)
 for cluster in result.clusters:              # una vista (o un pezzo) per isola
     print(cluster.outer.polygon.area, len(cluster.inners))
@@ -100,12 +122,13 @@ uno, così un consumatore compone il suo ordine — vedi `docs/API.md` (i passi 
 ## Disegnare con topo
 
 ```python
-import topo
+import topo, topo_dxf
 
 fg = topo.geometry
 doc = topo.load_segments(fg.rectangle(200, 100) + fg.rectangle(100, 50))
 result = topo.heal(doc)                # un pezzo: outer 200×100, un inner 100×50
-topo.to_dxf(result, doc).saveas("due_rettangoli.dxf")
+topo.save_svg(result, "due_rettangoli.svg")             # senza adapter
+topo_dxf.to_dxf(result, doc).saveas("due_rettangoli.dxf")
 ```
 
 I costruttori restituiscono segmenti di topo: `polygon(punti)`, `rectangle`,
@@ -140,12 +163,12 @@ disegno mostra un filetto, e quella regola sta nel consumatore.
 ## Linee di piega / incisione che sai già riconoscere
 
 Se sai come la sorgente segna pieghe o incisioni — per nome, per tratteggio,
-per colore o una combinazione — dillo a `load_dxf` con delle regole, così
+per colore o una combinazione — dillo a `topo_dxf.load_dxf` con delle regole, così
 assegna il ruolo subito invece di indovinarlo. Le regole si valutano in
 ordine, vince la prima che matcha:
 
 ```python
-doc = topo.load_dxf("pezzo.dxf", role_rules=[
+doc = topo_dxf.load_dxf("pezzo.dxf", role_rules=[
     *topo.name_rules({"Piega": "bending", "MARK": "engrave"}),
     topo.RoleRule("construction", name_contains="constr", dashed=True),
     topo.RoleRule("bending", dashed=True),
@@ -157,8 +180,9 @@ doc = topo.load_dxf("pezzo.dxf", role_rules=[
 ## La pipeline
 
 ```
-load_dxf(path)  ──►  Document   (edge + annotazioni + source_meta)
-                          │            l'unico passo che legge con ezdxf
+topo_dxf.load_dxf(path)   ──►  Document   (edge + annotazioni + source_meta)
+topo.load_segments(segs)  ──►  Document   l'adapter è l'unico codice che legge un formato
+                          │
                           ▼
      heal(doc)  ──►  Result      topologia: gap chiusi, giri trovati,
                           │            albero di contenimento outer / inner
@@ -166,13 +190,13 @@ load_dxf(path)  ──►  Document   (edge + annotazioni + source_meta)
   (la lettura di un consumatore)       es. snapbend: tipo di foro, linee di piega, incisioni,
                           │            attaccate a cluster.detected
                           ▼
-   to_dxf(result, doc)  ──►  ezdxf Drawing        render — un documento
-   split(result, doc)   ──►  list[Drawing]        render — uno per pezzo
-   to_svg(result)       ──►  stringa SVG          render — per una UI / un report
-   to_view_model(result)  ─►  dict (geometria completa) per un renderer esterno
-   to_text(result)      ──►  Markdown              sperimentale: una lettura per un modello linguistico (D84)
-   save_json / save_xml                           export del modello (metadati)
-   inject(result, ...)                            arricchimento opzionale dai testi
+   split(result)                 ──►  list[Result]     uno per pezzo, senza formato
+   topo_dxf.to_dxf(result, doc)  ──►  ezdxf Drawing    render — un Result intero o un pezzo
+   to_svg(result)                ──►  stringa SVG      render — per una UI / un report
+   to_view_model(result)         ──►  dict (geometria completa) per un renderer esterno
+   to_text(result)               ──►  Markdown         sperimentale: una lettura per un modello linguistico (D84)
+   save_json / save_xml                                export del modello (metadati)
+   inject(result, ...)                                 arricchimento opzionale dai testi
 ```
 
 Il prodotto è il modello. `to_dxf` non rilegge mai il file sorgente — ogni renderer
@@ -183,7 +207,7 @@ Il prodotto è il modello. `to_dxf` non rilegge mai il file sorgente — ogni re
 ## Layer del DXF in uscita
 
 topo non ha layer: l'adapter DXF scrive ogni ruolo sul layer che sceglie il
-chiamante (`to_dxf(layers=..., role_styles=...)`, un nome o una funzione
+chiamante (`topo_dxf.to_dxf(layers=..., role_styles=...)`, un nome o una funzione
 dell'elemento per ruolo). Quando il chiamante non dice niente, questi sono i
 suoi default:
 
@@ -198,6 +222,8 @@ suoi default:
 Niente della sorgente si perde in silenzio: la geometria non classificata va in
 `Trash`, testi e quote in `Annotation`. I tipi di entità che `topo` non modella
 (`HATCH`, `IMAGE`, `TABLE`, …) li segnala `load_dxf` con un warning, non li butta.
+Rileggendo un file scritto da topo, `load_dxf` salta i layer `Trash` e
+`Annotation` (`skip_layers=topo_dxf.SKIP_LAYERS`; `()` per leggere tutto).
 
 ---
 
@@ -206,13 +232,13 @@ Niente della sorgente si perde in silenzio: la geometria non classificata va in
 Tre livelli, come la pipeline:
 
 ```python
-import topo
+import topo, topo_dxf
 
-topo.inspect_dxf("pezzo.dxf")       # 1 — entità DXF grezze: cosa c'è nel file
+topo_dxf.inspect_dxf("pezzo.dxf")   # 1 — entità DXF grezze: cosa c'è nel file
 topo.inspect_document(doc)          # 2 — edge, primitive, grafo dei nodi: cosa ha capito l'adapter
 topo.inspect_result(result)         # 3 — il modello: cluster, outer/inner, quello che un consumatore ha attaccato, trash
 
-topo.inspect_file("pezzo.dxf", role_rules=topo.name_rules({"Piega": "bending"}))   # tutti e tre, in fila
+topo_dxf.inspect_file("pezzo.dxf", role_rules=topo.name_rules({"Piega": "bending"}))   # tutti e tre, in fila
 ```
 
 Tutto stampa su stdout. Serve quando qualcosa su un file vero non esce giusto e
@@ -241,13 +267,13 @@ devi vedere dove si rompe la catena.
 - **Spline ed ellissi** escono native sui layer di taglio (`to_dxf`) ma
   **discretizzate** in `to_svg` / `to_view_model` (polilinee: usa `to_dxf`
   quando conta la curva esatta).
-- **`load_pdf`** esiste ma è sperimentale — ritorna edge grezzi, non un
-  `Document`, quindi non si aggancia ancora a `heal()`. Non è nell'API pubblica.
+- **`topo_pdf.load_pdf`** esiste ma è sperimentale — ritorna edge grezzi, non
+  un `Document`, quindi non si aggancia ancora a `heal()`.
 - **Gap arco/arco oltre la tolleranza** non si chiudono da soli — alza `tolerance`.
 - Se non si riesce a formare un contorno esterno chiuso, `result.is_valid` è
   `False`. `to_dxf` / `to_svg` disegnano comunque quello che c'è (tutto su
   `Trash`), così vedi cosa ha capito topo; chi manda l'output a una macchina
-  passa `allow_invalid=False` e riceve `ValueError`. `split` solleva sempre:
+  passa `allow_invalid=False` e riceve `ValueError`. `topo.split` solleva sempre:
   un file per pezzo non ha senso senza pezzi.
 
 ---

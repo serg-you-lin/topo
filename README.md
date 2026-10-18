@@ -7,8 +7,11 @@ contours, their containment hierarchy, the drawing's annotations, and an open
 overlay where detected features are attached — then renders it to DXF (one
 document, or one per part), JSON/XML, SVG, a view model for a UI, or (experimental) a compact text reading for
 a language model. The model is the product; a CAD format is
-only a door in or out of it. Today that door is DXF (DWG via ODA), handled by a
-single adapter — everything downstream works on the format-neutral model.
+only a door in or out of it. **topo itself knows no file format**: geometry and
+roles, never layers. The doors are adapters, sibling packages in the same
+distribution — `topo_dxf` (DXF, DWG via ODA) and `topo_pdf` (experimental) —
+that use topo's public names only; everything downstream works on the
+format-neutral model.
 
 The distinctive part is the **healing**: reconnecting broken geometry — `LINE`/`ARC`
 soup from a CAM export, a client's DXF, a legacy R12 file — into closed contours.
@@ -29,27 +32,37 @@ own vocabulary on top through one open overlay (`cluster.detected`).
 ## Install
 
 ```bash
-pip install -e .            # from a clone
-pip install -e ".[pdf]"     # + experimental PDF input
+pip install -e ".[dxf]"     # from a clone: topo + topo_dxf (DXF/DWG in and out)
+pip install -e .            # topo alone: geometry in, SVG / JSON / text out
+pip install -e ".[pdf]"     # + topo_pdf, experimental PDF input
 ```
 
-Dependencies: `ezdxf`, `shapely`, `numpy` (Python ≥ 3.10).
+One distribution (`g-topo`), three importable packages:
+
+| package    | what                                   | extra   | brings  |
+|------------|----------------------------------------|---------|---------|
+| `topo`     | the engine: model, heal, island, split, SVG/JSON/text | —       | `shapely`, `numpy` |
+| `topo_dxf` | DXF/DWG reader and writer, XDATA, `inspect_dxf` | `[dxf]` | `ezdxf` |
+| `topo_pdf` | PDF reader (experimental)              | `[pdf]` | `PyMuPDF` |
+
+`topo` never imports an adapter, and an adapter only topo's public names — a
+boundary the index check enforces (`scripts/gen_index.py --check`). Python ≥ 3.10.
 
 ---
 
 ## Quick start — one file
 
 ```python
-import topo
+import topo, topo_dxf
 
-doc    = topo.load_dxf("part.dxf", tolerance=0.5)   # -> Document
-result = topo.heal(doc)                             # topology: closed contours, outer/inner
+doc    = topo_dxf.load_dxf("part.dxf", tolerance=0.5)   # -> Document
+result = topo.heal(doc)                                 # topology: closed contours, outer/inner
 #   holes, bends, engraving are a process reading on top: snapbend.flat.detect_flat
 
-if not result.is_valid:                             # no closed outer contour
-    print(result.errors)                             # still renderable, see "Known limits"
+if not result.is_valid:                                 # no closed outer contour
+    print(result.errors)                                 # still renderable, see "Known limits"
 
-doc_out = topo.to_dxf(result, doc)                  # -> ezdxf Drawing
+doc_out = topo_dxf.to_dxf(result, doc)                  # -> ezdxf Drawing
 doc_out.saveas("part_healed.dxf")
 
 topo.save_json(result, "part.json")                 # metadata
@@ -61,21 +74,30 @@ print(f"{result.cluster_count} cluster(s), {len(circles)} inner circles")
 ## Multi-part file
 
 ```python
-import topo
+import topo, topo_dxf
 
-doc    = topo.load_dxf("batch.dxf")
-result = topo.split_to_files(doc, "output/", label="batch")
-# writes output/batch_P1.dxf, output/batch_P2.dxf, ... one per piece
-# (pass namer=lambda i, cluster: "..." to control the file names)
+doc    = topo_dxf.load_dxf("batch.dxf")
+result = topo.heal(doc, label="batch")
+
+for part in topo.split(result):                 # one Result per part, no format
+    name = part.clusters[0].label               # batch_P1, batch_P2, ... (or namer=...)
+    topo_dxf.to_dxf(part, doc).saveas(f"output/{name}.dxf")
+    topo.save_svg(part, f"output/{name}.svg")   # the same part, another format
+
+topo_dxf.split_to_files(doc, "output/", label="batch")   # heal + split + save, in one call
 topo.save_json(result, "batch.json")
 ```
+
+`split` is a decision on the model: which parts (`min_area`), their names
+(`namer`), which trash and texts travel with each (the part that contains
+them, or the nearest). Each adapter then writes one part in its format.
 
 ## A drawing of views (several views, isometric)
 
 ```python
-import topo
+import topo, topo_dxf
 
-doc    = topo.load_dxf("sheet.dxf")        # frame / title block marked by role, or removed
+doc    = topo_dxf.load_dxf("sheet.dxf")    # frame / title block marked by role, or removed
 result = topo.island(doc, max_gap=0.5)
 for cluster in result.clusters:              # one view (or part) per island
     print(cluster.outer.polygon.area, len(cluster.inners))
@@ -96,12 +118,13 @@ so a consumer can compose its own order — see `docs/API.md` (the steps of `hea
 ## Drawing with topo
 
 ```python
-import topo
+import topo, topo_dxf
 
 fg = topo.geometry
 doc = topo.load_segments(fg.rectangle(200, 100) + fg.rectangle(100, 50))
 result = topo.heal(doc)                # one part: outer 200×100, one inner 100×50
-topo.to_dxf(result, doc).saveas("two_rectangles.dxf")
+topo.save_svg(result, "two_rectangles.svg")             # no adapter needed
+topo_dxf.to_dxf(result, doc).saveas("two_rectangles.dxf")
 ```
 
 Builders return topo segments: `polygon(points)`, `rectangle`, `regular_polygon`,
@@ -135,12 +158,12 @@ shows a thread, and that rule lives in the consumer.
 ## Bend / engrave lines you already know how to recognize
 
 If you know how the source marks bend lines or engraving — by name, by dash,
-by colour, or a combination — tell `load_dxf` with rules, so it assigns the
+by colour, or a combination — tell `topo_dxf.load_dxf` with rules, so it assigns the
 role up front instead of guessing. Rules are checked in order, the first
 match wins:
 
 ```python
-doc = topo.load_dxf("part.dxf", role_rules=[
+doc = topo_dxf.load_dxf("part.dxf", role_rules=[
     *topo.name_rules({"Piega": "bending", "MARK": "engrave"}),
     topo.RoleRule("construction", name_contains="constr", dashed=True),
     topo.RoleRule("bending", dashed=True),
@@ -152,8 +175,9 @@ doc = topo.load_dxf("part.dxf", role_rules=[
 ## The pipeline
 
 ```
-load_dxf(path)  ──►  Document   (edges + annotations + source_meta)
-                          │            the only step that touches ezdxf for reading
+topo_dxf.load_dxf(path)   ──►  Document   (edges + annotations + source_meta)
+topo.load_segments(segs)  ──►  Document   the adapter is the only code that reads a format
+                          │
                           ▼
      heal(doc)  ──►  Result      topology: gaps closed, loops found,
                           │            outer / inner containment tree
@@ -161,13 +185,13 @@ load_dxf(path)  ──►  Document   (edges + annotations + source_meta)
   (a consumer's reading)               e.g. snapbend: hole type, bend lines, engraving,
                           │            attached to cluster.detected
                           ▼
-   to_dxf(result, doc)  ──►  ezdxf Drawing        render — one document
-   split(result, doc)   ──►  list[Drawing]        render — one per part
-   to_svg(result)       ──►  SVG string           render — for a UI / report
-   to_view_model(result)  ─►  dict (full geometry) for an external renderer
-   to_text(result)      ──►  Markdown              experimental: a reading for a language model (D84)
-   save_json / save_xml                           export the model (metadata)
-   inject(result, ...)                            optional enrichment from texts
+   split(result)                 ──►  list[Result]     one per part, no format
+   topo_dxf.to_dxf(result, doc)  ──►  ezdxf Drawing    render — a whole Result or one part
+   to_svg(result)                ──►  SVG string       render — for a UI / report
+   to_view_model(result)         ──►  dict (full geometry) for an external renderer
+   to_text(result)               ──►  Markdown         experimental: a reading for a language model (D84)
+   save_json / save_xml                                export the model (metadata)
+   inject(result, ...)                                 optional enrichment from texts
 ```
 
 The model is the product. `to_dxf` never re-reads the source file — every renderer
@@ -178,8 +202,8 @@ The model is the product. `to_dxf` never re-reads the source file — every rend
 ## Output DXF layers
 
 topo has no layers: the DXF adapter writes each role to the layer the caller
-chooses (`to_dxf(layers=..., role_styles=...)`, a name or a function of the
-element per role). When the caller says nothing, these are its defaults:
+chooses (`topo_dxf.to_dxf(layers=..., role_styles=...)`, a name or a function
+of the element per role). When the caller says nothing, these are its defaults:
 
 | Layer          | Meaning                                    |
 |----------------|--------------------------------------------|
@@ -192,6 +216,8 @@ element per role). When the caller says nothing, these are its defaults:
 Nothing from the source is silently lost: unclassified geometry goes to `Trash`,
 texts and dimensions to `Annotation`. Entity types `topo` does not model (`HATCH`,
 `IMAGE`, `TABLE`, …) are reported as a warning by `load_dxf`, not dropped in silence.
+Reading back a file topo wrote, `load_dxf` skips the `Trash` and `Annotation`
+layers (`skip_layers=topo_dxf.SKIP_LAYERS`; pass `()` to read everything).
 
 ---
 
@@ -200,13 +226,13 @@ texts and dimensions to `Annotation`. Entity types `topo` does not model (`HATCH
 Three levels, matching the pipeline:
 
 ```python
-import topo
+import topo, topo_dxf
 
-topo.inspect_dxf("part.dxf")        # 1 — raw DXF entities: what's in the file
+topo_dxf.inspect_dxf("part.dxf")    # 1 — raw DXF entities: what's in the file
 topo.inspect_document(doc)          # 2 — edges, primitives, node graph: what the adapter understood
 topo.inspect_result(result)         # 3 — the model: clusters, outer/inner, whatever a consumer attached, trash
 
-topo.inspect_file("part.dxf", role_rules=topo.name_rules({"Piega": "bending"}))   # all three, in order
+topo_dxf.inspect_file("part.dxf", role_rules=topo.name_rules({"Piega": "bending"}))   # all three, in order
 ```
 
 Everything prints to stdout. Use it when something on a real file doesn't come out
@@ -234,13 +260,13 @@ right and you need to see where in the chain it breaks.
 - **Splines and ellipses** are re-emitted natively on cut layers (`to_dxf`) but
   **discretized** in `to_svg` / `to_view_model` (polylines: use `to_dxf` when
   the exact curve matters).
-- **`load_pdf`** exists but is experimental — it returns raw edges, not a
-  `Document`, so it does not plug into `heal()` yet. Not in the public API.
+- **`topo_pdf.load_pdf`** exists but is experimental — it returns raw edges,
+  not a `Document`, so it does not plug into `heal()` yet.
 - **`arc/arc` gaps beyond tolerance** are not auto-closed — raise `tolerance`.
 - If no closed outer contour can be formed, `result.is_valid` is `False`.
   `to_dxf` / `to_svg` still render what is there (everything on `Trash`), so
   you can see what topo understood; a caller feeding a machine passes
-  `allow_invalid=False` and gets `ValueError` instead. `split` always raises:
+  `allow_invalid=False` and gets `ValueError` instead. `topo.split` always raises:
   one file per part means nothing without parts.
 
 ---
