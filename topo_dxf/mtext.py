@@ -1,6 +1,6 @@
 """
-topo/adapters/dxf/mtext.py
----------------------------
+topo_dxf/mtext.py
+-----------------
 Decodifica del testo formattato DXF: MTEXT inline codes e testo dei MULTILEADER.
 
 `clean_mtext` è una funzione stringa → stringa (i codici di formattazione MTEXT

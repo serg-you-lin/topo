@@ -42,8 +42,8 @@ project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
-from topo.adapters.dxf.layers import role_to_dxf_layer
-from topo.io.dxf import cluster_passes_min_area, DEFAULT_MIN_CLUSTER_AREA
+import topo_dxf
+from topo_dxf.layers import role_to_dxf_layer
 
 
 MULTIPLI_DIR = project_root / "tests" / "data" / "golden_multipli"
@@ -139,20 +139,18 @@ def _get_parent_split_cache(parent_path: Path, tolerance: float) -> dict:
     output_folder = Path(tempfile.mkdtemp(prefix=f"golden_split_{parent_path.stem}_"))
     atexit.register(shutil.rmtree, output_folder, ignore_errors=True)
 
-    doc = topo.load_dxf(parent_path, explode_inserts=True, tolerance=tolerance)
+    doc = topo_dxf.load_dxf(parent_path, explode_inserts=True, tolerance=tolerance)
     result = topo.heal(doc, tolerance=tolerance)
 
     if result.is_valid and result.clusters:
-        drawings = topo.split(
+        parts = topo.split(
             result,
-            doc,
             namer=lambda i, cluster: f"{cluster.label}_P{i + 1:03d}",
         )
         output_folder.mkdir(parents=True, exist_ok=True)
-        kept = [p for p in result.clusters
-                if cluster_passes_min_area(p, DEFAULT_MIN_CLUSTER_AREA)]
-        for cluster, drawing in zip(kept, drawings):
-            drawing.saveas(str(output_folder / f"{cluster.label}.dxf"))
+        for part in parts:
+            topo_dxf.to_dxf(part, doc).saveas(
+                str(output_folder / f"{part.clusters[0].label}.dxf"))
 
     part_payloads = []
     for cluster in result.clusters if result.is_valid and result.clusters else []:

@@ -1,8 +1,8 @@
 
 
 """
-topo/adapters/dxf/adapter.py
---------------------------------
+topo_dxf/adapter.py
+-------------------
 Traduce entità DXF in primitive Topo.
 UNICO punto di conversione DXF → primitive.
 """
@@ -25,11 +25,6 @@ from .parser import DxfEntityDispatcher
 # ---------------------------------------------------------------------------
 
 _SUPPORTED_TYPES = frozenset({'LINE', 'ARC', 'SPLINE', 'ELLIPSE'})
-
-# Layer che topo produce in output per contenuti NON di taglio: se un file già
-# passato da topo viene riletto (round-trip, ri-heal), la loro geometria non è
-# geometria di parte e va sempre ignorata, senza doverlo chiedere al chiamante.
-_NON_STRUCTURAL_LAYERS = frozenset({'trash', 'annotation'})
 
 # Linetype "di sistema": non hanno una entry propria nella tabella o non
 # portano un pattern (BYLAYER/BYBLOCK ereditano; CONTINUOUS è sempre presente
@@ -166,7 +161,7 @@ def _entity_style(entity) -> EdgeStyle:
 # TRADUZIONE DXF → PRIMITIVE
 # ---------------------------------------------------------------------------
 # La traduzione entità DXF → primitiva vive in UN SOLO posto:
-# `adapters/dxf/parser.py::DxfEntityDispatcher` (MAP.md D7). Prima ce n'erano
+# `topo_dxf/parser.py::DxfEntityDispatcher` (MAP.md D7). Prima ce n'erano
 # due copie quasi identiche — una qui (`entity_to_primitive`), una in parser.py.
 
 
@@ -240,10 +235,12 @@ class DxfAdapter:
         exclude_ids: Optional[set] = None,
         ignore_layers: Optional[set] = None,
         role_rules: Sequence[RoleRule] = (),
+        skip_layers: Sequence[str] = (),
     ):
         self.msp = msp
         self.exclude_ids = exclude_ids or set()
         self.ignore_layers = ignore_layers or set()
+        self.skip_layers = {s.lower() for s in skip_layers}
         self.role_rules = list(role_rules)
 
     def to_edges(self) -> List[Edge]:
@@ -258,7 +255,7 @@ class DxfAdapter:
                 if entity.dxf.hasattr("layer")
                 else ""
             )
-            if layer in _NON_STRUCTURAL_LAYERS:
+            if layer in self.skip_layers:
                 return True
             if not ignore:
                 return False

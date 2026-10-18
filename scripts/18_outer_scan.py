@@ -17,6 +17,7 @@ import _paths  # noqa: F401  — chdir alla radice del repo
 
 import os
 import topo
+import topo_dxf
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -49,7 +50,7 @@ def _plot_edges(ax, edges, **kw):
 def main():
     os.makedirs(OUTDIR, exist_ok=True)
     for path in INPUTS:
-        doc = topo.load_dxf(path)
+        doc = topo_dxf.load_dxf(path)
         oc = outer_candidate_edges(doc.edges)
         stem = os.path.splitext(os.path.basename(path))[0]
 

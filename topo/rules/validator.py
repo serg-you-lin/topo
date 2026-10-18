@@ -7,7 +7,7 @@ restituisce warning/errori dentro un Result.
 Due validazioni distinte, entrambe utili:
 
     validate(doc)        — INPUT, prima di heal(). Prende il Document di
-                           topo.load_dxf() e segnala i problemi che
+                           topo_dxf.load_dxf() e segnala i problemi che
                            renderebbero l'healing inutile o sbagliato.
     validate_result(res) — OUTPUT, dopo heal(). Controlla che i cluster prodotti
                            siano sani (poligono valido, fori contenuti, area).
@@ -46,7 +46,7 @@ def validate(doc: Document) -> Result:
     """
     if not isinstance(doc, Document):
         raise TypeError(
-            "topo.validate() richiede un Document da topo.load_dxf(); "
+            "topo.validate() richiede un Document da topo_dxf.load_dxf(); "
             f"ricevuto {type(doc).__name__}"
         )
 

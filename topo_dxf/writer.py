@@ -1,15 +1,13 @@
 """
-topo/io/dxf.py
------------------
-Materializza un Result in uno o più documenti DXF NUOVI, lavorando
-esclusivamente sui segmenti del modello. Zero accesso a source_ref, entity_ids,
-msp sorgente.
+topo_dxf/writer.py
+------------------
+Materializza un Result in un documento DXF NUOVO, lavorando esclusivamente
+sui segmenti del modello. Zero accesso a source_ref, entity_ids, msp sorgente.
 
-- `to_dxf(result, ...)`  → un Drawing con tutte le parti (o un sottoinsieme).
-- `split(result, ...)`   → un Drawing per parte. Puro: nessun I/O su disco.
-
-L'unica funzione che tocca il disco è `recipes.split_to_files()`, che è un
-wrapper sottile attorno a `split()`.
+`to_dxf(result, ...)` → un Drawing con tutto quello che il Result contiene.
+Un file per parte: `topo.split(result)` dà un Result per parte, e ognuno
+passa da `to_dxf` (D124, D129); `recipes.split_to_files()` è quel ciclo, più
+il salvataggio su disco.
 """
 
 from __future__ import annotations
@@ -18,18 +16,16 @@ from typing import Callable, List, Mapping, Optional, Set
 
 import ezdxf
 
-from ..model import Result, Cluster, RoleStyle, role_style
-from ..model.document import Document
-from ..model.annotation import Annotation, Note, Dimension, Leader
-from ..model.role import ContourRole, feature_role, role_str
-from ..adapters.dxf.exporter import (
+from topo.model import (
+    Annotation, Cluster, ContourRole, Dimension, Document, Leader, Note, Result,
+    RoleStyle, feature_role, role_str, role_style,
+)
+from .exporter import (
     dxf_pattern, ensure_linetype, write_segments, write_open_segments, write_native_segments,
 )
-from ..adapters.dxf.layers import (
+from .layers import (
     COLOR_ANNOTATION, LAYER_ANNOTATION, LayerMap, color_for_role, role_to_dxf_layer,
 )
-
-DEFAULT_MIN_CLUSTER_AREA = 50.0  # mm²
 
 ANNOTATION_TYPES = frozenset({"TEXT", "MTEXT", "DIMENSION", "LEADER", "MULTILEADER"})
 
@@ -48,6 +44,7 @@ def to_dxf(
     role_styles: Optional[Mapping[str, RoleStyle]] = None,
     layers: Optional[LayerMap] = None,
     allow_invalid: bool = True,
+    exclude_types: Optional[Set[str]] = None,
 ) -> "ezdxf.document.Drawing":
     """
     Crea un documento DXF nuovo (R2010) e vi materializza il Result.
@@ -64,7 +61,7 @@ def to_dxf(
     silenziosamente è una regressione.
 
     Layer e aspetto sono del chiamante (D123, D128); quello che non dice è il
-    default dell'adapter (`adapters/dxf/layers.py`):
+    default dell'adapter (`topo_dxf/layers.py`):
       - `layers` → `{ruolo: "Nome"}` o `{ruolo: funzione(elemento) -> nome}`:
         con una funzione le entità di un ruolo si dividono su più layer
         (l'elemento è il Contour, l'elemento di `cluster.detected`, l'entità
@@ -77,8 +74,13 @@ def to_dxf(
       - `annotation_layer` → il layer di testi e quote senza ruolo; uno con
         un ruolo va sul layer del suo ruolo, come un edge (D127, D128).
     Nessuna annotazione viene scartata: quelle non coperte da alcuna parte
-    vengono comunque scritte (in `split()` assegnate alla parte più vicina,
-    come il trash).
+    vengono comunque scritte (`topo.split()` le assegna alla parte più
+    vicina, come il trash).
+
+    `filter_cluster(cluster)` sceglie quali cluster scrivere; trash e
+    annotazioni si scrivono comunque tutti (per un file per parte, la parte
+    viene da `topo.split()`, che le ha già divise). `exclude_types`
+    (`{"TEXT", "CIRCLE"}`) toglie dal documento le entità DXF di quei tipi.
 
     Restituisce il documento ezdxf: sta al chiamante fare doc.saveas(...).
 
@@ -107,12 +109,9 @@ def to_dxf(
     book = _Layers(doc_out, layers, role_styles)
     book.setup(annotation_layer)
 
-    written_clusters: List[Cluster] = []
-
     for cluster in result.clusters:
         if filter_cluster is not None and not filter_cluster(cluster):
             continue
-        written_clusters.append(cluster)
 
         # Contorno esterno e interni: un contorno si scrive col ruolo di
         # contorno che ha nel grafo (outer o inner), anche se ne porta un altro
@@ -132,90 +131,15 @@ def to_dxf(
         _write_attached_features(msp, cluster, book)
 
     if include_trash and result.trash_entities:
-        _write_trash(
-            msp, result, written_clusters, result.clusters, book,
-            restrict_to_written=filter_cluster is not None,
-        )
+        _write_trash(msp, result, book)
 
     if include_annotations and result.annotations:
-        _write_annotations(
-            msp, result.annotations, written_clusters, result.clusters,
-            book, annotation_layer,
-            restrict_to_written=filter_cluster is not None,
-        )
+        _write_annotations(msp, result.annotations, book, annotation_layer)
+
+    if exclude_types:
+        _remove_excluded_entities(msp, {t.upper() for t in exclude_types})
 
     return doc_out
-
-
-def cluster_passes_min_area(cluster: Cluster, min_area: float) -> bool:
-    """True se la parte supera la soglia di area minima (min_area <= 0 = nessun filtro)."""
-    return not (min_area > 0 and cluster.outer.polygon.area < min_area)
-
-
-def split(
-    result: Result,
-    source_doc: Optional[Document] = None,
-    namer: Optional[Callable] = None,
-    include_annotations: bool = True,
-    min_area: float = DEFAULT_MIN_CLUSTER_AREA,
-    exclude_types: Set[str] = None,
-    on_part: Optional[Callable] = None,
-    annotation_layer: str = LAYER_ANNOTATION,
-    role_styles: Optional[Mapping[str, RoleStyle]] = None,
-    layers: Optional[LayerMap] = None,
-) -> List["ezdxf.document.Drawing"]:
-    """
-    Materializza un Result in un Drawing per parte.
-
-    Funzione PURA: non tocca il disco. Per salvare i file usa
-    `recipes.split_to_files()`, o itera il risultato e chiama `.saveas(...)`.
-
-    Ritorna i Drawing nell'ordine delle parti tenute (quelle che superano
-    `min_area`). `namer(i, cluster)` — se passato — assegna `cluster.label`, così il
-    nome file resta ricavabile a valle come `f"{cluster.label}.dxf"`.
-    Solleva `ValueError` se `result` non è valido: un file per parte non ha
-    senso senza parti (D83).
-    """
-    if not result.is_valid:
-        raise ValueError(
-            "split(): il Result non è valido, nessun output generato. "
-            + " ".join(result.errors)
-        )
-    exclude_types = exclude_types or set()
-    drawings: List["ezdxf.document.Drawing"] = []
-
-    for i, cluster in enumerate(result.clusters):
-        if not cluster_passes_min_area(cluster, min_area):
-            result.warnings.append(
-                f"Part {i} scartato: area {cluster.outer.polygon.area:.2f} mm² "
-                f"sotto soglia {min_area} mm²"
-            )
-            continue
-
-        cluster.label = namer(i, cluster) if namer else f"{cluster.label}_P{i + 1}"
-
-        def _only_this_cluster(p: Cluster, _target=cluster) -> bool:
-            return p is _target
-
-        doc_out = to_dxf(
-            result,
-            source_doc,
-            filter_cluster=_only_this_cluster,
-            include_annotations=include_annotations,
-            annotation_layer=annotation_layer,
-            role_styles=role_styles,
-            layers=layers,
-        )
-
-        if exclude_types:
-            _remove_excluded_entities(doc_out.modelspace(), {t.upper() for t in exclude_types})
-
-        if on_part is not None:
-            on_part(cluster, doc_out)
-
-        drawings.append(doc_out)
-
-    return drawings
 
 
 # ---------------------------------------------------------------------------
@@ -225,39 +149,17 @@ def split(
 def _write_annotations(
     msp,
     annotations: List[Annotation],
-    written_clusters: List[Cluster],
-    all_clusters: List[Cluster],
     book: "_Layers",
     annotation_layer: str,
-    restrict_to_written: bool,
 ) -> None:
     """
-    Riscrive le annotazioni testuali della sorgente nel documento di output.
-
-    Nessuna annotazione viene scartata. In `to_dxf()` (documento intero) le
-    riporta tutte; in `split()` — un file per parte — ogni annotazione è
-    assegnata alla parte che la contiene o, se nessuna la contiene, alla parte
-    più vicina, e scritta solo nel file di quella parte (stessa logica del
-    trash).
+    Riscrive le annotazioni testuali della sorgente nel documento di output,
+    tutte: quale parte ne porta quali lo decide `topo.split()`.
 
     Un'annotazione con un ruolo va sul layer del suo ruolo, una senza su
     `annotation_layer` (D128).
     """
-    from shapely.geometry import Point
-
-    written_set = set(id(p) for p in written_clusters)
-    ref_polys = _outer_polygons(all_clusters)
-
     for ann in annotations:
-        if restrict_to_written and ref_polys:
-            probe = Point(ann.position)
-            covering = [p for p, poly in ref_polys if poly.covers(probe)]
-            target = covering[0] if covering else min(
-                ref_polys, key=lambda pp: pp[1].distance(probe)
-            )[0]
-            if id(target) not in written_set:
-                continue
-
         if ann.role != ContourRole.UNKNOWN:
             layer = book.for_role(ann.role, ann)
         else:
@@ -329,58 +231,16 @@ def _emit_rendered(msp, ann, attribs: dict) -> None:
 # su un layer col nome del ruolo se un consumatore ne ha assegnato uno (D31).
 # ---------------------------------------------------------------------------
 
-def _trash_probe_point(trash) -> Optional[tuple]:
-    """Punto rappresentativo di un'entità trash, per assegnarla a una parte."""
-    from ..core.geometry.measure import track_points
-
-    poly = getattr(trash, "polygon", None)
-    if poly is not None:
-        c = poly.representative_point()
-        return (c.x, c.y)
-
-    pts = track_points(getattr(trash, "segments", []) or [])
-    if pts:
-        mid = pts[len(pts) // 2]
-        return (mid[0], mid[1])
-    return None
-
-
-def _write_trash(
-    msp,
-    result: Result,
-    written_clusters: List[Cluster],
-    all_clusters: List[Cluster],
-    book: "_Layers",
-    restrict_to_written: bool,
-) -> None:
+def _write_trash(msp, result: Result, book: "_Layers") -> None:
     """
-    Materializza `result.trash_entities`.
+    Materializza `result.trash_entities`, tutte: in un file per parte le ha
+    già divise `topo.split()`.
 
     Ogni entità va sul layer del suo ruolo (`book.for_role`): di default
     `Trash` se il ruolo è `unknown`, un layer col nome dello slug se un
     consumatore l'ha marcata (`frame`, `title_block`, ...) — D31.
-
-    In `to_dxf()` (documento intero) le riporta tutte. In `split()` — un file
-    per parte — assegna ogni entità trash alla parte più vicina fra TUTTE le
-    parti e la scrive solo nel file di quella parte, così non viene duplicata
-    in ogni file.
     """
-    from shapely.geometry import Point
-
-    written_set = set(id(p) for p in written_clusters)
-    ref_polys = _outer_polygons(all_clusters)
-
     for trash in result.trash_entities:
-        if restrict_to_written and ref_polys:
-            probe = _trash_probe_point(trash)
-            if probe is not None:
-                nearest = min(
-                    ref_polys,
-                    key=lambda pp: pp[1].distance(Point(probe)),
-                )[0]
-                if id(nearest) not in written_set:
-                    continue
-
         segments = list(getattr(trash, "segments", []) or [])
         if segments:
             styles = list(getattr(trash, "styles", []) or [])
@@ -430,15 +290,6 @@ def _remove_excluded_entities(msp, excluded_upper: Set[str]) -> None:
     to_delete = [e for e in msp if e.dxftype().upper() in excluded_upper]
     for e in to_delete:
         msp.delete_entity(e)
-
-
-def _outer_polygons(clusters) -> list:
-    """(cluster, poligono dell'outer) per ogni cluster che ne ha uno."""
-    return [
-        (c, c.outer.polygon)
-        for c in clusters
-        if c.outer is not None and c.outer.polygon is not None
-    ]
 
 
 def _contour_role(contour, default: ContourRole):

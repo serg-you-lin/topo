@@ -1,7 +1,7 @@
 """
 test_writeback.py
 -----------------
-Test di integrazione per topo.to_dxf().
+Test di integrazione per topo_dxf.to_dxf().
 
 Dopo il refactoring `write` non modifica più il modelspace sorgente: produce
 un Drawing NUOVO. Questi test verificano il routing dei layer topo sul
@@ -28,17 +28,18 @@ project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
-from topo.adapters.dxf.parser import DxfEntityDispatcher
-from topo.adapters.dxf.layers import LAYER_OUTER, LAYER_INNER
+import topo_dxf
+from topo_dxf.parser import DxfEntityDispatcher
+from topo_dxf.layers import LAYER_OUTER, LAYER_INNER
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "data"
 
 
 def _pipeline(name, *, name_roles=None):
     """heal → to_dxf. Ritorna (result, msp_out)."""
-    doc = topo.load_dxf(EXAMPLES_DIR / name, role_rules=topo.name_rules(name_roles or {}))
+    doc = topo_dxf.load_dxf(EXAMPLES_DIR / name, role_rules=topo.name_rules(name_roles or {}))
     result = topo.heal(doc)
-    doc_out = topo.to_dxf(result, doc)
+    doc_out = topo_dxf.to_dxf(result, doc)
     return result, doc_out.modelspace()
 
 
@@ -126,7 +127,7 @@ class TestWritebackDeduplication(unittest.TestCase):
         self.assertEqual(len(outer), 1)
 
     def test_002_no_duplicate_lines_in_output(self):
-        from topo.adapters.dxf.sanitize import deduplicate as _dedup
+        from topo_dxf.sanitize import deduplicate as _dedup
         self.assertEqual(_dedup(self.msp), 0)
 
 
@@ -134,7 +135,7 @@ class TestWritebackDeduplication(unittest.TestCase):
 # Trash — vive nel modello E viene materializzato sul layer Trash del doc_out
 # ---------------------------------------------------------------------------
 
-from topo.adapters.dxf.layers import TRASH_LAYER
+from topo_dxf.layers import TRASH_LAYER
 
 
 class TestWritebackTrash(unittest.TestCase):
@@ -153,9 +154,9 @@ class TestWritebackTrash(unittest.TestCase):
         self.assertEqual(len(trash), len(result.trash_entities))
 
     def test_003_include_trash_false_omits_trash(self):
-        doc = topo.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf")
+        doc = topo_dxf.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf")
         result = topo.heal(doc)
-        msp = topo.to_dxf(result, doc, include_trash=False).modelspace()
+        msp = topo_dxf.to_dxf(result, doc, include_trash=False).modelspace()
         trash = [e for e in msp
                  if e.dxf.hasattr("layer") and e.dxf.layer == TRASH_LAYER]
         self.assertEqual(len(trash), 0)
@@ -177,19 +178,19 @@ class TestWritebackTrash(unittest.TestCase):
         # arco/arco di ~0.26 mm > 0.05) → heal() invalida il risultato. Di
         # default to_dxf() lo scrive lo stesso (tutto in trash, D83); con
         # allow_invalid=False si rifiuta, come vuole chi consegna a una macchina.
-        doc = topo.load_dxf(EXAMPLES_DIR / "arc_open.dxf")
+        doc = topo_dxf.load_dxf(EXAMPLES_DIR / "arc_open.dxf")
         result = topo.heal(doc)
         self.assertFalse(result.is_valid)
         self.assertEqual(result.cluster_count, 0)
         self.assertTrue(result.errors)
 
-        msp = topo.to_dxf(result, doc).modelspace()
+        msp = topo_dxf.to_dxf(result, doc).modelspace()
         trash = [e for e in msp if e.dxf.layer == TRASH_LAYER]
         self.assertEqual(len(trash), len(result.trash_entities))
         self.assertGreater(len(trash), 0)
 
         with self.assertRaises(ValueError):
-            topo.to_dxf(result, doc, allow_invalid=False)
+            topo_dxf.to_dxf(result, doc, allow_invalid=False)
         with self.assertRaises(ValueError):
             topo.to_svg(result, allow_invalid=False)
         self.assertIn("<svg", topo.to_svg(result))
@@ -252,7 +253,7 @@ class TestWritebackStyle(unittest.TestCase):
 # Annotazioni — testi e quote mai scartati, routing su layer dedicato
 # ---------------------------------------------------------------------------
 
-from topo.adapters.dxf.layers import LAYER_ANNOTATION
+from topo_dxf.layers import LAYER_ANNOTATION
 
 
 class TestWritebackAnnotations(unittest.TestCase):
@@ -298,18 +299,18 @@ class TestWritebackAnnotations(unittest.TestCase):
     def test_005_annotation_with_role_goes_on_its_role_layer(self):
         # Il layer d'origine non resta nel modello (D128): un testo che il
         # chiamante vuole distinto gli dà un ruolo, e va sul layer del ruolo.
-        doc = topo.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf",
+        doc = topo_dxf.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf",
                             role_rules=topo.name_rules({"TESTO": "note"}))
         result = topo.heal(doc)
-        msp = topo.to_dxf(result, doc).modelspace()
+        msp = topo_dxf.to_dxf(result, doc).modelspace()
         texts = list(msp.query("TEXT"))
         self.assertEqual(len(texts), 1)
         self.assertEqual(texts[0].dxf.layer, "note")
 
     def test_006_annotation_layer_custom_routes_there(self):
-        doc = topo.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf")
+        doc = topo_dxf.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf")
         result = topo.heal(doc)
-        msp = topo.to_dxf(result, doc, annotation_layer=TRASH_LAYER).modelspace()
+        msp = topo_dxf.to_dxf(result, doc, annotation_layer=TRASH_LAYER).modelspace()
         texts = list(msp.query("TEXT"))
         self.assertEqual(texts[0].dxf.layer, TRASH_LAYER)
 
@@ -320,23 +321,29 @@ class TestWritebackAnnotations(unittest.TestCase):
         name = "Multifeature.dxf"
         if not (EXAMPLES_DIR / name).exists():
             self.skipTest(name)
-        doc = topo.load_dxf(EXAMPLES_DIR / name)
+        doc = topo_dxf.load_dxf(EXAMPLES_DIR / name)
         kinds = Counter(a.kind for a in doc.annotations)
         self.assertEqual(kinds["DIMENSION"], 16)
         self.assertEqual(kinds["LEADER"], 4)
         result = topo.heal(doc)
-        msp = topo.to_dxf(result, doc).modelspace()
+        msp = topo_dxf.to_dxf(result, doc).modelspace()
         ann_geom = [e for e in msp.query("LWPOLYLINE")
                     if e.dxf.layer == LAYER_ANNOTATION]
         # direttrici delle quote lineari + frecce dei leader
         self.assertGreater(len(ann_geom), 20)
 
     def test_008_annotation_layer_ignored_on_reload(self):
-        # La geometria che topo scrive sul layer Annotation non deve essere
-        # riletta come geometria di parte in un round-trip.
-        from topo.adapters.dxf.adapter import _NON_STRUCTURAL_LAYERS
-        self.assertIn(LAYER_ANNOTATION.lower(), _NON_STRUCTURAL_LAYERS)
-        self.assertIn(TRASH_LAYER.lower(), _NON_STRUCTURAL_LAYERS)
+        # La geometria che topo scrive sui layer Annotation e Trash non deve
+        # essere riletta come geometria di parte in un round-trip: è il
+        # default visibile `skip_layers=SKIP_LAYERS` (D129), per nome esatto
+        # senza maiuscole; `skip_layers=()` legge tutto.
+        self.assertEqual(set(topo_dxf.SKIP_LAYERS), {LAYER_ANNOTATION, TRASH_LAYER})
+        src = ezdxf.new("R2010")
+        msp = src.modelspace()
+        for i, layer in enumerate((LAYER_ANNOTATION, TRASH_LAYER.lower(), "Trash_old", "0")):
+            msp.add_line((0, 10 * i), (50, 10 * i), dxfattribs={"layer": layer})
+        self.assertEqual(len(topo_dxf.document_from_msp(msp).edges), 2)
+        self.assertEqual(len(topo_dxf.document_from_msp(msp, skip_layers=()).edges), 4)
 
 
 # ---------------------------------------------------------------------------
@@ -348,7 +355,7 @@ class TestWritebackInsertExplodedByDefault(unittest.TestCase):
     def test_001_block_geometry_survives_without_flag(self):
         # scritta.dxf è un solo INSERT che avvolge 93 LINE + 23 SPLINE (lettere).
         # Senza esplodere, load_dxf scartava tutto. Ora è il default.
-        doc = topo.load_dxf(EXAMPLES_DIR / "scritta.dxf")
+        doc = topo_dxf.load_dxf(EXAMPLES_DIR / "scritta.dxf")
         self.assertGreater(len(doc.edges), 50)
         result = topo.heal(doc)
         self.assertEqual(result.cluster_count, 1)

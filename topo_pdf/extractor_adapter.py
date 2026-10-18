@@ -1,4 +1,4 @@
-# Legge PyMuPDF e mappa i comandi nativi ("l", "re", "qu", "c")# 1. adapters/pdf/extractor_adapter.py
+# Legge PyMuPDF e mappa i comandi nativi ("l", "re", "qu", "c")# 1. topo_pdf/extractor_adapter.py
 # Questo modulo è l'unico che sa dell'esistenza di fitz (PyMuPDF). Mappa l'estrazione grezza degli elementi geometrici della pagina.
 
 # Funzioni: extract_drawings_from_page(page)
@@ -6,7 +6,7 @@
 # Cosa fa: Cicla su page.get_drawings(), isola i comandi (l, re, qu, c) e restituisce dizionari o strutture dati pulite, isolate dalle dipendenze di PyMuPDF.
 
 """
-adapters/pdf/extractor_adapter.py
+topo_pdf/extractor_adapter.py
 ----------------------------------
 Estrae elementi grafici vettoriali grezzi da una pagina PDF usando PyMuPDF.
 

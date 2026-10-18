@@ -20,7 +20,8 @@ project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
-from topo.adapters.dxf.layers import role_to_dxf_layer
+import topo_dxf
+from topo_dxf.layers import role_to_dxf_layer
 
 
 EXAMPLES_DIR = project_root / "tests" / "data"
@@ -112,7 +113,7 @@ def _make_test(path):
         }
 
         result = topo.heal(
-            topo.load_dxf(
+            topo_dxf.load_dxf(
                 str(dxf_path),
                 upgrade=True,
                 explode_inserts=True,
@@ -277,18 +278,18 @@ def _make_roundtrip_test(path):
             return topo.heal(doc, tolerance=tol)
 
         result = _pipeline(
-            topo.load_dxf(
+            topo_dxf.load_dxf(
                 str(dxf_path), upgrade=True, explode_inserts=True,
                 flatten_z_flag=True, tolerance=tol, role_rules=topo.name_rules(name_roles),
             )
         )
-        source_doc = topo.load_dxf(
+        source_doc = topo_dxf.load_dxf(
             str(dxf_path), upgrade=True, explode_inserts=True,
             flatten_z_flag=True, tolerance=tol, role_rules=topo.name_rules(name_roles),
         )
-        doc_out = topo.to_dxf(result, source_doc)
+        doc_out = topo_dxf.to_dxf(result, source_doc)
         rt_result = _pipeline(
-            topo.document_from_msp(
+            topo_dxf.document_from_msp(
                 doc_out.modelspace(), tolerance=tol, role_rules=topo.name_rules(ROUNDTRIP_NAME_ROLES),
             )
         )

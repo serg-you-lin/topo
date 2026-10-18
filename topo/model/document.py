@@ -1,7 +1,7 @@
 """
 model/document.py
 -----------------
-Il Document — output di topo.load_dxf() e unico input di topo.heal().
+Il Document — output di topo_dxf.load_dxf() e unico input di topo.heal().
 
 load_dxf() non restituisce un modelspace ezdxf: restituisce questo oggetto di
 dominio. Dopo load_dxf() il riferimento al documento ezdxf sorgente sparisce e

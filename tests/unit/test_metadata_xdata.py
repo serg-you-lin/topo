@@ -12,6 +12,7 @@ import unittest
 import ezdxf
 
 import topo
+import topo_dxf
 
 
 def _square_result(side: float = 100.0):
@@ -20,7 +21,7 @@ def _square_result(side: float = 100.0):
     pts = [(0, 0), (side, 0), (side, side), (0, side), (0, 0)]
     for a, b in zip(pts, pts[1:]):
         msp.add_line(a, b)
-    source_doc = topo.document_from_msp(msp, tolerance=0.5)
+    source_doc = topo_dxf.document_from_msp(msp, tolerance=0.5)
     result = topo.heal(source_doc, tolerance=0.5)
     assert result.is_valid and result.clusters
     return source_doc, result
@@ -30,10 +31,10 @@ class TestMetadataXdataRoundtrip(unittest.TestCase):
 
     def test_write_then_read_roundtrip(self):
         source_doc, result = _square_result()
-        doc_out = topo.to_dxf(result, source_doc)
+        doc_out = topo_dxf.to_dxf(result, source_doc)
 
-        topo.write_metadata_to_dxf(doc_out, result.clusters[0])
-        meta = topo.read_metadata_from_dxf(doc_out)
+        topo_dxf.write_metadata_to_dxf(doc_out, result.clusters[0])
+        meta = topo_dxf.read_metadata_from_dxf(doc_out)
 
         self.assertIsInstance(meta, dict)
         self.assertTrue(meta, "XDATA non scritto: dict vuoto (import rotto?)")
@@ -44,8 +45,8 @@ class TestMetadataXdataRoundtrip(unittest.TestCase):
 
     def test_read_without_metadata_returns_empty(self):
         source_doc, result = _square_result()
-        doc_out = topo.to_dxf(result, source_doc)
-        self.assertEqual(topo.read_metadata_from_dxf(doc_out), {})
+        doc_out = topo_dxf.to_dxf(result, source_doc)
+        self.assertEqual(topo_dxf.read_metadata_from_dxf(doc_out), {})
 
 
 if __name__ == "__main__":

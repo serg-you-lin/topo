@@ -1,6 +1,6 @@
 # Gestisce la conversione geometrica (punti in mm, flip asse Y, ecc.)
 
-# 2. adapters/pdf/geometry_adapter.py
+# 2. topo_pdf/geometry_adapter.py
 # Questo modulo contiene la logica matematica e di conversione. Non gli interessa se i dati arrivano da un PDF o da un file di testo.
 
 # Costanti: PT_TO_MM = 25.4 / 72.0
@@ -11,7 +11,7 @@
 
 
 """
-adapters/pdf/geometry_adapter.py
+topo_pdf/geometry_adapter.py
 ---------------------------------
 Funzioni matematiche e geometriche per la conversione dei dati PDF.
 

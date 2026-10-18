@@ -17,6 +17,7 @@ project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
+import topo_dxf
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -39,7 +40,7 @@ class TestGapClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("rect_gap.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.2)
 
     def test_001_finds_one_part(self):
@@ -62,7 +63,7 @@ class TestGapNoClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("rect_gap.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.05)
 
     def test_001_no_parts(self):
@@ -78,7 +79,7 @@ class TestOverlapClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("rect_overlap.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.2)
 
     def test_001_finds_one_part(self):
@@ -101,7 +102,7 @@ class TestOverlapNoClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("rect_overlap.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.05)
 
     def test_001_one_part_or_warning(self):
@@ -122,7 +123,7 @@ class TestParallelClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("gap_parallelo.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.3)
 
     def test_001_finds_one_part(self):
@@ -141,7 +142,7 @@ class TestParallelNoClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("gap_parallelo.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.05)
 
     def test_001_no_parts(self):
@@ -161,7 +162,7 @@ class TestArcLineGapClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("arc_line_gap.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.2)
 
     def test_001_finds_one_part(self):
@@ -184,7 +185,7 @@ class TestArcLineGapNoClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("arc_line_gap.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.05)
 
     def test_001_no_parts(self):
@@ -208,7 +209,7 @@ class TestArcArcSameCircleClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("arc_arc_gap.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.2)
 
     def test_001_finds_one_part(self):
@@ -231,7 +232,7 @@ class TestArcArcSameCircleNoClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("arc_arc_gap.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.05)
 
     def test_001_no_parts(self):
@@ -250,7 +251,7 @@ class TestArcArcDifferentCircleClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("arc_open.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.5)
 
     def test_001_finds_one_part(self):
@@ -272,7 +273,7 @@ class TestArcArcDifferentCircleNoClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("arc_open.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.05)
 
     def test_001_no_parts(self):
@@ -292,7 +293,7 @@ class TestSplineLineGapClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("spline_line_gap.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.3)
 
     def test_001_finds_one_part(self):
@@ -316,7 +317,7 @@ class TestSplineLineGapNoClose(unittest.TestCase):
 
     def setUp(self):
         doc = load("spline_line_gap.dxf")
-        self.result = topo.heal(topo.document_from_msp(doc.modelspace()),
+        self.result = topo.heal(topo_dxf.document_from_msp(doc.modelspace()),
                                  tolerance=0.05)
 
     def test_001_no_parts(self):

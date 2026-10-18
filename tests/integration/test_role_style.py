@@ -18,8 +18,9 @@ project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
+import topo_dxf
 from topo import RoleStyle
-from topo.adapters.dxf.layers import LAYER_OUTER, TRASH_LAYER, color_for_role
+from topo_dxf.layers import LAYER_OUTER, TRASH_LAYER, color_for_role
 
 
 def _rect_with_hole_and_frame():
@@ -41,7 +42,7 @@ def _rect_with_hole_and_frame():
     msp.add_line((70, 40), (90, 40), dxfattribs={'layer': 'STAMP'})
     msp.add_line((200, 200), (220, 200), dxfattribs={'layer': 'FRAME'})
 
-    doc_in = topo.document_from_msp(
+    doc_in = topo_dxf.document_from_msp(
         msp, role_rules=topo.name_rules({'FRAME': 'frame', 'STAMP': 'stamp_d90'}))
     result = topo.heal(doc_in, tolerance=0.05)
     return result, doc_in
@@ -60,7 +61,7 @@ class TestLayerByName(unittest.TestCase):
 
     def setUp(self):
         self.result, self.doc_in = _rect_with_hole_and_frame()
-        self.doc_out = topo.to_dxf(
+        self.doc_out = topo_dxf.to_dxf(
             self.result, self.doc_in,
             layers={"stamp_d90": "StampD90"},
             role_styles={"stamp_d90": RoleStyle(color=(255, 0, 255))},
@@ -94,7 +95,7 @@ class TestLayerSplitByElement(unittest.TestCase):
             return "StampLeft" if x < 50 else "StampRight"
 
         self.result, self.doc_in = _rect_with_hole_and_frame()
-        self.doc_out = topo.to_dxf(
+        self.doc_out = topo_dxf.to_dxf(
             self.result, self.doc_in,
             layers={"stamp_d90": side},
             role_styles={"stamp_d90": RoleStyle(color=(0, 0, 255))},
@@ -115,7 +116,7 @@ class TestEngineRoleRemapped(unittest.TestCase):
 
     def setUp(self):
         self.result, self.doc_in = _rect_with_hole_and_frame()
-        self.doc_out = topo.to_dxf(self.result, self.doc_in, layers={"outer": "Cut"})
+        self.doc_out = topo_dxf.to_dxf(self.result, self.doc_in, layers={"outer": "Cut"})
 
     def test_001_outer_on_cut(self):
         self.assertGreater(len(self.doc_out.modelspace().query('*[layer=="Cut"]')), 0)
@@ -131,8 +132,8 @@ class TestNoStateBetweenCalls(unittest.TestCase):
 
     def test_001_second_call_is_default(self):
         result, doc_in = _rect_with_hole_and_frame()
-        topo.to_dxf(result, doc_in, role_styles={"outer": RoleStyle(color=(0, 0, 0))})
-        doc_out = topo.to_dxf(result, doc_in)
+        topo_dxf.to_dxf(result, doc_in, role_styles={"outer": RoleStyle(color=(0, 0, 0))})
+        doc_out = topo_dxf.to_dxf(result, doc_in)
         self.assertFalse(doc_out.layers.get(LAYER_OUTER).dxf.hasattr("true_color"))
 
 
@@ -141,7 +142,7 @@ class TestRoleStyleConsumerRole(unittest.TestCase):
 
     def setUp(self):
         self.result, self.doc_in = _rect_with_hole_and_frame()
-        self.doc_out = topo.to_dxf(
+        self.doc_out = topo_dxf.to_dxf(
             self.result, self.doc_in,
             role_styles={"frame": RoleStyle(color=(0, 0, 0), lineweight=0.05)},
         )
@@ -160,7 +161,7 @@ class TestRoleStyleLinetypeOverride(unittest.TestCase):
 
     def setUp(self):
         self.result, self.doc_in = _rect_with_hole_and_frame()
-        self.doc_out = topo.to_dxf(
+        self.doc_out = topo_dxf.to_dxf(
             self.result, self.doc_in,
             role_styles={"unknown": RoleStyle(linetype="DASHED")},
         )
@@ -179,7 +180,7 @@ class TestRoleStyleDash(unittest.TestCase):
 
     def setUp(self):
         self.result, self.doc_in = _rect_with_hole_and_frame()
-        self.doc_out = topo.to_dxf(
+        self.doc_out = topo_dxf.to_dxf(
             self.result, self.doc_in,
             role_styles={"unknown": RoleStyle(dash=(5.0, -2.0))},
         )
@@ -202,7 +203,7 @@ class TestRoleStyleUnknownLinetypeRaises(unittest.TestCase):
     def test_001_unknown_name_raises(self):
         result, doc_in = _rect_with_hole_and_frame()
         with self.assertRaises(ValueError):
-            topo.to_dxf(result, doc_in, role_styles={"unknown": RoleStyle(linetype="DASHHED")})
+            topo_dxf.to_dxf(result, doc_in, role_styles={"unknown": RoleStyle(linetype="DASHHED")})
 
 
 class TestRoleStyleUnknownRoleCreatesLayerEvenWithoutEntities(unittest.TestCase):
@@ -213,7 +214,7 @@ class TestRoleStyleUnknownRoleCreatesLayerEvenWithoutEntities(unittest.TestCase)
 
     def setUp(self):
         self.result, self.doc_in = _rect_with_hole_and_frame()
-        self.doc_out = topo.to_dxf(
+        self.doc_out = topo_dxf.to_dxf(
             self.result, self.doc_in,
             role_styles={"title_block": RoleStyle(color=(10, 20, 30))},
         )

@@ -11,6 +11,7 @@ project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
+import topo_dxf
 
 EDGE_CASES_DIR = project_root / "tests" / "data" / "edge_cases"
 
@@ -39,9 +40,9 @@ def _make_test(dxf_path):
     def test_method(self):
         msp = ezdxf.readfile(str(dxf_path)).modelspace()
 
-        topo_doc = topo.document_from_msp(msp)
+        topo_doc = topo_dxf.document_from_msp(msp)
         result = topo.heal(topo_doc)
-        doc_out = topo.to_dxf(result, topo_doc)
+        doc_out = topo_dxf.to_dxf(result, topo_doc)
         topo.inject(result)
 
         self.assertIsNotNone(result)

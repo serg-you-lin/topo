@@ -33,6 +33,7 @@ import time
 import traceback
 
 import topo
+import topo_dxf
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT_DIR = r"tests/examples/islands"          # tutti i .dxf/.dwg qui dentro
@@ -71,7 +72,7 @@ def main():
         stem = os.path.splitext(os.path.basename(path))[0]
         t0 = time.time()
         try:
-            doc = topo.load_dxf(path, tolerance=TOLERANCE)
+            doc = topo_dxf.load_dxf(path, tolerance=TOLERANCE)
             result = topo.island(doc, tolerance=TOLERANCE, max_gap=MAX_GAP)
             readings = topo.read_islands(doc.edges, TOLERANCE, max_gap=MAX_GAP)
         except Exception as exc:
@@ -90,7 +91,7 @@ def main():
             suffix = "_INVALIDO"
         out = os.path.abspath(os.path.join(OUTDIR, f"{stem}{suffix}.dxf"))
         try:
-            topo.to_dxf(_diagnostic(result, readings), doc, include_trash=True).saveas(out)
+            topo_dxf.to_dxf(_diagnostic(result, readings), doc, include_trash=True).saveas(out)
             print(f"  -> {out}")
         except PermissionError:
             print(f"  !! {out} è aperto in un altro programma: non sovrascritto")

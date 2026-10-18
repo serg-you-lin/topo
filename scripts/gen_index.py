@@ -30,8 +30,9 @@ diversi e frammenti di istruzioni ripetuti in più funzioni. Candidati da
 leggere, non verdetti.
 
 Uguale in ogni progetto (la copia di riferimento sta nella skill
-`code-guardrails`): si copia in `scripts/` così com'è e trova da sé il package
-da indicizzare (la cartella con `__init__.py` nella radice del repo). La regola
+`code-guardrails`): si copia in `scripts/` così com'è e trova da sé i package
+da indicizzare (le cartelle con `__init__.py` nella radice del repo: di solito
+una, più di una quando un repo distribuisce pacchetti fratelli). La regola
 dei layer è del progetto e sta nel suo `pyproject.toml`; un nome vietato può
 essere un layer interno o un pacchetto esterno (`topo` per snapbend):
 
@@ -44,6 +45,13 @@ di un pacchetto esterno e tutto quello che ci sta sotto (un consumer di topo
 che non entra negli interni):
 
     "*" = ["topo.core"]
+
+Con più package, una chiave che è il nome di un package vale per ogni suo
+modulo (un confine tra pacchetti fratelli: `topo` non importa `topo_dxf`,
+`topo_dxf` solo i nomi pubblici di `topo`); ogni altra chiave è un layer:
+
+    "topo"     = ["ezdxf", "topo_dxf"]
+    "topo_dxf" = ["topo.core"]
 
 Senza sezione l'indice si genera comunque e dice che non c'è nessuna regola.
 """
@@ -89,11 +97,11 @@ def load_layer_rule(root: Path) -> dict[str, tuple[str, ...]]:
 LAYER_RULE = load_layer_rule(ROOT)
 
 
-def find_package(root: Path) -> Path:
-    """La cartella del package da indicizzare: quella con `__init__.py`.
+def find_packages(root: Path) -> list[Path]:
+    """Le cartelle dei package da indicizzare: quelle con `__init__.py`, in ordine di nome.
 
-    Più di una candidata (o nessuna) è un errore esplicito: meglio chiedere
-    `--package` che indicizzare la cartella sbagliata in silenzio.
+    Nessuna candidata è un errore esplicito: meglio chiedere `--package` che
+    scrivere un indice vuoto in silenzio.
     """
     candidates = [
         child for child in sorted(root.iterdir())
@@ -102,13 +110,9 @@ def find_package(root: Path) -> Path:
         and not child.name.startswith((".", "_"))
         and (child / "__init__.py").exists()
     ]
-    if len(candidates) == 1:
-        return candidates[0]
-    names = ", ".join(c.name for c in candidates) or "nessuna"
-    raise SystemExit(
-        f"impossibile scegliere il package in {root} (candidate: {names}) — "
-        f"passa --package NOME"
-    )
+    if candidates:
+        return candidates
+    raise SystemExit(f"nessun package in {root} — passa --package NOME")
 
 
 # --------------------------------------------------------------------------- #
@@ -144,6 +148,11 @@ class Module:
     external: set[str] = field(default_factory=set)  # pacchetti esterni, primo livello
     external_paths: set[str] = field(default_factory=set)  # gli stessi, percorso intero
     loc: int = 0
+
+    @property
+    def package(self) -> str:
+        """Il package che contiene il file (la prima cartella del percorso)."""
+        return self.path.split("/")[0]
 
     @property
     def layer(self) -> str:
@@ -320,16 +329,16 @@ def find_duplicate_names(modules: Iterable[Module]) -> dict[str, list[Symbol]]:
     }
 
 
-def find_layer_violations(modules: Iterable[Module],
-                          pkg_name: str) -> list[tuple[str, str]]:
+def find_layer_violations(modules: Iterable[Module]) -> list[tuple[str, str]]:
     """Import che violano la regola di dipendenza, come (modulo, import)."""
     violations: list[tuple[str, str]] = []
     for module in modules:
-        forbidden = LAYER_RULE.get(module.layer, ()) + LAYER_RULE.get("*", ())
+        forbidden = (LAYER_RULE.get(module.layer, ()) + LAYER_RULE.get("*", ())
+                     + LAYER_RULE.get(module.package, ()))
         if not forbidden:
             continue
         for imported in sorted(module.imports):
-            tail = imported.removeprefix(f"{pkg_name}.").split(".")[0]
+            tail = imported.removeprefix(f"{module.package}.").split(".")[0]
             if tail in forbidden:
                 violations.append((module.path, imported))
         for package in sorted(module.external & set(forbidden)):
@@ -532,9 +541,9 @@ def _shifted(a: list[str], b: list[str]) -> bool:
     return True
 
 
-def report_similar(package: Path) -> str:
+def report_similar(packages: list[Path]) -> str:
     """Il testo del rapporto `--similar`."""
-    paths = list(iter_sources(package))
+    paths = [path for package in packages for path in iter_sources(package)]
     bodies = [b for p in paths for b in read_bodies(p)]
     lines = [f"# corpi analizzati: {len(bodies)}", "", "## stesso corpo (a meno dei nomi locali)"]
     for g in find_same_bodies(bodies):
@@ -553,13 +562,14 @@ def report_similar(package: Path) -> str:
 # rendering
 # --------------------------------------------------------------------------- #
 
-def render(modules: list[Module], pkg_name: str) -> str:
+def render(modules: list[Module], pkg_names: list[str]) -> str:
     """Il testo completo di docs/INDEX.md."""
+    pkg_name = ", ".join(pkg_names)
     all_symbols = [s for m in modules for s in m.symbols]
     funcs = [s for s in all_symbols if s.kind == "func"]
     classes = [s for s in all_symbols if s.kind == "class"]
     duplicates = find_duplicate_names(modules)
-    violations = find_layer_violations(modules, pkg_name)
+    violations = find_layer_violations(modules)
     layer_rule = LAYER_RULE
     total_loc = sum(m.loc for m in modules)
 
@@ -651,10 +661,10 @@ def render(modules: list[Module], pkg_name: str) -> str:
     w("")
     current_layer = None
     for module in modules:
-        if module.layer != current_layer:
-            current_layer = module.layer
-            w(f"### `{pkg_name}/{current_layer}/`" if current_layer != "(root)"
-              else f"### `{pkg_name}/` (root)")
+        if (module.package, module.layer) != current_layer:
+            current_layer = (module.package, module.layer)
+            w(f"### `{module.package}/{module.layer}/`" if module.layer != "(root)"
+              else f"### `{module.package}/` (root)")
             w("")
         w(f"#### `{module.path}` — {module.loc} lines")
         w("")
@@ -698,11 +708,15 @@ def render(modules: list[Module], pkg_name: str) -> str:
 # entry point
 # --------------------------------------------------------------------------- #
 
-def build(package: Path) -> str:
-    """Legge il package e ritorna il testo dell'indice."""
-    pkg_name = package.name
-    modules = [read_module(path, pkg_name) for path in iter_sources(package)]
-    return render(modules, pkg_name)
+def read_modules(packages: list[Path]) -> list[Module]:
+    """I moduli di ogni package, nell'ordine dei package e dei percorsi."""
+    return [read_module(path, package.name)
+            for package in packages for path in iter_sources(package)]
+
+
+def build(packages: list[Path]) -> str:
+    """Legge i package e ritorna il testo dell'indice."""
+    return render(read_modules(packages), [package.name for package in packages])
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -714,23 +728,23 @@ def main(argv: Optional[list[str]] = None) -> int:
                         help="non scrive: stampa corpi uguali o simili sotto nomi diversi "
                              "e frammenti ripetuti")
     parser.add_argument("--package", default=None,
-                        help="nome della cartella del package (default: trovata da sé)")
+                        help="indicizza solo questa cartella (default: tutti i package trovati)")
     args = parser.parse_args(argv)
 
-    package = (ROOT / args.package) if args.package else find_package(ROOT)
-    if not (package / "__init__.py").exists():
-        raise SystemExit(f"{package} non è un package (nessun __init__.py)")
+    packages = [ROOT / args.package] if args.package else find_packages(ROOT)
+    for package in packages:
+        if not (package / "__init__.py").exists():
+            raise SystemExit(f"{package} non è un package (nessun __init__.py)")
 
     if args.similar:
         sys.stdout.reconfigure(encoding="utf-8")
-        print(report_similar(package), end="")
+        print(report_similar(packages), end="")
         return 0
 
-    text = build(package)
+    text = build(packages)
 
     if args.check:
-        modules = [read_module(path, package.name) for path in iter_sources(package)]
-        violations = find_layer_violations(modules, package.name)
+        violations = find_layer_violations(read_modules(packages))
         for module_path, imported in violations:
             print(f"dependency rule: {module_path} imports {imported}")
         if not OUTPUT.exists():

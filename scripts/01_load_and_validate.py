@@ -17,6 +17,7 @@ import _paths  # noqa: F401  — chdir alla radice del repo
 
 import ezdxf
 import topo
+import topo_dxf
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT     = r"tests/data/Linee_piegatura.dxf"
@@ -25,7 +26,7 @@ NAME_ROLES = {"Piega": "bending", "MARK": "engrave"}   # {nome: ruolo}, maiuscol
 # -------------------------------------------------------------------------
 
 # 1. load_dxf --------------------------------------------------------------
-doc = topo.load_dxf(
+doc = topo_dxf.load_dxf(
     INPUT,
     tolerance=TOLERANCE,        # salvata in source_meta, riusata da heal()
     role_rules=topo.name_rules(NAME_ROLES),        # assegna il ruolo agli Edge già in fase di traduzione
@@ -62,5 +63,5 @@ if not check.is_valid:
 ez = ezdxf.new("R2010")
 msp = ez.modelspace()
 msp.add_lwpolyline([(0, 0), (100, 0), (100, 50), (0, 50)], close=True)
-doc2 = topo.document_from_msp(msp, tolerance=0.5, source_path="<generato a mano>")
+doc2 = topo_dxf.document_from_msp(msp, tolerance=0.5, source_path="<generato a mano>")
 print(f"\ndocument_from_msp : {len(doc2.edges)} edge da un rettangolo costruito a mano")

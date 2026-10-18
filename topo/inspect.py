@@ -5,15 +5,13 @@ Strumento di ispezione a tre livelli. Serve a *vedere* cosa succede a un file
 reale senza leggere il codice — pensato per il debug quando si lavora su file
 veri.
 
-I tre livelli, in ordine di pipeline:
+I due livelli di topo, in ordine di pipeline:
 
-    1. inspect_dxf(path)        → entità DXF grezze        — "cosa c'è nel file"
-    2. inspect_document(doc)    → edge + primitive + grafo — "cosa ha capito l'adapter"
-    3. inspect_result(result)  → il modello                 — "cosa ha prodotto topo"
+    inspect_document(doc)    → edge + primitive + grafo — "cosa ha capito l'adapter"
+    inspect_result(result)   → il modello                 — "cosa ha prodotto topo"
 
-E un orchestratore che li stampa in fila su un file:
-
-    topo.inspect_file("pezzo.dxf", role_rules=topo.name_rules({"Piega": "bending"}))
+Il livello del file (le entità grezze) è di un formato: `topo_dxf.inspect_dxf`,
+e `topo_dxf.inspect_file` stampa i tre livelli in fila su un file (D129).
 
 Tutto stampa su stdout con `print`. Nessun logger da configurare.
 """
@@ -25,14 +23,10 @@ from collections import Counter
 from typing import Optional, Sequence
 
 from topo.core.geometry.measure import track_points, track_shape_type
-from topo.model.role_rule import RoleRule
-from topo.model.document import DEFAULT_NODE_TOLERANCE
 
 __all__ = [
-    "inspect_dxf",
     "inspect_document",
     "inspect_result",
-    "inspect_file",
 ]
 
 _RULE = "=" * 72
@@ -56,97 +50,15 @@ def _role(r) -> str:
 
 
 # ===========================================================================
-# LIVELLO 1 — entità DXF grezze
-# ===========================================================================
-
-def inspect_dxf(path: str, entities: bool = True, limit: Optional[int] = 40) -> None:
-    """
-    Apre un DXF/DWG con ezdxf e stampa cosa contiene, senza toccare topo.
-
-    entities : se True elenca ogni entità con i suoi attributi chiave
-    limit    : numero massimo di entità elencate (None = tutte)
-    """
-    import ezdxf
-
-    _h(f"LIVELLO 1 — DXF grezzo\n{path}")
-
-    doc = ezdxf.readfile(path)
-    msp = doc.modelspace()
-    ents = list(msp)
-
-    print(f"\nversione DXF : {doc.dxfversion}")
-    print(f"$INSUNITS    : {doc.header.get('$INSUNITS', 'n/d')}   "
-          f"$MEASUREMENT : {doc.header.get('$MEASUREMENT', 'n/d')}")
-
-    counts = Counter(e.dxftype() for e in ents)
-    print(f"\nentità ({len(ents)} totali):")
-    for t, n in sorted(counts.items()):
-        print(f"  {t:<14} {n}")
-
-    layers = Counter(
-        (e.dxf.layer if e.dxf.hasattr("layer") else "?") for e in ents
-    )
-    print(f"\nlayer:")
-    for name, n in sorted(layers.items()):
-        print(f"  {name!r:<24} {n}")
-
-    if not entities:
-        return
-
-    print(f"\ndettaglio entità{' (primi %d)' % limit if limit else ''}:")
-    for i, e in enumerate(ents):
-        if limit is not None and i >= limit:
-            print(f"  ... e altre {len(ents) - limit}")
-            break
-        print(f"  [{i}] {_describe_dxf_entity(e)}")
-
-
-def _describe_dxf_entity(e) -> str:
-    t = e.dxftype()
-    layer = e.dxf.layer if e.dxf.hasattr("layer") else "?"
-    tag = f"{t:<12} layer={layer!r}"
-    try:
-        if t == "LINE":
-            return f"{tag}  {_p((e.dxf.start.x, e.dxf.start.y))} -> {_p((e.dxf.end.x, e.dxf.end.y))}"
-        if t == "ARC":
-            return (f"{tag}  c={_p((e.dxf.center.x, e.dxf.center.y))} r={e.dxf.radius:.2f} "
-                    f"{e.dxf.start_angle:.1f}°->{e.dxf.end_angle:.1f}°")
-        if t == "CIRCLE":
-            return f"{tag}  c={_p((e.dxf.center.x, e.dxf.center.y))} r={e.dxf.radius:.2f}"
-        if t in ("LWPOLYLINE", "POLYLINE"):
-            try:
-                n = len(list(e.get_points())) if t == "LWPOLYLINE" else len(list(e.vertices))
-            except Exception:
-                n = "?"
-            closed = getattr(e, "is_closed", getattr(e, "closed", "?"))
-            return f"{tag}  vertici={n} chiusa={closed}"
-        if t == "SPLINE":
-            return f"{tag}  cp={len(e.control_points)} closed={getattr(e, 'closed', '?')}"
-        if t in ("TEXT", "MTEXT"):
-            txt = (e.dxf.text if t == "TEXT" else e.text)[:40]
-            return f"{tag}  {txt!r}"
-        if t == "DIMENSION":
-            return f"{tag}  text={getattr(e.dxf, 'text', '')!r}"
-        if t == "INSERT":
-            return f"{tag}  block={e.dxf.name!r}"
-    except Exception as ex:
-        return f"{tag}  <errore lettura: {ex}>"
-    return tag
-
-
-# ===========================================================================
 # LIVELLO 2 — Document: edge, primitive, grafo
 # ===========================================================================
 
 def inspect_document(doc, graph: bool = True, limit: Optional[int] = 60) -> None:
     """
-    Stampa un Document prodotto da topo.load_dxf(): cosa ha estratto e
-    tradotto l'adapter. `doc` può essere un Document o un path (viene
-    aperto con load_dxf usando i default).
+    Stampa un Document prodotto da un adapter (`topo_dxf.load_dxf`, …) o da
+    `topo.load_geometry`: cosa ha estratto e tradotto. Per partire da un
+    file: `topo_dxf.inspect_file`.
     """
-    if isinstance(doc, str):
-        from .adapters.dxf.loader import load_dxf
-        doc = load_dxf(doc)
 
     _h("LIVELLO 2 — Document (adapter → dominio)")
 
@@ -298,40 +210,3 @@ def _sub_part(i: int, cluster, coords: bool) -> None:
 
     if coords:
         print(f"  outer coords: {[tuple(round(c, 1) for c in pt) for pt in o.polygon.exterior.coords]}")
-
-
-# ===========================================================================
-# ORCHESTRATORE — i tre livelli in fila su un file
-# ===========================================================================
-
-def inspect_file(
-    path: str,
-    tolerance: float = DEFAULT_NODE_TOLERANCE,
-    role_rules: Sequence[RoleRule] = (),
-    run_heal: bool = True,
-    entities: bool = True,
-    coords: bool = False,
-) -> None:
-    """
-    Apre un file e stampa i tre livelli in fila:
-    DXF grezzo → Document → Result.
-
-    run_heal              : disattivalo per fermarti al Document.
-    role_rules            : come in load_dxf().
-    """
-    from .adapters.dxf.loader import load_dxf
-
-    inspect_dxf(path, entities=entities)
-
-    doc = load_dxf(
-        path, tolerance=tolerance, role_rules=role_rules,
-    )
-    inspect_document(doc)
-
-    if not run_heal:
-        return
-
-    from .core.heal import heal as _heal
-    result = _heal(doc, tolerance=tolerance)
-
-    inspect_result(result, coords=coords)

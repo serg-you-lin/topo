@@ -17,6 +17,7 @@ project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
+import topo_dxf
 from topo.core.primitives.segments import CircleSeg
 from topo.model.contour import Contour
 from topo.tools.tabs import bridge_tabs, bridge_nested_tabs
@@ -82,7 +83,7 @@ class TestBridgeNestedTabs(unittest.TestCase):
     """Cammina la gerarchia — a qualunque profondita', mai un livello saltato."""
 
     def test_001_single_pair_on_real_fixture(self):
-        doc = topo.load_dxf(str(project_root / "tests/data/cerchi_concentrici_detect_is_counter_tabs_join.dxf"))
+        doc = topo_dxf.load_dxf(str(project_root / "tests/data/cerchi_concentrici_detect_is_counter_tabs_join.dxf"))
         result = topo.heal(doc)
         cluster = result.clusters[0]
 

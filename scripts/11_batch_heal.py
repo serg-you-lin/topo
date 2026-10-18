@@ -19,6 +19,7 @@ import sys
 from pathlib import Path
 
 import topo
+import topo_dxf
 
 # --- CONFIG ----------------------------------------------------------------
 DEFAULT_DIR = r"tests/data"
@@ -65,7 +66,7 @@ def main(argv):
         out_dxf  = src.with_name(f"{src.stem}_healed.dxf")
         out_json = src.with_name(f"{src.stem}_healed.json")
         try:
-            doc = topo.load_dxf(
+            doc = topo_dxf.load_dxf(
                 str(src),
                 explode_inserts=True,
                 flatten_z_flag=True,
@@ -85,7 +86,7 @@ def main(argv):
                 failed.append((src.name, "; ".join(result.errors) or "result non valido"))
                 continue
 
-            topo.to_dxf(result, doc).saveas(str(out_dxf))
+            topo_dxf.to_dxf(result, doc).saveas(str(out_dxf))
             ok += 1
             print(f"OK   {src.name} -> {out_dxf.name}  ({result.cluster_count} parti)")
 

@@ -18,6 +18,7 @@ import _paths  # noqa: F401  — chdir alla radice del repo
 
 import os
 import topo
+import topo_dxf
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT     = r"tests/lab/3d_1.dxf"
@@ -34,14 +35,14 @@ OUTDIR = "pipeline_output"
 os.makedirs(OUTDIR, exist_ok=True)
 base = os.path.splitext(os.path.basename(INPUT))[0]
 
-doc = topo.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
+doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
 result = topo.heal(doc, label=base)
 
 if not result.is_valid:
     raise SystemExit(f"non valido: {result.errors}")
 
 # 1. documento completo, tutte le parti
-out = topo.to_dxf(
+out = topo_dxf.to_dxf(
     result,
     source_doc=doc,             # solo per gli header
     include_trash=True,         # geometria non classificata sul layer "Trash"
@@ -53,7 +54,7 @@ print(f"completo         -> {path}")
 print("   layer:", sorted(l.dxf.name for l in out.layers if l.dxf.name.isupper() or l.dxf.name[0].isupper()))
 
 # 2. solo le parti che passano un filtro (callable(cluster) -> bool)
-big = topo.to_dxf(result, doc, filter_cluster=lambda p: p.outer.polygon.area > 1000)
+big = topo_dxf.to_dxf(result, doc, filter_cluster=lambda p: p.outer.polygon.area > 1000)
 path = os.path.join(OUTDIR, f"{base}_big_only.dxf")
 big.saveas(path)
 print(f"filter_cluster area -> {path}")

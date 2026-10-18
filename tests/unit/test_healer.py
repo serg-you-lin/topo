@@ -22,7 +22,8 @@ project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
-from topo.adapters.dxf.layers import LAYER_OUTER, LAYER_INNER
+import topo_dxf
+from topo_dxf.layers import LAYER_OUTER, LAYER_INNER
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -41,7 +42,7 @@ def load_msp(name):
 class TestHealerRectLines(unittest.TestCase):
 
     def setUp(self):
-        doc = topo.load_dxf(load("rect_lines.dxf"))
+        doc = topo_dxf.load_dxf(load("rect_lines.dxf"))
         self.result = topo.heal(doc)
 
     def test_001_finds_one_part(self):
@@ -75,7 +76,7 @@ class TestHealerRectLines(unittest.TestCase):
 class TestHealerRectWithHole(unittest.TestCase):
 
     def setUp(self):
-        doc = topo.load_dxf(load("rect_with_hole_lines.dxf"))
+        doc = topo_dxf.load_dxf(load("rect_with_hole_lines.dxf"))
         self.result = topo.heal(doc)
 
     def test_001_finds_one_part(self):
@@ -95,17 +96,17 @@ class TestHealerRectWithHole(unittest.TestCase):
 class TestHealerCleanFile(unittest.TestCase):
 
     def test_001_does_not_crash(self):
-        doc = topo.load_dxf(load("pline_with_hole.dxf"))
+        doc = topo_dxf.load_dxf(load("pline_with_hole.dxf"))
         result = topo.heal(doc)
         self.assertIsNotNone(result)
 
     def test_002_finds_one_part(self):
-        doc = topo.load_dxf(load("pline_with_hole.dxf"))
+        doc = topo_dxf.load_dxf(load("pline_with_hole.dxf"))
         result = topo.heal(doc)
         self.assertEqual(result.cluster_count, 1)
 
     def test_003_has_one_inner(self):
-        doc = topo.load_dxf(load("pline_with_hole.dxf"))
+        doc = topo_dxf.load_dxf(load("pline_with_hole.dxf"))
         result = topo.heal(doc)
         self.assertEqual(len(result.clusters[0].inners), 1)
 
@@ -117,7 +118,7 @@ class TestHealerCleanFile(unittest.TestCase):
 class TestHealerCircleOuter(unittest.TestCase):
 
     def setUp(self):
-        doc = topo.load_dxf(load("circle_outer_with_hole.dxf"))
+        doc = topo_dxf.load_dxf(load("circle_outer_with_hole.dxf"))
         self.result = topo.heal(doc)
 
     def test_001_finds_one_part(self):
@@ -135,7 +136,7 @@ class TestHealerCircleOuter(unittest.TestCase):
 class TestHealerCircleHole(unittest.TestCase):
 
     def setUp(self):
-        doc = topo.load_dxf(load("rect_with_circle_hole.dxf"))
+        doc = topo_dxf.load_dxf(load("rect_with_circle_hole.dxf"))
         self.result = topo.heal(doc)
 
     def test_001_finds_one_part(self):
@@ -153,7 +154,7 @@ class TestHealerCircleHole(unittest.TestCase):
 class TestHealerCircleInner(unittest.TestCase):
 
     def setUp(self):
-        doc = topo.load_dxf(load("rect_with_circle_inner.dxf"))
+        doc = topo_dxf.load_dxf(load("rect_with_circle_inner.dxf"))
         self.result = topo.heal(doc)
 
     def test_001_inner_present_and_role(self):
@@ -173,7 +174,7 @@ class TestHealerCircleInner(unittest.TestCase):
 class TestHealerCountersink(unittest.TestCase):
 
     def setUp(self):
-        doc = topo.load_dxf(load("rect_with_countersink.dxf"))
+        doc = topo_dxf.load_dxf(load("rect_with_countersink.dxf"))
         self.result = topo.heal(doc)
 
     def test_001_finds_one_part(self):
@@ -192,7 +193,7 @@ class TestHealerCountersink(unittest.TestCase):
 class TestHealerInnerLoopInsideLwpolyline(unittest.TestCase):
 
     def setUp(self):
-        doc = topo.load_dxf(load("rect_with_inner_mark.dxf"))
+        doc = topo_dxf.load_dxf(load("rect_with_inner_mark.dxf"))
         self.result = topo.heal(doc)
 
     def test_001_finds_one_part(self):
@@ -209,7 +210,7 @@ class TestHealerInnerLoopInsideLwpolyline(unittest.TestCase):
 class TestHealerDeduplication(unittest.TestCase):
 
     def setUp(self):
-        doc = topo.load_dxf(load("rect_lines_duplicated.dxf"), explode_inserts=True)
+        doc = topo_dxf.load_dxf(load("rect_lines_duplicated.dxf"), explode_inserts=True)
         self.result = topo.heal(doc)
 
     def test_001_finds_one_part(self):
@@ -229,12 +230,12 @@ class TestHealerDeduplication(unittest.TestCase):
 class TestValidateInput(unittest.TestCase):
 
     def test_001_detects_open_lines(self):
-        check = topo.validate(topo.load_dxf(load("rect_lines.dxf")))
+        check = topo.validate(topo_dxf.load_dxf(load("rect_lines.dxf")))
         self.assertGreater(len(check.warnings), 0)
         self.assertTrue(check.is_valid)
 
     def test_002_clean_file_no_errors(self):
-        check = topo.validate(topo.load_dxf(load("pline_with_hole.dxf")))
+        check = topo.validate(topo_dxf.load_dxf(load("pline_with_hole.dxf")))
         self.assertEqual(len(check.errors), 0)
         self.assertTrue(check.is_valid)
 

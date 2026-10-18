@@ -15,6 +15,7 @@ f"{cluster.label}.dxf" dove cluster.label = namer(i, cluster), senza namer f"{la
 import _paths  # noqa: F401  — chdir alla radice del repo
 
 import topo
+import topo_dxf
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT     = r"tests/data/golden/example_4_polylines.dxf"
@@ -23,9 +24,9 @@ OUTDIR    = "pipeline_output/batch_demo"
 LABEL     = "P-1024"
 # -------------------------------------------------------------------------
 
-doc = topo.load_dxf(INPUT, tolerance=TOLERANCE)
+doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE)
 
-result = topo.split_to_files(
+result = topo_dxf.split_to_files(
     doc,
     output_folder=OUTDIR,
     label=LABEL,

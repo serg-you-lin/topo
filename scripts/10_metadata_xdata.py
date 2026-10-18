@@ -18,6 +18,7 @@ import _paths  # noqa: F401  — chdir alla radice del repo
 import os
 import ezdxf
 import topo
+import topo_dxf
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT     = r"tests/data/Multifeature.dxf"
@@ -42,13 +43,13 @@ topo.set_schema({
     "bbox":         ("ingombro",      None,     "calculated"),
 })
 
-doc = topo.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
+doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
 result = topo.heal(doc, label=base)
 topo.inject(result, data_injector=lambda cluster, txt: {"material": "AISI304", "thickness": 3.0})
 
-out = topo.to_dxf(result, doc)
+out = topo_dxf.to_dxf(result, doc)
 for cluster in result.clusters:
-    topo.write_metadata_to_dxf(out, cluster)
+    topo_dxf.write_metadata_to_dxf(out, cluster)
 
 path = os.path.join(OUTDIR, f"{base}_xdata.dxf")
 out.saveas(path)
@@ -56,7 +57,7 @@ print(f"scritto: {path}")
 
 # rilettura da file
 reloaded = ezdxf.readfile(path)
-meta = topo.read_metadata_from_dxf(reloaded)
+meta = topo_dxf.read_metadata_from_dxf(reloaded)
 print("XDATA riletto:")
 for k, v in meta.items():
     print(f"   {k}: {v}")

@@ -19,6 +19,7 @@ import _paths  # noqa: F401  — chdir alla radice del repo
 
 import os
 import topo
+import topo_dxf
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT     = r"tests/data/Multifeature.dxf"
@@ -31,7 +32,7 @@ OUTDIR = "pipeline_output"
 os.makedirs(OUTDIR, exist_ok=True)
 base = os.path.splitext(os.path.basename(INPUT))[0]
 
-doc = topo.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
+doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
 result = topo.heal(doc, label=base, source_file=base)
 
 # JSON su stdout

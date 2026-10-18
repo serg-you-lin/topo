@@ -1,6 +1,6 @@
 """
-adapters/dxf/annotation_extractor.py
-------------------------------------
+topo_dxf/annotation_extractor.py
+--------------------------------
 Legge le entità di annotazione di un modelspace DXF e le traduce nel modello di
 dominio tipato (``Note`` / ``Dimension`` / ``Leader`` di ``model/annotation.py``).
 

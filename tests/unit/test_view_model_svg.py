@@ -16,6 +16,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import topo
+import topo_dxf
 from topo.model import DetectedFeatures
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "data"
@@ -36,7 +37,7 @@ class _Mark:
 
 
 def _result(path):
-    doc = topo.load_dxf(str(path), tolerance=0.5)
+    doc = topo_dxf.load_dxf(str(path), tolerance=0.5)
     result = topo.heal(doc)
     for cluster in result.clusters:
         marks = []

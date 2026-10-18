@@ -15,6 +15,7 @@ import unittest
 import ezdxf
 
 import topo
+import topo_dxf
 from topo.core.geometry_input import GeometryReader, load_geometry
 from topo.model.role import ContourRole
 
@@ -86,7 +87,7 @@ class TestLoadGeometryRectangleWithHole(unittest.TestCase):
 
     def test_to_dxf_writes_a_valid_document(self):
         result = topo.heal(self.doc, label="rect_test")
-        doc_out = topo.to_dxf(result)
+        doc_out = topo_dxf.to_dxf(result)
         self.assertGreater(len(doc_out.modelspace()), 0)
 
 
@@ -125,7 +126,7 @@ class TestLoadGeometryConeSector(unittest.TestCase):
 
     def test_to_dxf_keeps_arcs_native_not_discretized(self):
         result = topo.heal(self.doc, label="cono_sector_test")
-        doc_out = topo.to_dxf(result)
+        doc_out = topo_dxf.to_dxf(result)
         msp = doc_out.modelspace()
         # write_segments emette LWPOLYLINE con bulge per un contorno misto
         # linea/arco (rappresentazione esatta, non una discretizzazione) —
@@ -180,7 +181,7 @@ class TestLoadGeometrySplineFromSimplifyPoints(unittest.TestCase):
 
     def test_to_dxf_keeps_spline_native_not_discretized(self):
         result = topo.heal(self.doc, label="spline_loop_test")
-        doc_out = topo.to_dxf(result)
+        doc_out = topo_dxf.to_dxf(result)
         msp = doc_out.modelspace()
         self.assertEqual(len(list(msp.query("SPLINE"))), 1)
         self.assertEqual(len(list(msp.query("LWPOLYLINE"))), 0)
