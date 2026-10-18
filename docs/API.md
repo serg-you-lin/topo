@@ -1477,7 +1477,18 @@ che usano `heal`, `island` e `validate` quando `tolerance` non è passata (D86).
 
 `Note` / `Dimension` / `Leader`. Comuni: `kind` (`"TEXT"` | `"MTEXT"` |
 `"DIMENSION"` | `"LEADER"` | `"MULTILEADER"`), `position` `(x, y)`,
-`cluster_ref`, `display_text`.
+`cluster_ref`, `display_text`, `group` (il gruppo sorgente: il layer di un
+DXF), `role`.
+
+`role` dice cosa è l'annotazione per chi la usa (`"title_block"`,
+`"part_code"`, ...), come il ruolo di un edge (MAP.md D127). topo non lo legge
+e non lo decide: lo scrive il consumer (`Note(..., role="title_block")`,
+ripulito da `normalize_role`), oppure le sue `role_rules` al load, sul nome
+del gruppo. Su un'annotazione contano solo le regole sul nome (`name`,
+`name_contains`): una regola su tratto o colore non la tocca. `unknown` se
+nessuno l'ha detto. `to_dxf(..., annotation_layer=None)` scrive
+un'annotazione con un ruolo sul layer del suo ruolo, come un edge; senza
+ruolo, sul suo layer d'origine.
 
 - `Note`: `text`, `height`, `rotation`.
 - `Dimension`: `measured_value`, `dim_type`, `text_override` (testo

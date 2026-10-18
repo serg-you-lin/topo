@@ -266,7 +266,14 @@ def _write_annotations(
 
 
 def _emit_annotation(msp, ann: Annotation, annotation_layer: Optional[str]) -> None:
-    layer = annotation_layer if annotation_layer is not None else (ann.group or "0")
+    # `annotation_layer=None`: un'annotazione con un ruolo va sul layer del
+    # suo ruolo, come un edge (D127); senza, torna sul suo layer d'origine
+    if annotation_layer is not None:
+        layer = annotation_layer
+    elif ann.role != ContourRole.UNKNOWN:
+        layer = role_to_dxf_layer(ann.role)
+    else:
+        layer = ann.group or "0"
     attribs = {"layer": layer, "color": 256}
 
     if isinstance(ann, Note):

@@ -23,7 +23,7 @@ from ezdxf.addons import odafc
 from .sanitize import sanitize, _explode_inserts, deduplicate
 from .adapter import DxfAdapter
 from .annotation_extractor import DxfAnnotationExtractor
-from topo.model import DEFAULT_NODE_TOLERANCE, Document, RoleRule
+from topo.model import DEFAULT_NODE_TOLERANCE, Document, RoleRule, resolve_role
 
 # Percorso dell'eseguibile ODA File Converter. `topo` NON legge i DWG da solo:
 # il supporto DWG di ezdxf È l'addon `odafc`, che è un wrapper attorno a ODA
@@ -215,6 +215,14 @@ def _upgrade_to_r2010(doc, sink: list = None, verbose: bool = False) -> object:
 # Entry point pubblico
 # ---------------------------------------------------------------------------
 
+def _assign_annotation_roles(annotations, role_rules: Sequence[RoleRule]) -> None:
+    """Il ruolo di ogni annotazione dalle stesse regole degli edge, sul nome del
+    suo layer. Contano solo le regole sul nome: di un testo non si legge
+    l'aspetto (D127)."""
+    for ann in annotations:
+        ann.role = resolve_role(role_rules, ann.group)
+
+
 def load_dxf(
     path: str,
     upgrade: bool = False,
@@ -321,6 +329,7 @@ def load_dxf(
         _merge_annotations(annotations, DxfAnnotationExtractor(msp).extract())
 
     _warn_non_roundtrip_types(msp, warnings, verbose)
+    _assign_annotation_roles(annotations, role_rules)
 
     meta = {
         "$INSUNITS":     doc.header.get("$INSUNITS", 4),
@@ -360,6 +369,7 @@ def document_from_msp(
         msp, ignore_layers=ignore, role_rules=role_rules,
     ).to_edges()
     annotations = DxfAnnotationExtractor(msp).extract()
+    _assign_annotation_roles(annotations, role_rules)
 
     header = getattr(getattr(msp, "doc", None), "header", None)
     meta = {

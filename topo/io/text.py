@@ -240,7 +240,8 @@ def to_text(result: Result, source_name: str = "", decimals: int = 3,
                 lost.append(f"leader{text} at {w.pt(a.position)}: points at nothing")
         elif getattr(a, "display_text", ""):
             inside = f" in C{a.cluster_ref + 1}" if a.cluster_ref is not None else ""
-            texts.append(f"'{a.display_text}' at {w.pt(a.position)}{inside}")
+            role = f" ({a.role})" if a.role != "unknown" else ""
+            texts.append(f"'{a.display_text}'{role} at {w.pt(a.position)}{inside}")
     out += ["", "## texts"] + (texts or ["(none)"])
 
     out += ["", "## detected (attached by whoever read the drawing further)"]
