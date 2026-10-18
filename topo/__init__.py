@@ -94,7 +94,8 @@ from .model.role_rule import RoleRule, name_rules
 # formato. Il dizionario {ruolo: RoleStyle} è suo e lo passa a ogni exporter.
 from .model.style     import RoleStyle
 # Stesso criterio che heal() usa internamente per escludere un edge dal grafo
-# dei contorni (branching + centroide fuori dal hull, D49) — senza dire cosa
+# dei contorni (catene fra due nodi di branching, non sul bordo esterno, D111,
+# D131) — senza dire cosa
 # sia quell'edge. Un consumatore che vuole decidere `edge.role` prima di
 # heal() con un'interpretazione propria (non "bending" come fa detect_flat()) lo
 # chiama su doc.edges. Vedi MAP.md D55.

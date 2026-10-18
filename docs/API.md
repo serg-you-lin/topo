@@ -336,7 +336,7 @@ topo.steps.build_hierarchy(features, label="", source_file="", is_structural=Non
 | `close_near_full_arcs` | `list[Edge]` → `(edge, n_chiusi)` | un `ArcSeg` coi capi liberi diventa `CircleSeg` solo se il gap fra i capi è entro `tolerance` **e** l'angolo mancante è entro `max_missing_angle` (`NEAR_FULL_ARC_MISSING` = 2°): la tolleranza dice se il buco è un gap, l'angolo se l'arco è un cerchio. `tolerance=math.inf` lascia solo l'angolo, per chi conosce il suo CAD (D112). |
 | `close_free_gaps` | `list[Edge]` → `list[Edge]` | chiude i gap fra estremi liberi entro `tolerance` (estensione all'intersezione reale o linea di congiunzione), accoppiati due a due per vicinanza: ogni estremo chiude al più un gap, col più vicino ancora libero, e mai con l'altro capo dello stesso edge. Un lato più corto della tolleranza resta (D112). |
 | `dangling_splines` | `list[Edge]` → `list[Edge]` | le `SplineSeg` aperte con un estremo non collegato — solo diagnostica. |
-| `find_non_contour_edges` | `list[Edge]` → `set[id(Edge)]` | edge che non chiudono un contorno (corde e ponti: estremi su nodi di branching, non sul bordo della faccia esterna, D111), da tenere fuori dal grafo. `non_contour_candidates(doc)` è la stessa cosa su un documento. |
+| `find_non_contour_edges` | `list[Edge]` → `set[id(Edge)]` | edge che non chiudono un contorno (corde e ponti: catene fra due nodi di branching distinti, non sul bordo della faccia esterna, D111, D131), da tenere fuori dal grafo. `non_contour_candidates(doc)` è la stessa cosa su un documento. |
 | `find_joining_edges` | `list[Edge]`, `set[id]` → `list[Edge]` | fra i candidati, gli edge che uniscono due forme altrimenti staccate (tolti, i due estremi non si collegano più): heal() li segnala in un warning (D111). |
 | `free_ends` | `list[Edge]`, `epsilon` → `[(punto, mm)]` | gli estremi che nessun altro edge tocca, con la distanza dal nodo più vicino, dal più vicino; `epsilon` è quello del grafo su cui si sono chiusi i loop. heal() li segnala anche quando qualcosa si chiude (D111). |
 | `find_loops` | `list[Edge]` → `LoopSearch` | la scala: grafo esatto → riparazione angoli se restano estremi liberi (D57) → grafo tollerante, dove un edge i cui due capi si fondono resta fuori dal giro (D112). |
@@ -1372,8 +1372,8 @@ topo.non_contour_candidates(doc: Document, tolerance=None) -> list[Edge]
 ```
 
 Edge di `doc.edges` che il criterio topologico di `heal()` escluderebbe dal
-grafo dei contorni (estremi su nodi di branching, e non sul bordo della faccia
-esterna della sua componente connessa, MAP.md D111) — **senza dire cosa siano**. `heal()` da solo
+grafo dei contorni (catene fra due nodi di branching distinti, e non sul bordo
+della faccia esterna della loro componente connessa, MAP.md D111, D131) — **senza dire cosa siano**. `heal()` da solo
 non assegna un significato a questi edge: li esclude e basta, restano in
 `trash_entities` col ruolo che avevano. Un consumatore li interpreta (snapbend
 `detect_flat`: dritto, estremi sul contorno esterno → `"bending"`).

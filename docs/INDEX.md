@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`78` modules · `409` module-level functions · `57` classes · `14218` lines of code.
+`78` modules · `409` module-level functions · `57` classes · `14221` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -64,7 +64,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `BridgeTab` | class | `topo/tools/tabs.py:84` | Risultato di un singolo ponte. `*_cut_{a,b}` sono `(punto, indice_lato)` |
 | `_bspline_basis_row` | func | `topo/core/geometry/points.py:179` | Le n+1 funzioni di base N_i,p(u) (Cox-de Boor, Piegl & Tiller A2.2). |
 | `_bspline_find_span` | func | `topo/core/primitives/segments.py:258` | Indice `i` tale che `knots[i] <= t < knots[i+1]` (ricerca binaria, "The |
-| `build_hierarchy` | func | `topo/core/healing/steps.py:372` | Albero di contenimento sui ClosedCurve: ogni radice è un Cluster |
+| `build_hierarchy` | func | `topo/core/healing/steps.py:373` | Albero di contenimento sui ClosedCurve: ogni radice è un Cluster |
 | `build_metadata` | func | `topo/io/exporter.py:24` | Costruisce il dict dei metadati per un Cluster |
 | `build_node_graph` | func | `topo/core/topology/graph.py:301` | Costruisce il Graph da list[Edge]. |
 | `build_polygon` | func | `topo/core/primitives/polygon_builder.py:19` | Costruisce un Polygon shapely da una lista di primitive geometriche. |
@@ -182,9 +182,9 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `feature_role` | func | `topo/model/role.py:91` | Il ruolo con cui si disegna un contorno di un elemento dell'overlay (D90): |
 | `_features` | func | `topo/io/view_model.py:91` | `cluster.detected` per nome → lista di voci disegnabili. |
 | `_find_duplicates` | func | `topo_dxf/sanitize.py:216` | Restituisce i ref delle entità duplicate (seconda occorrenza in poi). |
-| `find_joining_edges` | func | `topo/core/healing/steps.py:168` | Gli Edge fra `candidate_ids` (di solito i non-contorno) che uniscono due |
-| `find_loops` | func | `topo/core/healing/steps.py:242` | La scala di heal() per chiudere i giri, esclusi `non_contour_ids`: |
-| `find_non_contour_edges` | func | `topo/core/healing/steps.py:158` | id(edge) degli Edge che non chiudono un contorno (branching, e non sul |
+| `find_joining_edges` | func | `topo/core/healing/steps.py:169` | Gli Edge fra `candidate_ids` (di solito i non-contorno) che uniscono due |
+| `find_loops` | func | `topo/core/healing/steps.py:243` | La scala di heal() per chiudere i giri, esclusi `non_contour_ids`: |
+| `find_non_contour_edges` | func | `topo/core/healing/steps.py:158` | id(edge) degli Edge che non chiudono un contorno (catene fra due nodi di |
 | `_first_coord` | func | `topo/core/topology/graph.py:362` |  |
 | `_first_point` | func | `topo/io/text.py:153` | Un punto che sta sul segmento, per dire in quale pezzo cade. |
 | `_first_step` | func | `topo/core/topology/outer_face.py:133` | L'edge che contiene il punto più a sinistra del componente, percorso |
@@ -196,7 +196,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_flattened_points` | func | `topo_dxf/annotation_extractor.py:484` | Punti di un ARC o CIRCLE appiattito alla sagitta `_ARC_SAGITTA`. |
 | `_fmt` | func | `topo/io/svg.py:24` | Lista di [x, y] → stringa 'x0,y0 x1,y1 …' per points= di polyline/polygon. |
 | `free_endpoints_from_edges` | func | `topo/core/healing/gap_solver.py:273` | Estrae gli endpoint liberi (grado < 2 nel grafo) dagli Edge. |
-| `free_ends` | func | `topo/core/healing/steps.py:196` | (estremo, distanza dal nodo più vicino) per ogni estremo che nessun altro |
+| `free_ends` | func | `topo/core/healing/steps.py:197` | (estremo, distanza dal nodo più vicino) per ogni estremo che nessun altro |
 | `_full_arc` | func | `topo/core/geometry/regions.py:176` | Un cerchio come arco di 360°: un arco si inverte, un CircleSeg no (è |
 | `_gap_endpoints` | func | `topo/core/healing/gap_solver.py:302` | GapEndpoint per gli estremi di LINE / ARC / SPLINE il cui nodo (arrotondato) |
 | `gap_endpoints_at_nodes` | func | `topo/core/healing/gap_solver.py:285` | GapEndpoint per gli endpoint che cadono su uno dei `nodes` — tuple di |
@@ -205,7 +205,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `GeometryReader` | class | `topo/core/geometry_input.py:46` | Traduce descrizioni geometriche pure (dict) in Edge del dominio topo. |
 | `_get_solver` | func | `topo/core/healing/gap_solver.py:162` |  |
 | `__getattr__` | func | `topo/model/__init__.py:57` |  |
-| `_graph` | func | `topo/core/healing/steps.py:389` |  |
+| `_graph` | func | `topo/core/healing/steps.py:390` |  |
 | `Graph` | class | `topo/core/topology/graph.py:59` | Grafo topologico interrogabile. |
 | `group_collinear_lines` | func | `topo/core/geometry/lines.py:61` | Tratti raggruppati per retta: [[L1, L2], [L3], ...]. Ogni gruppo prende la |
 | `_h` | func | `topo/inspect.py:36` |  |
@@ -234,7 +234,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `items_inside` | func | `topo/core/geometry/axis.py:221` | I tratti con entrambi i capi dentro `bounds` allargato di `margin`, nell'ordine dato. |
 | `_joined` | func | `topo/core/geometry/shape.py:294` |  |
 | `_key_for` | func | `topo_dxf/sanitize.py:154` | Restituisce una chiave hashable che identifica univocamente |
-| `labeled_curves` | func | `topo/core/healing/steps.py:350` | Gli Edge messi da parte da split_labeled() come curve col loro ruolo |
+| `labeled_curves` | func | `topo/core/healing/steps.py:351` | Gli Edge messi da parte da split_labeled() come curve col loro ruolo |
 | `_largest_loop` | func | `topo/core/topology/outer_face.py:202` | (loop, segments, styles, polygon) del giro di area massima. |
 | `_Layers` | class | `topo_dxf/writer.py:302` | I layer di un documento in scrittura (D128): il nome viene dalla scelta |
 | `Leader` | class | `topo/model/annotation.py:159` | Direttrice con testo che punta a una feature. |
@@ -262,7 +262,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `loop_geometry` | func | `topo/core/topology/loop_finder.py:206` | (segmenti, stili, poligono) di un loop; None se i segmenti non chiudono |
 | `loop_to_closed_curve` | func | `topo/core/healing/hierarchy.py:21` |  |
 | `LoopFinder` | class | `topo/core/topology/loop_finder.py:28` |  |
-| `loops_to_curves` | func | `topo/core/healing/steps.py:297` | Un ClosedCurve per loop, col ruolo del primo edge; senza poligono valido, niente. |
+| `loops_to_curves` | func | `topo/core/healing/steps.py:298` | Un ClosedCurve per loop, col ruolo del primo edge; senza poligono valido, niente. |
 | `LoopSearch` | class | `topo/core/healing/steps.py:41` | Come find_loops() ha chiuso (o non chiuso) i giri, gradino per gradino. |
 | `_loose_ends_warnings` | func | `topo/core/heal.py:188` | Quello che resta aperto anche quando qualcosa si chiude (D111): gli |
 | `_make_inner` | func | `topo/core/healing/hierarchy.py:91` |  |
@@ -288,7 +288,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_nearest_within` | func | `topo/tools/anchor.py:184` | L'indice della parte più vicina a ``probe``, se entro ``snap_distance`` (> 0). |
 | `NestedBridgeResult` | class | `topo/tools/tabs.py:208` | Risultato per UNA coppia isola/genitore-diretto trovata nella gerarchia. |
 | `NodedEdges` | class | `topo/core/topology/noding.py:51` | La rete piana: i pezzi, e per ognuno l'Edge da cui viene. |
-| `non_contour_candidates` | func | `topo/tools/non_contour.py:40` | Edge di `doc.edges` che il criterio topologico di `heal()` escluderebbe dal |
+| `non_contour_candidates` | func | `topo/tools/non_contour.py:41` | Edge di `doc.edges` che il criterio topologico di `heal()` escluderebbe dal |
 | `NonContourEdgeDetector` | class | `topo/core/topology/non_contour_edges.py:45` |  |
 | `_normalize` | func | `topo/core/island.py:241` | Stessi passi di heal, ma sulla griglia fine della rete piana: prima i |
 | `normalize_ocs` | func | `topo_dxf/sanitize.py:19` | Normalizza il vettore di estrusione di tutte le entità OCS nel modelspace. |
@@ -338,9 +338,9 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_poly_points` | func | `topo/io/view_model.py:41` | Vertici dell'anello esterno di un polygon shapely come lista di [x, y]. |
 | `polygon` | func | `topo/core/geometry/build.py:27` | Il poligono per i `points` dati, chiuso: l'ultimo lato torna al primo punto. Almeno 3 punti. |
 | `_polygon` | func | `topo/core/geometry/regions.py:194` |  |
-| `polygonize_edges` | func | `topo/core/healing/steps.py:313` | Ultima spiaggia quando nessun grafo chiude: le facce dell'intero disegno |
+| `polygonize_edges` | func | `topo/core/healing/steps.py:314` | Ultima spiaggia quando nessun grafo chiude: le facce dell'intero disegno |
 | `_polygons` | func | `topo/core/island.py:376` |  |
-| `polygons_to_curves` | func | `topo/core/healing/steps.py:329` | Per poligono un ClosedCurve OUTER dal bordo esterno e uno INNER per |
+| `polygons_to_curves` | func | `topo/core/healing/steps.py:330` | Per poligono un ClosedCurve OUTER dal bordo esterno e uno INNER per |
 | `_polyline` | func | `topo/core/geometry/regions.py:47` |  |
 | `polyline_line_intersections` | func | `topo/core/geometry/intersections.py:102` | Intersezioni fra la retta infinita (p1, p2) e la spezzata `points` (ogni |
 | `_polyline_points` | func | `topo_dxf/annotation_extractor.py:492` |  |
@@ -360,14 +360,14 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `RenderedGeometry` | class | `topo/model/annotation.py:48` | Immagine di una quota/direttrice già appiattita in primitive pure. |
 | `RenderedText` | class | `topo/model/annotation.py:39` | Un testo dentro l'immagine appiattita di una quota/direttrice. |
 | `renode` | func | `topo/core/topology/noding.py:64` | Nodi di ogni Edge ricalcolati dal punto reale del segmento a |
-| `repair_merged_corners` | func | `topo/core/healing/steps.py:216` | Chiude gli angoli che il grafo esatto vede aperti e il clustering degli |
+| `repair_merged_corners` | func | `topo/core/healing/steps.py:217` | Chiude gli angoli che il grafo esatto vede aperti e il clustering degli |
 | `resolve_role` | func | `topo/model/role_rule.py:106` | Ruolo della prima regola che matcha, in ordine; `unknown` se nessuna. |
 | `resolve_target` | func | `topo/tools/anchor.py:126` | L'oggetto (contorno o feature) a cui punta un ``target``, o ``None``. |
 | `Result` | class | `topo/model/result.py:11` | Risultato completo di una sessione topo su un file DXF. |
 | `_result_bbox_center` | func | `topo/tools/rotate.py:224` | Centro del bbox unito degli outer di tutti i cluster — vedi `rotate_to_longest`. |
 | `_reversed` | func | `topo/core/geometry/regions.py:190` |  |
 | `_rim_runs` | func | `topo/core/topology/rim.py:87` | [((edge, verso), primo vertice, ultimo vertice)] lungo l'anello: copertura greedy |
-| `_ring_segments` | func | `topo/core/healing/steps.py:395` |  |
+| `_ring_segments` | func | `topo/core/healing/steps.py:396` |  |
 | `_role` | func | `topo/inspect.py:47` | Nome del ruolo come stringa piatta ('outer'), non 'ContourRole.OUTER'. |
 | `_role_from` | func | `topo/core/geometry_input.py:38` | work_type stringa (stesso vocabolario di RoleRule.role) → ruolo. Un work_type |
 | `role_str` | func | `topo/model/role.py:143` | Valore stringa di un ruolo, che sia una costante ``ContourRole`` o una |
@@ -439,7 +439,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `splits_polygon` | func | `topo/core/geometry/lines.py:82` | La corda `start`-`end`, prolungata di `reach` ai due capi, divide `polygon` in due o più parti. |
 | `stadium` | func | `topo/core/geometry/build.py:57` | Stadio fuori tutto `length` × `width` (due semicerchi di raggio |
 | `_stadium` | func | `topo/core/geometry/shape.py:96` |  |
-| `structural_loops` | func | `topo/core/healing/steps.py:286` | I loop in cui ogni edge con ruolo deciso è strutturale: un solo edge non |
+| `structural_loops` | func | `topo/core/healing/steps.py:287` | I loop in cui ogni edge con ruolo deciso è strutturale: un solo edge non |
 | `structural_segments` | func | `topo/tools/rotate.py:73` | Segmenti nativi dei contorni strutturali di ogni cluster: sempre |
 | `_style_attribs` | func | `topo_dxf/exporter.py:57` | dxfattribs per una entità in output: layer + linetype della sorgente, se |
 | `_sub` | func | `topo/tools/tabs.py:51` |  |
@@ -520,7 +520,7 @@ Same name defined at module level in different modules. Not automatically a bug 
 
 ### `topo/` (root)
 
-#### `topo/__init__.py` — 182 lines
+#### `topo/__init__.py` — 183 lines
 
 _topo_
 
@@ -767,7 +767,7 @@ _core/healing/outer_scan.py_
 - `_intersections(piece, a: int, level: float) -> List[Point]` — L150 — Punti del pezzo con coordinata `a` == level.
 - `_scan_axis(pieces: list, axis: str, hits: Dict[int, List[OuterHit]]) -> int` — L184
 
-#### `topo/core/healing/steps.py` — 397 lines
+#### `topo/core/healing/steps.py` — 398 lines
 
 _core/healing/steps.py_
 
@@ -778,19 +778,19 @@ _core/healing/steps.py_
 - `_is_near_full_arc(edge: Edge, graph, tolerance: float, max_missing_angle: float) -> bool` — L119
 - `close_free_gaps(edges: List[Edge], tolerance: float) -> List[Edge]` — L134 — Chiude i gap fra estremi liberi entro `tolerance` col gap solver
 - `dangling_splines(edges: List[Edge]) -> List[Edge]` — L149 — SplineSeg aperte con almeno un estremo non collegato a nient'altro.
-- `find_non_contour_edges(edges: List[Edge], tolerance: float) -> Set[int]` — L158 — id(edge) degli Edge che non chiudono un contorno (branching, e non sul
-- `find_joining_edges(edges: List[Edge], candidate_ids: Set[int]) -> List[Edge]` — L168 — Gli Edge fra `candidate_ids` (di solito i non-contorno) che uniscono due
-- `free_ends(edges: List[Edge], epsilon: float=0.0) -> List[Tuple[Tuple, float]]` — L196 — (estremo, distanza dal nodo più vicino) per ogni estremo che nessun altro
-- `repair_merged_corners(edges: List[Edge], tolerance: float, exclude_ids: FrozenSet[int]=frozenset()) -> Tuple[List[Edge], int, list]` — L216 — Chiude gli angoli che il grafo esatto vede aperti e il clustering degli
-- `find_loops(edges: List[Edge], non_contour_ids: Set[int], tolerance: float) -> LoopSearch` — L242 — La scala di heal() per chiudere i giri, esclusi `non_contour_ids`:
-- `structural_loops(loops: List[list], is_structural: Optional[Callable[[str], bool]]=None) -> List[list]` — L286 — I loop in cui ogni edge con ruolo deciso è strutturale: un solo edge non
-- `loops_to_curves(loops: List[list]) -> List[ClosedCurve]` — L297 — Un ClosedCurve per loop, col ruolo del primo edge; senza poligono valido, niente.
-- `polygonize_edges(edges: List[Edge], tolerance: float) -> List[Polygon]` — L313 — Ultima spiaggia quando nessun grafo chiude: le facce dell'intero disegno
-- `polygons_to_curves(polygons: List[Polygon]) -> List[ClosedCurve]` — L329 — Per poligono un ClosedCurve OUTER dal bordo esterno e uno INNER per
-- `labeled_curves(edges: List[Edge]) -> list` — L350 — Gli Edge messi da parte da split_labeled() come curve col loro ruolo
-- `build_hierarchy(curves: list, label: str='', source_file: str='', is_structural: Optional[Callable[[str], bool]]=None) -> Tuple[List[Cluster], list]` — L372 — Albero di contenimento sui ClosedCurve: ogni radice è un Cluster
-- `_graph(edges: List[Edge], exclude_ids: FrozenSet[int], epsilon: float=0.0)` — L389
-- `_ring_segments(coords) -> List[LineSeg]` — L395
+- `find_non_contour_edges(edges: List[Edge], tolerance: float) -> Set[int]` — L158 — id(edge) degli Edge che non chiudono un contorno (catene fra due nodi di
+- `find_joining_edges(edges: List[Edge], candidate_ids: Set[int]) -> List[Edge]` — L169 — Gli Edge fra `candidate_ids` (di solito i non-contorno) che uniscono due
+- `free_ends(edges: List[Edge], epsilon: float=0.0) -> List[Tuple[Tuple, float]]` — L197 — (estremo, distanza dal nodo più vicino) per ogni estremo che nessun altro
+- `repair_merged_corners(edges: List[Edge], tolerance: float, exclude_ids: FrozenSet[int]=frozenset()) -> Tuple[List[Edge], int, list]` — L217 — Chiude gli angoli che il grafo esatto vede aperti e il clustering degli
+- `find_loops(edges: List[Edge], non_contour_ids: Set[int], tolerance: float) -> LoopSearch` — L243 — La scala di heal() per chiudere i giri, esclusi `non_contour_ids`:
+- `structural_loops(loops: List[list], is_structural: Optional[Callable[[str], bool]]=None) -> List[list]` — L287 — I loop in cui ogni edge con ruolo deciso è strutturale: un solo edge non
+- `loops_to_curves(loops: List[list]) -> List[ClosedCurve]` — L298 — Un ClosedCurve per loop, col ruolo del primo edge; senza poligono valido, niente.
+- `polygonize_edges(edges: List[Edge], tolerance: float) -> List[Polygon]` — L314 — Ultima spiaggia quando nessun grafo chiude: le facce dell'intero disegno
+- `polygons_to_curves(polygons: List[Polygon]) -> List[ClosedCurve]` — L330 — Per poligono un ClosedCurve OUTER dal bordo esterno e uno INNER per
+- `labeled_curves(edges: List[Edge]) -> list` — L351 — Gli Edge messi da parte da split_labeled() come curve col loro ruolo
+- `build_hierarchy(curves: list, label: str='', source_file: str='', is_structural: Optional[Callable[[str], bool]]=None) -> Tuple[List[Cluster], list]` — L373 — Albero di contenimento sui ClosedCurve: ogni radice è un Cluster
+- `_graph(edges: List[Edge], exclude_ids: FrozenSet[int], epsilon: float=0.0)` — L390
+- `_ring_segments(coords) -> List[LineSeg]` — L396
 
 #### `topo/core/island.py` — 392 lines
 
@@ -1183,11 +1183,11 @@ _inject.py_
 - `inject(result, data_injector: Optional[Callable]=None, snap_distance: float=0.0)` — L39 — Arricchisce i Cluster con i dati estratti da un `data_injector` esterno.
 - `_texts_by_part(result, snap_distance: float) -> Dict[int, List[str]]` — L74 — Testi di `result.annotations` per indice di parte. Un testo coperto da più
 
-#### `topo/tools/non_contour.py` — 50 lines
+#### `topo/tools/non_contour.py` — 51 lines
 
 _topo/tools/non_contour.py_
 
-- `non_contour_candidates(doc: Document, tolerance: Optional[float]=None) -> List[Edge]` — L40 — Edge di `doc.edges` che il criterio topologico di `heal()` escluderebbe dal
+- `non_contour_candidates(doc: Document, tolerance: Optional[float]=None) -> List[Edge]` — L41 — Edge di `doc.edges` che il criterio topologico di `heal()` escluderebbe dal
 
 #### `topo/tools/rotate.py` — 268 lines
 
