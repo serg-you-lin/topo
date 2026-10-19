@@ -120,7 +120,7 @@ topo/
 │   │                     PRIMA di heal() (D55) — lavora su Document
 │   ├── rotate.py         rotate_*() (sperimentale, D46)
 │   ├── split.py          split() — un Result per parte, senza formato (D129)
-│   └── tabs.py           bridge_tabs() (D40), bridge_parent_tabs() (D139)
+│   └── strips.py         facing_boundaries(), link(), unconnected_regions(), open_boundaries() (D134, D142)
 │
 ├── io/           RENDERER del modello senza dipendenze di formato
 │   ├── svg.py        to_svg(), save_svg()  (fuori dalla 1.0 stabile, D133)

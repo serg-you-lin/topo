@@ -125,8 +125,8 @@ def _collect_inners(
     l'outer, 1 per un figlio diretto, 2 per un nipote, ...) e `parent` (il
     `Contour` che lo contiene direttamente). Chi consuma il cluster può
     quindi risalire la catena di contenimento senza doverla ricalcolare da
-    zero — è il dato che uno strumento di microjoint/linguette (Smoother) deve
-    leggere per sapere quali contorni sono "nipoti" e di chi.
+    zero — è il dato che `topo.tools.strips` legge per sapere quali bordi
+    si affacciano (D134).
 
     heal() si ferma qui — non decide più hole vs inner né riconosce i
     countersink dal nesting (D15). detect_flat(features="holes") ri-deriva il

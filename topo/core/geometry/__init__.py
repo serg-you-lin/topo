@@ -19,7 +19,9 @@ Pubblici (qui sotto):
 Mattoni (si importano dal sottomodulo, interni):
     measure.py        arrotondamento dei nodi, "è circolare?" (bounding box: per una misura usa contour_shape)
     points.py         sequenze di punti: spigoli, doppioni, fit di cerchio, b-spline
-    intersections.py  retta/retta, cerchio/retta, cerchio/cerchio, polilinea/retta
+    strips.py         una striscia fra due contorni, distanza fra due contorni, un contorno aperto
+                      dove le strisce lo coprono (D142; i fatti sulla gerarchia in topo.tools.strips)
+    intersections.py  retta/retta, cerchio/retta, cerchio/cerchio
                       (pubblica: `intersections(a, b)` fra due primitive qualunque)
     lines.py, axis.py anche: distanza da una retta, collinearità, intervalli, tratti dentro un riquadro
 """
