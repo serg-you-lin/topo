@@ -19,7 +19,7 @@ import math
 from ..model import Result
 from ..model.document import Document
 from ..core.topology.graph import build_node_graph
-from ..core.primitives.segments import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg
+from ..core.primitives.segments import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg
 
 
 # ---------------------------------------------------------------------------
@@ -82,7 +82,7 @@ def validate(doc: Document) -> Result:
     zero_len = [
         e for e in edges
         if e.start == e.end
-        and not isinstance(e.segment, (CircleSeg, SplineSeg, EllipseSeg))
+        and not isinstance(e.segment, (CircleSeg, BSplineSeg, EllipseSeg))
     ]
     if zero_len:
         result.warnings.append(

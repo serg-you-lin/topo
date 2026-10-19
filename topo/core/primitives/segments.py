@@ -252,7 +252,7 @@ class ArcSeg:
         )
 
 # ---------------------------------------------------------------------------
-# SplineSeg
+# BSplineSeg
 # ---------------------------------------------------------------------------
 
 def _bspline_find_span(t: float, degree: int, knots: List[float], n: int) -> int:
@@ -288,15 +288,15 @@ def _point_to_segment_distance(p: Point, a: Point, b: Point) -> float:
 def _refine_segment(
     evaluate, t0: float, t1: float, p0: Point, p1: Point,
     tolerance: float, out: List[Point], depth: int,
-    max_depth: int = 8, max_points: int = MAX_SEGMENTS_SPLINE * 4,
+    max_depth: int = 8,
 ) -> None:
     """
     Suddivide `[t0, t1]` finché il punto medio (valutato con `evaluate(t)`)
-    resta entro `tolerance` dalla corda. `max_points` è un tetto sul totale
-    (non solo sulla profondità di questo ramo): evita l'esplosione di punti
-    su un tratto rumoroso che non converge mai entro `tolerance`.
+    resta entro `tolerance` dalla corda. `max_depth` limita i punti su un
+    tratto rumoroso che non converge mai; nessun tetto sul totale, che
+    lascerebbe il resto della curva a corde grosse fuori tolleranza.
 
-    `evaluate` è un callable `t -> Point` — condiviso da `SplineSeg`
+    `evaluate` è un callable `t -> Point` — condiviso da `BSplineSeg`
     (De Boor, curvatura variabile) ed `EllipseSeg` (parametrizzazione
     ellittica esatta, curvatura variabile): stessa esigenza di
     campionamento adattivo, math diversa a monte.
@@ -305,13 +305,12 @@ def _refine_segment(
     pm = evaluate(tm)
     if (
         depth >= max_depth
-        or len(out) >= max_points
         or _point_to_segment_distance(pm, p0, p1) <= tolerance
     ):
         out.append(p1)
         return
-    _refine_segment(evaluate, t0, tm, p0, pm, tolerance, out, depth + 1, max_depth, max_points)
-    _refine_segment(evaluate, tm, t1, pm, p1, tolerance, out, depth + 1, max_depth, max_points)
+    _refine_segment(evaluate, t0, tm, p0, pm, tolerance, out, depth + 1, max_depth)
+    _refine_segment(evaluate, tm, t1, pm, p1, tolerance, out, depth + 1, max_depth)
 
 
 def _adaptive_polyline(
@@ -335,23 +334,58 @@ def _adaptive_polyline(
 
 
 @dataclass
-class SplineSeg:
+class BSplineSeg:
+    """
+    B-spline (NURBS se `weights` è impostato): grado, punti di controllo,
+    nodi, pesi — solo la geometria (MAP.md D135). Quello che un formato
+    sorgente tiene in più (flag, tolleranze, fit points, tangenti) resta
+    nell'adapter; `closed` e `periodic` si ricavano dai campi.
+    """
     degree: int
     control_points: List[Point]
     knots: List[float]
     weights: Optional[List[float]] = None
-    approx_points: Optional[List[Point]] = None
-    fit_points: Optional[List[Tuple[float, float, float]]] = None
-    closed: bool = False
-    periodic: bool = False
-    flags: int = 0
-    knot_tolerance: Optional[float] = None
-    fit_tolerance: Optional[float] = None
-    control_point_tolerance: Optional[float] = None
-    start_tangent: Optional[Tuple[float, float, float]] = None
-    end_tangent: Optional[Tuple[float, float, float]] = None
 
-    def reversed(self) -> "SplineSeg":
+    def __post_init__(self):
+        # punti di discretize() per tolleranza: heal() chiede la stessa spline
+        # più volte. Non è un campo (fuori da eq/repr/fields); vale perché una
+        # spline non si modifica sul posto — reversed/rotated ne fanno una nuova.
+        self._points: dict = {}
+
+    @property
+    def clamped(self) -> bool:
+        """True se i primi e gli ultimi `degree + 1` nodi coincidono: la curva
+        parte dal primo punto di controllo e finisce sull'ultimo."""
+        p, k = self.degree, self.knots
+        if len(k) < 2 * (p + 1):
+            return True
+        return k[0] == k[p] and k[-1] == k[-(p + 1)]
+
+    @property
+    def closed(self) -> bool:
+        """True se la curva torna al punto di partenza (entro DEFAULT_TOLERANCE)."""
+        if len(self.control_points) < 2:
+            return False
+        start, end = self.endpoints()
+        return math.hypot(start[0] - end[0], start[1] - end[1]) < DEFAULT_TOLERANCE
+
+    @property
+    def periodic(self) -> bool:
+        """True se la curva è chiusa e non clamped: si richiude senza un punto
+        di controllo sul giunto."""
+        return self.closed and not self.clamped
+
+    def endpoints(self) -> Tuple[Point, Point]:
+        """(inizio, fine) sulla curva vera — per una spline non clamped non
+        sono il primo e l'ultimo punto di controllo."""
+        if not self.control_points:
+            return (0.0, 0.0), (0.0, 0.0)
+        p = self.degree
+        if len(self.knots) != len(self.control_points) + p + 1:
+            return self.control_points[0], self.control_points[-1]
+        return self._evaluate(self.knots[p]), self._evaluate(self.knots[-(p + 1)])
+
+    def reversed(self) -> "BSplineSeg":
         """
         Spline con la parametrizzazione invertita — stesso luogo geometrico
         percorso al contrario.
@@ -363,70 +397,27 @@ class SplineSeg:
         curva accoppiata a un vettore nodi sbagliato: la curva emessa in DXF
         risulta deformata all'interno (gli endpoint combaciano lo stesso
         perché una spline clamped interpola il primo e l'ultimo CP).
-
-        `approx_points` / `fit_points` sono solo campioni: si invertono e basta.
-        Le tangenti si scambiano E si negano (la tangente entrante all'inizio
-        diventa quella uscente alla fine, con verso opposto).
         """
         if self.knots:
             a, b = self.knots[0], self.knots[-1]
             new_knots = [a + b - k for k in reversed(self.knots)]
         else:
             new_knots = []
-
-        def _neg(v):
-            return None if v is None else (-v[0], -v[1], -v[2])
-
-        return SplineSeg(
+        return BSplineSeg(
             degree=self.degree,
             control_points=list(reversed(self.control_points)),
             knots=new_knots,
             weights=list(reversed(self.weights)) if self.weights else None,
-            approx_points=list(reversed(self.approx_points)) if self.approx_points else None,
-            fit_points=list(reversed(self.fit_points)) if self.fit_points else None,
-            closed=self.closed,
-            periodic=self.periodic,
-            flags=self.flags,
-            knot_tolerance=self.knot_tolerance,
-            fit_tolerance=self.fit_tolerance,
-            control_point_tolerance=self.control_point_tolerance,
-            start_tangent=_neg(self.end_tangent),
-            end_tangent=_neg(self.start_tangent),
         )
 
-    def rotated(self, angle: float, origin: Point = (0.0, 0.0)) -> "SplineSeg":
-        """
-        Stessa spline, ruotata di `angle` radianti attorno a `origin`: ruota
-        i punti di controllo e i campioni (`approx_points`/`fit_points`, che
-        sono XY(Z) assoluti). Le tangenti sono vettori direzione, non punti:
-        ruotano sulla sola componente XY, sempre attorno a (0, 0) — mai
-        traslate da `origin`.
-        """
-        def _rotate_xyz(p: Tuple[float, float, float]) -> Tuple[float, float, float]:
-            x, y = _rotate_point((p[0], p[1]), angle, origin)
-            return (x, y, p[2])
-
-        def _rotate_vec3(v):
-            if v is None:
-                return None
-            x, y = _rotate_point((v[0], v[1]), angle, (0.0, 0.0))
-            return (x, y, v[2])
-
-        return SplineSeg(
+    def rotated(self, angle: float, origin: Point = (0.0, 0.0)) -> "BSplineSeg":
+        """Stessa spline, ruotata di `angle` radianti attorno a `origin`: si
+        ruotano i punti di controllo, nodi e pesi non cambiano."""
+        return BSplineSeg(
             degree=self.degree,
             control_points=[_rotate_point(p, angle, origin) for p in self.control_points],
             knots=list(self.knots),
             weights=list(self.weights) if self.weights else None,
-            approx_points=[_rotate_point(p, angle, origin) for p in self.approx_points] if self.approx_points else None,
-            fit_points=[_rotate_xyz(p) for p in self.fit_points] if self.fit_points else None,
-            closed=self.closed,
-            periodic=self.periodic,
-            flags=self.flags,
-            knot_tolerance=self.knot_tolerance,
-            fit_tolerance=self.fit_tolerance,
-            control_point_tolerance=self.control_point_tolerance,
-            start_tangent=_rotate_vec3(self.start_tangent),
-            end_tangent=_rotate_vec3(self.end_tangent),
         )
 
     def _evaluate(self, t: float) -> Point:
@@ -440,36 +431,39 @@ class SplineSeg:
         ctrl = self.control_points
         n = len(ctrl) - 1
 
+        # Fuori dominio si valuta sul bordo: per una spline clamped è il
+        # primo/ultimo punto di controllo (esatto), per una non clamped no.
         t_min, t_max = knots[degree], knots[-(degree + 1)]
-        if t <= t_min:
-            return ctrl[0]
-        if t >= t_max:
-            return ctrl[-1]
+        t = min(max(t, t_min), t_max)
 
         k = _bspline_find_span(t, degree, knots, n)
-        rational = bool(self.weights)
-        if rational:
-            d = [
-                (ctrl[j][0] * self.weights[j], ctrl[j][1] * self.weights[j], self.weights[j])
-                for j in range(k - degree, k + 1)
-            ]
-            dim = 3
+        first = k - degree
+        weights = self.weights
+        # coordinate omogenee (x·w, y·w, w); w = 1 se la spline non è razionale
+        if weights:
+            ws = weights[first:k + 1]
+            xs = [ctrl[first + j][0] * ws[j] for j in range(degree + 1)]
+            ys = [ctrl[first + j][1] * ws[j] for j in range(degree + 1)]
         else:
-            d = [(ctrl[j][0], ctrl[j][1]) for j in range(k - degree, k + 1)]
-            dim = 2
+            ws = None
+            xs = [ctrl[first + j][0] for j in range(degree + 1)]
+            ys = [ctrl[first + j][1] for j in range(degree + 1)]
 
         for r in range(1, degree + 1):
             for j in range(degree, r - 1, -1):
-                i = k - degree + j
+                i = first + j
                 denom = knots[i + degree - r + 1] - knots[i]
                 alpha = 0.0 if denom == 0 else (t - knots[i]) / denom
-                d[j] = tuple((1 - alpha) * d[j - 1][c] + alpha * d[j][c] for c in range(dim))
+                beta = 1 - alpha
+                xs[j] = beta * xs[j - 1] + alpha * xs[j]
+                ys[j] = beta * ys[j - 1] + alpha * ys[j]
+                if ws is not None:
+                    ws[j] = beta * ws[j - 1] + alpha * ws[j]
 
-        point = d[degree]
-        if rational:
-            w = point[2]
-            return (point[0], point[1]) if w == 0 else (point[0] / w, point[1] / w)
-        return point
+        if ws is None:
+            return (xs[degree], ys[degree])
+        w = ws[degree]
+        return (xs[degree], ys[degree]) if w == 0 else (xs[degree] / w, ys[degree] / w)
 
     def discretize(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
@@ -477,9 +471,12 @@ class SplineSeg:
         poligono di controllo) via `_evaluate()`, con suddivisione adattiva
         finché la deviazione dalla corda resta entro `tolerance`.
         """
-        if self.approx_points:
-            return list(self.approx_points)
+        cached = self._points.get(tolerance)
+        if cached is None:
+            cached = self._points[tolerance] = self._discretize(tolerance)
+        return list(cached)
 
+    def _discretize(self, tolerance: float) -> List[Point]:
         if not self.control_points:
             return []
 
@@ -516,18 +513,8 @@ def segment_endpoints(segment) -> Tuple[Point, Point]:
     if isinstance(segment, ArcSeg):
         return segment._point_at(segment.start_angle), segment._point_at(segment.end_angle)
 
-    if isinstance(segment, SplineSeg):
-        # approx_points = risultato del flattening: sono i punti reali sulla
-        # curva, quindi gli endpoint più affidabili.
-        if segment.approx_points:
-            s, e = segment.approx_points[0], segment.approx_points[-1]
-            return (s[0], s[1]), (e[0], e[1])
-        if segment.fit_points:
-            s, e = segment.fit_points[0], segment.fit_points[-1]
-            return (s[0], s[1]), (e[0], e[1])
-        if segment.control_points:
-            return segment.control_points[0], segment.control_points[-1]
-        return (0.0, 0.0), (0.0, 0.0)
+    if isinstance(segment, BSplineSeg):
+        return segment.endpoints()
 
     if isinstance(segment, CircleSeg):
         pt = (segment.center[0] + segment.radius, segment.center[1])
@@ -648,7 +635,7 @@ class EllipseSeg:
     def discretize(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
         Discretizza in polilinea con suddivisione adattiva (`_adaptive_polyline`,
-        condivisa con `SplineSeg`): la curvatura di un'ellisse non è costante
+        condivisa con `BSplineSeg`): la curvatura di un'ellisse non è costante
         come quella di un cerchio (è massima agli estremi dell'asse minore,
         raggio di curvatura b²/a), quindi un angolo-per-segmento fisso alla
         `ArcSeg.discretize` sotto o sovra-campionerebbe a seconda del punto.

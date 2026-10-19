@@ -54,7 +54,7 @@ ROUNDTRIP_NAME_ROLES = {
     role_to_dxf_layer("engrave"): "engrave",
 }
 
-# Contorni misti SplineSeg + linee/archi: materializzati come SPLINE native +
+# Contorni misti BSplineSeg + linee/archi: materializzati come SPLINE native +
 # LWPOLYLINE aperte con endpoint coincidenti (mai discretizzati). Il round-trip
 # li ricuce via grafo — nessuna perdita nota al momento.
 ROUNDTRIP_KNOWN_LOSSY = set()

@@ -13,7 +13,7 @@ Tutte le entità del modello ereditano da qui:
     BendingLine(OpenCurve), Engraving(OpenCurve)
 
 Note:
-    - segments è List[LineSeg | ArcSeg | SplineSeg] — primitive pure, zero ezdxf
+    - segments è List[LineSeg | ArcSeg | BSplineSeg] — primitive pure, zero ezdxf
     - styles è List[EdgeStyle], allineata 1:1 a segments — aspetto grezzo
       (linetype/colore) dell'entità sorgente di ogni segmento (Cluster E).
       Può essere più corta di segments o vuota (geometria sintetizzata, es.
@@ -30,7 +30,7 @@ from typing import List, Optional, Tuple
 
 from shapely.geometry import Polygon
 
-from topo.core.primitives.segments import ArcSeg, LineSeg, SplineSeg
+from topo.core.primitives.segments import ArcSeg, LineSeg, BSplineSeg
 from topo.model.style import EdgeStyle
 
 
@@ -57,7 +57,7 @@ class ClosedCurve(Curve):
     sull'oggetto `Hole` da `detect_flat()` (D15), non sul contorno grezzo.
     """
     polygon:  Polygon                          = field(default=None)
-    segments: List[LineSeg | ArcSeg | SplineSeg] = field(default_factory=list)
+    segments: List[LineSeg | ArcSeg | BSplineSeg] = field(default_factory=list)
     styles:   List[EdgeStyle]                  = field(default_factory=list)
 
     @property
@@ -74,6 +74,6 @@ class OpenCurve(Curve):
     """
     Curva aperta: ha segmenti ma non un polygon.
     """
-    segments:    List[LineSeg | ArcSeg | SplineSeg] = field(default_factory=list)
+    segments:    List[LineSeg | ArcSeg | BSplineSeg] = field(default_factory=list)
     styles:      List[EdgeStyle]                  = field(default_factory=list)
     cluster_ref: Optional[int]                    = None   # indice in result.clusters dell'isola che la contiene (island, D99)

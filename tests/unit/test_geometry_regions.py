@@ -11,7 +11,7 @@ import math
 import unittest
 
 import topo
-from topo.core.primitives import ArcSeg, CircleSeg, LineSeg, SplineSeg
+from topo.core.primitives import ArcSeg, CircleSeg, LineSeg, BSplineSeg
 from topo.core.primitives.polygon_builder import build_polygon
 from topo.model.contour import Contour
 
@@ -64,7 +64,7 @@ class TestIntersections(unittest.TestCase):
         self.assertEqual(g.intersections(LineSeg((0, 0), (10, 0)), LineSeg((5, 0), (15, 0))), [])
 
     def test_spline_within_curve_tolerance(self):
-        spline = SplineSeg(degree=2, control_points=[(0, -5), (5, 10), (10, -5)],
+        spline = BSplineSeg(degree=2, control_points=[(0, -5), (5, 10), (10, -5)],
                            knots=[0, 0, 0, 1, 1, 1])
         pts = g.intersections(spline, LineSeg((0, 0), (10, 0)))
         self.assertEqual(len(pts), 2)

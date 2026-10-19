@@ -22,7 +22,7 @@ from ..geometry.measure import round_point, track_points
 from ..primitives import LineSeg
 from ..primitives.polygon_builder import build_polygon
 from ..primitives.segments import (
-    DEFAULT_TOLERANCE, ArcSeg, CircleSeg, SplineSeg, segment_endpoints,
+    DEFAULT_TOLERANCE, ArcSeg, CircleSeg, BSplineSeg, segment_endpoints,
 )
 from ..topology.edge import Edge
 from ..topology.graph import build_node_graph
@@ -147,8 +147,8 @@ def close_free_gaps(edges: List[Edge], tolerance: float) -> List[Edge]:
 
 
 def dangling_splines(edges: List[Edge]) -> List[Edge]:
-    """SplineSeg aperte con almeno un estremo non collegato a nient'altro."""
-    open_splines = [e for e in edges if isinstance(e.segment, SplineSeg) and e.start != e.end]
+    """BSplineSeg aperte con almeno un estremo non collegato a nient'altro."""
+    open_splines = [e for e in edges if isinstance(e.segment, BSplineSeg) and e.start != e.end]
     if not open_splines:
         return []
     graph = build_node_graph(edges)

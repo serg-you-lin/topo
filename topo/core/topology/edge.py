@@ -4,7 +4,7 @@ core/topology/edge.py
 Rappresentazione topologica di una entità geometrica lineare — l'unità che
 graph.py / loop_finder.py / non_contour_edges.py / gap_solver.py usano per
 costruire e percorrere il grafo. Non è una primitiva geometrica (quelle sono
-LineSeg/ArcSeg/SplineSeg/CircleSeg/EllipseSeg in core/primitives/segments.py,
+LineSeg/ArcSeg/BSplineSeg/CircleSeg/EllipseSeg in core/primitives/segments.py,
 math puro senza semantica): `Edge` ne avvolge una con ruolo, provenienza e
 stile — dati di dominio, zero riferimento all'entità sorgente di alcun formato.
 
@@ -19,12 +19,12 @@ from dataclasses import dataclass, field
 from typing import Optional, Tuple, Union
 
 from ..primitives.segments import (
-    LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg, segment_endpoints, segment_is_closed,
+    LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints, segment_is_closed,
 )
 from ..geometry.measure import round_point
 from ...model.style import EdgeStyle
 
-Segment = Union[LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg]
+Segment = Union[LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg]
 
 
 @dataclass
@@ -72,7 +72,7 @@ class Edge:
         """
         start, end = segment_endpoints(segment)
         start = round_point(start)
-        if isinstance(segment, (CircleSeg, SplineSeg, EllipseSeg)) and segment_is_closed(segment):
+        if isinstance(segment, (CircleSeg, BSplineSeg, EllipseSeg)) and segment_is_closed(segment):
             end = start
         else:
             end = round_point(end)

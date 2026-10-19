@@ -29,7 +29,7 @@ from typing import Any, Optional
 from shapely.geometry import Point
 from shapely.prepared import prep
 
-from ..core.primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, SplineSeg
+from ..core.primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, BSplineSeg
 from ..core.geometry.shape import contour_shape
 from ..model import Result
 from ..model.annotation import Dimension, Leader
@@ -90,11 +90,11 @@ class _Writer:
         if isinstance(s, EllipseSeg):
             return [f"ellipse centre {self.pt(s.center)} major axis {self.pt(s.major_axis)} "
                     f"ratio {self.num(s.ratio)} params {self.num(s.start_param)}..{self.num(s.end_param)}"]
-        if isinstance(s, SplineSeg):
+        if isinstance(s, BSplineSeg):
             return self.spline(s)
         return [type(s).__name__]
 
-    def spline(self, s: SplineSeg) -> list[str]:
+    def spline(self, s: BSplineSeg) -> list[str]:
         # quello che un lettore non sa calcolare dai punti di controllo: estremi,
         # ingombro, lunghezza (sulla curva, non sul poligono — D42). I dati
         # esatti solo se chiesti: a un lettore non servono, e pesano.

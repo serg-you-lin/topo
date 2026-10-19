@@ -21,7 +21,7 @@ MAX_GAP = 0.5
 
 
 class TestGhostLoop(unittest.TestCase):
-    """15 edge (2 ArcSeg + 13 SplineSeg) di un solo foro della vista
+    """15 edge (2 ArcSeg + 13 BSplineSeg) di un solo foro della vista
     isometrica di anch_02: un'ellisse proiettata pulita (2 spline che si
     chiudono da estremo a estremo). Preesistente, non introdotto dal lavoro
     PDF né da D98-D101 (bisecato su 1b5b02e, D99: identico)."""
@@ -30,7 +30,9 @@ class TestGhostLoop(unittest.TestCase):
         doc = topo_dxf.load_dxf(str(FIXTURES / "island_ghost_loop.dxf"), tolerance=TOLERANCE)
         reading = read_island(doc.edges, tolerance=TOLERANCE, max_gap=MAX_GAP)
         self.assertIsNotNone(reading.outer)
-        self.assertAlmostEqual(reading.outer.polygon.area, 16.247, places=2)
+        # 16.289 a discretizzazione fine; 16.247 finché le spline usavano i
+        # punti di ezdxf (D135)
+        self.assertAlmostEqual(reading.outer.polygon.area, 16.287, places=2)
         # oggi: 1 giro fantasma (~11 mm^2, 2 ArcSeg + spline seghettate) annidato
         # nello stesso punto — non un buco vero, un artefatto del noding
         self.assertEqual(len(reading.inner_loops), 0,
@@ -47,7 +49,8 @@ class TestTangentSpike(unittest.TestCase):
         doc = topo_dxf.load_dxf(str(FIXTURES / "island_tangent_spike.dxf"), tolerance=TOLERANCE)
         reading = read_island(doc.edges, tolerance=TOLERANCE, max_gap=MAX_GAP)
         self.assertIsNotNone(reading.outer)
-        self.assertAlmostEqual(reading.outer.polygon.area, 1011.27, places=1)
+        # 1011.359 a discretizzazione fine; 1011.27 coi punti di ezdxf (D135)
+        self.assertAlmostEqual(reading.outer.polygon.area, 1011.35, places=1)
         max_x = max(x for x, _ in reading.outer.polygon.exterior.coords)
         # pulito (D99) = 1506.30; rotto (D100, oggi) = 1506.63 (spike di 0.33mm)
         self.assertLess(max_x, 1506.4,

@@ -15,7 +15,7 @@ import math
 from typing import List, Optional, Tuple
 
 from .segments import (
-    ArcSeg, CircleSeg, EllipseSeg, LineSeg, Point, SplineSeg, _bspline_find_span,
+    ArcSeg, CircleSeg, EllipseSeg, LineSeg, Point, BSplineSeg, _bspline_find_span,
 )
 
 _TWO_PI = 2 * math.pi
@@ -35,7 +35,7 @@ def sub_segment(seg, a: Point, b: Point, via: Point):
         return LineSeg(start=_on_line(seg, a), end=_on_line(seg, b))
     if isinstance(seg, (ArcSeg, CircleSeg, EllipseSeg)):
         return _sub_angular(seg, a, b, via)
-    if isinstance(seg, SplineSeg):
+    if isinstance(seg, BSplineSeg):
         return _sub_spline(seg, a, b)
     return None
 
@@ -112,7 +112,7 @@ def _angular(seg, lo: float, hi: float, ccw: bool):
 # B-spline
 # ---------------------------------------------------------------------------
 
-def _sub_spline(seg: SplineSeg, a: Point, b: Point) -> Optional[SplineSeg]:
+def _sub_spline(seg: BSplineSeg, a: Point, b: Point) -> Optional[BSplineSeg]:
     if seg.periodic or not seg.knots or len(seg.control_points) < 2:
         return None
     p = seg.degree
@@ -133,17 +133,16 @@ def _sub_spline(seg: SplineSeg, a: Point, b: Point) -> Optional[SplineSeg]:
     sub_knots = [ta] * (p + 1) + inner + [tb] * (p + 1)
     first = last_a - p
     sub_cpw = cpw[first:first + len(sub_knots) - p - 1]
-    out = SplineSeg(
+    out = BSplineSeg(
         degree=p,
         control_points=[(x / w, y / w) for x, y, w in sub_cpw],
         knots=sub_knots,
         weights=[w for _, _, w in sub_cpw] if seg.weights else None,
-        flags=seg.flags & ~0b11,   # né chiusa né periodica: è un tratto
     )
     return out.reversed() if reverse else out
 
 
-def _spline_param(seg: SplineSeg, pt: Point, lo: float, hi: float) -> float:
+def _spline_param(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> float:
     """Parametro del punto della spline più vicino a `pt`: campioni, poi
     ricerca ternaria fra i due vicini del migliore."""
     step = (hi - lo) / _SAMPLES

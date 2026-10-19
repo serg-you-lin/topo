@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 import math
 from types import SimpleNamespace
 
-from topo.core.primitives import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg
+from topo.core.primitives import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg
 from topo.core.topology.edge import Edge
 from topo_dxf.parser import DxfEntityDispatcher
 from topo.core.topology.loop_finder import segments_from_loop
@@ -195,16 +195,12 @@ class MockMSP:
         spline.dxf = SimpleNamespace(
             degree=None,
             flags=0,
-            knot_tolerance=None,
-            fit_tolerance=None,
-            control_point_tolerance=None,
             layer=dxfattribs.get("layer") if dxfattribs else None,
             color=dxfattribs.get("color") if dxfattribs else None,
         )
         spline.control_points = []
         spline.knots = []
         spline.weights = []
-        spline.fit_points = []
         self.entities.append({
             'type': 'SPLINE',
             'entity': spline,
@@ -468,14 +464,14 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertAlmostEqual(end1[1], 0.0)
 
     def test_007_loop_con_spline(self):
-        """Loop con SPLINE → SplineSeg."""
+        """Loop con SPLINE → BSplineSeg."""
         spline = make_spline_entity([(0, 0), (0, 50), (0, 100)])
         loop = [
             (make_edge(spline), False),
             (make_edge(make_line(0, 100, 100, 100)), False),
         ]
         result = segments_from_loop(loop)
-        spline_prims = [p for p in result if isinstance(p, SplineSeg)]
+        spline_prims = [p for p in result if isinstance(p, BSplineSeg)]
         self.assertEqual(len(spline_prims), 1)
 
     def test_008_loop_ottimizzazione_polyline_singola(self):
@@ -640,7 +636,7 @@ class TestWriteContourToMsp(unittest.TestCase):
         """Spline singola → esportata come SPLINE nativa."""
         contour = MagicMock()
         contour.segments = [
-            SplineSeg(degree=0, control_points=[(0, 0), (10, 0)], knots=[], weights=None)
+            BSplineSeg(degree=0, control_points=[(0, 0), (10, 0)], knots=[], weights=None)
         ]
         result = write_segments(contour.segments, self.msp, "TEST")
         self.assertIsNotNone(result)

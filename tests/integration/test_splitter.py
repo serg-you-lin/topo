@@ -441,36 +441,13 @@ class TestIntegrationContours(unittest.TestCase):
         return _read_children(out_dir)
 
     def _spline_signature(self, spline):
+        # solo la geometria (MAP.md D135): flag, tolleranze, fit points e
+        # tangenti del file sorgente non fanno parte della curva
         cps = tuple((round(float(p[0]), 6), round(float(p[1]), 6), round(float(p[2]), 6))
                     for p in spline.control_points)
         knots = tuple(round(float(k), 9) for k in spline.knots)
         weights = tuple(round(float(w), 9) for w in spline.weights)
-        fit_points = tuple((round(float(p[0]), 6), round(float(p[1]), 6), round(float(p[2]), 6))
-                           for p in spline.fit_points)
-        start_tangent = None
-        if spline.dxf.hasattr("start_tangent"):
-            st = spline.dxf.start_tangent
-            start_tangent = (round(float(st.x), 6), round(float(st.y), 6), round(float(st.z), 6))
-        end_tangent = None
-        if spline.dxf.hasattr("end_tangent"):
-            et = spline.dxf.end_tangent
-            end_tangent = (round(float(et.x), 6), round(float(et.y), 6), round(float(et.z), 6))
-        knot_tol = float(spline.dxf.knot_tolerance)
-        fit_tol = float(spline.dxf.fit_tolerance)
-        cp_tol = float(spline.dxf.control_point_tolerance)
-        return (
-            int(spline.dxf.degree),
-            int(spline.dxf.flags),
-            cps,
-            knots,
-            weights,
-            fit_points,
-            start_tangent,
-            end_tangent,
-            knot_tol,
-            fit_tol,
-            cp_tol,
-        )
+        return (int(spline.dxf.degree), cps, knots, weights)
 
     def test_001_lwpolyline_outer_chiusa(self):
         """LWPOLYLINE su OuterContour nei figli è closed=True."""

@@ -1,7 +1,7 @@
 """
 topo_dxf/exporter.py
 --------------------
-Esporta primitive geometriche pure (LineSeg, ArcSeg, SplineSeg) in formato DXF.
+Esporta primitive geometriche pure (LineSeg, ArcSeg, BSplineSeg) in formato DXF.
 Unico file che tocca ezdxf per il write-back.
 """
 
@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 from typing import List, Optional, Tuple
 
-from topo.primitives import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg, segment_endpoints
+from topo.primitives import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints
 from topo.model import EdgeStyle
 
 _STANDARD_LINETYPES = frozenset({"BYLAYER", "BYBLOCK", "CONTINUOUS"})
@@ -121,11 +121,11 @@ def segments_to_pts_with_bulge(segments: list) -> list:
 # Write-back — unico punto che tocca ezdxf per le forme chiuse
 # ---------------------------------------------------------------------------
 
-def _add_spline(spline: SplineSeg, msp, layer: str,
+def _add_spline(spline: BSplineSeg, msp, layer: str,
                  style: Optional[EdgeStyle] = None) -> object:
     """
-    Materializza una SplineSeg come SPLINE nativa, ricostruita dalla primitiva
-    (control points / knots / weights / degree / tangenti) — non è una copia
+    Materializza una BSplineSeg come SPLINE nativa, ricostruita dalla primitiva
+    (control points / knots / weights / degree) — non è una copia
     dell'entità sorgente, è la stessa curva riespressa. Identico trattamento a
     quello della spline chiusa singola.
     """
@@ -140,28 +140,11 @@ def _add_spline(spline: SplineSeg, msp, layer: str,
         entity.knots = [float(k) for k in spline.knots]
     if spline.weights:
         entity.weights = [float(w) for w in spline.weights]
-    if spline.fit_points:
-        entity.fit_points = [
-            (float(p[0]), float(p[1]), float(p[2]))
-            for p in spline.fit_points
-        ]
-
-    flags = int(spline.flags or 0)
+    flags = 0
     if spline.closed:    flags |= 1
     if spline.periodic:  flags |= 2
     if spline.weights:   flags |= 4
     entity.dxf.flags = flags
-
-    if spline.knot_tolerance is not None:
-        entity.dxf.knot_tolerance = float(spline.knot_tolerance)
-    if spline.fit_tolerance is not None:
-        entity.dxf.fit_tolerance = float(spline.fit_tolerance)
-    if spline.control_point_tolerance is not None:
-        entity.dxf.control_point_tolerance = float(spline.control_point_tolerance)
-    if spline.start_tangent is not None:
-        entity.dxf.start_tangent = tuple(float(v) for v in spline.start_tangent)
-    if spline.end_tangent is not None:
-        entity.dxf.end_tangent = tuple(float(v) for v in spline.end_tangent)
 
     return entity
 
@@ -199,8 +182,8 @@ def write_segments(segments: List, msp, layer: str, styles: Optional[List] = Non
 
     - CircleSeg → CIRCLE
     - EllipseSeg → ELLIPSE nativa
-    - SplineSeg singola → SPLINE nativa
-    - SplineSeg mista a linee/archi → SPLINE native + LWPOLYLINE aperte che
+    - BSplineSeg singola → SPLINE nativa
+    - BSplineSeg mista a linee/archi → SPLINE native + LWPOLYLINE aperte che
       condividono gli endpoint (il loop chiuso è dato dall'insieme delle
       entità, non discretizziamo mai la spline in polilinea). Restituisce la
       lista delle entità create.
@@ -232,10 +215,10 @@ def write_segments(segments: List, msp, layer: str, styles: Optional[List] = Non
     if len(segments) == 1 and isinstance(segments[0], EllipseSeg):
         return _add_ellipse(segments[0], msp, layer, style)
 
-    if len(segments) == 1 and isinstance(segments[0], SplineSeg):
+    if len(segments) == 1 and isinstance(segments[0], BSplineSeg):
         return _add_spline(segments[0], msp, layer, style)
 
-    if any(isinstance(s, (SplineSeg, EllipseSeg)) for s in segments):
+    if any(isinstance(s, (BSplineSeg, EllipseSeg)) for s in segments):
         # Contorno misto: nessuna entità DXF singola può contenere insieme una
         # spline/ellisse e una polilinea. Lo materializziamo come più entità
         # native (SPLINE/ELLIPSE + LWPOLYLINE aperte) con endpoint coincidenti
@@ -281,7 +264,7 @@ def write_native_segments(segments: List, msp, layer: str, styles: Optional[List
 
       - LineSeg    → LINE
       - ArcSeg     → ARC
-      - SplineSeg  → SPLINE nativa (mai discretizzata)
+      - BSplineSeg  → SPLINE nativa (mai discretizzata)
       - CircleSeg  → CIRCLE
       - EllipseSeg → ELLIPSE nativa (mai discretizzata a spline)
 
@@ -320,7 +303,7 @@ def write_native_segments(segments: List, msp, layer: str, styles: Optional[List
             ))
         elif isinstance(seg, EllipseSeg):
             created.append(_add_ellipse(seg, msp, layer, style))
-        elif isinstance(seg, SplineSeg):
+        elif isinstance(seg, BSplineSeg):
             created.append(_add_spline(seg, msp, layer, style))
 
     return created
@@ -341,7 +324,7 @@ def write_open_segments(segments: List, msp, layer: str, styles: Optional[List] 
     fedele:
 
       - LineSeg / ArcSeg → una LWPOLYLINE aperta con bulge
-      - SplineSeg        → SPLINE nativa (una per spline)
+      - BSplineSeg        → SPLINE nativa (una per spline)
       - CircleSeg        → CIRCLE
       - EllipseSeg       → ELLIPSE nativa
 
@@ -396,7 +379,7 @@ def write_open_segments(segments: List, msp, layer: str, styles: Optional[List] 
             ))
         elif isinstance(seg, EllipseSeg):
             created.append(_add_ellipse(seg, msp, layer, style))
-        elif isinstance(seg, SplineSeg):
+        elif isinstance(seg, BSplineSeg):
             created.append(_add_spline(seg, msp, layer, style))
 
     _flush_poly_run()

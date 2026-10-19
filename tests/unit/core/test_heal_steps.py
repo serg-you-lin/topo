@@ -20,7 +20,7 @@ from topo.model.document import Document
 from topo.model.curve import ClosedCurve, OpenCurve
 from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import ArcSeg, LineSeg, CircleSeg, SplineSeg
+from topo.core.primitives.segments import ArcSeg, LineSeg, CircleSeg, BSplineSeg
 
 EXAMPLES = project_root / "tests" / "data"
 
@@ -94,7 +94,7 @@ class TestDanglingSplines(unittest.TestCase):
 
     def test_001_spline_con_estremo_libero(self):
         spline = Edge(role=ContourRole.UNKNOWN, start=(0.0, 0.0), end=(5.0, 5.0),
-                      segment=SplineSeg(degree=1, control_points=[(0.0, 0.0), (5.0, 5.0)],
+                      segment=BSplineSeg(degree=1, control_points=[(0.0, 0.0), (5.0, 5.0)],
                                         knots=[0, 0, 1, 1]))
         self.assertEqual(topo.steps.dangling_splines([spline]), [spline])
         self.assertEqual(topo.steps.dangling_splines(_square(0, 0, 10)), [])

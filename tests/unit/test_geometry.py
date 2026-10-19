@@ -359,11 +359,11 @@ class TestInterpolateBspline(unittest.TestCase):
 
     def _check_passes_through(self, pts, degree):
         from topo.core.geometry.points import interpolate_bspline
-        from topo.core.primitives.segments import SplineSeg
+        from topo.core.primitives.segments import BSplineSeg
         ctrl, knots = interpolate_bspline(pts, degree)
         self.assertEqual(len(ctrl), len(pts))
         self.assertEqual(len(knots), len(pts) + degree + 1)
-        curve = SplineSeg(degree=degree, control_points=ctrl, knots=knots)
+        curve = BSplineSeg(degree=degree, control_points=ctrl, knots=knots)
         from shapely.geometry import Point
         dense = LineString(curve.discretize(0.001))
         for p in pts:

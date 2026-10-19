@@ -53,7 +53,7 @@ immagine (PNG/JPG)
    │                                     (parametri di processo/CAM, non di
    │                                     topo; non ancora implementato)
    ▼
-[C] topo.simplify_points()          → LineSeg / SplineSeg per contorno
+[C] topo.simplify_points()          → LineSeg / BSplineSeg per contorno
    │
    ▼
 topo.load_geometry("spline") → topo.heal() → topo_dxf.to_dxf()

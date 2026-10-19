@@ -15,9 +15,9 @@ e stile.
 Quello che sta sotto `topo.core` è interno, senza garanzie.
 """
 from .core.primitives.segments import (
-    LineSeg, ArcSeg, CircleSeg, SplineSeg, EllipseSeg, segment_endpoints,
+    LineSeg, ArcSeg, CircleSeg, BSplineSeg, EllipseSeg, segment_endpoints,
 )
 from .core.primitives.trim import sub_segment
 
-__all__ = ["LineSeg", "ArcSeg", "CircleSeg", "SplineSeg", "EllipseSeg", "sub_segment",
+__all__ = ["LineSeg", "ArcSeg", "CircleSeg", "BSplineSeg", "EllipseSeg", "sub_segment",
            "segment_endpoints"]

@@ -5,7 +5,7 @@ import math
 import unittest
 
 import topo
-from topo.core.primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, SplineSeg
+from topo.core.primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, BSplineSeg
 from topo.core.geometry.shape import (
     CIRCLE, ELLIPSE, OTHER, POLYGON, RECTANGLE, STADIUM, ShapeKind, contour_shape,
 )
@@ -143,12 +143,11 @@ class TestShapeKindStabile(unittest.TestCase):
         # cerchio esatto come NURBS razionale quadratica: la regola legge le
         # primitive come sono, il riconoscimento è un passo del chiamante
         w = math.sqrt(2) / 2
-        spline = SplineSeg(
+        spline = BSplineSeg(
             degree=2,
             control_points=[(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0)],
             knots=[0, 0, 0, .25, .25, .5, .5, .75, .75, 1, 1, 1],
             weights=[1, w, 1, w, 1, w, 1, w, 1],
-            closed=True,
         )
         self.assertEqual(contour_shape([spline]).kind, OTHER)
 

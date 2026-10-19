@@ -1,7 +1,7 @@
 """
 topo_dxf/parser.py
 ------------------
-Traduce entità ezdxf in primitive geometriche pure (LineSeg, ArcSeg, SplineSeg).
+Traduce entità ezdxf in primitive geometriche pure (LineSeg, ArcSeg, BSplineSeg).
 Unico file che conosce ezdxf e il formato bulge DXF per il parsing.
 """
 
@@ -10,11 +10,7 @@ from __future__ import annotations
 import math
 from typing import List
 
-from topo.primitives import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg
-
-# Scarto massimo (mm) dei punti con cui ezdxf approssima una SPLINE: una scelta
-# del lettore DXF, non una tolleranza di topo.
-_FLATTENING_TOLERANCE = 0.01
+from topo.primitives import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg
 
 
 # ---------------------------------------------------------------------------
@@ -73,57 +69,32 @@ def _parse_arc(entity, rev) -> ArcSeg:
     return ArcSeg(center=(cx, cy), radius=r, start_angle=sa, end_angle=ea, ccw=ccw)
 
 
-def _parse_spline(entity, rev) -> SplineSeg:
+def _parse_spline(entity, rev) -> BSplineSeg:
+    """
+    Solo la geometria (MAP.md D135): grado, punti di controllo, nodi, pesi
+    così come sono scritti. Una SPLINE data per soli fit points (e tangenti),
+    o senza nodi, diventa punti di controllo e nodi qui, con la stessa
+    costruzione del CAD.
+    """
     try:
-        cps = [(float(p[0]), float(p[1]), float(p[2] if len(p) > 2 else 0.0)) for p in entity.control_points]
-        approx_points = [(float(p[0]), float(p[1])) for p in entity.flattening(_FLATTENING_TOLERANCE)]
-        knots = [float(k) for k in entity.knots]
-        weights = [float(w) for w in entity.weights] if len(entity.weights) else None
-        fit_points = [
-            (float(p[0]), float(p[1]), float(p[2] if len(p) > 2 else 0.0))
-            for p in entity.fit_points
-        ] if len(entity.fit_points) else None
-        flags = int(getattr(entity.dxf, "flags", 0) or 0)
-        periodic = bool(flags & 2)
-        closed = bool(getattr(entity, "closed", False) or (flags & 1))
-
-        start_tangent = None
-        if entity.dxf.hasattr("start_tangent"):
-            st = entity.dxf.start_tangent
-            start_tangent = (float(st.x), float(st.y), float(st.z))
-
-        end_tangent = None
-        if entity.dxf.hasattr("end_tangent"):
-            et = entity.dxf.end_tangent
-            end_tangent = (float(et.x), float(et.y), float(et.z))
+        if entity.control_point_count() and len(entity.knots):
+            seg = BSplineSeg(
+                degree=int(entity.dxf.degree),
+                control_points=[(float(p[0]), float(p[1])) for p in entity.control_points],
+                knots=[float(k) for k in entity.knots],
+                weights=[float(w) for w in entity.weights] if len(entity.weights) else None,
+            )
+        else:
+            bs = entity.construction_tool()
+            seg = BSplineSeg(
+                degree=int(bs.degree),
+                control_points=[(float(p[0]), float(p[1])) for p in bs.control_points],
+                knots=[float(k) for k in bs.knots()],
+                weights=[float(w) for w in bs.weights()] if bs.is_rational else None,
+            )
     except Exception:
-        cps = []
-        approx_points = []
-        knots = []
-        weights = None
-        fit_points = None
-        flags = 0
-        periodic = False
-        closed = False
-        start_tangent = None
-        end_tangent = None
-
-    seg = SplineSeg(
-        degree=int(getattr(entity.dxf, "degree", 3) or 3),
-        control_points=[(p[0], p[1]) for p in cps],
-        knots=knots,
-        weights=weights,
-        approx_points=approx_points or None,
-        fit_points=fit_points,
-        closed=closed,
-        periodic=periodic,
-        flags=flags,
-        knot_tolerance=float(entity.dxf.knot_tolerance) if entity.dxf.hasattr("knot_tolerance") else None,
-        fit_tolerance=float(entity.dxf.fit_tolerance) if entity.dxf.hasattr("fit_tolerance") else None,
-        control_point_tolerance=float(entity.dxf.control_point_tolerance) if entity.dxf.hasattr("control_point_tolerance") else None,
-        start_tangent=start_tangent,
-        end_tangent=end_tangent,
-    )
+        seg = BSplineSeg(degree=int(getattr(entity.dxf, "degree", 3) or 3),
+                         control_points=[], knots=[])
     return seg.reversed() if rev else seg
 
 

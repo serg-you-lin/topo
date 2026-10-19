@@ -23,7 +23,7 @@ from typing import Dict, Iterable, List, Tuple
 from ..topology.edge import Edge
 from ..primitives.segments import (
     angle_from_start, point_on_circle,
-    LineSeg, ArcSeg, CircleSeg, SplineSeg, EllipseSeg, DEFAULT_TOLERANCE,
+    LineSeg, ArcSeg, CircleSeg, BSplineSeg, EllipseSeg, DEFAULT_TOLERANCE,
 )
 
 Point = Tuple[float, float]
@@ -75,7 +75,7 @@ def outer_candidate_edges(edges: Iterable[Edge]) -> OuterCandidates:
     di quote-evento consecutive — estremi dei segmenti, estremi degli archi
     lungo l'asse — e per ciascuna il primo e l'ultimo punto d'intersezione.
     L'Edge che li produce è candidato. LineSeg/ArcSeg/CircleSeg analitici,
-    SplineSeg/EllipseSeg discretizzati.
+    BSplineSeg/EllipseSeg discretizzati.
     """
     edges = list(edges)
     pieces = [p for edge in edges for p in _pieces(edge)]
@@ -118,7 +118,7 @@ def _pieces(edge: Edge) -> list:
         return [_Arc(edge, seg.center, seg.radius, seg.start_angle, seg._sweep(), seg.ccw)]
     if isinstance(seg, CircleSeg):
         return [_Arc(edge, seg.center, seg.radius, 0.0, 2 * math.pi, True)]
-    if isinstance(seg, (SplineSeg, EllipseSeg)):
+    if isinstance(seg, (BSplineSeg, EllipseSeg)):
         pts = seg.discretize(DEFAULT_TOLERANCE)
         return [_Line(edge, pts[i], pts[i + 1]) for i in range(len(pts) - 1)]
     return []
