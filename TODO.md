@@ -207,6 +207,21 @@ primitive di topo.
 
 Poi topo 1.0.0, e snapbend 1.0.0 dietro.
 
+- **Disegni di `island()` senza cornice** (Federico, 19 ottobre). I test di
+  island girano sui disegni grezzi senza regole di ruolo: la cornice diventa
+  l'isola più esterna e ogni vista un suo inner. Nessun consumer chiama
+  island così — la cornice la riconosce snapdraw prima (notazione di disegno,
+  significato del consumer, D90) — quindi i golden provano due cose insieme
+  e una non è di topo. Federico toglie le cornici; proposta: copie senza
+  cornice per i golden di island, gli originali restano per i testi e per
+  snapdraw (gli `anch_*` servono anche ad `anchor_texts`, e i testi del
+  cartiglio sparirebbero). Poi i golden di island si rifanno da zero su
+  quelle, dopo i dubbi D103. Fino ad allora: `KNOWN_FAILING` in
+  `test_golden_anchoring` (anch_02–07) e `test_text_budget` (anch_02, anch_06),
+  fallimenti attesi, mai rigenerati.
+  Non è una richiesta a topo la "provenienza" dei pezzi tagliati (quale
+  entità del file erano): è un fatto di come il file è stato disegnato
+  (regola 1); il fatto geometrico — stessa retta, stesso nodo — c'è già.
 - **Trovati con D145 (griglia degli archi), 19 ottobre — tutti per la
   promessa geometrica di D143:**
   - `rect_with_countersink`: `cluster.area` non toglie uno dei due inner
