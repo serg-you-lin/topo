@@ -40,7 +40,7 @@ def num_segments_for_bulge(bulge: float) -> int:
 # Tracce aperte — vertici / lunghezza / tipo da segmenti nativi
 # ---------------------------------------------------------------------------
 # Una traccia aperta (bending line, incisione, frammento non chiuso) nel modello
-# è una lista di segmenti nativi (LineSeg / ArcSeg / SplineSeg / CircleSeg).
+# è una lista di segmenti nativi (LineSeg / ArcSeg / BSplineSeg / CircleSeg).
 # `pts`, `length`, `shape_type` sono valori DERIVATI da quei segmenti: qui, non
 # stoccati sul modello. Chi li consuma — detect_flat(), write._write_trash,
 # inspect() — li ricava con queste funzioni.
@@ -86,8 +86,8 @@ def track_shape_type(pts) -> str:
 def segment_length(segment) -> float:
     """
     Lunghezza reale di una primitiva nativa singola (`LineSeg`/`ArcSeg`/
-    `SplineSeg`/`CircleSeg`/`EllipseSeg`). `LineSeg`/`ArcSeg`/`CircleSeg`
-    hanno una formula chiusa; `SplineSeg`/`EllipseSeg` (curvatura non
+    `BSplineSeg`/`CircleSeg`/`EllipseSeg`). `LineSeg`/`ArcSeg`/`CircleSeg`
+    hanno una formula chiusa; `BSplineSeg`/`EllipseSeg` (curvatura non
     costante, nessuna formula chiusa comoda) riusano la stessa polilinea di
     `discretize()`, sommata come `track_length`.
     """

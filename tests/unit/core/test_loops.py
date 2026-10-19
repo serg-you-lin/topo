@@ -45,13 +45,13 @@ def _edge(start, end):
 
 def _arc_edge(start, end, arc_pts):
     """Crea un Edge che discretizza un arco (arc_pts da start a end)."""
-    # Usiamo SplineSeg per rappresentare la discretizzazione dell'arco
-    from topo.core.primitives.segments import SplineSeg
+    # Usiamo BSplineSeg per rappresentare la discretizzazione dell'arco
+    from topo.core.primitives.segments import BSplineSeg
     return Edge(
         role=ContourRole.UNKNOWN,
         start=start,
         end=end,
-        segment=SplineSeg(
+        segment=BSplineSeg(
             degree=1,
             control_points=arc_pts,
             knots=[],

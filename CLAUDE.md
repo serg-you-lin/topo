@@ -44,7 +44,7 @@ snapbend's `tests/gen_index.py` — change it in one, copy to the other.
 
 ## Non-negotiables
 
-1. **Reason in topo's own primitives.** `Edge`, `LineSeg`/`ArcSeg`/`SplineSeg`/
+1. **Reason in topo's own primitives.** `Edge`, `LineSeg`/`ArcSeg`/`BSplineSeg`/
    `CircleSeg`/`EllipseSeg`, `role`/`ContourRole`, `closed_path`. A source-format
    detail — which DXF layer something sits on, `LINE` vs `LWPOLYLINE`, how the CAD
    author grouped entities — is a fact about how *one file* was authored, never

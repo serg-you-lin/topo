@@ -14,7 +14,7 @@ from typing import List, Optional, Sequence, Tuple
 from ezdxf.colors import aci2rgb, int2rgb
 
 # Solo nomi pubblici di topo: l'adapter è un consumer come un altro (MAP.md D125)
-from topo.primitives import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg
+from topo.primitives import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg
 from topo.model import Edge, EdgeStyle, RoleRule, resolve_role
 
 from .parser import DxfEntityDispatcher
@@ -183,7 +183,7 @@ def _segment_key(segment) -> tuple:
             round(segment.end_angle, 6),
             segment.ccw,
         )
-    if isinstance(segment, SplineSeg):
+    if isinstance(segment, BSplineSeg):
         return (
             "SPLINE",
             int(segment.degree),
@@ -192,7 +192,6 @@ def _segment_key(segment) -> tuple:
             tuple(round(w, 9) for w in (segment.weights or [])),
             bool(segment.closed),
             bool(segment.periodic),
-            int(segment.flags),
         )
     if isinstance(segment, CircleSeg):
         return (

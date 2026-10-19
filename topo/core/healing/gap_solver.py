@@ -31,7 +31,7 @@ from ..geometry.intersections import (
     _distance, _line_intersection, _circle_line_intersections,
     _circle_circle_intersections, _closest_to,
 )
-from ..primitives.segments import LineSeg, ArcSeg, SplineSeg, segment_endpoints
+from ..primitives.segments import LineSeg, ArcSeg, BSplineSeg, segment_endpoints
 from ..topology.edge import Edge
 from ...model.role import ContourRole
 
@@ -247,7 +247,7 @@ def local_gap_fixes(fixes: List[GapFix], max_move: float) -> List[GapFix]:
 # Ponte Edge <-> GapFix — geometria pura, zero formato sorgente
 # ---------------------------------------------------------------------------
 
-_KIND_BY_SEGMENT = {LineSeg: "line", ArcSeg: "arc", SplineSeg: "spline"}
+_KIND_BY_SEGMENT = {LineSeg: "line", ArcSeg: "arc", BSplineSeg: "spline"}
 
 
 def _endpoint_meta(segment) -> dict:

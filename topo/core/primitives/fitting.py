@@ -6,7 +6,7 @@ di punti ordinata e densa — l'inverso della discretizzazione di
 core/primitives/segments.py. Il fit ad arco/cerchio è opt-in
 (`arc_fit_tolerance`, default `None`): un tratto curvo diventa `ArcSeg`/
 `CircleSeg` solo se il chiamante chiede esplicitamente la tolleranza entro cui
-accettarlo, altrimenti resta sempre una `SplineSeg` come prima.
+accettarlo, altrimenti resta sempre una `BSplineSeg` come prima.
 
     detect_corners  — per ogni punto, True se è uno spigolo (angolo vivo)
     fit_primitives  — spezza la sequenza sui corner e rifitta ogni tratto
@@ -30,7 +30,7 @@ from __future__ import annotations
 import math
 from typing import List, Optional, Tuple, Union
 
-from .segments import ArcSeg, CircleSeg, LineSeg, SplineSeg, Point
+from .segments import ArcSeg, CircleSeg, LineSeg, BSplineSeg, Point
 from ..geometry.points import (
     DEFAULT_ANGLE_THRESHOLD_DEG, DEFAULT_DUPLICATE_TOLERANCE, detect_corners,
     drop_duplicate_points, fit_circle_kasa, arc_angles, interpolate_bspline,
@@ -108,24 +108,23 @@ def _try_fit_arc(
     return ArcSeg(center=center, radius=radius, start_angle=start_angle, end_angle=end_angle, ccw=ccw)
 
 
-def _fit_spline(points: List[Point], degree: int, closed: bool = False) -> SplineSeg:
+def _fit_spline(points: List[Point], degree: int) -> BSplineSeg:
     """
-    Un solo SplineSeg passante per `points` (curva di fit globale, non ai
+    Un solo BSplineSeg passante per `points` (curva di fit globale, non ai
     minimi quadrati). Niente `fit_points` in uscita (MAP.md D41): control
     points + nodi bastano a definire la curva per intero, `fit_points` è solo
     metadato opzionale per un editor — averlo comunque, insieme ai control
     points, in un DXF ha reso alcuni lettori CAM incapaci di leggere la
     spline (letto: SigmaNest), forse perché provano a ricostruire la curva
     dai fit points con una loro logica invece di usare quella già data.
-    `closed` va passato dal chiamante: solo lui sa se questo tratto è
-    l'intero contorno chiuso o solo un arco fra due spigoli.
+    Se `points` torna al primo punto la spline è chiusa (`closed` si ricava
+    dalla geometria, D135).
     """
     control_points, knots = interpolate_bspline(points, degree)
-    return SplineSeg(
+    return BSplineSeg(
         degree=degree,
         control_points=control_points,
         knots=knots,
-        closed=closed,
     )
 
 
@@ -137,7 +136,7 @@ def fit_primitives(
     spline_degree: int = DEFAULT_SPLINE_DEGREE,
     duplicate_tolerance: float = DEFAULT_DUPLICATE_TOLERANCE,
     arc_fit_tolerance: Optional[float] = DEFAULT_ARC_FIT_TOLERANCE,
-) -> List[Union[LineSeg, ArcSeg, CircleSeg, SplineSeg]]:
+) -> List[Union[LineSeg, ArcSeg, CircleSeg, BSplineSeg]]:
     """
     Spezza `points` sui corner marcati in `is_corner` e rifitta ogni tratto: un
     tratto con meno di `min_points_for_spline` punti diventa una sequenza di
@@ -145,7 +144,7 @@ def fit_primitives(
     `arc_fit_tolerance` è impostato e il tratto sta entro quella tolleranza su
     un cerchio a raggio costante, diventa un `ArcSeg` (o un `CircleSeg` se il
     tratto si richiude su se stesso); in tutti gli altri casi un unico
-    `SplineSeg` di grado `spline_degree` passante per tutti i punti del tratto.
+    `BSplineSeg` di grado `spline_degree` passante per tutti i punti del tratto.
 
     Args:
         points:                 stessa sequenza passata a `detect_corners`
@@ -164,12 +163,7 @@ def fit_primitives(
                                   non lo passa esplicitamente.
     """
     stretches = _split_into_stretches(points, is_corner, closed)
-    # Un solo tratto con `closed=True` è l'intero contorno (MAP.md D41: mai
-    # più di uno per costruzione di `_split_into_stretches`, sia con zero
-    # spigoli sia con un solo spigolo che chiude il giro su se stesso) — è
-    # l'unico caso in cui la spline risultante deve portare `closed=True`.
-    whole_loop_as_one_stretch = closed and len(stretches) == 1
-    primitives: List[Union[LineSeg, ArcSeg, CircleSeg, SplineSeg]] = []
+    primitives: List[Union[LineSeg, ArcSeg, CircleSeg, BSplineSeg]] = []
 
     for stretch in stretches:
         pts = drop_duplicate_points(stretch, duplicate_tolerance)
@@ -186,7 +180,7 @@ def fit_primitives(
                 primitives.append(arc_or_circle)
                 continue
 
-        primitives.append(_fit_spline(pts, spline_degree, closed=whole_loop_as_one_stretch))
+        primitives.append(_fit_spline(pts, spline_degree))
 
     return primitives
 
@@ -203,7 +197,7 @@ def simplify_points(
     spline_degree: int = DEFAULT_SPLINE_DEGREE,
     duplicate_tolerance: float = DEFAULT_DUPLICATE_TOLERANCE,
     arc_fit_tolerance: Optional[float] = DEFAULT_ARC_FIT_TOLERANCE,
-) -> List[Union[LineSeg, ArcSeg, CircleSeg, SplineSeg]]:
+) -> List[Union[LineSeg, ArcSeg, CircleSeg, BSplineSeg]]:
     """
     `detect_corners` + `fit_primitives` in un solo passo — comodo quando serve
     solo il risultato finale. Vedi le due funzioni per il significato dei

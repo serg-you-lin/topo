@@ -9,7 +9,7 @@ import math
 import unittest
 
 from topo.core.primitives.segments import (
-    ArcSeg, CircleSeg, EllipseSeg, LineSeg, SplineSeg, segment_endpoints,
+    ArcSeg, CircleSeg, EllipseSeg, LineSeg, BSplineSeg, segment_endpoints,
 )
 from topo.core.primitives.trim import sub_segment
 
@@ -69,7 +69,7 @@ class TestSubSegment(unittest.TestCase):
         self._assert_on(piece, lambda p: abs((p[0] / 10) ** 2 + (p[1] / 5) ** 2 - 1), tol=1e-6)
 
     def test_spline_tratto_esatto_nei_due_versi(self):
-        spline = SplineSeg(degree=3,
+        spline = BSplineSeg(degree=3,
                            control_points=[(0, 0), (2, 4), (5, -1), (8, 3), (10, 0), (13, 2)],
                            knots=[0, 0, 0, 0, 0.3, 0.6, 1, 1, 1, 1])
         a, b = spline._evaluate(0.2), spline._evaluate(0.75)
@@ -85,7 +85,7 @@ class TestSubSegment(unittest.TestCase):
             self.assertTrue(_close(piece._evaluate(t), spline._evaluate(t), 1e-9))
 
     def test_spline_razionale(self):
-        spline = SplineSeg(degree=2, control_points=[(0, 0), (5, 5), (10, 0)],
+        spline = BSplineSeg(degree=2, control_points=[(0, 0), (5, 5), (10, 0)],
                            knots=[0, 0, 0, 1, 1, 1], weights=[1.0, 0.5, 1.0])
         a, b = spline._evaluate(0.25), spline._evaluate(0.8)
         piece = sub_segment(spline, a, b, None)
@@ -94,9 +94,12 @@ class TestSubSegment(unittest.TestCase):
             self.assertTrue(_close(piece._evaluate(t), spline._evaluate(t), 1e-9))
 
     def test_spline_periodica_non_si_taglia(self):
-        spline = SplineSeg(degree=3, control_points=[(0, 0), (1, 1), (2, 0), (3, 1)],
-                           knots=[0, 1, 2, 3, 4, 5, 6, 7], periodic=True)
-        self.assertIsNone(sub_segment(spline, (0, 0), (3, 1), None))
+        # cubica uniforme coi primi tre punti ripetuti in coda: si richiude
+        # senza un punto di controllo sul giunto (periodic si ricava, D135)
+        cps = [(0, 0), (4, 0), (4, 4), (0, 4)]
+        spline = BSplineSeg(degree=3, control_points=cps + cps[:3], knots=list(range(11)))
+        self.assertTrue(spline.periodic)
+        self.assertIsNone(sub_segment(spline, spline._evaluate(3.5), spline._evaluate(5.5), None))
 
 
 if __name__ == "__main__":

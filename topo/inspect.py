@@ -110,7 +110,7 @@ def inspect_document(doc, graph: bool = True, limit: Optional[int] = 60) -> None
 
 
 def _describe_segment(seg) -> str:
-    from .core.primitives.segments import LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg
+    from .core.primitives.segments import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg
 
     if seg is None:
         return "<nessun segmento>"
@@ -128,7 +128,7 @@ def _describe_segment(seg) -> str:
         semi_major = math.hypot(*seg.major_axis)
         return (f"ELLIPSE c={_p(seg.center)} a={semi_major:.2f} ratio={seg.ratio:.3f} "
                 f"sweep={sweep:.1f}° {'ccw' if seg.ccw else 'cw'}")
-    if isinstance(seg, SplineSeg):
+    if isinstance(seg, BSplineSeg):
         return (f"SPLINE deg={seg.degree} cp={len(seg.control_points)} "
                 f"closed={seg.closed} periodic={seg.periodic}")
     return type(seg).__name__

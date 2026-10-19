@@ -44,8 +44,7 @@ class TestGeometryReader(unittest.TestCase):
             GeometryReader([{"type": "hexagon"}]).to_edges()
 
     def test_spline_edge_endpoints_from_control_points(self):
-        # senza fit_points/approx_points, segment_endpoints ricade sui
-        # control_points: primo e ultimo control point sono gli estremi.
+        # spline clamped: primo e ultimo control point sono gli estremi.
         edge = GeometryReader([])._spline_edge(
             {
                 "control_points": [(0, 0), (5, 10), (10, 0)],
@@ -140,14 +139,14 @@ class TestLoadGeometryConeSector(unittest.TestCase):
 class TestLoadGeometrySplineFromSimplifyPoints(unittest.TestCase):
     """
     Il caso reale che ha aperto il tipo "spline": un contorno ricostruito da
-    topo.simplify_points() (Smoother) — la SplineSeg risultante deve poter
+    topo.simplify_points() (Smoother) — la BSplineSeg risultante deve poter
     tornare in load_geometry() senza reinventare i suoi campi a mano.
     """
 
     def setUp(self):
         # poligono regolare a 16 lati: angoli interni (157.5°) ben sopra la
         # soglia di default di simplify_points -> nessuno spigolo rilevato,
-        # l'intero contorno rifitta in un'unica SplineSeg.
+        # l'intero contorno rifitta in un'unica BSplineSeg.
         n, r = 16, 50.0
         points = [
             (r * math.cos(2 * math.pi * i / n), r * math.sin(2 * math.pi * i / n))
@@ -163,8 +162,6 @@ class TestLoadGeometrySplineFromSimplifyPoints(unittest.TestCase):
                 "control_points": seg.control_points,
                 "knots": seg.knots,
                 "degree": seg.degree,
-                "fit_points": seg.fit_points,
-                "closed": seg.closed,
                 "role": "outer",
             },
         ])

@@ -133,7 +133,7 @@ computer vision). Chi chiama non importa nessun tipo interno di topo.
 
 | parametro | significato |
 |---|---|
-| `entities` | lista di dict, uno per entità geometrica. `type` supportati: `line` (`start`, `end`), `arc` (`center`, `radius`, `start_angle`/`end_angle` **in gradi**, `ccw`), `circle` (`center`, `radius`), `polygon` (`points` — sempre chiuso, D96), `spline` (`control_points`, `knots`, `degree`, più `weights`/`fit_points`/`closed` opzionali — stessi campi di `SplineSeg`), `ellipse` (`center`, `major_axis` come **vettore** dal centro, più `ratio`/`start_param`/`end_param`/`ccw` opzionali — stessi campi di `EllipseSeg`, stessa parametrizzazione del gruppo DXF ELLIPSE; default = ellisse piena). `role` è opzionale su ogni entità — stesso vocabolario di `RoleRule.role` (`outer`, `hole`, `bending`, …); un valore diverso è conservato come slug di consumatore, non un errore. |
+| `entities` | lista di dict, uno per entità geometrica. `type` supportati: `line` (`start`, `end`), `arc` (`center`, `radius`, `start_angle`/`end_angle` **in gradi**, `ccw`), `circle` (`center`, `radius`), `polygon` (`points` — sempre chiuso, D96), `spline` (`control_points`, `knots`, `degree`, più `weights` opzionale — stessi campi di `BSplineSeg`, che porta solo la geometria: `closed`/`periodic` si ricavano, D135), `ellipse` (`center`, `major_axis` come **vettore** dal centro, più `ratio`/`start_param`/`end_param`/`ccw` opzionali — stessi campi di `EllipseSeg`, stessa parametrizzazione del gruppo DXF ELLIPSE; default = ellisse piena). `role` è opzionale su ogni entità — stesso vocabolario di `RoleRule.role` (`outer`, `hole`, `bending`, …); un valore diverso è conservato come slug di consumatore, non un errore. |
 | `tolerance` | tolleranza di arrotondamento dei nodi topologici — stesso significato di `topo_dxf.load_dxf(tolerance=...)`. |
 | `source_path` | etichetta libera per `Document.source_path`; non è un file, serve solo per diagnostica. |
 
@@ -151,7 +151,7 @@ topo_dxf.to_dxf(result)
 ```
 
 ```python
-# entità "spline" — i campi sono quelli di SplineSeg, presi 1:1
+# entità "spline" — i campi sono quelli di BSplineSeg, presi 1:1
 segments = topo.simplify_points(points, closed=True)
 doc = topo.load_geometry([
     {
@@ -159,8 +159,6 @@ doc = topo.load_geometry([
         "control_points": seg.control_points,
         "knots": seg.knots,
         "degree": seg.degree,
-        "fit_points": seg.fit_points,
-        "closed": seg.closed,
         "role": "outer",
     }
     for seg in segments
@@ -335,7 +333,7 @@ topo.steps.build_hierarchy(features, label="", source_file="", is_structural=Non
 | `split_labeled` | `list[Edge]` → `(restano, etichettati)` | mette da parte gli edge con un ruolo già deciso e non strutturale (D30). Senza `is_structural`, solo `outer`/`inner` sono strutturali. |
 | `close_near_full_arcs` | `list[Edge]` → `(edge, n_chiusi)` | un `ArcSeg` coi capi liberi diventa `CircleSeg` solo se il gap fra i capi è entro `tolerance` **e** l'angolo mancante è entro `max_missing_angle` (`NEAR_FULL_ARC_MISSING` = 2°): la tolleranza dice se il buco è un gap, l'angolo se l'arco è un cerchio. `tolerance=math.inf` lascia solo l'angolo, per chi conosce il suo CAD (D112). |
 | `close_free_gaps` | `list[Edge]` → `list[Edge]` | chiude i gap fra estremi liberi entro `tolerance` (estensione all'intersezione reale o linea di congiunzione), accoppiati due a due per vicinanza: ogni estremo chiude al più un gap, col più vicino ancora libero, e mai con l'altro capo dello stesso edge. Un lato più corto della tolleranza resta (D112). |
-| `dangling_splines` | `list[Edge]` → `list[Edge]` | le `SplineSeg` aperte con un estremo non collegato — solo diagnostica. |
+| `dangling_splines` | `list[Edge]` → `list[Edge]` | le `BSplineSeg` aperte con un estremo non collegato — solo diagnostica. |
 | `find_non_contour_edges` | `list[Edge]` → `set[id(Edge)]` | edge che non chiudono un contorno (corde e ponti: catene fra due nodi di branching distinti, non sul bordo della faccia esterna, D111, D131), da tenere fuori dal grafo. `non_contour_candidates(doc)` è la stessa cosa su un documento. |
 | `find_joining_edges` | `list[Edge]`, `set[id]` → `list[Edge]` | fra i candidati, gli edge che uniscono due forme altrimenti staccate (tolti, i due estremi non si collegano più): heal() li segnala in un warning (D111). |
 | `free_ends` | `list[Edge]`, `epsilon` → `[(punto, mm)]` | gli estremi che nessun altro edge tocca, con la distanza dal nodo più vicino, dal più vicino; `epsilon` è quello del grafo su cui si sono chiusi i loop. heal() li segnala anche quando qualcosa si chiude (D111). |
@@ -453,7 +451,7 @@ topo.steps.refit_tessellations(edges, max_segment=0.1, min_run=10,
 | `read_islands` | `list[Edge]` → `list[IslandReading]` | pezzi a contatto + `read_island` per ognuno + annidamento (`nested_in`, anche per un pezzo senza contorno tutto dentro un'isola). È `island()` prima di diventare `Result`. |
 | `read_island` | `list[Edge]` → `IslandReading` | un'isola: normalizza, rete piana, faccia esterna, classificazione dell'interno. |
 | `spatial_islands` | `list[Edge]` → `list[Island]` | union-find sulle coppie di edge a distanza vera `<= gap_tolerance` (STRtree). Nessuna nozione di chiusura. |
-| `split_at_crossings` | `list[Edge]` → `NodedEdges` | spezza `LineSeg`/`ArcSeg`/`CircleSeg` dove incrociano o toccano a T un altro edge, entro `tolerance`; due tagli entro `tolerance` l'uno dall'altro sono lo stesso nodo, non due (D101 — una quasi-tangenza incrocia in due radici matematicamente distinte ma vicinissime). `NodedEdges.parent_of(pezzo)` dà l'`Edge` originale. `SplineSeg`/`EllipseSeg` restano interi. |
+| `split_at_crossings` | `list[Edge]` → `NodedEdges` | spezza `LineSeg`/`ArcSeg`/`CircleSeg` dove incrociano o toccano a T un altro edge, entro `tolerance`; due tagli entro `tolerance` l'uno dall'altro sono lo stesso nodo, non due (D101 — una quasi-tangenza incrocia in due radici matematicamente distinte ma vicinissime). `NodedEdges.parent_of(pezzo)` dà l'`Edge` originale. `BSplineSeg`/`EllipseSeg` restano interi. |
 | `outer_face` | `list[Edge]` (rete piana) → `OuterFace \| None` | bordo della faccia esterna, per componente, quella di area massima; `spurs` = edge percorsi andata e ritorno. |
 | `refit_tessellations` | `list[Edge]` → `list[Edge]` | catene di `LineSeg` corti (curva scritta a punti) rifittate come arco/cerchio/spline; estremi della catena sui nodi originali. |
 
@@ -613,7 +611,7 @@ topo.geometry.intersections(a, b) -> list[Point]
 ```
 
 I punti dove due primitive si incontrano: incroci e tocchi, capi compresi.
-Esatti fra `LineSeg`, `ArcSeg`, `CircleSeg` (forma chiusa); su `SplineSeg` ed
+Esatti fra `LineSeg`, `ArcSeg`, `CircleSeg` (forma chiusa); su `BSplineSeg` ed
 `EllipseSeg` entro `CURVE_TOLERANCE` (1e-4), perché lì una forma chiusa non
 c'è. Due tratti sovrapposti (stessa retta, stesso cerchio) non danno punti: il
 loro incontro è un tratto (D118).
@@ -817,7 +815,7 @@ topo.geometry.chord_angle_deg(a, b) -> float
 ```
 
 - `segment_length`: la lunghezza di una primitiva nativa. Esatta per
-  `LineSeg`, `ArcSeg`, `CircleSeg`; per `SplineSeg` ed `EllipseSeg` è la
+  `LineSeg`, `ArcSeg`, `CircleSeg`; per `BSplineSeg` ed `EllipseSeg` è la
   polilinea di `discretize()`.
 - `length_inside`: quanta parte di `segment` sta dentro il rettangolo
   `bounds` = `(xmin, ymin, xmax, ymax)`, bordo compreso (le curve sulla
@@ -1240,7 +1238,7 @@ sta sotto `topo.core`, `topo.tools`, `topo.io`, `topo.rules` è interno, senza
 garanzie. Gli adapter sono pacchetti a parte (§9, §10):
 
 - **`topo.primitives`** — i segmenti nativi `LineSeg`, `ArcSeg`, `CircleSeg`,
-  `SplineSeg`, `EllipseSeg` (math puro, nessun ruolo) e
+  `BSplineSeg`, `EllipseSeg` (math puro, nessun ruolo) e
   `sub_segment(seg, a, b, via)`, il tratto di `seg` da `a` a `b` (`via`, un
   punto interno, serve solo su una curva chiusa).
 - **`topo.model`** — i tipi qui sotto (`Document`, `Result`, `Cluster`,

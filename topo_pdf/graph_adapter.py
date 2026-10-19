@@ -6,7 +6,7 @@ Traduce entità vettoriali sanificate del PDF in Edge topologici per il core.
 
 # Solo nomi pubblici di topo: l'adapter è un consumer come un altro (MAP.md D125)
 from topo.model import ContourRole, Edge
-from topo.primitives import LineSeg, SplineSeg
+from topo.primitives import LineSeg, BSplineSeg
 
 
 def map_sanitized_item_to_edge(item: tuple, page_idx: int) -> Edge | list[Edge] | None:
@@ -26,6 +26,6 @@ def map_sanitized_item_to_edge(item: tuple, page_idx: int) -> Edge | list[Edge] 
 
     elif cmd == "c_poly":
         pts = item[1]
-        return Edge.of(SplineSeg(degree=3, control_points=pts, knots=[]), ContourRole.UNKNOWN)
+        return Edge.of(BSplineSeg(degree=3, control_points=pts, knots=[]), ContourRole.UNKNOWN)
 
     return None

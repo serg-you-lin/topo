@@ -136,10 +136,19 @@ primitive di topo.
    1.0 (i dischi di cogo, D118, sono il precedente).
 
    **Deciso il 19 ottobre (D135–D137), da fare prima della 1.0:**
-   - **D135** `SplineSeg` → `BSplineSeg`, campi solo geometrici (grado, punti
-     di controllo, nodi, pesi); il resto lo tiene l'adapter se gli serve.
-     Verificare che una spline data per soli fit points venga convertita in
-     lettura. topo, `topo_dxf`, smoother (3 righe).
+   - ~~**D135** `SplineSeg` → `BSplineSeg`~~ — fatto il 19 ottobre: campi
+     solo geometrici, `closed`/`periodic` ricavati, fit points convertiti in
+     lettura; tolto il tetto di 400 punti di `_refine_segment`.
+   - **Tetto di 128 lati su `CircleSeg.discretize`** (trovato con D135): la
+     tolleranza è una freccia assoluta, quindi i lati devono crescere con il
+     raggio (~π·√(r/2·tol)); oltre r ≈ 33 a tol 0.01 il tetto la viola (r 500
+     → freccia 0.15). Stessa cura del tetto delle spline; cambia golden,
+     da giudicare a parte. Guardare anche `ArcSeg`/`EllipseSeg`.
+   - **Criterio del punto medio in `_refine_segment`** (nota, non urgente):
+     guarda solo il punto medio di ogni tratto; su un tratto a S il medio
+     cade sulla corda mentre i lobi escono, e la suddivisione si ferma
+     presto. Oggi lo copre il campionamento iniziale fitto (misurato: 0.00988
+     a tol 0.01 su `quadro_fori_spline`).
    - ~~**D136** `contour_shape.kind`~~ — fatto il 19 ottobre: sei kind,
      `ShapeKind`, `ellipse()`, `TestShapeKindStabile`.
    - **D137** `trash_entities` → `result.loose`, tipizzato; `cluster_ref` su
@@ -350,8 +359,8 @@ sul codice committato di questo branch, nessuno stash applicato):
 2. **Sistematico, non isolato**: nello stesso cluster, circa 20 forellini del
    pattern di foratura (bbox ~3.5mm, es. 1540–1544×128–134 e 1540–1544×104–109)
    hanno **due** inner quasi sovrapposti nello stesso punto: uno pulito (l'ellisse
-   proiettata vera, 2 SplineSeg che chiudono da estremo a estremo, area ~16 mm²) e
-   uno "fantasma" annidato dentro, fatto di 2 ArcSeg + 4-7 SplineSeg minuscoli e
+   proiettata vera, 2 BSplineSeg che chiudono da estremo a estremo, area ~16 mm²) e
+   uno "fantasma" annidato dentro, fatto di 2 ArcSeg + 4-7 BSplineSeg minuscoli e
    seghettati (area ~11 mm², non zero come i fantasmi di `regr_04`/D101 — qui è
    un'area reale, sbagliata). Pattern: `cluster[1].inners[26,28,30,32,...64]` su
    `anch_02.dxf` (script di ispezione non salvato, rifare con `topo.island()`
@@ -368,7 +377,7 @@ sul codice committato di questo branch, nessuno stash applicato):
      di tutto il lavoro di questa sessione). `fitting.py`/`points.py` non sono mai
      stati toccati per il PDF nella storia committata (solo spostati, D95) — non è
      una contaminazione del lavoro PDF. Raw edge nel punto caldo (1538–1546 ×
-     127–135, prima di `island()`): 2 `ArcSeg` + 13 `SplineSeg`, un'unica rete
+     127–135, prima di `island()`): 2 `ArcSeg` + 13 `BSplineSeg`, un'unica rete
      connessa — e tornano spalmati esattamente sui due inner (2 spline nel pulito,
      2 arc + 11 spline nel fantasma). Quindi non è il source duplicato: è
      `island()` che da una rete sola trova due giri chiusi (uno vero, uno fantasma)
@@ -393,7 +402,7 @@ sul codice committato di questo branch, nessuno stash applicato):
    lettura (`_NON_STRUCTURAL_LAYERS`, `adapter.py:40`) — ci si casca dentro,
    verificato sul roundtrip prima di fissare le fixture:
    - `tests/data/regressions/island_ghost_loop.dxf` (15 edge: 2 `ArcSeg` + 13
-     `SplineSeg`, il foro col giro fantasma)
+     `BSplineSeg`, il foro col giro fantasma)
    - `tests/data/regressions/island_tangent_spike.dxf` (71 edge, l'asola con la
      spike)
    - `tests/unit/core/test_island_regressions.py` — `TestGhostLoop` e
@@ -418,7 +427,7 @@ sul codice committato di questo branch, nessuno stash applicato):
    walk né nell'union di `outer_face.py` (quelli restano INTOCCATI): nasce
    prima, in `_normalize()`. Due `LineSeg` indipendenti (edge di un'altra
    faccia della vista isometrica, non il raccordo del contorno) hanno ciascuno
-   un estremo libero a ~0.4mm dalla curva del raccordo (2 `SplineSeg` già
+   un estremo libero a ~0.4mm dalla curva del raccordo (2 `BSplineSeg` già
    chiusi fra loro, la vera punta arrotondata) — entro `max_gap=0.5`, quindi
    `compute_gap_fixes` li tratta come un gap e li prolunga (retta-retta) fino
    alla loro intersezione reale, 0.33mm **oltre** la curva vera: una spike,
@@ -440,8 +449,8 @@ sul codice committato di questo branch, nessuno stash applicato):
    su un giro che duplica il bordo di un altro (`topo/core/island.py`).** Le
    15 edge sono **due componenti connesse separate** (13 e 2), ognuna già un
    giro chiuso per conto suo — non c'è autoincrocio numerico da correggere.
-   Il giro fantasma (11.3 mm², 2 `ArcSeg`+11 `SplineSeg`) sta **interamente
-   dentro** il giro vero (16.25 mm², 2 `SplineSeg`) e il suo bordo intero resta
+   Il giro fantasma (11.3 mm², 2 `ArcSeg`+11 `BSplineSeg`) sta **interamente
+   dentro** il giro vero (16.25 mm², 2 `BSplineSeg`) e il suo bordo intero resta
    entro ~0.51mm dal bordo del giro vero (tipicamente la parete visibile di un
    foro in una vista isometrica, quasi sovrapposta alla sua stessa apertura).
    D71 ("ogni giro chiuso è un inner") è corretto per isole scollegate ma non

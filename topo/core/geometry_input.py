@@ -27,7 +27,7 @@ import math
 from typing import Any, Dict, List
 
 from .geometry.build import polygon
-from .primitives.segments import LineSeg, ArcSeg, CircleSeg, SplineSeg, EllipseSeg
+from .primitives.segments import LineSeg, ArcSeg, CircleSeg, BSplineSeg, EllipseSeg
 from .topology.edge import Edge
 from ..model.document import DEFAULT_NODE_TOLERANCE, Document
 from ..model.role import normalize_role
@@ -56,8 +56,7 @@ class GeometryReader:
         polygon:  {"type": "polygon", "points": [(x,y), ...], "role": "outer"}
                   — sempre chiuso: l'ultimo lato torna al primo punto (D96)
         spline:   {"type": "spline", "control_points": [(x,y), ...], "knots": [...],
-                   "degree": 3, "weights": [...], "fit_points": [(x,y), ...],
-                   "closed": False, "role": "outer"}
+                   "degree": 3, "weights": [...], "role": "outer"}
         ellipse:  {"type": "ellipse", "center": (x,y), "major_axis": (x,y),
                    "ratio": 0.5, "start_param": 0.0, "end_param": 2*pi,
                    "ccw": True, "role": "outer"}
@@ -72,8 +71,8 @@ class GeometryReader:
     Gli angoli di "arc" sono in GRADI (convenzione DXF/CAD, non i radianti di
     ArcSeg) — più naturale per chi consegna numeri calcolati a mano.
 
-    Lo schema di "spline" ricalca 1:1 i campi di SplineSeg (control_points,
-    knots, degree, weights, fit_points, closed): chi ha in mano l'oggetto
+    Lo schema di "spline" ricalca 1:1 i campi di BSplineSeg (control_points,
+    knots, degree, weights): chi ha in mano l'oggetto
     restituito da simplify_points() lo passa quasi senza toccarlo — vedi
     topo.core.primitives.fitting. Solo "control_points"/"knots"/"degree" sono
     obbligatori, il resto è opzionale.
@@ -132,14 +131,11 @@ class GeometryReader:
 
     def _spline_edge(self, entity: Dict[str, Any], role: str) -> Edge:
         weights = entity.get("weights")
-        fit_points_raw = entity.get("fit_points")
-        seg = SplineSeg(
+        seg = BSplineSeg(
             degree=int(entity.get("degree", 3)),
             control_points=[tuple(p) for p in entity["control_points"]],
             knots=[float(k) for k in entity["knots"]],
             weights=[float(w) for w in weights] if weights else None,
-            fit_points=[tuple(p) for p in fit_points_raw] if fit_points_raw else None,
-            closed=bool(entity.get("closed", False)),
         )
         return Edge.of(seg, role)
 

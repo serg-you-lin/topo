@@ -4791,7 +4791,7 @@ the same change).
 
 **Not blocking 1.0**: all of it is new names, added in a 1.x.
 
-### D135 — `SplineSeg` becomes `BSplineSeg`, and carries geometry only
+### D135 — `SplineSeg` becomes `BSplineSeg`, and carries geometry only ✅
 Federico, 19 October. Reopens D121 on the form of the name only (D121 said
 `BSpline`).
 
@@ -4813,6 +4813,37 @@ fit points only is turned into control points on reading.
 
 Clean break before 1.0 (49 files in topo and its adapters, 3 lines in
 smoother, nothing in snapbend/snapdraw/snapfence).
+
+**Done (19 October).** Fields `degree`, `control_points`, `knots`,
+`weights`; `clamped`, `closed` (start and end within `DEFAULT_TOLERANCE`) and
+`periodic` (closed and not clamped) are properties, `endpoints()` evaluates
+the curve at the ends of its domain (for an unclamped spline they are not
+the first and last control point; `_evaluate` no longer returns them outside
+the domain either). The DXF reader keeps control points, knots and weights
+as written; a SPLINE given by fit points only, or without knots, gets them
+from the CAD's own construction (ezdxf `construction_tool`). The writer sets
+only the closed/periodic/rational flags. `load_geometry` and
+`_fit_spline` lose `fit_points`/`closed`.
+
+The sampled points the reader used to keep (`approx_points`, ezdxf's
+flattening) are gone, so every spline is now discretized by topo from its
+definition. That exposed a bug in `_refine_segment`: a cap of 400 points per
+curve left the rest of the curve at coarse chords, out of tolerance, so a
+finer tolerance gave a *worse* area (a spline hole: 12478.4 at 0.001 against
+12482.8 true). The cap is gone; `max_depth` still bounds a noisy stretch.
+At 0.01 both samplings are within tolerance (max deviation 0.00988 topo,
+0.00999 ezdxf), so four expected areas moved inside the error the tolerance
+allows, and were updated value by value, not regenerated:
+`quadro_fori_spline` (65537.43 → 65537.55, true 65536.11; its hole 12481.47
+→ 12481.35), `fa_che_non_mi_incazzi__001`/`sviluppo_multiparte__004`
+(38791.157 → 38791.054, true 38791.035), and the two island regressions
+(16.247 → 16.287, true 16.289; 1011.27 → 1011.35, true 1011.36).
+
+Cost: without the reader's points, `heal()` on the drawings with splines
+went from 17.8 s to 63.8 s — it asks for the same spline ~4 times at the
+same tolerance, and de Boor ran on tuples built per step. A per-tolerance
+cache inside the spline (not a field: a spline is never changed in place)
+and de Boor on plain coordinate lists bring it to 19.5 s.
 
 ### D136 — `contour_shape.kind` is a closed list of six, and a contour's kind never changes in 1.x ✅
 Federico, 19 October: "the choice that gives fewer problems tomorrow".

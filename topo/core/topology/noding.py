@@ -16,7 +16,7 @@ trattarle come due nodi separati crea uno sliver fra loro (MAP.md D100, D101)
 che spacca la faccia esterna. `_split_params` applica questa fusione per
 edge; `build_node_graph(epsilon=tolerance)` la applica fra edge diversi.
 
-SplineSeg/EllipseSeg restano interi (nessun taglio esatto semplice): fanno da
+BSplineSeg/EllipseSeg restano interi (nessun taglio esatto semplice): fanno da
 coltello per gli altri, discretizzati.
 
 Puro: solo Edge e primitive, nessun formato.

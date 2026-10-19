@@ -82,7 +82,7 @@ Dentro `topo/`:
 ```
 topo/
 ├── core/         MOTORE geometrico puro               (zero formato)
-│   ├── primitives/   LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg + discretizzazione;
+│   ├── primitives/   LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg + discretizzazione;
 │   │                 fitting.py: primitive da una sequenza di punti (simplify_points)
 │   ├── topology/     edge.py, grafo dei nodi, ricerca loop;
 │   │                 noding.py (rete piana), outer_face.py (faccia esterna)

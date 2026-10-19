@@ -10,7 +10,7 @@ import math
 import unittest
 
 from topo.core.primitives.segments import (
-    LineSeg, ArcSeg, SplineSeg, CircleSeg, EllipseSeg, segment_endpoints,
+    LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints,
 )
 
 
@@ -70,7 +70,7 @@ class TestCircleSegRotated(unittest.TestCase):
 class TestSplineSegRotated(unittest.TestCase):
 
     def test_control_points_rotate_and_back_restores_original(self):
-        seg = SplineSeg(
+        seg = BSplineSeg(
             degree=2,
             control_points=[(0, 0), (5, 10), (10, 0)],
             knots=[0, 0, 0, 1, 1, 1],
@@ -81,19 +81,6 @@ class TestSplineSegRotated(unittest.TestCase):
         for (x, y), (bx, by) in zip(seg.control_points, back.control_points):
             self.assertAlmostEqual(x, bx, places=6)
             self.assertAlmostEqual(y, by, places=6)
-
-    def test_tangent_vector_rotates_but_not_translated_by_origin(self):
-        seg = SplineSeg(
-            degree=1,
-            control_points=[(0, 0), (10, 0)],
-            knots=[0, 0, 1, 1],
-            start_tangent=(1.0, 0.0, 0.0),
-        )
-        rotated = seg.rotated(math.pi / 2, origin=(100, 100))
-        # vettore direzione: ruota solo, mai traslato dall'origine di rotazione
-        self.assertAlmostEqual(rotated.start_tangent[0], 0.0, places=9)
-        self.assertAlmostEqual(rotated.start_tangent[1], 1.0, places=9)
-        self.assertAlmostEqual(rotated.start_tangent[2], 0.0, places=9)
 
 
 class TestEllipseSegRotated(unittest.TestCase):

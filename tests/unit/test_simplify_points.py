@@ -14,8 +14,8 @@ anche i vertici retti.
 Copre:
   - detect_corners  : punte acute sotto soglia, punti lisci ignorati,
                        estremi mai spigoli su polilinea aperta
-  - fit_primitives   : tratti corti -> LineSeg, tratti lunghi -> SplineSeg,
-                        loop senza spigoli -> un solo SplineSeg chiuso
+  - fit_primitives   : tratti corti -> LineSeg, tratti lunghi -> BSplineSeg,
+                        loop senza spigoli -> un solo BSplineSeg chiuso
   - simplify_points  : le due funzioni in sequenza, soglie del chiamante
 """
 
@@ -27,7 +27,7 @@ import sys
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from topo.core.primitives.segments import ArcSeg, CircleSeg, LineSeg, SplineSeg
+from topo.core.primitives.segments import ArcSeg, CircleSeg, LineSeg, BSplineSeg
 from topo.core.primitives.fitting import (
     detect_corners,
     fit_primitives,
@@ -109,14 +109,14 @@ class TestFitPrimitives(unittest.TestCase):
 
     def test_011_tratto_curvo_denso_diventa_una_spline(self):
         # Semicerchio discretizzato densamente, nessun punto sotto soglia
-        # (angoli vicini a 180): un solo tratto -> un solo SplineSeg.
+        # (angoli vicini a 180): un solo tratto -> un solo BSplineSeg.
         arc_points = [
             (10 * math.cos(t), 10 * math.sin(t))
             for t in (i * math.pi / 20 for i in range(20))
         ]
         primitives = simplify_points(arc_points, closed=True, angle_threshold_deg=50.0)
         self.assertEqual(len(primitives), 1)
-        self.assertIsInstance(primitives[0], SplineSeg)
+        self.assertIsInstance(primitives[0], BSplineSeg)
 
     def test_012_tratto_sotto_soglia_min_punti_resta_lineseg(self):
         # 3 punti + punto di chiusura del loop = 4: sotto min_points_for_spline=5
@@ -146,12 +146,12 @@ class TestArcFit(unittest.TestCase):
     def test_030_senza_arc_fit_tolerance_resta_spline_anche_se_e_un_cerchio(self):
         # Comportamento invariato per chi non passa il parametro: stesso
         # cerchio del test_031, ma di default (arc_fit_tolerance=None) resta
-        # una SplineSeg come prima di questo cambiamento.
+        # una BSplineSeg come prima di questo cambiamento.
         n = 24
         circle = [(10 * math.cos(2 * math.pi * i / n), 10 * math.sin(2 * math.pi * i / n)) for i in range(n)]
         primitives = simplify_points(circle, closed=True)
         self.assertEqual(len(primitives), 1)
-        self.assertIsInstance(primitives[0], SplineSeg)
+        self.assertIsInstance(primitives[0], BSplineSeg)
 
     def test_031_cerchio_chiuso_diventa_circleseg(self):
         n = 24
@@ -186,12 +186,12 @@ class TestArcFit(unittest.TestCase):
 
     def test_033_curva_non_circolare_resta_spline_anche_con_tolleranza(self):
         # Una sinusoide non ha raggio costante: nessun cerchio la approssima
-        # entro una tolleranza stretta -> deve restare una SplineSeg.
+        # entro una tolleranza stretta -> deve restare una BSplineSeg.
         wave = [(x, 0.5 * math.sin(x)) for x in (i * 0.3 for i in range(20))]
         corners = [False] * len(wave)
         primitives = fit_primitives(wave, corners, closed=False, arc_fit_tolerance=0.01)
         self.assertEqual(len(primitives), 1)
-        self.assertIsInstance(primitives[0], SplineSeg)
+        self.assertIsInstance(primitives[0], BSplineSeg)
 
 
 # ---------------------------------------------------------------------------
@@ -202,10 +202,10 @@ class TestSimplifyPoints(unittest.TestCase):
 
     def test_020_soglie_sono_parametri_del_chiamante(self):
         square = [(0, 0), (10, 0), (10, 10), (0, 10)]
-        # Soglia bassa: il vertice retto non e' uno spigolo -> un solo SplineSeg.
+        # Soglia bassa: il vertice retto non e' uno spigolo -> un solo BSplineSeg.
         primitives = simplify_points(square, angle_threshold_deg=10.0)
         self.assertEqual(len(primitives), 1)
-        self.assertIsInstance(primitives[0], SplineSeg)
+        self.assertIsInstance(primitives[0], BSplineSeg)
 
         # Soglia sopra 90: i 4 vertici sono spigoli -> 4 LineSeg.
         primitives = simplify_points(square, angle_threshold_deg=100.0)
