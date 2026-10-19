@@ -134,6 +134,21 @@ primitive di topo.
    secondo consumer ne ha bisogno (snapdraw, lo spessore in una vista), così
    il fatto si disegna su due usi veri. Vale per ogni fatto nuovo dopo la
    1.0 (i dischi di cogo, D118, sono il precedente).
+
+   **Con il punto 8, da decidere prima della 1.0: dove e con che nome stanno
+   le linee che non chiudono niente** (Federico, 19 ottobre, a proposito delle
+   nervature). Prova su una lamiera 1000x600 con `heal()`: nervatura a linea
+   con estremi liberi, croce di Sant'Andrea spigolo a spigolo (le canalizzazioni),
+   nervature da bordo a bordo, bugna con ruolo `rib` → in tutti i casi un
+   pezzo pieno e valido, le linee in `trash_entities` e `split` le porta col
+   pezzo. Una bugna disegnata col suo contorno *senza* ruolo resta un `inner`,
+   indistinguibile da un foro (D15: la geometria non lo dice; lo dice un ruolo
+   o il consumer). Il punto aperto non è l'algoritmo, è il nome: snapbend
+   pesca già le linee di piega da `trash_entities` (`flat/detect.py`), quindi
+   "trash" porta significato, non solo scarti. Rinominarlo o separare "linee
+   dentro un pezzo" dagli scarti veri dopo la 1.0 rompe i consumer; tutto il
+   resto sulle nervature (l'opzione "foro" della scelta A, fatti nuovi) è
+   additivo e viene dopo.
 9. **Dopo la 1.0, additivo (non blocca):** curve da equazione. Una `Curve`
    costruita da una parametrizzazione esatta (`x(t), y(t)` su `[t0, t1]`)
    che ricorda la sua origine (`curve.source`: "generata da questa
