@@ -108,7 +108,9 @@ snapbend's `tests/gen_index.py` — change it in one, copy to the other.
 ## Conventions
 
 Identifiers, function and class names in English; docstrings and comments in
-Italian. Every module docstring opens with the file's path. Type hints everywhere.
+Italian, **except the docstrings of public names** (`__all__` of `topo`,
+`topo.geometry`, `topo_dxf`), which are English: they are what a user reads on
+hover and in `help()` (D144). Every module docstring opens with the file's path. Type hints everywhere.
 Dataclasses for the domain; results are queryable typed objects, not loose dicts.
 Formats live in the sibling packages `topo_dxf/` and `topo_pdf/` (MAP.md D129);
 `topo` never imports them, and they use topo's public names only. No

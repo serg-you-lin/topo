@@ -162,10 +162,17 @@ primitive di topo.
      il 19 ottobre; golden convertiti chiave per chiave, stessi valori.
    - **Rassegna dei campi di `Result`/`Cluster`** (sono API): `List[Any]`,
      `all_arcs`, `classified_entities` (di un consumer, D88), `_open_shapes`.
-   - **Una frase da scrivere: cosa promette la 1.0** — dire anche che la
-     superficie stabile tiene solo fatti, mai la forma di un consumer (D140) — solo nomi e firme, o
-     anche l'output geometrico. Da lì dipende se i 4 dubbi su D103
-     (`island()`) vanno verificati prima.
+   - ~~**Cosa promette la 1.0**~~ — deciso il 19 ottobre, D143: nomi e
+     firme *e* la geometria, come invarianti (fedele nei due versi, completa,
+     deterministica), non come numeri dei golden. Ne seguono, bloccanti:
+     la fedeltà a due vie (punto 7), il tetto di 128 lati qui sopra, i 4
+     dubbi su D103 verificati (non esclusi), e il giro scartato come
+     duplicato che va in `result.loose`, mai in un bucket di scarto.
+   - **Documenti del lettore in inglese** (D144, bloccante): `docs/API.md`
+     (1843 righe) e `docs/ARCHITECTURE.md` (405) tradotti; docstring dei nomi
+     pubblici (`__all__` di `topo`, `topo.geometry`, `topo_dxf`) in inglese,
+     corte. L'interno resta in italiano. Un controllo (in `gen_index` o un
+     test) che lo verifichi sui nomi pubblici, invece di ricordarlo.
 
    Restano 1.x: modello `Curve`, `as_analytic`, firma dei contorni, i fatti
    di riconoscimento, le strisce di D134. Le nervature: tutto il resto
@@ -336,6 +343,9 @@ D103 qui sotto (forellini di anch_03, inner "nipoti"): 27 coppie
 sovrapposte su anch_03, 25 su anch_02, quasi tutte contenimento pieno.
 
 ## APERTO — 4 dubbi su D103 (`_drop_boundary_duplicates`), non verificati, segnalati da Federico il 12 ottobre guardando `_debug/*_ghosts.dxf`
+
+**Bloccanti per la 1.0 (D143):** la promessa geometrica copre anche
+`island()`, quindi vanno verificati, non esclusi.
 
 Nessuno di questi quattro è stato controllato sul codice — sono dubbi legittimi,
 non ancora confermati né respinti:
@@ -834,7 +844,8 @@ riscrivere la storia per questo adesso — da riconsiderare nell'audit della
 
 Restano due cose:
 
-1. **Mettere in git i 32 disegni che la suite usa e non ha.** Letti e puliti in
+1. ~~**Mettere in git i 32 disegni che la suite usa e non ha.**~~ — fatto:
+   `audit_fixtures.py --strict` dice "tutti in git" (verificato il 19 ottobre). Letti e puliti in
    D78 — `anonymize scan` su tutti e 32, aggregato in un elenco unico di 261
    stringhe distinte, lette a occhio: zero percorsi assoluti, un nome di persona
    in `$LASTSAVEDBY` e una sigla di tre lettere su tre stili di quota,

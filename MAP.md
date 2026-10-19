@@ -5246,3 +5246,58 @@ adapts from its own session (the mapping is in TODO). Script 16 is now
 `tests/unit/test_strips.py` — sisters and window, cousins never facing,
 four nesting levels, perpendicular from a straight side, refusals, the
 fixture rejoined and healed back to a valid cluster with four empty sectors.
+
+### D143 — what 1.0 promises: names and signatures, *and* the geometry, as invariants rather than golden numbers ✅
+
+A library that promises only its names promises that the caller's code still
+imports, not that the part comes out right; for a geometry engine that is no
+promise at all. So 1.0 promises two things for the whole 1.x line:
+
+1. **The surface:** the public names and signatures (`__all__` of `topo`,
+   `topo.geometry`, `topo_dxf`) do not break. The stable surface holds facts
+   only, never the shape of a consumer (D140).
+2. **The geometry**, as three invariants checked on every input:
+   - **faithful** — Hausdorff distance between input and output, *in both
+     directions*, ≤ heal's tolerance; where heal did not intervene, the
+     coefficients are identical (centre, radius, control points). Checked on
+     the DXF written and read back, not only on the model in memory (D121);
+   - **complete** — every input curve is a contour of some cluster or lies in
+     `result.loose` (D137); nothing is dropped, not even as a "duplicate";
+   - **deterministic** — same input, same output, whatever the order of the
+     edges (D131).
+
+**Not promised:** the exact number of segments of a discretization, the start
+point or direction of a contour, the outcome of ambiguous cases of
+`island()`. These may improve in a minor. The reason: a golden freezes a
+number, an invariant states what matters — the part stays superimposable on
+the original — so a 1.x that discretizes better keeps the promise instead of
+breaking it.
+
+**What it makes blocking for 1.0** (TODO, "la strada verso la 1.0.0"): the
+two-way fidelity test and heal's per-entity deviation report (D121); the
+128-side cap on `CircleSeg.discretize`, which already violates the tolerance
+past r ≈ 33 at tol 0.01 (and `ArcSeg`/`EllipseSeg` checked the same way);
+the four doubts on D103, verified rather than excluded — `island()` is one of
+the two readings, leaving it outside the promise removes half its value; and
+a loop discarded as a boundary duplicate goes to `result.loose`, never to a
+discard bucket (non-negotiable 7).
+
+### D144 — for 1.0, the reader's documents are English: `API.md`, `ARCHITECTURE.md`, and the docstrings of public names; internal code stays Italian ✅
+
+1.0 is for a third party who builds on topo's primitives (D143). That reader
+meets topo in three places: `API.md` (the reference), `ARCHITECTURE.md` (why it
+is built this way), and the docstring of a public name — what an IDE shows on
+hover and `help(topo.heal)` prints. For that reader the docstring of a public
+name is part of the API, like its signature; in Italian it is a wall exactly
+where they need it. So, blocking for 1.0:
+
+- `docs/API.md` and `docs/ARCHITECTURE.md` in English (the repo rule already
+  said so; both were still Italian). `LLM.md` already is.
+- Docstrings of the public names — `__all__` of `topo`, `topo.geometry`,
+  `topo_dxf` — in English, short; the full card stays in `API.md`.
+- Everything internal (private helpers, `core/`, comments) stays Italian: its
+  reader is the maintainer, with the code in front of him.
+
+This is a topo exception to the general convention (docstrings in Italian),
+written in topo's `CLAUDE.md`. The public set is known to `gen_index`, so the
+rule can be checked rather than remembered.
