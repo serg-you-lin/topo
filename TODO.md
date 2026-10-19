@@ -233,6 +233,24 @@ Poi topo 1.0.0, e snapbend 1.0.0 dietro.
   senza. Un cerchio chiuso non può cambiare natura per ciò che gli sta
   attorno: i loop chiusi di un pezzo fuori dall'outer scelto (D71 lo copre
   solo per un'isola annidata). DXF in `_debug/anch_07_island_*_cornice.dxf`.
+- **Entità sovrapposte in `island()`** (Federico, 19 ottobre: "inner con una
+  parte in trash"). Misurato sui `_noframe`: tratti di `loose` interamente
+  sopra un contorno. Tre cause:
+  1. ✅ lati dell'outer contati anche come sporgenze (D146).
+  2. **Ponti sui T**: `_normalize` chiude gap da estremi "liberi" che cadono
+     a metà di un altro edge; il ponte giace sull'edge e lo raddoppia
+     (anch_01, anch_04, anch_06). Saltare quegli estremi (`_not_touching`,
+     prova tenuta fuori dal repo) toglie i doppioni ma **perde i giri che
+     condividono un lato col contorno esterno**: `read_island` cerca gli
+     inner solo fra i pezzi che l'outer non usa, e quei giri si chiudevano
+     grazie al doppione (anch_01, rettangolino 0.5×1.2 sotto la linea
+     esterna: 'Ø4.2' si aggancia al 46×3). Da decidere: un giro chiuso
+     della rete dentro l'outer, con un lato sull'outer, è un inner?
+  3. **Cerchi doppi**: CIRCLE + la stessa circonferenza tassellata
+     (anch_06): `refit_tessellations` la rifà cerchio, ma
+     `merge_cocircular_overlaps` prende solo `ArcSeg`, quindi due cerchi
+     coincidenti (o un arco su un cerchio intero) non si fondono — anche in
+     `heal()`.
 - **Trovati con D145 (griglia degli archi), 19 ottobre — tutti per la
   promessa geometrica di D143:**
   - `rect_with_countersink`: `cluster.area` non toglie uno dei due inner

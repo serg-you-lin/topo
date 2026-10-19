@@ -5349,3 +5349,21 @@ under the D103 doubts: anchoring changes only `length`/`width` of `other`
 shapes (≤ 0.017, polygon bbox), but anch_06 changes topology — `island()`
 decides self-contact on the discretized polygon, so the reading moves below
 the tolerance (TODO).
+
+### D146 — a piece of the outer contour is not also a spur: `outer_face` removes from `spurs` every edge its chosen loop uses ✅
+`outer_face` counts spurs on the walk (an edge walked twice), then may choose
+another loop: the boundary of the union of closed faces (D100), when nodes
+miss each other by microns. That loop can use an edge the walk counted twice,
+so the edge came back in `loop` *and* in `spurs`, and `island()` wrote it
+twice: in the outer contour and in `loose` (anch_08 without frame: 24 lines,
+one of 37.9 mm). The rule, where the data is made: a piece the chosen contour
+uses is contour, never a spur. Nothing else moves: suite identical.
+Proof: `tests/real/test_island_single_use.py` (no edge in both lists, on the
+eight `anch_NN_noframe` drawings; fails without the fix).
+
+Found on the same pass, not fixed here (TODO): `island()` closes gaps from
+"free" ends that lie mid-edge (a T within tolerance): the bridge lies on the
+existing edge and doubles it. Skipping those ends removes the duplicates but
+loses the loops that share a side with the outer contour — they closed only
+through the duplicate. And two coincident circles are never merged
+(`merge_cocircular_overlaps` takes `ArcSeg` only).

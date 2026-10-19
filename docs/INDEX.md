@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`80` modules · `442` module-level functions · `59` classes · `14716` lines of code.
+`80` modules · `442` module-level functions · `59` classes · `14720` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -175,7 +175,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_f` | func | `topo_dxf/text_extractor.py:570` |  |
 | `face_segments` | func | `topo/core/topology/rim.py:29` | (segments, styles) lungo il bordo esterno di `polygon`, in senso |
 | `_faced` | func | `topo/core/island.py:332` | (giri con almeno una faccia, pezzi dei loro edge fuori da ogni faccia): |
-| `_faces_union_loop` | func | `topo/core/topology/outer_face.py:176` | (loop, segments, styles, polygon) sul bordo dell'unione delle facce |
+| `_faces_union_loop` | func | `topo/core/topology/outer_face.py:180` | (loop, segments, styles, polygon) sul bordo dell'unione delle facce |
 | `Facing` | class | `topo/tools/strips.py:41` | Una regione vuota (`region`, un contorno di profondità dispari) e le |
 | `facing_boundaries` | func | `topo/tools/strips.py:54` | Fatto 1: un `Facing` per ogni regione vuota di `cluster`, nell'ordine di `cluster.inners`. |
 | `_fallback_anchor` | func | `topo_dxf/text_extractor.py:137` | Cerca un qualsiasi attributo-punto usabile. |
@@ -188,7 +188,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `find_non_contour_edges` | func | `topo/core/healing/steps.py:158` | id(edge) degli Edge che non chiudono un contorno (catene fra due nodi di |
 | `_first_coord` | func | `topo/core/topology/graph.py:362` |  |
 | `_first_point` | func | `topo/io/text.py:152` | Un punto che sta sul segmento, per dire in quale pezzo cade. |
-| `_first_step` | func | `topo/core/topology/outer_face.py:133` | L'edge che contiene il punto più a sinistra del componente, percorso |
+| `_first_step` | func | `topo/core/topology/outer_face.py:137` | L'edge che contiene il punto più a sinistra del componente, percorso |
 | `fit_circle_kasa` | func | `topo/core/geometry/points.py:47` | Fit algebrico (Kasa) ai minimi quadrati di un cerchio su `points`: minimizza |
 | `_fit_curve` | func | `topo/core/primitives/fitting.py:132` | Un pezzo curvo: arco per gli estremi se basta (e `arcs`), altrimenti spline entro `tolerance` per gli estremi. |
 | `_flatten_virtual` | func | `topo_dxf/text_extractor.py:471` | Espande `virtual_entities()` ricorsivamente sugli INSERT (frecce a blocco). |
@@ -240,12 +240,12 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_joined` | func | `topo/core/geometry/shape.py:348` |  |
 | `_key_for` | func | `topo_dxf/sanitize.py:154` | Restituisce una chiave hashable che identifica univocamente |
 | `labeled_curves` | func | `topo/core/healing/steps.py:351` | Gli Edge messi da parte da split_labeled() come curve col loro ruolo |
-| `_largest_loop` | func | `topo/core/topology/outer_face.py:202` | (loop, segments, styles, polygon) del giro di area massima. |
+| `_largest_loop` | func | `topo/core/topology/outer_face.py:206` | (loop, segments, styles, polygon) del giro di area massima. |
 | `_Layers` | class | `topo_dxf/writer.py:302` | I layer di un documento in scrittura (D128): il nome viene dalla scelta |
 | `_leader_text` | func | `topo_dxf/text_extractor.py:378` |  |
 | `_leader_vertices` | func | `topo_dxf/text_extractor.py:415` |  |
 | `_least_squares` | func | `topo/core/geometry/points.py:299` | Spline di grado `degree` con `count` punti di controllo ai minimi quadrati |
-| `_leaving_angle` | func | `topo/core/topology/outer_face.py:155` | Direzione con cui `edge` lascia `node`, letta a DIRECTION_SAMPLE (o a |
+| `_leaving_angle` | func | `topo/core/topology/outer_face.py:159` | Direzione con cui `edge` lascia `node`, letta a DIRECTION_SAMPLE (o a |
 | `_length` | func | `topo/core/geometry/regions.py:104` |  |
 | `_length` | func | `topo/core/geometry/shape.py:208` |  |
 | `_length` | func | `topo/core/primitives/fitting.py:164` |  |
@@ -323,8 +323,8 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `outer_candidate_edges` | func | `topo/core/healing/outer_scan.py:72` | Per ogni asse, una quota rappresentativa (punto medio) fra ogni coppia |
 | `_outer_entity` | func | `topo_dxf/xdata.py:17` | L'entità su layer OuterContour che porta gli XDATA: prima una polilinea, |
 | `outer_face` | func | `topo/core/topology/outer_face.py:59` | Contorno esterno della rete `edges` (già piana: split_at_crossings). I |
-| `outer_face_passes` | func | `topo/core/topology/outer_face.py:88` | {id(edge): quante volte il bordo della faccia esterna di `component` |
-| `_outer_face_walk` | func | `topo/core/topology/outer_face.py:103` | [(edge, dal nodo, al nodo)] lungo il bordo della faccia esterna. |
+| `outer_face_passes` | func | `topo/core/topology/outer_face.py:92` | {id(edge): quante volte il bordo della faccia esterna di `component` |
+| `_outer_face_walk` | func | `topo/core/topology/outer_face.py:107` | [(edge, dal nodo, al nodo)] lungo il bordo della faccia esterna. |
 | `_outer_polygons` | func | `topo/tools/split.py:151` | (cluster, poligono dell'outer) per ogni cluster che ne ha uno. |
 | `OuterCandidates` | class | `topo/core/healing/outer_scan.py:54` | Edge candidati a bordo esterno, con i raggi che li hanno scelti. |
 | `OuterFace` | class | `topo/core/topology/outer_face.py:42` | Il contorno esterno trovato, e cosa il percorso ha scartato. |
@@ -1017,19 +1017,19 @@ _non_contour_edges.py_
 - **class** `NonContourEdgeDetector` — L45
   - methods: `__init__`, `detect`
 
-#### `topo/core/topology/outer_face.py` — 210 lines
+#### `topo/core/topology/outer_face.py` — 214 lines
 
 _core/topology/outer_face.py_
 
 - **class** `OuterFace` — L42 — Il contorno esterno trovato, e cosa il percorso ha scartato.
   - methods: `edges`
 - `outer_face(edges: List[Edge], epsilon: float=0.0) -> Optional[OuterFace]` — L59 — Contorno esterno della rete `edges` (già piana: split_at_crossings). I
-- `outer_face_passes(graph: Graph, component, n_edges: int) -> dict` — L88 — {id(edge): quante volte il bordo della faccia esterna di `component`
-- `_outer_face_walk(graph: Graph, component, n_edges: int) -> list` — L103 — [(edge, dal nodo, al nodo)] lungo il bordo della faccia esterna.
-- `_first_step(graph: Graph, component)` — L133 — L'edge che contiene il punto più a sinistra del componente, percorso
-- `_leaving_angle(edge: Edge, node, graph: Graph) -> float` — L155 — Direzione con cui `edge` lascia `node`, letta a DIRECTION_SAMPLE (o a
-- `_faces_union_loop(edges: List[Edge], epsilon: float)` — L176 — (loop, segments, styles, polygon) sul bordo dell'unione delle facce
-- `_largest_loop(edges: List[Edge], epsilon: float)` — L202 — (loop, segments, styles, polygon) del giro di area massima.
+- `outer_face_passes(graph: Graph, component, n_edges: int) -> dict` — L92 — {id(edge): quante volte il bordo della faccia esterna di `component`
+- `_outer_face_walk(graph: Graph, component, n_edges: int) -> list` — L107 — [(edge, dal nodo, al nodo)] lungo il bordo della faccia esterna.
+- `_first_step(graph: Graph, component)` — L137 — L'edge che contiene il punto più a sinistra del componente, percorso
+- `_leaving_angle(edge: Edge, node, graph: Graph) -> float` — L159 — Direzione con cui `edge` lascia `node`, letta a DIRECTION_SAMPLE (o a
+- `_faces_union_loop(edges: List[Edge], epsilon: float)` — L180 — (loop, segments, styles, polygon) sul bordo dell'unione delle facce
+- `_largest_loop(edges: List[Edge], epsilon: float)` — L206 — (loop, segments, styles, polygon) del giro di area massima.
 
 #### `topo/core/topology/rim.py` — 154 lines
 
