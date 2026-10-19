@@ -260,6 +260,23 @@ def point_on_contour(segments: Sequence, point: Point, tolerance: float = DEFAUL
     return None
 
 
+def nearest_point(segments: Sequence, point: Point) -> Point:
+    """
+    Il punto delle primitive `segments` più vicino a `point`: anche a metà di
+    un lato, non solo su un vertice. Esatto su rette, archi e cerchi; su
+    spline ed ellissi entro `CURVE_TOLERANCE`. Per sapere dove cade sul
+    contorno (vertice, raccordo, lato) si passa a `point_on_contour`.
+    """
+    best: Optional[Point] = None
+    for seg in segments:
+        q = _at(seg, max(0.0, min(_span(seg), _param(seg, point))))
+        if best is None or math.dist(q, point) < math.dist(best, point):
+            best = q
+    if best is None:
+        raise ValueError("nearest_point(): `segments` è vuoto")
+    return best
+
+
 # ---------------------------------------------------------------------------
 # Un tratto tagliato da una regione
 # ---------------------------------------------------------------------------

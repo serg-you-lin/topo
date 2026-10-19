@@ -101,6 +101,37 @@ class TestPointOnContour(unittest.TestCase):
         self.assertIsNone(g.point_on_contour(SQUARE, (4, 1)))
 
 
+class TestNearestPoint(unittest.TestCase):
+    """Il punto del contorno più vicino a un punto qualunque (es. un click)."""
+
+    def test_middle_of_a_side_not_a_vertex(self):
+        self.assertEqual(_rounded([g.nearest_point(SQUARE, (4, -3))]), [(4, 0)])
+        self.assertEqual(_rounded([g.nearest_point(SQUARE, (4, 3))]), [(4, 0)])
+
+    def test_beyond_a_corner_is_the_corner(self):
+        self.assertEqual(_rounded([g.nearest_point(SQUARE, (13, -2))]), [(10, 0)])
+
+    def test_circle_and_arc_exact(self):
+        self.assertEqual(_rounded([g.nearest_point(g.circle(5), (0, 9))]), [(0, 5)])
+        # quarto da 0 a π/2: un punto sotto l'asse x cade sul capo (5, 0), non oltre l'ampiezza
+        quarter = [ArcSeg((0, 0), 5, 0, math.pi / 2, True)]
+        self.assertEqual(_rounded([g.nearest_point(quarter, (6, -4))]), [(5, 0)])
+
+    def test_feeds_point_on_contour(self):
+        p = g.point_on_contour(L_SHAPE, g.nearest_point(L_SHAPE, (4, 4)))
+        self.assertEqual((p.kind, p.point), ("vertex", (5.0, 5.0)))
+
+    def test_spline_within_curve_tolerance(self):
+        spline = BSplineSeg(degree=2, control_points=[(0, 0), (5, 10), (10, 0)], knots=[0, 0, 0, 1, 1, 1])
+        x, y = g.nearest_point([spline], (5, 20))
+        self.assertAlmostEqual(x, 5, places=3)
+        self.assertAlmostEqual(y, 5, places=3)
+
+    def test_empty_raises(self):
+        with self.assertRaises(ValueError):
+            g.nearest_point([], (0, 0))
+
+
 class TestCutBy(unittest.TestCase):
 
     def test_line_through_a_disk(self):
