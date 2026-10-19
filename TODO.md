@@ -154,6 +154,10 @@ primitive di topo.
    - ~~**D137** `trash_entities` → `result.loose`~~ — fatto il 19 ottobre:
      `cluster_ref` su ogni curva, `topo.promote`, `split` per `cluster_ref`;
      snapbend usa `cluster_ref` e `promote`. Il layer DXF resta `Trash`.
+   - **D138** `Annotation`/`Note`/`Dimension`/`Leader` → un solo tipo
+     `Text`. Da decidere prima di farlo: `dim_type` (snapdraw lo usa per
+     riconoscere i diametri ed escludere gli angoli dal rapporto di scala),
+     `measured_value`, `text_override` (sintassi `<>` del DXF).
    - **Rassegna dei campi di `Result`/`Cluster`** (sono API): `List[Any]`,
      `all_arcs`, `classified_entities` (di un consumer, D88), `_open_shapes`.
    - **Una frase da scrivere: cosa promette la 1.0** — solo nomi e firme, o

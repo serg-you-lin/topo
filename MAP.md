@@ -4949,3 +4949,34 @@ midpoints (bend lines, open and closed engravings) and moves bend lines with
 `promote` instead of filtering `loose` by id; its 435 tests and goldens are
 unchanged. snapdraw, snapfence, cogo: rename only. No golden of topo changed.
 `main` stays **0.21.0**: not released yet, D137 joins D135 and D136 in it.
+
+### D138 — `Annotation`, `Note`, `Dimension`, `Leader` become one type, `Text`
+Federico, 19 October, reopening the naming of D20 (the typed model stays).
+"Annotation" is the vocabulary of whoever draws on top of a drawing; a quote
+and a leader are drafting notation. Neither is topo's: the test of
+non-negotiable 1 fails for `Dimension` and `Leader` — a PDF gives two lines,
+two arrows and a string, and calling that a dimension is a reading, a
+consumer's. They exist in topo only because a DXF has DIMENSION and LEADER
+entities.
+
+What stays when the drafting names go is geometry: a string at a point
+(today's `Note`); a string with a polyline whose tip lands on something
+(`Leader`: `vertices`, `target`); a string with the points it measures
+between (`Dimension`: `measured_points`, `references`). One type, `Text`,
+with those parts optional: `pointer` (tip first) and `target`,
+`measured_points` and `references`, `rendered` (the image the source draws
+around the string, which the DXF writer already re-emits instead of a native
+DIMENSION/LEADER). Where it came from stays a fact of the source,
+`source_kind`, so the writer can rebuild it faithfully. Saying "this is a
+dimension" is a consumer's, even when the format says it already.
+
+Consequences on public names (frozen for 1.0, so before it):
+`result.annotations`/`doc.annotations` → `texts`, `anchor_annotations` →
+`anchor_texts`, `include_annotations` → `include_texts`, `display_text` →
+the text itself. The DXF adapter's default layer `Annotation` stays, as
+`Trash` stayed in D137: a layer name is the format's (D123).
+Consumers: snapdraw (reads `Dimension`, `dim_type`, `measured_value`,
+`topo.Note`), to_text.
+
+Open before implementing: what becomes of `dim_type`, `measured_value`,
+`text_override` (see TODO).
