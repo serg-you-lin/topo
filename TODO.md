@@ -222,9 +222,16 @@ in sola lettura). Raccoglierle: `grep -n -A20 "## Richieste a topo" ../*/TODO.md
 Richieste aperte:
 
 - **smoother, linguette a click** (D139/D140): `bridge_parent_tabs`,
-  `is_tab_island` in `tools.tabs`, sperimentali. Il fatto che serviva è
-  `geometry.nearest_point` (fatto). Il resto si riscrive come i fatti di
-  D134, con nomi geometrici; poi smoother sposta lì la sua politica.
+  `is_tab_island` in `tools.tabs`, sperimentali, committati. Il fatto che
+  serviva è `geometry.nearest_point` (fatto). Il resto si riscrive come i
+  fatti di D134, con nomi geometrici; poi smoother sposta lì la sua politica.
+- **smoother, linguette che non attraversano niente** (19 ottobre): è il
+  fatto 3 di D134 ("rifiutata se attraversa un terzo bordo"), arriva con la
+  riscrittura. Oggi smoother scarta a valle (`pipeline._crossing_islands`).
+- ~~**smoother, spigoli per svolta / linee dove è dritto / arco per gli
+  estremi / spline con tolleranza**~~ — fatto, D141 (`simplify_points`
+  riscritta). Resta a smoother: buttare `smoother/fitting.py` e chiamare
+  `topo.simplify_points(pts, tolerance, scale, closed, corner_turn_deg, arcs)`.
 
 - **snapdraw `lab/`** (D122): `LoopFinder`, `segments_from_loop`,
   `edge_styles_from_loop`, `build_node_graph`, `split_at_crossings`,

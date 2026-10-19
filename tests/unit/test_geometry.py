@@ -26,8 +26,10 @@ from topo.core.geometry.measure import (
     chord_angle_deg, length_inside,
 )
 from topo.core.geometry.points import (
-    interior_angle_deg, detect_corners, drop_duplicate_points, fit_circle_kasa, arc_angles,
+    drop_duplicate_points, fit_circle_kasa, douglas_peucker, turn_corners, circle_through,
+    approximate_bspline, even_spacing,
 )
+from topo.core.primitives.segments import BSplineSeg
 from topo.core.primitives.segments import CircleSeg
 
 
@@ -230,27 +232,11 @@ class TestTrackHelpers(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# interior_angle_deg / detect_corners / drop_duplicate_points / fit_circle_kasa
-# / arc_angles (D38 — spostate qui da tools/simplify_points.py)
+# drop_duplicate_points / fit_circle_kasa (D38), Douglas-Peucker, spigoli per
+# svolta, cerchio per tre punti, spline approssimante (D141)
 # ---------------------------------------------------------------------------
 
 class TestPointSequenceMath(unittest.TestCase):
-
-    def test_001_interior_angle_right_angle(self):
-        # vertice di un quadrato: 90 gradi.
-        angle = interior_angle_deg((10, 0), (0, 0), (0, 10))
-        self.assertAlmostEqual(angle, 90.0, places=3)
-
-    def test_002_interior_angle_straight_is_180(self):
-        angle = interior_angle_deg((0, 0), (5, 0), (10, 0))
-        self.assertAlmostEqual(angle, 180.0, places=3)
-
-    def test_003_detect_corners_still_reachable_and_correct(self):
-        square = [(0, 0), (10, 0), (10, 10), (0, 10)]
-        self.assertEqual(
-            detect_corners(square, angle_threshold_deg=100.0, closed=True),
-            [True, True, True, True],
-        )
 
     def test_004_drop_duplicate_points(self):
         pts = [(0, 0), (0, 0), (1, 0), (1, 0.0000001), (2, 0)]
@@ -274,15 +260,49 @@ class TestPointSequenceMath(unittest.TestCase):
     def test_006_fit_circle_kasa_too_few_points(self):
         self.assertIsNone(fit_circle_kasa([(0, 0), (1, 1)]))
 
-    def test_007_arc_angles_quarter_circle_ccw(self):
-        pts = [
-            (10 * math.cos(t), 10 * math.sin(t))
-            for t in (i * (math.pi / 2) / 11 for i in range(12))
-        ]
-        start, end, ccw = arc_angles(pts, (0, 0))
-        self.assertAlmostEqual(start, 0.0, places=3)
-        self.assertAlmostEqual(end, math.pi / 2, places=3)
-        self.assertTrue(ccw)
+    def test_008_douglas_peucker_keeps_the_corner(self):
+        pts = [(x / 10, 0.0) for x in range(11)] + [(1.0, y / 10) for y in range(1, 11)]
+        self.assertEqual(douglas_peucker(pts, 0.01), [0, 10, 20])
+
+    def test_009_a_right_angle_rounded_by_sampling_is_still_a_corner(self):
+        # quadrato 10x10 con gli spigoli smussati su 2 campioni: nessun angolo
+        # interno fra vicini sta sotto 90°, la svolta su scala 2 sì
+        pts = []
+        for (ax, ay), (bx, by) in [((0, 0), (10, 0)), ((10, 0), (10, 10)), ((10, 10), (0, 10)), ((0, 10), (0, 0))]:
+            pts += [(ax + (bx - ax) * t / 20, ay + (by - ay) * t / 20) for t in range(1, 20)]
+        corners = turn_corners(pts, closed=True, turn_deg=35, scale=2.0, tolerance=0.1)
+        self.assertEqual(len(corners), 4)
+
+    def test_010_a_circle_has_no_corner(self):
+        pts = [(10 * math.cos(2 * math.pi * i / 100), 10 * math.sin(2 * math.pi * i / 100)) for i in range(100)]
+        self.assertEqual(turn_corners(pts, closed=True, turn_deg=35, scale=2.0, tolerance=0.01), [])
+
+    def test_011_circle_through_three_points(self):
+        center, radius = circle_through((10, 0), (0, 10), (-10, 0))
+        self.assertAlmostEqual(center[0], 0.0)
+        self.assertAlmostEqual(center[1], 0.0)
+        self.assertAlmostEqual(radius, 10.0)
+        self.assertIsNone(circle_through((0, 0), (1, 1), (2, 2)))
+
+    def test_012_approximate_bspline_ends_exact_and_within_tolerance(self):
+        # mezza circonferenza con rumore di 0.05: la spline passa per gli
+        # estremi, sta entro 0.1 da ogni punto e usa molti meno controlli
+        pts = [(10 * math.cos(a) + 0.05 * math.sin(37 * a), 10 * math.sin(a))
+               for a in (i * math.pi / 200 for i in range(201))]
+        control, knots = approximate_bspline(pts, 3, 0.1)
+        self.assertLess(len(control), 30)
+        self.assertEqual(control[0], pts[0])
+        self.assertEqual(control[-1], pts[-1])
+        curve = LineString(BSplineSeg(degree=3, control_points=control, knots=knots).discretize(1e-4))
+        from shapely.geometry import Point as SPoint
+        self.assertLessEqual(max(curve.distance(SPoint(p)) for p in pts), 0.1)
+
+    def test_013_even_spacing_fills_long_gaps(self):
+        pts = [(0, 0), (1, 0), (2, 0), (10, 0)]
+        out = even_spacing(pts, closed=False)
+        self.assertEqual(out[0], (0, 0))
+        self.assertEqual(out[-1], (10, 0))
+        self.assertTrue(all(b[0] - a[0] <= 1.0 + 1e-9 for a, b in zip(out, out[1:])))
 
 
 # ---------------------------------------------------------------------------

@@ -152,7 +152,7 @@ topo_dxf.to_dxf(result)
 
 ```python
 # entità "spline" — i campi sono quelli di BSplineSeg, presi 1:1
-segments = topo.simplify_points(points, closed=True)
+segments = topo.simplify_points(points, tolerance=0.01, scale=25.0, arcs=False)
 doc = topo.load_geometry([
     {
         "type": "spline",
@@ -443,7 +443,7 @@ topo.steps.spatial_islands(edges, gap_tolerance) -> list[Island]
 topo.steps.split_at_crossings(edges, tolerance, decimals=3) -> NodedEdges
 topo.steps.outer_face(edges, epsilon=0.0) -> OuterFace | None
 topo.steps.refit_tessellations(edges, max_segment=0.1, min_run=10,
-                          arc_fit_tolerance=0.02, node_decimals=3) -> list[Edge]
+                          tolerance=0.02, node_decimals=3) -> list[Edge]
 ```
 
 | funzione | prende → ritorna | cosa fa |
@@ -453,7 +453,7 @@ topo.steps.refit_tessellations(edges, max_segment=0.1, min_run=10,
 | `spatial_islands` | `list[Edge]` → `list[Island]` | union-find sulle coppie di edge a distanza vera `<= gap_tolerance` (STRtree). Nessuna nozione di chiusura. |
 | `split_at_crossings` | `list[Edge]` → `NodedEdges` | spezza `LineSeg`/`ArcSeg`/`CircleSeg` dove incrociano o toccano a T un altro edge, entro `tolerance`; due tagli entro `tolerance` l'uno dall'altro sono lo stesso nodo, non due (D101 — una quasi-tangenza incrocia in due radici matematicamente distinte ma vicinissime). `NodedEdges.parent_of(pezzo)` dà l'`Edge` originale. `BSplineSeg`/`EllipseSeg` restano interi. |
 | `outer_face` | `list[Edge]` (rete piana) → `OuterFace \| None` | bordo della faccia esterna, per componente, quella di area massima; `spurs` = edge percorsi andata e ritorno. |
-| `refit_tessellations` | `list[Edge]` → `list[Edge]` | catene di `LineSeg` corti (curva scritta a punti) rifittate come arco/cerchio/spline; estremi della catena sui nodi originali. |
+| `refit_tessellations` | `list[Edge]` → `list[Edge]` | catene di `LineSeg` corti (curva scritta a punti) rifittate da `simplify_points` (linee, archi, spline entro `tolerance`, spigoli per svolta su `max_segment`, D141); estremi della catena sui nodi originali. |
 
 Nessuna **muta** l'input: ritornano liste/oggetti nuovi.
 

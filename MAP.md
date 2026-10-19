@@ -5117,3 +5117,83 @@ job, one implementation); it stays internal, used by `tools.tabs`.
 **Not blocking 1.0.** The stable surface already holds facts only; what the
 hook adds is that nothing else gets in by accident. The sentence "what 1.0
 promises" (TODO, road to 1.0) should say it in so many words.
+
+### D141 — `simplify_points` rewritten: corners are a turn over a scale, lines where straight, arcs through their ends, splines within a tolerance; one chain ✅
+The first requests that arrived through D140 (smoother `TODO.md`, "Richieste
+a topo", 19 October): four of them are one thing. Working read-only on topo,
+smoother had rebuilt the whole point→primitive reconstruction in its own
+`smoother/fitting.py` (smoother D21), because `simplify_points` was wrong in
+three ways on a traced contour:
+
+- **A corner was an interior angle between two neighbouring samples** under
+  a threshold (50°). A right angle never is, and a corner traced from a
+  raster is spread over 2–3 samples, none under threshold: letters came out
+  rounded. Now a corner is a Douglas-Peucker vertex where the curve **turns**
+  by at least `corner_turn_deg` between the point `scale` before and `scale`
+  after, along the curve — measured over a length, the rounding counts for
+  the whole turn. Of two corners closer than `scale`, the one that turns more.
+- **Every stretch between corners became one spline**, also when straight.
+  Now: within `tolerance` of its chord → a line; within `tolerance` of an arc
+  → an arc; otherwise the long straight Douglas-Peucker sides become lines
+  (not the facets inside a curve: small turns the same way at their ends,
+  not much longer than their neighbours) and the rest arcs or splines.
+- **The arc was a least-squares (Kåsa) fit**, which moves the ends onto the
+  circle: between an arc and the line next to it a gap opened and the
+  contour no longer closed (smoother counted 321 loose pieces). Now an arc
+  passes exactly through its two ends (and the middle sample) and is taken
+  only if every point is within `tolerance` of its circle. Kåsa stays for a
+  whole closed loop with no corner, which has no ends to keep.
+- (fourth request) **The spline interpolated every point**, oscillating on
+  noisy or irregularly spaced samples. Now `approximate_bspline`
+  (Piegl & Tiller 9.4.1: chord-length parameters, averaged knots, least
+  squares with both ends fixed) finds the fewest control points that keep
+  every sample within `tolerance`; when none is enough it is the
+  interpolation.
+
+Two more facts the port needed, both geometric: samples are first evened out
+to the median step (a long side with no samples would let three points pass
+for an arc), and a corner rounded by sampling is rebuilt sharp — a curved
+piece shorter than `scale` between two lines that turn by ≥ `corner_turn_deg`
+is the rounding, and the shared vertex goes to the crossing of the two
+least-squares lines. Found while testing, both fixed here rather than
+ported: smoother's first and last Douglas-Peucker sides were always lines
+("an end is a corner, never inside a curve"), so a pure arc came out
+line-arc-line; an end side is now judged on the one neighbour it has, and a
+stretch that is one arc is tried first. A closed contour with no corner is
+opened at an arbitrary point; when the first and last pieces are the same arc
+or the same line they are joined again.
+
+**The guarantees, all geometric**: the output is a head-to-tail chain (an
+open sequence starts and ends exactly at its ends; a closed one closes);
+every sample is within `tolerance`, except samples within `scale` of a
+rebuilt corner; a primitive is a line or an arc only if its samples are,
+within `tolerance`. `scale` is the caller's statement of what is detail and
+what is shape: the length over which a turn is a corner, under which a
+straight run belongs to a curve and a curve between two sides is a rounded
+corner.
+
+**Signature, a clean break** (experimental since D33, outside `__all__`):
+`simplify_points(points, tolerance, scale, closed=True, corner_turn_deg=35,
+arcs=True, spline_degree=3)`. `tolerance` and `scale` are required: they are
+lengths in the caller's units and topo cannot guess them. Gone:
+`detect_corners`, `fit_primitives`, `interior_angle_deg`, `arc_angles`,
+`DEFAULT_ANGLE_THRESHOLD_DEG`, `min_points_for_spline`,
+`duplicate_tolerance`, `arc_fit_tolerance`. New in `core/geometry/points.py`:
+`even_spacing`, `offset_from_line`, `douglas_peucker`, `turn_corners`,
+`circle_through`, `approximate_bspline`.
+
+**Internal caller**: `steps.refit_tessellations` (inside `island()`) now calls
+it with `tolerance` (renamed from `arc_fit_tolerance`, it now bounds lines and
+splines too) and `scale=max_segment`. All island goldens unchanged.
+
+**Proof on real traces** (smoother's images: a gear, a hand-drawn circle, a
+stylised dandelion; tolerance 0.3, scale 2): same kinds of primitives as
+smoother's D21 (gear 35 lines, 1 arc, 2 circles, 18 splines vs 37/1/2/17), joints
+within 4e-11, maximum deviation 0.299 everywhere — smoother's own code reached
+0.319 on the dandelion, over its own tolerance, because its corner
+sharpening did not check. DXF for the eye: `pipeline_output/D141_fit/`
+(`*_raw`, `*_smoother`, `*_topo`).
+
+**Not done here**: the fifth request (strips that cross nothing) is fact 3 of
+D134 and lands with that rewrite. smoother's `fitting.py` is now the duplicate:
+it moves onto `simplify_points` from smoother's own session (D140).

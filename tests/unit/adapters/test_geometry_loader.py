@@ -144,15 +144,15 @@ class TestLoadGeometrySplineFromSimplifyPoints(unittest.TestCase):
     """
 
     def setUp(self):
-        # poligono regolare a 16 lati: angoli interni (157.5°) ben sopra la
-        # soglia di default di simplify_points -> nessuno spigolo rilevato,
-        # l'intero contorno rifitta in un'unica BSplineSeg.
+        # poligono regolare a 16 lati: su una scala di 25 svolta di ~29°, sotto
+        # i 35° di uno spigolo; lati più corti della scala -> nessuna linea;
+        # senza archi -> l'intero contorno rifitta in un'unica BSplineSeg.
         n, r = 16, 50.0
         points = [
             (r * math.cos(2 * math.pi * i / n), r * math.sin(2 * math.pi * i / n))
             for i in range(n)
         ]
-        segments = topo.simplify_points(points, closed=True)
+        segments = topo.simplify_points(points, tolerance=0.01, scale=25.0, closed=True, arcs=False)
         self.assertEqual(len(segments), 1)
         seg = segments[0]
 

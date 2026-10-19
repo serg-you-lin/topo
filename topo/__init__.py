@@ -37,12 +37,10 @@ Document dalla geometria.
 """
 
 from .core.geometry_input import load_geometry, load_segments
-# simplify_points: SPERIMENTALE, fuori dal contratto pubblico (vedi MAP.md D33).
-# Ricostruisce linee/spline da una sequenza di punti densa e ordinata (spigoli
-# + refit) — generico, zero dipendenza da immagini. Resta importabile come
-# topo.simplify_points, non è in __all__ e non è documentato finché non è
-# stato provato da un caso reale (Smoother). detect_corners/fit_primitives
-# restano accessibili da topo.core.primitives.fitting per chi vuole comporli.
+# simplify_points: SPERIMENTALE, fuori dal contratto pubblico (MAP.md D33, D141).
+# Da una sequenza di punti campionata a linee/archi/spline in catena, entro una
+# tolleranza, spigoli per svolta su una scala — generico, zero dipendenza da
+# immagini. Importabile come topo.simplify_points, non in __all__.
 from .core.primitives.fitting import simplify_points
 # rotate_*: SPERIMENTALE, fuori dal contratto pubblico (vedi MAP.md D46).
 # Ruotano un Cluster/Result già sano (nessun heal() in più — una

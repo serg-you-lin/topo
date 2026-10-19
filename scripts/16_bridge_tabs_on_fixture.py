@@ -27,7 +27,8 @@ from topo.tools.tabs import bridge_nested_tabs
 INPUT = r"tests/data/cerchi_concentrici_detect_is_counter_tabs_join.dxf"
 TAB_COUNT = 4
 TAB_WIDTH = 2.0    # mm, larghezza reale (perpendicolare) della linguetta
-ARC_FIT_TOLERANCE = 0.05
+FIT_TOLERANCE = 0.05     # mm, scostamento massimo del refit dai punti
+FIT_SCALE = 1.0          # mm, scala su cui si misura la svolta di uno spigolo
 DISCRETIZE_TOLERANCE = 0.05
 OUTDIR = "pipeline_output"
 # -------------------------------------------------------------------------
@@ -75,7 +76,7 @@ for other in cluster.inners:
 
 # i due contorni ponteggiati: ogni stretch rifittato, i fianchi come LINE native
 for stretch in bridge.child_stretches + bridge.parent_stretches:
-    segments = topo.simplify_points(stretch, closed=False, arc_fit_tolerance=ARC_FIT_TOLERANCE)
+    segments = topo.simplify_points(stretch, tolerance=FIT_TOLERANCE, scale=FIT_SCALE, closed=False)
     print(f"  stretch di {len(stretch)} punti -> {[type(s).__name__ for s in segments]}")
     for seg in segments:
         write_native(msp, seg)
