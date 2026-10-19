@@ -32,7 +32,7 @@ Tutti gli esempi di questo documento sono scritti così (MAP.md D119).
 
 1. [Geometria in ingresso](#1-geometria-in-ingresso) — `load_segments`, `load_geometry`, `RoleRule`, `name_rules`, scrivere un adapter
 2. [Validazione](#2-validazione) — `validate`, `validate_result`
-3. [Elaborazione](#3-elaborazione) — `heal` / `island` e i suoi mattoni (core), `split`, `anchor_annotations` / `inject` (tools)
+3. [Elaborazione](#3-elaborazione) — `heal` / `island` e i suoi mattoni (core), `split`, `promote`, `anchor_annotations` / `inject` (tools)
 4. [Export](#4-export) — `save_json`, `to_json`, `save_xml`, `to_view_model`, `to_svg`, `save_svg`
 5. [Metadati](#5-metadati) — `build_metadata`, `set_schema`
 6. [Ispezione / debug](#6-ispezione--debug) — `inspect_document`, `inspect_result`
@@ -282,7 +282,7 @@ inners=[Contour...])`. Chiamare foro un cerchio è una lettura di processo (snap
 assegna i ruoli agli `Edge`.
 
 **Ritorna** un `Result`. Se non si forma nessun contorno esterno chiuso,
-`result.is_valid` è `False` e `result.errors` è popolato (la `trash_entities`
+`result.is_valid` è `False` e `result.errors` è popolato (`loose`
 resta piena per la diagnostica).
 
 **Solleva** `TypeError` se non gli passi un `Document`.
@@ -345,7 +345,7 @@ topo.steps.build_hierarchy(features, label="", source_file="", is_structural=Non
 | `polygons_to_curves` | `list[Polygon]` → `list[ClosedCurve]` | OUTER dal bordo, INNER dai buchi, a `LineSeg` (la geometria nativa è persa). |
 | `edges_to_open_curves` | `list[Edge]` → feature | gli edge non assorbiti da un loop (`exclude_ids`) come feature aperte. |
 | `labeled_curves` | `list[Edge]` → feature | gli etichettati di `split_labeled`, col ruolo intatto. |
-| `build_hierarchy` | feature → `(cluster, trash)` | albero di contenimento: ogni radice un `Cluster`, i discendenti `inners` con `depth`/`parent`. |
+| `build_hierarchy` | feature → `(cluster, loose)` | albero di contenimento: ogni radice un `Cluster`, i discendenti `inners` con `depth`/`parent`. |
 
 Nessuno **muta** l'input: ritornano liste/oggetti nuovi.
 
@@ -394,7 +394,7 @@ legge il disegno dall'esterno:
 4. ogni contorno esterno che non sta dentro un altro è un'**isola** (un
    cluster); un pezzo che sta dentro un'isola, col suo contorno o senza, è
    suo per contenimento (D99);
-5. dentro: i giri chiusi diventano `inners`, il resto va in `trash_entities`
+5. dentro: i giri chiusi diventano `inners`, il resto va in `loose`
    col ruolo che aveva (`unknown` se nessuno l'ha deciso) e con `cluster_ref`,
    l'indice dell'isola che lo contiene o che tocca (`None` fuori da tutte).
 
@@ -415,7 +415,7 @@ Cosa sia un cluster — vista, pezzo — lo decide chi lo usa (D21).
 |---|---|
 | `max_gap` | **obbligatorio**, per nome. Due edge più vicini di così (mm) si toccano; gap chiusi fra estremi liberi, mai spostando un estremo più di così. Nessun default (D98). |
 | `tolerance` | se `None`, ripresa da `doc.source_meta["tolerance"]` — come `heal()`. |
-| `is_structural` | come in `heal()` (D30): un `Edge` con un ruolo già deciso e non strutturale (`frame`, `title_block`, ...) resta **fuori** dalla lettura e va in `trash_entities` col suo ruolo. È così che un consumatore toglie cornice e cartiglio prima di leggere le viste. Senza, solo `outer`/`inner` sono strutturali. |
+| `is_structural` | come in `heal()` (D30): un `Edge` con un ruolo già deciso e non strutturale (`frame`, `title_block`, ...) resta **fuori** dalla lettura e va in `loose` col suo ruolo. È così che un consumatore toglie cornice e cartiglio prima di leggere le viste. Senza, solo `outer`/`inner` sono strutturali. |
 
 **Ritorna** un `Result` con un `Cluster` per isola,
 ordinati per area del contorno esterno. Nessun giro chiuso in nessuna isola →
@@ -858,10 +858,14 @@ topo.split(
 
 **Un `Result` per parte**, senza formato (D124, D129): scegliere le parti è
 una decisione sul modello, scriverle è di un adapter. Ogni parte è un
-`Result` con un solo cluster, più le entità trash e le annotazioni che le
-appartengono: quelle che contiene o, se nessuna parte le contiene, quelle più
-vicine al suo contorno esterno fra **tutte** le parti (anche quelle scartate
-da `min_area`). Niente viene duplicato, niente perso. Gli altri campi
+`Result` con un solo cluster, più le curve sciolte e le annotazioni che le
+appartengono. Una curva di `loose` va al cluster del suo `cluster_ref` (D137),
+un'annotazione alla parte che la contiene; quelle che nessuna parte contiene
+vanno alla più vicina al suo contorno esterno fra **tutte** le parti (anche
+quelle scartate da `min_area`). Niente viene duplicato, niente perso: ogni
+elemento è copiato con `cluster_ref` riferito alla parte (`0` se il suo
+cluster la contiene, `None` altrimenti). Una curva promossa (`promote`) sta
+già in `cluster.detected` e viaggia col suo cluster. Gli altri campi
 (sorgente, avvisi) sono copiati. Ogni writer prende un `Result`, quindi una
 parte va in DXF, SVG o testo allo stesso modo.
 
@@ -880,6 +884,38 @@ for part in topo.split(result, min_area=100.0):
     name = part.clusters[0].label
     topo_dxf.to_dxf(part, doc).saveas(f"{name}.dxf")
     topo.save_svg(part, f"{name}.svg")
+```
+
+---
+
+### `promote`
+
+```python
+topo.promote(
+    result: Result,
+    curve: OpenCurve | ClosedCurve,   # un elemento di result.loose
+    cluster: Cluster,                 # un elemento di result.clusters
+    name: str,                        # la collezione di cluster.detected
+    item=None,                        # cosa attaccare: la curva stessa se None
+) -> None
+```
+
+**Una curva sciolta diventa parte di un cluster** (D137). Toglie `curve` da
+`result.loose` e mette `item` nella collezione `name` di `cluster.detected`,
+creandolo se manca. `item` è quello che il chiamante ha fatto della curva (un
+suo oggetto con `role` e geometria, D90), o la curva stessa.
+
+Cosa sia la curva lo decide chi chiama, e non conta dove sta: una linea
+dentro il pezzo che un consumatore legge come asse, una guida fuori dal pezzo
+che indica un suo dettaglio. topo non promuove niente da sé.
+
+**Solleva `ValueError`** se `curve` non è in `result.loose` o `cluster` non è
+in `result.clusters`: una curva non sta mai in due posti, né si perde.
+
+```python
+for curve in list(result.loose):
+    if curve.cluster_ref is not None and is_axis(curve):   # la lettura è tua
+        topo.promote(result, curve, result.clusters[curve.cluster_ref], "axes")
 ```
 
 ---
@@ -929,7 +965,7 @@ essere nel documento o fra gli standard, altrimenti `ValueError` (D85);
 ```python
 topo_dxf.to_dxf(result, doc, role_styles={
     "frame":   topo.RoleStyle(color=(0, 0, 0)),          # cornice: nero
-    "unknown": topo.RoleStyle(lineweight=0.05),          # trash: linea sottilissima
+    "unknown": topo.RoleStyle(lineweight=0.05),          # curve sciolte: linea sottilissima
     "bending": topo.RoleStyle(dash=(5.0, -2.0)),         # pieghe: tratto 5, vuoto 2
 })
 ```
@@ -1101,7 +1137,7 @@ Stessi campi di `save_json` (`extra_metadata` incluso), in XML
 topo.to_view_model(
     result: Result,
     tolerance=0.05,
-    include_trash=True,
+    include_loose=True,
     include_annotations=True,
 ) -> dict
 ```
@@ -1143,7 +1179,7 @@ Non muta `result`, non solleva su `result` non valido (torna il dict con
 topo.to_svg(
     result: Result,
     tolerance=0.05,
-    include_trash=True,
+    include_loose=True,
     include_annotations=True,
     padding=0.03,
     background="#1e1e1e",     # None = trasparente
@@ -1226,7 +1262,7 @@ topo.inspect_result(result, coords=False) -> None
 ```
 **Livello 3** — un `Result`: validità, warning/errori, e per ogni parte
 outer/inner, le collezioni di `cluster.detected` (quello che un consumatore ha
-attaccato), custom, più `trash_entities`,
+attaccato), custom, più `loose`,
 `classified_entities`, annotazioni. "Cosa ha prodotto topo."
 
 ---
@@ -1308,7 +1344,7 @@ Prodotto da `heal()`, arricchito da un consumatore / `inject()`.
 | `clusters` | `list[Cluster]` | un elemento per contorno esterno chiuso |
 | `is_valid` | `bool` | **controllalo prima di `split` o di scrivere (`topo_dxf.to_dxf`)** |
 | `warnings` / `errors` | `list[str]` | diagnostica |
-| `trash_entities` | `list` | geometria non classificata (proxy con `segments`, formato-indipendenti) |
+| `loose` | `list[OpenCurve \| ClosedCurve]` | ogni curva che non è contorno di nessun cluster: catene che non chiudono niente, tracce aperte, curve chiuse con un ruolo non strutturale (D137). `curve.cluster_ref` = indice del cluster il cui contorno esterno la contiene tutta, bordo e buchi compresi (una linea da lato a lato, una croce dentro un foro); `None` altrimenti. Con `island()` anche l'isola che la curva tocca (D99). Un consumatore la sposta in `cluster.detected` con `promote` |
 | `annotations` | `list[Annotation]` | copiate da `heal()` dal `Document` |
 | `classified_entities` | `list` | di un consumatore (snapbend: marking, work_type custom) |
 | `all_arcs` | `list[ArcSeg]` | tutti gli archi del disegno (snapbend li usa per i fori filettati) |
@@ -1371,7 +1407,7 @@ passi `is_structural=...` — vedi `heal()` sopra. Un consumatore che marca la g
 di `heal`**: tiene i riferimenti agli `Edge` di `doc.edges`, imposta
 `edge.role = topo.normalize_role("frame")` — resta fuori dal grafo per
 default (nessun predicato lo riconosce strutturale), la geometria marcata
-finisce in `trash_entities` col ruolo intatto e l'output la scrive sul layer
+finisce in `loose` col ruolo intatto e l'output la scrive sul layer
 `frame`. È l'aggancio usato da `snapdraw` per cornice e cartiglio.
 
 ### `non_contour_candidates`
@@ -1384,7 +1420,7 @@ Edge di `doc.edges` che il criterio topologico di `heal()` escluderebbe dal
 grafo dei contorni (catene fra due nodi di branching distinti, e non sul bordo
 della faccia esterna della loro componente connessa, MAP.md D111, D131) — **senza dire cosa siano**. `heal()` da solo
 non assegna un significato a questi edge: li esclude e basta, restano in
-`trash_entities` col ruolo che avevano. Un consumatore li interpreta (snapbend
+`loose` col ruolo che avevano. Un consumatore li interpreta (snapbend
 `detect_flat`: dritto, estremi sul contorno esterno → `"bending"`).
 
 Un consumatore che vuole
@@ -1600,7 +1636,7 @@ topo_dxf.to_dxf(
     source_doc: Document = None,
     filter_cluster=None,
     include_annotations=True,
-    include_trash=True,
+    include_loose=True,
     annotation_layer="Annotation",
     role_styles: dict[str, RoleStyle] = None,
     layers: dict[str, str | Callable[[object], str]] = None,
@@ -1615,11 +1651,11 @@ entità dalla sorgente: `source_doc` serve solo a riportare gli header
 
 | parametro | significato |
 |---|---|
-| `filter_cluster` | `callable(Cluster) -> bool` — scrive solo i cluster che passano; trash e annotazioni si scrivono tutti. Per un file per parte la parte viene da `topo.split` (§3), che li ha già divisi. |
+| `filter_cluster` | `callable(Cluster) -> bool` — scrive solo i cluster che passano; `loose` e annotazioni si scrivono tutti. Per un file per parte la parte viene da `topo.split` (§3), che li ha già divisi. |
 | `exclude_types` | set di `dxftype` da togliere dal documento (es. `{"TEXT"}`). |
-| `include_trash` | `True` (default): la geometria non classificata va sul layer `Trash`. Chi apre il file deve poter vedere ogni entità del disegno di partenza. |
-| `allow_invalid` | `True` (default): un `result` non valido viene scritto lo stesso (trash e annotazioni), come fa `to_svg`. `False` → `ValueError`: per il chiamante che consegna il file a una macchina (D83). |
-| `layers` | dove va ogni ruolo: `{ruolo: "Nome"}`, o `{ruolo: funzione(elemento) -> nome}` per dividere le entità di un ruolo su più layer guardando l'elemento scritto (il `Contour`, l'elemento di `cluster.detected`, l'entità trash o l'`Annotation`). Un ruolo che non nomini resta al default dell'adapter: `OuterContour`, `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo (D31, D128). |
+| `include_loose` | `True` (default): le curve di `result.loose` vanno sul layer del loro ruolo (`Trash` per `unknown`). Chi apre il file deve poter vedere ogni entità del disegno di partenza. |
+| `allow_invalid` | `True` (default): un `result` non valido viene scritto lo stesso (`loose` e annotazioni), come fa `to_svg`. `False` → `ValueError`: per il chiamante che consegna il file a una macchina (D83). |
+| `layers` | dove va ogni ruolo: `{ruolo: "Nome"}`, o `{ruolo: funzione(elemento) -> nome}` per dividere le entità di un ruolo su più layer guardando l'elemento scritto (il `Contour`, l'elemento di `cluster.detected`, la curva di `loose` o l'`Annotation`). Un ruolo che non nomini resta al default dell'adapter: `OuterContour`, `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo (D31, D128). |
 | `role_styles` | come si disegna ogni ruolo: `{ruolo: RoleStyle}` (vedi sotto). Agisce sul layer — tutto si scrive BYLAYER — e su un layer di più ruoli vince il primo scritto. Un ruolo con uno stile ha il suo layer anche senza entità. Sotto c'è sempre la palette di topo (`DEFAULT_ROLE_STYLES`): la mappa aggiunge i ruoli del chiamante e cambia solo i campi che dà. |
 | `annotation_layer` | il layer di testi e quote **senza ruolo** (default `"Annotation"`). Un'annotazione con un ruolo va sul layer del suo ruolo, come un edge (D127, D128). Nessuna annotazione viene mai scartata. |
 

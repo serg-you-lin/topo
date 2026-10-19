@@ -162,15 +162,15 @@ def inspect_result(result, coords: bool = False) -> None:
     for i, cluster in enumerate(result.clusters):
         _sub_part(i, cluster, coords)
 
-    trash = result.trash_entities or []
-    if trash:
-        print(f"\n{_SUB}\ntrash_entities: {len(trash)}  (geometria non classificata)")
+    loose = result.loose or []
+    if loose:
+        print(f"\n{_SUB}\nloose: {len(loose)}  (curve che non sono contorno di nessun cluster)")
         kinds = Counter(
             "closed" if getattr(t, "polygon", None) is not None
             else track_shape_type(track_points(getattr(t, "segments", []) or []))
-            for t in trash
+            for t in loose
         )
-        roles = Counter(_role(getattr(t, "role", "?")) for t in trash)
+        roles = Counter(_role(getattr(t, "role", "?")) for t in loose)
         print(f"  per tipo : {dict(kinds)}")
         print(f"  per ruolo: {dict(roles)}")
 

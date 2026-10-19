@@ -69,7 +69,7 @@ class ContourRole(str, Enum):
 # passa il proprio predicato a `heal(doc, is_structural=...)`. Senza quel
 # predicato, heal()
 # tratta qualunque ruolo fuori da qui come non strutturale di default (esce
-# dal grafo, resta in trash col ruolo intatto — MAP.md, "roles out of core").
+# dal grafo, resta in `loose` col ruolo intatto — MAP.md, "roles out of core").
 STRUCTURAL_ROLES = frozenset({
     ContourRole.OUTER,
     ContourRole.INNER,

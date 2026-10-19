@@ -151,12 +151,9 @@ primitive di topo.
      a tol 0.01 su `quadro_fori_spline`).
    - ~~**D136** `contour_shape.kind`~~ — fatto il 19 ottobre: sei kind,
      `ShapeKind`, `ellipse()`, `TestShapeKindStabile`.
-   - **D137** `trash_entities` → `result.loose`, tipizzato; `cluster_ref` su
-     ogni curva (contenuta per intero nel contorno esterno, bordo e fori
-     compresi); un'operazione pubblica di promozione verso
-     `cluster.detected`, valida anche per curve fuori dal pezzo; `split`
-     usa `cluster_ref`. Consumer: snapbend (`flat/detect.py`, usa la
-     promozione al posto dei filtri per id), snapdraw, snapfence.
+   - ~~**D137** `trash_entities` → `result.loose`~~ — fatto il 19 ottobre:
+     `cluster_ref` su ogni curva, `topo.promote`, `split` per `cluster_ref`;
+     snapbend usa `cluster_ref` e `promote`. Il layer DXF resta `Trash`.
    - **Rassegna dei campi di `Result`/`Cluster`** (sono API): `List[Any]`,
      `all_arcs`, `classified_entities` (di un consumer, D88), `_open_shapes`.
    - **Una frase da scrivere: cosa promette la 1.0** — solo nomi e firme, o

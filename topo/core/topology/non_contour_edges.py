@@ -8,7 +8,7 @@ Non è classificazione di feature: qui non si decide che un edge "è una piega".
 Si decide solo, per topologia, che un edge non chiude contorno — tipicamente
 una linea che attraversa il pezzo da parte a parte (spesso una linea di piega,
 ma anche un asse, una mezzeria, una tracciatura passante). La semantica vera
-sta in un consumatore (snapbend `detect_flat`), che li ripesca dalla trash.
+sta in un consumatore (snapbend `detect_flat`), che li ripesca da `result.loose`.
 
 Si giudica la catena (`Graph.chains`, D131): gli edge di fila attraverso
 nodi di grado 2. Una catena è esclusa, tutta intera, se:

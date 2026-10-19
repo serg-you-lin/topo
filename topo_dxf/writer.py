@@ -39,7 +39,7 @@ def to_dxf(
     source_doc: Optional[Document] = None,
     filter_cluster: Optional[Callable[[Cluster], bool]] = None,
     include_annotations: bool = True,
-    include_trash: bool = True,
+    include_loose: bool = True,
     annotation_layer: str = LAYER_ANNOTATION,
     role_styles: Optional[Mapping[str, RoleStyle]] = None,
     layers: Optional[LayerMap] = None,
@@ -54,8 +54,8 @@ def to_dxf(
     riportare gli header ($INSUNITS, $MEASUREMENT). Testi e quote arrivano da
     `result.annotations` (il modello), non dalla sorgente.
 
-    Con `include_trash=True` (default) le entità che il pipeline non ha
-    classificato (`result.trash_entities`) vengono materializzate sul layer
+    Con `include_loose=True` (default) le entità che il pipeline non ha
+    classificato (`result.loose`) vengono materializzate sul layer
     `Trash`: un operatore CAM deve poter vedere OGNI entità del disegno di
     partenza, anche archi spuri, frammenti di profilo, centerline. Ometterle
     silenziosamente è una regressione.
@@ -64,8 +64,8 @@ def to_dxf(
     default dell'adapter (`topo_dxf/layers.py`):
       - `layers` → `{ruolo: "Nome"}` o `{ruolo: funzione(elemento) -> nome}`:
         con una funzione le entità di un ruolo si dividono su più layer
-        (l'elemento è il Contour, l'elemento di `cluster.detected`, l'entità
-        trash o l'Annotation che si sta scrivendo). Default: `OuterContour`,
+        (l'elemento è il Contour, l'elemento di `cluster.detected`, la
+        curva di `loose` o l'Annotation che si sta scrivendo). Default: `OuterContour`,
         `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo.
       - `role_styles` → `{ruolo: RoleStyle}`: colore, tratto, spessore.
         Agisce sul LAYER, non sull'entità: tutto ciò che si scrive è BYLAYER,
@@ -75,9 +75,9 @@ def to_dxf(
         un ruolo va sul layer del suo ruolo, come un edge (D127, D128).
     Nessuna annotazione viene scartata: quelle non coperte da alcuna parte
     vengono comunque scritte (`topo.split()` le assegna alla parte più
-    vicina, come il trash).
+    vicina, come le curve sciolte).
 
-    `filter_cluster(cluster)` sceglie quali cluster scrivere; trash e
+    `filter_cluster(cluster)` sceglie quali cluster scrivere; `loose` e
     annotazioni si scrivono comunque tutti (per un file per parte, la parte
     viene da `topo.split()`, che le ha già divise). `exclude_types`
     (`{"TEXT", "CIRCLE"}`) toglie dal documento le entità DXF di quei tipi.
@@ -85,7 +85,7 @@ def to_dxf(
     Restituisce il documento ezdxf: sta al chiamante fare doc.saveas(...).
 
     Un `result` non valido (es. nessun contorno esterno chiuso → zero parti)
-    viene scritto lo stesso, con quello che c'è (trash, annotazioni): come
+    viene scritto lo stesso, con quello che c'è (`loose`, annotazioni): come
     `to_svg`, serve a vedere cosa ha capito topo. `allow_invalid=False` →
     `ValueError` invece: il chiamante che consegna a una macchina (D83).
     """
@@ -130,8 +130,8 @@ def to_dxf(
         # L'overlay di un consumatore (fori, pieghe, ...: D70, D90)
         _write_attached_features(msp, cluster, book)
 
-    if include_trash and result.trash_entities:
-        _write_trash(msp, result, book)
+    if include_loose and result.loose:
+        _write_loose(msp, result, book)
 
     if include_annotations and result.annotations:
         _write_annotations(msp, result.annotations, book, annotation_layer)
@@ -227,24 +227,24 @@ def _emit_rendered(msp, ann, attribs: dict) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Trash — entità fuori dai cluster. Sul layer Trash se non hanno un ruolo;
+# Curve sciolte (`result.loose`). Sul layer Trash se non hanno un ruolo;
 # su un layer col nome del ruolo se un consumatore ne ha assegnato uno (D31).
 # ---------------------------------------------------------------------------
 
-def _write_trash(msp, result: Result, book: "_Layers") -> None:
+def _write_loose(msp, result: Result, book: "_Layers") -> None:
     """
-    Materializza `result.trash_entities`, tutte: in un file per parte le ha
+    Materializza `result.loose`, tutte: in un file per parte le ha
     già divise `topo.split()`.
 
     Ogni entità va sul layer del suo ruolo (`book.for_role`): di default
     `Trash` se il ruolo è `unknown`, un layer col nome dello slug se un
     consumatore l'ha marcata (`frame`, `title_block`, ...) — D31.
     """
-    for trash in result.trash_entities:
-        segments = list(getattr(trash, "segments", []) or [])
+    for curve in result.loose:
+        segments = list(getattr(curve, "segments", []) or [])
         if segments:
-            styles = list(getattr(trash, "styles", []) or [])
-            layer = book.for_role(getattr(trash, "role", ContourRole.UNKNOWN), trash)
+            styles = list(getattr(curve, "styles", []) or [])
+            layer = book.for_role(getattr(curve, "role", ContourRole.UNKNOWN), curve)
             # Il colore resta quello del layer — solo il linetype (tratteggio)
             # della sorgente viene ripristinato fedele.
             write_open_segments(segments, msp, layer, styles)

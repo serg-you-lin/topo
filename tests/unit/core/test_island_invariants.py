@@ -130,7 +130,7 @@ def _make_dropped_test(dxf: Path):
         doc, result = island_reading(dxf, MAX_GAP)
         out = [_geometry(s) for c in result.clusters for ct in [c.outer] + c.inners
                for s in ct.segments]
-        out += [_geometry(s) for f in result.trash_entities for s in f.segments]
+        out += [_geometry(s) for f in result.loose for s in f.segments]
         covered = unary_union(out).buffer(MAX_GAP)
         lost = unary_union([_geometry(e.segment) for e in doc.edges]).difference(covered)
         self.assertLessEqual(lost.length, GRAPH_EPSILON,

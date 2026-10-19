@@ -376,7 +376,7 @@ def build_hierarchy(curves: list, label: str = "", source_file: str = "",
     """
     Albero di contenimento sui ClosedCurve: ogni radice è un Cluster
     (outer), i discendenti i suoi inners con `depth`/`parent`. Ritorna
-    (cluster, trash): trash è ciò che non è finito in un cluster e non è
+    (cluster, loose): loose è ciò che non è finito in un cluster e non è
     strutturale.
     """
     builder = HierarchyBuilder(label=label, source_file=source_file, is_structural=is_structural)

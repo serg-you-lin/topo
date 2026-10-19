@@ -257,7 +257,7 @@ def load_dxf(
                          senza distinguere maiuscole)
         skip_layers:     layer da saltare per nome esatto (senza distinguere
                          maiuscole): di default `SKIP_LAYERS`, quelli che il
-                         writer usa per trash e annotazioni, così un file
+                         writer usa per `loose` e annotazioni, così un file
                          scritto da topo si rilegge pulito; `()` legge tutto
 
     Returns:

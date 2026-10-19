@@ -43,6 +43,7 @@ from .topology.noding import GRAPH_EPSILON, NODE_DECIMALS, edge_geometry, renode
 from .topology.non_contour_edges import NonContourEdgeDetector
 from .topology.outer_face import OuterFace, outer_face
 from .topology.rim import face_segments
+from .healing.hierarchy import assign_cluster_refs
 from .healing.islands import spatial_islands
 from .healing.gap_solver import (
     free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, local_gap_fixes, MoveEndpoint,
@@ -81,8 +82,8 @@ def island(doc: Document, *, max_gap: float,
     Un pezzo il cui contorno sta dentro quello di un'isola diventa suo
     interno, con tutti i suoi giri chiusi (con la cornice nel disegno,
     l'unico contorno esterno è la cornice — toglierla è del chiamante). Gli
-    edge aperti vanno in `trash_entities` con `cluster_ref` = l'isola che li
-    contiene o che toccano; `None` se stanno fuori da ogni isola (D99).
+    edge aperti vanno in `loose` con `cluster_ref` = l'isola che toccano o
+    che li contiene; `None` se stanno fuori da ogni isola (D99, D137).
 
     max_gap:    due edge più vicini di così si toccano; gap chiusi fra
                 estremi liberi, mai spostando un estremo più di così (mm).
@@ -90,7 +91,7 @@ def island(doc: Document, *, max_gap: float,
     tolerance:  come heal() — se None, doc.source_meta['tolerance'].
     is_structural: come heal() (D30): un Edge con un ruolo già deciso e non
                 strutturale (cornice, cartiglio, ...) resta fuori dalla
-                lettura e va in trash col suo ruolo. Senza, solo outer/inner
+                lettura e va in `loose` col suo ruolo. Senza, solo outer/inner
                 sono strutturali.
     """
     if not isinstance(doc, Document):
@@ -106,7 +107,7 @@ def island(doc: Document, *, max_gap: float,
     readings = read_islands(edges, tol, max_gap=max_gap)
 
     result = Result(source_file=doc.source_path, annotations=list(doc.annotations))
-    result.trash_entities += _open(labeled)
+    result.loose += _open(labeled)
     clusters = {}
     for i, r in enumerate(readings):
         if r.outer is not None and r.nested_in is None:
@@ -131,7 +132,11 @@ def island(doc: Document, *, max_gap: float,
     index = {id(c): k for k, c in enumerate(result.clusters)}
     for curve, host in owned:
         curve.cluster_ref = None if host is None else index[id(host)]
-    result.trash_entities += [f for f, _ in owned]
+    result.loose += [f for f, _ in owned]
+    # D137: chi non tocca nessuna isola ha l'isola che lo contiene, se c'è
+    # (un asse staccato dentro la vista, la cornice marcata dal chiamante)
+    free = [c for c in result.loose if c.cluster_ref is None]
+    assign_cluster_refs(free, result.clusters, tol)
     if not result.clusters:
         result.is_valid = False
         result.errors.append("Nessuna isola con un contorno esterno chiuso.")
@@ -328,7 +333,7 @@ def _faced(loops: list, tolerance: float):
     """(giri con almeno una faccia, pezzi dei loro edge fuori da ogni faccia):
     un giro senza facce resta fuori e i suoi edge vanno con il resto; i
     pezzi di un giro che nessuna faccia usa (la zona di contatto fra due
-    lobi) vanno nel trash, non spariscono (D106)."""
+    lobi) vanno in `loose`, non spariscono (D106)."""
     kept, off = [], []
     for loop in loops:
         faces = _loop_faces(loop, tolerance)

@@ -7,7 +7,8 @@ from ...model.curve import ClosedCurve
 from ...model.cluster import Cluster
 from ...model.contour import Contour
 from ...model.role import ContourRole, is_structural_role
-from ...core.geometry.measure import circular_geometry
+from ...core.geometry.measure import circular_geometry, track_points
+from ...core.geometry.regions import enclosing
 
 
 MIN_CONTOUR_AREA = 1e-3
@@ -160,14 +161,14 @@ class HierarchyBuilder:
 
         valid = [p for p in proxies if getattr(p, "polygon", None) is not None]
         if not valid:
-            return [], self._collect_trash(proxies)
+            return [], self._collect_loose(proxies)
 
         tree  = _build_tree(valid)
         clusters = self._build_parts(tree)
-        trash = self._collect_trash(proxies)
+        loose = self._collect_loose(proxies)
 
         clusters.sort(key=lambda p: p.outer.polygon.area, reverse=True)
-        return clusters, trash
+        return clusters, loose
 
     def _build_parts(self, tree: list) -> list[Cluster]:
         clusters = []
@@ -202,9 +203,29 @@ class HierarchyBuilder:
 
         return clusters
 
-    def _collect_trash(self, proxies: list) -> list:
+    def _collect_loose(self, proxies: list) -> list:
         return [
             p for p in proxies
             if id(getattr(p, "polygon", None)) not in self._classified_proxies
             and not self._is_structural(getattr(p, "role", ContourRole.UNKNOWN))
         ]
+
+
+# ---------------------------------------------------------------------------
+# cluster_ref delle curve sciolte (D137)
+# ---------------------------------------------------------------------------
+
+def assign_cluster_refs(curves: list, clusters: list, tolerance: float) -> None:
+    """
+    Scrive su ogni curva di `curves` (`result.loose`) `cluster_ref`: l'indice
+    in `clusters` del cluster il cui contorno esterno la contiene tutta, bordo
+    e buchi compresi; `None` se nessuno (`geometry.regions.enclosing`).
+    """
+    tracks = [
+        list(c.polygon.exterior.coords) if getattr(c, "polygon", None) is not None
+        else track_points(getattr(c, "segments", []) or [])
+        for c in curves
+    ]
+    outers = [c.outer.polygon if c.outer is not None else None for c in clusters]
+    for curve, ref in zip(curves, enclosing(tracks, outers, tolerance)):
+        curve.cluster_ref = ref

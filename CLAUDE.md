@@ -68,7 +68,8 @@ snapbend's `tests/gen_index.py` — change it in one, copy to the other.
    `to_dxf`/`to_svg` render an invalid result anyway (`allow_invalid=True`, so
    you can see it); a caller that delivers to a machine passes
    `allow_invalid=False`. `split` always raises on invalid (D83).
-7. **Nothing is silently dropped**: unclassified geometry goes to `trash_entities`,
+7. **Nothing is silently dropped**: every curve that is no cluster's contour
+   goes to `result.loose` (D137),
    unmodeled source types to `doc.warnings`.
 8. **Justify every choice from topo's own geometry and domain model.** "That is
    what other CAD software does" / "it's the convention" is not an argument here —

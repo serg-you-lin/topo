@@ -23,6 +23,7 @@ from ..model.role import is_structural_role
 from .primitives.segments import ArcSeg
 from .topology.loop_finder import edges_to_open_curves
 from .topology.noding import interior_crossings
+from .healing.hierarchy import assign_cluster_refs
 from .healing.normalizer import (
     merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
 )
@@ -151,13 +152,14 @@ def heal(doc: Document, tolerance: Optional[float] = None, label: str = "",
         result.is_valid = False
         return result
 
-    clusters, trash = build_hierarchy(curves, label=label, source_file=source_file,
+    clusters, loose = build_hierarchy(curves, label=label, source_file=source_file,
                                       is_structural=structural)
     result.clusters = clusters
-    result.trash_entities = trash + labeled_curves(labeled)
+    result.loose = loose + labeled_curves(labeled)
+    assign_cluster_refs(result.loose, clusters, tol)
     if not clusters:
         # La geometria non compone nessun contorno esterno chiuso: il
-        # risultato non è un pezzo, è un file non lavorabile. La trash resta
+        # risultato non è un pezzo, è un file non lavorabile. `loose` resta
         # per la diagnostica, ma to_dxf() si rifiuta di scrivere solo quella.
         result.errors.append(
             "Nessun contorno esterno chiuso: nessuna parte generabile dal file. "
@@ -180,7 +182,7 @@ _LABELED_WITHOUT_PREDICATE = (
     "outer/inner/unknown, trattati come non strutturali di "
     "default (heal() chiamato senza is_structural=...): un "
     "ruolo come 'hole' non viene riconosciuto come contorno "
-    "di pezzo e finisce in trash. Passa a heal() un "
+    "di pezzo e finisce in `loose`. Passa a heal() un "
     "is_structural che lo riconosca."
 )
 
@@ -193,7 +195,7 @@ def _loose_ends_warnings(edges: list, non_contour_ids: set, epsilon: float) -> l
     ends = free_ends(edges, epsilon)
     if ends:
         first = ", ".join(f"({p[0]:.1f}, {p[1]:.1f}) a {d:.2f} mm dal nodo più vicino" for p, d in ends[:4])
-        warnings.append(f"{len(ends)} estremi liberi non chiudono niente e restano nel trash "
+        warnings.append(f"{len(ends)} estremi liberi non chiudono niente e restano in loose "
                         f"(i più vicini a un nodo: {first}).")
     joining = find_joining_edges(edges, non_contour_ids)
     if joining:

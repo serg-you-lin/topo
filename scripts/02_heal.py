@@ -34,7 +34,7 @@ result = topo.heal(
 
 print(f"is_valid   : {result.is_valid}")
 print(f"parti      : {result.cluster_count}")
-print(f"trash      : {len(result.trash_entities)}  (geometria non ancora in un loop)")
+print(f"loose      : {len(result.loose)}  (curve che non sono contorno di nessun cluster)")
 for e in result.errors:
     print(f"   ERROR: {e}")
 for w in result.warnings:

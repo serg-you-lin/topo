@@ -42,7 +42,7 @@ def num_segments_for_bulge(bulge: float) -> int:
 # Una traccia aperta (bending line, incisione, frammento non chiuso) nel modello
 # è una lista di segmenti nativi (LineSeg / ArcSeg / BSplineSeg / CircleSeg).
 # `pts`, `length`, `shape_type` sono valori DERIVATI da quei segmenti: qui, non
-# stoccati sul modello. Chi li consuma — detect_flat(), write._write_trash,
+# stoccati sul modello. Chi li consuma — detect_flat(), write._write_loose,
 # inspect() — li ricava con queste funzioni.
 
 def track_points(segments, tolerance: Optional[float] = None) -> List[Point]:

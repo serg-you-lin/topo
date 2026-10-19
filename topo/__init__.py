@@ -58,6 +58,7 @@ from .tools.inject       import inject
 from .tools.anchor       import anchor_annotations, dimension_references, leader_target, resolve_target
 # Un Result per parte, senza formato: ogni exporter ne scrive una (D124, D129)
 from .tools.split        import split, DEFAULT_MIN_CLUSTER_AREA
+from .tools.promote      import promote
 from .rules.validator     import validate, validate_result
 from .io.exporter         import (
     to_json,
@@ -137,6 +138,7 @@ __all__ = [
     "island",
     "split",
     "DEFAULT_MIN_CLUSTER_AREA",
+    "promote",
     "inject",
     "anchor_annotations",
     "leader_target",

@@ -104,7 +104,7 @@ class TestCustomRoleSurvivesHeal(unittest.TestCase):
 
         all_roles = {result.clusters[0].outer.role}
         all_roles.update(i.role for i in result.clusters[0].inners)
-        all_roles.update(role_str(getattr(t, "role", "")) for t in result.trash_entities)
+        all_roles.update(role_str(getattr(t, "role", "")) for t in result.loose)
 
         self.assertIn("title_block", all_roles)
         self.assertEqual(result.clusters[0].outer.role, ContourRole.OUTER)

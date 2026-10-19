@@ -226,7 +226,7 @@ def edges_to_open_curves(edges: list, exclude_ids: set) -> list:
 
     L'OpenCurve porta solo `role` + `segments` (primitive native). `pts`,
     `length`, `shape_type` sono valori derivati: chi li consuma (detect,
-    write._write_trash, inspect) li ricava dai segmenti con gli helper
+    write._write_loose, inspect) li ricava dai segmenti con gli helper
     `track_*` di `core.geometry.measure`.
 
     Args:

@@ -89,8 +89,8 @@ topo.save_json(result, "batch.json")
 ```
 
 `split` is a decision on the model: which parts (`min_area`), their names
-(`namer`), which trash and texts travel with each (the part that contains
-them, or the nearest). Each adapter then writes one part in its format.
+(`namer`), which loose curves and texts travel with each (the part that
+contains them, or the nearest). Each adapter then writes one part in its format.
 
 ## A drawing of views (several views, isometric)
 
@@ -230,7 +230,7 @@ import topo, topo_dxf
 
 topo_dxf.inspect_dxf("part.dxf")    # 1 — raw DXF entities: what's in the file
 topo.inspect_document(doc)          # 2 — edges, primitives, node graph: what the adapter understood
-topo.inspect_result(result)         # 3 — the model: clusters, outer/inner, whatever a consumer attached, trash
+topo.inspect_result(result)         # 3 — the model: clusters, outer/inner, whatever a consumer attached, loose curves
 
 topo_dxf.inspect_file("part.dxf", role_rules=topo.name_rules({"Piega": "bending"}))   # all three, in order
 ```

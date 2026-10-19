@@ -169,7 +169,7 @@ def _make_dropped_test(dxf: Path):
         doc, result = _read(dxf)
         tol = _tolerance(dxf)
         out = [_geometry(s) for c in result.clusters for ct in [c.outer] + c.inners for s in ct.segments]
-        out += [_geometry(s) for f in result.trash_entities for s in f.segments]
+        out += [_geometry(s) for f in result.loose for s in f.segments]
         covered = unary_union(out).buffer(tol)
         lost = unary_union([_geometry(e.segment) for e in doc.edges]).difference(covered)
         self.assertLessEqual(lost.length, DEFAULT_TOLERANCE,

@@ -62,7 +62,7 @@ def _diagnostic(result, readings):
             trash += [topo.model.OpenCurve(role=role, segments=[e.segment], styles=[e.style]) for e in edges]
         if r.outer is None:
             trash += [topo.model.OpenCurve(role="unknown", segments=[e.segment], styles=[e.style]) for e in r.edges]
-    result.trash_entities = trash
+    result.loose = trash
     return result
 
 
@@ -91,7 +91,7 @@ def main():
             suffix = "_INVALIDO"
         out = os.path.abspath(os.path.join(OUTDIR, f"{stem}{suffix}.dxf"))
         try:
-            topo_dxf.to_dxf(_diagnostic(result, readings), doc, include_trash=True).saveas(out)
+            topo_dxf.to_dxf(_diagnostic(result, readings), doc, include_loose=True).saveas(out)
             print(f"  -> {out}")
         except PermissionError:
             print(f"  !! {out} è aperto in un altro programma: non sovrascritto")

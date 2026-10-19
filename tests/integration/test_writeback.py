@@ -9,7 +9,7 @@ documento materializzato (doc_out), non più sul msp di partenza.
 
 Il vecchio comportamento "sposta le entità sul msp / entità su layer Trash /
 keep_trash" non esiste più — i test relativi sono stati riscritti per
-ispezionare il modello (`result.trash_entities`) o l'output di to_dxf().
+ispezionare il modello (`result.loose`) o l'output di to_dxf().
 
 Prima di lanciare, genera i DXF di esempio:
     python tests/generate_examples.py
@@ -142,7 +142,7 @@ class TestWritebackTrash(unittest.TestCase):
 
     def test_001_trash_entities_in_model(self):
         result, _ = _pipeline("rect_with_trash.dxf")
-        self.assertGreater(len(result.trash_entities), 0)
+        self.assertGreater(len(result.loose), 0)
 
     def test_002_trash_materialized_on_trash_layer(self):
         # Regressione: to_dxf() DEVE riportare ogni entità non classificata sul
@@ -151,12 +151,12 @@ class TestWritebackTrash(unittest.TestCase):
         result, msp = _pipeline("rect_with_trash.dxf")
         trash = [e for e in msp
                  if e.dxf.hasattr("layer") and e.dxf.layer == TRASH_LAYER]
-        self.assertEqual(len(trash), len(result.trash_entities))
+        self.assertEqual(len(trash), len(result.loose))
 
     def test_003_include_trash_false_omits_trash(self):
         doc = topo_dxf.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf")
         result = topo.heal(doc)
-        msp = topo_dxf.to_dxf(result, doc, include_trash=False).modelspace()
+        msp = topo_dxf.to_dxf(result, doc, include_loose=False).modelspace()
         trash = [e for e in msp
                  if e.dxf.hasattr("layer") and e.dxf.layer == TRASH_LAYER]
         self.assertEqual(len(trash), 0)
@@ -186,7 +186,7 @@ class TestWritebackTrash(unittest.TestCase):
 
         msp = topo_dxf.to_dxf(result, doc).modelspace()
         trash = [e for e in msp if e.dxf.layer == TRASH_LAYER]
-        self.assertEqual(len(trash), len(result.trash_entities))
+        self.assertEqual(len(trash), len(result.loose))
         self.assertGreater(len(trash), 0)
 
         with self.assertRaises(ValueError):

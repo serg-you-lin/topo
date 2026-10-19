@@ -4885,7 +4885,7 @@ while the package declares 3.10. Failing before and after, untouched: the two
 `to_text` budgets (`anch_02`, `anch_06`) and snapdraw's frame bbox on
 `regr_03`/`regr_05`.
 
-### D137 — `trash_entities` becomes `loose`: every curve knows which cluster contains it, and any curve can be promoted
+### D137 — `trash_entities` becomes `loose`: every curve knows which cluster contains it, and any curve can be promoted ✅
 Federico, 19 October. The DXF layer is not an argument (a format's concern,
 D123); the name is.
 
@@ -4918,3 +4918,34 @@ instead of its own probe point); a promoted curve travels with its cluster.
 The type is declared (`List[OpenCurve | ClosedCurve]`, not `List[Any]`).
 `Result.classified_entities` (D88), which snapbend fills next to this, is
 looked at in the review of `Result`/`Cluster` fields, not here.
+
+**Done (19 October).** `Result.loose: List[OpenCurve | ClosedCurve]`;
+`ClosedCurve` gains `cluster_ref` next to `OpenCurve`'s. The fact is
+`geometry.regions.enclosing` (smallest outer polygon whose exterior covers
+the whole trace, buffered by the node tolerance), written by
+`assign_cluster_refs` in `heal()` on every loose curve. `island()` keeps D99
+for what it already attaches (the island a curve touches) and gives the
+curves that touch nothing the island that contains them, if any: a detached
+axis inside a view, a caller-marked frame stays `None`. `topo.promote(result,
+curve, cluster, name, item=None)` is public; it raises if the curve is not in
+`loose` or the cluster is not in the result. `split` hands each curve to the
+part of its `cluster_ref` (nearest part only for `None`, as before) and gives
+each part *copies* whose `cluster_ref` refers to that part (`0` or `None`);
+the same for annotations, which before kept their index in the whole result
+and pointed past the end of a one-cluster part.
+
+Found on the way: `rotate_result` rotated only open loose curves, a closed
+one (a marked circle) kept its old position; it now goes through
+`_rotate_contour` like any closed contour.
+
+What did not change: the DXF adapter's default layer for role `unknown` is
+still `Trash` (`TRASH_LAYER`, `SKIP_LAYERS`) — a layer name is the format's
+(D123), and a file written before reads back the same. `include_trash` is
+`include_loose` in `to_dxf`/`to_view_model`/`to_svg`, and the view model's
+key is `loose`.
+
+Consumers: snapbend's `detect_flat` reads `cluster_ref` instead of probing
+midpoints (bend lines, open and closed engravings) and moves bend lines with
+`promote` instead of filtering `loose` by id; its 435 tests and goldens are
+unchanged. snapdraw, snapfence, cogo: rename only. No golden of topo changed.
+`main` stays **0.21.0**: not released yet, D137 joins D135 and D136 in it.

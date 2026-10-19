@@ -8,7 +8,7 @@ sul bordo della faccia esterna della loro componente connessa, MAP.md D111,
 D131).
 
 `heal()` non assegna mai un significato a questi edge: li esclude dal grafo e
-basta, restano in `trash_entities` col ruolo che avevano (`unknown` se nessuno
+basta, restano in `loose` col ruolo che avevano (`unknown` se nessuno
 l'ha già deciso). È `detect_flat()` — un consumatore a valle come un altro — a
 interpretarli (`_detect_bending`, "candidato dritto con gli estremi sul
 contorno esterno → piega, confidence 0.9").

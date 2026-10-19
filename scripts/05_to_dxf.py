@@ -45,7 +45,7 @@ if not result.is_valid:
 out = topo_dxf.to_dxf(
     result,
     source_doc=doc,             # solo per gli header
-    include_trash=True,         # geometria non classificata sul layer "Trash"
+    include_loose=True,         # geometria non classificata sul layer "Trash"
     annotation_layer="Annotation",   # "Trash" / altro nome / None (= layer originale)
 )
 path = os.path.join(OUTDIR, f"{base}_healed.dxf")
