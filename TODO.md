@@ -1078,6 +1078,15 @@ eventualmente ML/vision.
 
 # linguette (`bridge_tabs`) — fatto (MAP.md D40); resta aperto solo questo
 
+## APERTO (19 ottobre, MAP.md D134) — regioni annidate unite da strisce, da rifare in 1.x
+
+Oggi `bridge_nested_tabs` unisce ogni regione al genitore anche quando c'è
+una sorella accanto (in smoother "viene una merda"). Da fare: i quattro fatti
+di D134 (chi si affaccia a chi, distanza e punti più vicini, la striscia
+anche tra sorelle, chi resta non collegato), nomi solo geometrici (via `tabs`,
+`tab_width`, `tab_count`), smoother aggiornato nello stesso cambio. La
+politica (quante, dove, chi con chi) resta in smoother. Non blocca la 1.0.
+
 ## Cosa resta parcheggiato, non toccare senza motivo
 
 - ~~**Problema 2**~~ — risolto da D47, poi la tassonomia di processo è uscita

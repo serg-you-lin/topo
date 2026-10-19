@@ -4741,3 +4741,52 @@ arcs and circles, and on a sheet of views it outweighs the source DXF), so
 1.0 must not freeze their signatures or output. API.md keeps their cards
 under a note; LLM.md, ARCHITECTURE.md and the READMEs mark them. Callers
 (smoother, snapbend's tests) use `topo.to_svg`, which still works.
+
+### D134 — joining nested regions: topo gives the facts and the construction, the caller the policy; siblings join too; geometric names only
+Federico, 19 October, correcting Claude (who had proposed moving the code
+out of topo, against D39). Supersedes the "known unresolved limit" of D40.
+
+**The defect.** `bridge_nested_tabs` joins every filled region of even
+depth ≥ 2 to its direct parent, `tab_count` strips equally spaced around its
+centroid. Two sibling regions side by side in the same empty region are each
+joined to the parent, unaware of each other: the strip aimed at the parent
+runs into the sibling, or the long way round when the sibling is 10 units
+away. Seen in smoother's output.
+
+**The split (D39 restated).** Constructing a strip of width `w` between two
+boundaries at a given place is deterministic geometry: topo. How many, where,
+and which region joins which is the caller's. topo gives, as facts:
+
+1. **Which boundaries face each other**: for every empty region, its own
+   boundary plus the boundaries of the filled regions directly inside it.
+   Two regions inside different empty regions (cousins) never face each
+   other: material lies between them, a strip would cross a third boundary.
+   They are excluded by construction, not by a rule.
+2. **The gap between two facing boundaries**: minimum distance and the pair
+   of closest points.
+3. **The strip**: between any two facing boundaries (parent–child *and*
+   sibling–sibling) at a given place and width; refused if it crosses a
+   third boundary.
+4. **Which filled regions are not connected** to the outermost filled region,
+   through any chain of strips, given a set of strips. A caller placing
+   strips by hand learns what is still unconnected.
+
+**Policy stays with the caller.** "Join each region to its nearest
+neighbour" alone fails: two discs 10 apart in a window, 100 from its edge,
+join each other and neither reaches the edge. Growing from the parent,
+joining each time the nearest region to something already connected, gives
+the nearest-neighbour behaviour and connects everything. That is one policy
+among several (count, mid-point snaps, by hand), so it lives in the caller
+(smoother today); fact 4 is how the caller checks it. No separate project
+for it: one caller places strips today; when a second does, what both
+rebuild gets promoted.
+
+**Names are geometry only.** topo is geometry for the real world, never the
+vocabulary of one trade. No manufacturing words in names, docstrings or
+docs: not "tab", "bridge" in the cutting sense, "fall out", "cut", "laser",
+"sheet". The current names (`tools/tabs.py`, `bridge_tabs`,
+`bridge_nested_tabs`, `tab_width`, `tab_count`) are renamed when rewritten;
+experimental and outside `__all__`, so a clean break (smoother updated in
+the same change).
+
+**Not blocking 1.0**: all of it is new names, added in a 1.x.
