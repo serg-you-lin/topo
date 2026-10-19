@@ -218,6 +218,11 @@ Dopo la 1.0, un nome utile ma non ancora sicuro può passare da
 Da D140 le richieste arrivano anche scritte: ogni consumer le mette nel suo
 `TODO.md`, sezione `## Richieste a topo` (da una sessione nel consumer topo è
 in sola lettura). Raccoglierle: `grep -n -A20 "## Richieste a topo" ../*/TODO.md`.
+Chiedere non basta per entrare: ogni richiesta passa dai tre esiti qui sopra,
+e un "no, resta nel consumer" si scrive qui col perché, così il consumer lo
+trova e non la richiede. Nemmeno il codice già scritto entra perché c'è: D139
+è entrata così (scritta in topo da smoother prima del blocco) e resta
+sperimentale finché la riscrittura di D134 non la giudica.
 
 Richieste aperte:
 
