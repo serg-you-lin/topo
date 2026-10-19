@@ -4845,6 +4845,9 @@ same tolerance, and de Boor ran on tuples built per step. A per-tolerance
 cache inside the spline (not a field: a spline is never changed in place)
 and de Boor on plain coordinate lists bring it to 19.5 s.
 
+`main` → **0.21.0** (D135 and D136, one bump: public names and
+`contour_shape` output changed).
+
 ### D136 — `contour_shape.kind` is a closed list of six, and a contour's kind never changes in 1.x ✅
 Federico, 19 October: "the choice that gives fewer problems tomorrow".
 
