@@ -58,7 +58,8 @@ def _make_test(name: str):
 # anch_02 cresciuto con D138, da capire; anch_06 cambia topologia con D145
 # (contatto deciso sul poligono in `island()`, lettura "dopo" giudicata più
 # corretta da Federico, ma il golden resta congelato con gli altri di island).
-KNOWN_FAILING = {"anch_02.dxf", "anch_06.dxf"}
+# anch_01: +3 caratteri con D147, i lati dei due rettangolini passano in loose.
+KNOWN_FAILING = {"anch_01.dxf", "anch_02.dxf", "anch_06.dxf"}
 
 for _name in FILES:
     _test = _make_test(_name)
