@@ -70,7 +70,7 @@ primitive di topo.
 2. ~~**Superficie pubblica esplicita**~~ — fatta: prima metà D120 (0.18.0),
    seconda metà D122 (0.19.0). Misure e fatti sugli assi in `topo.geometry`;
    `"*"` attivo in snapbend e snapdraw. Fuori dalla 1.0 stabile, apposta: le
-   linguette (`tools.tabs`, in sviluppo, cambieranno) e la tabella dei layer
+   strisce fra regioni annidate (`tools.strips`, D142, sperimentali) e la tabella dei layer
    DXF (un `topo.layers` pubblico provato e tolto: topo non ha layer, D123).
    Restano: `gen_index` in smoother (non ce l'ha), i lab di snapdraw come
    richieste (sotto).
@@ -185,7 +185,7 @@ primitive di topo.
     misure del vano + un motivo da un disegno qualunque (logo, numero civico,
     decoro) che diventa la lamiera di tamponamento traforata; uscita: DXF di
     taglio dei pezzi piani (snapfence MAP D2). Le richieste attese (scalare e
-    spostare un documento, `bridge_nested_tabs` pubblico e con le spline,
+    spostare un documento, strisce fra regioni annidate — ora `tools.strips`, D142, la politica è di snapfence —,
     scritte lasciate come TEXT) stanno nel TODO di snapfence e arrivano qui
     solo quando uno script le chiede davvero.
 
@@ -226,13 +226,19 @@ sperimentale finché la riscrittura di D134 non la giudica.
 
 Richieste aperte:
 
-- **smoother, linguette a click** (D139/D140): `bridge_parent_tabs`,
-  `is_tab_island` in `tools.tabs`, sperimentali, committati. Il fatto che
-  serviva è `geometry.nearest_point` (fatto). Il resto si riscrive come i
-  fatti di D134, con nomi geometrici; poi smoother sposta lì la sua politica.
-- **smoother, linguette che non attraversano niente** (19 ottobre): è il
-  fatto 3 di D134 ("rifiutata se attraversa un terzo bordo"), arriva con la
-  riscrittura. Oggi smoother scarta a valle (`pipeline._crossing_islands`).
+- ~~**smoother, linguette a click** (D139/D140) e **linguette che non
+  attraversano niente** (19 ottobre)~~ — fatto, D142: `tools.tabs` è
+  diventato `tools.strips`, i quattro fatti di D134 più la costruzione.
+  Entrato: bordi affacciati, distanza, striscia in un punto (anche fra
+  sorelle, rifiutata col perché se attraversa un bordo o un'altra striscia),
+  regioni non collegate, bordi aperti in catene di primitive. **No, resta a
+  smoother** (scelte sue): quali regioni ricevono strisce (`is_tab_island`,
+  `min_island_size`), quante e dove (`tab_count` attorno al centroide), a
+  quale isola va un click (`_anchors_by_island`). Da fare in smoother:
+  `bridge_parent_tabs`/`bridge_nested_tabs` → un `link` per punto con
+  `placed=` + `open_boundaries`; `_crossing_islands` sparisce (lo fa `link`);
+  i tratti sono catene di `LineSeg` (punti: gli `start` più l'ultimo `end`),
+  i fianchi `opened.sides`.
 - ~~**smoother, spigoli per svolta / linee dove è dritto / arco per gli
   estremi / spline con tolleranza**~~ — fatto, D141 (`simplify_points`
   riscritta). Resta a smoother: buttare `smoother/fitting.py` e chiamare
@@ -1120,16 +1126,15 @@ eventualmente ML/vision.
 
 ---
 
-# linguette (`bridge_tabs`) — fatto (MAP.md D40); resta aperto solo questo
+# strisce fra regioni annidate — fatto (MAP.md D40, D134, D142)
 
-## APERTO (19 ottobre, MAP.md D134) — regioni annidate unite da strisce, da rifare in 1.x
+## ~~APERTO (19 ottobre, MAP.md D134) — regioni annidate unite da strisce~~
 
-Oggi `bridge_nested_tabs` unisce ogni regione al genitore anche quando c'è
-una sorella accanto (in smoother "viene una merda"). Da fare: i quattro fatti
-di D134 (chi si affaccia a chi, distanza e punti più vicini, la striscia
-anche tra sorelle, chi resta non collegato), nomi solo geometrici (via `tabs`,
-`tab_width`, `tab_count`), smoother aggiornato nello stesso cambio. La
-politica (quante, dove, chi con chi) resta in smoother. Non blocca la 1.0.
+Fatto il 19 ottobre, D142: `topo.tools.strips` (i quattro fatti e la
+costruzione, nomi geometrici). smoother non è stato aggiornato nello stesso
+cambio come diceva D134: da D140 si adegua dalla sua sessione (voce sopra in
+"richieste dalla superficie"). Resta aperto: promuovere a `topo.geometry`
+quando un secondo chiamante (snapfence) li usa davvero.
 
 ## Cosa resta parcheggiato, non toccare senza motivo
 

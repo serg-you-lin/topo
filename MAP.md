@@ -4742,7 +4742,7 @@ arcs and circles, and on a sheet of views it outweighs the source DXF), so
 under a note; LLM.md, ARCHITECTURE.md and the READMEs mark them. Callers
 (smoother, snapbend's tests) use `topo.to_svg`, which still works.
 
-### D134 — joining nested regions: topo gives the facts and the construction, the caller the policy; siblings join too; geometric names only
+### D134 — joining nested regions: topo gives the facts and the construction, the caller the policy; siblings join too; geometric names only (done in D142)
 Federico, 19 October, correcting Claude (who had proposed moving the code
 out of topo, against D39). Supersedes the "known unresolved limit" of D40.
 
@@ -5030,7 +5030,7 @@ from its caller. The scale leaves out `measure_is_angle` (now also 3-point
 angles, which `== "angular"` missed). Its regression readings are unchanged
 (regr_03/05 fail on the frame bbox as before). snapbend, snapfence: rename.
 
-### D139 — Tabs at caller-chosen points: `bridge_parent_tabs`, one parent split once ✅ (names re-scoped by D140: experimental, not the stable surface)
+### D139 — Tabs at caller-chosen points: `bridge_parent_tabs`, one parent split once ✅ (names re-scoped by D140: experimental, not the stable surface) — superseded by D142
 Federico, 19 October, from smoother (its D20): tabs placed by hand, a click
 with snap in smoother's web UI, instead of `tab_count` equally spaced around
 the island centroid. `topo.tools.tabs.bridge_parent_tabs(parent,
@@ -5197,3 +5197,52 @@ sharpening did not check. DXF for the eye: `pipeline_output/D141_fit/`
 **Not done here**: the fifth request (strips that cross nothing) is fact 3 of
 D134 and lands with that rewrite. smoother's `fitting.py` is now the duplicate:
 it moves onto `simplify_points` from smoother's own session (D140).
+
+### D142 — `tools.tabs` becomes `tools.strips`: D134's four facts and the construction, on primitives; policy and `is_tab_island` go back to the caller ✅
+Federico, 19 October ("implement what belongs here"). Implements D134 and
+judges D139, which had entered because it was already written, not because a
+triage admitted it (TODO, "richieste dalla superficie").
+
+**What topo gives** (`topo.tools.strips`, experimental, D140):
+`facing_boundaries(cluster)` → `Facing(region, inside)` per empty region
+(fact 1); `gap(a, b)` → `Gap(distance, on_a, on_b)` (fact 2);
+`link(facing, a, b, at, width, placed=())` → `Link(a, b, strip)` (fact 3);
+`unconnected_regions(cluster, links)` (fact 4); `open_boundaries(links)` →
+`Opened(boundaries, sides)`, the construction. The ring-level geometry (no
+hierarchy) is `topo/core/geometry/strips.py`: `gap`, `strip_between`,
+`open_ring`, `Strip` — a brick, not in `topo.geometry.__all__` until a
+second caller uses it.
+
+**Choices, each with its reason:**
+- **Primitives, not points.** The old code discretized every contour
+  (`discretize_tolerance`) and returned point lists to be refitted. Now the
+  cuts are `intersections` of the side lines with the contour's own
+  primitives, and the opened boundary is chains of the same primitives (a cut
+  circle is an arc, exact). A caller tracing a raster still gets its
+  polyline back as `LineSeg`s; a caller with real arcs no longer loses them.
+- **The direction keeps D139's rule** (perpendicular from the nearer
+  boundary, toward the other, else toward its closest point), made
+  hierarchy-free: the normal points inward if the boundary contains the other
+  one, outward otherwise. Tangents are exact on lines, arcs and circles: a
+  one-sided difference at a circle's seam tilted the strip by 3e-5.
+- **Refused, with the reason**, when a side misses `a` or `b`, crosses
+  another boundary of the `Facing` or its own two boundaries again (concave
+  shapes), when a boundary lies wholly inside the strip, or when it touches a
+  strip in `placed`. This is smoother's `_crossing_islands`, now a fact.
+- **Which stretch the strip covers** is the one between its two cuts that
+  holds its foot (`a_at`/`b_at`), never "the shorter one": the old single-tab
+  rule was a guess that breaks on a strip wider than half a small contour.
+  Two strips overlapping on one boundary raise in `open_boundaries`.
+- **Removed, back to the caller** (policy, D134): `is_tab_island` (which
+  regions get strips), `tab_count` spaced round the centroid
+  (`bridge_nested_tabs`), the per-island `failed` bookkeeping
+  (`bridge_parent_tabs`: the caller catches `link`'s `ValueError` per
+  region). Also removed, used only by tabs: `polyline_line_intersections`,
+  `closest_point_on_track`.
+
+D134 said "smoother updated in the same change": superseded by D140, smoother
+adapts from its own session (the mapping is in TODO). Script 16 is now
+`16_strips_on_fixture.py` and holds its own policy (4 strips at 90°). Proof:
+`tests/unit/test_strips.py` — sisters and window, cousins never facing,
+four nesting levels, perpendicular from a straight side, refusals, the
+fixture rejoined and healed back to a valid cluster with four empty sectors.

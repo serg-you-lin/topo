@@ -23,7 +23,7 @@ Point = Tuple[float, float]
 # Matematica generica su una sequenza ordinata di punti (x, y): non sa nulla
 # di primitive topo (LineSeg/ArcSeg/...) né di come il chiamante la userà.
 # Nata dentro tools/simplify_points.py (D33/D36), spostata qui perché un
-# secondo consumatore (un futuro tool linguette) ne ha bisogno senza
+# secondo consumatore ne ha bisogno senza
 # duplicarla — `core/primitives/fitting.py` resta l'orchestratore che decide
 # quando/come usarla per ricostruire linee/archi/spline.
 

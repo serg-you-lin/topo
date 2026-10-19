@@ -11,7 +11,6 @@ from typing import Optional, Tuple, List
 from shapely.geometry import LineString, box
 
 from ..primitives.segments import LineSeg, ArcSeg, CircleSeg
-from .regions import nearest_point
 
 Point = Tuple[float, float]
 
@@ -71,12 +70,6 @@ def track_length(pts) -> float:
         math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1])
         for i in range(len(pts) - 1)
     )
-
-
-def closest_point_on_track(pts, point: Point, closed: bool = False) -> Point:
-    """Il punto della traccia `pts` più vicino a `point`: `nearest_point` sui suoi lati."""
-    ring = list(pts) + [pts[0]] if closed else list(pts)
-    return nearest_point([LineSeg(start=a, end=b) for a, b in zip(ring, ring[1:]) if a != b], point)
 
 
 def track_shape_type(pts) -> str:
