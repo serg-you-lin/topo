@@ -128,7 +128,7 @@ topo_dxf.to_dxf(result, doc).saveas("two_rectangles.dxf")
 ```
 
 Builders return topo segments: `polygon(points)`, `rectangle`, `regular_polygon`,
-`circle`, `stadium` (with true arcs). Any other straight-sided shape is a `polygon`.
+`circle`, `ellipse`, `stadium` (with true arcs). Any other straight-sided shape is a `polygon`.
 
 ## Shapes: what a contour is, not what it is for
 
@@ -139,7 +139,7 @@ part, snapdraw for the drawing notation — D68, D91).
 ```python
 for cluster in result.clusters:
     for inner in cluster.inners:
-        shape = topo.geometry.contour_shape(inner)     # circle / stadium / rectangle / polygon / other
+        shape = topo.geometry.contour_shape(inner)     # circle / ellipse / stadium / rectangle / polygon / other
         print(shape.kind, shape.center, shape.length, shape.width)
 
     # circles sharing a center, smallest first (singletons included)

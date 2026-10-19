@@ -140,9 +140,8 @@ primitive di topo.
      di controllo, nodi, pesi); il resto lo tiene l'adapter se gli serve.
      Verificare che una spline data per soli fit points venga convertita in
      lettura. topo, `topo_dxf`, smoother (3 righe).
-   - **D136** `contour_shape.kind`: sei (aggiunta `ellipse`), `ShapeKind(str,
-     Enum)`, builder `ellipse()`, regole sulle primitive come sono (solo
-     equivalenza esatta), test che fissa l'insieme e i casi limite.
+   - ~~**D136** `contour_shape.kind`~~ — fatto il 19 ottobre: sei kind,
+     `ShapeKind`, `ellipse()`, `TestShapeKindStabile`.
    - **D137** `trash_entities` → `result.loose`, tipizzato; `cluster_ref` su
      ogni curva (contenuta per intero nel contorno esterno, bordo e fori
      compresi); un'operazione pubblica di promozione verso

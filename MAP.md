@@ -4814,7 +4814,7 @@ fit points only is turned into control points on reading.
 Clean break before 1.0 (49 files in topo and its adapters, 3 lines in
 smoother, nothing in snapbend/snapdraw/snapfence).
 
-### D136 — `contour_shape.kind` is a closed list of six, and a contour's kind never changes in 1.x
+### D136 — `contour_shape.kind` is a closed list of six, and a contour's kind never changes in 1.x ✅
 Federico, 19 October: "the choice that gives fewer problems tomorrow".
 
 **The criterion for a kind**: the contour is fully determined by the measures
@@ -4841,6 +4841,15 @@ are part of the contract.
 working); an `ellipse()` builder joins the others for the round trip (D96);
 one test fixes the set of kinds and the edge cases (square, equal-axis
 ellipse, spline circle, rounded rectangle, a hole in an isometric view).
+
+**Done** the same day: `TestShapeKindStabile` in `test_shape.py`, the
+`ellipse()` round trip in `test_build.py`; `to_text` writes an ellipse on one
+line like a rectangle or a stadium. No golden of topo, snapbend or snapdraw
+changed (no fixture has a closed ellipse today). `ShapeKind` overrides
+`__str__`/`__format__` rather than using `StrEnum`, which needs Python 3.11
+while the package declares 3.10. Failing before and after, untouched: the two
+`to_text` budgets (`anch_02`, `anch_06`) and snapdraw's frame bbox on
+`regr_03`/`regr_05`.
 
 ### D137 — `trash_entities` becomes `loose`: every curve knows which cluster contains it, and any curve can be promoted
 Federico, 19 October. The DXF layer is not an argument (a format's concern,
