@@ -46,15 +46,21 @@ class TestArcSegRotated(unittest.TestCase):
         self.assertAlmostEqual(rotated.end_angle, math.pi, places=9)
         self.assertEqual(rotated.ccw, seg.ccw)
 
-    def test_discretized_points_match_manual_rotation(self):
+    def test_discretized_points_lie_on_the_rotated_arc(self):
+        # D145: i vertici stanno sulla griglia del cerchio (angolo 0), quindi
+        # non ruotano col pezzo; ruotano gli estremi, e ogni punto sta sull'arco
         seg = ArcSeg(center=(0, 0), radius=4, start_angle=0.0, end_angle=math.pi, ccw=True)
         angle = math.radians(30)
         rotated = seg.rotated(angle, origin=(0, 0))
-        for (x, y), (rx, ry) in zip(seg.discretize(0.01), rotated.discretize(0.01)):
-            ex = x * math.cos(angle) - y * math.sin(angle)
-            ey = x * math.sin(angle) + y * math.cos(angle)
-            self.assertAlmostEqual(rx, ex, places=6)
-            self.assertAlmostEqual(ry, ey, places=6)
+        pts = rotated.discretize(0.01)
+        self.assertAlmostEqual(pts[0][0], 4 * math.cos(angle), places=9)
+        self.assertAlmostEqual(pts[0][1], 4 * math.sin(angle), places=9)
+        self.assertAlmostEqual(pts[-1][0], -4 * math.cos(angle), places=9)
+        self.assertAlmostEqual(pts[-1][1], -4 * math.sin(angle), places=9)
+        for x, y in pts:
+            self.assertAlmostEqual(math.hypot(x, y), 4.0, places=9)
+            phi = math.atan2(y, x) % (2 * math.pi)
+            self.assertTrue(angle - 1e-9 <= phi <= angle + math.pi + 1e-9)
 
 
 class TestCircleSegRotated(unittest.TestCase):

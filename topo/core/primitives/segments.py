@@ -23,8 +23,15 @@ Point = Tuple[float, float]
 # COSTANTI DI DISCRETIZZAZIONE — MODIFICARE QUI PER CAMBIARE COMPORTAMENTO
 # ---------------------------------------------------------------------------
 
-# Numero minimo di segmenti per archi (evita errori di area su archi grandi)
+# Numero minimo di segmenti per il campionamento iniziale dell'ellisse
 MIN_SEGMENTS_ARC = 32
+
+# Lati minimi della griglia di un cerchio; un arco ne prende la sua parte (D145)
+MIN_SEGMENTS_CIRCLE = 64
+
+# Un punto della griglia più vicino di così a un estremo dell'arco coincide
+# con l'estremo e si salta: eviterebbe solo un tratto degenere
+_GRID_SNAP = 1e-9
 
 # Numero massimo di segmenti per tratto di spline (evita esplosione di punti)
 MAX_SEGMENTS_SPLINE = 100
@@ -121,6 +128,38 @@ def _sagitta_step(radius: float, tolerance: float) -> Optional[float]:
     return 2.0 * math.acos(ratio)
 
 
+def _circle_sides(radius: float, tolerance: float) -> int:
+    """
+    Lati della griglia del cerchio di raggio `radius`: sagitta <= tolerance,
+    almeno MIN_SEGMENTS_CIRCLE, nessun tetto (la freccia è assoluta, i lati
+    crescono con il raggio). Multiplo di 4: la griglia è simmetrica rispetto
+    ai due assi, quindi i quarti cadono sui vertici e un pezzo specchiato dà
+    il poligono specchiato.
+    """
+    step = _sagitta_step(radius, tolerance)
+    if step is None:
+        return MIN_SEGMENTS_CIRCLE
+    sides = max(MIN_SEGMENTS_CIRCLE, int(math.ceil(2 * math.pi / step)))
+    return -(-sides // 4) * 4
+
+
+def _grid_angles(lo: float, hi: float, radius: float, sides: int) -> List[float]:
+    """
+    Angoli da `lo` a `hi` (lo < hi): i due estremi esatti e, fra loro, i punti
+    della griglia k·2π/sides ancorata all'angolo 0 (D145). Così ogni arco di un
+    cerchio è un pezzo del poligono del cerchio intero, comunque sia tagliato.
+    """
+    step = 2 * math.pi / sides
+    snap = _GRID_SNAP / radius
+    angles = [lo]
+    for k in range(math.floor(lo / step) + 1, math.ceil(hi / step)):
+        a = k * step
+        if a - lo > snap and hi - a > snap:
+            angles.append(a)
+    angles.append(hi)
+    return angles
+
+
 # ---------------------------------------------------------------------------
 # ArcSeg
 # ---------------------------------------------------------------------------
@@ -139,37 +178,24 @@ class ArcSeg:
 
     def discretize(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
-        Discretizza l'arco in polilinea con errore di sagitta < tolerance.
-        
-        Formula: sagitta = r * (1 - cos(θ/2))
-        dove θ è l'angolo per segmento.
-        
-        Usa ALMENO MIN_SEGMENTS_ARC segmenti per archi grandi.
+        Discretizza l'arco sulla griglia del suo cerchio (D145): gli estremi
+        esatti più i vertici di `CircleSeg.discretize` che cadono fra loro, così
+        l'arco si sovrappone al cerchio intero. Sagitta <= tolerance: nessun
+        tratto supera il passo della griglia, i due di testa sono più corti.
         """
         total_angle = self._sweep()
-        
+
         if total_angle < 1e-12:
             # Arco nullo
             start_pt = self._point_at(self.start_angle)
             return [start_pt, start_pt]
-        
-        # Angolo per segmento dalla tolleranza; raggio molto piccolo: angolo fisso
-        angle_per_segment = _sagitta_step(self.radius, tolerance) or math.radians(FALLBACK_ANGLE_DEG)
 
-        # Applica il minimo di segmenti
-        n_segments = max(MIN_SEGMENTS_ARC, int(math.ceil(total_angle / angle_per_segment)))
-        
-        # Genera i punti
-        pts = []
-        for i in range(n_segments + 1):
-            t = i / n_segments
-            if self.ccw:
-                angle = self.start_angle + t * total_angle
-            else:
-                angle = self.start_angle - t * total_angle
-            pts.append(self._point_at(angle))
-        
-        return pts
+        sides = _circle_sides(self.radius, tolerance)
+        if self.ccw:
+            angles = _grid_angles(self.start_angle, self.start_angle + total_angle, self.radius, sides)
+        else:
+            angles = _grid_angles(self.start_angle - total_angle, self.start_angle, self.radius, sides)[::-1]
+        return [self._point_at(a) for a in angles]
 
     def _point_at(self, angle: float) -> Point:
         """Punto sull'arco all'angolo dato (radianti)."""
@@ -557,20 +583,13 @@ class CircleSeg:
 
     def discretize(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
-        Discretizza il cerchio in polilinea chiusa.
-        Usa il doppio dei segmenti di un arco con lo stesso raggio.
+        Discretizza il cerchio in polilinea chiusa sulla sua griglia
+        (`_circle_sides`, ancorata all'angolo 0): sagitta <= tolerance, lati
+        che crescono con il raggio (~π·√(r/2·tol)). Ogni `ArcSeg` dello stesso
+        cerchio usa gli stessi vertici (D145).
         """
-        angle_per_segment = _sagitta_step(self.radius, tolerance)
-        if angle_per_segment is None:
-            n_segments = 8
-        else:
-            # Cerchio completo = 2π, quindi il doppio dei segmenti
-            n_segments = int(math.ceil(2 * math.pi / angle_per_segment))
-        
-        # MIN_SEGMENTS_ARC * 2 per coerenza (64 segmenti minimo)
-        n_segments = max(MIN_SEGMENTS_ARC * 2, n_segments)
-        n_segments = min(n_segments, 128)
-        
+        n_segments = _circle_sides(self.radius, tolerance)
+
         # Genera i punti (chiuso)
         pts = []
         for i in range(n_segments + 1):
