@@ -62,6 +62,10 @@ primitive di topo.
       non committate) non è stato portato: quando si riprende il PDF si
       parte da `topo_pdf/` e lo si porta lì, con `load_pdf` che restituisce
       un `Document` come ogni adapter (oggi `list[Edge]`, D10).
+      La worktree e il suo branch `experiment/pdf-adapter` restano finché
+      il PDF non si riprende (Federico, 19 ottobre): non proporre di
+      cancellarli. Gli altri branch locali, copie della storia di prima
+      della riscrittura, sono stati cancellati lo stesso giorno.
 1. ~~**Rename `forge` → `topo` / `g-topo`**~~ — fatto, D119 (0.17.0), insieme
    a D117: via i prefissi `Forge*`, i passi di heal/island in `topo.steps`.
    Il repo GitHub è già `topo` e `origin` punta lì; la cartella locale è
