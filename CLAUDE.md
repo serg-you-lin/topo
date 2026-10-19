@@ -97,6 +97,12 @@ snapbend's `tests/gen_index.py` — change it in one, copy to the other.
 - **A large file is filtered, not read**: to find something inside a big file
   (a drawing, a log, a golden) run a filter (`grep`, `anonymize scan`, a small
   parser) and read its output only.
+- **Consumers adapt to topo, never the reverse** (D140). A session opened in a
+  consumer cannot write here (a global hook blocks it); its needs arrive as
+  lines under `## Richieste a topo` in that consumer's `TODO.md`. At the start
+  of a topo session that touches the public surface, collect them
+  (`grep -n -A20 "## Richieste a topo" ../*/TODO.md`) and triage each one as
+  TODO.md's "richieste dalla superficie" says.
 - Refactors are clean breaks: no compatibility aliases kept "just in case".
 
 ## Conventions

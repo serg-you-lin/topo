@@ -158,7 +158,8 @@ primitive di topo.
      il 19 ottobre; golden convertiti chiave per chiave, stessi valori.
    - **Rassegna dei campi di `Result`/`Cluster`** (sono API): `List[Any]`,
      `all_arcs`, `classified_entities` (di un consumer, D88), `_open_shapes`.
-   - **Una frase da scrivere: cosa promette la 1.0** — solo nomi e firme, o
+   - **Una frase da scrivere: cosa promette la 1.0** — dire anche che la
+     superficie stabile tiene solo fatti, mai la forma di un consumer (D140) — solo nomi e firme, o
      anche l'output geometrico. Da lì dipende se i 4 dubbi su D103
      (`island()`) vanno verificati prima.
 
@@ -190,6 +191,12 @@ primitive di topo.
 
 Poi topo 1.0.0, e snapbend 1.0.0 dietro.
 
+- **`test_text_budget::test_anch_02` rosso già su `0d5a512` (D138)**: `to_text`
+  di anch_02 fa 200435 caratteri contro un budget di 193366 (+3.7%). Visto il
+  19 ottobre lavorando a D140, non causato da D140 (rosso anche sull'HEAD
+  pulito). Capire se D138 ha aggiunto testo legittimo prima di toccare il
+  budget (regola: mai rigenerare per far passare).
+
 ## APERTO (17 ottobre) — richieste dalla superficie
 
 Un prototipo (script, lab, pipeline di terzi) può importare da `topo.core`
@@ -208,7 +215,16 @@ Dopo la 1.0, un nome utile ma non ancora sicuro può passare da
 `topo.experimental` (pubblico, dichiarato instabile, come le API
 "provisional" di PEP 411) prima del suo posto definitivo.
 
+Da D140 le richieste arrivano anche scritte: ogni consumer le mette nel suo
+`TODO.md`, sezione `## Richieste a topo` (da una sessione nel consumer topo è
+in sola lettura). Raccoglierle: `grep -n -A20 "## Richieste a topo" ../*/TODO.md`.
+
 Richieste aperte:
+
+- **smoother, linguette a click** (D139/D140): `bridge_parent_tabs`,
+  `is_tab_island` in `tools.tabs`, sperimentali. Il fatto che serviva è
+  `geometry.nearest_point` (fatto). Il resto si riscrive come i fatti di
+  D134, con nomi geometrici; poi smoother sposta lì la sua politica.
 
 - **snapdraw `lab/`** (D122): `LoopFinder`, `segments_from_loop`,
   `edge_styles_from_loop`, `build_node_graph`, `split_at_crossings`,

@@ -35,13 +35,16 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Sequence, Tuple
 
 from ..core.primitives.segments import LineSeg, Point
 from ..core.geometry.intersections import _distance, polyline_line_intersections
-from ..core.geometry.measure import track_points
+from ..core.geometry.measure import closest_point_on_track, track_points
 
-__all__ = ["bridge_tabs", "bridge_nested_tabs", "BridgeTab", "NestedBridgeResult"]
+__all__ = [
+    "bridge_tabs", "bridge_parent_tabs", "bridge_nested_tabs", "is_tab_island",
+    "BridgeTab", "NestedBridgeResult", "ParentBridgeResult", "TabbedIsland",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -181,12 +184,19 @@ def _split_closed_polyline_at_cuts(
 
     n = len(points)
     n_cuts = len(enriched)
+    perimeter = cum[-1] + _distance(points[-1], points[0])
+    single_tab = len({cut[3] for cut in enriched}) == 1
     stretches: List[List[Point]] = []
     for k in range(n_cuts):
-        _, edge_a, pt_a, tab_a = enriched[k]
-        _, edge_b, pt_b, tab_b = enriched[(k + 1) % n_cuts]
+        pos_a, edge_a, pt_a, tab_a = enriched[k]
+        pos_b, edge_b, pt_b, tab_b = enriched[(k + 1) % n_cuts]
         if tab_a == tab_b:
-            continue  # arco sotto la linguetta: qui ci passa il ponte, si scarta
+            # arco sotto la linguetta: qui ci passa il ponte, si scarta. Con
+            # una linguetta sola ANCHE il resto del contorno va da un suo
+            # taglio all'altro: sotto la linguetta è solo il più corto dei due.
+            arc = (pos_b - pos_a) % perimeter
+            if not single_tab or arc <= perimeter - arc:
+                continue
 
         stretch = [pt_a]
         i = (edge_a + 1) % n
@@ -233,6 +243,168 @@ def _ray_exit_point(points: List[Point], center: Point, direction: Point) -> Poi
     return min(forward, key=lambda h: _distance(h[0], center))[0]
 
 
+def is_tab_island(contour) -> bool:
+    """
+    `contour` è un'isola da collegare al genitore diretto: profondità pari
+    >= 2 (un'isola sotto la profondità 0 rischia di staccarsi, una profondità
+    dispari è un vuoto, non materiale) e un genitore a cui attaccarla.
+    """
+    return contour.depth >= 2 and contour.depth % 2 == 0 and contour.parent is not None
+
+
+def _outward_normal(points: List[Point], at: Point) -> Point:
+    """
+    Normale unitaria uscente dal contorno chiuso `points` nel suo punto
+    `at`, dal lato più vicino ad `at`. "Uscente" dal verso di percorrenza
+    (area con segno): esatto anche dove il contorno è sottile o concavo, a
+    differenza di un test dentro/fuori su un punto spostato di poco.
+    """
+    n = len(points)
+    signed_area2 = sum(
+        points[i][0] * points[(i + 1) % n][1] - points[(i + 1) % n][0] * points[i][1] for i in range(n)
+    )
+    best_d, tangent = math.inf, (1.0, 0.0)
+    for i in range(n):
+        a, b = points[i], points[(i + 1) % n]
+        ab = _sub(b, a)
+        len2 = _dot(ab, ab)
+        if len2 == 0:
+            continue
+        t = max(0.0, min(1.0, _dot(_sub(at, a), ab) / len2))
+        d = _distance(at, _add(a, _scale(ab, t)))
+        if d < best_d:
+            best_d, tangent = d, _unit_vector(_sub(b, a))
+    # antiorario: l'esterno è a destra del verso di percorrenza
+    right = (tangent[1], -tangent[0])
+    return right if signed_area2 > 0 else _scale(right, -1.0)
+
+
+def _split_pair(
+    contour, parent, child_points: List[Point], parent_points: List[Point], bridges: List[BridgeTab]
+) -> NestedBridgeResult:
+    """Spezza isola e genitore sui tagli di tutte le `bridges` della coppia, insieme."""
+    child_cuts, parent_cuts, tab_edges = [], [], []
+    for tab_idx, b in enumerate(bridges):
+        child_cuts.append((b.child_cut_a[1], b.child_cut_a[0], tab_idx))
+        child_cuts.append((b.child_cut_b[1], b.child_cut_b[0], tab_idx))
+        parent_cuts.append((b.parent_cut_a[1], b.parent_cut_a[0], tab_idx))
+        parent_cuts.append((b.parent_cut_b[1], b.parent_cut_b[0], tab_idx))
+        tab_edges.extend(b.tab_edges)
+
+    return NestedBridgeResult(
+        child_contour=contour,
+        parent_contour=parent,
+        child_stretches=_split_closed_polyline_at_cuts(child_points, child_cuts),
+        parent_stretches=_split_closed_polyline_at_cuts(parent_points, parent_cuts),
+        tab_edges=tab_edges,
+    )
+
+
+def _bridge_at(
+    child_points: List[Point], parent_points: List[Point], anchor: Point, tab_width: float
+) -> BridgeTab:
+    """
+    Una linguetta nel punto `anchor`, scelto dal chiamante. Si proietta sul
+    più vicino dei due contorni e la linguetta parte lì, perpendicolare al
+    contorno: verso l'esterno se il punto è sull'isola (fino al genitore),
+    verso l'interno se è sul genitore (fino all'isola; se in quella
+    direzione l'isola non c'è, verso il suo punto più vicino). Mai il "punto
+    più vicino" e basta: da un lato dritto dell'isola può stare di fianco, e
+    la linguetta correrebbe lungo il lato invece di uscirne.
+    """
+    on_child = closest_point_on_track(child_points, anchor, closed=True)
+    on_parent = closest_point_on_track(parent_points, anchor, closed=True)
+    if _distance(anchor, on_child) <= _distance(anchor, on_parent):
+        anchor_child = on_child
+        anchor_parent = _ray_exit_point(parent_points, anchor_child, _outward_normal(child_points, anchor_child))
+    else:
+        anchor_parent = on_parent
+        inward = _scale(_outward_normal(parent_points, anchor_parent), -1.0)
+        try:
+            anchor_child = _ray_exit_point(child_points, anchor_parent, inward)
+        except ValueError:
+            anchor_child = closest_point_on_track(child_points, anchor_parent, closed=True)
+    return bridge_tabs(parent_points, child_points, anchor_parent, anchor_child, tab_width)
+
+
+@dataclass
+class TabbedIsland:
+    """Un'isola collegata da `bridge_parent_tabs`: i suoi tratti fra una linguetta e l'altra."""
+    contour:   "Contour"
+    stretches: List[List[Point]]
+
+
+@dataclass
+class ParentBridgeResult:
+    """
+    Risultato di `bridge_parent_tabs` per UN genitore e le sue isole. Se
+    nessuna isola è stata collegata, `islands` e `parent_stretches` sono
+    vuoti: il genitore resta intero, nessun taglio.
+    """
+    parent_contour:   "Contour"
+    parent_stretches: List[List[Point]]
+    islands:          List[TabbedIsland]
+    tab_edges:        List[LineSeg]
+    failed:           List[Tuple["Contour", str]]   # isola + perché non si è potuta collegare
+
+
+def bridge_parent_tabs(
+    parent,
+    island_anchors: Sequence[Tuple["Contour", Sequence[Point]]],
+    tab_width: float,
+    discretize_tolerance: float = 0.05,
+) -> ParentBridgeResult:
+    """
+    Collega le isole di UN genitore (`island_anchors`: coppie isola, punti)
+    con una linguetta per punto, nei punti scelti dal chiamante (es. click a
+    snap in una UI; vedi `_bridge_at` per la direzione). Il genitore si
+    spezza UNA volta sui tagli di tutte le isole insieme — spezzarlo per
+    ogni isola separatamente darebbe tratti sovrapposti che non chiudono più.
+
+    Un'isola su cui una linguetta non trova i due contorni (`ValueError` di
+    `bridge_tabs`) non si collega e va in `failed` col messaggio, senza
+    fermare le altre; le sue eventuali linguette riuscite si scartano tutte,
+    mai un'isola collegata a metà. Solleva `ValueError` se un contorno non è
+    un'isola di `parent` o non ha punti.
+    """
+    parent_points = _discretize_closed(parent, discretize_tolerance)
+    islands: List[TabbedIsland] = []
+    failed: List[Tuple["Contour", str]] = []
+    parent_cuts, tab_edges = [], []
+    tab_idx = 0
+
+    for contour, anchors in island_anchors:
+        if not is_tab_island(contour) or contour.parent is not parent:
+            raise ValueError("bridge_parent_tabs(): ogni contorno deve essere un'isola di `parent`")
+        if not anchors:
+            raise ValueError("bridge_parent_tabs(): ogni isola deve avere almeno un punto")
+        child_points = _discretize_closed(contour, discretize_tolerance)
+        try:
+            bridges = [_bridge_at(child_points, parent_points, a, tab_width) for a in anchors]
+        except ValueError as exc:
+            failed.append((contour, str(exc)))
+            continue
+
+        child_cuts = []
+        for b in bridges:
+            child_cuts.append((b.child_cut_a[1], b.child_cut_a[0], tab_idx))
+            child_cuts.append((b.child_cut_b[1], b.child_cut_b[0], tab_idx))
+            parent_cuts.append((b.parent_cut_a[1], b.parent_cut_a[0], tab_idx))
+            parent_cuts.append((b.parent_cut_b[1], b.parent_cut_b[0], tab_idx))
+            tab_edges.extend(b.tab_edges)
+            tab_idx += 1
+        islands.append(TabbedIsland(contour=contour, stretches=_split_closed_polyline_at_cuts(child_points, child_cuts)))
+
+    parent_stretches = _split_closed_polyline_at_cuts(parent_points, parent_cuts) if parent_cuts else []
+    return ParentBridgeResult(
+        parent_contour=parent,
+        parent_stretches=parent_stretches,
+        islands=islands,
+        tab_edges=tab_edges,
+        failed=failed,
+    )
+
+
 def bridge_nested_tabs(
     cluster,
     tab_width: float,
@@ -241,20 +413,17 @@ def bridge_nested_tabs(
 ) -> List[NestedBridgeResult]:
     """
     Cammina `cluster.inners` (che porta `depth`/`parent` per ogni contorno,
-    D34) e collega ogni isola (profondità pari, >= 2 — un'isola sotto la
-    profondità 0 rischia di staccarsi, una profondità dispari è un vuoto, non
-    materiale) al suo genitore diretto, con `tab_count` linguette equispaziate
-    attorno al centroide dell'isola. A qualunque profondità: nipote<->figlio,
-    pro-pronipote<->pronipote, mai un livello saltato.
+    D34) e collega ogni isola (`is_tab_island`) al suo genitore diretto, con
+    `tab_count` linguette equispaziate attorno al centroide dell'isola. A
+    qualunque profondità: nipote<->figlio, pro-pronipote<->pronipote, mai un
+    livello saltato.
     """
     results: List[NestedBridgeResult] = []
 
     for contour in cluster.inners:
-        if contour.depth < 2 or contour.depth % 2 != 0:
+        if not is_tab_island(contour):
             continue
         parent = contour.parent
-        if parent is None:
-            continue
 
         child_points = _discretize_closed(contour, discretize_tolerance)
         parent_points = _discretize_closed(parent, discretize_tolerance)
@@ -268,20 +437,6 @@ def bridge_nested_tabs(
             anchor_parent = _ray_exit_point(parent_points, center, direction)
             bridges.append(bridge_tabs(parent_points, child_points, anchor_parent, anchor_child, tab_width))
 
-        child_cuts, parent_cuts, tab_edges = [], [], []
-        for tab_idx, b in enumerate(bridges):
-            child_cuts.append((b.child_cut_a[1], b.child_cut_a[0], tab_idx))
-            child_cuts.append((b.child_cut_b[1], b.child_cut_b[0], tab_idx))
-            parent_cuts.append((b.parent_cut_a[1], b.parent_cut_a[0], tab_idx))
-            parent_cuts.append((b.parent_cut_b[1], b.parent_cut_b[0], tab_idx))
-            tab_edges.extend(b.tab_edges)
-
-        results.append(NestedBridgeResult(
-            child_contour=contour,
-            parent_contour=parent,
-            child_stretches=_split_closed_polyline_at_cuts(child_points, child_cuts),
-            parent_stretches=_split_closed_polyline_at_cuts(parent_points, parent_cuts),
-            tab_edges=tab_edges,
-        ))
+        results.append(_split_pair(contour, parent, child_points, parent_points, bridges))
 
     return results

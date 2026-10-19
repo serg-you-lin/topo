@@ -35,7 +35,7 @@ from .measure import (
     segment_length, length_inside, chord_angle_deg,
     track_points, track_length, track_shape_type,
 )
-from .regions import point_on_contour, ContourPoint, cut_by, contour_minus
+from .regions import point_on_contour, ContourPoint, nearest_point, cut_by, contour_minus
 from .intersections import intersections
 from .axis import (
     covered_rectangles, CoveredRectangle, spanning_lines, sides_on_border, axis_aligned_share,
@@ -50,7 +50,7 @@ __all__ = [
     "splits_polygon", "bridged_runs", "CollinearRun", "dash_line", "group_collinear_lines",
     "segment_length", "length_inside", "chord_angle_deg",
     "track_points", "track_length", "track_shape_type",
-    "point_on_contour", "ContourPoint", "cut_by", "contour_minus", "intersections",
+    "point_on_contour", "ContourPoint", "nearest_point", "cut_by", "contour_minus", "intersections",
     "covered_rectangles", "CoveredRectangle", "spanning_lines", "sides_on_border", "axis_aligned_share",
     "axis_lines", "AxisLine", "items_inside", "merge_intervals",
 ]

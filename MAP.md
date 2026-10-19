@@ -5029,3 +5029,91 @@ check; `parse_callout(text, diameter=False)` gets the "a bare 15 is a Ø" rule
 from its caller. The scale leaves out `measure_is_angle` (now also 3-point
 angles, which `== "angular"` missed). Its regression readings are unchanged
 (regr_03/05 fail on the frame bbox as before). snapbend, snapfence: rename.
+
+### D139 — Tabs at caller-chosen points: `bridge_parent_tabs`, one parent split once ✅ (names re-scoped by D140: experimental, not the stable surface)
+Federico, 19 October, from smoother (its D20): tabs placed by hand, a click
+with snap in smoother's web UI, instead of `tab_count` equally spaced around
+the island centroid. `topo.tools.tabs.bridge_parent_tabs(parent,
+[(island, anchors), ...], tab_width)` → `ParentBridgeResult`.
+
+Three geometric choices, each forced by a case that broke:
+
+- **The tab leaves the contour perpendicular at the chosen point**, outward
+  from the island or inward from the parent (into the island; if the island
+  is not that way, toward its closest point). Toward "the closest point of
+  the other contour" fails on a straight side: from the middle of an
+  island's side the parent's closest point can be beside it, the offset
+  lines run along the side and `bridge_tabs` finds no intersection.
+  Outward is read from the ring's orientation (signed area), exact on thin
+  or concave contours where a nudged inside/outside test is not.
+- **A parent is split once, on the cuts of all its islands.** Splitting it
+  once per island (what a per-island call would do) gives overlapping
+  copies of the parent that no longer close.
+- **An island that cannot be bridged goes to `failed` with the reason**,
+  all its tabs dropped (never an island half attached); the other islands
+  go on. Nothing silently dropped, and one bad island does not cost the
+  whole parent.
+
+Found on the way, fixed: `_split_closed_polyline_at_cuts` dropped both arcs
+when a contour had a single tab (both cuts belong to the same tab, so the
+rest of the contour also ran "from a cut of tab 0 to a cut of tab 0"). With
+one tab only the shorter arc is the one under the tab. `bridge_nested_tabs`
+with `tab_count=1` had the same hole.
+
+Also added `topo.core.geometry.measure.closest_point_on_track` and the
+predicate `is_tab_island` (even depth >= 2 with a parent), now shared by
+both bridging functions. Not addressed: a perpendicular tab can still cross
+another island of the same parent (the obstacle question already open for
+`bridge_nested_tabs`).
+
+### D140 — a consumer uses topo as it uses numpy: topo is read-only from a consumer's session, and what it lacks arrives as a request ✅
+Federico, 19 October, from smoother: "the consumers I build must be as if I
+imported numpy. I don't touch numpy to fix what it exports for a thing of
+mine, I adapt my code to what I have to do, as I do here with shapely."
+
+**What happened.** Working in smoother, a session could also write in
+`../topo`, and did: `bridge_island_tabs`, then `bridge_parent_tabs`,
+`is_tab_island`, `closest_point_on_track`, and D139, all shaped by one web
+UI (a click with snap). Each was reasonable alone; together they are the
+road to one API per consumer, which is the fear that would block 1.0. D139 also
+went against D134 without reopening it (trade words in names: "tab",
+"bridge"; a policy, the anchor rule, inside topo).
+
+**The rule.**
+1. From a session opened in a consumer, topo is **read-only**. A global hook
+   (`~/.claude/hooks/library_guard.py`, Federico's machine, outside this repo)
+   refuses every Edit/Write/shell write into this repo unless the session is
+   opened in topo, and at session start puts in context what a consumer needs:
+   `docs/LLM.md`, `docs/INDEX.md`, the titles of every decision here.
+2. The consumer adapts to the public surface. What it lacks is a line in
+   **its own** `TODO.md`, section `## Richieste a topo` (what, why, which code
+   would use it); meanwhile the consumer writes it locally.
+3. A session opened in topo triages those lines, as "richieste dalla
+   superficie" already says: a geometric fact → a public name with docs, test
+   and a D##; a piece of an algorithm → offer what it was rebuilding; a choice
+   of the caller → stays in the caller.
+4. The test for a new name: what changes from one consumer to the next must be
+   an **argument** (a point, a width, a ring), never a **new function**. D118
+   (`cut_by` takes any ring, not "a disc" and "a square") and D134 (the four
+   facts for joining regions) are the precedents.
+
+**What it means for D139.** Its geometric findings stay true and stay
+recorded (perpendicular exit read from the ring's orientation; a parent split
+once on all its cuts; an island that cannot be joined is reported, not half
+joined; the one-cut split bug, fixed). Its names do not enter the stable
+surface: `topo.tools.tabs` stays experimental and outside 1.0 (D122), frozen
+from consumer sessions, and is rewritten as D134's facts with geometric names;
+`bridge_nested_tabs` and the click rule then become smoother's policy on top
+of them, migrated from smoother's own session. Until then smoother keeps
+importing `topo.tools.tabs` as a prototype does (D122).
+
+**Point 2, done now.** The one fact the click rule really needed was "the point
+of a contour closest to a point": `topo.geometry.nearest_point(segments,
+point)`, on the exact primitives (lines, arcs, circles exact; splines and
+ellipses within `CURVE_TOLERANCE`), composable with `point_on_contour`.
+`closest_point_on_track` is now that same function on a track's sides (one
+job, one implementation); it stays internal, used by `tools.tabs`.
+
+**Not blocking 1.0.** The stable surface already holds facts only; what the
+hook adds is that nothing else gets in by accident. The sentence "what 1.0
+promises" (TODO, road to 1.0) should say it in so many words.

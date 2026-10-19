@@ -638,6 +638,21 @@ dista più di `tolerance` (D118).
 
 ---
 
+### `nearest_point`
+
+```python
+topo.geometry.nearest_point(segments, point) -> Point
+```
+
+Il punto delle primitive `segments` più vicino a `point`, anche a metà di un
+lato. Esatto su rette, archi e cerchi; su spline ed ellissi entro `1e-4`.
+`point` può stare ovunque (un click, il centro di un'altra figura): per sapere
+dove cade il risultato sul contorno si passa a `point_on_contour` (D140).
+
+**Non muta** niente. **Solleva** `ValueError` se `segments` è vuoto.
+
+---
+
 ### `cut_by`
 
 ```python
