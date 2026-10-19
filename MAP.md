@@ -5367,3 +5367,31 @@ existing edge and doubles it. Skipping those ends removes the duplicates but
 loses the loops that share a side with the outer contour — they closed only
 through the duplicate. And two coincident circles are never merged
 (`merge_cocircular_overlaps` takes `ArcSeg` only).
+
+### D147 — `island()`: an end that lies on another edge's interior is not a free end; a closed loop with a side on the contour that holds it is not an inner ✅
+`island()` closes drawing gaps up to `max_gap` (D60) from the free ends of
+the graph. An end that falls mid-edge (a T within the node tolerance) is
+"free" for the graph — the edge has no node there until
+`split_at_crossings` — so two such ends close to each other were joined: a
+bridge laid on the edge, or both lines stretched to meet outside it. Either
+way the same stretch came out twice, in the contour and in `loose` (what
+Federico saw as "inner with a part in trash"). Rule (`_on_edge_interiors`):
+an end within tolerance of another edge, away from that edge's nodes, is
+already connected — the noding makes it a node — and takes no gap fix. It
+stays free when another free end lies within tolerance (a corner: the two
+ends are one node; without this a corner on a crossing circle closed
+through a 0.01 arc and the DXF round trip changed, `regr_01`/`anch_08`).
+
+The duplicate was the only thing closing loops that share a side with the
+contour around them (`read_island` looks for inners among the pieces the
+outer does not use). They now go to `loose`. Federico's call: a rectangle
+0.5 × 1.2 hanging under the outer line of a section view is a feature of
+that view, "trash tutta la vita", not an inner. Measured on every island
+fixture: the inners lost are all thin loops (0.5 wide) with one side of
+0.5–1.04 on the larger contour; `regr_02` loses a 0.18 nub (0.06 mm²) and
+`regr_04` a 30.8 mm² pocket at its left edge (DXF in `_debug/`, to judge).
+Goldens of island that move (`anch_01`, `anch_04`, `regr_03`; anchoring and
+text budget of `anch_01`) are expected failures with the others, redone
+from scratch on the `_noframe` drawings. Proof:
+`tests/real/test_island_single_use.py` (the T case, built with topo's API;
+fails without the fix), all `island_invariants` green (round trip included).

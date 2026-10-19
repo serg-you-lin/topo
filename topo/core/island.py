@@ -23,8 +23,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import Callable, List, Optional
 
-from shapely import make_valid
-from shapely.geometry import Polygon
+from shapely import STRtree, make_valid
+from shapely.geometry import Point, Polygon
 from shapely.ops import unary_union
 
 from ..model.cluster import Cluster
@@ -251,12 +251,40 @@ def _normalize(edges: List[Edge], tolerance: float, max_gap: float) -> List[Edge
     edges = weld_degenerate_linesegs(merge_cocircular_overlaps(merge_collinear_overlaps(edges)))
     gap = max(tolerance, max_gap)
     graph = build_node_graph(edges)
-    fixes = compute_gap_fixes(free_endpoints_from_edges(edges, graph), gap, pairwise=False)
+    free = _on_edge_interiors(free_endpoints_from_edges(edges, graph), edges, tolerance)
+    fixes = compute_gap_fixes(free, gap, pairwise=False)
     fixes = _drop_redundant_meets(fixes, graph)
     fixes = local_gap_fixes(fixes, gap)
     if fixes:
         edges = apply_gap_fixes(edges, fixes)
     return [e for e in edges if e.start != e.end or segment_is_closed(e.segment)]
+
+
+def _on_edge_interiors(endpoints: list, edges: List[Edge], tolerance: float) -> list:
+    """Gli estremi liberi che non cadono sull'interno di un altro edge. Uno
+    che ci cade (un incrocio a T, entro `tolerance` dall'edge e lontano dai
+    suoi nodi) è già collegato — `split_at_crossings` ne fa un nodo — e
+    chiuderlo verso un altro estremo stenderebbe un ponte sopra l'edge, o
+    allungherebbe i due fino a incontrarsi fuori: lo stesso tratto due volte,
+    nel contorno e in `loose` (D147). Resta libero vicino al nodo di un
+    altro edge, o a un altro estremo libero entro `tolerance` (un angolo:
+    lì il gap è vero, i due estremi sono lo stesso nodo)."""
+    geoms = [edge_geometry(e) for e in edges]
+    tree = STRtree(geoms)
+    near = lambda p, q: (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 <= tolerance ** 2
+    kept = []
+    for ep in endpoints:
+        if any(other is not ep and near(ep.pt, other.pt) for other in endpoints):
+            kept.append(ep)
+            continue
+        point = Point(ep.pt)
+        on_interior = any(
+            edges[k] is not ep.ref and geoms[k].distance(point) <= tolerance
+            and not near(ep.pt, edges[k].start) and not near(ep.pt, edges[k].end)
+            for k in tree.query(point.buffer(tolerance)))
+        if not on_interior:
+            kept.append(ep)
+    return kept
 
 
 def _drop_redundant_meets(fixes: list, graph) -> list:

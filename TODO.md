@@ -178,6 +178,13 @@ primitive di topo.
      pubblici (`__all__` di `topo`, `topo.geometry`, `topo_dxf`) in inglese,
      corte. L'interno resta in italiano. Un controllo (in `gen_index` o un
      test) che lo verifichi sui nomi pubblici, invece di ricordarlo.
+   - **README fuorviante** (Federico, 19 ottobre, bloccante): sembra una
+     libreria solo per disegni tecnici, a partire dal titolo ("for
+     technical drawings and CAD geometry") e dagli esempi. Va riscritto per
+     quello che topo è: un motore di geometria 2D (contorni chiusi,
+     contenimento, le due letture) di cui i disegni tecnici sono un caso.
+     Con `README_IT.md` e la prima riga di `CLAUDE.md` / `pyproject`
+     (description), che dicono la stessa cosa.
 
    Restano 1.x: modello `Curve`, `as_analytic`, firma dei contorni, i fatti
    di riconoscimento, le strisce di D134. Le nervature: tutto il resto
@@ -237,20 +244,18 @@ Poi topo 1.0.0, e snapbend 1.0.0 dietro.
   parte in trash"). Misurato sui `_noframe`: tratti di `loose` interamente
   sopra un contorno. Tre cause:
   1. ✅ lati dell'outer contati anche come sporgenze (D146).
-  2. **Ponti sui T**: `_normalize` chiude gap da estremi "liberi" che cadono
-     a metà di un altro edge; il ponte giace sull'edge e lo raddoppia
-     (anch_01, anch_04, anch_06). Saltare quegli estremi (`_not_touching`,
-     prova tenuta fuori dal repo) toglie i doppioni ma **perde i giri che
-     condividono un lato col contorno esterno**: `read_island` cerca gli
-     inner solo fra i pezzi che l'outer non usa, e quei giri si chiudevano
-     grazie al doppione (anch_01, rettangolino 0.5×1.2 sotto la linea
-     esterna: 'Ø4.2' si aggancia al 46×3). Da decidere: un giro chiuso
-     della rete dentro l'outer, con un lato sull'outer, è un inner?
+  2. ✅ **Ponti sui T** (D147): un estremo sull'interno di un altro edge non
+     è libero. I giri con un lato sul contorno che li contiene vanno in
+     `loose` (Federico: feature della vista, trash). Da guardare a occhio:
+     `regr_04` perde una tasca di 30.8 mm² sul bordo sinistro
+     (`_debug/regr_04_island_D147_*.dxf`).
   3. **Cerchi doppi**: CIRCLE + la stessa circonferenza tassellata
      (anch_06): `refit_tessellations` la rifà cerchio, ma
      `merge_cocircular_overlaps` prende solo `ArcSeg`, quindi due cerchi
      coincidenti (o un arco su un cerchio intero) non si fondono — anche in
-     `heal()`.
+     `heal()`. Da proporre a Federico (tocca heal e i suoi golden).
+  Federico, stesso giorno: "un paio di imprecisioni sull'outer in una vista
+  in anch_08" — da riprendere sui `_noframe`.
 - **Trovati con D145 (griglia degli archi), 19 ottobre — tutti per la
   promessa geometrica di D143:**
   - `rect_with_countersink`: `cluster.area` non toglie uno dei due inner
