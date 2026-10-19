@@ -1,217 +1,121 @@
 """
 test_simplify_points.py
 ------------------------
-Test unitari per topo.core.primitives.fitting.
+Test unitari per topo.core.primitives.fitting.simplify_points (MAP.md D141).
 
-Semantica di `detect_corners` (ereditata da smoother_5.py::classifica_punti):
-l'angolo interno ai due lati adiacenti è VICINO A 180 gradi su un tratto
-liscio/dritto (i lati puntano quasi in direzioni opposte) e VICINO A 0 su una
-punta acuta (i lati ripiegano quasi su se stessi). Un angolo retto (90 gradi,
-il vertice di un rettangolo) sta in mezzo. "spigolo" = angolo SOTTO soglia:
-una soglia bassa cattura solo le punte acute, una soglia sopra 90 cattura
-anche i vertici retti.
-
-Copre:
-  - detect_corners  : punte acute sotto soglia, punti lisci ignorati,
-                       estremi mai spigoli su polilinea aperta
-  - fit_primitives   : tratti corti -> LineSeg, tratti lunghi -> BSplineSeg,
-                        loop senza spigoli -> un solo BSplineSeg chiuso
-  - simplify_points  : le due funzioni in sequenza, soglie del chiamante
+Le tre garanzie, su casi che vengono da un contorno tracciato (smoother D21):
+  - ogni punto dato sta entro `tolerance` dalle primitive;
+  - le primitive sono una catena testa-coda: un tratto aperto parte e
+    finisce esattamente nei suoi estremi, un contorno chiuso si richiude;
+  - linea dove è dritto, arco dove è a raggio costante, spigolo vivo dove
+    svolta, anche se il campionamento ha smussato l'angolo.
 """
 
 import math
 import unittest
-from pathlib import Path
-import sys
 
-project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(project_root))
+from shapely.geometry import LineString, Point as SPoint
 
-from topo.core.primitives.segments import ArcSeg, CircleSeg, LineSeg, BSplineSeg
-from topo.core.primitives.fitting import (
-    detect_corners,
-    fit_primitives,
-    simplify_points,
-)
+from topo.core.primitives.segments import ArcSeg, CircleSeg, LineSeg, BSplineSeg, segment_endpoints
+from topo.core.primitives.fitting import simplify_points
 
 
-def densify_edge(p1, p2, n_extra):
-    """Punti intermedi collineari fra p1 e p2 (esclusi gli estremi)."""
-    return [
-        (p1[0] + (p2[0] - p1[0]) * t, p1[1] + (p2[1] - p1[1]) * t)
-        for t in (i / (n_extra + 1) for i in range(1, n_extra + 1))
-    ]
+def _side(a, b, n):
+    """`n` punti da `a` verso `b`, `b` escluso."""
+    return [(a[0] + (b[0] - a[0]) * t / n, a[1] + (b[1] - a[1]) * t / n) for t in range(n)]
 
 
-# ---------------------------------------------------------------------------
-# detect_corners
-# ---------------------------------------------------------------------------
-
-class TestDetectCorners(unittest.TestCase):
-
-    def test_001_punta_acuta_sotto_soglia_e_spigolo(self):
-        # Punta a ~22.6 gradi: sotto una soglia di 50 e' spigolo.
-        spike = [(0, 0), (2, 10), (4, 0)]
-        corners = detect_corners(spike, angle_threshold_deg=50.0, closed=False)
-        self.assertEqual(corners, [False, True, False])
-
-    def test_002_vertice_retto_serve_soglia_sopra_90(self):
-        square = [(0, 0), (10, 0), (10, 10), (0, 10)]
-        # Soglia bassa (tipica per punte acute): il vertice a 90 gradi non e' spigolo.
-        self.assertEqual(
-            detect_corners(square, angle_threshold_deg=50.0, closed=True),
-            [False, False, False, False],
-        )
-        # Soglia sopra 90: il vertice retto ora e' spigolo.
-        self.assertEqual(
-            detect_corners(square, angle_threshold_deg=100.0, closed=True),
-            [True, True, True, True],
-        )
-
-    def test_003_punti_su_lato_dritto_non_sono_mai_spigoli(self):
-        # Punto a meta' di un lato: angolo ~180 gradi, non scende sotto
-        # nessuna soglia ragionevole, a differenza dei vertici veri.
-        corners_pts = [(0, 0), (10, 0), (10, 10), (0, 10)]
-        square = []
-        for i in range(4):
-            square.append(corners_pts[i])
-            square.extend(densify_edge(corners_pts[i], corners_pts[(i + 1) % 4], 1))
-        corners = detect_corners(square, angle_threshold_deg=100.0, closed=True)
-        # indici pari = vertici (True), indici dispari = punti medi (False)
-        self.assertEqual(corners, [True, False] * 4)
-
-    def test_004_polilinea_aperta_estremi_mai_spigoli(self):
-        # Stessa punta acuta di test_001, ma come polilinea aperta: se fosse
-        # chiusa il primo e l'ultimo punto sarebbero spigoli fra loro fra
-        # loro; aperta, non lo sono mai.
-        zigzag = [(0, 0), (2, 10), (4, 0)]
-        corners = detect_corners(zigzag, angle_threshold_deg=170.0, closed=False)
-        self.assertEqual(corners, [False, True, False])
-
-    def test_005_meno_di_tre_punti_nessuno_spigolo(self):
-        self.assertEqual(detect_corners([(0, 0), (1, 1)]), [False, False])
+def _rounded_square(size=10.0, n=20):
+    """Quadrato campionato come da un raster: il vertice manca, l'angolo è smussato su due campioni."""
+    corners = [(0, 0), (size, 0), (size, size), (0, size)]
+    pts = []
+    for k in range(4):
+        pts += _side(corners[k], corners[(k + 1) % 4], n)[1:]
+    return pts
 
 
-# ---------------------------------------------------------------------------
-# fit_primitives
-# ---------------------------------------------------------------------------
-
-class TestFitPrimitives(unittest.TestCase):
-
-    def test_010_quadrato_diventa_quattro_lineseg(self):
-        square = [(0, 0), (10, 0), (10, 10), (0, 10)]
-        corners = detect_corners(square, angle_threshold_deg=100.0, closed=True)
-        primitives = fit_primitives(square, corners, closed=True)
-        self.assertEqual(len(primitives), 4)
-        self.assertTrue(all(isinstance(p, LineSeg) for p in primitives))
-        # Il loop si richiude: ultimo end coincide col primo start.
-        self.assertEqual(primitives[-1].end, primitives[0].start)
-
-    def test_011_tratto_curvo_denso_diventa_una_spline(self):
-        # Semicerchio discretizzato densamente, nessun punto sotto soglia
-        # (angoli vicini a 180): un solo tratto -> un solo BSplineSeg.
-        arc_points = [
-            (10 * math.cos(t), 10 * math.sin(t))
-            for t in (i * math.pi / 20 for i in range(20))
-        ]
-        primitives = simplify_points(arc_points, closed=True, angle_threshold_deg=50.0)
-        self.assertEqual(len(primitives), 1)
-        self.assertIsInstance(primitives[0], BSplineSeg)
-
-    def test_012_tratto_sotto_soglia_min_punti_resta_lineseg(self):
-        # 3 punti + punto di chiusura del loop = 4: sotto min_points_for_spline=5
-        # anche senza alcuno spigolo marcato -> resta una sequenza di LineSeg.
-        pts = [(0, 0), (5, 5), (10, 0)]
-        corners = [False, False, False]
-        primitives = fit_primitives(pts, corners, closed=True, min_points_for_spline=5)
-        self.assertTrue(all(isinstance(p, LineSeg) for p in primitives))
-
-    def test_013_punti_duplicati_consecutivi_rimossi(self):
-        square = [(0, 0), (0, 0), (10, 0), (10, 10), (10, 10), (0, 10)]
-        # Spigoli passati esplicitamente (i duplicati confonderebbero il calcolo
-        # angolare, non e' quello sotto test qui): solo i 4 vertici veri.
-        corners = [True, False, True, True, False, True]
-        primitives = fit_primitives(square, corners, closed=True)
-        self.assertTrue(all(isinstance(p, LineSeg) for p in primitives))
-        # nessun segmento degenere (start == end) rimasto dai duplicati
-        self.assertTrue(all(p.start != p.end for p in primitives))
+def _max_distance(primitives, points):
+    line = LineString([q for s in primitives for q in s.discretize(1e-4)])
+    return max(line.distance(SPoint(p)) for p in points)
 
 
-# ---------------------------------------------------------------------------
-# fit ad arco/cerchio (arc_fit_tolerance) — opt-in, default None
-# ---------------------------------------------------------------------------
-
-class TestArcFit(unittest.TestCase):
-
-    def test_030_senza_arc_fit_tolerance_resta_spline_anche_se_e_un_cerchio(self):
-        # Comportamento invariato per chi non passa il parametro: stesso
-        # cerchio del test_031, ma di default (arc_fit_tolerance=None) resta
-        # una BSplineSeg come prima di questo cambiamento.
-        n = 24
-        circle = [(10 * math.cos(2 * math.pi * i / n), 10 * math.sin(2 * math.pi * i / n)) for i in range(n)]
-        primitives = simplify_points(circle, closed=True)
-        self.assertEqual(len(primitives), 1)
-        self.assertIsInstance(primitives[0], BSplineSeg)
-
-    def test_031_cerchio_chiuso_diventa_circleseg(self):
-        n = 24
-        circle = [(10 * math.cos(2 * math.pi * i / n), 10 * math.sin(2 * math.pi * i / n)) for i in range(n)]
-        corners = [False] * n
-        primitives = fit_primitives(circle, corners, closed=True, arc_fit_tolerance=0.01)
-        self.assertEqual(len(primitives), 1)
-        self.assertIsInstance(primitives[0], CircleSeg)
-        self.assertAlmostEqual(primitives[0].center[0], 0.0, places=3)
-        self.assertAlmostEqual(primitives[0].center[1], 0.0, places=3)
-        self.assertAlmostEqual(primitives[0].radius, 10.0, places=3)
-
-    def test_032_arco_aperto_fra_due_corner_diventa_arcseg(self):
-        # Quarto di cerchio, raggio 10, da 0 a 90 gradi (CCW) — come il
-        # raccordo arrotondato fra due lati dritti, il caso reale per le
-        # linguette (MAP.md D5/D6 in smoother: si spezza un arco, non una spline).
-        arc_points = [
-            (10 * math.cos(t), 10 * math.sin(t))
-            for t in (i * (math.pi / 2) / 11 for i in range(12))
-        ]
-        corners = [False] * len(arc_points)
-        primitives = fit_primitives(arc_points, corners, closed=False, arc_fit_tolerance=0.01)
-        self.assertEqual(len(primitives), 1)
-        seg = primitives[0]
-        self.assertIsInstance(seg, ArcSeg)
-        self.assertAlmostEqual(seg.center[0], 0.0, places=3)
-        self.assertAlmostEqual(seg.center[1], 0.0, places=3)
-        self.assertAlmostEqual(seg.radius, 10.0, places=3)
-        self.assertTrue(seg.ccw)
-        self.assertAlmostEqual(seg.start_angle, 0.0, places=3)
-        self.assertAlmostEqual(seg.end_angle, math.pi / 2, places=3)
-
-    def test_033_curva_non_circolare_resta_spline_anche_con_tolleranza(self):
-        # Una sinusoide non ha raggio costante: nessun cerchio la approssima
-        # entro una tolleranza stretta -> deve restare una BSplineSeg.
-        wave = [(x, 0.5 * math.sin(x)) for x in (i * 0.3 for i in range(20))]
-        corners = [False] * len(wave)
-        primitives = fit_primitives(wave, corners, closed=False, arc_fit_tolerance=0.01)
-        self.assertEqual(len(primitives), 1)
-        self.assertIsInstance(primitives[0], BSplineSeg)
+def _is_chain(primitives, closed):
+    ends = [segment_endpoints(s) for s in primitives]
+    links = list(zip(ends, ends[1:] + (ends[:1] if closed else [])))
+    return all(math.dist(a[1], b[0]) < 1e-9 for a, b in links)
 
 
-# ---------------------------------------------------------------------------
-# simplify_points
-# ---------------------------------------------------------------------------
+class TestGuarantees(unittest.TestCase):
 
-class TestSimplifyPoints(unittest.TestCase):
+    def test_001_rounded_square_four_lines_sharp_corners(self):
+        pts = _rounded_square()
+        out = simplify_points(pts, tolerance=0.1, scale=2.0)
+        self.assertEqual([type(s) for s in out], [LineSeg] * 4)
+        self.assertTrue(_is_chain(out, closed=True))
+        # lo spigolo torna vivo: nell'incrocio dei due lati, non sul campione
+        vertices = sorted((round(s.start[0], 6), round(s.start[1], 6)) for s in out)
+        self.assertEqual(vertices, [(0, 0), (0, 10), (10, 0), (10, 10)])
 
-    def test_020_soglie_sono_parametri_del_chiamante(self):
-        square = [(0, 0), (10, 0), (10, 10), (0, 10)]
-        # Soglia bassa: il vertice retto non e' uno spigolo -> un solo BSplineSeg.
-        primitives = simplify_points(square, angle_threshold_deg=10.0)
-        self.assertEqual(len(primitives), 1)
-        self.assertIsInstance(primitives[0], BSplineSeg)
+    def test_002_circle_is_one_circle(self):
+        pts = [(5 + 10 * math.cos(2 * math.pi * i / 90), 10 * math.sin(2 * math.pi * i / 90)) for i in range(90)]
+        out = simplify_points(pts, tolerance=0.01, scale=2.0)
+        self.assertEqual(len(out), 1)
+        self.assertIsInstance(out[0], CircleSeg)
+        self.assertAlmostEqual(out[0].radius, 10.0, places=6)
 
-        # Soglia sopra 90: i 4 vertici sono spigoli -> 4 LineSeg.
-        primitives = simplify_points(square, angle_threshold_deg=100.0)
-        self.assertEqual(len(primitives), 4)
-        self.assertTrue(all(isinstance(p, LineSeg) for p in primitives))
+    def test_003_stadium_lines_and_arcs_chained(self):
+        # due lati dritti e due semicerchi, raccordati senza spigolo
+        pts = _side((0, 0), (20, 0), 40)
+        pts += [(20 + 5 * math.sin(math.pi * i / 30), 5 - 5 * math.cos(math.pi * i / 30)) for i in range(30)]
+        pts += _side((20, 10), (0, 10), 40)
+        pts += [(-5 * math.sin(math.pi * i / 30), 5 + 5 * math.cos(math.pi * i / 30)) for i in range(30)]
+        out = simplify_points(pts, tolerance=0.01, scale=2.0)
+        self.assertEqual(sorted(type(s).__name__ for s in out), ["ArcSeg", "ArcSeg", "LineSeg", "LineSeg"])
+        self.assertTrue(_is_chain(out, closed=True))
+        self.assertLessEqual(_max_distance(out, pts), 0.01 + 1e-6)
+
+    def test_004_open_stretch_keeps_its_ends(self):
+        # un tratto aperto fra due tagli: linea e poi quarto d'arco
+        pts = _side((0, 0), (10, 0), 20) + [(10 + 5 * math.sin(a), 5 - 5 * math.cos(a))
+                                           for a in (math.pi / 2 * i / 20 for i in range(21))]
+        out = simplify_points(pts, tolerance=0.01, scale=2.0, closed=False)
+        # un arco ricava i capi dagli angoli: esatti a meno della virgola mobile
+        self.assertLess(math.dist(segment_endpoints(out[0])[0], pts[0]), 1e-9)
+        self.assertLess(math.dist(segment_endpoints(out[-1])[1], pts[-1]), 1e-9)
+        self.assertTrue(_is_chain(out, closed=False))
+        self.assertEqual([type(s) for s in out], [LineSeg, ArcSeg])
+
+    def test_005_noisy_free_curve_is_a_spline_within_tolerance(self):
+        pts = [(x / 10, math.sin(x / 20) * 3 + 0.03 * math.sin(x * 1.7)) for x in range(200)]
+        out = simplify_points(pts, tolerance=0.1, scale=2.0, closed=False, arcs=False)
+        self.assertTrue(all(isinstance(s, (BSplineSeg, LineSeg)) for s in out))
+        self.assertTrue(_is_chain(out, closed=False))
+        self.assertLessEqual(_max_distance(out, pts), 0.1 + 1e-6)
+        spline = next(s for s in out if isinstance(s, BSplineSeg))
+        self.assertLess(len(spline.control_points), 40)   # non interpola tutti i 200 punti
+
+    def test_006_without_arcs_no_arc(self):
+        pts = [(10 * math.cos(2 * math.pi * i / 90), 10 * math.sin(2 * math.pi * i / 90)) for i in range(90)]
+        out = simplify_points(pts, tolerance=0.01, scale=2.0, arcs=False)
+        self.assertFalse(any(isinstance(s, (ArcSeg, CircleSeg)) for s in out))
+        self.assertTrue(_is_chain(out, closed=True))
+
+    def test_007_lower_turn_more_corners(self):
+        # ottagono: svolta di 45° a ogni vertice
+        pts = []
+        verts = [(10 * math.cos(math.pi / 4 * k), 10 * math.sin(math.pi / 4 * k)) for k in range(8)]
+        for k in range(8):
+            pts += _side(verts[k], verts[(k + 1) % 8], 15)
+        self.assertEqual(len(simplify_points(pts, tolerance=0.05, scale=1.0, corner_turn_deg=40)), 8)
+        self.assertTrue(all(isinstance(s, LineSeg) for s in simplify_points(pts, tolerance=0.05, scale=1.0,
+                                                                             corner_turn_deg=40)))
+
+    def test_008_degenerate_inputs(self):
+        self.assertEqual(simplify_points([], tolerance=0.1, scale=1.0), [])
+        self.assertEqual(simplify_points([(0, 0), (0, 0)], tolerance=0.1, scale=1.0), [])
+        out = simplify_points([(0, 0), (3, 4)], tolerance=0.1, scale=1.0, closed=False)
+        self.assertEqual(out, [LineSeg(start=(0.0, 0.0), end=(3.0, 4.0))])
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(verbosity=2)

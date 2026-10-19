@@ -462,15 +462,16 @@ def refit_tessellations(
     edges: Iterable[Edge],
     max_segment: float = 0.1,
     min_run: int = 10,
-    arc_fit_tolerance: float = 0.02,
+    tolerance: float = 0.02,
     node_decimals: int = 3,
 ) -> List[Edge]:
     """
     Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di
     `max_segment`, collegati uno dopo l'altro, è una curva scritta a punti:
-    diventa le primitive di `simplify_points` (arco/cerchio entro
-    `arc_fit_tolerance`, se no spline). Gli estremi della catena tengono i
-    nodi originali, così resta attaccata ai vicini. Il resto non si tocca.
+    diventa le primitive di `simplify_points` (linee, archi, spline entro
+    `tolerance`; uno spigolo è una svolta su `max_segment`, D141). Gli
+    estremi della catena tengono i nodi originali, così resta attaccata ai
+    vicini. Il resto non si tocca.
     """
     edges = list(edges)
     short = [e for e in edges
@@ -489,7 +490,7 @@ def refit_tessellations(
             pts.append(b)
         if closed:
             pts = pts[:-1]
-        prims = simplify_points(pts, closed=closed, arc_fit_tolerance=arc_fit_tolerance)
+        prims = simplify_points(pts, tolerance=tolerance, scale=max_segment, closed=closed)
         if not prims:
             continue
         first, last = path[0], path[-1]
