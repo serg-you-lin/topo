@@ -82,6 +82,10 @@ def outer_face(edges: List[Edge], epsilon: float = 0.0) -> Optional[OuterFace]:
     if best is None:
         return None
     loop, segments, styles, polygon = best
+    # il percorso conta due volte anche un edge che il giro scelto (D100) usa:
+    # chi sta nel contorno è contorno, non sporgenza
+    in_loop = {id(e) for e, _ in loop}
+    spurs = [e for e in spurs if id(e) not in in_loop]
     return OuterFace(loop=loop, segments=segments, styles=styles, polygon=polygon, spurs=spurs)
 
 
