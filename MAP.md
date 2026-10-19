@@ -5301,3 +5301,51 @@ where they need it. So, blocking for 1.0:
 This is a topo exception to the general convention (docstrings in Italian),
 written in topo's `CLAUDE.md`. The public set is known to `gen_index`, so the
 rule can be checked rather than remembered.
+
+### D145 — circles and arcs discretize on one grid per circle: no side cap, sides grow with the radius, an arc is a piece of its circle's polygon ✅
+
+The first item made blocking by D143. Two changes, one reason: the same curve
+must give the same polygon, within `tol`, however the file cut it.
+
+**No cap.** A chord of angle θ on radius r leaves a sagitta r(1 − cos θ/2);
+held at `tol`, the sides needed are ~π·√(r / 2·tol) — they grow with the
+radius. The old cap of 128 sides broke the tolerance from r ≈ 33 at tol 0.01,
+linearly with r: 0.15 at r 500, 0.60 at r 2000. Now 994 sides at r 2000,
+deviation 0.00999.
+
+**One grid per circle.** Before, a circle had at least 64 sides and an arc
+at least 32 whatever its sweep (a small quarter was eight times denser than
+its circle), with vertices starting at its own start angle: a hole that
+arrives as one CIRCLE, two halves or four quarters gave three different
+polygons — a fact about how one file was authored (non-negotiable 1). Now the
+circle has N sides (`_circle_sides`: sagitta ≤ tol, at least 64, rounded up to
+a multiple of 4) at angles k·2π/N anchored at angle 0; an arc takes its exact
+ends plus every grid point between them (`_grid_angles`). So the four
+quarters joined are the circle's polygon exactly, an arc is a piece of it, a
+reversed arc gives the same points backwards. The two end chords are shorter
+than a step (smaller sagitta, so within `tol`); an arc shorter than a step is
+one chord; a grid point is skipped only when it coincides with an end
+(1e-9), never within a fraction of a step, which would stretch a chord past
+the step and break `tol`. N a multiple of 4: the grid is symmetric about both
+axes, so quarters fall on vertices and a mirrored part gives the mirrored
+polygon.
+
+**The price, chosen:** a circle has no direction of its own, so the grid is
+anchored to the world's angle 0; rotating a part no longer rotates its
+vertices (they still lie on the curve within `tol`). Same curve → same polygon
+is the stronger invariant, and D143 promises the tolerance, not the vertices.
+Output to a machine is unaffected: `to_dxf` writes native ARC/CIRCLE.
+
+`ArcSeg`/`EllipseSeg` were measured already within `tol` (ellipse untouched).
+Proof: `tests/unit/core/test_discretize_tolerance.py` (every scale; quarters
+= circle; off-grid arc = piece of the circle; reversed; one chord; no
+degenerate side); `test_segment_rotation` now checks points on the rotated
+arc. Goldens of `heal` regenerated after proof: every changed part's area
+recomputed at tol 1e-5 and the error checked against tol × perimeter — all
+within (22 of 33 closer to the true area, 11 a little farther: small fillets
+lost the 32-side floor, still within `tol`). Goldens of `island()`
+(`golden_anchoring`, `text_budget` of anch_06) left red on purpose, frozen
+under the D103 doubts: anchoring changes only `length`/`width` of `other`
+shapes (≤ 0.017, polygon bbox), but anch_06 changes topology — `island()`
+decides self-contact on the discretized polygon, so the reading moves below
+the tolerance (TODO).

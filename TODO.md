@@ -143,7 +143,12 @@ primitive di topo.
    - ~~**D135** `SplineSeg` → `BSplineSeg`~~ — fatto il 19 ottobre: campi
      solo geometrici, `closed`/`periodic` ricavati, fit points convertiti in
      lettura; tolto il tetto di 400 punti di `_refine_segment`.
-   - **Tetto di 128 lati su `CircleSeg.discretize`** (trovato con D135): la
+   - ~~**Tetto di 128 lati su `CircleSeg.discretize`**~~ — fatto il 19
+     ottobre, D145: tolto, e cerchi e archi su una griglia per cerchio.
+     **Lasciati rossi apposta:** `test_golden_anchoring` anch_02–07 e
+     `test_text_budget` anch_06 (golden di `island()`, congelati dai dubbi
+     D103; anch_06 cambia topologia, vedi "Trovati con D145" più sotto).
+     Nota originale: (trovato con D135): la
      tolleranza è una freccia assoluta, quindi i lati devono crescere con il
      raggio (~π·√(r/2·tol)); oltre r ≈ 33 a tol 0.01 il tetto la viola (r 500
      → freccia 0.15). Stessa cura del tetto delle spline; cambia golden,
@@ -202,6 +207,22 @@ primitive di topo.
 
 Poi topo 1.0.0, e snapbend 1.0.0 dietro.
 
+- **Trovati con D145 (griglia degli archi), 19 ottobre — tutti per la
+  promessa geometrica di D143:**
+  - `rect_with_countersink`: `cluster.area` non toglie uno dei due inner
+    (78.4 mm², disgiunto dall'altro): area 19372.16 contro 19293.14 vera
+    (outer meno l'unione degli inner a tol 1e-5). Identico prima di D145.
+  - `island()` decide il contatto di un giro con sé stesso sul poligono
+    discretizzato (`_loop_faces`: `make_valid`, lobi, `face_segments`
+    rilegge i segmenti dal bordo del lobo): la topologia cambia sotto la
+    tolleranza. `anch_06`: un cerchio D2.2 toccato dalle linee di un simbolo
+    passa da `circle` a `other` (2 linee + arco) cambiando solo la
+    discretizzazione dell'arco, e l'estremo di una linea si sposta di 0.023
+    (> 0.01). Il contatto va deciso sulle primitive (intersezioni esatte),
+    con i dubbi D103.
+  - `contour_shape` di una forma `other` misura `length`/`width` sul
+    poligono (`shape.py`): il bbox di un poligono inscritto è più corto
+    fino a 2·tol. Il bbox esatto di archi e cerchi è dai punti estremi.
 - **`test_text_budget::test_anch_02` rosso già su `0d5a512` (D138)**: `to_text`
   di anch_02 fa 200435 caratteri contro un budget di 193366 (+3.7%). Visto il
   19 ottobre lavorando a D140, non causato da D140 (rosso anche sull'HEAD
