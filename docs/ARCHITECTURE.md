@@ -12,10 +12,9 @@ che non conosce alcun formato di file: geometria e ruoli, mai layer (MAP.md
 D123). I formati entrano ed escono da adapter, pacchetti fratelli nella stessa
 distribuzione (`topo_dxf`, `topo_pdf`). Prende geometria 2D rumorosa e produce un modello
 geometrico consistente e senza perdite: contorni chiusi, gerarchia di
-contenimento, annotazioni, e un overlay aperto per le feature rilevate. Non sa
-cosa sia la lamiera né alcun processo: leggere un contorno come "foro" o una linea
-come "piega" è un'interpretazione, e sta nei consumatori (`snapbend` per fori,
-pieghe e incisioni; `snapdraw` per la notazione del disegno — MAP.md D88).
+contenimento, annotazioni, e un overlay aperto per le feature rilevate. Non
+conosce nessun mestiere: dire cosa significa un contorno o una linea è
+un'interpretazione, e sta nei consumatori (MAP.md D88).
 
 Il DXF è solo il primo formato implementato, e sta fuori da topo: `topo`
 non importa `ezdxf` né un adapter, e si installa senza (`pip install g-topo`;
@@ -108,7 +107,7 @@ topo/
 │   ├── contour.py
 │   ├── annotation.py Annotation → Note / Dimension / Leader
 │   └── role.py       ContourRole = solo UNKNOWN/OUTER/INNER — il minimo
-│                      che il motore usa. Nessun ruolo manifatturiero qui
+│                      che il motore usa. Nessun ruolo di un consumatore qui
 │                      (D47, "roles out of core")
 │
 ├── tools/        STADI opzionali su un Document/Result (il caller sceglie quali e in che ordine)
@@ -197,9 +196,8 @@ consumatore (snapdraw) compone gli stessi passi come gli serve.
    `weld_degenerate_linesegs`): rette e archi tracciati a spezzoni fusi,
    `LineSeg` sotto 0.05 mm saldati in un nodo (D50, D52, D56)
 2. **estrae** (`split_labeled`) gli `Edge` con ruolo deciso e non strutturale
-   (`engrave`, `marking`, `bending` da `role_rules`, o uno slug di un
-   consumatore come `frame` / `title_block`): non entrano nel grafo — sono
-   marcatura o arredo del disegno, non contorno. Il predicato è
+   (qualunque ruolo che un consumatore assegna, con `role_rules` o prima di
+   `heal`): non entrano nel grafo, non sono contorno. Il predicato è
    `model/role.is_structural_role` (D30); è il punto d'aggancio per un
    consumatore che marca la geometria prima di `heal` (snapdraw) —
    `topo.non_contour_candidates(doc)` (D55) espone lo stesso criterio del
@@ -216,8 +214,7 @@ consumatore (snapdraw) compone gli stessi passi come gli serve.
    esterna della loro componente non percorre una volta sola (una corda, un
    ponte) non sono contorno (D111, riapre D49) — escono dal grafo, intere,
    per non rompere la ricerca dei loop. `heal` non
-   decide cosa siano: resta a un consumatore (snapbend li interpreta come
-   piega; snapdraw può decidere da sé)
+   decide cosa siano: lo decide un consumatore, a modo suo
 5. **ricerca loop** (`find_loops` → `LoopSearch`, che dice quale gradino ha
    chiuso), con una scala di strategie sempre meno esatte:
    - grafo esatto (uguaglianza delle tuple arrotondate)
@@ -232,9 +229,9 @@ consumatore (snapdraw) compone gli stessi passi come gli serve.
 6. **loop → curva** (`structural_loops`, `loops_to_curves`): un loop con un
    edge di ruolo non strutturale non è contorno
 7. **costruzione gerarchia** (`build_hierarchy`): quale loop contiene quale →
-   albero di contenimento `outer` / `inner`. `heal` si ferma qui: **non** decide
-   hole vs inner (D15) — ogni loop contenuto è un `Contour` in
-   `cluster.inners`.
+   albero di contenimento `outer` / `inner`. `heal` si ferma qui: **non** dà un
+   significato ai contorni interni (D15) — ogni loop contenuto è un `Contour`
+   in `cluster.inners`.
 
 Se non si forma **nessun** contorno esterno chiuso, il risultato è dichiarato
 **non valido** (`is_valid = False`) — come il modelspace vuoto. `topo_dxf.to_dxf` e
@@ -277,9 +274,8 @@ chiama mai `heal`.
 
 ### 3. la lettura di un consumatore (fuori da topo)
 
-Fori, pieghe, incisioni sono una lettura di processo: le fa snapbend
-(`snapbend.flat.detect_flat`, MAP.md D88) sopra il `Result`, e le attacca
-a `cluster.detected` (D44) — non a campi fissi del cluster. topo non conosce
+Cosa significa un contorno o una curva è la lettura di un consumatore
+(MAP.md D88): la fa sopra il `Result` e la attacca a `cluster.detected` (D44) — non a campi fissi del cluster. topo non conosce
 nessun nome dell'overlay: `cluster.features(name)` legge una collezione per
 nome, `[]` se `detected` è `None` o quel nome non è stato scritto. I renderer
 disegnano ogni elemento dal suo `role` e dalla sua geometria (D90), e l'area
@@ -304,7 +300,7 @@ suo ruolo, o su quello di default dell'adapter (vedi la tabella nel README e
   / knots / weights / degree / tangenti — **mai discretizzate a polilinea**
 - **l'overlay**: un contorno con `polygon` si scrive chiuso, uno senza come N
   entità native (`LINE`/`ARC`/`SPLINE`/`CIRCLE`), **mai come `LWPOLYLINE`**
-  (D90) — così esce un'incisione di snapbend
+  (D90) — così esce una curva aperta attaccata da un consumatore
 - **il trash** si materializza sempre sul layer `Trash`
 - **le annotazioni** si riscrivono tutte, quelle del `Result` che riceve: in
   un file per parte, quelle che `split` ha dato alla parte
@@ -356,20 +352,18 @@ alza `tolerance`.
 
 ### Il doppio binario delle feature (role_rules / inferenza)
 
-Ogni feature di un consumatore è raggiungibile per **due strade** (oggi la
-seconda è di snapbend, D88):
+Ogni feature di un consumatore è raggiungibile per **due strade** (la
+seconda la fa il consumatore, D88):
 
-- **`role_rules`**: il chiamante dice "le linee chiamate `Piega` sono pieghe",
-  o "le tratteggiate con `constr` nel nome sono costruzione". Il ruolo è
+- **`role_rules`**: il chiamante dice "le linee del gruppo sorgente `A` hanno
+  ruolo `a`", o "le tratteggiate con `constr` nel nome hanno ruolo `b`". Il ruolo è
   assegnato al load, è **autoritativo**, a valle non si rimette in discussione
   (`source="labeled"`, `confidence=1.0`). Il vocabolario dei ruoli è aperto —
   passa per `normalize_role` e non è un errore che topo (cioè il motore)
   non lo conosca. Cosa succede in `heal` dipende da `is_structural=...`
-  (D47): senza, qualunque work_type — manifatturiero incluso — resta fuori
-  dal grafo, come `frame`/`title_block`; con il predicato di snapbend
-  (`snapbend.flat.is_structural`), `hole`/`countersink`/`threaded_hole`
-  restano DENTRO il grafo (sono vera topologia di pezzo), solo
-  `bending`/`engrave`/`marking` e i ruoli di altri consumatori restano fuori.
+  (D47): senza, qualunque ruolo di un consumatore resta fuori dal grafo; con
+  il predicato del consumatore, i ruoli che lui dichiara strutturali restano
+  DENTRO il grafo (chiudono contorni del pezzo), gli altri restano fuori.
   L'output lo scrive su un layer DXF col nome dello slug (non
   `Trash` — non è spazzatura), geometria intatta (D27, D30, D31, D47).
   Una regola combina segnali neutri — nome del gruppo sorgente, tratteggio,
@@ -382,7 +376,7 @@ seconda è di snapbend, D88):
   formato (D126): tratto come segni con segno, colore in RGB. "Tratteggiata" vuol dire che il pattern ha
   almeno un vuoto — un fatto del pattern, non del nome del linetype.
 - **inferenza geometrica**: il consumatore riconosce la feature dalla forma
-  (`source="geometric"`, `confidence < 1.0`) — per fori e pieghe, snapbend.
+  (`source="geometric"`, `confidence < 1.0`).
 
 ---
 
