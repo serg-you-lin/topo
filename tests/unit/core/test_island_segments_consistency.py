@@ -17,7 +17,8 @@ import unittest
 from pathlib import Path
 
 import topo
-import topo_dxf
+
+from tests.readings import island_reading
 from topo.core.island import GRAPH_EPSILON
 from topo.core.primitives.polygon_builder import build_polygon
 from topo.core.primitives.segments import DEFAULT_TOLERANCE
@@ -46,7 +47,7 @@ class TestIslandSegmentsConsistency(unittest.TestCase):
 
 def _make_test(dxf: Path):
     def test(self):
-        result = topo.island(topo_dxf.load_dxf(str(dxf)), max_gap=MAX_GAP)
+        _, result = island_reading(dxf, MAX_GAP)
         for ci, cluster in enumerate(result.clusters):
             self._assert_same_shape(cluster.outer, f"{dxf.stem}.cluster[{ci}].outer")
             for ii, inner in enumerate(cluster.inners):

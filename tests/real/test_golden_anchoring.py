@@ -26,7 +26,8 @@ project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 import topo
-import topo_dxf
+
+from tests.readings import island_reading
 from topo.model.annotation import Dimension, Leader
 
 # max_gap non ha default (D98); island_gap non esiste più (D99)
@@ -51,7 +52,7 @@ def _element(result, path):
 
 
 def snapshot(dxf_path: Path) -> dict:
-    result = topo.anchor_annotations(topo.island(topo_dxf.load_dxf(str(dxf_path)), max_gap=MAX_GAP))
+    result = topo.anchor_annotations(island_reading(dxf_path, MAX_GAP)[1])
     entries = []
     for a in result.annotations:
         if isinstance(a, Dimension):

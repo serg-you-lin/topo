@@ -17,6 +17,8 @@ from shapely.ops import unary_union
 
 import topo
 import topo_dxf
+
+from tests.readings import island_reading
 from topo.core.island import GRAPH_EPSILON
 from topo.core.primitives.segments import DEFAULT_TOLERANCE
 
@@ -67,7 +69,7 @@ class TestPolygonValidity(unittest.TestCase):
 
 def _make_validity_test(dxf: Path):
     def test(self):
-        result = topo.island(topo_dxf.load_dxf(str(dxf)), max_gap=MAX_GAP)
+        _, result = island_reading(dxf, MAX_GAP)
         for ci, cluster in enumerate(result.clusters):
             self._assert_valid(cluster.outer, f"{dxf.stem}.cluster[{ci}].outer")
             for ii, inner in enumerate(cluster.inners):
@@ -90,8 +92,7 @@ class TestRoundtripStable(unittest.TestCase):
 
 def _make_roundtrip_test(dxf: Path):
     def test(self):
-        doc = topo_dxf.load_dxf(str(dxf))
-        before = topo.island(doc, max_gap=MAX_GAP)
+        doc, before = island_reading(dxf, MAX_GAP)
         exported = topo_dxf.to_dxf(before, source_doc=doc, allow_invalid=True)
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp) / f"{dxf.stem}.dxf"
@@ -126,8 +127,7 @@ class TestNothingDropped(unittest.TestCase):
 
 def _make_dropped_test(dxf: Path):
     def test(self):
-        doc = topo_dxf.load_dxf(str(dxf))
-        result = topo.island(doc, max_gap=MAX_GAP)
+        doc, result = island_reading(dxf, MAX_GAP)
         out = [_geometry(s) for c in result.clusters for ct in [c.outer] + c.inners
                for s in ct.segments]
         out += [_geometry(s) for f in result.trash_entities for s in f.segments]
@@ -152,7 +152,7 @@ class TestInnersDontCross(unittest.TestCase):
 
 def _make_cross_test(dxf: Path):
     def test(self):
-        result = topo.island(topo_dxf.load_dxf(str(dxf)), max_gap=MAX_GAP)
+        _, result = island_reading(dxf, MAX_GAP)
         crossing = []
         for ci, cluster in enumerate(result.clusters):
             polygons = [inner.polygon for inner in cluster.inners]
