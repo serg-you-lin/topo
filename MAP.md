@@ -4790,3 +4790,88 @@ experimental and outside `__all__`, so a clean break (smoother updated in
 the same change).
 
 **Not blocking 1.0**: all of it is new names, added in a 1.x.
+
+### D135 — `SplineSeg` becomes `BSplineSeg`, and carries geometry only
+Federico, 19 October. Reopens D121 on the form of the name only (D121 said
+`BSpline`).
+
+Every spline topo holds is a B-spline: degree, control points, knots, and
+weights when it is rational. The same type receives a free-form profile from
+any source: cubic Béziers are B-splines with clamped knots, a conic exported
+as a spline needs weights. So the name says the representation: `BSplineSeg`,
+keeping the family `LineSeg`/`ArcSeg`/`CircleSeg`/`EllipseSeg` (the user
+writes one pattern, not five).
+
+Fields: `degree`, `control_points`, `knots`, `weights` (optional), plus what
+follows from them (closed, periodic). Today half the fields describe how one
+file format stored the curve (raw flags, three tolerances, 3D fit points and
+tangents, sampled points); topo has no format (D123), so they leave the
+model. Whatever an adapter needs to keep about its source stays in the
+adapter. Fidelity (D121): an untouched spline comes out with the same control
+points, knots and weights. To verify in the adapter: a source spline given by
+fit points only is turned into control points on reading.
+
+Clean break before 1.0 (49 files in topo and its adapters, 3 lines in
+smoother, nothing in snapbend/snapdraw/snapfence).
+
+### D136 — `contour_shape.kind` is a closed list of six, and a contour's kind never changes in 1.x
+Federico, 19 October: "the choice that gives fewer problems tomorrow".
+
+**The criterion for a kind**: the contour is fully determined by the measures
+the record already carries (centre, length, width, angle). Circle, stadium,
+rectangle pass, and so does the **ellipse** (centre, two axes, angle).
+`polygon` and `other` are the two catch-alls (their measures are the minimum
+rotated rectangle, not a determination). A rounded rectangle (needs a corner
+radius), an arc-shaped slot, a D-shaped hole, a regular hexagon (a `polygon`,
+D96) fail the criterion: they are read from the contour's signature (D121,
+1.x) by the caller.
+
+The ellipse is decided now because adding it later would reclassify existing
+`other` contours: every circle seen in an isometric view is an ellipse.
+
+**A contour's kind is stable, not only the list of names.** The rules read
+the primitives as they are: a circle made of four Béziers stays `other` even
+after `as_analytic` exists (1.x); a caller who wants recognition asks for it
+in its own step. Only exact equivalence counts: an ellipse with equal axes is
+a `circle`, arcs on one circle merged by `merge_runs` are a circle; an
+approximation within a tolerance is not. The default tolerances (1 %, 1°)
+are part of the contract.
+
+`kind` becomes `ShapeKind(str, Enum)` (comparisons with `"circle"` keep
+working); an `ellipse()` builder joins the others for the round trip (D96);
+one test fixes the set of kinds and the edge cases (square, equal-axis
+ellipse, spline circle, rounded rectangle, a hole in an isometric view).
+
+### D137 — `trash_entities` becomes `loose`: every curve knows which cluster contains it, and any curve can be promoted
+Federico, 19 October. The DXF layer is not an argument (a format's concern,
+D123); the name is.
+
+**What is in it.** Every curve that is not a contour of any cluster: chains
+that close nothing (D131), open curves, closed curves with a non-structural
+role, curves the caller had already labelled. Some of it is stray geometry,
+much of it is not (lines inside a part a consumer reads as folds or ribs, a
+guide line a reader uses to locate a feature). "Trash" judged them; `loose`
+only says they are attached to no contour.
+
+**One list, one geometric fact per curve.** `result.loose` stays a single
+list (no split per cluster): what a curve *is* is the consumer's, and a
+consumer promotes it. topo adds the fact consumers recompute by hand today
+(snapbend finds the containing cluster by midpoint, twice): `cluster_ref`,
+the index of the cluster whose outer contour contains the curve entirely,
+boundary and holes included (a line from edge to edge, a centre cross inside
+a hole), `None` otherwise. Same name and convention as annotations (`anchor`)
+and `island()` (D99), which already set it.
+
+**Promotion is not bound by position.** A curve outside every part can still
+belong to one: a guide line next to a part that points at a feature. A
+consumer attaches any loose curve to any cluster, through one public
+operation that moves it out of `loose` into `cluster.detected` (D44, D90):
+never in both places (snapbend's comment: the same line written twice), never
+dropped (non-negotiable 7). No default: topo never decides which loose curves
+matter.
+
+`split` hands each curve to the cluster of its `cluster_ref` (one rule
+instead of its own probe point); a promoted curve travels with its cluster.
+The type is declared (`List[OpenCurve | ClosedCurve]`, not `List[Any]`).
+`Result.classified_entities` (D88), which snapbend fills next to this, is
+looked at in the review of `Result`/`Cluster` fields, not here.

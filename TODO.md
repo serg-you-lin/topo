@@ -135,20 +135,29 @@ primitive di topo.
    il fatto si disegna su due usi veri. Vale per ogni fatto nuovo dopo la
    1.0 (i dischi di cogo, D118, sono il precedente).
 
-   **Con il punto 8, da decidere prima della 1.0: dove e con che nome stanno
-   le linee che non chiudono niente** (emerso il 19 ottobre provando le
-   nervature). Prova su una lamiera 1000x600 con `heal()`: nervatura a linea
-   con estremi liberi, croce di Sant'Andrea spigolo a spigolo (le canalizzazioni),
-   nervature da bordo a bordo, bugna con ruolo `rib` → in tutti i casi un
-   pezzo pieno e valido, le linee in `trash_entities` e `split` le porta col
-   pezzo. Una bugna disegnata col suo contorno *senza* ruolo resta un `inner`,
-   indistinguibile da un foro (D15: la geometria non lo dice; lo dice un ruolo
-   o il consumer). Il punto aperto non è l'algoritmo, è il nome: snapbend
-   pesca già le linee di piega da `trash_entities` (`flat/detect.py`), quindi
-   "trash" porta significato, non solo scarti. Rinominarlo o separare "linee
-   dentro un pezzo" dagli scarti veri dopo la 1.0 rompe i consumer; tutto il
-   resto sulle nervature (l'opzione "foro" della scelta A, fatti nuovi) è
-   additivo e viene dopo.
+   **Deciso il 19 ottobre (D135–D137), da fare prima della 1.0:**
+   - **D135** `SplineSeg` → `BSplineSeg`, campi solo geometrici (grado, punti
+     di controllo, nodi, pesi); il resto lo tiene l'adapter se gli serve.
+     Verificare che una spline data per soli fit points venga convertita in
+     lettura. topo, `topo_dxf`, smoother (3 righe).
+   - **D136** `contour_shape.kind`: sei (aggiunta `ellipse`), `ShapeKind(str,
+     Enum)`, builder `ellipse()`, regole sulle primitive come sono (solo
+     equivalenza esatta), test che fissa l'insieme e i casi limite.
+   - **D137** `trash_entities` → `result.loose`, tipizzato; `cluster_ref` su
+     ogni curva (contenuta per intero nel contorno esterno, bordo e fori
+     compresi); un'operazione pubblica di promozione verso
+     `cluster.detected`, valida anche per curve fuori dal pezzo; `split`
+     usa `cluster_ref`. Consumer: snapbend (`flat/detect.py`, usa la
+     promozione al posto dei filtri per id), snapdraw, snapfence.
+   - **Rassegna dei campi di `Result`/`Cluster`** (sono API): `List[Any]`,
+     `all_arcs`, `classified_entities` (di un consumer, D88), `_open_shapes`.
+   - **Una frase da scrivere: cosa promette la 1.0** — solo nomi e firme, o
+     anche l'output geometrico. Da lì dipende se i 4 dubbi su D103
+     (`island()`) vanno verificati prima.
+
+   Restano 1.x: modello `Curve`, `as_analytic`, firma dei contorni, i fatti
+   di riconoscimento, le strisce di D134. Le nervature: tutto il resto
+   (l'opzione "foro" della scelta A, fatti nuovi) è additivo e viene dopo.
 9. **Dopo la 1.0, additivo (non blocca):** curve da equazione. Una `Curve`
    costruita da una parametrizzazione esatta (`x(t), y(t)` su `[t0, t1]`)
    che ricorda la sua origine (`curve.source`: "generata da questa
