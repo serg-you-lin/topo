@@ -222,6 +222,17 @@ Poi topo 1.0.0, e snapbend 1.0.0 dietro.
   Non è una richiesta a topo la "provenienza" dei pezzi tagliati (quale
   entità del file erano): è un fatto di come il file è stato disegnato
   (regola 1); il fatto geometrico — stessa retta, stesso nodo — c'è già.
+  Fatte le copie `golden_anchoring/anch_NN_noframe.dxf` (19 ottobre): cornice,
+  fascia e cartiglio rilevati da snapdraw (`detect_frame`), tolte dal DXF
+  originale le entità che coincidono con quegli edge; il resto è intatto.
+  Il cartiglio snapdraw lo trova solo in anch_07 e anch_08: negli altri, se
+  c'è, è rimasto. Confronto di `island()` con e senza cornice: nessun contorno
+  nuovo, sparisce solo geometria tolta, **tranne anch_07**: due cerchi chiusi
+  (simboli di rugosità, cerchio + due linee che toccano un rettangolo) sono
+  `inner` dell'isola-cornice con la cornice, e `loose` dell'isola-rettangolo
+  senza. Un cerchio chiuso non può cambiare natura per ciò che gli sta
+  attorno: i loop chiusi di un pezzo fuori dall'outer scelto (D71 lo copre
+  solo per un'isola annidata). DXF in `_debug/anch_07_island_*_cornice.dxf`.
 - **Trovati con D145 (griglia degli archi), 19 ottobre — tutti per la
   promessa geometrica di D143:**
   - `rect_with_countersink`: `cluster.area` non toglie uno dei due inner

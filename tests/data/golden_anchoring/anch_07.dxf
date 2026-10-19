@@ -3635,7 +3635,7 @@ AcDbSymbolTableRecord
 100
 AcDbBlockTableRecord
   2
-Bordi bosatra
+Bordi
 340
 0
   0
@@ -5259,7 +5259,7 @@ AcDbEntity
 100
 AcDbBlockBegin
   2
-Bordi bosatra
+Bordi
  70
 0
  10
@@ -5269,7 +5269,7 @@ Bordi bosatra
  30
 0.0
   3
-Bordi bosatra
+Bordi
   1
 
   0
@@ -8119,7 +8119,7 @@ ByLayer
 100
 AcDbBlockReference
   2
-Bordi bosatra
+Bordi
  10
 0.0
  20
