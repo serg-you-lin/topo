@@ -48,7 +48,7 @@ for part in parts:
     doc_out = topo_dxf.to_dxf(
         part, doc,
         exclude_types={"TEXT"},     # rimuove i TEXT dal documento figlio
-        include_annotations=True,
+        include_texts=True,
     )
     # quello che faceva on_part: metadati / marcature sul doc figlio
     topo_dxf.write_metadata_to_dxf(doc_out, cluster)

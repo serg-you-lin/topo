@@ -1,0 +1,29 @@
+{
+  "source_file": "rect_with_trash.dxf",
+  "text_count": 1,
+  "by_source_kind": {
+    "TEXT": 1
+  },
+  "cluster_count": 1,
+  "texts": [
+    {
+      "source_kind": "TEXT",
+      "position": [
+        0.0,
+        0.0
+      ],
+      "text": "REF_001",
+      "cluster_ref": 0,
+      "height": 5.0,
+      "rotation": 0.0,
+      "measure": null,
+      "measure_is_angle": false,
+      "pointer": 0,
+      "rendered": {
+        "strokes": 0,
+        "fills": 0,
+        "texts": 0
+      }
+    }
+  ]
+}

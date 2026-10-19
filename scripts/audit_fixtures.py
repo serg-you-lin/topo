@@ -86,7 +86,7 @@ def _golden_parents() -> set[Path]:
         data = json.loads(golden.read_text(encoding="utf-8"))
         add(GOLDEN / data["source_file"])
 
-    for golden in sorted((GOLDEN / "annotations").glob("*.json")):
+    for golden in sorted((GOLDEN / "texts").glob("*.json")):
         name = json.loads(golden.read_text(encoding="utf-8"))["source_file"]
         add(next((base / name for base in (DATA, GOLDEN)
                   if (base / name).exists()), None))

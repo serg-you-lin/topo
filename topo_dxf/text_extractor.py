@@ -1,16 +1,16 @@
 """
-topo_dxf/annotation_extractor.py
---------------------------------
-Legge le entità di annotazione di un modelspace DXF e le traduce nel modello di
-dominio tipato (``Note`` / ``Dimension`` / ``Leader`` di ``model/annotation.py``).
+topo_dxf/text_extractor.py
+--------------------------
+Legge le entità di testo di un modelspace DXF (TEXT, MTEXT, DIMENSION, LEADER,
+MULTILEADER) e le traduce in ``topo.model.Text`` (MAP.md D138).
 
-È l'equivalente per testi e quote di quello che ``DxfAdapter.to_edges()`` è per
-la geometria di taglio: l'unico punto in cui le annotazioni DXF vengono lette.
+È l'equivalente per i testi di quello che ``DxfAdapter.to_edges()`` è per
+la geometria: l'unico punto in cui i testi DXF vengono letti.
 Dopo ``extract()`` il modelspace sorgente non serve più.
 
 Compito: solo conoscenza di formato — dove sta il testo, come si appiattisce il
-blocco anonimo di una quota. NON decide cosa un'annotazione significhi per il
-pezzo: quello è la fase ``anchor_annotations()`` della fase tools/.
+blocco anonimo di una quota, cosa vuol dire ``<>``. NON decide cosa un testo
+significhi: quello è di ``anchor_texts()`` e dei consumatori.
 
 Tipi gestiti: TEXT, MTEXT, DIMENSION, LEADER, MULTILEADER.
 Non gestisce INSERT — si assume siano già stati esplosi da load_dxf().
@@ -18,7 +18,7 @@ Non gestisce INSERT — si assume siano già stati esplosi da load_dxf().
 DIMENSION / LEADER / MULTILEADER non hanno una geometria "propria" nei campi
 DXF: la loro immagine (linee di misura, direttrici, frecce, testo) sta in un
 blocco anonimo espandibile con ``virtual_entities()``. La appiattiamo qui in
-primitive pure e la conserviamo in ``annotation.rendered`` (RenderedGeometry),
+primitive pure e la conserviamo in ``Text.rendered`` (RenderedGeometry),
 così ``write()`` la ri-materializza fedele all'originale.
 """
 
@@ -28,44 +28,43 @@ import re
 from typing import List, Optional, Sequence, Tuple
 
 from topo.model import (
-    Annotation, Note, Dimension, Leader, RenderedGeometry, RenderedText,
-    RoleRule, resolve_role,
+    Text, RenderedGeometry, RenderedText, RoleRule, resolve_role,
 )
 from ezdxf.tools.text import plain_mtext
 
 from .mtext import clean_mtext, mleader_text
 
-ANNOTATION_TYPES = frozenset({"TEXT", "MTEXT", "DIMENSION", "LEADER", "MULTILEADER"})
+TEXT_TYPES = frozenset({"TEXT", "MTEXT", "DIMENSION", "LEADER", "MULTILEADER"})
 
 # Errore massimo di corda per discretizzare archi/curve (mm).
 _ARC_SAGITTA = 0.1
 
 
-class DxfAnnotationExtractor:
-    """Traduce le entità di annotazione di un msp in list[Annotation]."""
+class DxfTextExtractor:
+    """Traduce le entità di testo di un msp in list[Text]."""
 
     def __init__(self, msp, role_rules: Sequence[RoleRule] = ()):
         self.msp = msp
         self.role_rules = list(role_rules)
 
-    def extract(self) -> List[Annotation]:
-        out: List[Annotation] = []
+    def extract(self) -> List[Text]:
+        out: List[Text] = []
         for entity in self.msp:
-            if entity.dxftype() not in ANNOTATION_TYPES:
+            if entity.dxftype() not in TEXT_TYPES:
                 continue
-            ann = _to_annotation(entity, self.role_rules)
-            if ann is not None:
-                out.append(ann)
+            text = _to_text(entity, self.role_rules)
+            if text is not None:
+                out.append(text)
         return out
 
 
-def _to_annotation(entity, role_rules: Sequence[RoleRule] = ()) -> Optional[Annotation]:
+def _to_text(entity, role_rules: Sequence[RoleRule] = ()) -> Optional[Text]:
     kind = entity.dxftype()
     # Il ruolo dalle stesse regole degli edge, sul nome del layer: contano
     # solo quelle sul nome, di un testo non si legge l'aspetto (D127). Il
     # layer resta qui (D128).
     role = resolve_role(role_rules, entity.dxf.get("layer", "0"))
-    pos = annotation_anchor(entity)
+    pos = text_anchor(entity)
 
     if kind in ("TEXT", "MTEXT"):
         content = _extract_content(entity)
@@ -73,7 +72,7 @@ def _to_annotation(entity, role_rules: Sequence[RoleRule] = ()) -> Optional[Anno
             return None
         dxf = entity.dxf
         raw_h = dxf.get("char_height", 2.5) if kind == "MTEXT" else dxf.get("height", 2.5)
-        return Note(
+        return Text(
             position=pos,
             role=role,
             text=content,
@@ -84,21 +83,21 @@ def _to_annotation(entity, role_rules: Sequence[RoleRule] = ()) -> Optional[Anno
         )
 
     if kind == "DIMENSION":
-        return _dimension_annotation(entity, pos, role)
+        return _dimension_text_of(entity, pos, role)
 
     if kind in ("LEADER", "MULTILEADER"):
-        return _leader_annotation(entity, pos, role, kind)
+        return _leader_text(entity, pos, role, kind)
 
     return None
 
 
 # ---------------------------------------------------------------------------
-# Punto d'ancoraggio — dove `write` riposiziona il testo dell'annotazione
+# Punto d'ancoraggio — dove `write` riposiziona il testo
 # ---------------------------------------------------------------------------
 
-def annotation_anchor(entity) -> Optional[Tuple[float, float]]:
+def text_anchor(entity) -> Optional[Tuple[float, float]]:
     """
-    Punto d'ancoraggio XY di un'entità di annotazione.
+    Punto d'ancoraggio XY di un'entità di testo.
 
     TEXT/MTEXT hanno il punto d'inserimento nei campi DXF; MULTILEADER e
     DIMENSION lo tengono in strutture annidate; LEADER non ce l'ha e ricade
@@ -152,7 +151,7 @@ def _fallback_anchor(entity) -> Optional[Tuple[float, float]]:
 # ---------------------------------------------------------------------------
 
 def _extract_content(entity) -> str:
-    """Testo pulito dell'annotazione, stringa vuota se non ne ha."""
+    """Testo pulito dell'entità, stringa vuota se non ne ha."""
     t = entity.dxftype()
     if t == "TEXT":
         return (entity.dxf.get("text", "") or "").strip()
@@ -191,7 +190,7 @@ def _width_factor(entity) -> float:
 # DIMENSION
 # ---------------------------------------------------------------------------
 
-def _dimension_annotation(entity, pos, role: str) -> Optional[Dimension]:
+def _dimension_text_of(entity, pos, role: str) -> Optional[Text]:
     rendered = _render_block(entity)
 
     if rendered.is_empty():
@@ -219,16 +218,42 @@ def _dimension_annotation(entity, pos, role: str) -> Optional[Dimension]:
         if pos is None:
             return None
 
-    return Dimension(
+    return Text(
         position=pos,
         role=role,
         source_kind="DIMENSION",
-        measured_value=measured,
-        dim_type=dim_type,
-        text_override=override,
+        text=_shown_text(override, rendered, measured),
+        measure=measured,
+        measure_is_angle=dim_type in ("angular", "angular3p"),
         rendered=rendered,
         measured_points=_measured_points(entity, dim_type),
     )
+
+
+_NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
+
+
+def _shown_text(override: Optional[str], rendered: RenderedGeometry,
+                measured: Optional[float]) -> str:
+    """
+    La stringa che la quota mostra: l'override con ``<>`` sostituito dalla
+    misura; senza override, i testi dell'immagine; senza immagine, la misura.
+    """
+    if override is not None:
+        return override.replace("<>", _shown_value(rendered, measured))
+    if rendered.texts:
+        return "".join(t.content for t in rendered.texts)
+    return _shown_value(rendered, measured)
+
+
+def _shown_value(rendered: RenderedGeometry, measured: Optional[float]) -> str:
+    """La misura come la mostra il disegno (precisione, virgola), o calcolata."""
+    for t in rendered.texts:
+        if _NUMBER.fullmatch(t.content.strip()):
+            return t.content.strip()
+    if measured is not None:
+        return f"{measured:.2f}".rstrip("0").rstrip(".")
+    return ""
 
 
 def _dimension_semantics(entity) -> Tuple[str, Optional[float]]:
@@ -255,7 +280,7 @@ def _dimension_override(entity) -> Optional[str]:
 
     Campo DXF `text`: "" / "<>" → misura calcolata (nessun override);
     " " → testo soppresso; "...<>" → prefisso/suffisso; altro → override.
-    `write()` risolve "<>" con la misura.
+    `_shown_text` risolve "<>" con la misura (D138).
     """
     raw = entity.dxf.get("text", "") or ""
     if raw in ("", "<>"):
@@ -350,7 +375,7 @@ def _synthesize_dimension(entity):
 # LEADER / MULTILEADER
 # ---------------------------------------------------------------------------
 
-def _leader_annotation(entity, pos, role: str, source_kind) -> Optional[Leader]:
+def _leader_text(entity, pos, role: str, source_kind) -> Optional[Text]:
     rendered = _render_block(entity)
     if rendered.is_empty():
         return None
@@ -377,12 +402,12 @@ def _leader_annotation(entity, pos, role: str, source_kind) -> Optional[Leader]:
         if pos is None:
             return None
 
-    return Leader(
+    return Text(
         position=pos,
         role=role,
         source_kind=source_kind,
         text=text,
-        vertices=vertices,
+        pointer=vertices,
         rendered=rendered,
     )
 

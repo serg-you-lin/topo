@@ -1,0 +1,29 @@
+{
+  "source_file": "quattro_sviluppi_un_foglio.dxf",
+  "text_count": 1,
+  "by_source_kind": {
+    "TEXT": 1
+  },
+  "cluster_count": 4,
+  "texts": [
+    {
+      "source_kind": "TEXT",
+      "position": [
+        50.0,
+        70.0
+      ],
+      "text": "quattro_sviluppi_un_foglio",
+      "cluster_ref": 0,
+      "height": 20.0,
+      "rotation": 0.0,
+      "measure": null,
+      "measure_is_angle": false,
+      "pointer": 0,
+      "rendered": {
+        "strokes": 0,
+        "fills": 0,
+        "texts": 0
+      }
+    }
+  ]
+}

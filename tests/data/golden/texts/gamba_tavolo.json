@@ -1,24 +1,23 @@
 {
   "source_file": "gamba_tavolo.dxf",
-  "annotation_count": 8,
-  "by_kind": {
+  "text_count": 8,
+  "by_source_kind": {
     "DIMENSION": 7,
     "MTEXT": 1
   },
   "cluster_count": 4,
-  "annotations": [
+  "texts": [
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         -944.299,
         181.534
       ],
-      "display_text": "50",
+      "text": "50",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 50.0,
-      "text_override": null,
+      "measure": 50.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,
@@ -26,17 +25,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         -932.088,
         122.84
       ],
-      "display_text": "40",
+      "text": "40",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 40.0,
-      "text_override": null,
+      "measure": 40.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,
@@ -44,17 +42,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         -878.008,
         221.534
       ],
-      "display_text": "90",
+      "text": "90",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 90.0,
-      "text_override": null,
+      "measure": 90.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,
@@ -62,17 +59,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         -869.884,
         122.84
       ],
-      "display_text": "50",
+      "text": "50",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 50.0,
-      "text_override": null,
+      "measure": 50.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,
@@ -80,29 +76,35 @@
       }
     },
     {
-      "type": "Note",
-      "kind": "MTEXT",
+      "source_kind": "MTEXT",
       "position": [
         -848.004,
         239.813
       ],
-      "display_text": "SPESSORE 8mm",
+      "text": "SPESSORE 8mm",
       "cluster_ref": null,
       "height": 10.0,
-      "rotation": 0.0
+      "rotation": 0.0,
+      "measure": null,
+      "measure_is_angle": false,
+      "pointer": 0,
+      "rendered": {
+        "strokes": 0,
+        "fills": 0,
+        "texts": 0
+      }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         -797.681,
         122.84
       ],
-      "display_text": "50",
+      "text": "50",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 50.0,
-      "text_override": null,
+      "measure": 50.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,
@@ -110,17 +112,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         -675.477,
         122.84
       ],
-      "display_text": "50",
+      "text": "50",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 50.0,
-      "text_override": null,
+      "measure": 50.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,
@@ -128,17 +129,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         -665.019,
         223.172
       ],
-      "display_text": "91.6",
+      "text": "91.6",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 91.6381,
-      "text_override": null,
+      "measure": 91.6381,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,

@@ -8,14 +8,14 @@ dominio. Dopo load_dxf() il riferimento al documento ezdxf sorgente sparisce e
 non viene più toccato fino a write().
 
     edges       : geometria parsata (Edge puri) — input per heal()
-    annotations : testi, quote, leader — dati puri, input per write()
+    texts       : i testi della sorgente (D138) — dati puri, input per write()
     source_meta : header rilevanti del file sorgente ($INSUNITS, $MEASUREMENT, …)
     source_path : percorso del file aperto
     warnings    : diagnostica raccolta da load_dxf() sul file grezzo — audit,
                   INSERT non esplosi, entità con Z != 0 riportate sul piano,
                   duplicati rimossi. topo.validate(doc) le rilancia.
 
-Nessun campo porta un riferimento a ezdxf: edges e annotations sono dati puri
+Nessun campo porta un riferimento a ezdxf: edges e texts sono dati puri
 prodotti dall'adapter, source_meta è un dizionario di primitivi.
 """
 
@@ -24,7 +24,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from .annotation import Annotation
+from .text import Text
 
 if TYPE_CHECKING:
     from ..core.topology.edge import Edge
@@ -42,7 +42,7 @@ class Document:
     Result che ne deriva — mai su entità ezdxf.
     """
     edges:       List["Edge"]        = field(default_factory=list)
-    annotations: List[Annotation]    = field(default_factory=list)
+    texts:       List[Text]           = field(default_factory=list)
     source_meta: Dict[str, Any]      = field(default_factory=dict)
     source_path: str                 = ""
     warnings:    List[str]           = field(default_factory=list)

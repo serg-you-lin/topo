@@ -17,7 +17,7 @@ from typing import Callable, List, Mapping, Optional, Set
 import ezdxf
 
 from topo.model import (
-    Annotation, Cluster, ContourRole, Dimension, Document, Leader, Note, Result,
+    Cluster, ContourRole, Document, Result, Text,
     RoleStyle, feature_role, role_str, role_style,
 )
 from .exporter import (
@@ -26,8 +26,6 @@ from .exporter import (
 from .layers import (
     COLOR_ANNOTATION, LAYER_ANNOTATION, LayerMap, color_for_role, role_to_dxf_layer,
 )
-
-ANNOTATION_TYPES = frozenset({"TEXT", "MTEXT", "DIMENSION", "LEADER", "MULTILEADER"})
 
 
 # ---------------------------------------------------------------------------
@@ -38,9 +36,9 @@ def to_dxf(
     result: Result,
     source_doc: Optional[Document] = None,
     filter_cluster: Optional[Callable[[Cluster], bool]] = None,
-    include_annotations: bool = True,
+    include_texts: bool = True,
     include_loose: bool = True,
-    annotation_layer: str = LAYER_ANNOTATION,
+    text_layer: str = LAYER_ANNOTATION,
     role_styles: Optional[Mapping[str, RoleStyle]] = None,
     layers: Optional[LayerMap] = None,
     allow_invalid: bool = True,
@@ -52,7 +50,7 @@ def to_dxf(
     Itera i clusters del modello e scrive i segmenti puri di ogni contorno/hole.
     Non legge entità DXF esistenti — se passato, `source_doc` serve solo per
     riportare gli header ($INSUNITS, $MEASUREMENT). Testi e quote arrivano da
-    `result.annotations` (il modello), non dalla sorgente.
+    `result.texts` (il modello), non dalla sorgente.
 
     Con `include_loose=True` (default) le entità che il pipeline non ha
     classificato (`result.loose`) vengono materializzate sul layer
@@ -65,27 +63,27 @@ def to_dxf(
       - `layers` → `{ruolo: "Nome"}` o `{ruolo: funzione(elemento) -> nome}`:
         con una funzione le entità di un ruolo si dividono su più layer
         (l'elemento è il Contour, l'elemento di `cluster.detected`, la
-        curva di `loose` o l'Annotation che si sta scrivendo). Default: `OuterContour`,
+        curva di `loose` o il Text che si sta scrivendo). Default: `OuterContour`,
         `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo.
       - `role_styles` → `{ruolo: RoleStyle}`: colore, tratto, spessore.
         Agisce sul LAYER, non sull'entità: tutto ciò che si scrive è BYLAYER,
         quindi vale per ogni entità del ruolo; su un layer condiviso da più
         ruoli vince il primo scritto. Un campo a `None` resta il default.
-      - `annotation_layer` → il layer di testi e quote senza ruolo; uno con
+      - `text_layer` → il layer di testi e quote senza ruolo; uno con
         un ruolo va sul layer del suo ruolo, come un edge (D127, D128).
-    Nessuna annotazione viene scartata: quelle non coperte da alcuna parte
-    vengono comunque scritte (`topo.split()` le assegna alla parte più
+    Nessun testo viene scartato: quelli non coperti da alcuna parte
+    vengono comunque scritti (`topo.split()` li assegna alla parte più
     vicina, come le curve sciolte).
 
     `filter_cluster(cluster)` sceglie quali cluster scrivere; `loose` e
-    annotazioni si scrivono comunque tutti (per un file per parte, la parte
-    viene da `topo.split()`, che le ha già divise). `exclude_types`
+    testi si scrivono comunque tutti (per un file per parte, la parte
+    viene da `topo.split()`, che li ha già divisi). `exclude_types`
     (`{"TEXT", "CIRCLE"}`) toglie dal documento le entità DXF di quei tipi.
 
     Restituisce il documento ezdxf: sta al chiamante fare doc.saveas(...).
 
     Un `result` non valido (es. nessun contorno esterno chiuso → zero parti)
-    viene scritto lo stesso, con quello che c'è (`loose`, annotazioni): come
+    viene scritto lo stesso, con quello che c'è (`loose`, testi): come
     `to_svg`, serve a vedere cosa ha capito topo. `allow_invalid=False` →
     `ValueError` invece: il chiamante che consegna a una macchina (D83).
     """
@@ -107,7 +105,7 @@ def to_dxf(
 
     msp = doc_out.modelspace()
     book = _Layers(doc_out, layers, role_styles)
-    book.setup(annotation_layer)
+    book.setup(text_layer)
 
     for cluster in result.clusters:
         if filter_cluster is not None and not filter_cluster(cluster):
@@ -133,8 +131,8 @@ def to_dxf(
     if include_loose and result.loose:
         _write_loose(msp, result, book)
 
-    if include_annotations and result.annotations:
-        _write_annotations(msp, result.annotations, book, annotation_layer)
+    if include_texts and result.texts:
+        _write_texts(msp, result.texts, book, text_layer)
 
     if exclude_types:
         _remove_excluded_entities(msp, {t.upper() for t in exclude_types})
@@ -143,40 +141,42 @@ def to_dxf(
 
 
 # ---------------------------------------------------------------------------
-# Annotazioni
+# Testi
 # ---------------------------------------------------------------------------
 
-def _write_annotations(
+def _write_texts(
     msp,
-    annotations: List[Annotation],
+    texts: List[Text],
     book: "_Layers",
-    annotation_layer: str,
+    text_layer: str,
 ) -> None:
     """
-    Riscrive le annotazioni testuali della sorgente nel documento di output,
-    tutte: quale parte ne porta quali lo decide `topo.split()`.
+    Riscrive i testi della sorgente nel documento di output, tutti: quale
+    parte ne porta quali lo decide `topo.split()`.
 
-    Un'annotazione con un ruolo va sul layer del suo ruolo, una senza su
-    `annotation_layer` (D128).
+    Un testo con un ruolo va sul layer del suo ruolo, uno senza su
+    `text_layer` (D128).
     """
-    for ann in annotations:
-        if ann.role != ContourRole.UNKNOWN:
-            layer = book.for_role(ann.role, ann)
+    for text in texts:
+        if text.role != ContourRole.UNKNOWN:
+            layer = book.for_role(text.role, text)
         else:
-            layer = annotation_layer
-        _emit_annotation(msp, ann, layer)
+            layer = text_layer
+        _emit_text(msp, text, layer)
 
 
-def _emit_annotation(msp, ann: Annotation, layer: str) -> None:
+def _emit_text(msp, text: Text, layer: str) -> None:
+    """Con un'immagine (`rendered`: quote e richiami della sorgente) si
+    riscrive l'immagine, altrimenti la stringa."""
     attribs = {"layer": layer, "color": 256}
 
-    if isinstance(ann, Note):
-        _emit_note(msp, ann, attribs)
-    elif isinstance(ann, (Dimension, Leader)):
-        _emit_rendered(msp, ann, attribs)
+    if text.rendered.is_empty():
+        _emit_string(msp, text, attribs)
+    else:
+        _emit_rendered(msp, text, attribs)
 
 
-def _emit_note(msp, note: Note, attribs: dict) -> None:
+def _emit_string(msp, note: Text, attribs: dict) -> None:
     if not note.text:
         return
     width = note.width_factor or 1.0
@@ -204,7 +204,7 @@ def _emit_note(msp, note: Note, attribs: dict) -> None:
 
 def _emit_rendered(msp, ann, attribs: dict) -> None:
     """
-    DIMENSION / LEADER: ri-materializza l'immagine appiattita. I testi in
+    Ri-materializza l'immagine appiattita (DIMENSION / LEADER di un DXF). I testi in
     `rendered.texts` sono già il testo visualizzato finale (il blocco DXF lo
     incorpora risolto; i percorsi sintetici passano da `_dimension_text`).
     """
@@ -314,14 +314,14 @@ class _Layers:
         self.role_styles = dict(role_styles or {})
         self._ready: Set[str] = set()
 
-    def setup(self, annotation_layer: str) -> None:
+    def setup(self, text_layer: str) -> None:
         """I layer di ogni documento: quelli dei ruoli del motore e delle
-        annotazioni, poi quelli di ogni ruolo con un `RoleStyle` (anche senza
+        testi, poi quelli di ogni ruolo con un `RoleStyle` (anche senza
         entità, così il chiamante ci scrive sopra a mano). Un ruolo il cui
         layer è una funzione dell'elemento nasce solo quando si scrive."""
         for role in (ContourRole.OUTER, ContourRole.INNER):
             self._setup_role(role)
-        self.ensure(annotation_layer, color=COLOR_ANNOTATION)
+        self.ensure(text_layer, color=COLOR_ANNOTATION)
         self._setup_role(ContourRole.UNKNOWN)
         for role in self.role_styles:
             self._setup_role(role)

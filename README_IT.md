@@ -4,7 +4,7 @@
 
 `topo` prende un disegno 2D disordinato e ne ricava un modello pulito e senza
 perdite — contorni chiusi ricuciti, la loro gerarchia di contenimento, le
-annotazioni del disegno, e un overlay aperto dove si attaccano le feature
+testi del disegno, e un overlay aperto dove si attaccano le feature
 rilevate — poi lo riscrive in DXF (un documento, o uno per pezzo), JSON/XML, SVG,
 un view model per una UI, o (sperimentale) una lettura testuale compatta per un
 modello linguistico. Il prodotto è il
@@ -180,7 +180,7 @@ doc = topo_dxf.load_dxf("pezzo.dxf", role_rules=[
 ## La pipeline
 
 ```
-topo_dxf.load_dxf(path)   ──►  Document   (edge + annotazioni + source_meta)
+topo_dxf.load_dxf(path)   ──►  Document   (edge + testi + source_meta)
 topo.load_segments(segs)  ──►  Document   l'adapter è l'unico codice che legge un formato
                           │
                           ▼
@@ -250,7 +250,7 @@ devi vedere dove si rompe la catena.
 
 - **Come contorni strutturali:** `LWPOLYLINE`, `POLYLINE`, `CIRCLE`, `SPLINE` chiusa, `ELLIPSE` chiusa
 - **Da ricostruire in contorni:** `LINE`, `ARC`, `SPLINE`/`ELLIPSE` aperte collegate ad altre entità
-- **Come annotazioni:** `TEXT`, `MTEXT`, `DIMENSION`, `LEADER`, `MULTILEADER`
+- **Come testi:** `TEXT`, `MTEXT`, `DIMENSION`, `LEADER`, `MULTILEADER`
 - **Blocchi:** gli `INSERT` si esplodono al caricamento, di default
 - **Legacy:** i file R12/R13/R14 si aggiornano a R2010
 - **DWG:** né `topo` né `ezdxf` leggono il DWG direttamente — passa da

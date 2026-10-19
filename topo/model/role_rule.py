@@ -85,7 +85,7 @@ class RoleRule:
         """
         True se l'elemento (nome del gruppo sorgente + aspetto) soddisfa la
         regola. `style=None` = la sorgente non ha un aspetto da confrontare
-        (un'annotazione, D127): una regola che guarda l'aspetto non matcha.
+        (un testo, D127): una regola che guarda l'aspetto non matcha.
         """
         if style is None and self.reads_style:
             return False

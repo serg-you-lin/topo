@@ -90,7 +90,7 @@ class TestSplitIsModel(unittest.TestCase):
         # ogni testo alla parte che lo contiene o alla più vicina, il trash
         # alla più vicina: niente duplicato, niente perso
         parts = topo.split(self.result)
-        texts = [[a.text for a in p.annotations] for p in parts]
+        texts = [[a.text for a in p.texts] for p in parts]
         self.assertEqual(texts, [["A"], ["B"]])
         self.assertEqual([len(p.loose) for p in parts],
                          [0, len(self.result.loose)])

@@ -46,7 +46,7 @@ out = topo_dxf.to_dxf(
     result,
     source_doc=doc,             # solo per gli header
     include_loose=True,         # geometria non classificata sul layer "Trash"
-    annotation_layer="Annotation",   # "Trash" / altro nome / None (= layer originale)
+    text_layer="Annotation",   # "Trash" / altro nome / None (= layer originale)
 )
 path = os.path.join(OUTDIR, f"{base}_healed.dxf")
 out.saveas(path)

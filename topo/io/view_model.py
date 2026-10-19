@@ -108,13 +108,13 @@ def _loose_entry(curve, tolerance: float, role_styles: Mapping[str, RoleStyle]) 
     return {"role": _role_str(role), "color": _color(role, role_styles), "points": pts, "closed": closed}
 
 
-def _annotation_entry(ann) -> dict:
+def _text_entry(text) -> dict:
     return {
-        "kind":     ann.kind,
-        "position": [round(ann.position[0], 4), round(ann.position[1], 4)],
-        "text":     ann.display_text,
-        "height":   getattr(ann, "height", 2.5) or 2.5,
-        "rotation": getattr(ann, "rotation", 0.0) or 0.0,
+        "source_kind": text.source_kind,
+        "position":    [round(text.position[0], 4), round(text.position[1], 4)],
+        "text":        text.text,
+        "height":      text.height or 2.5,
+        "rotation":    text.rotation or 0.0,
     }
 
 
@@ -134,7 +134,7 @@ def to_view_model(
     result: Result,
     tolerance: float = 0.05,
     include_loose: bool = True,
-    include_annotations: bool = True,
+    include_texts: bool = True,
     role_styles: Optional[Mapping[str, RoleStyle]] = None,
 ) -> dict:
     """
@@ -146,7 +146,7 @@ def to_view_model(
                              spline delle tracce aperte (le tracce chiuse usano
                              il polygon già discretizzato al load).
         include_loose:       includi `result.loose`.
-        include_annotations: includi `result.annotations`.
+        include_texts: includi `result.texts`.
         role_styles:         `{ruolo: RoleStyle}` del chiamante (D128),
                              sopra la palette di topo: ne legge il colore.
 
@@ -181,8 +181,8 @@ def to_view_model(
     }
     if include_loose:
         vm["loose"] = [_loose_entry(t, tolerance, role_styles) for t in result.loose]
-    if include_annotations:
-        vm["annotations"] = [_annotation_entry(a) for a in result.annotations]
+    if include_texts:
+        vm["texts"] = [_text_entry(t) for t in result.texts]
     return vm
 
 

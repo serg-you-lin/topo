@@ -1,10 +1,9 @@
 {
   "source_file": "anch_07.dxf",
-  "annotations": [
+  "texts": [
     {
-      "type": "Dimension",
-      "dim_type": "radius",
-      "display_text": "10.63",
+      "measure_is_angle": false,
+      "text": "10.63",
       "position": [
         73.0,
         183.78
@@ -23,9 +22,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "diameter",
-      "display_text": "6.63",
+      "measure_is_angle": false,
+      "text": "6.63",
       "position": [
         75.92,
         182.21
@@ -44,9 +42,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "15",
+      "measure_is_angle": false,
+      "text": "15",
       "position": [
         114.65,
         179.4
@@ -65,9 +62,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "105.5",
+      "measure_is_angle": false,
+      "text": "105.5",
       "position": [
         178.5,
         150.65
@@ -75,9 +71,8 @@
       "anchored": []
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "57",
+      "measure_is_angle": false,
+      "text": "57",
       "position": [
         178.5,
         150.65
@@ -85,9 +80,8 @@
       "anchored": []
     },
     {
-      "type": "Dimension",
-      "dim_type": "diameter",
-      "display_text": "5.37",
+      "measure_is_angle": false,
+      "text": "5.37",
       "position": [
         180.8,
         177.68
@@ -106,9 +100,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "diameter",
-      "display_text": "6.62",
+      "measure_is_angle": false,
+      "text": "6.62",
       "position": [
         232.71,
         182.0
@@ -127,9 +120,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "radius",
-      "display_text": "10.63",
+      "measure_is_angle": false,
+      "text": "10.63",
       "position": [
         235.5,
         183.78
@@ -148,9 +140,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "162.5",
+      "measure_is_angle": false,
+      "text": "162.5",
       "position": [
         235.5,
         213.74
@@ -158,9 +149,8 @@
       "anchored": []
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "5",
+      "measure_is_angle": false,
+      "text": "5",
       "position": [
         302.3,
         203.87

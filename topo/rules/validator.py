@@ -60,8 +60,8 @@ def validate(doc: Document) -> Result:
 
     if not edges:
         result.errors.append(
-            "Documento senza geometria: solo annotazioni."
-            if doc.annotations
+            "Documento senza geometria: solo testi."
+            if doc.texts
             else "Documento vuoto: nessuna geometria trovata."
         )
         result.is_valid = False

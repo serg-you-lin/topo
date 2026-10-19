@@ -1,23 +1,22 @@
 {
   "source_file": "lineette_bastarde.dxf",
-  "annotation_count": 1,
-  "by_kind": {
+  "text_count": 1,
+  "by_source_kind": {
     "DIMENSION": 1
   },
   "cluster_count": 1,
-  "annotations": [
+  "texts": [
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         54.78,
         483.324
       ],
-      "display_text": "975.43",
+      "text": "975.43",
       "cluster_ref": null,
-      "dim_type": "aligned",
-      "measured_value": 975.4301,
-      "text_override": null,
+      "measure": 975.4301,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,

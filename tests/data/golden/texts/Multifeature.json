@@ -1,25 +1,24 @@
 {
   "source_file": "Multifeature.dxf",
-  "annotation_count": 24,
-  "by_kind": {
+  "text_count": 24,
+  "by_source_kind": {
     "DIMENSION": 16,
     "LEADER": 4,
     "TEXT": 4
   },
   "cluster_count": 1,
-  "annotations": [
+  "texts": [
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         194.727,
         135.305
       ],
-      "display_text": "80",
+      "text": "80",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 80.0,
-      "text_override": null,
+      "measure": 80.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -27,17 +26,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         204.727,
         175.305
       ],
-      "display_text": "25",
+      "text": "25",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 25.0,
-      "text_override": null,
+      "measure": 25.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -45,17 +43,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         204.736,
         150.305
       ],
-      "display_text": "25",
+      "text": "25",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 25.0,
-      "text_override": null,
+      "measure": 25.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -63,17 +60,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         214.727,
         192.805
       ],
-      "display_text": "15",
+      "text": "15",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 15.0,
-      "text_override": null,
+      "measure": 15.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -81,17 +77,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         230.727,
         209.305
       ],
-      "display_text": "R6",
+      "text": "R6",
       "cluster_ref": 0,
-      "dim_type": "radius",
-      "measured_value": 6.0,
-      "text_override": "R<>",
+      "measure": 6.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -99,17 +94,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         231.727,
         225.305
       ],
-      "display_text": "8.5",
+      "text": "8.5",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 8.5,
-      "text_override": null,
+      "measure": 8.5,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -117,17 +111,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         235.977,
         245.305
       ],
-      "display_text": "11.25",
+      "text": "11.25",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 11.25,
-      "text_override": null,
+      "measure": 11.25,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -135,15 +128,16 @@
       }
     },
     {
-      "type": "Leader",
-      "kind": "LEADER",
+      "source_kind": "LEADER",
       "position": [
         266.727,
         96.91
       ],
-      "display_text": "",
+      "text": "",
       "cluster_ref": null,
-      "vertices": 2,
+      "measure": null,
+      "measure_is_angle": false,
+      "pointer": 2,
       "rendered": {
         "strokes": 1,
         "fills": 1,
@@ -151,17 +145,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         266.727,
         115.305
       ],
-      "display_text": "32",
+      "text": "32",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 32.0,
-      "text_override": null,
+      "measure": 32.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -169,17 +162,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         266.727,
         115.305
       ],
-      "display_text": "42",
+      "text": "42",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 42.0,
-      "text_override": null,
+      "measure": 42.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -187,15 +179,16 @@
       }
     },
     {
-      "type": "Leader",
-      "kind": "LEADER",
+      "source_kind": "LEADER",
       "position": [
         266.727,
         255.516
       ],
-      "display_text": "",
+      "text": "",
       "cluster_ref": null,
-      "vertices": 2,
+      "measure": null,
+      "measure_is_angle": false,
+      "pointer": 2,
       "rendered": {
         "strokes": 1,
         "fills": 1,
@@ -203,17 +196,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         274.727,
         125.305
       ],
-      "display_text": "50",
+      "text": "50",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 50.0,
-      "text_override": null,
+      "measure": 50.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -221,41 +213,54 @@
       }
     },
     {
-      "type": "Note",
-      "kind": "TEXT",
+      "source_kind": "TEXT",
       "position": [
         277.319,
         89.41
       ],
-      "display_text": "B",
+      "text": "B",
       "cluster_ref": null,
       "height": 5.0,
-      "rotation": 0.0
+      "rotation": 0.0,
+      "measure": null,
+      "measure_is_angle": false,
+      "pointer": 0,
+      "rendered": {
+        "strokes": 0,
+        "fills": 0,
+        "texts": 0
+      }
     },
     {
-      "type": "Note",
-      "kind": "TEXT",
+      "source_kind": "TEXT",
       "position": [
         277.319,
         258.016
       ],
-      "display_text": "B",
+      "text": "B",
       "cluster_ref": null,
       "height": 5.0,
-      "rotation": 0.0
+      "rotation": 0.0,
+      "measure": null,
+      "measure_is_angle": false,
+      "pointer": 0,
+      "rendered": {
+        "strokes": 0,
+        "fills": 0,
+        "texts": 0
+      }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         293.342,
         179.057
       ],
-      "display_text": "M8",
+      "text": "M8",
       "cluster_ref": 0,
-      "dim_type": "diameter",
-      "measured_value": 8.0,
-      "text_override": "M<>",
+      "measure": 8.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -263,17 +268,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         294.727,
         125.305
       ],
-      "display_text": "20",
+      "text": "20",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 20.0,
-      "text_override": null,
+      "measure": 20.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -281,17 +285,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         314.727,
         125.305
       ],
-      "display_text": "20",
+      "text": "20",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 20.0,
-      "text_override": null,
+      "measure": 20.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -299,15 +302,16 @@
       }
     },
     {
-      "type": "Leader",
-      "kind": "LEADER",
+      "source_kind": "LEADER",
       "position": [
         334.227,
         96.122
       ],
-      "display_text": "",
+      "text": "",
       "cluster_ref": null,
-      "vertices": 2,
+      "measure": null,
+      "measure_is_angle": false,
+      "pointer": 2,
       "rendered": {
         "strokes": 1,
         "fills": 1,
@@ -315,17 +319,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         334.227,
         235.305
       ],
-      "display_text": "109.5",
+      "text": "109.5",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 109.5,
-      "text_override": null,
+      "measure": 109.5,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -333,15 +336,16 @@
       }
     },
     {
-      "type": "Leader",
-      "kind": "LEADER",
+      "source_kind": "LEADER",
       "position": [
         334.227,
         255.718
       ],
-      "display_text": "",
+      "text": "",
       "cluster_ref": null,
-      "vertices": 2,
+      "measure": null,
+      "measure_is_angle": false,
+      "pointer": 2,
       "rendered": {
         "strokes": 1,
         "fills": 1,
@@ -349,41 +353,54 @@
       }
     },
     {
-      "type": "Note",
-      "kind": "TEXT",
+      "source_kind": "TEXT",
       "position": [
         343.974,
         88.622
       ],
-      "display_text": "A",
+      "text": "A",
       "cluster_ref": null,
       "height": 5.0,
-      "rotation": 0.0
+      "rotation": 0.0,
+      "measure": null,
+      "measure_is_angle": false,
+      "pointer": 0,
+      "rendered": {
+        "strokes": 0,
+        "fills": 0,
+        "texts": 0
+      }
     },
     {
-      "type": "Note",
-      "kind": "TEXT",
+      "source_kind": "TEXT",
       "position": [
         343.974,
         258.218
       ],
-      "display_text": "A",
+      "text": "A",
       "cluster_ref": null,
       "height": 5.0,
-      "rotation": 0.0
+      "rotation": 0.0,
+      "measure": null,
+      "measure_is_angle": false,
+      "pointer": 0,
+      "rendered": {
+        "strokes": 0,
+        "fills": 0,
+        "texts": 0
+      }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         363.477,
         245.305
       ],
-      "display_text": "127.5",
+      "text": "127.5",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 127.5,
-      "text_override": null,
+      "measure": 127.5,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -391,17 +408,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         390.922,
         193.305
       ],
-      "display_text": "36",
+      "text": "36",
       "cluster_ref": 0,
-      "dim_type": "linear",
-      "measured_value": 36.0,
-      "text_override": null,
+      "measure": 36.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,

@@ -33,7 +33,7 @@ result = topo_dxf.split_to_files(
     source_file=INPUT,
     namer=lambda i, cluster: f"{LABEL}_P{i + 1}",
     min_area=50.0,
-    include_annotations=True,
+    include_texts=True,
 )
 
 print(f"parti scritte : {result.cluster_count}  ->  {OUTDIR}/")

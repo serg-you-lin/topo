@@ -21,9 +21,9 @@ Cosa NON viene ruotato, di proposito, non per svista:
   non sa cosa contengono; se hai già fatto `detect_flat()`, quei dati (bending
   line, fori tipizzati, ...) restano nelle coordinate vecchie dopo una
   rotazione. Fai `detect_flat()` DOPO aver ruotato, non prima.
-- `result.annotations` — stesso limite di `rotate_document`: nessun caso
+- `result.texts` — stesso limite di `rotate_document`: nessun caso
   reale le ha ancora richieste. Se presenti, viene aggiunto un warning
-  invece di lasciarle silenziosamente nel posto sbagliato.
+  invece di lasciarli silenziosamente nel posto sbagliato.
 
 Nato dalla discussione "funzioni geometriche" (TODO.md) — orientamento
 canonico per un futuro nester: la meccanica sta qui (`rotate_cluster`,
@@ -152,7 +152,7 @@ def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) 
     ruotati di `angle_rad` attorno a `origin`. Nessun `heal()` richiamato: una
     rotazione rigida non cambia la topologia, solo le coordinate.
 
-    `result.annotations` non sono ruotate (vedi il modulo) — se presenti,
+    `result.texts` non sono ruotate (vedi il modulo) — se presenti,
     aggiunge un warning invece di lasciarle ferme senza avvisare.
     `cluster.detected` non è toccato — se presente su qualche cluster, un
     warning ricorda di rifare `detect_flat()` dopo la rotazione.
@@ -166,9 +166,9 @@ def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) 
     new_arcs = [a.rotated(angle_rad, origin) for a in result.all_arcs]
 
     new_warnings = list(result.warnings)
-    if result.annotations:
+    if result.texts:
         new_warnings.append(
-            f"rotate_result(): {len(result.annotations)} annotazioni non ruotate (non ancora supportato)"
+            f"rotate_result(): {len(result.texts)} testi non ruotati (non ancora supportato)"
         )
     if any(c.detected is not None for c in result.clusters):
         new_warnings.append(
@@ -200,7 +200,7 @@ def rotate_document(
     lungo E ruota", vedi `rotate_to_longest` — che lavora su un
     `Result` già sano, un solo `heal()` in tutto.
 
-    Le annotazioni non sono ruotate — stesso limite di `rotate_result`.
+    I testi non sono ruotati — stesso limite di `rotate_result`.
     """
     new_edges: List = []
     for edge in doc.edges:
@@ -209,9 +209,9 @@ def rotate_document(
         new_edges.append(replace(edge, segment=seg, start=round_point(start), end=round_point(end)))
 
     new_warnings = list(doc.warnings)
-    if doc.annotations:
+    if doc.texts:
         new_warnings.append(
-            f"rotate_document(): {len(doc.annotations)} annotazioni non ruotate (non ancora supportato)"
+            f"rotate_document(): {len(doc.texts)} testi non ruotati (non ancora supportato)"
         )
 
     return replace(doc, edges=new_edges, warnings=new_warnings)

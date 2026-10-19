@@ -103,13 +103,13 @@ sotto, non l'ho toccata senza dirtelo.
    quando c'è almeno una quota scritta, la geometria misurata concorda?
    Spostato qui dal vecchio punto 4 dopo la nota sulla scala sopra — è
    preventivo, non produzione. ✅ **La parte di topo è fatta** (D66, D69):
-   ogni `Dimension` porta `measured_value` (la misura nel disegno),
-   `display_text` (il testo come è scritto) e `references` (gli elementi
-   quotati). **Il confronto è di snapdraw** (D69, chiusa): leggere il numero
+   ogni quota porta `measure` (la misura nel disegno), `text` (il testo
+   come è scritto) e `references` (gli elementi quotati) — dal D138 su un
+   `Text` qualunque. **Il confronto è di snapdraw** (D69, chiusa): leggere il numero
    in `"∅5,3"` o `"M5"` è lettura della notazione, non geometria — un `M5`
    misura il nocciolo (Ø4.13), non 5, e solo chi legge la notazione lo sa.
 1. ✅ **(topo, piccolo, D82)** `snap_distance` anche su `inject()` — stessa logica
-   già scritta per `anchor_annotations`, la stessa piccola tolleranza.
+   già scritta per `anchor_texts`, la stessa piccola tolleranza.
 2. **(tuo, privato)** scrivi il `data_injector` per il primo cliente che ti
    interessa — regex/pattern per material/thickness/qty/code. Non va nel
    repo pubblico (`forge-reports-drawing-never-guesses-no-shop-nomenclature`).

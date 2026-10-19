@@ -11,8 +11,8 @@ API topo usate:
 `cluster.custom` (codice pezzo, materiale, spessore, ...). Senza `data_injector`
 non fa nulla.
 
-I testi arrivano da `result.annotations`: il modello tipato (`Note`, `Dimension`,
-`Leader`) prodotto da `load_dxf()` e portato sul result da `heal()`. Niente
+I testi arrivano da `result.texts`: il modello tipato (`topo.Text`, D138)
+prodotto da `load_dxf()` e portato sul result da `heal()`. Niente
 `msp`, niente `import ezdxf`, niente liste sciolte — dopo il load il formato
 sorgente è sparito (MAP.md D20).
 
@@ -39,11 +39,11 @@ result = topo.heal(doc, label="P-1024")
 
 # Le annotazioni sono già nel modello, tipate e con posizione. `display_text` è
 # il testo pulito (MTEXT senza codici di formato, quote con il loro valore).
-print(f"annotazioni nel modello: {len(result.annotations)}")
-for ann in result.annotations:
-    if ann.display_text and ann.display_text.strip():
+print(f"annotazioni nel modello: {len(result.texts)}")
+for ann in result.texts:
+    if ann.text and ann.text.strip():
         pos = tuple(round(c, 1) for c in ann.position)
-        print(f"   {type(ann).__name__:<10} {ann.display_text!r:<8} @ {pos}")
+        print(f"   {type(ann).__name__:<10} {ann.text!r:<8} @ {pos}")
 
 
 # data_injector: riceve il cluster e SOLO i testi che ricadono geometricamente

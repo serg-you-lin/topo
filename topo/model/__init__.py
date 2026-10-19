@@ -2,13 +2,13 @@
 topo/model/__init__.py
 ----------------------
 I tipi del modello, pubblici (MAP.md D120): documento, risultato, cluster,
-contorni, curve, annotazioni, stili, feature rilevate, ruoli, regole di ruolo
+contorni, curve, testi, stili, feature rilevate, ruoli, regole di ruolo
 e `Edge` — quello che serve a un adapter per costruire un `Document` (D125).
 Si scrive `topo.model.<Nome>`; i quattro più usati (`Document`, `Result`,
 `Cluster`, `Contour`) stanno anche in `topo.<Nome>`.
 """
-from .annotation import (
-    Annotation, Note, Dimension, Leader, RenderedGeometry, RenderedText,
+from .text import (
+    Text, RenderedGeometry, RenderedText,
 )
 from .document import Document, DEFAULT_NODE_TOLERANCE
 from .contour import Contour
@@ -23,10 +23,7 @@ from .role_rule import RoleRule, resolve_role, name_rules
 __all__ = [
     "Document",
     "DEFAULT_NODE_TOLERANCE",
-    "Annotation",
-    "Note",
-    "Dimension",
-    "Leader",
+    "Text",
     "RenderedGeometry",
     "RenderedText",
     "Contour",

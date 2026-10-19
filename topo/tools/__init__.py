@@ -5,14 +5,14 @@ Stadi opzionali e componibili su un ``Result`` già prodotto da
 ``topo.heal``. Ognuno lo arricchisce in-place e lo ritorna; il chiamante
 sceglie quali eseguire e in che ordine.
 
-- ``anchor_annotations`` — àncora ogni annotazione al cluster che la contiene
-- ``inject``             — passa i testi di un cluster a un data_injector esterno
+- ``anchor_texts`` — àncora ogni testo al cluster che lo contiene
+- ``inject``       — passa i testi di un cluster a un data_injector esterno
 
 È il pattern che un interprete di disegno (progetto separato) generalizza e
 orchestra dall'alto.
 """
 
-from .anchor import anchor_annotations
+from .anchor import anchor_texts
 from .inject import inject
 
-__all__ = ["anchor_annotations", "inject"]
+__all__ = ["anchor_texts", "inject"]

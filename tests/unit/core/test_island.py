@@ -29,7 +29,7 @@ def _circle(center, radius):
 
 
 def _doc(edges):
-    return Document(edges=edges, annotations=[], source_meta={"tolerance": 0.05}, source_path="")
+    return Document(edges=edges, texts=[], source_meta={"tolerance": 0.05}, source_path="")
 
 
 class TestIsland(unittest.TestCase):

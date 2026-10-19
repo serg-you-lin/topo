@@ -22,7 +22,7 @@ from ezdxf.addons import odafc
 
 from .sanitize import sanitize, _explode_inserts, deduplicate
 from .adapter import DxfAdapter
-from .annotation_extractor import DxfAnnotationExtractor
+from .text_extractor import DxfTextExtractor
 from .layers import SKIP_LAYERS
 from topo.model import DEFAULT_NODE_TOLERANCE, Document, RoleRule
 
@@ -60,23 +60,23 @@ DWG_VERSIONS = {
 # DWG → doc via odafc
 # ---------------------------------------------------------------------------
 
-def _annotation_signature(ann) -> tuple:
-    return (ann.kind, round(ann.position[0], 3), round(ann.position[1], 3),
-            ann.display_text)
+def _text_signature(text) -> tuple:
+    return (text.source_kind, round(text.position[0], 3), round(text.position[1], 3),
+            text.text)
 
 
-def _merge_annotations(base: list, extra: list) -> None:
-    """Aggiunge a `base` le annotazioni di `extra` non già presenti (per firma)."""
-    seen = {_annotation_signature(a) for a in base}
-    for ann in extra:
-        sig = _annotation_signature(ann)
+def _merge_texts(base: list, extra: list) -> None:
+    """Aggiunge a `base` i testi di `extra` non già presenti (per firma)."""
+    seen = {_text_signature(t) for t in base}
+    for text in extra:
+        sig = _text_signature(text)
         if sig not in seen:
             seen.add(sig)
-            base.append(ann)
+            base.append(text)
 
 
 # Tipi che topo sa ri-materializzare in to_dxf(): geometria di taglio +
-# annotazioni. Tutto il resto viene perso nel write-back.
+# testi. Tutto il resto viene perso nel write-back.
 _ROUNDTRIP_TYPES = frozenset({
     "LINE", "ARC", "CIRCLE", "ELLIPSE", "SPLINE", "LWPOLYLINE", "POLYLINE",
     "POINT", "TEXT", "MTEXT", "DIMENSION", "LEADER", "MULTILEADER", "INSERT",
@@ -237,7 +237,7 @@ def load_dxf(
         4. upgrade R2010 se necessario o richiesto
         5. explode INSERT se richiesto
         6. sanitize (normalize_ocs + flatten_z)
-        7. traduzione: DxfAdapter.to_edges() + DxfAnnotationExtractor.extract()
+        7. traduzione: DxfAdapter.to_edges() + DxfTextExtractor.extract()
 
     Args:
         path:            percorso del file .dxf o .dwg
@@ -257,11 +257,11 @@ def load_dxf(
                          senza distinguere maiuscole)
         skip_layers:     layer da saltare per nome esatto (senza distinguere
                          maiuscole): di default `SKIP_LAYERS`, quelli che il
-                         writer usa per `loose` e annotazioni, così un file
+                         writer usa per `loose` e testi, così un file
                          scritto da topo si rilegge pulito; `()` legge tutto
 
     Returns:
-        Document (edges + annotations + source_meta + warnings) — pronto
+        Document (edges + texts + source_meta + warnings) — pronto
         per heal(). La diagnostica sul file grezzo (audit, INSERT non esplosi,
         Z != 0 riportate sul piano, duplicati rimossi) finisce in
         `doc.warnings`; con verbose=True viene anche stampata.
@@ -277,12 +277,12 @@ def load_dxf(
     if upgrade or doc.dxfversion < 'AC1015':
         doc = _upgrade_to_r2010(doc, sink=warnings, verbose=verbose)
 
-    # Le annotazioni vanno estratte PRIMA di doc.audit(): l'auditor di ezdxf
+    # I testi vanno estratti PRIMA di doc.audit(): l'auditor di ezdxf
     # cancella le DIMENSION che referenziano un blocco geometria non definito
-    # (dims salvate senza pre-rendering) — sono comunque annotazioni valide da
+    # (dims salvate senza pre-rendering) — sono comunque testi validi da
     # riportare in output. `_dimension_text()` / `virtual_entities()` non hanno
     # bisogno del documento auditato.
-    annotations = DxfAnnotationExtractor(doc.modelspace(), role_rules).extract()
+    texts = DxfTextExtractor(doc.modelspace(), role_rules).extract()
 
     auditor = doc.audit()
     if auditor.errors:
@@ -326,7 +326,7 @@ def load_dxf(
     # Dopo explode possono affiorare TEXT/MTEXT che stavano dentro i blocchi:
     # le aggiungiamo a quelle catturate pre-audit, senza duplicare.
     if inserts_found and explode_inserts:
-        _merge_annotations(annotations, DxfAnnotationExtractor(msp, role_rules).extract())
+        _merge_texts(texts, DxfTextExtractor(msp, role_rules).extract())
 
     _warn_non_roundtrip_types(msp, warnings, verbose)
 
@@ -339,7 +339,7 @@ def load_dxf(
 
     return Document(
         edges=edges,
-        annotations=annotations,
+        texts=texts,
         source_meta=meta,
         source_path=str(path),
         warnings=warnings,
@@ -368,7 +368,7 @@ def document_from_msp(
     edges = DxfAdapter(
         msp, ignore_layers=ignore, role_rules=role_rules, skip_layers=skip_layers,
     ).to_edges()
-    annotations = DxfAnnotationExtractor(msp, role_rules).extract()
+    texts = DxfTextExtractor(msp, role_rules).extract()
 
     header = getattr(getattr(msp, "doc", None), "header", None)
     meta = {
@@ -378,7 +378,7 @@ def document_from_msp(
         "ignore_layers": sorted(ignore),
     }
     return Document(
-        edges=edges, annotations=annotations,
+        edges=edges, texts=texts,
         source_meta=meta, source_path=source_path,
     )
 

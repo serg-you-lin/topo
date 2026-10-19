@@ -1,23 +1,22 @@
 {
   "source_file": "contorno_ambiguo.dxf",
-  "annotation_count": 1,
-  "by_kind": {
+  "text_count": 1,
+  "by_source_kind": {
     "DIMENSION": 1
   },
   "cluster_count": 1,
-  "annotations": [
+  "texts": [
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         56.124,
         1244.281
       ],
-      "display_text": "2027.43",
+      "text": "2027.43",
       "cluster_ref": null,
-      "dim_type": "aligned",
-      "measured_value": 2027.4301,
-      "text_override": null,
+      "measure": 2027.4301,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,

@@ -4950,7 +4950,7 @@ midpoints (bend lines, open and closed engravings) and moves bend lines with
 unchanged. snapdraw, snapfence, cogo: rename only. No golden of topo changed.
 `main` stays **0.21.0**: not released yet, D137 joins D135 and D136 in it.
 
-### D138 — `Annotation`, `Note`, `Dimension`, `Leader` become one type, `Text`
+### D138 — `Annotation`, `Note`, `Dimension`, `Leader` become one type, `Text` ✅
 Federico, 19 October, reopening the naming of D20 (the typed model stays).
 "Annotation" is the vocabulary of whoever draws on top of a drawing; a quote
 and a leader are drafting notation. Neither is topo's: the test of
@@ -4978,5 +4978,54 @@ the text itself. The DXF adapter's default layer `Annotation` stays, as
 Consumers: snapdraw (reads `Dimension`, `dim_type`, `measured_value`,
 `topo.Note`), to_text.
 
-Open before implementing: what becomes of `dim_type`, `measured_value`,
-`text_override` (see TODO).
+Decided with Federico the same day, on the three fields of `Dimension`
+that are drafting words:
+- **`dim_type` goes.** "Diameter" is a reading of the points: two
+  `measured_points` opposite on one circle (a Ø12 on a hole; a linear
+  dimension tangent to a circle at its two extremes is its diameter too, and
+  reads as one). What geometry cannot say is whether the number is a length
+  or an angle — a consumer computing a scale must leave angles out — so that
+  one fact stays: `measure_is_angle: bool`.
+- **`measured_value` → `measure`**: the number the source says it measured,
+  a fact of the source like a text height; `None` when the source says none
+  (a PDF).
+- **`text_override` goes**: its `<>` is DXF syntax ("<> H7" = the measure,
+  then H7). The adapter resolves it on reading and `text` is what is shown
+  ("12 H7"); the writer re-emits `rendered`, never a native DIMENSION, so
+  `<>` had no effect on output anyway.
+Federico: `measured_points` and `measure` are also what a future datum (a
+reference frame on the drawing) would read — nothing to build for it now.
+
+**Done (19 October).** `topo/model/text.py` (was `annotation.py`): `Text`
+with `position`, `text`, `height`, `rotation`, `width_factor`, `role`,
+`origin`, `cluster_ref`, `source_kind`, `pointer`, `target`,
+`measured_points`, `measure`, `measure_is_angle`, `references`, `rendered`.
+`kind` (an alias of `source_kind`) and `display_text` are gone. The DXF
+reader is `topo_dxf/text_extractor.py`: the logic that was
+`Dimension.display_text` (override with `<>` → the measure as drawn, else the
+drawn fragments, else the measure) runs there, once, on reading. The writer
+picks by geometry, not by type: a `Text` with a `rendered` image is written as
+that image, one without as a TEXT/MTEXT — the same split as before, since
+only DIMENSION/LEADER entities ever carried an image. `anchor_texts`
+(`pointer_distance`), `pointer_target`, `measured_references`;
+`include_texts`, `text_layer`; view-model key `texts`. `to_text` format 1:
+`## measures and pointers`, lines `measure '…' measured N [(angle)] -> …` and
+`pointer …`.
+
+Goldens: the two families that stored the old types (`golden/texts`, was
+`golden/annotations`; `golden_anchoring/json`) were converted key by key
+with the same values — `kind` → `source_kind`, `display_text` → `text`,
+`measured_value` → `measure`, `dim_type` → `measure_is_angle` (true for
+angular), `vertices` → `pointer`; `text_override` dropped, its effect was
+already in `display_text`. The new code reproduces them unchanged. Nothing
+else in topo's goldens moved. `text_budget` anch_06 now fits (the lines are
+shorter); anch_02 still does not (open, not to be reopened).
+
+snapdraw: `dim_type == "diameter"` became geometry, as decided — two
+measured points, one element, a circle, their midpoint on its centre (so a
+dimension on a thread's crest, anchored to the core circle, still counts);
+`_anchor_by_center` already tested centre and radius and only lost the type
+check; `parse_callout(text, diameter=False)` gets the "a bare 15 is a Ø" rule
+from its caller. The scale leaves out `measure_is_angle` (now also 3-point
+angles, which `== "angular"` missed). Its regression readings are unchanged
+(regr_03/05 fail on the frame bbox as before). snapbend, snapfence: rename.

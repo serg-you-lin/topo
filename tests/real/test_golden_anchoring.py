@@ -1,11 +1,12 @@
 """
 test_golden_anchoring.py
 ------------------------
-Regressione sugli agganci delle annotazioni nei disegni di viste: per ogni
-quota e freccia, l'elemento a cui `anchor_annotations` la lega
-(`Dimension.references`, `Leader.target`, D66/D69), descritto con la sua
-forma (`contour_shape`) e non col suo indice — un riordino degli `inners`
-non è una regressione, un aggancio a un altro cerchio sì.
+Regressione sugli agganci dei testi nei disegni di viste: per ogni testo con
+un'immagine (le quote e i richiami della sorgente), gli elementi a cui
+`anchor_texts` lo lega (`Text.references`, `Text.target`, D66/D69, D138),
+descritti con la loro forma (`contour_shape`) e non col loro indice — un
+riordino degli `inners` non è una regressione, un aggancio a un altro cerchio
+sì. I golden di prima di D138 sono stati convertiti chiave per chiave.
 
 Disegni in `tests/data/golden_anchoring/` (`anch_NN.dxf`, fogli del campione
 `islands` rinominati), golden in `json/` accanto. Senza i disegni il test si
@@ -28,7 +29,6 @@ sys.path.insert(0, str(project_root))
 import topo
 
 from tests.readings import island_reading
-from topo.model.annotation import Dimension, Leader
 
 # max_gap non ha default (D98); island_gap non esiste più (D99)
 MAX_GAP = 0.5
@@ -52,20 +52,17 @@ def _element(result, path):
 
 
 def snapshot(dxf_path: Path) -> dict:
-    result = topo.anchor_annotations(island_reading(dxf_path, MAX_GAP)[1])
+    result = topo.anchor_texts(island_reading(dxf_path, MAX_GAP)[1])
     entries = []
-    for a in result.annotations:
-        if isinstance(a, Dimension):
-            paths, extra = a.references, {"dim_type": a.dim_type}
-        elif isinstance(a, Leader):
-            paths, extra = [a.target] if a.target else [], {}
-        else:
+    for t in result.texts:
+        if t.rendered.is_empty():   # una stringa sola: niente da agganciare
             continue
-        entries.append({"type": type(a).__name__, **extra, "display_text": a.display_text,
-                        "position": [round(a.position[0], 2), round(a.position[1], 2)],
+        paths = t.references + ([t.target] if t.target else [])
+        entries.append({"measure_is_angle": t.measure_is_angle, "text": t.text,
+                        "position": [round(t.position[0], 2), round(t.position[1], 2)],
                         "anchored": [_element(result, p) for p in paths]})
-    entries.sort(key=lambda e: (e["position"], e["type"], e["display_text"]))
-    return {"source_file": dxf_path.name, "annotations": entries}
+    entries.sort(key=lambda e: (e["position"], e["text"]))
+    return {"source_file": dxf_path.name, "texts": entries}
 
 
 def _golden_path(name: str) -> Path:
@@ -81,11 +78,11 @@ def _make_test(name: str):
         dxf_path, golden_path = SOURCE_DIR / name, _golden_path(name)
         if not dxf_path.exists() or not golden_path.exists():
             self.skipTest(name)
-        expected = json.loads(golden_path.read_text(encoding="utf-8"))["annotations"]
-        actual = snapshot(dxf_path)["annotations"]
-        self.assertEqual(len(actual), len(expected), msg=f"{name}: numero annotazioni")
+        expected = json.loads(golden_path.read_text(encoding="utf-8"))["texts"]
+        actual = snapshot(dxf_path)["texts"]
+        self.assertEqual(len(actual), len(expected), msg=f"{name}: numero testi")
         for i, (act, exp) in enumerate(zip(actual, expected)):
-            self.assertEqual(act, exp, msg=f"{name} annotazione[{i}] {exp['display_text']!r}")
+            self.assertEqual(act, exp, msg=f"{name} testo[{i}] {exp['text']!r}")
     return test
 
 
@@ -102,8 +99,8 @@ def generate():
             continue
         snap = snapshot(dxf_path)
         _golden_path(name).write_text(json.dumps(snap, indent=2, ensure_ascii=False), encoding="utf-8")
-        anchored = sum(bool(e["anchored"]) for e in snap["annotations"])
-        print(f"  OK: {name} — {anchored}/{len(snap['annotations'])} agganciate")
+        anchored = sum(bool(e["anchored"]) for e in snap["texts"])
+        print(f"  OK: {name} — {anchored}/{len(snap['texts'])} agganciati")
 
 
 if __name__ == "__main__":

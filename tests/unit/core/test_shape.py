@@ -177,7 +177,7 @@ class TestContourShapeSuIsole(unittest.TestCase):
         segs = (_ring((0, 0), (100, 0), (100, 50), (0, 50))
                 + [CircleSeg(center=(15, 25), radius=4)]
                 + _stadium((40, 25), (70, 25), 5))
-        return Document(edges=[_edge(s) for s in segs], annotations=[],
+        return Document(edges=[_edge(s) for s in segs], texts=[],
                              source_meta={"tolerance": 0.05}, source_path="")
 
     def _kinds(self, cluster):

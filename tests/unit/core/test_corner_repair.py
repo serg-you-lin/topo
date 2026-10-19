@@ -100,7 +100,7 @@ class TestRepairWithOtherLoopClosed(unittest.TestCase):
             Edge(role=ContourRole.UNKNOWN, start=(52.0, 5.0), end=(52.0, 5.0),
                  segment=CircleSeg(center=(50.0, 5.0), radius=2.0)),
         ]
-        doc = Document(edges=edges, annotations=[],
+        doc = Document(edges=edges, texts=[],
                             source_meta={"tolerance": 0.1}, source_path="")
         result = heal(doc)
         self.assertEqual(len(result.clusters), 2)

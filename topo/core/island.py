@@ -106,7 +106,7 @@ def island(doc: Document, *, max_gap: float,
     edges = [e for e in doc.edges if id(e) not in labeled_ids]
     readings = read_islands(edges, tol, max_gap=max_gap)
 
-    result = Result(source_file=doc.source_path, annotations=list(doc.annotations))
+    result = Result(source_file=doc.source_path, texts=list(doc.texts))
     result.loose += _open(labeled)
     clusters = {}
     for i, r in enumerate(readings):

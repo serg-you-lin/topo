@@ -8,7 +8,7 @@ _Fixtures        — helper che costruiscono geometria in memoria
                    e passano per heal() reale (no mock Result)
 
 TestUnitSplitOutput        — unit: file generati, namer, min_area
-TestUnitSplitFilters       — unit: include_annotations, exclude_types, keep_trash
+TestUnitSplitFilters       — unit: include_texts, exclude_types, keep_trash
 TestUnitSplitLayers        — unit: layer presenti e colori canonici nei figli
 
 TestIntegrationPipeline    — integration: pipeline heal→detect→split su examples/
@@ -54,7 +54,7 @@ sys.path.insert(0, str(project_root))
 import topo
 import topo_dxf
 from topo import DEFAULT_MIN_CLUSTER_AREA
-from topo_dxf.writer import ANNOTATION_TYPES
+from topo_dxf.text_extractor import TEXT_TYPES
 from topo_dxf.layers import (
     LAYER_OUTER, LAYER_INNER, TRASH_LAYER,
     ALL_LAYERS,
@@ -106,7 +106,7 @@ def _read_children(out_dir: str) -> dict[str, object]:
 def _split_files(result, source_doc, out_dir, *, min_area=DEFAULT_MIN_CLUSTER_AREA,
                  namer=None, **write_kwargs):
     """topo.split() puro, poi to_dxf + saveas per parte (D129): le opzioni di
-    scrittura (`include_annotations`, `exclude_types`, ...) vanno a to_dxf."""
+    scrittura (`include_texts`, `exclude_types`, ...) vanno a to_dxf."""
     os.makedirs(out_dir, exist_ok=True)
     paths = []
     for part in topo.split(result, namer=namer, min_area=min_area):
@@ -214,14 +214,14 @@ class TestUnitSplitFilters(unittest.TestCase):
     def setUp(self):
         self.out_dir = tempfile.mkdtemp()
 
-        def _add_annotations(msp):
+        def _add_texts(msp):
             msp.add_text("NOTA", dxfattribs={
                 "insert": (50, 50), "height": 5, "layer": "0"
             })
             msp.add_circle((100, 50), 10, dxfattribs={"layer": "0"})
 
         self.doc, self.result = _make_via_heal(
-            _rect(), extra_entities=[_add_annotations]
+            _rect(), extra_entities=[_add_texts]
         )
         self.assertTrue(
             len(self.result.clusters) > 0,
@@ -236,23 +236,23 @@ class TestUnitSplitFilters(unittest.TestCase):
         return ezdxf.readfile(generated[0]).modelspace()
 
     def test_001_default_include_testo_e_cerchio(self):
-        """Default (include_annotations=True): TEXT e CIRCLE copiati nel figlio."""
+        """Default (include_texts=True): TEXT e CIRCLE copiati nel figlio."""
         out_msp = self._child_msp()
         self.assertEqual(len(list(out_msp.query("TEXT"))), 1,
                          "TEXT dovrebbe essere presente")
         self.assertEqual(len(list(out_msp.query("CIRCLE"))), 1,
                          "CIRCLE dovrebbe essere presente")
 
-    def test_002_include_annotations_false_esclude_text(self):
-        """include_annotations=False: TEXT assente, CIRCLE presente."""
-        out_msp = self._child_msp(include_annotations=False)
+    def test_002_include_texts_false_esclude_text(self):
+        """include_texts=False: TEXT assente, CIRCLE presente."""
+        out_msp = self._child_msp(include_texts=False)
         self.assertEqual(len(list(out_msp.query("TEXT"))), 0,
                          "TEXT non dovrebbe essere presente")
         self.assertEqual(len(list(out_msp.query("CIRCLE"))), 1,
                          "CIRCLE dovrebbe essere presente")
 
-    def test_003_include_annotations_false_esclude_tutti_i_tipi(self):
-        """include_annotations=False esclude tutti i tipi in ANNOTATION_TYPES."""
+    def test_003_include_texts_false_esclude_tutti_i_tipi(self):
+        """include_texts=False esclude tutti i tipi in TEXT_TYPES."""
         def _add_mtext(msp):
             msp.add_mtext("mtext", dxfattribs={
                 "insert": (30, 30), "char_height": 5, "layer": "0"
@@ -263,10 +263,10 @@ class TestUnitSplitFilters(unittest.TestCase):
         )
         out_dir = tempfile.mkdtemp()
         generated = _split_files(result, doc, out_dir,
-                                 include_annotations=False)
+                                 include_texts=False)
         self.assertTrue(len(generated) > 0)
         out_msp = ezdxf.readfile(generated[0]).modelspace()
-        for ann_type in ANNOTATION_TYPES:
+        for ann_type in TEXT_TYPES:
             found = list(out_msp.query(ann_type))
             self.assertEqual(len(found), 0,
                              f"{ann_type} non dovrebbe essere presente")
@@ -388,8 +388,8 @@ class TestIntegrationPipeline(unittest.TestCase):
         self.assertGreater(len(result.clusters[0].inners), 0,
                            "Nessun inner/hole trovato")
 
-    def test_005_include_annotations_false_propagato(self):
-        """include_annotations=False propagato correttamente dalla wrapper."""
+    def test_005_include_texts_false_propagato(self):
+        """include_texts=False propagato correttamente dalla wrapper."""
         out_dir = tempfile.mkdtemp()
         doc = ezdxf.new("R2010")
         msp = doc.modelspace()
@@ -398,11 +398,11 @@ class TestIntegrationPipeline(unittest.TestCase):
             "insert": (50, 50), "height": 5, "layer": "0"
         })
         topo_dxf.split_to_files(topo_dxf.document_from_msp(msp), output_folder=out_dir, label="test",
-                             include_annotations=False)
+                             include_texts=False)
         for f in Path(out_dir).glob("*.dxf"):
             out_msp = ezdxf.readfile(str(f)).modelspace()
             self.assertEqual(len(list(out_msp.query("TEXT"))), 0,
-                             f"{f.name}: TEXT presente con include_annotations=False")
+                             f"{f.name}: TEXT presente con include_texts=False")
 
     def test_006_namer_custom_propagato(self):
         """Un namer custom passato a split_to_files() viene usato."""
