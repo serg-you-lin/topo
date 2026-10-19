@@ -3,7 +3,7 @@ topo/tools/split.py
 -------------------
 Un Result per parte (MAP.md D124, D129). Scegliere le parti è una decisione
 sul modello, non su un formato: quali cluster tenere (`min_area`), come si
-chiamano (`namer` → `cluster.label`), quali curve sciolte e quali annotazioni
+chiamano (`namer` → `cluster.label`), quali curve sciolte e quali testi
 viaggiano con ognuna. Ogni exporter scrive poi una parte nel suo formato
 (`topo_dxf.to_dxf`, `topo.to_svg`, `topo.to_text`): lo stesso split esporta
 parti in DXF, SVG o PDF.
@@ -31,9 +31,9 @@ def split(
     """
     Un `Result` per parte, nell'ordine delle parti tenute.
 
-    Ogni parte è un `Result` con un solo cluster, le curve sciolte e le
-    annotazioni che le appartengono. Una curva va al cluster del suo
-    `cluster_ref` (D137); un'annotazione alla parte che la contiene. Quelle
+    Ogni parte è un `Result` con un solo cluster, le curve sciolte e i
+    testi che le appartengono. Una curva va al cluster del suo
+    `cluster_ref` (D137); un testo alla parte che lo contiene. Quelli
     che nessuna parte contiene vanno alla più vicina al suo contorno esterno
     fra TUTTE le parti (anche quelle scartate da `min_area`). Niente viene
     duplicato: ogni elemento sta in una parte sola, copiato con
@@ -57,7 +57,7 @@ def split(
 
     outers = _outer_polygons(result.clusters)
     loose_of = _assign_loose(result, outers)
-    annotations_of = _assign(result.annotations, outers, lambda a: a.position, covering=True)
+    texts_of = _assign(result.texts, outers, lambda a: a.position, covering=True)
 
     parts: List[Result] = []
     for i, cluster in enumerate(result.clusters):
@@ -73,7 +73,7 @@ def split(
             result,
             clusters=[cluster],
             loose=_local(loose_of.get(id(cluster), []), i),
-            annotations=_local(annotations_of.get(id(cluster), []), i),
+            texts=_local(texts_of.get(id(cluster), []), i),
             warnings=list(result.warnings),
             errors=list(result.errors),
         ))

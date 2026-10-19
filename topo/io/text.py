@@ -5,7 +5,7 @@ io/text.py
 un modello linguistico (MAP.md D84).
 
 Un fatto per riga, in Markdown. Ogni contorno chiuso ha un id corto (`C1`,
-`C1.3`) che quote e frecce riusano: "quale quota misura cosa" è un
+`C1.3`) che le misure e le frecce dei testi riusano: "cosa misura un testo" è un
 riferimento scritto, non una cosa da indovinare. Le forme con un nome
 (`contour_shape`) stanno su una riga; le altre si scrivono lato per lato. Le
 spline restano esatte, con estremi, ingombro e lunghezza calcolati da topo.
@@ -13,8 +13,8 @@ Ogni collezione di `cluster.detected` si scrive in modo generico, come fa
 `to_dxf` (D70): topo non sa cosa sia, la riporta. Niente viene perso: quello
 che topo non ha capito sta nell'ultima sezione.
 
-Non riesegue nessuna fase: legge `Dimension.references`/`Leader.target`
-dove `anchor_annotations` li ha già scritti.
+Non riesegue nessuna fase: legge `Text.references`/`Text.target` dove
+`anchor_texts` li ha già scritti.
 """
 
 from __future__ import annotations
@@ -32,9 +32,8 @@ from shapely.prepared import prep
 from ..core.primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, BSplineSeg
 from ..core.geometry.shape import contour_shape
 from ..model import Result
-from ..model.annotation import Dimension, Leader
 
-FORMAT_VERSION = 0
+FORMAT_VERSION = 1
 """Versione del formato, scritta in testa: cambia quando cambia la sintassi."""
 
 _PATH = re.compile(r"clusters\[(\d+)\]\.(\w+)(?:\[(\d+)\])?$")
@@ -174,7 +173,7 @@ def to_text(result: Result, source_name: str = "", decimals: int = 3,
     """
     Il `Result` come testo per un modello linguistico (`.topo.md`).
 
-    Sezioni: contorni, linee aperte non ancora classificate, quote e frecce,
+    Sezioni: contorni, linee aperte non ancora classificate, misure e frecce dei testi,
     testi, `detected`, e quello che non è stato capito. Coordinate a
     `decimals` cifre. Una linea aperta si elenca se sta dentro un cluster e
     nessuno l'ha classificata; con un ruolo già deciso (cornice, cartiglio...)
@@ -187,7 +186,7 @@ def to_text(result: Result, source_name: str = "", decimals: int = 3,
     out = [title,
            f"format: topo-text {FORMAT_VERSION} · drawing units · y up · {decimals} decimals",
            "legend: Cn = cluster n (its outer contour); Cn.k = k-th closed contour inside it; "
-           "-> = what a dimension measures or a leader points at",
+           "-> = the elements a measure was taken between, or a pointer points at",
            ""]
 
     out.append("## contours")
@@ -221,27 +220,28 @@ def to_text(result: Result, source_name: str = "", decimals: int = 3,
         unknown.append(f"{dash}: {body}")
     out += ["", "## open edges (inside a cluster, not part of a closed contour, not classified)"] + (unknown or ["(none)"])
 
-    out += ["", "## dimensions and leaders"]
+    out += ["", "## measures and pointers"]
     texts, lost = [], []
-    for a in result.annotations:
-        if isinstance(a, Dimension):
-            measured = "" if a.measured_value is None else f" measured {w.num(a.measured_value)}"
+    for a in result.texts:
+        if a.measure is not None or a.measured_points:
+            unit = " (angle)" if a.measure_is_angle else ""
+            measured = "" if a.measure is None else f" measured {w.num(a.measure)}{unit}"
             refs = [w.label(p) for p in a.references]
             if refs:
-                out.append(f"dim {a.dim_type} '{a.display_text}'{measured} -> {', '.join(refs)}")
+                out.append(f"measure '{a.text}'{measured} -> {', '.join(refs)}")
             else:
-                lost.append(f"dim {a.dim_type} '{a.display_text}'{measured} at {w.pt(a.position)}: "
+                lost.append(f"measure '{a.text}'{measured} at {w.pt(a.position)}: "
                             f"no element found")
-        elif isinstance(a, Leader):
-            text = f" '{a.display_text}'" if a.display_text else ""
+        elif a.pointer:
+            text = f" '{a.text}'" if a.text else ""
             if a.target:
-                out.append(f"leader{text} at {w.pt(a.position)} -> {w.label(a.target)}")
+                out.append(f"pointer{text} at {w.pt(a.position)} -> {w.label(a.target)}")
             else:
-                lost.append(f"leader{text} at {w.pt(a.position)}: points at nothing")
-        elif getattr(a, "display_text", ""):
+                lost.append(f"pointer{text} at {w.pt(a.position)}: points at nothing")
+        elif a.text:
             inside = f" in C{a.cluster_ref + 1}" if a.cluster_ref is not None else ""
             role = f" ({a.role})" if a.role != "unknown" else ""
-            texts.append(f"'{a.display_text}'{role} at {w.pt(a.position)}{inside}")
+            texts.append(f"'{a.text}'{role} at {w.pt(a.position)}{inside}")
     out += ["", "## texts"] + (texts or ["(none)"])
 
     out += ["", "## detected (attached by whoever read the drawing further)"]

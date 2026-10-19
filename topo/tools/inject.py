@@ -9,9 +9,9 @@ resta solo per il suo lavoro unico: passare a un `data_injector` esterno i testi
 che ricadono dentro l'outer di ogni parte (codice pezzo, materiale, spessore) e
 mettere il dict risultante in `cluster.custom`.
 
-I testi vengono da `result.annotations` (il modello tipato prodotto da
+I testi vengono da `result.texts` (il modello tipato prodotto da
 load_dxf): niente più `msp` o liste sciolte. Filtro per contenimento nell'outer
-della parte — l'equivalente di quello che faceva `anchor_annotations()`, ma
+della parte — l'equivalente di quello che faceva `anchor_texts()`, ma
 applicato al volo qui perché `inject()` deve funzionare anche se quella fase non
 è stata chiamata.
 
@@ -50,7 +50,7 @@ def inject(result, data_injector: Optional[Callable] = None,
                        mettere in `cluster.custom` (materiale, spessore, codice, ...).
         snap_distance: > 0 → un testo fuori da ogni parte va alla parte più vicina
                        se dista al massimo tanto dal suo contorno (stessa regola di
-                       `anchor_annotations`). Default 0.0: solo contenimento.
+                       `anchor_texts`). Default 0.0: solo contenimento.
     """
     if not result.clusters or data_injector is None:
         return result
@@ -73,7 +73,7 @@ def inject(result, data_injector: Optional[Callable] = None,
 
 def _texts_by_part(result, snap_distance: float) -> Dict[int, List[str]]:
     """
-    Testi di `result.annotations` per indice di parte. Un testo coperto da più
+    Testi di `result.texts` per indice di parte. Un testo coperto da più
     outer va a ciascuno; uno fuori da tutti va alla parte più vicina entro
     `snap_distance`, altrimenti a nessuna.
     """
@@ -84,8 +84,8 @@ def _texts_by_part(result, snap_distance: float) -> Dict[int, List[str]]:
         and not c.outer.polygon.is_empty
     ]
     testi: Dict[int, List[str]] = {i: [] for i, _ in refs}
-    for ann in result.annotations:
-        if not ann.display_text:
+    for ann in result.texts:
+        if not ann.text:
             continue
         probe = Point(ann.position)
         parts = [i for i, poly in refs if poly.covers(probe)]
@@ -93,5 +93,5 @@ def _texts_by_part(result, snap_distance: float) -> Dict[int, List[str]]:
             nearest = _nearest_within(probe, refs, snap_distance)
             parts = [] if nearest is None else [nearest]
         for i in parts:
-            testi[i].append(ann.display_text)
+            testi[i].append(ann.text)
     return testi

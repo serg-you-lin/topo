@@ -84,14 +84,14 @@ def inspect_document(doc, graph: bool = True, limit: Optional[int] = 60) -> None
         print(f"  [{i}] role={_role(e.role):<13} {_p(e.start)} -> {_p(e.end)}  "
               f"{_describe_segment(e.segment)}")
 
-    anns = getattr(doc, "annotations", []) or []
+    anns = doc.texts or []
     if anns:
-        print(f"\nannotazioni: {len(anns)}")
-        kinds = Counter(a.kind for a in anns)
+        print(f"\ntesti: {len(anns)}")
+        kinds = Counter(a.source_kind for a in anns)
         print(f"  per tipo: {dict(kinds)}")
         for a in anns[:20]:
-            content = (a.display_text or "")[:40]
-            print(f"  - {a.kind:<10} @ {_p(a.position)}  {content!r}")
+            content = (a.text or "")[:40]
+            print(f"  - {a.source_kind:<10} @ {_p(a.position)}  {content!r}")
 
     if not graph:
         return
@@ -181,9 +181,9 @@ def inspect_result(result, coords: bool = False) -> None:
             print(f"  - {c.work_type:<12} source={c.source} conf={c.confidence:.2f} "
                   f"@ {_p(c.representative_point)}")
 
-    anns = result.annotations or []
+    anns = result.texts or []
     if anns:
-        print(f"\nannotazioni nel modello: {len(anns)}  ({dict(Counter(a.kind for a in anns))})")
+        print(f"\ntesti nel modello: {len(anns)}  ({dict(Counter(a.source_kind for a in anns))})")
 
 
 def _sub_part(i: int, cluster, coords: bool) -> None:

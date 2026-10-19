@@ -32,7 +32,7 @@ Tutti gli esempi di questo documento sono scritti così (MAP.md D119).
 
 1. [Geometria in ingresso](#1-geometria-in-ingresso) — `load_segments`, `load_geometry`, `RoleRule`, `name_rules`, scrivere un adapter
 2. [Validazione](#2-validazione) — `validate`, `validate_result`
-3. [Elaborazione](#3-elaborazione) — `heal` / `island` e i suoi mattoni (core), `split`, `promote`, `anchor_annotations` / `inject` (tools)
+3. [Elaborazione](#3-elaborazione) — `heal` / `island` e i suoi mattoni (core), `split`, `promote`, `anchor_texts` / `inject` (tools)
 4. [Export](#4-export) — `save_json`, `to_json`, `save_xml`, `to_view_model`, `to_svg`, `save_svg`
 5. [Metadati](#5-metadati) — `build_metadata`, `set_schema`
 6. [Ispezione / debug](#6-ispezione--debug) — `inspect_document`, `inspect_result`
@@ -186,7 +186,7 @@ non importano `topo.core`/`tools`/`io`/`rules` (D129). Quello che gli serve:
 | `topo.model.EdgeStyle(linetype="", linetype_desc="", dash=None, color=None)` | l'aspetto effettivo dell'entità sorgente, senza parole di un formato (D126): `dash` sono segni con segno (`> 0` tratto, `0` punto, `< 0` vuoto; `()` continuo, `None` non noto — un dash-array `[3, 1]` è `(3, -1)`), `color` è `(r, g, b)`. L'adapter risolve l'ereditarietà (uno stile "del layer") prima di consegnarlo |
 | `topo.model.RoleRule`, `topo.model.resolve_role(rules, name, style) -> str` | il ruolo di un'entità dalle regole del chiamante: la prima che matcha, altrimenti `unknown` |
 | `topo.model.Document`, `topo.model.DEFAULT_NODE_TOLERANCE` | il risultato dell'adapter e la tolleranza di default che `heal()` chiuderà |
-| `topo.model.Annotation`, `Note`, `Dimension`, `Leader`, `RenderedGeometry`, `RenderedText` | le annotazioni lette dalla sorgente, ognuna col suo `role` (D127; il gruppo sorgente non resta nel modello, D128) |
+| `topo.model.Text`, `RenderedGeometry`, `RenderedText` | i testi letti dalla sorgente, ognuno col suo `role` (D127, D138; il gruppo sorgente non resta nel modello, D128) |
 
 Per riscrivere in un formato: `topo.primitives.segment_endpoints(segment)` dà i
 due estremi di un segmento, `topo.model.feature_role(contour, item_role)` il
@@ -249,7 +249,7 @@ costruisci un `Result` per altre vie.
 
 `heal` e `island` sono le due letture del motore (`topo/core/`), una
 dall'interno e una dall'esterno — il chiamante sceglie quella adatta al
-disegno; `split`, `anchor_annotations` / `inject` sono stadi opzionali su un
+disegno; `split`, `anchor_texts` / `inject` sono stadi opzionali su un
 `Result` (`topo/tools/`, il caller sceglie quali e in che ordine). Scrivere
 in un formato è di un adapter: `topo_dxf.to_dxf` e `topo_dxf.split_to_files`
 (§9); `to_svg`/`to_view_model`/`to_text` sono in §4. Fori, pieghe, incisioni sono
@@ -858,9 +858,9 @@ topo.split(
 
 **Un `Result` per parte**, senza formato (D124, D129): scegliere le parti è
 una decisione sul modello, scriverle è di un adapter. Ogni parte è un
-`Result` con un solo cluster, più le curve sciolte e le annotazioni che le
+`Result` con un solo cluster, più le curve sciolte e i testi che le
 appartengono. Una curva di `loose` va al cluster del suo `cluster_ref` (D137),
-un'annotazione alla parte che la contiene; quelle che nessuna parte contiene
+un testo alla parte che lo contiene; quelli che nessuna parte contiene
 vanno alla più vicina al suo contorno esterno fra **tutte** le parti (anche
 quelle scartate da `min_area`). Niente viene duplicato, niente perso: ogni
 elemento è copiato con `cluster_ref` riferito alla parte (`0` se il suo
@@ -972,29 +972,29 @@ topo_dxf.to_dxf(result, doc, role_styles={
 
 ---
 
-### `anchor_annotations`
+### `anchor_texts`
 
 ```python
-topo.anchor_annotations(result: Result, snap_distance=0.0,
-                         leader_distance=0.5) -> Result
+topo.anchor_texts(result: Result, snap_distance=0.0,
+                  pointer_distance=0.5) -> Result
 ```
 
-Collega le annotazioni alla geometria. Per ogni annotazione `cluster_ref` =
-indice del cluster il cui contorno esterno ne contiene la posizione (con
+Collega i testi alla geometria. Per ogni testo `cluster_ref` = indice del
+cluster il cui contorno esterno ne contiene la posizione (con
 `snap_distance` > 0, anche il più vicino entro quella distanza). Per ogni
-`Leader` con vertici anche `target` — vedi `leader_target`; per ogni
-`Dimension` `references` — vedi `dimension_references`.
+testo con `pointer` anche `target` — vedi `pointer_target`; per ogni testo
+con `measured_points` `references` — vedi `measured_references`.
 
-**Muta** le annotazioni di `result` in-place. **Ritorna** lo stesso `result`.
+**Muta** i testi di `result` in-place. **Ritorna** lo stesso `result`.
 
-### `leader_target`
+### `pointer_target`
 
 ```python
-topo.leader_target(result: Result, leader: Leader,
+topo.pointer_target(result: Result, text: Text,
                     distance=0.5) -> str | None
 ```
 
-L'elemento su cui cade la punta (`vertices[0]`) di `leader`, come percorso in
+L'elemento su cui cade la punta (`pointer[0]`) di `text`, come percorso in
 `result`: `"clusters[0].outer"`, `"clusters[0].inners[3]"`,
 `"clusters[1].holes[2]"` — qualunque collezione di `cluster.detected`, quindi
 vale dopo la lettura di un consumatore come dopo `island`.
@@ -1002,22 +1002,22 @@ vale dopo la lettura di un consumatore come dopo `island`.
 Regola: il bordo più vicino alla punta, se entro `distance` (a parità, vince
 l'elemento più piccolo); altrimenti il più piccolo elemento chiuso, non il
 contorno esterno, che contiene la punta (freccia che finisce dentro un foro);
-altrimenti `None` (freccia di sezione, fuori dal pezzo). Non legge il testo.
+altrimenti `None` (freccia fuori dal pezzo). Non legge la stringa.
 
 **Non muta** niente.
 
-### `dimension_references`
+### `measured_references`
 
 ```python
-topo.dimension_references(result: Result, dimension: Dimension,
-                           distance=0.5) -> list[str]
+topo.measured_references(result: Result, text: Text,
+                         distance=0.5) -> list[str]
 ```
 
-Gli elementi fra cui la quota misura, come percorsi in `result` (stesso
-formato di `Leader.target`): per ogni punto di `measured_points` l'elemento
-il cui bordo passa entro `distance` (a parità il più piccolo). Senza doppioni,
-nell'ordine dei punti: un diametro dà il cerchio, una lineare uno o due
-elementi. Non legge il testo.
+Gli elementi su cui cadono i `measured_points` di `text`, come percorsi in
+`result` (stesso formato di `target`): per ogni punto l'elemento il cui bordo
+passa entro `distance` (a parità il più piccolo). Senza doppioni,
+nell'ordine dei punti: due punti opposti su un cerchio danno il cerchio, due
+capi uno o due elementi. Non legge la stringa.
 
 **Non muta** niente.
 
@@ -1046,13 +1046,13 @@ topo.inject(
 Arricchimento **opzionale** dai testi. **Muta** `result.clusters[i].custom` in-place e
 ritorna il `result`. Fa **una cosa**: se passi `data_injector` —
 `callable(cluster, list[str]) -> dict` — gli passa i testi di
-`result.annotations` che ricadono dentro l'outer di ogni parte e mette il dict
+`result.texts` che ricadono dentro l'outer di ogni parte e mette il dict
 restituito in `cluster.custom` (codice pezzo, materiale, spessore, …). Senza
 `data_injector`, `inject()` non fa nulla.
 
 `snap_distance` > 0: un testo fuori da ogni parte va alla parte **più vicina**
 (una sola) se dista al massimo `snap_distance` dal suo contorno esterno — il
-callout scritto appena fuori dal pezzo. Stessa regola di `anchor_annotations`
+callout scritto appena fuori dal pezzo. Stessa regola di `anchor_texts`
 (MAP.md D82). Un testo contenuto non viene mai spostato dallo snap.
 
 I **conteggi delle feature** NON si fanno qui: `cluster.summary` dà il
@@ -1138,7 +1138,7 @@ topo.to_view_model(
     result: Result,
     tolerance=0.05,
     include_loose=True,
-    include_annotations=True,
+    include_texts=True,
 ) -> dict
 ```
 
@@ -1180,7 +1180,7 @@ topo.to_svg(
     result: Result,
     tolerance=0.05,
     include_loose=True,
-    include_annotations=True,
+    include_texts=True,
     padding=0.03,
     background="#1e1e1e",     # None = trasparente
     true_circles=True,        # una voce con center + diameter → <circle>
@@ -1253,7 +1253,7 @@ che stampa i tre in fila, §9). Tutti stampano su stdout.
 topo.inspect_document(doc, graph=True, limit=60) -> None
 ```
 **Livello 2** — un `Document`: `source_meta`, warning del loader,
-gli `Edge` (ruolo, primitiva, endpoint), le annotazioni, e il
+gli `Edge` (ruolo, primitiva, endpoint), i testi, e il
 grafo dei nodi (nodi totali, loop degeneri, nodi di branching, estremi liberi).
 "Cosa ha capito l'adapter."
 
@@ -1263,7 +1263,7 @@ topo.inspect_result(result, coords=False) -> None
 **Livello 3** — un `Result`: validità, warning/errori, e per ogni parte
 outer/inner, le collezioni di `cluster.detected` (quello che un consumatore ha
 attaccato), custom, più `loose`,
-`classified_entities`, annotazioni. "Cosa ha prodotto topo."
+`classified_entities`, testi. "Cosa ha prodotto topo."
 
 ---
 
@@ -1279,7 +1279,7 @@ garanzie. Gli adapter sono pacchetti a parte (§9, §10):
   punto interno, serve solo su una curva chiusa).
 - **`topo.model`** — i tipi qui sotto (`Document`, `Result`, `Cluster`,
   `Contour`), le curve (`Curve`, `ClosedCurve`, `OpenCurve`), `Edge` (un
-  segmento con ruolo e stile), `EdgeStyle`, le annotazioni, le feature
+  segmento con ruolo e stile), `EdgeStyle`, i testi, le feature
   rilevate e i ruoli: `ContourRole`, `role_str`, `normalize_role`,
   `is_structural_role`. I quattro più usati stanno anche in `topo.<Nome>`.
 - **`topo.steps`** — i passi di `heal()` e della lettura per isole (§3).
@@ -1300,7 +1300,7 @@ core: dopo di lui, `ezdxf` non si tocca più.
 | campo | tipo | contenuto |
 |---|---|---|
 | `edges` | `list[Edge]` | geometria tradotta in primitive pure — input di `heal()` |
-| `annotations` | `list[Annotation]` | testi e quote della sorgente |
+| `texts` | `list[Text]` | i testi della sorgente |
 | `source_meta` | `dict` | `$INSUNITS`, `$MEASUREMENT`, `tolerance`, `ignore_layers` |
 | `source_path` | `str` | percorso del file |
 | `warnings` | `list[str]` | diagnostica del loader sul file grezzo |
@@ -1310,30 +1310,38 @@ sono lo stesso nodo — `override` se dato, altrimenti `source_meta["tolerance"]
 altrimenti `DEFAULT_NODE_TOLERANCE` (0.05, `model/document.py`). È la lettura
 che usano `heal`, `island` e `validate` quando `tolerance` non è passata (D86).
 
-### `Annotation`
+### `Text`
 
-`Note` / `Dimension` / `Leader`. Comuni: `kind` (`"TEXT"` | `"MTEXT"` |
-`"DIMENSION"` | `"LEADER"` | `"MULTILEADER"`), `position` `(x, y)`,
-`cluster_ref`, `display_text`, `role`.
+Un testo della sorgente, un tipo solo (MAP.md D138). Che sia una nota, una
+quota o un richiamo è una lettura di chi lo usa, anche quando il formato lo
+dice già: il formato resta in `source_kind`.
 
-`role` dice cosa è l'annotazione per chi la usa (`"title_block"`,
-`"part_code"`, ...), come il ruolo di un edge (MAP.md D127). topo non lo legge
-e non lo decide: lo scrive il consumer (`Note(..., role="title_block")`,
-ripulito da `normalize_role`), oppure le sue `role_rules` al load, sul nome
-del gruppo sorgente (il layer di un DXF). Su un'annotazione contano solo le
-regole sul nome (`name`, `name_contains`): una regola su tratto o colore non
-la tocca. `unknown` se nessuno l'ha detto. Il gruppo sorgente serve solo a
-questo e non resta nel modello (D128): chi vuole un testo distinto in uscita
-gli dà un ruolo. `topo_dxf.to_dxf` scrive un'annotazione con un ruolo sul layer del suo
-ruolo, come un edge; senza ruolo, su `annotation_layer`.
+| campo | contenuto |
+|---|---|
+| `position` | `(x, y)` — il punto d'ancoraggio |
+| `text` | la stringa come si legge sul disegno (una quota DXF con `<>` è già risolta: `"12 H7"`) |
+| `height`, `rotation`, `width_factor` | come è scritta la stringa |
+| `role` | cosa è per chi la usa (vedi sotto) |
+| `cluster_ref` | indice del cluster che lo contiene (da `anchor_texts`) |
+| `source_kind` | il tipo di entità nel formato sorgente (`"TEXT"`, `"MTEXT"`, `"DIMENSION"`, `"LEADER"`, `"MULTILEADER"` in un DXF) |
+| `pointer` | una polilinea che parte dalla punta (`pointer[0]`): dove il testo indica |
+| `target` | l'elemento su cui cade la punta (da `anchor_texts`) |
+| `measured_points` | i punti sulla geometria fra cui è stato misurato il numero: due capi; due punti opposti di un cerchio; un punto di un arco |
+| `measure` | il numero che la sorgente dice di aver misurato; `None` se non lo dice (un PDF) |
+| `measure_is_angle` | `measure` è un angolo, non una lunghezza |
+| `references` | gli elementi su cui cadono i `measured_points` (da `anchor_texts`) |
+| `rendered` | l'immagine che la sorgente disegna attorno alla stringa (linee, frecce, altri testi): `to_dxf` riscrive quella invece della sola stringa |
 
-- `Note`: `text`, `height`, `rotation`.
-- `Dimension`: `measured_value`, `dim_type`, `text_override` (testo
-  dell'autore, `<>` = la misura), `rendered`, `measured_points` (i punti
-  sulla geometria fra cui misura), `references` (percorsi degli elementi
-  quotati, da `anchor_annotations`). `display_text` = override con `<>`
-  sostituito dalla misura come è scritta nel disegno.
-- `Leader`: `text`, `vertices` (`[0]` = punta), `target`.
+`role` dice cosa è il testo per chi lo usa (`"title_block"`, `"part_code"`,
+...), come il ruolo di un edge (MAP.md D127). topo non lo legge e non lo
+decide: lo scrive il consumer (`Text(..., role="title_block")`, ripulito da
+`normalize_role`), oppure le sue `role_rules` al load, sul nome del gruppo
+sorgente (il layer di un DXF). Su un testo contano solo le regole sul nome
+(`name`, `name_contains`): una regola su tratto o colore non lo tocca.
+`unknown` se nessuno l'ha detto. Il gruppo sorgente serve solo a questo e non
+resta nel modello (D128): chi vuole un testo distinto in uscita gli dà un
+ruolo. `topo_dxf.to_dxf` scrive un testo con un ruolo sul layer del suo
+ruolo, come un edge; senza ruolo, su `text_layer`.
 
 ### `Result`
 
@@ -1345,7 +1353,7 @@ Prodotto da `heal()`, arricchito da un consumatore / `inject()`.
 | `is_valid` | `bool` | **controllalo prima di `split` o di scrivere (`topo_dxf.to_dxf`)** |
 | `warnings` / `errors` | `list[str]` | diagnostica |
 | `loose` | `list[OpenCurve \| ClosedCurve]` | ogni curva che non è contorno di nessun cluster: catene che non chiudono niente, tracce aperte, curve chiuse con un ruolo non strutturale (D137). `curve.cluster_ref` = indice del cluster il cui contorno esterno la contiene tutta, bordo e buchi compresi (una linea da lato a lato, una croce dentro un foro); `None` altrimenti. Con `island()` anche l'isola che la curva tocca (D99). Un consumatore la sposta in `cluster.detected` con `promote` |
-| `annotations` | `list[Annotation]` | copiate da `heal()` dal `Document` |
+| `texts` | `list[Text]` | copiati da `heal()` dal `Document` |
 | `classified_entities` | `list` | di un consumatore (snapbend: marking, work_type custom) |
 | `all_arcs` | `list[ArcSeg]` | tutti gli archi del disegno (snapbend li usa per i fori filettati) |
 | `cluster_count` | property | `len(clusters)` |
@@ -1523,7 +1531,7 @@ topo_dxf.load_dxf(
 
 Unico punto in cui `ezdxf` viene usato per **leggere**. Apre un `.dxf` o `.dwg`,
 lo audita, lo porta a R2010 se legacy, esplode gli `INSERT`, sanifica (OCS, Z≠0),
-traduce le entità in `Edge` puri e le annotazioni in `Annotation`. Dopo questa
+traduce le entità in `Edge` puri e i testi in `Text`. Dopo questa
 funzione il documento `ezdxf` sorgente sparisce.
 
 | parametro | significato |
@@ -1535,7 +1543,7 @@ funzione il documento `ezdxf` sorgente sparisce.
 | `tolerance` | tolleranza di arrotondamento dei nodi topologici. Viene salvata in `source_meta` e riletta da `heal()` se non gliela ripassi. |
 | `role_rules` | lista di `RoleRule` — assegnano il **ruolo** agli `Edge` già in fase di traduzione. Valutate in ordine, vince la prima che matcha, nessuna → `unknown`. Il nome valutato da `name`/`name_contains` è il layer; `dashed` e `color` guardano l'aspetto **effettivo** (un'entità `ByLayer` viene risolta al linetype/colore del suo layer). Il layer non esce dall'adapter: l'`Edge` porta solo il ruolo (MAP.md D63). Vedi **`RoleRule`** sotto. |
 | `ignore_layers` | lista di layer da escludere dalla geometria (per sottostringa, maiuscole ignorate). |
-| `skip_layers` | layer da saltare per **nome esatto** (maiuscole ignorate). Di default `topo_dxf.SKIP_LAYERS`, i layer che il writer usa per trash e annotazioni: un file scritto da topo si rilegge pulito, e `Trash_old` si legge. `()` legge tutto (D129). |
+| `skip_layers` | layer da saltare per **nome esatto** (maiuscole ignorate). Di default `topo_dxf.SKIP_LAYERS`, i layer che il writer usa per `loose` e testi: un file scritto da topo si rilegge pulito, e `Trash_old` si legge. `()` legge tutto (D129). |
 
 **Ritorna** un `Document`. La diagnostica sul file grezzo (audit, INSERT non
 esplosi, Z≠0, duplicati rimossi, tipi non ri-materializzabili in output) finisce
@@ -1635,9 +1643,9 @@ topo_dxf.to_dxf(
     result: Result,
     source_doc: Document = None,
     filter_cluster=None,
-    include_annotations=True,
+    include_texts=True,
     include_loose=True,
-    annotation_layer="Annotation",
+    text_layer="Annotation",
     role_styles: dict[str, RoleStyle] = None,
     layers: dict[str, str | Callable[[object], str]] = None,
     allow_invalid: bool = True,
@@ -1647,17 +1655,17 @@ topo_dxf.to_dxf(
 
 Materializza il modello in un **documento DXF nuovo** (R2010). Non rilegge mai
 entità dalla sorgente: `source_doc` serve solo a riportare gli header
-(`$INSUNITS`, `$MEASUREMENT`). Testi e quote arrivano da `result.annotations`.
+(`$INSUNITS`, `$MEASUREMENT`). I testi arrivano da `result.texts`.
 
 | parametro | significato |
 |---|---|
-| `filter_cluster` | `callable(Cluster) -> bool` — scrive solo i cluster che passano; `loose` e annotazioni si scrivono tutti. Per un file per parte la parte viene da `topo.split` (§3), che li ha già divisi. |
+| `filter_cluster` | `callable(Cluster) -> bool` — scrive solo i cluster che passano; `loose` e testi si scrivono tutti. Per un file per parte la parte viene da `topo.split` (§3), che li ha già divisi. |
 | `exclude_types` | set di `dxftype` da togliere dal documento (es. `{"TEXT"}`). |
 | `include_loose` | `True` (default): le curve di `result.loose` vanno sul layer del loro ruolo (`Trash` per `unknown`). Chi apre il file deve poter vedere ogni entità del disegno di partenza. |
-| `allow_invalid` | `True` (default): un `result` non valido viene scritto lo stesso (`loose` e annotazioni), come fa `to_svg`. `False` → `ValueError`: per il chiamante che consegna il file a una macchina (D83). |
-| `layers` | dove va ogni ruolo: `{ruolo: "Nome"}`, o `{ruolo: funzione(elemento) -> nome}` per dividere le entità di un ruolo su più layer guardando l'elemento scritto (il `Contour`, l'elemento di `cluster.detected`, la curva di `loose` o l'`Annotation`). Un ruolo che non nomini resta al default dell'adapter: `OuterContour`, `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo (D31, D128). |
+| `allow_invalid` | `True` (default): un `result` non valido viene scritto lo stesso (`loose` e testi), come fa `to_svg`. `False` → `ValueError`: per il chiamante che consegna il file a una macchina (D83). |
+| `layers` | dove va ogni ruolo: `{ruolo: "Nome"}`, o `{ruolo: funzione(elemento) -> nome}` per dividere le entità di un ruolo su più layer guardando l'elemento scritto (il `Contour`, l'elemento di `cluster.detected`, la curva di `loose` o il `Text`). Un ruolo che non nomini resta al default dell'adapter: `OuterContour`, `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo (D31, D128). |
 | `role_styles` | come si disegna ogni ruolo: `{ruolo: RoleStyle}` (vedi sotto). Agisce sul layer — tutto si scrive BYLAYER — e su un layer di più ruoli vince il primo scritto. Un ruolo con uno stile ha il suo layer anche senza entità. Sotto c'è sempre la palette di topo (`DEFAULT_ROLE_STYLES`): la mappa aggiunge i ruoli del chiamante e cambia solo i campi che dà. |
-| `annotation_layer` | il layer di testi e quote **senza ruolo** (default `"Annotation"`). Un'annotazione con un ruolo va sul layer del suo ruolo, come un edge (D127, D128). Nessuna annotazione viene mai scartata. |
+| `text_layer` | il layer dei testi **senza ruolo** (default `"Annotation"`). Un testo con un ruolo va sul layer del suo ruolo, come un edge (D127, D128). Nessun testo viene mai scartato. |
 
 Le mappe sono del chiamante e valgono per la sua chiamata: topo non ne tiene
 nessuna (D128). Un consumatore pubblica le sue (`snapbend.flat.ROLE_STYLES`,
@@ -1705,10 +1713,10 @@ topo_dxf.split_to_files(
     source_file="",
     tolerance=None,
     namer=None,
-    include_annotations=True,
+    include_texts=True,
     min_area=50.0,
     exclude_types=None,
-    annotation_layer="Annotation",
+    text_layer="Annotation",
     is_structural=None,
     role_styles=None,
     layers=None,
@@ -1717,7 +1725,7 @@ topo_dxf.split_to_files(
 
 Flusso multi-pezzo + salvataggio su disco: `topo.heal → topo.split →
 to_dxf + .saveas()` per parte (`is_structural` passa a `heal`;
-`include_annotations`, `annotation_layer`, `role_styles`, `layers`,
+`include_texts`, `text_layer`, `role_styles`, `layers`,
 `exclude_types` a `to_dxf`). È un ciclo che puoi scrivere tu (§3, `split`).
 Una lettura di processo (fori, pieghe) si fa sul result con `heal` + la
 detection + `split`, non qui. **È l'unica funzione che scrive su disco.**

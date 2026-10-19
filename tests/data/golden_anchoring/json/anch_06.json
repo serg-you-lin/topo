@@ -1,10 +1,9 @@
 {
   "source_file": "anch_06.dxf",
-  "annotations": [
+  "texts": [
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "100",
+      "measure_is_angle": false,
+      "text": "100",
       "position": [
         23.99,
         240.81
@@ -12,9 +11,8 @@
       "anchored": []
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "20",
+      "measure_is_angle": false,
+      "text": "20",
       "position": [
         36.76,
         140.81
@@ -22,9 +20,8 @@
       "anchored": []
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "20",
+      "measure_is_angle": false,
+      "text": "20",
       "position": [
         36.76,
         160.81
@@ -32,9 +29,8 @@
       "anchored": []
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "40",
+      "measure_is_angle": false,
+      "text": "40",
       "position": [
         53.69,
         118.38
@@ -42,9 +38,8 @@
       "anchored": []
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "20",
+      "measure_is_angle": false,
+      "text": "20",
       "position": [
         57.69,
         260.35
@@ -63,9 +58,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "8.5",
+      "measure_is_angle": false,
+      "text": "8.5",
       "position": [
         87.26,
         245.06
@@ -84,9 +78,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "diameter",
-      "display_text": "M5",
+      "measure_is_angle": false,
+      "text": "M5",
       "position": [
         92.09,
         182.74
@@ -105,9 +98,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "66",
+      "measure_is_angle": false,
+      "text": "66",
       "position": [
         93.69,
         118.38
@@ -126,9 +118,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "diameter",
-      "display_text": "Ø3",
+      "measure_is_angle": false,
+      "text": "Ø3",
       "position": [
         134.81,
         167.03
@@ -147,9 +138,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "5",
+      "measure_is_angle": false,
+      "text": "5",
       "position": [
         135.69,
         146.01
@@ -168,9 +158,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "19",
+      "measure_is_angle": false,
+      "text": "19",
       "position": [
         140.69,
         146.01
@@ -189,9 +178,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "diameter",
-      "display_text": "Ø6.5",
+      "measure_is_angle": false,
+      "text": "Ø6.5",
       "position": [
         145.63,
         203.3
@@ -210,9 +198,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "12",
+      "measure_is_angle": false,
+      "text": "12",
       "position": [
         147.69,
         227.58
@@ -231,9 +218,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "92",
+      "measure_is_angle": false,
+      "text": "92",
       "position": [
         159.69,
         269.49
@@ -252,9 +238,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "5",
+      "measure_is_angle": false,
+      "text": "5",
       "position": [
         170.46,
         160.81
@@ -273,9 +258,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "15",
+      "measure_is_angle": false,
+      "text": "15",
       "position": [
         179.93,
         175.81
@@ -294,9 +278,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "30",
+      "measure_is_angle": false,
+      "text": "30",
       "position": [
         179.93,
         205.81
@@ -304,9 +287,8 @@
       "anchored": []
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "8",
+      "measure_is_angle": false,
+      "text": "8",
       "position": [
         212.77,
         262.52
@@ -325,9 +307,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "30",
+      "measure_is_angle": false,
+      "text": "30",
       "position": [
         247.99,
         160.81
@@ -346,9 +327,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "(35)",
+      "measure_is_angle": false,
+      "text": "(35)",
       "position": [
         247.99,
         215.81
@@ -367,9 +347,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "55",
+      "measure_is_angle": false,
+      "text": "55",
       "position": [
         247.99,
         215.81
@@ -388,9 +367,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "45",
+      "measure_is_angle": false,
+      "text": "45",
       "position": [
         259.24,
         121.49
@@ -409,9 +387,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "65",
+      "measure_is_angle": false,
+      "text": "65",
       "position": [
         259.24,
         260.92
@@ -430,9 +407,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "115",
+      "measure_is_angle": false,
+      "text": "115",
       "position": [
         374.24,
         271.02
@@ -451,9 +427,8 @@
       ]
     },
     {
-      "type": "Dimension",
-      "dim_type": "linear",
-      "display_text": "120",
+      "measure_is_angle": false,
+      "text": "120",
       "position": [
         388.21,
         130.81

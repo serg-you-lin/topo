@@ -1,23 +1,22 @@
 {
   "source_file": "piega_cazzuta.dxf",
-  "annotation_count": 1,
-  "by_kind": {
+  "text_count": 1,
+  "by_source_kind": {
     "DIMENSION": 1
   },
   "cluster_count": 1,
-  "annotations": [
+  "texts": [
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         310.89,
         873.733
       ],
-      "display_text": "0",
+      "text": "0",
       "cluster_ref": null,
-      "dim_type": "aligned",
-      "measured_value": 0.0,
-      "text_override": null,
+      "measure": 0.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,

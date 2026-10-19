@@ -24,10 +24,10 @@ from .writer import to_dxf
 
 def split_to_files(doc: Document, output_folder, label="", source_file="",
                    tolerance=None, namer=None,
-                   include_annotations=True,
+                   include_texts=True,
                    min_area=DEFAULT_MIN_CLUSTER_AREA,
                    exclude_types=None,
-                   annotation_layer=LAYER_ANNOTATION,
+                   text_layer=LAYER_ANNOTATION,
                    is_structural=None,
                    role_styles=None,
                    layers=None) -> Result:
@@ -35,7 +35,7 @@ def split_to_files(doc: Document, output_folder, label="", source_file="",
     Pipeline multi-pezzo + salvataggio su disco: heal → `topo.split` →
     `to_dxf` e `.saveas()` per parte. Il nome file è `f"{cluster.label}.dxf"`
     (cluster.label lo assegna `namer`). `is_structural` passa a `heal()`
-    (vedi lì); `role_styles`, `layers`, `annotation_layer` ed
+    (vedi lì); `role_styles`, `layers`, `text_layer` ed
     `exclude_types` a `to_dxf()` (D128, D129).
     """
     result = topo.heal(doc, tolerance=tolerance, label=label, source_file=source_file,
@@ -49,8 +49,8 @@ def split_to_files(doc: Document, output_folder, label="", source_file="",
     os.makedirs(output_folder, exist_ok=True)
     for part in parts:
         drawing = to_dxf(part, doc,
-                         include_annotations=include_annotations,
-                         annotation_layer=annotation_layer,
+                         include_texts=include_texts,
+                         text_layer=text_layer,
                          role_styles=role_styles, layers=layers,
                          exclude_types=exclude_types)
         drawing.saveas(os.path.join(output_folder, f"{part.clusters[0].label}.dxf"))

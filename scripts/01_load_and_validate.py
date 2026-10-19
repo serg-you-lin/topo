@@ -8,7 +8,7 @@ API topo usate:
     validate           valida l'INPUT prima di heal() — non modifica niente
 
 Dopo load_dxf il documento ezdxf sorgente sparisce: heal() lavora
-solo su Document.edges (primitive pure) e Document.annotations.
+solo su Document.edges (primitive pure) e Document.texts.
 
     python 01_load_and_validate.py
 """
@@ -37,7 +37,7 @@ doc = topo_dxf.load_dxf(
 
 print(f"file            : {doc.source_path}")
 print(f"edges           : {len(doc.edges)}")
-print(f"annotations     : {len(doc.annotations)}")
+print(f"texts           : {len(doc.texts)}")
 print(f"source_meta     : {doc.source_meta}")
 print(f"loader warnings : {len(doc.warnings)}")
 for w in doc.warnings:

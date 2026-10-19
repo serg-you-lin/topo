@@ -3,7 +3,7 @@
 **Deterministic 2D-geometry engine for technical drawings and CAD geometry.**
 
 `topo` turns a messy 2D drawing into a clean, lossless model — healed closed
-contours, their containment hierarchy, the drawing's annotations, and an open
+contours, their containment hierarchy, the drawing's texts, and an open
 overlay where detected features are attached — then renders it to DXF (one
 document, or one per part), JSON/XML, SVG, a view model for a UI, or (experimental) a compact text reading for
 a language model. The model is the product; a CAD format is
@@ -175,7 +175,7 @@ doc = topo_dxf.load_dxf("part.dxf", role_rules=[
 ## The pipeline
 
 ```
-topo_dxf.load_dxf(path)   ──►  Document   (edges + annotations + source_meta)
+topo_dxf.load_dxf(path)   ──►  Document   (edges + texts + source_meta)
 topo.load_segments(segs)  ──►  Document   the adapter is the only code that reads a format
                           │
                           ▼
@@ -244,7 +244,7 @@ right and you need to see where in the chain it breaks.
 
 - **As structural contours:** `LWPOLYLINE`, `POLYLINE`, `CIRCLE`, closed `SPLINE`, closed `ELLIPSE`
 - **To reconstruct into contours:** `LINE`, `ARC`, open `SPLINE`/`ELLIPSE` connected to other entities
-- **As annotations:** `TEXT`, `MTEXT`, `DIMENSION`, `LEADER`, `MULTILEADER`
+- **As texts:** `TEXT`, `MTEXT`, `DIMENSION`, `LEADER`, `MULTILEADER`
 - **Blocks:** `INSERT` is exploded on load by default
 - **Legacy:** R12/R13/R14 files are upgraded to R2010
 - **DWG:** neither `topo` nor `ezdxf` reads DWG natively — it goes through

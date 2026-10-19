@@ -12,7 +12,7 @@ che non conosce alcun formato di file: geometria e ruoli, mai layer (MAP.md
 D123). I formati entrano ed escono da adapter, pacchetti fratelli nella stessa
 distribuzione (`topo_dxf`, `topo_pdf`). Prende geometria 2D rumorosa e produce un modello
 geometrico consistente e senza perdite: contorni chiusi, gerarchia di
-contenimento, annotazioni, e un overlay aperto per le feature rilevate. Non
+contenimento, testi, e un overlay aperto per le feature rilevate. Non
 conosce nessun mestiere: dire cosa significa un contorno o una linea è
 un'interpretazione, e sta nei consumatori (MAP.md D88).
 
@@ -50,8 +50,9 @@ niente, il modello è abbastanza ricco da tenere anche ciò che non ha classific
   (segmenti puri, formato-indipendenti; `cluster_ref` dice quale cluster la
   contiene, D137). Cosa sia lo decide un consumatore, che la sposta in
   `cluster.detected` con `topo.promote`
-- testi e quote → `result.annotations` (oggetti di dominio, con sia il valore
-  semantico sia la forma renderizzata come primitive)
+- testi → `result.texts` (`Text`, un tipo solo, D138: la stringa, la
+  polilinea che indica, i punti fra cui è stato misurato il numero, e
+  l'immagine disegnata attorno come primitive)
 
 I tipi di entità che `topo` non modella (`HATCH`, `IMAGE`, `TABLE`, `3DFACE`,
 `XLINE`…) restano fuori, ma `load_dxf` emette un warning che li elenca — nessuna
@@ -69,7 +70,7 @@ topo/             IL MOTORE — nessun formato, nessun ezdxf / PyMuPDF
 topo_dxf/         ADAPTER DXF/DWG                      (conosce ezdxf; extra [dxf])
 │                     consumer di topo: solo nomi pubblici, mai topo.core (D125)
 ├── loader.py         load_dxf, document_from_msp       (+ adapter, parser, sanitize,
-│                                                         annotation_extractor, mtext)
+│                                                         text_extractor, mtext)
 ├── writer.py         to_dxf                            (+ exporter: segmenti → entità)
 ├── layers.py         i layer di default, SKIP_LAYERS, role_to_dxf_layer
 ├── xdata.py          write/read_metadata_to_dxf
@@ -106,13 +107,13 @@ topo/
 │   ├── detected.py   DetectedFeatures — il contenitore dell'overlay (D44, D90)
 │   ├── curve.py      Curve → ClosedCurve / OpenCurve
 │   ├── contour.py
-│   ├── annotation.py Annotation → Note / Dimension / Leader
+│   ├── text.py       Text — i testi della sorgente (D138)
 │   └── role.py       ContourRole = solo UNKNOWN/OUTER/INNER — il minimo
 │                      che il motore usa. Nessun ruolo di un consumatore qui
 │                      (D47, "roles out of core")
 │
 ├── tools/        STADI opzionali su un Document/Result (il caller sceglie quali e in che ordine)
-│   ├── anchor.py         anchor_annotations()   — àncora le annotazioni ai cluster
+│   ├── anchor.py         anchor_texts()         — àncora i testi ai cluster
 │   ├── inject.py         inject()                — testi del cluster → data_injector esterno
 │   ├── non_contour.py    non_contour_candidates() — stesso criterio non-contorno
 │   │                     di heal() (D49), esposto per decidere `edge.role`
@@ -172,14 +173,14 @@ In ordine:
 
 1. se `.dwg` → conversione via ODA File Converter
 2. `readfile`
-3. `audit` (le annotazioni vengono estratte **prima**: l'auditor di ezdxf
+3. `audit` (i testi vengono estratti **prima**: l'auditor di ezdxf
    cancella le quote che referenziano un blocco geometria mancante)
 4. upgrade a R2010 se il file è legacy (R12/R13/R14)
 5. explode degli `INSERT` (default `True` — un blocco non esploso fa sparire la
    sua geometria)
 6. sanitize: normalizzazione OCS, appiattimento Z ≠ 0, deduplica
 7. traduzione: ogni entità → uno o più `Edge`; ogni testo/quota → un
-   `Annotation`. I layer che il writer usa per trash e annotazioni
+   `Text`. I layer che il writer usa per `loose` e testi
    (`SKIP_LAYERS`) si saltano, così un file già passato da topo si rilegge
    pulito (D129)
 
@@ -285,9 +286,9 @@ netta toglie gli elementi che si dichiarano vuoti del pezzo (`is_void`).
 ### 4. un Result per parte — `split`
 
 `topo.split(result)` sceglie le parti sul modello (`min_area`, `namer`) e dà
-un `Result` per parte, con le curve sciolte e le annotazioni che le
-appartengono: una curva va al cluster del suo `cluster_ref`, un'annotazione
-alla parte che la contiene; se nessuna, alla più vicina fra tutte — niente
+un `Result` per parte, con le curve sciolte e i testi che le
+appartengono: una curva va al cluster del suo `cluster_ref`, un testo
+alla parte che lo contiene; se nessuna, alla più vicina fra tutte — niente
 duplicato, niente perso (D124, D129). Nessun formato: ogni renderer prende un
 `Result`, quindi una parte va in DXF, SVG o testo allo stesso modo.
 
@@ -305,8 +306,9 @@ suo ruolo, o su quello di default dell'adapter (vedi la tabella nel README e
   (D90) — così esce una curva aperta attaccata da un consumatore
 - **`loose`** si scrive sempre, sul layer del ruolo di ogni curva (`Trash`
   per `unknown`)
-- **le annotazioni** si riscrivono tutte, quelle del `Result` che riceve: in
-  un file per parte, quelle che `split` ha dato alla parte
+- **i testi** si riscrivono tutti, quelli del `Result` che riceve (con la
+  loro immagine `rendered` se ce l'hanno): in un file per parte, quelli che
+  `split` ha dato alla parte
 
 ### 6. export / inject
 

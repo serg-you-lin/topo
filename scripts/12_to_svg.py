@@ -70,6 +70,6 @@ topo.save_svg(
     result,
     os.path.join(OUTDIR, f"{base}_clean.svg"),
     include_loose=False,
-    include_annotations=False,
+    include_texts=False,
     background=None,
 )

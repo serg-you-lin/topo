@@ -256,7 +256,7 @@ class TestWritebackStyle(unittest.TestCase):
 from topo_dxf.layers import LAYER_ANNOTATION
 
 
-class TestWritebackAnnotations(unittest.TestCase):
+class TestWritebackTexts(unittest.TestCase):
 
     def _texts(self, msp):
         return list(msp.query("TEXT")) + list(msp.query("MTEXT"))
@@ -268,7 +268,7 @@ class TestWritebackAnnotations(unittest.TestCase):
         texts = self._texts(msp)
         self.assertEqual(len(texts), 8)
 
-    def test_002_annotations_on_dedicated_layer_by_default(self):
+    def test_002_texts_on_dedicated_layer_by_default(self):
         result, msp = _pipeline("gamba_tavolo.dxf")
         for e in self._texts(msp):
             self.assertEqual(e.dxf.layer, LAYER_ANNOTATION)
@@ -296,7 +296,7 @@ class TestWritebackAnnotations(unittest.TestCase):
         self.assertEqual(len(texts), 1)
         self.assertEqual(texts[0].dxf.layer, LAYER_ANNOTATION)
 
-    def test_005_annotation_with_role_goes_on_its_role_layer(self):
+    def test_005_text_with_role_goes_on_its_role_layer(self):
         # Il layer d'origine non resta nel modello (D128): un testo che il
         # chiamante vuole distinto gli dà un ruolo, e va sul layer del ruolo.
         doc = topo_dxf.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf",
@@ -307,10 +307,10 @@ class TestWritebackAnnotations(unittest.TestCase):
         self.assertEqual(len(texts), 1)
         self.assertEqual(texts[0].dxf.layer, "note")
 
-    def test_006_annotation_layer_custom_routes_there(self):
+    def test_006_text_layer_custom_routes_there(self):
         doc = topo_dxf.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf")
         result = topo.heal(doc)
-        msp = topo_dxf.to_dxf(result, doc, annotation_layer=TRASH_LAYER).modelspace()
+        msp = topo_dxf.to_dxf(result, doc, text_layer=TRASH_LAYER).modelspace()
         texts = list(msp.query("TEXT"))
         self.assertEqual(texts[0].dxf.layer, TRASH_LAYER)
 
@@ -322,7 +322,7 @@ class TestWritebackAnnotations(unittest.TestCase):
         if not (EXAMPLES_DIR / name).exists():
             self.skipTest(name)
         doc = topo_dxf.load_dxf(EXAMPLES_DIR / name)
-        kinds = Counter(a.kind for a in doc.annotations)
+        kinds = Counter(a.source_kind for a in doc.texts)
         self.assertEqual(kinds["DIMENSION"], 16)
         self.assertEqual(kinds["LEADER"], 4)
         result = topo.heal(doc)

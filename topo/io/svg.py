@@ -47,7 +47,7 @@ def to_svg(
     result: Result,
     tolerance: float = 0.05,
     include_loose: bool = True,
-    include_annotations: bool = True,
+    include_texts: bool = True,
     padding: float = 0.03,
     background: Optional[str] = "#1e1e1e",
     true_circles: bool = True,
@@ -63,7 +63,7 @@ def to_svg(
     Args:
         tolerance:           discretizzazione di archi/spline nelle tracce aperte.
         include_loose:       disegna anche `result.loose` (rosso).
-        include_annotations: disegna i testi della sorgente.
+        include_texts: disegna i testi della sorgente.
         padding:             margine attorno al disegno, frazione del lato bbox.
         background:          colore di sfondo (`None` = trasparente).
         true_circles:        disegna come `<circle>` vero una voce dell'overlay
@@ -100,7 +100,7 @@ def to_svg(
         background = None
     vm = to_view_model(
         result, tolerance=tolerance,
-        include_loose=include_loose, include_annotations=include_annotations,
+        include_loose=include_loose, include_texts=include_texts,
         role_styles=role_styles,
     )
 
@@ -151,8 +151,8 @@ def to_svg(
 
     out.append("</g>")  # end flipped group
 
-    # Annotazioni: testo fuori dal gruppo ribaltato (altrimenti sarebbe speculare)
-    for ann in vm.get("annotations", []):
+    # Testi: fuori dal gruppo ribaltato (altrimenti sarebbero speculari)
+    for ann in vm.get("texts", []):
         txt = (ann.get("text") or "").strip()
         if not txt:
             continue

@@ -55,7 +55,7 @@ from .core.primitives.fitting import simplify_points
 from .tools.rotate import rotate_result, rotate_cluster, rotate_document, rotate_to_longest
 from .core.heal          import heal
 from .tools.inject       import inject
-from .tools.anchor       import anchor_annotations, dimension_references, leader_target, resolve_target
+from .tools.anchor       import anchor_texts, measured_references, pointer_target, resolve_target
 # Un Result per parte, senza formato: ogni exporter ne scrive una (D124, D129)
 from .tools.split        import split, DEFAULT_MIN_CLUSTER_AREA
 from .tools.promote      import promote
@@ -81,7 +81,7 @@ from .io.svg              import to_svg, save_svg
 from .io.text             import to_text, save_text
 from .model         import (
     Result, Cluster, Contour, Document,
-    Annotation, Note, Dimension, Leader,
+    Text,
     DetectedFeature, DetectedFeatures,
 )
 # Un consumatore che marca la geometria prima di heal() (snapdraw: cornice /
@@ -140,9 +140,9 @@ __all__ = [
     "DEFAULT_MIN_CLUSTER_AREA",
     "promote",
     "inject",
-    "anchor_annotations",
-    "leader_target",
-    "dimension_references",
+    "anchor_texts",
+    "pointer_target",
+    "measured_references",
     "resolve_target",
     "geometry",
     "steps",
@@ -169,10 +169,7 @@ __all__ = [
     "Cluster",
     "Contour",
     "Document",
-    "Annotation",
-    "Note",
-    "Dimension",
-    "Leader",
+    "Text",
     "DetectedFeature",
     "DetectedFeatures",
     # Ruoli — aggancio per un consumatore che marca la geometria pre-heal

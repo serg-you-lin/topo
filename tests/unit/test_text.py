@@ -8,7 +8,7 @@ tests/unit/test_text.py
 import unittest
 
 import topo
-from topo.model.annotation import Dimension, Leader, Note
+from topo.model.text import Text
 
 
 def _plate():
@@ -33,12 +33,12 @@ def _plate():
     # l'ordine degli inners non è garantito: la freccia punta al cerchio, cercato per forma
     circle = next(j for j, c in enumerate(result.clusters[0].inners)
                   if topo.geometry.contour_shape(c).kind == "circle")
-    result.annotations = [
-        Dimension(position=(50, 60), measured_value=100.0, text_override="100",
-                  references=["clusters[0].outer"]),
-        Dimension(position=(20, 40), measured_value=10.0, text_override="Ø10", dim_type="diameter"),
-        Leader(position=(25, 30), vertices=[(25, 30)], target=f"clusters[0].inners[{circle}]"),
-        Note(position=(50, -10), text="PIASTRA", cluster_ref=None),
+    result.texts = [
+        Text(position=(50, 60), text="100", measure=100.0, references=["clusters[0].outer"]),
+        Text(position=(20, 40), text="Ø10", measure=10.0),
+        Text(position=(30, 45), text="30°", measure=30.0, measure_is_angle=True),
+        Text(position=(25, 30), pointer=[(25, 30)], target=f"clusters[0].inners[{circle}]"),
+        Text(position=(50, -10), text="PIASTRA", cluster_ref=None),
     ]
     return result
 
@@ -57,8 +57,8 @@ class TestToText(unittest.TestCase):
 
     def test_001_header_and_sections(self):
         # la prima riga dice cos'è il file: il lettore lo riconosce dal contenuto
-        self.assertTrue(self.text.startswith("# topo reading of plate.dxf\nformat: topo-text 0"))
-        for section in ("## contours", "## open edges", "## dimensions and leaders",
+        self.assertTrue(self.text.startswith("# topo reading of plate.dxf\nformat: topo-text 1"))
+        for section in ("## contours", "## open edges", "## measures and pointers",
                         "## texts", "## detected", "## not understood"):
             self.assertIn(section, self.text)
 
@@ -74,15 +74,17 @@ class TestToText(unittest.TestCase):
         self.assertIn("6 segments", head)
         self.assertIn("  line (90,10) (90,20)", self.text)
 
-    def test_004_annotations_reuse_the_ids(self):
-        self.assertIn("dim linear '100' measured 100 -> C1", self.text)
+    def test_004_texts_reuse_the_ids(self):
+        self.assertIn("measure '100' measured 100 -> C1", self.text)
         circle_id = next(l.split(":")[0] for l in self.text.splitlines() if "circle D10" in l)
-        self.assertIn(f"leader at (25,30) -> {circle_id}", self.text)
+        self.assertIn(f"pointer at (25,30) -> {circle_id}", self.text)
 
     def test_005_unanchored_goes_to_not_understood(self):
         # niente si perde in silenzio: la quota senza elemento sta in fondo
         tail = self.text.split("## not understood")[1]
-        self.assertIn("dim diameter 'Ø10' measured 10 at (20,40): no element found", tail)
+        self.assertIn("measure 'Ø10' measured 10 at (20,40): no element found", tail)
+        # un angolo si dice tale: non è una lunghezza
+        self.assertIn("measure '30°' measured 30 (angle) at (30,45): no element found", tail)
 
     def test_006_open_edges_listed_with_geometry(self):
         self.assertIn("continuous: line (20,15) (20,35)", self.text)

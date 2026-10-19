@@ -1,21 +1,17 @@
 """
 topo/tools/anchor.py
 ---------------------------
-Ancoraggio delle annotazioni: collega ogni annotazione del modello alla
-geometria che la riguarda. Prima chiamato `interpret_annotations()`,
-rinominato (MAP.md D43) perché "interpret" era già usato per tre cose diverse
-(questa funzione, il futuro progetto interprete, il concetto generico di
-interpretazione discusso in MAP.md D39-D42) — pura ricostruzione geometrica,
-zero giudizio, non ha niente a che fare col significato del disegno.
+Ancoraggio dei testi: collega ogni testo del modello alla geometria che lo
+riguarda (MAP.md D43, D138). Pura ricostruzione geometrica, zero giudizio,
+niente a che fare col significato del disegno.
 
-Fase separata e opzionale — NON viene chiamata da heal(). `detect_flat()`
-fa già abbastanza (geometria + feature); l'ancoraggio delle annotazioni è
-un concern a sé, che il chiamante attiva quando gli serve
-(es. prima di split() o di inject(), per sapere quale nota va con quale pezzo).
+Fase separata e opzionale — NON viene chiamata da heal(): il chiamante la
+attiva quando gli serve (es. prima di split() o di inject(), per sapere quale
+testo va con quale pezzo).
 
-Popola ``Annotation.cluster_ref`` (indice della parte contenitrice),
-``Leader.target`` (l'elemento su cui cade la punta della direttrice, D66) e
-``Dimension.references`` (gli elementi fra cui la quota misura, D69).
+Popola ``Text.cluster_ref`` (indice della parte contenitrice), ``Text.target``
+(l'elemento su cui cade la punta di ``pointer``, D66) e ``Text.references``
+(gli elementi su cui cadono i ``measured_points``, D69).
 """
 
 from __future__ import annotations
@@ -25,31 +21,31 @@ from typing import Any, Iterator, Optional, Tuple
 
 from shapely.geometry import LineString, Point
 
-from ..model.annotation import Dimension, Leader
 from ..model.result import Result
+from ..model.text import Text
 
-LEADER_TARGET_DISTANCE = 0.5   # mm — la punta di una freccia sta sulla linea che indica
+POINTER_TARGET_DISTANCE = 0.5   # mm — la punta di una freccia sta sulla linea che indica
 
 
-def anchor_annotations(result: Result, snap_distance: float = 0.0,
-                       leader_distance: float = LEADER_TARGET_DISTANCE) -> Result:
+def anchor_texts(result: Result, snap_distance: float = 0.0,
+                 pointer_distance: float = POINTER_TARGET_DISTANCE) -> Result:
     """
-    Assegna ``cluster_ref`` a ogni annotazione di ``result.annotations``.
+    Assegna ``cluster_ref`` a ogni testo di ``result.texts``.
 
     ``cluster_ref`` è l'indice in ``result.clusters`` della parte il cui contorno
-    esterno contiene la posizione dell'annotazione. Le annotazioni fuori da
-    ogni parte (es. il cartiglio) restano con ``cluster_ref = None``.
+    esterno contiene la posizione del testo. I testi fuori da ogni parte (es.
+    il cartiglio) restano con ``cluster_ref = None``.
 
-    ``snap_distance`` > 0: un'annotazione non contenuta da nessuna parte viene
-    comunque assegnata alla parte più vicina se dista meno di ``snap_distance``
-    dal suo contorno — utile per i callout che il CAD posiziona appena fuori dal
+    ``snap_distance`` > 0: un testo non contenuto da nessuna parte viene
+    comunque assegnato alla parte più vicina se dista meno di ``snap_distance``
+    dal suo contorno — utile per i testi che il CAD posiziona appena fuori dal
     pezzo. Con il default 0.0 vale solo il contenimento stretto.
 
-    Per ogni ``Leader`` con vertici calcola anche ``target`` (vedi
-    `leader_target`), per ogni ``Dimension`` ``references`` (vedi
-    `dimension_references`).
+    Per ogni testo con ``pointer`` calcola anche ``target`` (vedi
+    `pointer_target`), per ogni testo con ``measured_points`` ``references``
+    (vedi `measured_references`).
 
-    Muta le annotazioni in-place e ritorna il ``result``.
+    Muta i testi in-place e ritorna il ``result``.
     """
     refs = [
         (i, p.outer.polygon)
@@ -60,31 +56,31 @@ def anchor_annotations(result: Result, snap_distance: float = 0.0,
     if not refs:
         return result
 
-    for ann in result.annotations:
-        ann.cluster_ref = _assign(ann.position, refs, snap_distance)
-        if isinstance(ann, Leader):
-            ann.target = leader_target(result, ann, leader_distance)
-        elif isinstance(ann, Dimension):
-            ann.references = dimension_references(result, ann, leader_distance)
+    for text in result.texts:
+        text.cluster_ref = _assign(text.position, refs, snap_distance)
+        if text.pointer:
+            text.target = pointer_target(result, text, pointer_distance)
+        if text.measured_points:
+            text.references = measured_references(result, text, pointer_distance)
 
     return result
 
 
-def leader_target(result: Result, leader: Leader,
-                  distance: float = LEADER_TARGET_DISTANCE) -> Optional[str]:
+def pointer_target(result: Result, text: Text,
+                   distance: float = POINTER_TARGET_DISTANCE) -> Optional[str]:
     """
-    L'elemento indicato dalla punta (``vertices[0]``) di ``leader``, come
+    L'elemento indicato dalla punta (``pointer[0]``) di ``text``, come
     percorso in ``result``: ``"clusters[0].outer"``, ``"clusters[0].inners[3]"``,
     ``"clusters[1].holes[2]"`` (qualunque collezione di ``cluster.detected``).
 
     Il bordo più vicino alla punta, se entro ``distance``; altrimenti il più
     piccolo elemento chiuso (non il contorno esterno) che contiene la punta —
     una freccia che finisce dentro un foro; altrimenti ``None`` (una freccia
-    di sezione, fuori dal pezzo). ``resolve_target`` fa il passo inverso.
+    fuori dal pezzo). ``resolve_target`` fa il passo inverso.
     """
-    if not leader.vertices:
+    if not text.pointer:
         return None
-    tip = Point(leader.vertices[0])
+    tip = Point(text.pointer[0])
     elements = list(_elements(result))
     if not elements:
         return None
@@ -98,18 +94,18 @@ def leader_target(result: Result, leader: Leader,
     return min(inside)[1] if inside else None
 
 
-def dimension_references(result: Result, dimension: Dimension,
-                         distance: float = LEADER_TARGET_DISTANCE) -> list:
+def measured_references(result: Result, text: Text,
+                        distance: float = POINTER_TARGET_DISTANCE) -> list:
     """
-    Gli elementi fra cui ``dimension`` misura, come percorsi in ``result``
-    (stesso formato di ``Leader.target``): per ogni punto di
-    ``measured_points`` l'elemento il cui bordo passa entro ``distance``, a
-    parità il più piccolo. Senza doppioni, nell'ordine dei punti. Un diametro
-    dà un elemento (il cerchio), una quota lineare uno o due.
+    Gli elementi su cui cadono i ``measured_points`` di ``text``, come
+    percorsi in ``result`` (stesso formato di ``target``): per ogni punto
+    l'elemento il cui bordo passa entro ``distance``, a parità il più
+    piccolo. Senza doppioni, nell'ordine dei punti. Due punti opposti su un
+    cerchio danno un elemento (il cerchio), due capi uno o due.
     """
     elements = list(_elements(result))
     refs = []
-    for point in dimension.measured_points:
+    for point in text.measured_points:
         path = _on_boundary(elements, Point(point), distance) if elements else None
         if path is not None and path not in refs:
             refs.append(path)

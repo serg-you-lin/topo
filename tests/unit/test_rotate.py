@@ -22,7 +22,7 @@ from topo.tools.rotate import (
     structural_segments, longest_structural_segment,
     rotate_cluster, rotate_result, rotate_document, rotate_to_longest,
 )
-from topo.model.annotation import Note
+from topo.model.text import Text
 
 
 def _tall_rect_with_diagonal():
@@ -104,18 +104,18 @@ class TestRotateResult(unittest.TestCase):
         self.assertAlmostEqual(length, 400.0, places=6)
         self.assertAlmostEqual(angle_deg, 0.0, places=6)
 
-    def test_002_trash_entities_rotate_too(self):
+    def test_002_loose_rotates_too(self):
         result = topo.heal(_tall_rect_with_diagonal())
         trash_before = result.loose[0].segments[0]
         rotated = rotate_result(result, math.radians(-90), origin=(50, 200))
         trash_after = rotated.loose[0].segments[0]
         self.assertNotEqual(trash_before.start, trash_after.start)
 
-    def test_003_warns_instead_of_silently_dropping_annotations(self):
+    def test_003_warns_instead_of_silently_dropping_texts(self):
         result = topo.heal(_tall_rect_with_diagonal())
-        result.annotations.append(Note(position=(0, 0), text="X"))
+        result.texts.append(Text(position=(0, 0), text="X"))
         rotated = rotate_result(result, 0.1)
-        self.assertTrue(any("annotazioni non ruotate" in w for w in rotated.warnings))
+        self.assertTrue(any("testi non ruotati" in w for w in rotated.warnings))
 
     def test_004_warns_when_detected_overlay_present(self):
         result = topo.heal(_tall_rect_with_diagonal())

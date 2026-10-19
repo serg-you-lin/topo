@@ -5,7 +5,7 @@ from dataclasses import field
 from typing import List, Set, Any
 from .curve import ClosedCurve, OpenCurve
 from .cluster import Cluster
-from .annotation import Annotation
+from .text import Text
 
 
 @dataclass
@@ -17,7 +17,7 @@ class Result:
     È quello che topo.heal() restituisce al chiamante.
 
     Campi:
-        annotations : testi e quote della sorgente (list[Annotation]), copiati
+        texts     : i testi della sorgente (list[Text], D138), copiati
                     qui da heal() dal Document. Sono dati di dominio
                     indipendenti dal formato: ogni renderer (to_dxf, un
                     futuro to_svg/to_pdf) li disegna dal modello, senza
@@ -35,7 +35,7 @@ class Result:
     warnings:            List[str]              = field(default_factory=list)
     errors:              List[str]              = field(default_factory=list)
     loose:               List[OpenCurve | ClosedCurve] = field(default_factory=list)
-    annotations:         List[Annotation]       = field(default_factory=list)
+    texts:               List[Text]             = field(default_factory=list)
     classified_entities: List[Any]              = field(default_factory=list)  # di un consumatore (D88)
     all_arcs:            List[Any]              = field(default_factory=list)
     _open_shapes:        List[Any]              = field(default_factory=list)

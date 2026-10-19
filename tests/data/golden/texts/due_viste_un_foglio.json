@@ -1,23 +1,22 @@
 {
   "source_file": "due_viste_un_foglio.dxf",
-  "annotation_count": 3,
-  "by_kind": {
+  "text_count": 3,
+  "by_source_kind": {
     "DIMENSION": 3
   },
   "cluster_count": 2,
-  "annotations": [
+  "texts": [
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         123.069,
         99.872
       ],
-      "display_text": "68",
+      "text": "68",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 68.0,
-      "text_override": null,
+      "measure": 68.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -25,17 +24,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         142.665,
         269.83
       ],
-      "display_text": "1",
+      "text": "1",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 1.0,
-      "text_override": null,
+      "measure": 1.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -43,17 +41,16 @@
       }
     },
     {
-      "type": "Dimension",
-      "kind": "DIMENSION",
+      "source_kind": "DIMENSION",
       "position": [
         144.352,
         116.891
       ],
-      "display_text": "120",
+      "text": "120",
       "cluster_ref": null,
-      "dim_type": "linear",
-      "measured_value": 120.0,
-      "text_override": null,
+      "measure": 120.0,
+      "measure_is_angle": false,
+      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,

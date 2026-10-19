@@ -67,7 +67,7 @@ def heal(doc: Document, tolerance: Optional[float] = None, label: str = "",
     structural = is_structural or is_structural_role
 
     result = Result(source_file=source_file)
-    result.annotations = list(doc.annotations)
+    result.texts = list(doc.texts)
     if not doc.edges:
         result.errors.append("Modelspace vuoto: nessuna geometria trovata.")
         result.is_valid = False
