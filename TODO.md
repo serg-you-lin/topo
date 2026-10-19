@@ -136,7 +136,7 @@ primitive di topo.
    1.0 (i dischi di cogo, D118, sono il precedente).
 
    **Con il punto 8, da decidere prima della 1.0: dove e con che nome stanno
-   le linee che non chiudono niente** (Federico, 19 ottobre, a proposito delle
+   le linee che non chiudono niente** (emerso il 19 ottobre provando le
    nervature). Prova su una lamiera 1000x600 con `heal()`: nervatura a linea
    con estremi liberi, croce di Sant'Andrea spigolo a spigolo (le canalizzazioni),
    nervature da bordo a bordo, bugna con ruolo `rib` → in tutti i casi un
