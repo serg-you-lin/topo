@@ -148,9 +148,14 @@ primitive di topo.
     topo: vedere se un terzo consumer chiede qualcosa che la superficie
     pubblica non dà (ogni richiesta va in "richieste dalla superficie"). Beta,
     senza esagerare: progetto a parte accanto a snapbend/snapdraw, setup come
-    gli altri (`python-project-setup`, `gen_index`). Da chiarire all'avvio: da
-    quali ingressi (misure? uno schizzo? un DXF?) e che uscita (DXF di taglio
-    dei pezzi?).
+    gli altri (`python-project-setup`, `gen_index`).
+    **Avviato il 19 ottobre** (`../snapfence`, 0.1.0, solo scheletro). Ingressi:
+    misure del vano + un motivo da un disegno qualunque (logo, numero civico,
+    decoro) che diventa la lamiera di tamponamento traforata; uscita: DXF di
+    taglio dei pezzi piani (snapfence MAP D2). Le richieste attese (scalare e
+    spostare un documento, `bridge_nested_tabs` pubblico e con le spline,
+    scritte lasciate come TEXT) stanno nel TODO di snapfence e arrivano qui
+    solo quando uno script le chiede davvero.
 
 Poi topo 1.0.0, e snapbend 1.0.0 dietro.
 
