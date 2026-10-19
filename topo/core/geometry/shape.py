@@ -1,8 +1,11 @@
 """
 topo/core/geometry/shape.py
 ----------------------------
-Fatti di forma di un contorno chiuso: cerchio, stadio, rettangolo, poligono.
-Geometria pura, vale uguale su `heal()` e su `island()`. "circle" non vuol
+Fatti di forma di un contorno chiuso: cerchio, ellisse, stadio, rettangolo,
+poligono. Elenco chiuso (MAP.md D136): una forma ha un nome solo se centro,
+lunghezza, larghezza e angolo la determinano; il resto è `polygon` o `other`.
+Le regole leggono le primitive come sono: un cerchio fatto di spline resta
+`other`. Geometria pura, vale uguale su `heal()` e su `island()`. "circle" non vuol
 dire foro: cosa sia quel cerchio lo dice chi legge il disegno o il processo
 (MAP.md D68).
 In coda i fatti fra più contorni: cerchi concentrici, archi attorno a un
@@ -13,20 +16,42 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional, Tuple
 
 from shapely.geometry import Polygon
 
 from .measure import chord_angle_deg
-from ..primitives.segments import ArcSeg, CircleSeg, LineSeg
+from ..primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg
 
 Point = Tuple[float, float]
 
-CIRCLE = "circle"
-STADIUM = "stadium"
-RECTANGLE = "rectangle"
-POLYGON = "polygon"
-OTHER = "other"
+
+class ShapeKind(str, Enum):
+    """
+    Le sei forme di `contour_shape`, elenco chiuso e stabile (MAP.md D136).
+    Eredita da str: `kind == "circle"` funziona e il testo stampa il valore.
+    """
+    CIRCLE = "circle"
+    ELLIPSE = "ellipse"
+    STADIUM = "stadium"
+    RECTANGLE = "rectangle"
+    POLYGON = "polygon"
+    OTHER = "other"
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __format__(self, spec: str) -> str:
+        return format(self.value, spec)
+
+
+CIRCLE = ShapeKind.CIRCLE
+ELLIPSE = ShapeKind.ELLIPSE
+STADIUM = ShapeKind.STADIUM
+RECTANGLE = ShapeKind.RECTANGLE
+POLYGON = ShapeKind.POLYGON
+OTHER = ShapeKind.OTHER
 
 SHAPE_TOLERANCE = 0.01       # frazione della dimensione del contorno
 ANGLE_TOLERANCE_DEG = 1.0
@@ -35,14 +60,16 @@ ANGLE_TOLERANCE_DEG = 1.0
 @dataclass(frozen=True)
 class ContourShape:
     """
-    kind:   circle | stadium | rectangle | polygon | other
-    center: centro (cerchio, stadio, rettangolo) o baricentro (il resto)
-    length: dimensione maggiore — cerchio: diametro; stadio: fuori tutto
-    width:  dimensione minore — cerchio: diametro; stadio: 2 × raggio
+    kind:   un `ShapeKind` (circle | ellipse | stadium | rectangle | polygon | other)
+    center: centro (cerchio, ellisse, stadio, rettangolo) o baricentro (il resto)
+    length: dimensione maggiore — cerchio: diametro; ellisse: asse maggiore;
+            stadio: fuori tutto
+    width:  dimensione minore — cerchio: diametro; ellisse: asse minore;
+            stadio: 2 × raggio
     angle:  gradi [0, 180) dell'asse lungo; None per il cerchio
     sides:  segmenti del contorno dopo la ricomposizione
     """
-    kind: str
+    kind: ShapeKind
     center: Point
     length: float
     width: float
@@ -54,7 +81,7 @@ class ContourShape:
         return self.length if self.kind == CIRCLE else None
 
     def to_dict(self) -> dict:
-        return {"kind": self.kind, "center": list(self.center),
+        return {"kind": self.kind.value, "center": list(self.center),
                 "length": round(self.length, 4), "width": round(self.width, 4),
                 "angle": None if self.angle is None else round(self.angle, 4),
                 "sides": self.sides}
@@ -72,25 +99,52 @@ def contour_shape(item, tolerance: float = SHAPE_TOLERANCE,
     if not segments:
         return None
     segments, _ = merge_runs(segments, [None] * len(segments))
-    for rule in (_circle, _stadium, _rectangle):
+    for rule in (_circle, _ellipse, _stadium, _rectangle):
         shape = rule(segments, tolerance, angle_tolerance)
         if shape is not None:
             return shape
     return _generic(segments)
 
 
+def _radius(seg, tol) -> Optional[float]:
+    """Raggio di un pezzo di cerchio; un'ellisse ad assi uguali è un cerchio, esattamente."""
+    if isinstance(seg, (ArcSeg, CircleSeg)):
+        return seg.radius
+    if isinstance(seg, EllipseSeg) and abs(1.0 - seg.ratio) <= tol:
+        return math.hypot(*seg.major_axis)
+    return None
+
+
 def _circle(segments, tol, _angle_tol):
-    if not all(isinstance(s, (ArcSeg, CircleSeg)) for s in segments):
+    radii = [_radius(s, tol) for s in segments]
+    if any(r is None for r in radii):
         return None
-    s0 = segments[0]
-    if any(abs(s.radius - s0.radius) > tol * s0.radius
-           or math.dist(s.center, s0.center) > tol * s0.radius for s in segments):
+    s0, r0 = segments[0], radii[0]
+    if any(abs(r - r0) > tol * r0 or math.dist(s.center, s0.center) > tol * r0
+           for s, r in zip(segments, radii)):
         return None
     sweep = sum(2 * math.pi if isinstance(s, CircleSeg) else s._sweep() for s in segments)
     if abs(sweep - 2 * math.pi) > math.radians(1.0):
         return None
-    d = 2 * s0.radius
+    d = 2 * r0
     return ContourShape(CIRCLE, tuple(s0.center), d, d, None, len(segments))
+
+
+def _ellipse(segments, tol, angle_tol):
+    """Pezzi della stessa ellisse (centro, semiassi, direzione dell'asse) per un giro intero."""
+    if not all(isinstance(s, EllipseSeg) for s in segments):
+        return None
+    s0 = segments[0]
+    a = math.hypot(*s0.major_axis)
+    angle = math.degrees(math.atan2(s0.major_axis[1], s0.major_axis[0])) % 180
+    for s in segments:
+        if (abs(math.hypot(*s.major_axis) - a) > tol * a or abs(s.ratio - s0.ratio) > tol
+                or math.dist(s.center, s0.center) > tol * a
+                or _angle_diff(math.degrees(math.atan2(s.major_axis[1], s.major_axis[0])), angle) > angle_tol):
+            return None
+    if abs(sum(s._sweep() for s in segments) - 2 * math.pi) > math.radians(1.0):
+        return None
+    return ContourShape(ELLIPSE, tuple(s0.center), 2 * a, 2 * a * s0.ratio, angle, len(segments))
 
 
 def _stadium(segments, tol, angle_tol):

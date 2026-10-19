@@ -119,7 +119,7 @@ class _Writer:
         shape = contour_shape(contour)
         if shape is not None and shape.kind == "circle":
             return [f"circle D{self.num(shape.diameter or shape.length)} centre {self.pt(shape.center)}"]
-        if shape is not None and shape.kind in ("rectangle", "stadium"):
+        if shape is not None and shape.kind in ("ellipse", "rectangle", "stadium"):
             axis = "" if not shape.angle else f" axis {self.num(shape.angle)}deg"
             return [f"{shape.kind} {self.num(shape.length)} x {self.num(shape.width)} "
                     f"centre {self.pt(shape.center)}{axis}"]

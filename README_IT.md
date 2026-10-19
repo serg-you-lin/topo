@@ -132,7 +132,7 @@ topo_dxf.to_dxf(result, doc).saveas("due_rettangoli.dxf")
 ```
 
 I costruttori restituiscono segmenti di topo: `polygon(punti)`, `rectangle`,
-`regular_polygon`, `circle`, `stadium` (con archi veri). Ogni altra forma a lati
+`regular_polygon`, `circle`, `ellipse`, `stadium` (con archi veri). Ogni altra forma a lati
 dritti è un `polygon`.
 
 ## Forme: cos'è un contorno, non a cosa serve
@@ -144,7 +144,7 @@ foro da forare, una sede o il puntino di un logo lo legge un consumatore
 ```python
 for cluster in result.clusters:
     for inner in cluster.inners:
-        shape = topo.geometry.contour_shape(inner)     # circle / stadium / rectangle / polygon / other
+        shape = topo.geometry.contour_shape(inner)     # circle / ellipse / stadium / rectangle / polygon / other
         print(shape.kind, shape.center, shape.length, shape.width)
 
     # cerchi con lo stesso centro, dal più piccolo (anche quelli da soli)

@@ -13,7 +13,7 @@ from __future__ import annotations
 import math
 from typing import List, Sequence, Tuple
 
-from ..primitives.segments import ArcSeg, CircleSeg, LineSeg
+from ..primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg
 
 Point = Tuple[float, float]
 
@@ -52,6 +52,19 @@ def regular_polygon(sides: int, radius: float, center: Point = (0.0, 0.0), angle
 def circle(radius: float, center: Point = (0.0, 0.0)) -> List[CircleSeg]:
     """Il cerchio di raggio `radius` in `center`."""
     return [CircleSeg(center=tuple(center), radius=radius)]
+
+
+def ellipse(length: float, width: float, center: Point = (0.0, 0.0), angle: float = 0.0) -> List[EllipseSeg]:
+    """
+    L'ellisse di assi `length` × `width` centrata in `center`, asse lungo a
+    `angle` gradi. `length` >= `width` > 0.
+    """
+    if not length >= width > 0:
+        raise ValueError(f"ellipse(): serve length >= width > 0, non {length} x {width}")
+    a = math.radians(angle)
+    major = (length / 2 * math.cos(a), length / 2 * math.sin(a))
+    return [EllipseSeg(center=tuple(center), major_axis=major, ratio=width / length,
+                       start_param=0.0, end_param=2 * math.pi)]
 
 
 def stadium(length: float, width: float, center: Point = (0.0, 0.0), angle: float = 0.0) -> list:

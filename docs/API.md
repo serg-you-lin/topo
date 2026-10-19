@@ -487,6 +487,7 @@ angle=20))` ridà 80, 30, 20 (D96):
 | `rectangle(length, width, center=(0, 0), angle=0)` | rettangolo, lato lungo a `angle` gradi |
 | `regular_polygon(sides, radius, center=(0, 0), angle=0)` | poligono regolare inscritto nel cerchio di raggio `radius`, primo vertice a `angle` |
 | `circle(radius, center=(0, 0))` | un `CircleSeg` |
+| `ellipse(length, width, center=(0, 0), angle=0)` | un `EllipseSeg` intero, assi `length` × `width` (`length` >= `width`), asse lungo a `angle` |
 | `stadium(length, width, center=(0, 0), angle=0)` | due semicerchi veri (`ArcSeg`) e due lati paralleli; fuori tutto `length` × `width` |
 
 Rombi, trapezi e ogni altra forma con lati dritti sono un `polygon`.
@@ -509,15 +510,25 @@ topo.geometry.contour_shape(item, tolerance=0.01, angle_tolerance=1.0) -> Contou
 ```
 
 La forma di un contorno chiuso (`Contour`, un oggetto con `.segments`
-o la lista dei segmenti): `circle`, `stadium` (stadio: due semicerchi uguali
-e due rette parallele — nome geometrico, non "asola"), `rectangle`, `polygon` (solo rette), `other`. Fatto
+o la lista dei segmenti): `circle`, `ellipse`, `stadium` (stadio: due
+semicerchi uguali e due rette parallele — nome geometrico, non "asola"),
+`rectangle`, `polygon` (solo rette), `other`. Fatto
 geometrico, non feature: `circle` non vuol dire foro, lo decide chi legge il
 disegno o il processo. Vale uguale su `heal` e su `island`. I segmenti
 consecutivi sulla stessa retta o circonferenza sono ricomposti prima.
 `tolerance` è una frazione della dimensione del contorno.
 
+**Elenco chiuso e stabile** (D136): `kind` è un `ShapeKind` (`str`, quindi
+`kind == "circle"` funziona) e nella 1.x non nascono altri kind né un
+contorno cambia kind. Una forma ha un nome solo se centro, lunghezza,
+larghezza e angolo la determinano; un rettangolo raccordato, un'asola ad arco,
+un esagono sono `other` o `polygon`. Le regole leggono le primitive come sono:
+un'ellisse ad assi uguali è un `circle` (stessi punti, esattamente), un
+cerchio fatto di spline resta `other`.
+
 `ContourShape`: `kind`, `center`, `length` (maggiore; cerchio: diametro;
-stadio: fuori tutto), `width` (minore; stadio: 2 × raggio), `angle` (gradi
+ellisse: asse maggiore; stadio: fuori tutto), `width` (minore; ellisse: asse
+minore; stadio: 2 × raggio), `angle` (gradi
 [0, 180) dell'asse lungo, `None` per il cerchio), `sides` (segmenti dopo la
 ricomposizione), `diameter` (solo cerchio), `.to_dict()`.
 

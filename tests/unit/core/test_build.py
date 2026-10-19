@@ -6,7 +6,7 @@ import unittest
 
 import topo
 from topo.core.geometry import contour_shape
-from topo.core.geometry.build import circle, polygon, rectangle, regular_polygon, stadium
+from topo.core.geometry.build import circle, ellipse, polygon, rectangle, regular_polygon, stadium
 from topo.core.primitives.segments import ArcSeg, CircleSeg, LineSeg
 
 
@@ -42,6 +42,16 @@ class TestBuild(unittest.TestCase):
         (c,) = circle(5, center=(3, 4))
         self.assertIsInstance(c, CircleSeg)
         self.assertEqual(contour_shape([c]).diameter, 10)
+
+    def test_ellisse_si_rilegge_uguale(self):
+        s = contour_shape(ellipse(40, 16, center=(3, 4), angle=120))
+        self.assertEqual(s.kind, "ellipse")
+        self.assertAlmostEqual(s.length, 40)
+        self.assertAlmostEqual(s.width, 16)
+        self.assertAlmostEqual(s.angle, 120)
+        self.assertEqual(s.center, (3, 4))
+        with self.assertRaises(ValueError):
+            ellipse(10, 20)
 
     def test_stadio_con_archi_veri(self):
         segs = stadium(60, 20, center=(10, 5), angle=30)
