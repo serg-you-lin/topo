@@ -3,7 +3,8 @@ topo/core/geometry/regions.py
 ------------------------------
 Un contorno chiuso e una regione: dove cade un punto sul contorno (in mezzo a
 un lato, su uno spigolo, su un raccordo), un tratto tagliato da una regione,
-un contorno meno una regione (MAP.md D118).
+un contorno meno una regione (MAP.md D118); quale contorno esterno contiene
+per intero una traccia (D137).
 
 Contorno e regione sono anelli di primitive testa-coda (`contour.segments`,
 `topo.geometry.circle`, `topo.geometry.rectangle`, ...): una regione è un
@@ -21,7 +22,8 @@ import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
 
-from shapely.geometry import Point as SPoint
+from shapely.geometry import LineString, Point as SPoint, Polygon
+from shapely.prepared import prep
 
 from ..primitives.polygon_builder import build_polygon
 from ..primitives.segments import (
@@ -350,3 +352,38 @@ def contour_minus(contour: Sequence, region: Sequence) -> List[list]:
             if side == 1:
                 kept.append(piece.reversed() if same else piece)
     return _chain(kept)
+
+
+# ---------------------------------------------------------------------------
+# Quale contorno contiene una traccia (D137)
+# ---------------------------------------------------------------------------
+
+def enclosing(tracks: Sequence[Sequence[Point]], outers: Sequence, tolerance: float) -> List[Optional[int]]:
+    """
+    Per ogni traccia (una sequenza di punti), l'indice in `outers` del
+    poligono più piccolo che la contiene tutta, `None` se nessuno. Conta solo
+    il bordo esterno: una traccia dentro un buco sta dentro il pezzo (una
+    croce al centro di un foro). Il bordo è dentro, entro `tolerance`: una
+    linea da lato a lato appartiene al pezzo che attraversa.
+    """
+    regions = []
+    for i, outer in enumerate(outers):
+        if outer is None or outer.is_empty:
+            continue
+        filled = Polygon(outer.exterior).buffer(tolerance)
+        regions.append((filled.area, i, filled.bounds, prep(filled)))
+    regions.sort(key=lambda r: r[0])
+    found: List[Optional[int]] = []
+    for pts in tracks:
+        pts = list(pts)
+        if not pts:
+            found.append(None)
+            continue
+        shape = LineString(pts) if len(pts) > 1 else SPoint(pts[0])
+        x0, y0, x1, y1 = shape.bounds
+        found.append(next(
+            (i for _, i, (a, b, c, d), region in regions
+             if a <= x0 and b <= y0 and x1 <= c and y1 <= d and region.covers(shape)),
+            None,
+        ))
+    return found

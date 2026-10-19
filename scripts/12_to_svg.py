@@ -47,7 +47,7 @@ print(f"parti          : {vm['cluster_count']}")
 print(f"bbox           : {vm['bbox']}")
 print(f"outer          : {len(cluster['outer']['points'])} punti, colore {cluster['outer']['color']}")
 print(f"inner          : {len(cluster['inners'])}")
-print(f"trash          : {len(vm['trash'])}")
+print(f"loose          : {len(vm['loose'])}")
 print(f"palette        : {vm['palette']}")
 
 vm_path = os.path.join(OUTDIR, f"{base}_view.json")
@@ -60,7 +60,7 @@ topo.save_svg(
     result,
     os.path.join(OUTDIR, f"{base}.svg"),
     tolerance=0.05,
-    include_trash=True,
+    include_loose=True,
     background="#1e1e1e",
     true_circles=True,
 )
@@ -69,7 +69,7 @@ topo.save_svg(
 topo.save_svg(
     result,
     os.path.join(OUTDIR, f"{base}_clean.svg"),
-    include_trash=False,
+    include_loose=False,
     include_annotations=False,
     background=None,
 )

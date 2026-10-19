@@ -3,7 +3,7 @@ io/view_model.py
 ----------------
 `to_view_model(result)` — serializza un `Result` in un dizionario JSON
 **orientato al rendering**: coordinate di OGNI feature (outer, inner, overlay
-di un consumatore, trash) + ruolo + colore, pronto da disegnare.
+di un consumatore, curve sciolte) + ruolo + colore, pronto da disegnare.
 
 È il pendant di `to_json` (che dà solo metadati, zero geometria) e la versione
 completa di `to_nester_input` (che dà solo outer + inner). Lo consumano `to_svg`
@@ -98,13 +98,13 @@ def _features(cluster, tolerance: float, role_styles: Mapping[str, RoleStyle]) -
     }
 
 
-def _trash_entry(trash, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict:
-    role = getattr(trash, "role", ContourRole.UNKNOWN)
-    poly = getattr(trash, "polygon", None)
+def _loose_entry(curve, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict:
+    role = getattr(curve, "role", ContourRole.UNKNOWN)
+    poly = getattr(curve, "polygon", None)
     if poly is not None:
         pts, closed = _poly_points(poly), True
     else:
-        pts, closed = _track(getattr(trash, "segments", []), tolerance), False
+        pts, closed = _track(getattr(curve, "segments", []), tolerance), False
     return {"role": _role_str(role), "color": _color(role, role_styles), "points": pts, "closed": closed}
 
 
@@ -133,7 +133,7 @@ def _bbox_of(clusters) -> Optional[list]:
 def to_view_model(
     result: Result,
     tolerance: float = 0.05,
-    include_trash: bool = True,
+    include_loose: bool = True,
     include_annotations: bool = True,
     role_styles: Optional[Mapping[str, RoleStyle]] = None,
 ) -> dict:
@@ -145,7 +145,7 @@ def to_view_model(
         tolerance:           tolleranza di discretizzazione per archi/cerchi/
                              spline delle tracce aperte (le tracce chiuse usano
                              il polygon già discretizzato al load).
-        include_trash:       includi `result.trash_entities`.
+        include_loose:       includi `result.loose`.
         include_annotations: includi `result.annotations`.
         role_styles:         `{ruolo: RoleStyle}` del chiamante (D128),
                              sopra la palette di topo: ne legge il colore.
@@ -179,8 +179,8 @@ def to_view_model(
         "clusters":       parts_out,
         "palette":     _palette_dict(role_styles),
     }
-    if include_trash:
-        vm["trash"] = [_trash_entry(t, tolerance, role_styles) for t in result.trash_entities]
+    if include_loose:
+        vm["loose"] = [_loose_entry(t, tolerance, role_styles) for t in result.loose]
     if include_annotations:
         vm["annotations"] = [_annotation_entry(a) for a in result.annotations]
     return vm

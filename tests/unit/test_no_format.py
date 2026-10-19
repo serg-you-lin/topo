@@ -92,8 +92,8 @@ class TestSplitIsModel(unittest.TestCase):
         parts = topo.split(self.result)
         texts = [[a.text for a in p.annotations] for p in parts]
         self.assertEqual(texts, [["A"], ["B"]])
-        self.assertEqual([len(p.trash_entities) for p in parts],
-                         [0, len(self.result.trash_entities)])
+        self.assertEqual([len(p.loose) for p in parts],
+                         [0, len(self.result.loose)])
 
     def test_min_area_drops_with_warning(self):
         parts = topo.split(self.result, min_area=20000)

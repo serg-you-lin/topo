@@ -45,7 +45,7 @@ from ..core.primitives.segments import segment_endpoints
 from ..model.cluster import Cluster
 from ..model.contour import Contour
 from ..model.document import Document
-from ..model.curve import OpenCurve
+from ..model.curve import ClosedCurve, OpenCurve
 from ..model.result import Result
 
 Point = Tuple[float, float]
@@ -105,7 +105,7 @@ def longest_structural_segment(
 # Rotazione — primitive pure, riusabili in un ciclo (nester)
 # ---------------------------------------------------------------------------
 
-def _rotate_contour(contour: Contour, angle_rad: float, origin: Point) -> Contour:
+def _rotate_contour(contour: ClosedCurve, angle_rad: float, origin: Point) -> ClosedCurve:
     return replace(
         contour,
         segments=[s.rotated(angle_rad, origin) for s in contour.segments],
@@ -146,7 +146,7 @@ def rotate_cluster(cluster: Cluster, angle_rad: float, origin: Point = (0.0, 0.0
 
 def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) -> Result:
     """
-    Nuovo `Result` con ogni cluster (`rotate_cluster`), `trash_entities`
+    Nuovo `Result` con ogni cluster (`rotate_cluster`), `loose`
     e `all_arcs` (usati da `detect_flat()` per i fori filettati — vanno ruotati
     anche loro o un `detect_flat()` successivo leggerebbe coordinate vecchie)
     ruotati di `angle_rad` attorno a `origin`. Nessun `heal()` richiamato: una
@@ -158,10 +158,10 @@ def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) 
     warning ricorda di rifare `detect_flat()` dopo la rotazione.
     """
     new_clusters = [rotate_cluster(c, angle_rad, origin) for c in result.clusters]
-    new_trash = [
+    new_loose = [
         replace(t, segments=[s.rotated(angle_rad, origin) for s in t.segments])
-        if isinstance(t, OpenCurve) else t
-        for t in result.trash_entities
+        if isinstance(t, OpenCurve) else _rotate_contour(t, angle_rad, origin)
+        for t in result.loose
     ]
     new_arcs = [a.rotated(angle_rad, origin) for a in result.all_arcs]
 
@@ -178,7 +178,7 @@ def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) 
     return replace(
         result,
         clusters=new_clusters,
-        trash_entities=new_trash,
+        loose=new_loose,
         all_arcs=new_arcs,
         warnings=new_warnings,
     )

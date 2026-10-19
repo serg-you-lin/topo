@@ -59,6 +59,7 @@ class ClosedCurve(Curve):
     polygon:  Polygon                          = field(default=None)
     segments: List[LineSeg | ArcSeg | BSplineSeg] = field(default_factory=list)
     styles:   List[EdgeStyle]                  = field(default_factory=list)
+    cluster_ref: Optional[int]                 = None   # in result.loose: indice del cluster che la contiene (D137)
 
     @property
     def area(self) -> float:
@@ -76,4 +77,4 @@ class OpenCurve(Curve):
     """
     segments:    List[LineSeg | ArcSeg | BSplineSeg] = field(default_factory=list)
     styles:      List[EdgeStyle]                  = field(default_factory=list)
-    cluster_ref: Optional[int]                    = None   # indice in result.clusters dell'isola che la contiene (island, D99)
+    cluster_ref: Optional[int]                    = None   # in result.loose: indice del cluster che la contiene (D99, D137)

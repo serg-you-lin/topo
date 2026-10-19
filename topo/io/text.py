@@ -205,7 +205,7 @@ def to_text(result: Result, source_name: str = "", decimals: int = 3,
     # cluster si conta soltanto
     outers = [prep(c.outer.polygon) for c in result.clusters if getattr(c.outer, "polygon", None) is not None]
     unknown, by_role, outside = [], Counter(), 0
-    for feature in result.trash_entities:
+    for feature in result.loose:
         role = getattr(feature, "role", None) or "unknown"
         segments = getattr(feature, "segments", None) or []
         if role != "unknown" or not segments:

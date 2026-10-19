@@ -44,7 +44,7 @@ class TestA_InteriorChainIsChord(unittest.TestCase):
         self.assertEqual(result.cluster_count, 1)
         self.assertEqual(len(result.clusters[0].inners), 0)
         self.assertAlmostEqual(result.clusters[0].outer.polygon.area, 260 * 150)
-        self.assertEqual(len(result.trash_entities), 8)
+        self.assertEqual(len(result.loose), 8)
 
 
 class TestB_BridgeSplitsParts(unittest.TestCase):
@@ -56,7 +56,7 @@ class TestB_BridgeSplitsParts(unittest.TestCase):
                        + _lines((166, 0), (276, 0), (276, 100), (166, 100), (166, 50), closed=True)
                        + _lines((110, 50), (166, 50)))
         self.assertEqual(result.cluster_count, 2)
-        self.assertEqual(len(result.trash_entities), 1)
+        self.assertEqual(len(result.loose), 1)
         self.assertTrue(any("uniscono due forme" in w for w in result.warnings), result.warnings)
 
 
@@ -71,7 +71,7 @@ class TestC_GrazedChordIsChord(unittest.TestCase):
         result = _heal(outline + _lines((0, 49), (100, 49)))
         self.assertEqual(result.cluster_count, 1)
         self.assertAlmostEqual(result.clusters[0].outer.polygon.area, 100 * 50 - 1.5)
-        self.assertEqual(len(result.trash_entities), 1)
+        self.assertEqual(len(result.loose), 1)
 
 
 class TestD_CrossingSidesAreReported(unittest.TestCase):
@@ -117,7 +117,7 @@ class TestE_ClosedChainNeverCandidate(unittest.TestCase):
                        + _lines((0, 0), (90, 40), (50, 80), closed=True))
         self.assertEqual(result.cluster_count, 1)
         self.assertEqual(len(result.clusters[0].inners), 1)
-        self.assertEqual(len(result.trash_entities), 0)
+        self.assertEqual(len(result.loose), 0)
 
 
 if __name__ == "__main__":

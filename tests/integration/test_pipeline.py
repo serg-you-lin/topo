@@ -56,9 +56,9 @@ class TestSpecialLayersWithoutDetect(unittest.TestCase):
 
     def test_002_trash_has_entities(self):
         # Senza detect_flat(), la geometria non strutturale resta nel modello
-        # come trash_entities (non più spostata su un layer "Trash" del msp).
+        # come loose (non più spostata su un layer "Trash" del msp).
         result = self.pipeline["result"]
-        self.assertGreater(len(result.trash_entities), 0)
+        self.assertGreater(len(result.loose), 0)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

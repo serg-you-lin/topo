@@ -106,9 +106,9 @@ class TestRotateResult(unittest.TestCase):
 
     def test_002_trash_entities_rotate_too(self):
         result = topo.heal(_tall_rect_with_diagonal())
-        trash_before = result.trash_entities[0].segments[0]
+        trash_before = result.loose[0].segments[0]
         rotated = rotate_result(result, math.radians(-90), origin=(50, 200))
-        trash_after = rotated.trash_entities[0].segments[0]
+        trash_after = rotated.loose[0].segments[0]
         self.assertNotEqual(trash_before.start, trash_after.start)
 
     def test_003_warns_instead_of_silently_dropping_annotations(self):

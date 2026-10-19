@@ -57,7 +57,7 @@ def dxf_pattern(dash: Optional[Tuple[float, ...]]) -> Optional[Tuple[float, ...]
 def _style_attribs(doc, layer: str, style: Optional[EdgeStyle] = None) -> dict:
     """
     dxfattribs per una entità in output: layer + linetype della sorgente, se
-    noto. Il colore resta SEMPRE BYLAYER (256) — anche per il trash: il
+    noto. Il colore resta SEMPRE BYLAYER (256) — anche per le curve sciolte: il
     colore lo decide il ruolo, sul layer (la mappa del chiamante o il default
     di `layers.py`, D128), mai quello, eventualmente diverso, della
     sorgente. Solo l'aspetto del tratto (continuo/tratteggiato/...) va
@@ -310,7 +310,7 @@ def write_native_segments(segments: List, msp, layer: str, styles: Optional[List
 
 
 # ---------------------------------------------------------------------------
-# Write-back — tracce APERTE (trash, frammenti di profilo, centerline, ...)
+# Write-back — tracce APERTE (curve sciolte, frammenti di profilo, centerline, ...)
 # ---------------------------------------------------------------------------
 
 def write_open_segments(segments: List, msp, layer: str, styles: Optional[List] = None) -> List[object]:
@@ -318,7 +318,7 @@ def write_open_segments(segments: List, msp, layer: str, styles: Optional[List] 
     Materializza una lista di segmenti puri come geometria APERTA su msp.
 
     A differenza di `write_segments` non chiude il contorno: serve per le
-    entità che il pipeline lascia non classificate (`result.trash_entities`),
+    entità che il pipeline lascia non classificate (`result.loose`),
     dove chiudere il loop falserebbe la forma, e come fallback di
     `write_segments` per i contorni misti spline+linee. Ogni segmento resta
     fedele:
@@ -331,7 +331,7 @@ def write_open_segments(segments: List, msp, layer: str, styles: Optional[List] 
     Il linetype (`styles`, allineata a `segments`) è sempre ripristinato — un
     run di LineSeg/ArcSeg consecutivi diventa una sola LWPOLYLINE, quindi
     prende lo stile del primo segmento del run come rappresentante. Il
-    colore resta sempre BYLAYER, trash compreso: quella geometria non ha un
+    colore resta sempre BYLAYER, curve sciolte comprese: quella geometria non ha un
     ruolo classificato, ma il rosso di `Trash` è comunque una decisione di
     layer, non un colore da ripristinare entità per entità.
 

@@ -46,9 +46,10 @@ Perché `topo` non perda
 niente, il modello è abbastanza ricco da tenere anche ciò che non ha classificato:
 
 - geometria chiusa ricostruita → parti / contorni interni / feature (se una lettura le aggiunge)
-- geometria non classificata → `result.trash_entities` (segmenti puri,
-  formato-indipendenti — ogni loader li alimenta, ogni renderer sceglie se
-  disegnarli)
+- ogni curva che non è contorno di nessun cluster → `result.loose`
+  (segmenti puri, formato-indipendenti; `cluster_ref` dice quale cluster la
+  contiene, D137). Cosa sia lo decide un consumatore, che la sposta in
+  `cluster.detected` con `topo.promote`
 - testi e quote → `result.annotations` (oggetti di dominio, con sia il valore
   semantico sia la forma renderizzata come primitive)
 
@@ -235,7 +236,7 @@ consumatore (snapdraw) compone gli stessi passi come gli serve.
 
 Se non si forma **nessun** contorno esterno chiuso, il risultato è dichiarato
 **non valido** (`is_valid = False`) — come il modelspace vuoto. `topo_dxf.to_dxf` e
-`to_svg` lo disegnano lo stesso (tutto in trash) per farti vedere cosa ha capito
+`to_svg` lo disegnano lo stesso (tutto in `loose`) per farti vedere cosa ha capito
 topo; rifiutarlo è scelta del chiamante che consegna a una macchina
 (`allow_invalid=False`, D83).
 
@@ -263,7 +264,7 @@ come contorno. `island` parte da un fatto globale, cosa sta fuori:
 5. **faccia esterna** (`outer_face`): si parte dal punto più a sinistra della
    geometria, a ogni nodo si gira il meno possibile in senso antiorario; un
    edge percorso andata e ritorno è una sporgenza (asse, segno)
-6. **interno**: giri chiusi → `inners`, il resto in `trash_entities`. Un'isola
+6. **interno**: giri chiusi → `inners`, il resto in `loose`. Un'isola
    il cui contorno sta dentro quello di un'altra non è un cluster: diventa
    interno della più esterna che la contiene
 
@@ -284,8 +285,9 @@ netta toglie gli elementi che si dichiarano vuoti del pezzo (`is_void`).
 ### 4. un Result per parte — `split`
 
 `topo.split(result)` sceglie le parti sul modello (`min_area`, `namer`) e dà
-un `Result` per parte, con il trash e le annotazioni che le appartengono: la
-parte che li contiene o, se nessuna, la più vicina fra tutte — niente
+un `Result` per parte, con le curve sciolte e le annotazioni che le
+appartengono: una curva va al cluster del suo `cluster_ref`, un'annotazione
+alla parte che la contiene; se nessuna, alla più vicina fra tutte — niente
 duplicato, niente perso (D124, D129). Nessun formato: ogni renderer prende un
 `Result`, quindi una parte va in DXF, SVG o testo allo stesso modo.
 
@@ -297,11 +299,12 @@ suo ruolo, o su quello di default dell'adapter (vedi la tabella nel README e
 `API.md` §9). Regole di fedeltà:
 
 - **le spline** si riemettono come `SPLINE` native, ricostruite da control points
-  / knots / weights / degree / tangenti — **mai discretizzate a polilinea**
+  / knots / weights / degree (D135) — **mai discretizzate a polilinea**
 - **l'overlay**: un contorno con `polygon` si scrive chiuso, uno senza come N
   entità native (`LINE`/`ARC`/`SPLINE`/`CIRCLE`), **mai come `LWPOLYLINE`**
   (D90) — così esce una curva aperta attaccata da un consumatore
-- **il trash** si materializza sempre sul layer `Trash`
+- **`loose`** si scrive sempre, sul layer del ruolo di ogni curva (`Trash`
+  per `unknown`)
 - **le annotazioni** si riscrivono tutte, quelle del `Result` che riceve: in
   un file per parte, quelle che `split` ha dato alla parte
 
@@ -391,7 +394,7 @@ Onestà sullo stato — dettagli e motivazioni sono in `MAP.md` (sezione
 - **Il DWG** passa da ODA File Converter, un eseguibile esterno: `topo_dxf`
   lo chiama via l'addon `odafc` di `ezdxf`.
 - **`heal()` con solo edge etichettati** (tutti con ruolo non strutturale):
-  errore "Nessuna geometria chiusa trovata" e `trash_entities` **vuota** — gli
+  errore "Nessuna geometria chiusa trovata" e `loose` **vuota** — gli
   etichettati non ci arrivano, a differenza di ogni altro caso invalido.
   Comportamento di sempre, conservato tale e quale nella fase B (D62).
 

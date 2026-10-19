@@ -50,7 +50,7 @@ def show(tag, result):
     # i ruoli assegnati al load finiscono in trash col loro ruolo intatto:
     # quante entità per ruolo
     from collections import Counter
-    roles = Counter(str(getattr(t, "role", "?")) for t in result.trash_entities)
+    roles = Counter(str(getattr(t, "role", "?")) for t in result.loose)
     print(f"{tag:<20} {dict(roles)}")
 
 
@@ -59,4 +59,4 @@ for i, (tag, rules) in enumerate(STEPS, start=1):
     result = topo.heal(doc, tolerance=TOLERANCE)
     show(tag, result)
     out = os.path.join(OUTDIR, f"14_style_classification_{i}.dxf")
-    topo_dxf.to_dxf(result, doc, include_trash=True).saveas(out)
+    topo_dxf.to_dxf(result, doc, include_loose=True).saveas(out)

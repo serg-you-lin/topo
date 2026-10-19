@@ -329,7 +329,7 @@ class TestSplitArcStubs(unittest.TestCase):
     geometria non chiude nessun loop (limite noto del solo loop finder). La
     pipeline completa (`heal()`) lo recupera — clustering degli endpoint +
     riparazione angoli all'intersezione reale — e le stub finiscono in
-    `trash_entities` senza essere perse. Il test verifica l'esito del
+    `loose` senza essere perse. Il test verifica l'esito del
     PRODOTTO, non del loop finder isolato.
     """
 
@@ -348,7 +348,7 @@ class TestSplitArcStubs(unittest.TestCase):
 
     def test_stub_non_perse_finiscono_in_trash(self):
         # una stub per angolo: fuori dal contorno, ma materializzate in trash
-        self.assertGreaterEqual(len(self.result.trash_entities), 4)
+        self.assertGreaterEqual(len(self.result.loose), 4)
 
 
 if __name__ == "__main__":

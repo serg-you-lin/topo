@@ -92,8 +92,8 @@ topo.save_json(result, "batch.json")
 ```
 
 `split` è una decisione sul modello: quali pezzi (`min_area`), come si chiamano
-(`namer`), quale trash e quali testi viaggiano con ognuno (il pezzo che li
-contiene, o il più vicino). Ogni adapter scrive poi un pezzo nel suo formato.
+(`namer`), quali curve sciolte e quali testi viaggiano con ognuno (il pezzo
+che le contiene, o il più vicino). Ogni adapter scrive poi un pezzo nel suo formato.
 
 ## Un disegno di viste (più viste, isometrica)
 
@@ -236,7 +236,7 @@ import topo, topo_dxf
 
 topo_dxf.inspect_dxf("pezzo.dxf")   # 1 — entità DXF grezze: cosa c'è nel file
 topo.inspect_document(doc)          # 2 — edge, primitive, grafo dei nodi: cosa ha capito l'adapter
-topo.inspect_result(result)         # 3 — il modello: cluster, outer/inner, quello che un consumatore ha attaccato, trash
+topo.inspect_result(result)         # 3 — il modello: cluster, outer/inner, quello che un consumatore ha attaccato, curve sciolte
 
 topo_dxf.inspect_file("pezzo.dxf", role_rules=topo.name_rules({"Piega": "bending"}))   # tutti e tre, in fila
 ```

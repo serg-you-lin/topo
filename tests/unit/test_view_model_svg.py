@@ -61,7 +61,7 @@ class TestViewModel(unittest.TestCase):
 
     def test_top_level_shape(self):
         for key in ("source_file", "is_valid", "cluster_count", "bbox",
-                    "clusters", "palette", "trash", "annotations"):
+                    "clusters", "palette", "loose", "annotations"):
             self.assertIn(key, self.vm)
         self.assertEqual(self.vm["cluster_count"], len(self.vm["clusters"]))
         self.assertEqual(self.vm["cluster_count"], 4)
@@ -90,9 +90,9 @@ class TestViewModel(unittest.TestCase):
                 self.assertIsInstance(pt[0], (int, float))
 
     def test_toggles_drop_sections(self):
-        vm = topo.to_view_model(self.result, include_trash=False,
+        vm = topo.to_view_model(self.result, include_loose=False,
                                  include_annotations=False)
-        self.assertNotIn("trash", vm)
+        self.assertNotIn("loose", vm)
         self.assertNotIn("annotations", vm)
 
     def test_invalid_result_does_not_raise(self):

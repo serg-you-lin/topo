@@ -50,7 +50,7 @@ _, length2, angle_deg2 = longest_structural_segment(rotated_result)
 print(f"outer più lungo DOPO  : {length2:.1f}mm a {angle_deg2:.1f}°  (atteso ~0°)")
 
 os.makedirs(OUTDIR, exist_ok=True)
-out = topo_dxf.to_dxf(rotated_result, source_doc=doc, include_trash=True)
+out = topo_dxf.to_dxf(rotated_result, source_doc=doc, include_loose=True)
 path = os.path.join(OUTDIR, "try_for_rotation_rotated.dxf")
 out.saveas(path)
 print(f"scritto               -> {path}")

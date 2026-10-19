@@ -44,7 +44,7 @@ def snapshot(dxf_path: Path) -> dict:
                      for c in result.clusters)
     return {"source_file": dxf_path.name,
             "islands": [{"bbox": i[:4], "inners": i[4]} for i in islands],
-            "open_outside": sum(1 for t in result.trash_entities if getattr(t, "cluster_ref", None) is None)}
+            "open_outside": sum(1 for t in result.loose if getattr(t, "cluster_ref", None) is None)}
 
 
 class TestGoldenIslands(unittest.TestCase):

@@ -61,7 +61,7 @@ class TestIsland(unittest.TestCase):
         small = _poly((200, 0), (210, 0), (210, 10), (200, 10))
         axis, loose = _line((10, 25), (90, 25)), _line((300, 0), (320, 0))
         result = topo.island(_doc(view + small + [axis, loose]), max_gap=MAX_GAP)
-        refs = {round(t.segments[0].start[0]): t.cluster_ref for t in result.trash_entities}
+        refs = {round(t.segments[0].start[0]): t.cluster_ref for t in result.loose}
         self.assertEqual(refs, {10: 0, 300: None})
 
     def test_gruppo_di_fori_staccati_dentro_una_vista_tutti_interni(self):
@@ -72,7 +72,7 @@ class TestIsland(unittest.TestCase):
         self.assertEqual(len(result.clusters), 1)
         self.assertEqual(sorted(round(i.polygon.area) for i in result.clusters[0].inners),
                          sorted(round(math.pi * r * r) for r in (3, 5.5, 3)))
-        self.assertEqual(result.trash_entities, [])
+        self.assertEqual(result.loose, [])
 
     def test_foro_resta_giro_interno(self):
         edges = _poly((0, 0), (20, 0), (20, 20), (0, 20)) + [_circle((10, 10), 3)]
@@ -105,7 +105,7 @@ class TestIsland(unittest.TestCase):
         result = topo.island(_doc(frame + view), max_gap=MAX_GAP)
         self.assertEqual(len(result.clusters), 1)
         self.assertAlmostEqual(result.clusters[0].outer.polygon.area, 400.0)
-        self.assertEqual(sum(1 for t in result.trash_entities if t.role == "frame"), 4)
+        self.assertEqual(sum(1 for t in result.loose if t.role == "frame"), 4)
 
     def test_niente_di_chiuso_invalido(self):
         result = topo.island(_doc([_line((0, 0), (5, 0))]), max_gap=MAX_GAP)

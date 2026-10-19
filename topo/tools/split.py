@@ -3,7 +3,7 @@ topo/tools/split.py
 -------------------
 Un Result per parte (MAP.md D124, D129). Scegliere le parti è una decisione
 sul modello, non su un formato: quali cluster tenere (`min_area`), come si
-chiamano (`namer` → `cluster.label`), quali entità trash e quali annotazioni
+chiamano (`namer` → `cluster.label`), quali curve sciolte e quali annotazioni
 viaggiano con ognuna. Ogni exporter scrive poi una parte nel suo formato
 (`topo_dxf.to_dxf`, `topo.to_svg`, `topo.to_text`): lo stesso split esporta
 parti in DXF, SVG o PDF.
@@ -11,6 +11,7 @@ parti in DXF, SVG o PDF.
 
 from __future__ import annotations
 
+import copy
 from dataclasses import replace
 from typing import Callable, List, Optional
 
@@ -30,12 +31,15 @@ def split(
     """
     Un `Result` per parte, nell'ordine delle parti tenute.
 
-    Ogni parte è un `Result` con un solo cluster, le entità trash e le
-    annotazioni che le appartengono: quelle che contiene o, se nessuna parte
-    le contiene, quelle più vicine al suo contorno esterno fra TUTTE le parti
-    (anche quelle scartate da `min_area`). Niente viene duplicato: ogni
-    entità sta in una parte sola. Gli altri campi del `Result` (sorgente,
-    avvisi) sono copiati.
+    Ogni parte è un `Result` con un solo cluster, le curve sciolte e le
+    annotazioni che le appartengono. Una curva va al cluster del suo
+    `cluster_ref` (D137); un'annotazione alla parte che la contiene. Quelle
+    che nessuna parte contiene vanno alla più vicina al suo contorno esterno
+    fra TUTTE le parti (anche quelle scartate da `min_area`). Niente viene
+    duplicato: ogni elemento sta in una parte sola, copiato con
+    `cluster_ref` riferito alla parte (0 se il suo cluster la contiene,
+    `None` altrimenti). Una curva promossa (`topo.promote`) sta già nel suo
+    cluster. Gli altri campi del `Result` (sorgente, avvisi) sono copiati.
 
     `namer(i, cluster)` — se passato — assegna `cluster.label`, così il nome
     di un file resta ricavabile a valle (`f"{cluster.label}.dxf"`); senza,
@@ -52,7 +56,7 @@ def split(
         )
 
     outers = _outer_polygons(result.clusters)
-    trash_of = _assign(result.trash_entities, outers, _trash_probe_point, covering=False)
+    loose_of = _assign_loose(result, outers)
     annotations_of = _assign(result.annotations, outers, lambda a: a.position, covering=True)
 
     parts: List[Result] = []
@@ -68,8 +72,8 @@ def split(
         parts.append(replace(
             result,
             clusters=[cluster],
-            trash_entities=trash_of.get(id(cluster), []),
-            annotations=annotations_of.get(id(cluster), []),
+            loose=_local(loose_of.get(id(cluster), []), i),
+            annotations=_local(annotations_of.get(id(cluster), []), i),
             warnings=list(result.warnings),
             errors=list(result.errors),
         ))
@@ -85,7 +89,7 @@ def _assign(items, outers, probe_of, covering: bool) -> dict[int, list]:
     """
     id(cluster) → gli elementi che gli appartengono. Con `covering` vince la
     prima parte che contiene il punto, altrimenti la più vicina; senza, la
-    più vicina e basta (il trash, che sta fuori dalle parti per definizione).
+    più vicina e basta.
     Un elemento senza un punto rappresentativo va alla prima parte.
     """
     owned: dict[int, list] = {}
@@ -104,14 +108,40 @@ def _assign(items, outers, probe_of, covering: bool) -> dict[int, list]:
     return owned
 
 
-def _trash_probe_point(trash) -> Optional[tuple]:
-    """Punto rappresentativo di un'entità trash, per assegnarla a una parte."""
-    poly = getattr(trash, "polygon", None)
+def _assign_loose(result: Result, outers) -> dict[int, list]:
+    """id(cluster) → le curve sciolte che gli vanno, nell'ordine di
+    `result.loose`: quelle col suo `cluster_ref`, e quelle che nessun
+    cluster contiene se è la parte più vicina."""
+    free = _assign([c for c in result.loose if c.cluster_ref is None],
+                   outers, _probe_point, covering=False)
+    target = {id(c): key for key, curves in free.items() for c in curves}
+    owned: dict[int, list] = {}
+    for curve in result.loose:
+        key = (id(result.clusters[curve.cluster_ref]) if curve.cluster_ref is not None
+               else target.get(id(curve)))
+        if key is not None:
+            owned.setdefault(key, []).append(curve)
+    return owned
+
+
+def _local(items: list, i: int) -> list:
+    """Copie di `items` con `cluster_ref` riferito al Result di una parte sola."""
+    out = []
+    for item in items:
+        local = copy.copy(item)
+        local.cluster_ref = 0 if item.cluster_ref == i else None
+        out.append(local)
+    return out
+
+
+def _probe_point(curve) -> Optional[tuple]:
+    """Punto rappresentativo di una curva, per darla alla parte più vicina."""
+    poly = getattr(curve, "polygon", None)
     if poly is not None:
         c = poly.representative_point()
         return (c.x, c.y)
 
-    pts = track_points(getattr(trash, "segments", []) or [])
+    pts = track_points(getattr(curve, "segments", []) or [])
     if pts:
         mid = pts[len(pts) // 2]
         return (mid[0], mid[1])

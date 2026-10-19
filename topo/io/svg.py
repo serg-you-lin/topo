@@ -46,7 +46,7 @@ def _shape(entry: dict, stroke_w: float, true_circles: bool) -> str:
 def to_svg(
     result: Result,
     tolerance: float = 0.05,
-    include_trash: bool = True,
+    include_loose: bool = True,
     include_annotations: bool = True,
     padding: float = 0.03,
     background: Optional[str] = "#1e1e1e",
@@ -62,7 +62,7 @@ def to_svg(
 
     Args:
         tolerance:           discretizzazione di archi/spline nelle tracce aperte.
-        include_trash:       disegna anche `result.trash_entities` (rosso).
+        include_loose:       disegna anche `result.loose` (rosso).
         include_annotations: disegna i testi della sorgente.
         padding:             margine attorno al disegno, frazione del lato bbox.
         background:          colore di sfondo (`None` = trasparente).
@@ -86,7 +86,7 @@ def to_svg(
                              di ogni ruolo (D128), come in `to_dxf`.
 
     Un `result` non valido viene disegnato lo stesso (vuoto o con la sola
-    trash); `allow_invalid=False` → `ValueError`, per chi consegna a una
+    `loose`); `allow_invalid=False` → `ValueError`, per chi consegna a una
     macchina (D83, stesso contratto di `to_dxf`).
     """
     if not result.is_valid and not allow_invalid:
@@ -100,7 +100,7 @@ def to_svg(
         background = None
     vm = to_view_model(
         result, tolerance=tolerance,
-        include_trash=include_trash, include_annotations=include_annotations,
+        include_loose=include_loose, include_annotations=include_annotations,
         role_styles=role_styles,
     )
 
@@ -146,7 +146,7 @@ def to_svg(
                 out.append(_shape(entry, sw, true_circles))
         out.append("</g>")
 
-    for t in vm.get("trash", []):
+    for t in vm.get("loose", []):
         out.append(_shape(t, sw, False))
 
     out.append("</g>")  # end flipped group
@@ -192,7 +192,7 @@ def _scan_bbox(vm: dict) -> Optional[list]:
         for entries in cluster["features"].values():
             for e in entries:
                 _collect(e)
-    for t in vm.get("trash", []):
+    for t in vm.get("loose", []):
         _collect(t)
 
     if not xs:
