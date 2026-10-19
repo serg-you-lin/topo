@@ -5368,7 +5368,14 @@ loses the loops that share a side with the outer contour — they closed only
 through the duplicate. And two coincident circles are never merged
 (`merge_cocircular_overlaps` takes `ArcSeg` only).
 
-### D147 — `island()`: an end that lies on another edge's interior is not a free end; a closed loop with a side on the contour that holds it is not an inner ✅
+### D147 — `island()`: an end that lies on another edge's interior is not a free end; a closed loop with a side on the contour that holds it is not an inner — ⏸ suspended, code on branch `d147-t-ends`
+**Suspended the same evening:** Federico judged `regr_04` worse after — the
+outer of the pictorial (3D) view was right before and is wrong after (the
+30.8 mm² pocket at its left edge). The code is reverted on `main`, kept on
+branch `d147-t-ends` (commit 71ca4f0); the decision on loops with a side on
+the contour (trash, Federico) stands. What follows is the state as committed
+there.
+
 `island()` closes drawing gaps up to `max_gap` (D60) from the free ends of
 the graph. An end that falls mid-edge (a T within the node tolerance) is
 "free" for the graph — the edge has no node there until

@@ -244,11 +244,17 @@ Poi topo 1.0.0, e snapbend 1.0.0 dietro.
   parte in trash"). Misurato sui `_noframe`: tratti di `loose` interamente
   sopra un contorno. Tre cause:
   1. ✅ lati dell'outer contati anche come sporgenze (D146).
-  2. ✅ **Ponti sui T** (D147): un estremo sull'interno di un altro edge non
-     è libero. I giri con un lato sul contorno che li contiene vanno in
-     `loose` (Federico: feature della vista, trash). Da guardare a occhio:
-     `regr_04` perde una tasca di 30.8 mm² sul bordo sinistro
-     (`_debug/regr_04_island_D147_*.dxf`).
+  2. ⏸ **Ponti sui T** (D147, **sospeso**, codice sul branch `d147-t-ends`,
+     annullato su `main`). Regola: un estremo sull'interno di un altro edge
+     non è libero, salvo un altro estremo libero entro tolleranza. Decisione
+     che resta: i giri con un lato sul contorno che li contiene sono trash
+     (Federico). **Punto di ripresa:** `regr_04` è peggio dopo — l'outer
+     della vista 3D era giusto prima, dopo perde una tasca di 30.8 mm² sul
+     bordo sinistro (x 808–816, y 434–445;
+     `_debug/regr_04_island_D147_prima/dopo.dxf`). Capire quale estremo, ora
+     non più chiuso, teneva in piedi quell'outer, e se la regola deve
+     distinguerlo; poi rimisurare tutti i disegni di island (vecchio contro
+     nuovo) e riguardare i DXF prima di rimettere il codice su `main`.
   3. **Cerchi doppi**: CIRCLE + la stessa circonferenza tassellata
      (anch_06): `refit_tessellations` la rifà cerchio, ma
      `merge_cocircular_overlaps` prende solo `ArcSeg`, quindi due cerchi

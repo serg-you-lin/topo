@@ -72,11 +72,8 @@ def _make_test(dxf: Path, golden: Path):
 
 # golden fermi apposta: D102/D103 li hanno spostati e non si rigenerano finché
 # i dubbi su D103 (TODO.md) non sono chiariti — si rigenerano tutti insieme,
-# guardando prima i DXF; allora questa lista si svuota. anch_01/anch_04/regr_03:
-# con D147 un giro chiuso con un lato sul contorno che lo contiene non è più
-# inner (si chiudeva solo col ponte doppione sul T) — deciso da Federico
-KNOWN_STALE = {"anch_01", "anch_02", "anch_03", "anch_04", "anch_06", "anch_07",
-               "regr_01", "regr_02", "regr_03", "regr_04", "regr_05"}
+# guardando prima i DXF; allora questa lista si svuota
+KNOWN_STALE = {"anch_02", "anch_03", "anch_06", "anch_07", "regr_01", "regr_02", "regr_04", "regr_05"}
 
 for _dxf in sorted(SOURCE_DIR.glob("*.dxf")):
     _golden = GOLDEN_DIR / f"{_dxf.stem}.json"
