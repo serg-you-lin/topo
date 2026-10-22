@@ -413,9 +413,14 @@ def weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]:
     diventano uno e ogni altro Edge che li toccava viene rimappato lì — la
     catena resta connessa. Solo i nodi (Edge.start/end) si spostano, il
     `segment` conserva il punto reale. Ordine di input preservato.
+
+    Un gruppo di nodi saldati non supera `_DEGENERATE_LENGTH_EPS` di
+    diagonale: una curva disegnata a tratti corti non collassa in un punto
+    (D152). I tratti si saldano in ordine canonico, non d'ingresso (D131).
     """
     edges = list(edges)
     parent: dict = {}
+    extent: dict = {}   # radice -> (xmin, ymin, xmax, ymax) del gruppo
 
     def find(p):
         root = p
@@ -425,20 +430,37 @@ def weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]:
             parent[p], p = root, parent.get(p, p)
         return root
 
-    def union(a, b):
-        ra, rb = find(a), find(b)
-        if ra != rb:
-            parent[rb] = ra
+    def box(root):
+        return extent.get(root, (root[0], root[1], root[0], root[1]))
 
-    degenerate_ids: set = set()
+    def union(a, b) -> bool:
+        ra, rb = find(a), find(b)
+        if ra == rb:
+            return True
+        ba, bb = box(ra), box(rb)
+        merged = (min(ba[0], bb[0]), min(ba[1], bb[1]), max(ba[2], bb[2]), max(ba[3], bb[3]))
+        if math.hypot(merged[2] - merged[0], merged[3] - merged[1]) >= _DEGENERATE_LENGTH_EPS:
+            return False
+        if rb < ra:
+            ra, rb = rb, ra
+        parent[rb] = ra
+        extent[ra] = merged
+        return True
+
+    candidates = []
     for edge in edges:
         seg = edge.segment
         if isinstance(seg, LineSeg) and edge.role == ContourRole.UNKNOWN:
-            dx = seg.end[0] - seg.start[0]
-            dy = seg.end[1] - seg.start[1]
-            if math.hypot(dx, dy) < _DEGENERATE_LENGTH_EPS:
-                union(edge.start, edge.end)
-                degenerate_ids.add(id(edge))
+            length = math.hypot(seg.end[0] - seg.start[0], seg.end[1] - seg.start[1])
+            if length < _DEGENERATE_LENGTH_EPS:
+                candidates.append((length, min(edge.start, edge.end),
+                                   max(edge.start, edge.end), edge))
+    candidates.sort(key=lambda c: c[:3])
+
+    degenerate_ids: set = set()
+    for _, _, _, edge in candidates:
+        if union(edge.start, edge.end):
+            degenerate_ids.add(id(edge))
 
     if not degenerate_ids:
         return edges

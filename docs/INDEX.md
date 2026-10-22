@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`80` modules · `443` module-level functions · `59` classes · `14721` lines of code.
+`80` modules · `443` module-level functions · `59` classes · `14743` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -374,7 +374,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `rectangle` | func | `topo/core/geometry/build.py:37` | Rettangolo `length` × `width` centrato in `center`, lato lungo a `angle` gradi. |
 | `_rectangle` | func | `topo/core/geometry/shape.py:176` |  |
 | `_refine_segment` | func | `topo/core/primitives/segments.py:314` | Suddivide `[t0, t1]` finché il punto medio (valutato con `evaluate(t)`) |
-| `refit_tessellations` | func | `topo/core/healing/normalizer.py:461` | Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di |
+| `refit_tessellations` | func | `topo/core/healing/normalizer.py:483` | Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di |
 | `_refuse_crossings` | func | `topo/core/geometry/strips.py:207` |  |
 | `_region_of` | func | `topo/tools/strips.py:95` | La regione piena a cui appartiene un bordo: lui se è pieno, la regione che contiene il vuoto se è vuoto. |
 | `regular_polygon` | func | `topo/core/geometry/build.py:43` | Poligono regolare di `sides` lati inscritto nel cerchio di raggio `radius`; il primo vertice a `angle` gradi. |
@@ -430,7 +430,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `set_schema` | func | `topo/io/exporter.py:101` | Imposta uno schema esterno come schema attivo. |
 | `_shape` | func | `topo/io/svg.py:29` |  |
 | `ShapeKind` | class | `topo/core/geometry/shape.py:30` | Le sei forme di `contour_shape`, elenco chiuso e stabile (MAP.md D136). |
-| `_short_runs` | func | `topo/core/healing/normalizer.py:514` | Catene massimali: percorsi fra nodi di grado != 2, o anelli. |
+| `_short_runs` | func | `topo/core/healing/normalizer.py:536` | Catene massimali: percorsi fra nodi di grado != 2, o anelli. |
 | `_shown_text` | func | `topo_dxf/text_extractor.py:236` | La stringa che la quota mostra: l'override con ``<>`` sostituito dalla |
 | `_shown_value` | func | `topo_dxf/text_extractor.py:249` | La misura come la mostra il disegno (precisione, virgola), o calcolata. |
 | `_side` | func | `topo/core/geometry/regions.py:203` | +1 dentro, -1 fuori, 0 sul bordo. |
@@ -801,7 +801,7 @@ _core/healing/islands.py_
   - methods: `width`, `height`
 - `spatial_islands(edges: Iterable[Edge], gap_tolerance: float) -> List[Island]` — L54 — Union-find sulle coppie di Edge a distanza <= gap_tolerance (STRtree,
 
-#### `topo/core/healing/normalizer.py` — 542 lines
+#### `topo/core/healing/normalizer.py` — 564 lines
 
 _core/healing/normalizer.py_
 
@@ -818,8 +818,8 @@ _core/healing/normalizer.py_
 - `_arc_chains(group: List[Edge]) -> List[List[_Span]]` — L363 — Catene angolari di un gruppo sullo stesso cerchio. Se l'ultima catena
 - `_merged_arc(lo: _Span, hi: _Span)` — L389 — Il fuso di una catena cocircolare: un arco, o un cerchio se chiude il
 - `weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]` — L409 — Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale
-- `refit_tessellations(edges: Iterable[Edge], max_segment: float=0.1, min_run: int=10, tolerance: float=0.02, node_decimals: int=3) -> List[Edge]` — L461 — Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di
-- `_short_runs(short_edges: List[Edge]) -> list` — L514 — Catene massimali: percorsi fra nodi di grado != 2, o anelli.
+- `refit_tessellations(edges: Iterable[Edge], max_segment: float=0.1, min_run: int=10, tolerance: float=0.02, node_decimals: int=3) -> List[Edge]` — L483 — Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di
+- `_short_runs(short_edges: List[Edge]) -> list` — L536 — Catene massimali: percorsi fra nodi di grado != 2, o anelli.
 
 #### `topo/core/healing/outer_scan.py` — 217 lines
 
