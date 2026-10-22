@@ -18,7 +18,7 @@ from shapely import STRtree
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import polygonize, snap, unary_union
 
-from ..geometry.measure import round_point, track_points
+from ..geometry.measure import round_point, segment_length, track_points
 from ..primitives import LineSeg
 from ..primitives.polygon_builder import build_polygon
 from ..primitives.segments import (
@@ -295,19 +295,37 @@ def structural_loops(loops: List[list],
             if all(e.role == ContourRole.UNKNOWN or structural(e.role) for e, _ in loop)]
 
 
-def loops_to_curves(loops: List[list]) -> List[ClosedCurve]:
-    """Un ClosedCurve per loop, col ruolo del primo edge; senza poligono valido, niente."""
+def loops_to_curves(loops: List[list]) -> List[ClosedCurve | OpenCurve]:
+    """
+    Un ClosedCurve per loop, col ruolo del primo edge. Un loop che non fa un
+    contorno (poligono nullo, area sotto soglia, micro-cerchio) torna come un
+    OpenCurve per edge, così finisce in `loose` invece di sparire (D151).
+    """
     curves = []
     for loop in loops:
         role = loop[0][0].role if loop else ContourRole.UNKNOWN
         geometry = loop_geometry(loop)
-        if geometry is None:
-            continue
-        segments, styles, polygon = geometry
-        curve = loop_to_closed_curve(loop, role=role, polygon=polygon, segments=segments,
-                                     styles=styles)
+        curve = None
+        if geometry is not None:
+            segments, styles, polygon = geometry
+            curve = loop_to_closed_curve(loop, role=role, polygon=polygon, segments=segments,
+                                         styles=styles)
         if curve is not None:
             curves.append(curve)
+        else:
+            curves += _edges_as_open_curves(edge for edge, _ in loop)
+    return curves
+
+
+def _edges_as_open_curves(edges) -> List[OpenCurve]:
+    """Un OpenCurve per edge col suo segmento nativo, anche se chiuso da solo
+    (un cerchio scartato non è un contorno). Esclusi solo i tratti di
+    lunghezza nulla."""
+    curves = []
+    for edge in edges:
+        seg = edge.segment or LineSeg(start=edge.start, end=edge.end)
+        if segment_length(seg) > 0:
+            curves.append(OpenCurve(role=edge.role, segments=[seg], styles=[edge.style]))
     return curves
 
 
