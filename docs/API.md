@@ -1277,8 +1277,7 @@ topo.inspect_result(result, coords=False) -> None
 ```
 **Livello 3** — un `Result`: validità, warning/errori, e per ogni parte
 outer/inner, le collezioni di `cluster.detected` (quello che un consumatore ha
-attaccato), custom, più `loose`,
-`classified_entities`, testi. "Cosa ha prodotto topo."
+attaccato), custom, più `loose` e testi. "Cosa ha prodotto topo."
 
 ---
 
@@ -1369,8 +1368,6 @@ Prodotto da `heal()`, arricchito da un consumatore / `inject()`.
 | `warnings` / `errors` | `list[str]` | diagnostica |
 | `loose` | `list[OpenCurve \| ClosedCurve]` | ogni curva che non è contorno di nessun cluster: catene che non chiudono niente, tracce aperte, curve chiuse con un ruolo non strutturale (D137). `curve.cluster_ref` = indice del cluster il cui contorno esterno la contiene tutta, bordo e buchi compresi (una linea da lato a lato, una croce dentro un foro); `None` altrimenti. Con `island()` anche l'isola che la curva tocca (D99). Un consumatore la sposta in `cluster.detected` con `promote` |
 | `texts` | `list[Text]` | copiati da `heal()` dal `Document` |
-| `classified_entities` | `list` | di un consumatore (snapbend: marking, work_type custom) |
-| `all_arcs` | `list[ArcSeg]` | tutti gli archi del disegno (snapbend li usa per i fori filettati) |
 | `cluster_count` | property | `len(clusters)` |
 
 Metodo `to_dict()` → dizionario JSON-ready (usato internamente dagli export).

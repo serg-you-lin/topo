@@ -20,7 +20,6 @@ from typing import Callable, Optional
 from ..model.document import Document
 from ..model.result import Result
 from ..model.role import is_structural_role
-from .primitives.segments import ArcSeg
 from .topology.loop_finder import edges_to_open_curves
 from .topology.noding import interior_crossings
 from .healing.hierarchy import assign_cluster_refs
@@ -116,7 +115,6 @@ def heal(doc: Document, tolerance: Optional[float] = None, label: str = "",
 
     search = find_loops(edges, non_contour_ids, tol)
     edges = search.edges
-    result.all_arcs = [e.segment for e in edges if isinstance(e.segment, ArcSeg)]
     result.warnings += _search_warnings(search, tol)
     if search.loops:
         result.warnings += _loose_ends_warnings(edges, non_contour_ids,

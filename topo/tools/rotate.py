@@ -9,9 +9,8 @@ Un solo heal(), non due: una rotazione rigida NON cambia la topologia (chi
 contiene chi, quali loop esistono restano identici — solo le coordinate
 cambiano), quindi non c'è bisogno di ricostruire l'albero di contenimento
 dopo aver ruotato. `rotate_result`/`rotate_cluster` trasformano DIRETTAMENTE
-le strutture che `heal()` ha già prodotto (poligoni, segmenti, gli `all_arcs`
-grezzi che `detect_flat()` userà) — non tornano alla geometria grezza pre-heal e
-non richiamano `heal()`. Per lo stesso motivo `rotate_cluster` è economico e
+le strutture che `heal()` ha già prodotto (poligoni, segmenti) — non tornano
+alla geometria grezza pre-heal e non richiamano `heal()`. Per lo stesso motivo `rotate_cluster` è economico e
 ripetibile: un futuro nester può chiamarlo in un ciclo per provare molti
 angoli su una singola parte, senza pagare il costo di un `heal()` ad ogni
 tentativo.
@@ -146,10 +145,8 @@ def rotate_cluster(cluster: Cluster, angle_rad: float, origin: Point = (0.0, 0.0
 
 def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) -> Result:
     """
-    Nuovo `Result` con ogni cluster (`rotate_cluster`), `loose`
-    e `all_arcs` (usati da `detect_flat()` per i fori filettati — vanno ruotati
-    anche loro o un `detect_flat()` successivo leggerebbe coordinate vecchie)
-    ruotati di `angle_rad` attorno a `origin`. Nessun `heal()` richiamato: una
+    Nuovo `Result` con ogni cluster (`rotate_cluster`) e `loose` ruotati di
+    `angle_rad` attorno a `origin`. Nessun `heal()` richiamato: una
     rotazione rigida non cambia la topologia, solo le coordinate.
 
     `result.texts` non sono ruotate (vedi il modulo) — se presenti,
@@ -163,7 +160,6 @@ def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) 
         if isinstance(t, OpenCurve) else _rotate_contour(t, angle_rad, origin)
         for t in result.loose
     ]
-    new_arcs = [a.rotated(angle_rad, origin) for a in result.all_arcs]
 
     new_warnings = list(result.warnings)
     if result.texts:
@@ -179,7 +175,6 @@ def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) 
         result,
         clusters=new_clusters,
         loose=new_loose,
-        all_arcs=new_arcs,
         warnings=new_warnings,
     )
 
