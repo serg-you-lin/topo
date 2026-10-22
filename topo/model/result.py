@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from dataclasses import field
-from typing import List, Set, Any
+from typing import List
 from .curve import ClosedCurve, OpenCurve
 from .cluster import Cluster
 from .text import Text
@@ -36,9 +36,6 @@ class Result:
     errors:              List[str]              = field(default_factory=list)
     loose:               List[OpenCurve | ClosedCurve] = field(default_factory=list)
     texts:               List[Text]             = field(default_factory=list)
-    classified_entities: List[Any]              = field(default_factory=list)  # di un consumatore (D88)
-    all_arcs:            List[Any]              = field(default_factory=list)
-    _open_shapes:        List[Any]              = field(default_factory=list)
 
     @property
     def cluster_count(self) -> int:

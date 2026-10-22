@@ -5429,3 +5429,44 @@ otherwise it is a line under "dopo la 1.0".
 Why a closed list: the road to 1.0 in `TODO.md` grew with every session
 (D135–D147 were each right, and each added scope). A list that can grow has no
 end; a list that can only shrink does.
+
+### D149 — reopening D143 on one point: heal's per-entity deviation report is 1.x, the two-way fidelity test stays blocking ✅
+Federico, 22 October, closing the 1.0 gate (D148, item G2). D143 made two
+things blocking for fidelity: the test (Hausdorff both ways ≤ tolerance,
+identical coefficients where heal did not intervene) and a report on `Result`
+of how far heal moved each entity. The promise is kept by the test: it is what
+proves, on every fixture, that the output is superimposable on the input. The
+report is a new field on `Result` — a new name, so additive, and a 1.x minor
+can add it without breaking anyone. It leaves the gate; the test (G3) stays.
+
+### D150 — `Result` loses `classified_entities`, `all_arcs` and `_open_shapes` ✅
+Gate item G1 (D148): the fields of `Result` typed `List[Any]` are public
+surface and 1.0 would freeze them.
+
+- `_open_shapes`: nothing wrote or read it. Removed.
+- `classified_entities`: snapbend's. What went in it is a `ClassifiedEntity` —
+  `work_type` (bending, marking, …), `confidence`, `source`, `data` "ready
+  for CAM": process vocabulary (non-negotiable 4). Its geometry was already in
+  topo's result, as the loose curve or inner it came from. It stayed on
+  `Result` only because `detect()` lived in topo before D88. Removed;
+  snapbend writes what it classifies into the cluster that contains it, and a
+  shape no cluster contains now stays in `result.loose` instead of living only
+  in a list topo did not know about (D137: nothing disappears from the result).
+- `all_arcs`: geometry, but a duplicate. Every curve is a cluster's contour or
+  in `loose` (D137), so the arcs are already in their `segments`; an open arc
+  (a thread crest) is in `loose`. The need behind it is already public —
+  `topo.geometry.arcs_around(center, radius, arcs)` takes the arcs as an
+  argument. Removed; `rotate_result` no longer rotates a parallel list.
+
+Checked before removing: on 376 local drawings the arcs of contours + `loose`
+equal `all_arcs` (direction aside) on 362. On the other 14, two quarter arcs
+(r 0.64–0.8) are in `all_arcs` and nowhere in the result — a D137/D143
+"complete" violation by `heal()`, not a reason to keep the field. All 14 are
+untracked and warn of contour crossings without a common node; to reproduce
+with topo's API (TODO, G3).
+
+Suites: topo unchanged (1377 passed, 20 xfailed). snapbend 16 failed and
+snapdraw 3 failed, the same tests before and after this change (snapbend's are
+process-golden areas, e.g. `arc_arc_gap` 7851.96 vs 7850.83: plausibly D145's
+finer arcs, to be judged in snapbend, not regenerated). `main` stays 0.21.0,
+unreleased: D150 joins D135–D138 in it.

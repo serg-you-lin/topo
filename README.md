@@ -148,7 +148,9 @@ for cluster in result.clusters:
             print("concentric:", group.center, group.diameters)
 
 # arcs concentric to a circle and larger: sweep in degrees, radius ratio
-for found in topo.geometry.arcs_around((10, 20), 2.5, result.all_arcs, tolerance=0.1):
+# (an open arc closes nothing, so it is in result.loose)
+arcs = [s for c in result.loose for s in c.segments if isinstance(s, topo.primitives.ArcSeg)]
+for found in topo.geometry.arcs_around((10, 20), 2.5, arcs, tolerance=0.1):
     print(found.sweep, found.radius_ratio)
 ```
 

@@ -153,7 +153,9 @@ for cluster in result.clusters:
             print("concentrici:", group.center, group.diameters)
 
 # archi concentrici a un cerchio e più grandi: angolo in gradi, rapporto dei raggi
-for found in topo.geometry.arcs_around((10, 20), 2.5, result.all_arcs, tolerance=0.1):
+# (un arco aperto non chiude niente, quindi sta in result.loose)
+arcs = [s for c in result.loose for s in c.segments if isinstance(s, topo.primitives.ArcSeg)]
+for found in topo.geometry.arcs_around((10, 20), 2.5, arcs, tolerance=0.1):
     print(found.sweep, found.radius_ratio)
 ```
 

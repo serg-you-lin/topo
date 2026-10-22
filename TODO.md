@@ -26,18 +26,22 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
 (si scrivono su una superficie ferma), ultima la pulizia.
 
 **Superficie — cambia nomi, quindi prima**
-- [ ] **G1** Rassegna dei campi di `Result`/`Cluster`: `List[Any]`,
-      `all_arcs`, `classified_entities` (di un consumer, D88), `_open_shapes`.
-      Per ognuno: tipizzato, privato o via.
-- [ ] **G2** Report di scostamento di `heal()` per entità (D121).
-      **Domanda per Federico:** è un campo in più su `Result`, quindi additivo:
-      proposta di spostarlo a 1.x (riaprendo D143 su questo punto) e tenere
-      bloccante solo la prova G3.
+- [x] **G1** Campi di `Result` — fatto, D150: via `classified_entities`
+      (di snapbend), `all_arcs` (doppione di contorni + `loose`),
+      `_open_shapes` (morto). snapbend adattato.
+- [x] **G2** ~~Report di scostamento di `heal()` per entità~~ — spostato a
+      1.x, D149 (riapre D143 su questo punto): è additivo; resta bloccante
+      la prova G3.
 
 **Promessa — D143, provata sui fixture**
 - [ ] **G3** Test di fedeltà a due vie (Hausdorff nei due versi ≤ tol,
       coefficienti identici dove heal non tocca), sul DXF scritto e riletto,
       su tutti i fixture, `heal()` e `island()`.
+      **Trovato con D150:** in 14 disegni locali (non tracciati) `heal()`
+      perde due quarti di cerchio (r 0.64–0.8): né contorno né `loose`.
+      Tutti avvisano "incroci fra lati di contorno senza un nodo in comune".
+      Da riprodurre con l'API di topo in un fixture tracciato: allora è
+      una violazione di "completo" dentro il cancello.
 - [ ] **G4** `ArcSeg`/`EllipseSeg.discretize` verificati contro la
       tolleranza come i cerchi in D145.
 - [ ] **G5** Bug di misura trovati con D145: `cluster.area` di
@@ -65,8 +69,13 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       abbreviati sembravano codici), corretto alla fonte. Il controllo
       docstring vive qui; G9 decide se spostarlo nella suite.
 
+**Fuori dal cancello di topo, ma prima di snapbend 1.0:** le suite dei
+consumer erano già rosse prima di D150 (snapbend 16 golden di processo,
+aree spostate di ~1 mm² — probabilmente D145; snapdraw 3 regressioni). Si
+giudicano nei loro repo, mai rigenerando alla cieca.
+
 **Dopo la 1.0 (1.x, additivo — non toccare finché il cancello è aperto):**
-PDF (`topo_pdf`), modello `Curve`/`as_analytic`/firma dei contorni, viewer,
+report di scostamento di `heal()` per entità (D149), PDF (`topo_pdf`), modello `Curve`/`as_analytic`/firma dei contorni, viewer,
 strisce (D142), D147 (estremi sui T, branch `d147-t-ends`), cerchi doppi,
 criterio del punto medio di `_refine_segment`, curve da equazione, fatti di
 riconoscimento, snapfence, richieste dei consumer che aggiungono nomi.

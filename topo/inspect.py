@@ -174,13 +174,6 @@ def inspect_result(result, coords: bool = False) -> None:
         print(f"  per tipo : {dict(kinds)}")
         print(f"  per ruolo: {dict(roles)}")
 
-    ce = result.classified_entities or []
-    if ce:
-        print(f"\nclassified_entities: {len(ce)}")
-        for c in ce:
-            print(f"  - {c.work_type:<12} source={c.source} conf={c.confidence:.2f} "
-                  f"@ {_p(c.representative_point)}")
-
     anns = result.texts or []
     if anns:
         print(f"\ntesti nel modello: {len(anns)}  ({dict(Counter(a.source_kind for a in anns))})")
