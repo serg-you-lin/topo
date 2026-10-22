@@ -37,13 +37,26 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
 - [ ] **G3** Test di fedeltà a due vie (Hausdorff nei due versi ≤ tol,
       coefficienti identici dove heal non tocca), sul DXF scritto e riletto,
       su tutti i fixture, `heal()` e `island()`.
-      **Trovato con D150:** in 14 disegni locali (non tracciati) `heal()`
-      perde due quarti di cerchio (r 0.64–0.8): né contorno né `loose`.
-      Tutti avvisano "incroci fra lati di contorno senza un nodo in comune".
-      Da riprodurre con l'API di topo in un fixture tracciato: allora è
-      una violazione di "completo" dentro il cancello.
+      **Trovato con D150, risolto in D151:** un giro chiuso senza area
+      (arco + la sua copia a corde) spariva da `heal()`; ora va in `loose`.
+      Test in `test_heal_steps.py::TestLoopsToCurves`.
+      **Misura (22 ottobre), 278 fixture tracciati, scritto e riletto:**
+      `island()` sempre entro `max_gap` (max 0.47 su 0.5). `heal()` entro
+      la tolleranza su 277; fuori `golden_islands/regr_01` (0.59 su 0.05):
+      `weld_degenerate_linesegs` salda a catena tratti da 0.02 e la curva
+      collassa in un punto. Correzione su branch `d152-bounded-weld`
+      (gruppo saldato ≤ 0.05, ordine canonico): fedele, suite verde, ma
+      cambia la lettura di ~20 disegni locali — inner a spigoli vivi e
+      micro-inner spariscono, 6 strisce di un foglio di viste non chiudono
+      più (gap 0.08–0.1 chiusi prima solo dalla deriva). Da giudicare a
+      occhio: `topo/_debug/d152/caso*_prima|dopo.dxf`. Poi: il test di
+      fedeltà nella suite (bound: tolleranza per heal, `max_gap` per
+      island) e i coefficienti identici dove heal non tocca.
 - [ ] **G4** `ArcSeg`/`EllipseSeg.discretize` verificati contro la
       tolleranza come i cerchi in D145.
+      `ArcSeg.discretize` con raggio 0 dà ZeroDivisionError (`_grid_angles`):
+      ci sono archi di raggio 0 in disegni scritti da `island()` (D113,
+      locali).
 - [ ] **G5** Bug di misura trovati con D145: `cluster.area` di
       `rect_with_countersink` (un inner non tolto); `contour_shape`
       `length`/`width` sul poligono invece che sulle primitive.
