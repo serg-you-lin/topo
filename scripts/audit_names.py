@@ -65,12 +65,19 @@ PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\b[A-Za-z]{2,5}\d{2,4}#\d{2,4}\b"),             # XX000#000
 )
 
-BARE_DIGITS = re.compile(r"(?<![\d.#])\d{6,13}(?![\d.])")
+BARE_DIGITS = re.compile(r"(?<![\d.#A-Za-z])\d{6,13}(?![\d.A-Za-z])")
 """Codice di sole cifre, cercato sul testo e non sui token: un token è spezzato
 anche sul punto, quindi `1.0000003` diventerebbe `0000003`. Da qui i contorni —
 niente cifra o punto prima e dopo (esclude i decimali), niente `#` prima
-(esclude un colore `#808080`), e non oltre le 13 cifre (oltre non è un codice
-ma un blob binario)."""
+(esclude un colore `#808080`), niente lettera attaccata (esclude uno sha git
+abbreviato, `091970a`: le cifre attaccate a lettere le guardano già i
+`PATTERNS`), e non oltre le 13 cifre (oltre non è un codice ma un blob
+binario)."""
+
+DECISION_ID = re.compile(r"^D\d{1,4}$", re.IGNORECASE)
+"""Il numero di una decisione di `MAP.md` (`D129`, e `d147` in un nome di
+branch): da D100 in su ha la forma di un codice pezzo, e la prosa del repo ne
+è piena."""
 
 NAME_CODE_DIGITS = re.compile(r"^\d{3,}$")
 """Un nome di file che *comincia* con sole cifre (`1026.dxf`, `4821_...`) è un
@@ -124,6 +131,8 @@ produce un token nuovo e diverso in ogni file."""
 def _is_noise(token: str) -> bool:
     """Scarta quello che ha la forma di un codice ma non lo è."""
     if token.upper() in {a.upper() for a in ALLOWED}:
+        return True
+    if DECISION_ID.match(token):         # D129 — una decisione di MAP.md
         return True
     if DIMENSION.match(token):           # 100x400 — una misura
         return True

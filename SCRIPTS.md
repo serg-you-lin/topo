@@ -74,6 +74,12 @@ Non fanno parte della palestra dell'API: non chiamano `topo`, guardano il repo.
   girano meno test di quanti se ne vedono passare. `--list` dà la lista da
   passare a `git add -f`; mettere un disegno in git resta una decisione da
   prendere, non un passo automatico (D76).
+- `scripts/release_check.py` — topo è *1.0-ready*? (D148). Esce 0 solo se
+  passano tutti: suite senza failed/error/xfailed/xpassed, `gen_index --check`,
+  `audit_names --strict` sui file e sulla history, `audit_fixtures --strict`,
+  docstring inglesi sui
+  nomi pubblici; per ogni controllo che non passa stampa cosa manca e il punto
+  del cancello in `TODO.md`. `--no-suite` salta pytest (~90 s).
 
 ## Fuori serie
 
