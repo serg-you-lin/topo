@@ -315,6 +315,40 @@ class TestLoopsToCurves(unittest.TestCase):
         curves = topo.steps.loops_to_curves(kept)
         self.assertEqual([round(f.polygon.area) for f in curves], [100])
 
+    @staticmethod
+    def _arc_with_chords(center=(5.0, 5.0), radius=0.64, n=15):
+        # Un quarto di cerchio disegnato due volte: l'arco e la sua copia a
+        # corde. Chiudono un giro di area ~6e-4, sotto MIN_CONTOUR_AREA.
+        arc = ArcSeg(center=center, radius=radius, start_angle=0.0,
+                     end_angle=math.pi / 2, ccw=True)
+        pts = [arc._point_at(k * (math.pi / 2) / n) for k in range(n + 1)]
+        return [arc] + [LineSeg(start=pts[i], end=pts[i + 1]) for i in range(n)]
+
+    def test_002_giro_senza_area_torna_come_curve_aperte(self):
+        doc = topo.load_segments(self._arc_with_chords())
+        loops = topo.steps.find_loops(doc.edges, set(), 0.01).loops
+        self.assertEqual(len(loops), 1)
+        curves = topo.steps.loops_to_curves(loops)
+        self.assertEqual(len(curves), 16)
+        self.assertTrue(all(isinstance(c, OpenCurve) for c in curves))
+
+    def test_003_micro_cerchio_torna_come_curva_aperta(self):
+        loops = topo.steps.find_loops([_circle((0.0, 0.0), 0.01)], set(), 0.001).loops
+        curves = topo.steps.loops_to_curves(loops)
+        self.assertEqual(len(curves), 1)
+        self.assertIsInstance(curves[0], OpenCurve)
+        self.assertIsInstance(curves[0].segments[0], CircleSeg)
+
+    def test_004_heal_non_perde_il_giro_senza_area(self):
+        # D137: l'arco e le corde non sono contorno, stanno in loose (D151)
+        square = [LineSeg(start=a, end=b) for a, b in
+                  [((0, 0), (10, 0)), ((10, 0), (10, 10)), ((10, 10), (0, 10)), ((0, 10), (0, 0))]]
+        result = topo.heal(topo.load_segments(square + self._arc_with_chords()))
+        self.assertEqual(result.cluster_count, 1)
+        loose = [s for curve in result.loose for s in curve.segments]
+        self.assertEqual(sum(isinstance(s, ArcSeg) for s in loose), 1)
+        self.assertEqual(sum(isinstance(s, LineSeg) for s in loose), 15)
+
 
 class TestPolygonize(unittest.TestCase):
 

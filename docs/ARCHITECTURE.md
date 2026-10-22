@@ -229,7 +229,8 @@ consumatore (snapdraw) compone gli stessi passi come gli serve.
      `polygonize_edges` sui segmenti discretizzati, che dà già i contorni
      (`polygons_to_curves`, geometria nativa persa)
 6. **loop → curva** (`structural_loops`, `loops_to_curves`): un loop con un
-   edge di ruolo non strutturale non è contorno
+   edge di ruolo non strutturale non è contorno; un loop senza area (o un
+   micro-cerchio) torna come curve aperte, che finiscono in `loose` (D151)
 7. **costruzione gerarchia** (`build_hierarchy`): quale loop contiene quale →
    albero di contenimento `outer` / `inner`. `heal` si ferma qui: **non** dà un
    significato ai contorni interni (D15) — ogni loop contenuto è un `Contour`

@@ -315,7 +315,7 @@ topo.steps.free_ends(edges, epsilon=0.0) -> list[tuple[point, float]]
 topo.steps.find_loops(edges, non_contour_ids, tolerance) -> LoopSearch
 topo.steps.repair_merged_corners(edges, tolerance, exclude_ids=frozenset()) -> tuple[list[Edge], int, list]
 topo.steps.structural_loops(loops, is_structural=None) -> list[loop]
-topo.steps.loops_to_curves(loops) -> list[ClosedCurve]
+topo.steps.loops_to_curves(loops) -> list[ClosedCurve | OpenCurve]
 topo.steps.polygonize_edges(edges, tolerance) -> list[Polygon]
 topo.steps.polygons_to_curves(polygons) -> list[ClosedCurve]
 topo.steps.edges_to_open_curves(edges, exclude_ids) -> list[OpenCurve | ClosedCurve]
@@ -340,7 +340,7 @@ topo.steps.build_hierarchy(features, label="", source_file="", is_structural=Non
 | `find_loops` | `list[Edge]` → `LoopSearch` | la scala: grafo esatto → riparazione angoli se restano estremi liberi (D57) → grafo tollerante, dove un edge i cui due capi si fondono resta fuori dal giro (D112). |
 | `repair_merged_corners` | `list[Edge]` → `(edge, n_riparati, cluster_saltati)` | il secondo gradino da solo: angoli fusi dal clustering portati all'intersezione reale; cluster di 3+ estremi saltati. |
 | `structural_loops` | loop → loop | tiene i loop senza edge di ruolo non strutturale. |
-| `loops_to_curves` | loop → `list[ClosedCurve]` | un `ClosedCurve` per loop, geometria nativa. |
+| `loops_to_curves` | loop → `list[ClosedCurve \| OpenCurve]` | un `ClosedCurve` per loop, geometria nativa; un loop che non fa un contorno (area nulla, micro-cerchio) torna come un `OpenCurve` per edge, mai perso (D151). |
 | `polygonize_edges` | `list[Edge]` → `list[Polygon]` | ultima spiaggia quando `find_loops` non chiude: le facce dell'intero disegno discretizzato. |
 | `polygons_to_curves` | `list[Polygon]` → `list[ClosedCurve]` | OUTER dal bordo, INNER dai buchi, a `LineSeg` (la geometria nativa è persa). |
 | `edges_to_open_curves` | `list[Edge]` → feature | gli edge non assorbiti da un loop (`exclude_ids`) come feature aperte. |
@@ -367,7 +367,7 @@ edges, labeled = topo.steps.split_labeled(doc.edges, is_structural)
 edges = topo.steps.close_free_gaps(edges, 0.1)
 search = topo.steps.find_loops(edges, topo.steps.find_non_contour_edges(edges, 0.1), 0.1)
 print(search.method, len(search.loops))
-closed = topo.steps.loops_to_curves(topo.steps.structural_loops(search.loops, is_structural))
+curves = topo.steps.loops_to_curves(topo.steps.structural_loops(search.loops, is_structural))
 ```
 
 ---

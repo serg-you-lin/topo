@@ -5470,3 +5470,28 @@ snapdraw 3 failed, the same tests before and after this change (snapbend's are
 process-golden areas, e.g. `arc_arc_gap` 7851.96 vs 7850.83: plausibly D145's
 finer arcs, to be judged in snapbend, not regenerated). `main` stays 0.21.0,
 unreleased: D150 joins D135–D138 in it.
+
+### D151 — A loop that makes no contour goes to `loose`, edge by edge ✅
+Found under G3 (D148), the 14 drawings of D150. `loops_to_curves` dropped a
+loop the graph had closed but that made no contour: no valid polygon, area
+under `MIN_CONTOUR_AREA`, or a single circle under `MIN_SINGLE_LOOP_DIAMETER`.
+Its edges were already counted as "in a loop", so `edges_to_open_curves`
+skipped them too: they vanished from the result, with no warning. A D137/D143
+"complete" violation.
+
+The 14 cases are one shape: a quarter arc drawn twice, as the `ARC` and as its
+chord approximation (15 chords of 0.07 on r 0.64). Arc and chords share both
+ends, so the graph closes them into a loop of area ~6e-4 mm². The crossing
+warning those drawings carry is unrelated. Reproduced with topo's API in
+`tests/unit/core/test_heal_steps.py::TestLoopsToCurves` (arc + chords inside a
+square: before, 16 segments lost; now 16 in `loose`).
+
+The fix is in the step, not in `heal()`, so a caller composing its own recipe
+from `topo.steps` (D62) gets it too: a rejected loop comes back as one
+`OpenCurve` per edge, native segment kept. An `OpenCurve`, never a
+`ClosedCurve`, also for a lone circle: a rejected loop is by definition no
+contour, and a `ClosedCurve` would be put back in the containment tree by
+`build_hierarchy`. Only zero-length segments are left out (no geometry to
+lose). `loops_to_curves` now returns `list[ClosedCurve | OpenCurve]`.
+
+Checked: the 376 local drawings lose no source arc (was 14); suite unchanged.
