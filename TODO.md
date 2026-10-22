@@ -57,9 +57,13 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
 **Pulizia**
 - [ ] **G10** Rewrite della history (`git filter-repo` + `--message-callback`,
       un solo force-push), contro le liste di D76–D78.
-- [ ] **G11** `scripts/release_check.py`: suite senza xfail, `gen_index
-      --check`, `audit_names --strict`, `audit_fixtures --strict`, controllo
-      docstring. Si scrive per primo (dice cosa manca), è verde per ultimo.
+- [x] **G11** `scripts/release_check.py` — scritto il 22 ottobre: suite
+      senza xfail, `gen_index --check`, `audit_names --strict` (file e
+      history), `audit_fixtures --strict`, docstring inglesi dei nomi pubblici.
+      Al primo giro: rossi suite (20 xfailed → G6/G7), history (19 sospetti
+      distinti → G10) e docstring (85 nomi → G9); `audit_names` era rosso da D100 (gli id `D1xx` e gli sha
+      abbreviati sembravano codici), corretto alla fonte. Il controllo
+      docstring vive qui; G9 decide se spostarlo nella suite.
 
 **Dopo la 1.0 (1.x, additivo — non toccare finché il cancello è aperto):**
 PDF (`topo_pdf`), modello `Curve`/`as_analytic`/firma dei contorni, viewer,
@@ -331,7 +335,7 @@ Poi topo 1.0.0, e snapbend 1.0.0 dietro.
     poligono (`shape.py`): il bbox di un poligono inscritto è più corto
     fino a 2·tol. Il bbox esatto di archi e cerchi è dai punti estremi.
 - **`test_text_budget::test_anch_02` rosso già su `0d5a512` (D138)**: `to_text`
-  di anch_02 fa 200435 caratteri contro un budget di 193366 (+3.7%). Visto il
+  di anch_02 fa 200.435 caratteri contro un budget di 193.366 (+3.7%). Visto il
   19 ottobre lavorando a D140, non causato da D140 (rosso anche sull'HEAD
   pulito). Capire se D138 ha aggiunto testo legittimo prima di toccare il
   budget (regola: mai rigenerare per far passare).
