@@ -100,10 +100,9 @@ notes them from D109 on).
 a neutral vocabulary in the model (D126), annotations with a role (D127),
 output by role with no registry (D128).
 
-Still open, in order: the road to 1.0 in `TODO.md` (point 0 closed with
-D129; then edge order, the viewer, the client-data audit, two-way fidelity,
-`Curve` and the contour signature), and the PDF adapter to be picked up in
-`topo_pdf`.
+Still open: the 1.0 gate in `TODO.md` (D148, items G1–G11, closed list —
+feature freeze until `scripts/release_check.py` exits 0). Everything else,
+the PDF adapter in `topo_pdf` included, is 1.x.
 
 ---
 
@@ -5402,3 +5401,31 @@ text budget of `anch_01`) are expected failures with the others, redone
 from scratch on the `_noframe` drawings. Proof:
 `tests/real/test_island_single_use.py` (the T case, built with topo's API;
 fails without the fix), all `island_invariants` green (round trip included).
+
+### D148 — feature freeze until topo is *1.0-ready*: a closed gate of eleven items, then every commit on `main` keeps it releasable ✅
+Federico, 22 October: stop adding things. The goal is not "release 1.0" but
+reach, as soon as possible, the state from which 1.0 can be pushed at any
+moment with nothing else to do. The version number may stay where it is; what
+matters is that from that day `main` is always releasable.
+
+**1.0-ready** means one command, `scripts/release_check.py` (gate item G11),
+exits 0: the suite green with **no** `expectedFailure`, `gen_index --check`,
+`audit_names --strict`, `audit_fixtures --strict`, the English-docstring check
+on public names. From that day every commit on `main` keeps it at 0; a change
+that cannot is a branch.
+
+**The gate is closed** — the list in `TODO.md` ("IL CANCELLO DELLA 1.0", G1–G11)
+is the whole of it. Only two kinds of work enter it: what changes a public name
+or signature (it must happen before 1.0 or wait for 2.0), and what D143's
+invariants (faithful, complete, deterministic) need to be true and proven on
+the existing fixtures, plus the reader's documents (D144) and the client-data
+history rewrite. Everything else — PDF, the `Curve` model, contour signature,
+viewer, strips, D147's T ends, coincident circles, curves from equations,
+recognition facts, new consumer requests that add names — is 1.x, additive,
+after the gate. A problem found while closing the gate enters it only if it
+breaks a public name or violates an invariant on a fixture already in the repo;
+otherwise it is a line under "dopo la 1.0".
+
+Why a closed list: the road to 1.0 in `TODO.md` grew with every session
+(D135–D147 were each right, and each added scope). A list that can grow has no
+end; a list that can only shrink does.

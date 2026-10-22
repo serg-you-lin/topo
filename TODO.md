@@ -10,10 +10,62 @@ ancora aperto.
 
 ---
 
-## I FILI APERTI — si riparte da qui
+## IL CANCELLO DELLA 1.0 — si riparte da qui (D148, 22 ottobre)
 
-Lista corta e in ordine, scritta perché una sessione nuova non ricominci da capo
-dimenticando quella prima. Il dettaglio di ognuno sta più sotto o in `MAP.md`.
+**Feature freeze.** Questa lista è chiusa: può solo accorciarsi. Quando è
+vuota topo è *1.0-ready*: `python scripts/release_check.py` esce 0 e da quel
+giorno ogni commit su `main` lo tiene a 0 (la versione può restare 0.x; la
+1.0 si pubblica quando si vuole, senza fare altro).
+
+Entra qui solo ciò che **rompe un nome pubblico** o serve a rendere **vere e
+provate le invarianti di D143** sui fixture già nel repo, più i documenti
+(D144) e la history pulita. Tutto il resto va in "Dopo la 1.0" in fondo a
+questa sezione. Il dettaglio di ogni punto sta più sotto o in `MAP.md`.
+
+Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
+(si scrivono su una superficie ferma), ultima la pulizia.
+
+**Superficie — cambia nomi, quindi prima**
+- [ ] **G1** Rassegna dei campi di `Result`/`Cluster`: `List[Any]`,
+      `all_arcs`, `classified_entities` (di un consumer, D88), `_open_shapes`.
+      Per ognuno: tipizzato, privato o via.
+- [ ] **G2** Report di scostamento di `heal()` per entità (D121).
+      **Domanda per Federico:** è un campo in più su `Result`, quindi additivo:
+      proposta di spostarlo a 1.x (riaprendo D143 su questo punto) e tenere
+      bloccante solo la prova G3.
+
+**Promessa — D143, provata sui fixture**
+- [ ] **G3** Test di fedeltà a due vie (Hausdorff nei due versi ≤ tol,
+      coefficienti identici dove heal non tocca), sul DXF scritto e riletto,
+      su tutti i fixture, `heal()` e `island()`.
+- [ ] **G4** `ArcSeg`/`EllipseSeg.discretize` verificati contro la
+      tolleranza come i cerchi in D145.
+- [ ] **G5** Bug di misura trovati con D145: `cluster.area` di
+      `rect_with_countersink` (un inner non tolto); `contour_shape`
+      `length`/`width` sul poligono invece che sulle primitive.
+- [ ] **G6** I 4 dubbi D103 verificati (guardati e classificati, non
+      risolti per forza) e il giro scartato come duplicato in `result.loose`.
+- [ ] **G7** Zero `expectedFailure`: golden di island rifatti da zero sui
+      `_noframe` (dopo G6), `test_text_budget` anch_02 spiegato.
+
+**Documenti — D144**
+- [ ] **G8** README / README_IT / `description` di pyproject / prima riga
+      di CLAUDE.md: motore di geometria 2D, i disegni tecnici sono un caso.
+- [ ] **G9** `docs/API.md` e `docs/ARCHITECTURE.md` in inglese; docstring
+      dei nomi pubblici in inglese, con un controllo nella suite.
+
+**Pulizia**
+- [ ] **G10** Rewrite della history (`git filter-repo` + `--message-callback`,
+      un solo force-push), contro le liste di D76–D78.
+- [ ] **G11** `scripts/release_check.py`: suite senza xfail, `gen_index
+      --check`, `audit_names --strict`, `audit_fixtures --strict`, controllo
+      docstring. Si scrive per primo (dice cosa manca), è verde per ultimo.
+
+**Dopo la 1.0 (1.x, additivo — non toccare finché il cancello è aperto):**
+PDF (`topo_pdf`), modello `Curve`/`as_analytic`/firma dei contorni, viewer,
+strisce (D142), D147 (estremi sui T, branch `d147-t-ends`), cerchi doppi,
+criterio del punto medio di `_refine_segment`, curve da equazione, fatti di
+riconoscimento, snapfence, richieste dei consumer che aggiungono nomi.
 
 ## APERTO (17 ottobre) — la strada verso la 1.0.0
 
