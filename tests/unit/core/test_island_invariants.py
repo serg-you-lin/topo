@@ -11,18 +11,15 @@ disegni reali: ogni disegno tracciato che si legge con `island()`
 
 import tempfile
 import unittest
-from dataclasses import replace
 from pathlib import Path
 
-from shapely.geometry import LineString, Point
-from shapely.ops import unary_union
 
 import topo
 import topo_dxf
 
 from tests.drawings import case_name, drawing_key, drawings_for
-from tests.invariants import MOTIONS, along_contours, known_defect, contours, moved, orders, shape_differences
-from tests.readings import island_reading
+from tests.invariants import along_contours, uncovered, known_defect, contours, shape_differences, unscrambled
+from tests.readings import island_reading, island_scrambled
 from topo.core.island import GRAPH_EPSILON
 from topo.core.primitives.segments import DEFAULT_TOLERANCE
 
@@ -47,37 +44,11 @@ KNOWN = {
     # pezzi usciti due volte, in un contorno e in loose: il ripiego "unione
     # delle facce" (D100) segna presi gli edge del cammino, non del bordo
     "out once": ("G6b", _keys(
-        "golden_islands/regr_01 golden_islands/anch_02 golden_islands/anch_04 golden_islands/anch_06 "
-        "golden_islands/regr_04 golden_anchoring/anch_02 golden_anchoring/anch_02_noframe "
-        "golden_anchoring/anch_04 golden_anchoring/anch_04_noframe golden_anchoring/anch_06 "
-        "golden_anchoring/anch_06_noframe golden_anchoring/anch_08 golden_anchoring/anch_08_noframe")),
+        "golden_islands/regr_01 golden_islands/anch_06 golden_islands/regr_04 "
+        "golden_anchoring/anch_06_noframe")),
     # la lettura cambia con l'ordine delle entità o con un moto rigido
-    "edge order": ("G6c", _keys(
-        "golden_anchoring/anch_01 golden_anchoring/anch_01_noframe golden_anchoring/anch_02 "
-        "golden_anchoring/anch_02_noframe golden_anchoring/anch_03 golden_anchoring/anch_03_noframe "
-        "golden_anchoring/anch_04 golden_anchoring/anch_04_noframe golden_anchoring/anch_05 "
-        "golden_anchoring/anch_05_noframe golden_anchoring/anch_06 golden_anchoring/anch_06_noframe "
-        "golden_anchoring/anch_08 golden_anchoring/anch_08_noframe golden_islands/anch_02 "
-        "golden_islands/anch_03 golden_islands/anch_05 golden_islands/anch_06 golden_islands/anch_08 "
-        "golden_islands/regr_01 golden_islands/regr_02 golden_islands/regr_04")),
-    "rigid motion": ("G6c", _keys(
-        "golden_anchoring/anch_01 golden_anchoring/anch_01_noframe golden_anchoring/anch_02 "
-        "golden_anchoring/anch_02_noframe golden_anchoring/anch_03 golden_anchoring/anch_03_noframe "
-        "golden_anchoring/anch_04 golden_anchoring/anch_04_noframe golden_anchoring/anch_06 "
-        "golden_anchoring/anch_06_noframe golden_anchoring/anch_07 golden_anchoring/anch_08 "
-        "golden_anchoring/anch_08_noframe golden_islands/anch_01 golden_islands/anch_02 "
-        "golden_islands/anch_04 golden_islands/anch_06 golden_islands/anch_08 golden_islands/regr_03 "
-        "golden_islands/regr_04")),
-    # inner sovrapposti in parte: cicli fra giri accettati che non sono facce
-    # (D107), non giri di D103 (D157)
-    "inners cross": ("G7", _keys(
-        "golden_islands/anch_03 golden_islands/regr_02 golden_anchoring/anch_01 "
-        "golden_anchoring/anch_01_noframe golden_anchoring/anch_02 golden_anchoring/anch_02_noframe "
-        "golden_anchoring/anch_03 golden_anchoring/anch_03_noframe golden_anchoring/anch_04 "
-        "golden_anchoring/anch_04_noframe golden_anchoring/anch_08 golden_anchoring/anch_08_noframe")),
-    "roundtrip": ("G7", _keys(
-        "golden_islands/anch_03 golden_islands/regr_02 golden_anchoring/anch_03 "
-        "golden_anchoring/anch_03_noframe")),
+    "scrambled": ("G6c", _keys(
+        "golden_anchoring/anch_08_noframe golden_islands/anch_08")),
 }
 
 
@@ -168,13 +139,6 @@ for _dxf in SOURCES:
     setattr(TestRoundtripStable, case_name(_dxf), _make_roundtrip_test(_dxf))
 
 
-def _geometry(segment):
-    pts = segment.discretize(DEFAULT_TOLERANCE)
-    if len(pts) < 2 or all(p == pts[0] for p in pts):
-        return Point(pts[0])
-    return LineString(pts)
-
-
 class TestNothingDropped(unittest.TestCase):
     """Ogni pezzo di geometria in ingresso finisce in uscita — nei segmenti
     di un contorno o nel trash — entro `max_gap`: il gap-fix può spostare un
@@ -185,11 +149,7 @@ class TestNothingDropped(unittest.TestCase):
 def _make_dropped_test(dxf: Path):
     def test(self):
         doc, result = island_reading(dxf, MAX_GAP)
-        out = [_geometry(s) for c in result.clusters for ct in [c.outer] + c.inners
-               for s in ct.segments]
-        out += [_geometry(s) for f in result.loose for s in f.segments]
-        covered = unary_union(out).buffer(MAX_GAP)
-        lost = unary_union([_geometry(e.segment) for e in doc.edges]).difference(covered)
+        lost = uncovered(doc, result, MAX_GAP)
         self.assertLessEqual(lost.length, GRAPH_EPSILON,
                              f"{dxf.stem}: {lost.length:.3f} mm di geometria in ingresso "
                              f"non stanno in nessuna uscita (vicino a {lost.representative_point()})")
@@ -217,35 +177,6 @@ for _dxf in SOURCES:
     setattr(TestOutOnce, case_name(_dxf), _make_out_once_test(_dxf))
 
 
-class TestInnersDontCross(unittest.TestCase):
-    """Due inner della stessa isola o sono disgiunti o uno contiene l'altro
-    (un foro dentro un foro): sovrapposti in parte sono due cicli che non
-    sono facce. Margine: una fascia larga BOUNDS_TOLERANCE lungo il bordo
-    del più piccolo. Difetti noti in KNOWN."""
-
-
-def _make_cross_test(dxf: Path):
-    def test(self):
-        _, result = island_reading(dxf, MAX_GAP)
-        crossing = []
-        for ci, cluster in enumerate(result.clusters):
-            polygons = [inner.polygon for inner in cluster.inners]
-            for i in range(len(polygons)):
-                for j in range(i + 1, len(polygons)):
-                    small = min(polygons[i], polygons[j], key=lambda p: p.area)
-                    band = small.length * BOUNDS_TOLERANCE
-                    shared = polygons[i].intersection(polygons[j]).area
-                    if shared > band and small.area - shared > band:
-                        crossing.append(f"cluster[{ci}].inner[{i}]/inner[{j}]")
-        _check(self, "inners cross", dxf,
-               lambda: self.assertEqual(crossing, [], f"{dxf.stem}: inner sovrapposti in parte"))
-    return test
-
-
-for _dxf in SOURCES:
-    setattr(TestInnersDontCross, case_name(_dxf), _make_cross_test(_dxf))
-
-
 def _differences(result, again, back=lambda p: p) -> list:
     """Cosa cambia fra le isole di `result` e quelle di `again` (riportate
     indietro con `back`): numero, outer, inner."""
@@ -261,46 +192,24 @@ def _differences(result, again, back=lambda p: p) -> list:
     return found
 
 
-class TestRigidMotion(unittest.TestCase):
-    """Ruotare, spostare lontano dall'origine o specchiare il disegno prima
-    di `island()` dà le stesse isole mosse, outer e inner: la lettura non
-    dipende dal sistema di riferimento né dalla grandezza delle coordinate
-    (D143, D158)."""
+class TestScrambled(unittest.TestCase):
+    """Lo stesso disegno scritto in un altro modo — entità in un altro ordine,
+    ruotato, lontano dall'origine, specchiato — dà le stesse isole: la
+    lettura non dipende né dall'ordine del file né dal sistema di
+    riferimento (D143, D158). Tutto in una lettura sola (D160)."""
 
 
-def _make_motion_test(dxf: Path):
+def _make_scrambled_test(dxf: Path):
     def test(self):
-        doc, result = island_reading(dxf, MAX_GAP)
-        found = {name: _differences(result, topo.island(moved(doc, move), max_gap=MAX_GAP), back)
-                 for name, move, back, _ in MOTIONS}
-        found = {name: diff for name, diff in found.items() if diff}
-        _check(self, "rigid motion", dxf,
-               lambda: self.assertEqual(found, {}, f"{dxf.stem}: un moto cambia le isole"))
+        _, result = island_reading(dxf, MAX_GAP)
+        found = _differences(result, island_scrambled(dxf, MAX_GAP), unscrambled)
+        _check(self, "scrambled", dxf,
+               lambda: self.assertEqual(found, [], f"{dxf.stem}: scritto in un altro modo cambia le isole"))
     return test
 
 
 for _dxf in SOURCES:
-    setattr(TestRigidMotion, case_name(_dxf), _make_motion_test(_dxf))
-
-
-class TestEdgeOrder(unittest.TestCase):
-    """L'ordine in cui il file elenca le entità non conta: gli edge al
-    contrario, e rimescolati con seed fissi, danno le stesse isole."""
-
-
-def _make_order_test(dxf: Path):
-    def test(self):
-        doc, result = island_reading(dxf, MAX_GAP)
-        found = {name: _differences(result, topo.island(replace(doc, edges=edges), max_gap=MAX_GAP))
-                 for name, edges in orders(doc.edges)}
-        found = {name: diff for name, diff in found.items() if diff}
-        _check(self, "edge order", dxf,
-               lambda: self.assertEqual(found, {}, f"{dxf.stem}: l'ordine cambia le isole"))
-    return test
-
-
-for _dxf in SOURCES:
-    setattr(TestEdgeOrder, case_name(_dxf), _make_order_test(_dxf))
+    setattr(TestScrambled, case_name(_dxf), _make_scrambled_test(_dxf))
 
 
 if __name__ == "__main__":

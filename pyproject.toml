@@ -33,7 +33,8 @@ dxf    = ["ezdxf>=1.1"]                 # topo_dxf
 pdf    = ["PyMuPDF"]                    # topo_pdf
 raster = ["opencv-python", "Pillow"]
 # i test leggono le fixture DXF attraverso topo_dxf
-dev    = ["pytest", "pytest-cov", "ezdxf>=1.1"]
+# pytest-timeout: ogni test ha un tetto, uno che si pianta fallisce col suo nome (D160)
+dev    = ["pytest", "pytest-cov", "pytest-timeout", "ezdxf>=1.1"]
 all    = ["g-topo[dxf,pdf,raster]"]
 
 [tool.setuptools.packages.find]
@@ -53,3 +54,5 @@ topo_pdf = ["topo.core", "topo.tools", "topo.io", "topo.rules", "topo_dxf"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# in seriale: la suite sta sotto i 3 minuti anche su una macchina con pochi core (D160)
+addopts = "--timeout=60 --durations=8"

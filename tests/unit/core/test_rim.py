@@ -1,8 +1,9 @@
 # tests/unit/core/test_rim.py
 
 """
-I segmenti di una faccia letti dal suo bordo (`face_segments`, D106), e un
-giro che tocca se stesso letto come più facce (`island._loop_faces`).
+I segmenti di una faccia letti dal suo bordo (`face_segments`, D106). Le
+facce per giro di `island()` non ci sono più: island non costruisce inner
+(D161).
 """
 
 import math
@@ -10,7 +11,6 @@ import unittest
 
 from shapely.geometry import Polygon, box
 
-from topo.core.island import _loop_faces
 from topo.core.primitives.polygon_builder import build_polygon
 from topo.core.primitives.segments import ArcSeg, LineSeg, segment_endpoints
 from topo.core.topology.edge import Edge
@@ -52,29 +52,6 @@ class TestFaceSegments(unittest.TestCase):
         polygon = Polygon(arc.discretize(0.01))
         segments, _ = face_segments(edges, polygon, BAND)
         self.assertEqual(sorted(type(s).__name__ for s in segments), ["ArcSeg", "LineSeg"])
-
-
-class TestLoopFaces(unittest.TestCase):
-
-    def _loop(self, *pts):
-        return [(_line(pts[i], pts[(i + 1) % len(pts)]), False) for i in range(len(pts))]
-
-    def test_giro_che_tocca_se_stesso_sono_due_facce(self):
-        # due triangoli uniti in un vertice, percorsi come un otto
-        loop = self._loop((0, 0), (10, 5), (20, 0), (20, 10), (10, 5), (0, 10))
-        faces = _loop_faces(loop, tolerance=0.05)
-        self.assertEqual(sorted(round(f[2].area, 6) for f in faces), [50.0, 50.0])
-        for segments, styles, polygon in faces:
-            self.assertEqual(len(segments), len(styles))
-            self.assertLess(build_polygon(segments).symmetric_difference(polygon).area, 1e-9)
-
-    def test_giro_semplice_resta_uno(self):
-        faces = _loop_faces(self._loop((0, 0), (10, 0), (10, 10), (0, 10)), tolerance=0.05)
-        self.assertEqual(len(faces), 1)
-
-    def test_faccia_piu_stretta_della_tolleranza_non_e_una_faccia(self):
-        faces = _loop_faces(self._loop((0, 0), (10, 0), (10, 0.01), (0, 0.01)), tolerance=0.05)
-        self.assertEqual(faces, [])
 
 
 if __name__ == "__main__":

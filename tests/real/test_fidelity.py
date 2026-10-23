@@ -34,7 +34,7 @@ sys.path.insert(0, str(project_root))
 import topo
 import topo_dxf
 from topo.core.primitives.segments import segment_endpoints
-from tests.drawings import tracked_drawings
+from tests.drawings import case_name, tracked_drawings
 from tests.readings import island_reading
 
 MAX_GAP = 0.5            # quello di snapdraw, come test_golden_islands
@@ -132,35 +132,35 @@ def _round_trip(rel: str, reading: str):
 
 
 class TestFidelity(unittest.TestCase):
+    """Un test per disegno tracciato, così la suite li divide fra i core
+    (D160): in un test solo, il ciclo su tutti i disegni era il più lento
+    della suite e non si poteva dividere."""
 
-    @classmethod
-    def setUpClass(cls):
-        cls.drawings = tracked_drawings()
-        cls.compared = 0
-
-    def test_001_hausdorff_e_coefficienti(self):
-        self.assertTrue(self.drawings, "nessun disegno tracciato")
-        for rel, reading in self.drawings:
-            with self.subTest(drawing=rel, reading=reading):
-                doc, back, bound = _round_trip(rel, reading)
-                src_lines, src_samples = _lines_and_samples(doc.edges)
-                out_lines, out_samples = _lines_and_samples(back.edges)
-                self.assertLessEqual(_directed(src_samples, out_lines), bound,
-                                     "un punto del sorgente non è nel risultato")
-                self.assertLessEqual(_directed(out_samples, src_lines), bound,
-                                     "un punto del risultato non è nel sorgente")
-                written = [c for c in map(_coefficients, (e.segment for e in back.edges)) if c]
-                untouched = _untouched_curves(doc.edges)
-                type(self).compared += len(untouched)
-                missing = [c for c in untouched
-                           if not any(_same(c, w, COEFF_EPS) for w in written)]
-                self.assertEqual(missing, [], "curve non toccate riscritte con altri coefficienti")
-
-    def test_002_il_confronto_dei_coefficienti_non_e_vuoto(self):
+    def test_il_confronto_dei_coefficienti_non_e_vuoto(self):
         # la regola "non toccata" non deve escludere quasi tutto
-        if not self.compared:
-            self.test_001_hausdorff_e_coefficienti()
-        self.assertGreater(self.compared, 1000)
+        compared = sum(len(_untouched_curves(topo_dxf.load_dxf(str(project_root / rel)).edges))
+                       for rel, _ in tracked_drawings())
+        self.assertGreater(compared, 1000)
+
+
+def _make_fidelity_test(rel: str, reading: str):
+    def test(self):
+        doc, back, bound = _round_trip(rel, reading)
+        src_lines, src_samples = _lines_and_samples(doc.edges)
+        out_lines, out_samples = _lines_and_samples(back.edges)
+        self.assertLessEqual(_directed(src_samples, out_lines), bound,
+                             "un punto del sorgente non è nel risultato")
+        self.assertLessEqual(_directed(out_samples, src_lines), bound,
+                             "un punto del risultato non è nel sorgente")
+        written = [c for c in map(_coefficients, (e.segment for e in back.edges)) if c]
+        missing = [c for c in _untouched_curves(doc.edges)
+                   if not any(_same(c, w, COEFF_EPS) for w in written)]
+        self.assertEqual(missing, [], "curve non toccate riscritte con altri coefficienti")
+    return test
+
+
+for _rel, _reading in tracked_drawings():
+    setattr(TestFidelity, f"{case_name(project_root / _rel)}_{_reading}", _make_fidelity_test(_rel, _reading))
 
 
 if __name__ == "__main__":

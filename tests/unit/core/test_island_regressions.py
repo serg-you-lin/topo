@@ -20,25 +20,6 @@ TOLERANCE = 0.05
 MAX_GAP = 0.5
 
 
-class TestGhostLoop(unittest.TestCase):
-    """15 edge (2 ArcSeg + 13 BSplineSeg) di un solo foro della vista
-    isometrica di anch_02: un'ellisse proiettata pulita (2 spline che si
-    chiudono da estremo a estremo). Preesistente, non introdotto dal lavoro
-    PDF né da D98-D101 (bisecato su 1b5b02e, D99: identico)."""
-
-    def test_un_foro_non_ha_un_giro_fantasma_annidato(self):
-        doc = topo_dxf.load_dxf(str(FIXTURES / "island_ghost_loop.dxf"), tolerance=TOLERANCE)
-        reading = read_island(doc.edges, tolerance=TOLERANCE, max_gap=MAX_GAP)
-        self.assertIsNotNone(reading.outer)
-        # 16.289 a discretizzazione fine; 16.247 finché le spline usavano i
-        # punti di ezdxf (D135)
-        self.assertAlmostEqual(reading.outer.polygon.area, 16.287, places=2)
-        # oggi: 1 giro fantasma (~11 mm^2, 2 ArcSeg + spline seghettate) annidato
-        # nello stesso punto — non un buco vero, un artefatto del noding
-        self.assertEqual(len(reading.inner_loops), 0,
-                          "giro fantasma annidato nello stesso foro: non e' una feature reale")
-
-
 class TestTangentSpike(unittest.TestCase):
     """71 edge di una sola asola della stessa vista isometrica. Pulita su
     1b5b02e (D99, punta a x=1506.30), rotta già su 091970a (D100, "the outer

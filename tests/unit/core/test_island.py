@@ -40,13 +40,15 @@ class TestIsland(unittest.TestCase):
         self.assertEqual(len(result.clusters), 2)
         self.assertEqual([round(c.outer.polygon.area) for c in result.clusters], [100, 50])
 
-    def test_isola_dentro_un_altra_non_e_un_cluster(self):
-        # cornice 100x100 e una vista dentro: l'unico contorno esterno è la cornice
+    def test_isola_dentro_un_altra_va_in_loose(self):
+        # D161: cornice 100x100 e una vista dentro — l'unico contorno è la
+        # cornice, i lati della vista vanno in loose con l'isola che li contiene
         edges = _poly((0, 0), (100, 0), (100, 100), (0, 100)) + _poly((40, 40), (60, 40), (60, 60), (40, 60))
         result = topo.island(_doc(edges), max_gap=MAX_GAP)
         self.assertEqual(len(result.clusters), 1)
         self.assertAlmostEqual(result.clusters[0].outer.polygon.area, 10000.0)
-        self.assertEqual(len(result.clusters[0].inners), 1)
+        self.assertEqual(result.clusters[0].inners, [])
+        self.assertEqual([t.cluster_ref for t in result.loose], [0, 0, 0, 0])
 
     def test_due_contorni_vicinissimi_restano_due_isole(self):
         # D99: nessuna distanza fra le viste — due contorni a 1 mm sono due isole
@@ -64,31 +66,33 @@ class TestIsland(unittest.TestCase):
         refs = {round(t.segments[0].start[0]): t.cluster_ref for t in result.loose}
         self.assertEqual(refs, {10: 0, 300: None})
 
-    def test_gruppo_di_fori_staccati_dentro_una_vista_tutti_interni(self):
-        # D71: tre fori staccati dal bordo dentro la vista diventano tutti interni
+    def test_gruppo_di_cerchi_staccati_dentro_una_vista_in_loose(self):
+        # D161: tre cerchi staccati dal bordo dentro la vista vanno in loose,
+        # interi, con l'isola che li contiene
         edges = _poly((0, 0), (200, 0), (200, 100), (0, 100)) + [
             _circle((90, 50), 3), _circle((100, 50), 5.5), _circle((110, 50), 3)]
         result = topo.island(_doc(edges), max_gap=MAX_GAP)
         self.assertEqual(len(result.clusters), 1)
-        self.assertEqual(sorted(round(i.polygon.area) for i in result.clusters[0].inners),
-                         sorted(round(math.pi * r * r) for r in (3, 5.5, 3)))
-        self.assertEqual(result.loose, [])
+        self.assertEqual(result.clusters[0].inners, [])
+        self.assertEqual(sorted(s.radius for t in result.loose for s in t.segments), [3, 3, 5.5])
+        self.assertEqual({t.cluster_ref for t in result.loose}, {0})
 
-    def test_foro_resta_giro_interno(self):
+    def test_cerchio_dentro_una_vista_in_loose(self):
         edges = _poly((0, 0), (20, 0), (20, 20), (0, 20)) + [_circle((10, 10), 3)]
-        cluster = topo.island(_doc(edges), max_gap=MAX_GAP).clusters[0]
-        self.assertEqual(cluster.outer.role, ContourRole.OUTER)
-        self.assertEqual(len(cluster.inners), 1)
-        self.assertAlmostEqual(cluster.inners[0].polygon.area, math.pi * 9, delta=0.5)
+        result = topo.island(_doc(edges), max_gap=MAX_GAP)
+        self.assertEqual(result.clusters[0].outer.role, ContourRole.OUTER)
+        self.assertEqual(result.clusters[0].inners, [])
+        self.assertEqual([(type(s).__name__, s.radius, t.cluster_ref) for t in result.loose for s in t.segments],
+                         [("CircleSeg", 3, 0)])
 
-    def test_foro_tagliato_dagli_assi_torna_cerchio(self):
-        # gli assi spezzano il cerchio in 4 archi nella rete piana: il giro
-        # interno li ricompone in un cerchio solo
+    def test_cerchio_tagliato_dagli_assi_esce_intero(self):
+        # gli assi incrociano il cerchio nella rete piana: in loose il
+        # cerchio esce intatto, non nei 4 archi della rete (D161)
         edges = _poly((0, 0), (20, 0), (20, 20), (0, 20)) + [_circle((10, 10), 3)]
         edges += [_line((5, 10), (15, 10)), _line((10, 5), (10, 15))]
         result = topo.island(_doc(edges), max_gap=MAX_GAP)
-        inner = result.clusters[0].inners[0]
-        self.assertEqual([type(s).__name__ for s in inner.segments], ["CircleSeg"])
+        self.assertEqual(sorted(type(s).__name__ for t in result.loose for s in t.segments),
+                         ["CircleSeg", "LineSeg", "LineSeg"])
 
     def test_lato_tagliato_da_un_asse_torna_un_segmento(self):
         # un asse che esce dal contorno lo spezza: il contorno esterno resta di 4 lati
@@ -107,24 +111,17 @@ class TestIsland(unittest.TestCase):
         self.assertAlmostEqual(result.clusters[0].outer.polygon.area, 400.0)
         self.assertEqual(sum(1 for t in result.loose if t.role == "frame"), 4)
 
-    def test_giro_che_ricalca_un_foro_entro_max_gap_va_in_loose(self):
-        # D103, D157: un cerchio a 0.4 dentro il foro non ha un bordo suo a
-        # max_gap 0.5 — un inner solo, il secondo cerchio intero in loose
-        # con l'isola che lo contiene
+    def test_cerchi_concentrici_vicini_in_loose_a_ogni_max_gap(self):
+        # D161: due cerchi a 0.4 l'uno dall'altro dentro la vista escono
+        # entrambi in loose, sotto e sopra il contatto (max_gap 0.5 e 0.2)
         edges = _poly((0, 0), (100, 0), (100, 100), (0, 100)) + [
             _circle((50, 50), 5), _circle((50, 50), 4.6)]
-        result = topo.island(_doc(edges), max_gap=MAX_GAP)
-        self.assertEqual([[s.radius for s in i.segments] for i in result.clusters[0].inners], [[5]])
-        self.assertEqual([[s.radius for s in t.segments] for t in result.loose], [[4.6]])
-        self.assertEqual(result.loose[0].cluster_ref, 0)
-
-    def test_giro_che_ricalca_un_foro_oltre_max_gap_resta_inner(self):
-        # D157: la stessa coppia con max_gap 0.2 — 0.4 è oltre il contatto, due inner
-        edges = _poly((0, 0), (100, 0), (100, 100), (0, 100)) + [
-            _circle((50, 50), 5), _circle((50, 50), 4.6)]
-        result = topo.island(_doc(edges), max_gap=0.2)
-        self.assertEqual(sorted(s.radius for i in result.clusters[0].inners for s in i.segments), [4.6, 5])
-        self.assertEqual(result.loose, [])
+        for gap in (MAX_GAP, 0.2):
+            with self.subTest(max_gap=gap):
+                result = topo.island(_doc(edges), max_gap=gap)
+                self.assertEqual(result.clusters[0].inners, [])
+                self.assertEqual(sorted(s.radius for t in result.loose for s in t.segments), [4.6, 5])
+                self.assertEqual({t.cluster_ref for t in result.loose}, {0})
 
     def test_niente_di_chiuso_invalido(self):
         result = topo.island(_doc([_line((0, 0), (5, 0))]), max_gap=MAX_GAP)

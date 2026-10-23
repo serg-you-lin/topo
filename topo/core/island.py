@@ -20,11 +20,9 @@ Puro: solo Edge, primitive e modello, nessun formato.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from typing import Callable, List, Optional
 
-from shapely import make_valid
-from shapely.geometry import Polygon
 from shapely.ops import unary_union
 
 from ..model.cluster import Cluster
@@ -33,16 +31,13 @@ from ..model.document import Document
 from ..model.curve import OpenCurve
 from ..model.result import Result
 from ..model.role import ContourRole, is_structural_role
-from .primitives.segments import DEFAULT_TOLERANCE, LineSeg, segment_endpoints, segment_is_closed
-from .primitives.trim import sub_segment
+from .primitives.segments import segment_is_closed
 from .topology.edge import Edge
 from .topology.graph import build_node_graph
 from .geometry.shape import merge_runs
-from .topology.loop_finder import LoopFinder, loop_geometry
 from .topology.noding import GRAPH_EPSILON, NODE_DECIMALS, edge_geometry, renode, split_at_crossings
 from .topology.non_contour_edges import NonContourEdgeDetector
 from .topology.outer_face import OuterFace, outer_face
-from .topology.rim import face_segments
 from .healing.hierarchy import assign_cluster_refs
 from .healing.islands import spatial_islands
 from .healing.gap_solver import (
@@ -59,13 +54,10 @@ class IslandReading:
     """Cosa island() ha deciso su un'isola, pezzo per pezzo."""
     edges:          List[Edge]                               # dell'isola, come arrivano
     outer:          Optional[OuterFace]    = None            # None: nessun giro chiuso
-    inner_loops:    List[list]             = field(default_factory=list)   # loop [(Edge, reversed)]
     spurs:          List[Edge]             = field(default_factory=list)   # percorsi andata e ritorno
     outside:        List[Edge]             = field(default_factory=list)   # fuori dal contorno
-    outside_loops:  List[list]             = field(default_factory=list)   # giri chiusi fra gli `outside` (D71)
     non_contour:    List[Edge]             = field(default_factory=list)   # criterio D49
     unclassified:   List[Edge]             = field(default_factory=list)
-    off_faces:      List[Edge]             = field(default_factory=list)   # pezzi di un giro fuori da ogni sua faccia (D106)
     nested_in:     Optional[int]          = None            # indice dell'isola che la contiene (anche senza outer)
 
 
@@ -78,12 +70,12 @@ def island(doc: Document, *, max_gap: float,
            is_structural: Optional[Callable[[str], bool]] = None) -> Result:
     """
     Legge `doc` per isole. Un Cluster per ogni contorno esterno che non
-    sta dentro un altro: `outer` il contorno, `inners` i giri chiusi dentro.
-    Un pezzo il cui contorno sta dentro quello di un'isola diventa suo
-    interno, con tutti i suoi giri chiusi (con la cornice nel disegno,
-    l'unico contorno esterno è la cornice — toglierla è del chiamante). Gli
-    edge aperti vanno in `loose` con `cluster_ref` = l'isola che toccano o
-    che li contiene; `None` se stanno fuori da ogni isola (D99, D137).
+    sta dentro un altro, col solo `outer`: island() non costruisce inner
+    (D161). Tutto il resto — chiuso o aperto, dentro o fuori dal contorno,
+    un'isola intera dentro un'altra — va in `loose`, intatto, con
+    `cluster_ref` = l'isola che tocca o che lo contiene; `None` se sta fuori
+    da ogni isola (D99, D137). Cosa sia è del consumer. Con la cornice nel
+    disegno l'unico contorno esterno è la cornice: toglierla è del chiamante.
 
     max_gap:    due edge più vicini di così si toccano; gap chiusi fra
                 estremi liberi, mai spostando un estremo più di così (mm).
@@ -118,16 +110,11 @@ def island(doc: Document, *, max_gap: float,
         if host is None or r.outer is None:
             owned += [(f, host) for f in _open(r.edges)]
             continue
-        outside = r.outside
         if r.nested_in is not None:
-            host.inners.append(_contour(r.outer.segments, r.outer.styles, r.outer.polygon,
-                                        ContourRole.INNER, host.outer))
-            host.inners += _inners(r.inner_loops, host.outer, tol)
-            # D71: dentro l'ospite, anche i giri fuori dal contorno scelto sono interni
-            host.inners += _inners(r.outside_loops, host.outer, tol)
-            in_loops = {id(e) for loop in r.outside_loops for e, _ in loop}
-            outside = [e for e in r.outside if id(e) not in in_loops]
-        owned += [(f, host) for f in _open(r.spurs + outside + r.non_contour + r.unclassified + r.off_faces)]
+            # D161: un'isola dentro un'altra non è un suo inner, va in `loose`
+            owned += [(f, host) for f in _open(r.edges)]
+            continue
+        owned += [(f, host) for f in _open(r.spurs + r.outside + r.non_contour + r.unclassified)]
     result.clusters = sorted(clusters.values(), key=lambda c: c.outer.polygon.area, reverse=True)
     index = {id(c): k for k, c in enumerate(result.clusters)}
     for curve, host in owned:
@@ -170,9 +157,8 @@ def read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandRe
     """
     Un'isola: normalizza (nodi dagli estremi reali, tassellature rifittate,
     merge/weld di heal, gap fino a `max_gap`), rende la rete piana, ne
-    percorre la faccia esterna, poi classifica il resto: giri chiusi
-    interni, non-contorno (D49), fuori dal contorno (e i giri chiusi fra
-    questi, `outside_loops`, D71), non classificati.
+    percorre la faccia esterna, poi classifica il resto, che va tutto in
+    `loose` (D161): fuori dal contorno, non-contorno (D49), non classificati.
     """
     normalized = _normalize(edges, tolerance, max_gap)
     noded = split_at_crossings(normalized, tolerance)
@@ -190,56 +176,17 @@ def read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandRe
         reading.outside = [e for e in rest if not probe.contains(edge_geometry(e))]
         outside_ids = {id(e) for e in reading.outside}
         rest = [e for e in rest if id(e) not in outside_ids]
-        if reading.outside:
-            reading.outside_loops, off = _faced(
-                LoopFinder().find(build_node_graph(reading.outside, epsilon=GRAPH_EPSILON)), tolerance)
-            reading.off_faces += off
-
-    rest_graph = build_node_graph(rest, epsilon=GRAPH_EPSILON)
-    loops = LoopFinder().find(rest_graph)
-    band = tolerance + max_gap
-    reference = face.polygon if face is not None else None
-    loops = _drop_boundary_duplicates(loops, reference, band)
-    loops, off = _faced(loops, tolerance)
-    reading.off_faces += off
-    reading.inner_loops = loops
-    in_loops = {id(e) for loop in loops for e, _ in loop}
+    # D161: dentro il contorno nessun inner, tutto il resto va in `loose`
     full_graph = build_node_graph(pieces, epsilon=GRAPH_EPSILON)
     non_contour_ids = NonContourEdgeDetector(tolerance).detect(full_graph, pieces)
-    reading.non_contour = [e for e in rest if id(e) not in in_loops and id(e) in non_contour_ids]
-    reading.unclassified = [e for e in rest if id(e) not in in_loops and id(e) not in non_contour_ids]
+    reading.non_contour = [e for e in rest if id(e) in non_contour_ids]
+    reading.unclassified = [e for e in rest if id(e) not in non_contour_ids]
     return reading
 
 
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
-
-def _drop_boundary_duplicates(loops: list, reference: Optional[Polygon], band: float) -> list:
-    """Scarta un giro chiuso il cui intero bordo sta entro `band` dal bordo di
-    un giro più grande già accettato (il contorno esterno `reference`, o un
-    altro giro già tenuto, in ordine di area): a `band` = tolleranza +
-    max_gap i due bordi si toccano ovunque, quindi il giro non ha un bordo
-    suo e non aggiunge un contorno. I suoi edge restano nel resto e vanno in
-    `loose` (D103, D157). Raffina D71 ("ogni giro chiuso è un inner")."""
-    accepted: List[Polygon] = [reference] if reference is not None else []
-    scored = []
-    for loop in loops:
-        geometry = loop_geometry(loop)
-        area = geometry[2].area if geometry is not None else -1.0
-        scored.append((area, loop, geometry))
-    kept = []
-    for _, loop, geometry in sorted(scored, key=lambda t: -t[0]):
-        if geometry is None:
-            kept.append(loop)
-            continue
-        polygon = geometry[2]
-        if any(g.exterior.buffer(band).contains(polygon.exterior) for g in accepted):
-            continue
-        accepted.append(polygon)
-        kept.append(loop)
-    return kept
-
 
 def _normalize(edges: List[Edge], tolerance: float, max_gap: float) -> List[Edge]:
     """Stessi passi di heal, ma sulla griglia fine della rete piana: prima i
@@ -290,96 +237,7 @@ def _drop_redundant_meets(fixes: list, graph) -> list:
 def _cluster(reading: IslandReading, source_file: str, tolerance: float) -> Cluster:
     face = reading.outer
     outer = _contour(face.segments, face.styles, face.polygon, ContourRole.OUTER, None)
-    cluster = Cluster(outer=outer, source_file=source_file)
-    cluster.inners = _inners(reading.inner_loops, outer, tolerance)
-    return cluster
-
-
-def _inners(loops, parent: Contour, tolerance: float) -> List[Contour]:
-    """Un Contour inner per faccia di ogni giro chiuso; un giro senza
-    poligono valido no."""
-    return [_contour(*face, ContourRole.INNER, parent)
-            for loop in loops for face in _loop_faces(loop, tolerance)]
-
-
-def _loop_faces(loop, tolerance: float) -> list:
-    """(segmenti, stili, poligono) per ogni faccia di un giro chiuso: una se
-    il suo anello è semplice; se tocca se stesso (due archi tangenti, due
-    bordi entro tolleranza) una per lobo, coi segmenti letti dal bordo del
-    lobo (`face_segments`) — non il solo lobo più grande (D106). Una faccia
-    più stretta di `tolerance` non è una faccia: è il contatto fra due
-    curve che si toccano (D106)."""
-    geometry = loop_geometry(loop)
-    if geometry is None:
-        return []
-    ring = []
-    for i, seg in enumerate(geometry[0]):
-        pts = seg.discretize(DEFAULT_TOLERANCE)
-        ring += pts if i == 0 else pts[1:]
-    raw = Polygon(ring)
-    if raw.is_valid:
-        return [] if _thinner_than(raw, tolerance) else [geometry]
-    lobes = [Polygon(g.exterior) for g in _polygons(make_valid(raw))
-             if not _thinner_than(g, tolerance)]
-    if len(lobes) < 2:
-        return [geometry] if lobes else []
-    edges = [e for e, _ in loop]
-    return [(*face_segments(edges, lobe, 2 * GRAPH_EPSILON), lobe) for lobe in lobes]
-
-
-def _faced(loops: list, tolerance: float):
-    """(giri con almeno una faccia, pezzi dei loro edge fuori da ogni faccia):
-    un giro senza facce resta fuori e i suoi edge vanno con il resto; i
-    pezzi di un giro che nessuna faccia usa (la zona di contatto fra due
-    lobi) vanno in `loose`, non spariscono (D106)."""
-    kept, off = [], []
-    for loop in loops:
-        faces = _loop_faces(loop, tolerance)
-        if faces:
-            kept.append(loop)
-            off += _off_faces(loop, faces)
-    return kept, off
-
-
-def _off_faces(loop, faces) -> List[Edge]:
-    """I tratti degli edge di `loop` lontani più di `band` dal bordo di ogni
-    faccia, ognuno tagliato esatto dal suo edge."""
-    band = 2 * GRAPH_EPSILON
-    rims = unary_union([face[2].exterior for face in faces]).buffer(band)
-    pieces = []
-    for edge, _ in loop:
-        for part in _lines(edge_geometry(edge).difference(rims)):
-            if part.length <= band:
-                continue
-            a, b = part.coords[0], part.coords[-1]
-            middle = part.interpolate(0.5, normalized=True)
-            piece = sub_segment(edge.segment, a, b, (middle.x, middle.y))
-            chain = [piece] if piece is not None else [
-                LineSeg(start=p, end=q) for p, q in zip(part.coords, part.coords[1:])]
-            for seg in chain:
-                start, end = segment_endpoints(seg)
-                pieces.append(replace(edge, segment=seg,
-                                      start=(round(start[0], NODE_DECIMALS), round(start[1], NODE_DECIMALS)),
-                                      end=(round(end[0], NODE_DECIMALS), round(end[1], NODE_DECIMALS))))
-    return pieces
-
-
-def _lines(geometry) -> list:
-    if geometry.geom_type == "LineString":
-        return [geometry]
-    return [p for g in getattr(geometry, "geoms", []) for p in _lines(g)]
-
-
-def _thinner_than(polygon: Polygon, width: float) -> bool:
-    """Larghezza media (2·area/perimetro: per una striscia, la sua
-    larghezza) sotto `width`."""
-    return 2 * polygon.area < width * polygon.length
-
-
-def _polygons(geometry) -> List[Polygon]:
-    if geometry.geom_type == "Polygon":
-        return [geometry]
-    return [p for g in getattr(geometry, "geoms", []) for p in _polygons(g)]
+    return Cluster(outer=outer, source_file=source_file)
 
 
 def _contour(segments, styles, polygon, role, parent) -> Contour:

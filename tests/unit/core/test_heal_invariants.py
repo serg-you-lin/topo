@@ -30,7 +30,7 @@ from topo.core.primitives.segments import DEFAULT_TOLERANCE
 from topo.model.document import Document
 
 from tests.drawings import case_name, drawing_key, drawings_for
-from tests.invariants import MOTIONS, along_contours, known_defect, contours, geometry as _geometry, moved, orders, shape_differences
+from tests.invariants import MOTIONS, along_contours, uncovered, known_defect, contours, geometry as _geometry, moved, orders, shape_differences
 
 DATA = Path(__file__).resolve().parent.parent.parent / "data"
 SOURCE_DIR = DATA / "golden"
@@ -158,10 +158,7 @@ def _make_dropped_test(dxf: Path):
     def test(self):
         doc, result = _read(dxf)
         tol = _tolerance(dxf)
-        out = [_geometry(s) for c in result.clusters for ct in [c.outer] + c.inners for s in ct.segments]
-        out += [_geometry(s) for f in result.loose for s in f.segments]
-        covered = unary_union(out).buffer(tol)
-        lost = unary_union([_geometry(e.segment) for e in doc.edges]).difference(covered)
+        lost = uncovered(doc, result, tol)
         self.assertLessEqual(lost.length, DEFAULT_TOLERANCE,
                              f"{dxf.stem}: {lost.length:.3f} mm di geometria in ingresso non stanno "
                              f"in nessuna uscita (vicino a {lost.representative_point()})")

@@ -135,6 +135,23 @@ strisce (D142), D147 (estremi sui T, branch `d147-t-ends`), cerchi doppi,
 criterio del punto medio di `_refine_segment`, curve da equazione, fatti di
 riconoscimento, snapfence, richieste dei consumer che aggiungono nomi.
 
+## APERTO (23 ottobre) — shape dei pezzi chiusi in loose (D161)
+
+Con D161 un foro letto da `island()` è un pezzo chiuso in `loose` (un
+`CircleSeg`, un percorso che chiude da sé), non più un inner: `anchor_texts`
+non lega più una quota Ø8 o una freccia al suo cerchio, e `contour_shape`
+non lo classifica. Idea di Federico: esporre dall'API la shape (cerchio,
+stadio, ellisse, rettangolo, poligono) dei pezzi chiusi in `loose`, così un
+detector non la ricalcola e `anchor_texts` li usa come bersagli. Un pezzo
+che chiude da sé non è un ciclo scelto (D161 resta): è un fatto
+dell'ingresso. Da decidere (D162) e da confrontare con la detection di
+snapdraw. Difetti noti finché è aperto: 5 test in
+`tests/unit/test_anchor_texts.py`, `TestContourShapeSuIsole.test_island`.
+
+Stato dei difetti noti d'isole dopo D161: G6b out once 13 → 4 (regr_01,
+anch_06, regr_04, anchoring anch_06_noframe), G6c scrambled 26 → 2
+(anchoring anch_08_noframe, islands anch_08), G7 roundtrip 4 → 0.
+
 ## APERTO (17 ottobre) — la strada verso la 1.0.0
 
 Obiettivo: API stabili su cui un terzo costruisce i suoi algoritmi con le

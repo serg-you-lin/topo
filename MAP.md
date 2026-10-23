@@ -5777,3 +5777,74 @@ crossing and roundtrip (G7). Order dependence is a defect, not one of the
 "ambiguous cases" D143 leaves open: an ambiguous case may be decided either
 way, but by the geometry, and the same geometry listed in another order is
 the same case.
+
+### D160 — the full suite runs in under 3 minutes, serial, every test capped
+
+A suite nobody can run often blocks delivery: past ~3 minutes it is not
+run, or it is run while waiting, and both cost more than the tests save.
+After the D158 sweep the serial suite took 10 minutes, and a run that hung
+gave no name. The budget holds on a machine with few cores, so it is
+measured serial, and no test is removed:
+
+- **Every test has a cap.** `pytest-timeout` (`--timeout=60` in
+  `pyproject.toml`): a test that hangs fails with its name and the stack
+  where it stood, instead of freezing the run at 99%. No parallel workers:
+  each xdist worker rebuilt the cached readings for itself, multiplying the
+  work, and wall time on many cores hid the cost a small machine pays.
+- **Each reading is computed once.** The base reading of `island()` and one
+  `scrambled` variant per drawing (D158) are cached in `tests/readings.py`
+  and handed out as fresh copies.
+- **The checks are local and build each band once.** "Out once" and
+  "nothing dropped" compare a curve with the band around the outputs near
+  it (an STRtree query), which is the same set inside that width; the band
+  around each output is buffered once and reused, because the band of a
+  union is the union of the bands (rebuilding it per input edge cost more
+  than 60 s on one sheet with 7,500 short edges, now under 3 s). The twin
+  search between holes skips pairs with disjoint bounds whose areas already
+  exceed the band, where the symmetric difference is the sum of the areas.
+
+When a full run finds a failure, only the failures are rerun (`--lf`) until
+green, then the full suite once before the commit.
+
+A change that pushes the suite over 3 minutes is fixed in the same change,
+by caching, cheaper checks or fewer cases — slimming tests or goldens is
+preferred to a slow suite.
+
+### D161 — reopening D59, D71, D103, D106, D157: `island()` reads outer contours and nothing else; everything inside an outer goes to `loose`
+
+Decided by Federico, 23 October 2026, on G6c. `island()` returns, for each
+island, its outer contour; every other piece — closed or open, inside or
+outside the outer, a whole nested island — goes to `result.loose` with
+`cluster_ref` set to the island it touches or lies in (D137). `island()`
+never builds an inner.
+
+Why. `island()` reads drawings (views, isometrics, sheets with notation),
+where a closed loop inside an outer has no meaning the geometry can decide:
+the cell of a strip crossed by slots, a logo letter, a hidden line that
+closes on a view. Which closed loops to call inners was chosen by walking
+cycles (`LoopFinder`: from the nodes in insertion order, each edge once,
+the straightest way at a branch), so the answer depended on the order of
+the entities in the file and on the frame (G6c: 22 of 31 drawings changed
+with the order, 20 with a rigid motion). A planar-face reading would make
+it deterministic, but deterministic is not meaningful: no face criterion
+tells a hole from a cell without knowing what the drawing represents. That
+is the consumer's call (the same split as D88/D90: topo reads structure,
+the consumer reads meaning), and the consumer gets every piece, untouched,
+in `loose`.
+
+What goes: the inner loops and their machinery in `topo/core/island.py`
+(`LoopFinder` on the rest, `_drop_boundary_duplicates` D103, the faces per
+loop D106, the closed loops outside the chosen contour D71), the
+`IslandReading` fields `inner_loops`, `outside_loops`, `off_faces` (clean
+break, D140 surface is pre-1.0). A nested island no longer becomes an
+inner of its host: its edges go to `loose` with the host's `cluster_ref`.
+What stays: the outer face (D59, D100), spurs, outside, non-contour (D49)
+and the nesting index, which now only decides `cluster_ref`. `heal()` is
+untouched: in a flat part a closed loop inside the outer is a hole by
+construction (D88 is snapbend's reading of it).
+
+Consequences on the gate: G6c's inner families and G7's crossing inners
+and inner roundtrip have no object any more; what remains of G6c is
+whether the outers change with order or frame. The island goldens change
+and are regenerated only after Federico has looked at them (non-negotiable
+9). D147 (suspended) is moot for its inner half.
