@@ -60,6 +60,19 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       anch_03/regr_02 (`KNOWN_CROSSING_INNERS`, D107: cicli fra giri
       accettati che non sono facce — non sono giri di D103, D157).
 
+**Trovato il 23 ottobre (dopo G6), da decidere con Federico se entra nel
+cancello:** `island()` mette in `loose` geometria che sta già sull'outer. Su
+anch_06 15.6 mm (heal: 1.25, solo tangenze). Caso isolato: il simbolo a goccia
+(cerchio r 1.102 + due linee quasi tangenti), `_debug/2026-10-23_topo_G6_D103/
+simbolo_anch06*.dxf`. Causa: l'outer esce dal ripiego "unione delle facce"
+(D100): `face.segments` è il bordo della goccia letto dagli edge (D106), ma
+`face.edges` — quello che `read_island` segna come preso — è il giro del
+cammino, qui un triangolino vicino alla tangenza. Le linee e l'arco grande che
+formano davvero il bordo restano `spurs`/`unclassified` e finiscono interi in
+`loose`, sopra l'outer. Rimedio probabile: togliere dagli edge non presi i
+tratti che stanno sul bordo della faccia scelta (come `_off_faces` per i
+lobi), così `loose` è il resto esatto. Cambia i golden di island: prima di G7.
+
 **Documenti — D144**
 - [ ] **G8** README / README_IT / `description` di pyproject / prima riga
       di CLAUDE.md: motore di geometria 2D, i disegni tecnici sono un caso.
