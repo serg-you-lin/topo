@@ -5569,3 +5569,24 @@ ellipse far from the origin, quarters = whole, reversed); the two new
 invariants fail on the old code. No golden changed. Arcs were measured again
 (300 random: radius 0.001–3000, centers at 1e5, both directions): all within
 `tol`, nothing to change.
+
+### D154 — a curve of zero size is a point, not a curve: the primitive refuses it, the DXF adapter turns it into a warning ✅
+Gate G4. `ArcSeg.discretize` raised ZeroDivisionError on radius 0. The source
+of those arcs was not an ARC entity: 6 arcs in 4 local drawings came from
+LWPOLYLINEs with a repeated vertex that carries a bulge. `from_chord` divided
+0 by 0 on numpy floats, which warns instead of raising, and built an arc with
+center NaN and radius 0. Separately, a CIRCLE of radius 0 stopped `load_dxf`
+on the whole drawing (`CircleSeg` refuses it, nothing caught it).
+The rule, one for all three closed-form curves: a radius 0, a null axis or a
+`ratio` of 0 has no extent. It is a point (or, for the ellipse, a segment),
+and topo has no point primitive. `ArcSeg` and `EllipseSeg` refuse it at
+construction like `CircleSeg` already did (`not x > 0`, so NaN is refused
+too), and `ArcSeg.from_chord` refuses a null chord. In the adapter:
+- a null chord with a bulge in a polyline becomes the null `LineSeg` it would
+  be without the bulge (welded by D56);
+- an ARC, CIRCLE or ELLIPSE the primitive refuses is counted by type and
+  reported in `doc.warnings`, the channel D137 gives to what the model cannot
+  hold, instead of ending the load.
+Proof: `tests/integration/test_degenerate_curves.py` (all five fail on the old
+code); 683 local drawings load, 376 heal without errors, no zero-radius arc
+left in any source or result.

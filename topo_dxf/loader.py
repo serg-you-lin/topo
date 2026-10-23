@@ -316,12 +316,15 @@ def load_dxf(
 
     ignore = {s.lower() for s in (ignore_layers or [])}
 
-    edges = DxfAdapter(
+    adapter = DxfAdapter(
         msp,
         ignore_layers=ignore,
         role_rules=role_rules,
         skip_layers=skip_layers,
-    ).to_edges()
+    )
+    edges = adapter.to_edges()
+    for msg in adapter.warnings:
+        _emit(warnings, msg, verbose)
 
     # Dopo explode possono affiorare TEXT/MTEXT che stavano dentro i blocchi:
     # le aggiungiamo a quelle catturate pre-audit, senza duplicare.
@@ -365,9 +368,10 @@ def document_from_msp(
     """
     ignore = {s.lower() for s in (ignore_layers or [])}
 
-    edges = DxfAdapter(
+    adapter = DxfAdapter(
         msp, ignore_layers=ignore, role_rules=role_rules, skip_layers=skip_layers,
-    ).to_edges()
+    )
+    edges = adapter.to_edges()
     texts = DxfTextExtractor(msp, role_rules).extract()
 
     header = getattr(getattr(msp, "doc", None), "header", None)
@@ -380,6 +384,7 @@ def document_from_msp(
     return Document(
         edges=edges, texts=texts,
         source_meta=meta, source_path=source_path,
+        warnings=list(adapter.warnings),
     )
 
 

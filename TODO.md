@@ -40,12 +40,10 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       Lungo la strada: D151 (giro senza area perso), D152 (saldatura a
       catena). Ogni disegno con la sua lettura: `golden_islands/` e
       `golden_anchoring/` → `island()`, il resto → `heal()`.
-- [ ] **G4** `ArcSeg`/`EllipseSeg.discretize` verificati contro la
-      tolleranza come i cerchi in D145. Fatto (D153): archi già entro `tol`,
-      ellisse sulla griglia del parametro. Resta il raggio 0:
-      `ArcSeg.discretize` con raggio 0 dà ZeroDivisionError (`_grid_angles`):
-      ci sono archi di raggio 0 in disegni scritti da `island()` (D113,
-      locali).
+- [x] **G4** `ArcSeg`/`EllipseSeg.discretize` verificati contro la
+      tolleranza come i cerchi in D145: archi già entro `tol`, ellisse sulla
+      griglia del parametro (D153); curve di misura nulla rifiutate dalla
+      primitiva e avvisate dall'adapter (D154).
 - [ ] **G5** Bug di misura trovati con D145: `cluster.area` di
       `rect_with_countersink` (un inner non tolto); `contour_shape`
       `length`/`width` sul poligono invece che sulle primitive.
