@@ -5716,3 +5716,27 @@ the dropped loops: DXFs in `_debug/2026-10-23_topo_G6_D103/` (layer
 `GIRO_SCARTATO`, red).
 
 No change to `island()` output. `main` → **0.22.2**.
+
+### D158 — the 1.0 gate closes on invariants: D143's promises become tests on every fixture, both readings; what they do not see goes to 1.x
+
+Federico, 23 October, after G6b appeared: the gate keeps growing because
+defects are found by looking, one drawing at a time, and looking never ends.
+D143 states the promise as a finite set of invariants; three were already
+tests, one ("every input piece comes out once") was not, and that is where G6b
+was hiding. So:
+
+**Permanent (stays after 1.0):** every invariant of D143 is a test in the
+suite, run on every fixture in the repo, in both readings where it applies —
+faithful both ways (`test_fidelity`), complete (`TestNothingDropped`), every
+piece out once (new, G6b), deterministic (edge order, `TestEdgeOrder`), and
+invariant under rigid motion (rotation exists for `heal()`; translation far
+from the origin, mirror, and all of them for `island()` are missing). A
+reading's facts are properties of the shape, not of where it sits or in what
+order it was read, so moving, turning, mirroring or reordering a drawing must
+not change them beyond the tolerance. These are the guard every 1.x change
+must keep green, and a new fixture gets them for free.
+
+**Temporary (deleted when topo is 1.0-ready):** the list of red invariants
+on today's fixtures *is* the rest of the gate. After that sweep, an item
+enters the gate only if it turns one of these invariants red on a fixture in
+the repo; a defect found by eye that no invariant sees is a 1.x fix.
