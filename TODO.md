@@ -22,6 +22,11 @@ provate le invarianti di D143** sui fixture già nel repo, più i documenti
 (D144) e la history pulita. Tutto il resto va in "Dopo la 1.0" in fondo a
 questa sezione. Il dettaglio di ogni punto sta più sotto o in `MAP.md`.
 
+**Regola d'ingresso (D158, temporanea — si cancella a 1.0-ready):** dopo la
+passata delle invarianti di D143 su tutti i fixture, entra qui solo ciò che
+rende rossa una di quelle invarianti su un fixture del repo. Il resto è 1.x.
+Le invarianti invece restano nella suite per sempre.
+
 Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
 (si scrivono su una superficie ferma), ultima la pulizia.
 
