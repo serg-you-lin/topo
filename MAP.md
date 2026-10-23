@@ -5848,3 +5848,27 @@ and inner roundtrip have no object any more; what remains of G6c is
 whether the outers change with order or frame. The island goldens change
 and are regenerated only after Federico has looked at them (non-negotiable
 9). D147 (suspended) is moot for its inner half.
+
+### D162 — a piece that closes by itself comes out of `island()` as one closed curve in `loose`; `anchor_texts` targets it
+
+Decided by Federico, 23 October 2026, on the D161 follow-up. Among the pieces
+`island()` puts in `loose`, the ones that close by themselves — one closed
+segment (a circle, a full ellipse, a closed spline) or a chain where every
+node has degree 2 — come out as one `ClosedCurve` (polygon, segments in ring
+order), still in `loose` with their `cluster_ref`. Everything else stays one
+`OpenCurve` per edge. `contour_shape` reads them like any contour; on a piece
+that does not close it returns `None` (it used to crash). `anchor_texts`
+targets them as `"loose[k]"` (`resolve_target` resolves it); loose closed
+curves with a non-structural role (a frame marked by the caller) are not
+targets.
+
+Why. topo exposes its shapes, nothing more: the consumer finds its own
+patterns (a bent sheet seen from the side, a counterbore's section) among
+the loose curves and skips what already has a shape. A ring with only
+degree-2 nodes has one cycle and no choice, so D161 holds: nothing depends
+on entity order or on the frame. A chain with a branch stays open edges;
+which cycle to see there is the consumer's. `heal()` is untouched.
+
+Not done, on purpose: no new type, no new function, no path for a group of
+open curves, no open loose curves as anchor targets (a leader tip on a
+centre line would compete with the hole it crosses).

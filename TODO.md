@@ -135,7 +135,18 @@ strisce (D142), D147 (estremi sui T, branch `d147-t-ends`), cerchi doppi,
 criterio del punto medio di `_refine_segment`, curve da equazione, fatti di
 riconoscimento, snapfence, richieste dei consumer che aggiungono nomi.
 
-## APERTO (23 ottobre) — shape dei pezzi chiusi in loose (D161)
+## FATTO, DA GUARDARE (23 ottobre) — shape dei pezzi chiusi in loose (D162)
+
+D162: un pezzo che chiude da sé esce da `island()` come un `ClosedCurve` in
+`loose`; `contour_shape` lo legge, `anchor_texts` lo aggancia (`"loose[k]"`).
+I 6 test sono tornati verdi. Da fare: Federico guarda i DXF in
+`Projects/_debug/2026-10-23_topo_pezzi_chiusi_loose/` (layer
+`PezzoChiusoLoose` in rosso, `Aggancio` = testo → pezzo); se gli agganci sono
+giusti si rigenerano i golden `anch_01`/`anch_08` (17 e 1 agganci nuovi,
+nessuno perso) e si tolgono da `KNOWN_FAILING`. snapdraw: leggere i fori da
+`loose` invece che da `cluster.inners` (da annotare nel suo TODO).
+
+Storia della voce:
 
 Con D161 un foro letto da `island()` è un pezzo chiuso in `loose` (un
 `CircleSeg`, un percorso che chiude da sé), non più un inner: `anchor_texts`

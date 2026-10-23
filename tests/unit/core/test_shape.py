@@ -243,12 +243,12 @@ class TestContourShapeSuIsole(unittest.TestCase):
     def _kinds(self, cluster):
         return sorted(contour_shape(c).kind for c in cluster.inners)
 
-    # difetto noto (TODO, shape dei pezzi chiusi in loose): con D161 il foro è in loose
-    @unittest.expectedFailure
     def test_island(self):
-        cluster = topo.island(self._doc(), max_gap=MAX_GAP).clusters[0]
-        self.assertEqual(contour_shape(cluster.outer).kind, RECTANGLE)
-        self.assertEqual(self._kinds(cluster), [CIRCLE, STADIUM])
+        # D161: island() non fa inner; i pezzi che chiudono da sé sono in loose (D162)
+        result = topo.island(self._doc(), max_gap=MAX_GAP)
+        self.assertEqual(contour_shape(result.clusters[0].outer).kind, RECTANGLE)
+        kinds = sorted(s.kind for s in map(contour_shape, result.loose) if s is not None)
+        self.assertEqual(kinds, [CIRCLE, STADIUM])
 
     def test_heal(self):
         cluster = topo.heal(self._doc()).clusters[0]
