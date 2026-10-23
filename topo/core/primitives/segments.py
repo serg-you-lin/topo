@@ -64,6 +64,14 @@ class LineSeg:
             end=_rotate_point(self.end, angle, origin),
         )
 
+    def translated(self, dx: float, dy: float) -> "LineSeg":
+        """Stessa linea, spostata di (`dx`, `dy`)."""
+        return LineSeg(start=_translate_point(self.start, dx, dy), end=_translate_point(self.end, dx, dy))
+
+    def mirrored(self) -> "LineSeg":
+        """Stessa linea, specchiata sull'asse x (y → −y)."""
+        return LineSeg(start=_mirror_point(self.start), end=_mirror_point(self.end))
+
 
 # ---------------------------------------------------------------------------
 # Matematica di rotazione condivisa (ogni primitiva)
@@ -75,6 +83,16 @@ def _rotate_point(pt: Point, angle: float, origin: Point) -> Point:
     x, y = pt[0] - ox, pt[1] - oy
     cos_a, sin_a = math.cos(angle), math.sin(angle)
     return (ox + x * cos_a - y * sin_a, oy + x * sin_a + y * cos_a)
+
+
+def _translate_point(pt: Point, dx: float, dy: float) -> Point:
+    """`pt` spostato di (`dx`, `dy`)."""
+    return (pt[0] + dx, pt[1] + dy)
+
+
+def _mirror_point(pt: Point) -> Point:
+    """`pt` specchiato sull'asse x."""
+    return (pt[0], -pt[1])
 
 
 # ---------------------------------------------------------------------------
@@ -223,6 +241,21 @@ class ArcSeg:
             end_angle=self.end_angle + angle,
             ccw=self.ccw,
         )
+
+    def translated(self, dx: float, dy: float) -> "ArcSeg":
+        """Stesso arco, spostato di (`dx`, `dy`): si sposta solo il centro."""
+        return ArcSeg(center=_translate_point(self.center, dx, dy), radius=self.radius,
+                      start_angle=self.start_angle, end_angle=self.end_angle, ccw=self.ccw)
+
+    def mirrored(self) -> "ArcSeg":
+        """
+        Stesso arco, specchiato sull'asse x: il punto all'angolo `a` va
+        all'angolo `−a`, quindi gli angoli cambiano segno e il verso si
+        inverte. La griglia del cerchio (D145, ancorata all'angolo 0) è
+        simmetrica: l'arco specchiato ha i vertici specchiati.
+        """
+        return ArcSeg(center=_mirror_point(self.center), radius=self.radius,
+                      start_angle=-self.start_angle, end_angle=-self.end_angle, ccw=not self.ccw)
 
     @classmethod
     def from_chord(cls, start: Point, end: Point, bulge: float) -> "ArcSeg":
@@ -445,6 +478,19 @@ class BSplineSeg:
             weights=list(self.weights) if self.weights else None,
         )
 
+    def translated(self, dx: float, dy: float) -> "BSplineSeg":
+        """Stessa spline, spostata di (`dx`, `dy`): si spostano i punti di controllo."""
+        return BSplineSeg(degree=self.degree,
+                          control_points=[_translate_point(p, dx, dy) for p in self.control_points],
+                          knots=list(self.knots), weights=list(self.weights) if self.weights else None)
+
+    def mirrored(self) -> "BSplineSeg":
+        """Stessa spline, specchiata sull'asse x: una mappa lineare porta la
+        curva nella curva dei punti di controllo specchiati."""
+        return BSplineSeg(degree=self.degree,
+                          control_points=[_mirror_point(p) for p in self.control_points],
+                          knots=list(self.knots), weights=list(self.weights) if self.weights else None)
+
     def _evaluate(self, t: float) -> Point:
         """
         Punto della curva vera al parametro `t` (algoritmo di de Boor, "The
@@ -580,6 +626,15 @@ class CircleSeg:
         """Stesso cerchio, ruotato di `angle` radianti attorno a `origin` (solo il centro si sposta)."""
         return CircleSeg(center=_rotate_point(self.center, angle, origin), radius=self.radius)
 
+    def translated(self, dx: float, dy: float) -> "CircleSeg":
+        """Stesso cerchio, spostato di (`dx`, `dy`)."""
+        return CircleSeg(center=_translate_point(self.center, dx, dy), radius=self.radius)
+
+    def mirrored(self) -> "CircleSeg":
+        """Stesso cerchio, specchiato sull'asse x (la griglia, ancorata
+        all'angolo 0, è simmetrica)."""
+        return CircleSeg(center=_mirror_point(self.center), radius=self.radius)
+
     def discretize(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
         Discretizza il cerchio in polilinea chiusa sulla sua griglia
@@ -706,3 +761,21 @@ class EllipseSeg:
             end_param=self.end_param,
             ccw=self.ccw,
         )
+
+    def translated(self, dx: float, dy: float) -> "EllipseSeg":
+        """Stessa ellisse, spostata di (`dx`, `dy`): si sposta solo il centro."""
+        return EllipseSeg(center=_translate_point(self.center, dx, dy), major_axis=self.major_axis,
+                          ratio=self.ratio, start_param=self.start_param, end_param=self.end_param,
+                          ccw=self.ccw)
+
+    def mirrored(self) -> "EllipseSeg":
+        """
+        Stessa ellisse, specchiata sull'asse x. Il semiasse minore è
+        `ratio`·(asse maggiore ruotato di +90°): specchiando l'asse maggiore
+        quello ricavato punta dalla parte opposta all'immagine del minore,
+        quindi il punto al parametro `t` va al parametro `−t` — parametri
+        col segno cambiato e verso invertito, come `ArcSeg.mirrored`.
+        """
+        return EllipseSeg(center=_mirror_point(self.center), major_axis=_mirror_point(self.major_axis),
+                          ratio=self.ratio, start_param=-self.start_param, end_param=-self.end_param,
+                          ccw=not self.ccw)

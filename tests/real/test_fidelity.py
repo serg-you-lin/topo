@@ -19,8 +19,6 @@ Ogni disegno con la sua lettura (D152): quelli di `golden_islands/` e
 altri con `heal()`. Le copie identiche si misurano una volta.
 """
 
-import hashlib
-import subprocess
 import sys
 import unittest
 from collections import Counter
@@ -36,26 +34,13 @@ sys.path.insert(0, str(project_root))
 import topo
 import topo_dxf
 from topo.core.primitives.segments import segment_endpoints
+from tests.drawings import tracked_drawings
 from tests.readings import island_reading
 
 MAX_GAP = 0.5            # quello di snapdraw, come test_golden_islands
 SAMPLE_TOL = 0.01        # passo della discretizzazione su cui si misura
 COEFF_EPS = 1e-9         # "identico" in virgola mobile
 DUPLICATE_EPS = 0.05     # due curve così vicine sono un doppione da fondere
-ISLAND_DIRS = ("tests/data/golden_islands/", "tests/data/golden_anchoring/")
-
-
-def _tracked_drawings() -> list:
-    out = subprocess.run(["git", "ls-files", "tests/*.dxf", "tests/*.DXF"],
-                         cwd=project_root, capture_output=True, text=True).stdout
-    seen, drawings = set(), []
-    for rel in out.splitlines():
-        digest = hashlib.sha1((project_root / rel).read_bytes()).hexdigest()
-        reading = "island" if rel.startswith(ISLAND_DIRS) else "heal"
-        if (digest, reading) not in seen:
-            seen.add((digest, reading))
-            drawings.append((rel, reading))
-    return drawings
 
 
 def _lines_and_samples(edges):
@@ -150,7 +135,7 @@ class TestFidelity(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.drawings = _tracked_drawings()
+        cls.drawings = tracked_drawings()
         cls.compared = 0
 
     def test_001_hausdorff_e_coefficienti(self):
