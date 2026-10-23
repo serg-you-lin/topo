@@ -13,6 +13,7 @@ Poi lancia:
     python -m pytest tests/unit/test_healer.py -v
 """
 
+import math
 import unittest
 from pathlib import Path
 import sys
@@ -184,6 +185,15 @@ class TestHealerCountersink(unittest.TestCase):
         # heal() non distingue countersink — li vede entrambi come inners
         self.assertEqual(len(self.result.clusters[0].features("holes")), 0)
         self.assertGreaterEqual(len(self.result.clusters[0].inners), 2)
+
+    def test_003_area_per_parita(self):
+        # Ø30 vuoto (depth 1), Ø10 isola dentro di lui (depth 2, D89): l'area
+        # vera è 200·100 − π·15² + π·5², non outer meno l'unione. Scarto dal
+        # poligono entro tol × perimetro dei due cerchi (G5)
+        c = self.result.clusters[0]
+        self.assertEqual(sorted(i.depth for i in c.inners), [1, 2])
+        exact = 200 * 100 - math.pi * 15 ** 2 + math.pi * 5 ** 2
+        self.assertAlmostEqual(c.area, exact, delta=0.01 * 2 * math.pi * (15 + 5))
 
 
 # ---------------------------------------------------------------------------
