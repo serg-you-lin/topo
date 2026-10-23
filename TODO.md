@@ -34,24 +34,12 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       la prova G3.
 
 **Promessa — D143, provata sui fixture**
-- [ ] **G3** Test di fedeltà a due vie (Hausdorff nei due versi ≤ tol,
-      coefficienti identici dove heal non tocca), sul DXF scritto e riletto,
-      su tutti i fixture, `heal()` e `island()`.
-      **Trovato con D150, risolto in D151:** un giro chiuso senza area
-      (arco + la sua copia a corde) spariva da `heal()`; ora va in `loose`.
-      Test in `test_heal_steps.py::TestLoopsToCurves`.
-      **Misura (22 ottobre), 278 fixture tracciati, scritto e riletto:**
-      `island()` sempre entro `max_gap` (max 0.47 su 0.5). `heal()` entro
-      la tolleranza su 277; fuori `golden_islands/regr_01` (0.59 su 0.05):
-      `weld_degenerate_linesegs` salda a catena tratti da 0.02 e la curva
-      collassa in un punto. Correzione su branch `d152-bounded-weld`
-      (gruppo saldato ≤ 0.05, ordine canonico): fedele, suite verde, ma
-      cambia la lettura di ~20 disegni locali — inner a spigoli vivi e
-      micro-inner spariscono, 6 strisce di un foglio di viste non chiudono
-      più (gap 0.08–0.1 chiusi prima solo dalla deriva). Da giudicare a
-      occhio: `topo/_debug/d152/caso*_prima|dopo.dxf`. Poi: il test di
-      fedeltà nella suite (bound: tolleranza per heal, `max_gap` per
-      island) e i coefficienti identici dove heal non tocca.
+- [x] **G3** Test di fedeltà a due vie — `tests/real/test_fidelity.py`
+      (D152): Hausdorff ≤ tolleranza (heal) / `max_gap` (island) e
+      coefficienti identici dove la lettura non tocca, sul DXF riletto.
+      Lungo la strada: D151 (giro senza area perso), D152 (saldatura a
+      catena). Ogni disegno con la sua lettura: `golden_islands/` e
+      `golden_anchoring/` → `island()`, il resto → `heal()`.
 - [ ] **G4** `ArcSeg`/`EllipseSeg.discretize` verificati contro la
       tolleranza come i cerchi in D145.
       `ArcSeg.discretize` con raggio 0 dà ZeroDivisionError (`_grid_angles`):

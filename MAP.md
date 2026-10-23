@@ -5495,3 +5495,46 @@ contour, and a `ClosedCurve` would be put back in the containment tree by
 lose). `loops_to_curves` now returns `list[ClosedCurve | OpenCurve]`.
 
 Checked: the 376 local drawings lose no source arc (was 14); suite unchanged.
+
+### D152 — Reopening D56 on one point: a welded group spans at most 0.05 mm; fidelity is tested per reading ✅
+Found by G3's measurement (D148): on `golden_islands/regr_01`, read with
+`heal()`, a source point lay 0.59 mm from the output against a tolerance of
+0.05. `weld_degenerate_linesegs` (D56) used an unbounded union-find: a curve
+drawn as a chain of 0.02 mm LineSegs welded into one node, the welded edges
+vanished, the curve collapsed to a point. D56 stays — welding, not deleting —
+but a group of welded nodes now spans at most `_DEGENERATE_LENGTH_EPS` (its
+bounding-box diagonal); a sub-threshold LineSeg whose weld would exceed that
+stays as a real edge. Candidates are welded in a canonical order (length, then
+nodes), not input order, so the groups do not depend on edge order (D131).
+
+Effect on local drawings: only sheets of views change, and Federico judged
+them (23 Oct): heal on a sheet of views is not a case heal is designed for, so
+those changes are irrelevant; on `island()` the result is a little better
+(fewer false micro-inners). Rounded rectangles drawn twice (arcs + chord
+corners) were read before as sharp-cornered inners plus a false inner per
+corner arc; now they are in `loose` — better, though not yet a contour.
+
+**Which reading a fixture gets.** It was already in the golden tests and is
+now written down: drawings in `tests/data/golden_islands/` and
+`tests/data/golden_anchoring/` are sheets of views, read with `island()`;
+every other tracked drawing is read with `heal()`. A fidelity failure of
+`heal()` on a sheet of views is not a defect.
+
+**The test** (`tests/real/test_fidelity.py`, closes G3): every tracked drawing,
+written with `to_dxf` and read back with `document_from_msp(skip_layers=())`
+(loose included), identical copies measured once (216 drawing/reading pairs):
+1. Hausdorff in both directions ≤ the reading's bound: the node tolerance for
+   `heal()`, `max_gap` for `island()` — gap closures are the only thing that
+   moves geometry in a view.
+2. Identical coefficients (≤ 1e-9: centre and radius, ellipse, control points,
+   a spline also reversed) for every curve the reading had no reason to touch:
+   both ends coincide with another source edge's, and no near-duplicate of
+   the same kind within 0.05. A free end may have been closed within the
+   tolerance, and then an arc read back from an LWPOLYLINE bulge has its centre
+   and radius recomputed from moved ends (0.09 mm on an r 420 arc of small
+   sweep — ill-conditioned, still within Hausdorff). That is heal intervening,
+   which D143 exempts. Today 7391 of 11838 source curves are compared; the
+   test asserts the count stays above 1000, so the rule cannot quietly
+   exclude everything.
+Mutation check: a bulge off by 0.1% in the writer fails 77 sub-tests. Suite
+time 90 → 154 s.
