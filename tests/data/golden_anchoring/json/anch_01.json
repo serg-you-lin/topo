@@ -8,18 +8,7 @@
         16.18,
         90.39
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.46,
-            114.84
-          ],
-          "length": 48.0,
-          "width": 46.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -28,18 +17,7 @@
         21.74,
         92.39
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.46,
-            114.84
-          ],
-          "length": 48.0,
-          "width": 46.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -48,18 +26,7 @@
         21.74,
         92.39
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.46,
-            114.84
-          ],
-          "length": 48.0,
-          "width": 46.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -68,18 +35,7 @@
         26.36,
         114.39
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            118.79,
-            84.0
-          ],
-          "length": 231.919,
-          "width": 162.343
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -88,18 +44,7 @@
         31.26,
         43.64
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            54.26,
-            59.12
-          ],
-          "length": 46.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -108,18 +53,7 @@
         31.26,
         128.37
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.46,
-            114.84
-          ],
-          "length": 48.0,
-          "width": 46.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -128,18 +62,7 @@
         32.14,
         101.2
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.46,
-            114.84
-          ],
-          "length": 48.0,
-          "width": 46.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -148,18 +71,7 @@
         34.66,
         85.01
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            118.79,
-            84.0
-          ],
-          "length": 231.919,
-          "width": 162.343
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -168,18 +80,7 @@
         34.66,
         144.51
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            118.79,
-            84.0
-          ],
-          "length": 231.919,
-          "width": 162.343
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -188,18 +89,7 @@
         40.89,
         92.39
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.46,
-            114.84
-          ],
-          "length": 48.0,
-          "width": 46.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -208,18 +98,7 @@
         41.86,
         63.03
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            54.26,
-            59.12
-          ],
-          "length": 46.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": true,
@@ -237,18 +116,7 @@
         48.29,
         110.39
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.26,
-            114.39
-          ],
-          "length": 7.895,
-          "width": 4.2
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -266,18 +134,7 @@
         54.26,
         85.09
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            118.79,
-            84.0
-          ],
-          "length": 231.919,
-          "width": 162.343
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -286,18 +143,7 @@
         54.26,
         114.39
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.26,
-            114.39
-          ],
-          "length": 7.895,
-          "width": 4.2
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -306,18 +152,7 @@
         54.26,
         116.79
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.26,
-            114.39
-          ],
-          "length": 7.895,
-          "width": 4.2
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -326,18 +161,7 @@
         54.26,
         144.49
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            118.79,
-            84.0
-          ],
-          "length": 231.919,
-          "width": 162.343
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -346,18 +170,7 @@
         54.34,
         101.2
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.46,
-            114.84
-          ],
-          "length": 48.0,
-          "width": 46.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -366,18 +179,7 @@
         54.84,
         90.89
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.46,
-            114.84
-          ],
-          "length": 48.0,
-          "width": 46.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -386,18 +188,7 @@
         55.86,
         122.93
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.26,
-            114.39
-          ],
-          "length": 7.895,
-          "width": 4.2
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -406,28 +197,7 @@
         56.36,
         63.03
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            52.41,
-            60.02
-          ],
-          "length": 1.2,
-          "width": 0.5
-        },
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            56.11,
-            60.02
-          ],
-          "length": 1.2,
-          "width": 0.5
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": true,
@@ -463,18 +233,7 @@
         70.86,
         63.03
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            54.26,
-            59.12
-          ],
-          "length": 46.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": true,
@@ -492,18 +251,7 @@
         73.86,
         85.15
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            118.79,
-            84.0
-          ],
-          "length": 231.919,
-          "width": 162.343
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -512,18 +260,7 @@
         73.86,
         134.99
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.46,
-            114.84
-          ],
-          "length": 48.0,
-          "width": 46.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -532,18 +269,7 @@
         73.86,
         144.33
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            118.79,
-            84.0
-          ],
-          "length": 231.919,
-          "width": 162.343
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -552,18 +278,7 @@
         77.26,
         43.64
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            54.26,
-            59.12
-          ],
-          "length": 46.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -572,18 +287,7 @@
         77.26,
         101.2
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.46,
-            114.84
-          ],
-          "length": 48.0,
-          "width": 46.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -592,28 +296,7 @@
         77.26,
         105.96
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            73.86,
-            95.21
-          ],
-          "length": 6.7,
-          "width": 3.35
-        },
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.46,
-            114.84
-          ],
-          "length": 48.0,
-          "width": 46.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -622,18 +305,7 @@
         77.26,
         149.64
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            54.46,
-            114.84
-          ],
-          "length": 48.0,
-          "width": 46.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -642,18 +314,7 @@
         81.55,
         57.62
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            54.26,
-            59.12
-          ],
-          "length": 46.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -662,18 +323,7 @@
         83.16,
         114.39
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            118.79,
-            84.0
-          ],
-          "length": 231.919,
-          "width": 162.343
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -682,18 +332,7 @@
         102.15,
         110.39
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            108.55,
-            114.39
-          ],
-          "length": 48.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -702,18 +341,7 @@
         116.24,
         138.39
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            108.55,
-            114.39
-          ],
-          "length": 48.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -722,18 +350,7 @@
         132.36,
         90.39
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            139.9,
-            114.39
-          ],
-          "length": 48.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -742,18 +359,7 @@
         132.36,
         134.99
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            139.9,
-            114.39
-          ],
-          "length": 48.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -762,18 +368,7 @@
         138.4,
         143.77
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            139.9,
-            114.39
-          ],
-          "length": 48.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": true,
@@ -800,18 +395,7 @@
         162.05,
         90.39
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            169.51,
-            114.39
-          ],
-          "length": 48.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -820,18 +404,7 @@
         162.05,
         138.39
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            169.51,
-            114.39
-          ],
-          "length": 48.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": true,

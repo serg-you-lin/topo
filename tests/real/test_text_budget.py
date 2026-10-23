@@ -55,10 +55,10 @@ def _make_test(name: str):
 
 
 # Fallimenti attesi, mai budget alzati per farli passare (TODO):
-# anch_02 cresciuto con D138, da capire; anch_06 cambia topologia con D145
+# anch_06 cambia topologia con D145
 # (contatto deciso sul poligono in `island()`, lettura "dopo" giudicata più
 # corretta da Federico, ma il golden resta congelato con gli altri di island).
-KNOWN_FAILING = {"anch_02.dxf", "anch_06.dxf"}
+KNOWN_FAILING = {"anch_06.dxf"}
 
 for _name in FILES:
     _test = _make_test(_name)

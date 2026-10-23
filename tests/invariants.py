@@ -19,6 +19,7 @@ from dataclasses import replace
 
 from shapely import affinity
 from shapely.errors import GEOSException
+from shapely import STRtree, prepare
 from shapely.geometry import LineString, Point
 from shapely.ops import unary_union
 
@@ -67,6 +68,25 @@ MOTIONS = [
 ]
 
 
+def scrambled(doc: Document) -> Document:
+    """`doc` scritto in un altro modo, tutto insieme: edge rimescolati (seed 0),
+    ruotati di ROTATION, spostati di FAR e specchiati. Una lettura sola al
+    posto di una per moto e per ordine (D160): se la lettura dipende da una
+    qualunque di queste cose, cambia anche qui; quale sia lo dice la
+    diagnosi, che prova i moti e gli ordini uno alla volta."""
+    edges = list(doc.edges)
+    random.Random(0).shuffle(edges)
+    return moved(replace(doc, edges=edges), lambda s: s.rotated(ROTATION).translated(*FAR).mirrored())
+
+
+def unscrambled(poly):
+    """Il poligono shapely di una lettura di `scrambled(doc)` riportato nel
+    sistema di `doc`."""
+    poly = affinity.scale(poly, 1.0, -1.0, origin=(0, 0))
+    poly = affinity.translate(poly, -FAR[0], -FAR[1])
+    return affinity.rotate(poly, -ROTATION, origin=(0, 0), use_radians=True)
+
+
 def orders(edges: list) -> list:
     """(nome, edge) per ogni ordine provato: al contrario, più SHUFFLES
     rimescolamenti riproducibili."""
@@ -97,6 +117,16 @@ def _differ_by(a, b) -> float:
         return math.inf
 
 
+def _could_be_twins(a, b, band: float) -> bool:
+    """Falso solo se la differenza simmetrica di `a` e `b` supera certo
+    `band`: con gli ingombri disgiunti è la somma delle aree. Evita il
+    confronto vero, che è il conto caro, fra i fori lontani (D160)."""
+    ax0, ay0, ax1, ay1 = a.bounds
+    bx0, by0, bx1, by1 = b.bounds
+    apart = ax1 < bx0 or bx1 < ax0 or ay1 < by0 or by1 < ay0
+    return not apart or a.area + b.area <= band
+
+
 def shape_differences(before: list, after: list, band_per_mm: float) -> list:
     """I poligoni di `before` senza un gemello in `after` (differenza
     simmetrica sotto `band_per_mm` per mm di perimetro), accoppiati uno a uno."""
@@ -104,7 +134,8 @@ def shape_differences(before: list, after: list, band_per_mm: float) -> list:
     missing = []
     for poly in before:
         band = poly.length * band_per_mm
-        twin = next((other for other in free if _differ_by(poly, other) <= band), None)
+        twin = next((other for other in free if _could_be_twins(poly, other, band)
+                     and _differ_by(poly, other) <= band), None)
         if twin is None:
             missing.append(tuple(round(v, 2) for v in poly.bounds))
         else:
@@ -118,24 +149,76 @@ def contours(result) -> list:
             [i.polygon for c in result.clusters for i in c.inners])
 
 
+class _Bands:
+    """Le fasce larghe `distance` attorno a `geoms`, costruite una volta per
+    geometria. La fascia attorno a un'unione è l'unione delle fasce: rifare il
+    buffer dei vicini a ogni curva costava milioni di vertici su un disegno
+    con molti lati corti (D160)."""
+
+    def __init__(self, geoms: list, distance: float):
+        self.distance = distance
+        self.tree = STRtree(geoms)
+        self.bands = [g.buffer(distance) for g in geoms]
+        prepare(self.bands)
+
+    def near(self, curve):
+        """La fascia attorno alle geometrie vicine a `curve`, o None se
+        nessuna è vicina. Dentro `distance` da `curve` è la fascia attorno a
+        tutte: le altre non la raggiungono."""
+        near = self.tree.query(curve, predicate="dwithin", distance=self.distance)
+        if len(near) == 0:
+            return None
+        # il caso normale: la curva sta tutta nella fascia di un vicino solo
+        for i in near:
+            if self.bands[i].covers(curve):
+                return self.bands[i]
+        return unary_union([self.bands[i] for i in near])
+
+
+def _rims(result) -> list:
+    return [geometry(s) for c in result.clusters for ct in [c.outer] + c.inners for s in ct.segments]
+
+
 def along_contours(result) -> list:
     """I tratti di `result.loose` che corrono lungo un contorno (entro
     ON_CONTOUR per più di ALONG mm): (lunghezza, punto) per ognuno. Ogni
     pezzo d'ingresso esce una volta — o in un contorno o in `loose` (D137) —
     quindi la lista è vuota."""
-    rims = [geometry(s) for c in result.clusters for ct in [c.outer] + c.inners for s in ct.segments]
+    rims = _rims(result)
     if not rims:
         return []
-    band = unary_union(rims).buffer(ON_CONTOUR)
+    bands = _Bands(rims, ON_CONTOUR)
     found = []
     for curve in result.loose:
         for segment in curve.segments:
-            shared = geometry(segment).intersection(band)
+            loose = geometry(segment)
+            band = bands.near(loose)
+            if band is None:
+                continue
+            shared = loose.intersection(band)
             for piece in getattr(shared, "geoms", [shared]):
                 if piece.length > ALONG:
                     point = piece.representative_point()
                     found.append((round(piece.length, 2), (round(point.x, 1), round(point.y, 1))))
     return found
+
+
+def uncovered(doc: Document, result, distance: float):
+    """La geometria in ingresso di `doc` più lontana di `distance` da ogni
+    uscita di `result` (segmenti dei contorni e di `loose`)."""
+    outputs = _rims(result) + [geometry(s) for f in result.loose for s in f.segments]
+    # un ingresso uscito tale e quale (nei due versi) è coperto: si salta il
+    # conto della fascia, che è il caro, per quasi ogni edge (D160)
+    same = {tuple(g.coords) for g in outputs} | {tuple(g.coords)[::-1] for g in outputs}
+    bands = _Bands(outputs, distance)
+    lost = []
+    for edge in doc.edges:
+        curve = geometry(edge.segment)
+        if tuple(curve.coords) in same:
+            continue
+        band = bands.near(curve)
+        lost.append(curve if band is None else curve.difference(band))
+    return unary_union(lost)
 
 
 def known_defect(test, where: str, gate: str, check) -> None:
