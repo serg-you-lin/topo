@@ -44,9 +44,11 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       tolleranza come i cerchi in D145: archi già entro `tol`, ellisse sulla
       griglia del parametro (D153); curve di misura nulla rifiutate dalla
       primitiva e avvisate dall'adapter (D154).
-- [ ] **G5** Bug di misura trovati con D145: `cluster.area` di
-      `rect_with_countersink` (un inner non tolto); `contour_shape`
-      `length`/`width` sul poligono invece che sulle primitive.
+- [x] **G5** Bug di misura trovati con D145 — fatto, D156: l'area di
+      `rect_with_countersink` non era un bug (Ø10 è un'isola a depth 2,
+      D89; scarto 0.47 entro tol × perimetro, ora provato da un test);
+      `contour_shape` `length`/`width` di `other` misurati sulle primitive
+      (prima fino a 0.016 corti, ora ≤ 4e-5 dal riferimento a 1e-6).
 - [ ] **G6** I 4 dubbi D103 verificati (guardati e classificati, non
       risolti per forza) e il giro scartato come duplicato in `result.loose`.
 - [ ] **G7** Zero `expectedFailure`: golden di island rifatti da zero sui
@@ -329,9 +331,8 @@ Poi topo 1.0.0, e snapbend 1.0.0 dietro.
   in anch_08" — da riprendere sui `_noframe`.
 - **Trovati con D145 (griglia degli archi), 19 ottobre — tutti per la
   promessa geometrica di D143:**
-  - `rect_with_countersink`: `cluster.area` non toglie uno dei due inner
-    (78.4 mm², disgiunto dall'altro): area 19372.16 contro 19293.14 vera
-    (outer meno l'unione degli inner a tol 1e-5). Identico prima di D145.
+  - ~~`rect_with_countersink`: `cluster.area`~~ — non un bug (D156): il
+    Ø10 sta dentro il Ø30, depth 2, isola per D89.
   - `island()` decide il contatto di un giro con sé stesso sul poligono
     discretizzato (`_loop_faces`: `make_valid`, lobi, `face_segments`
     rilegge i segmenti dal bordo del lobo): la topologia cambia sotto la
@@ -340,9 +341,7 @@ Poi topo 1.0.0, e snapbend 1.0.0 dietro.
     discretizzazione dell'arco, e l'estremo di una linea si sposta di 0.023
     (> 0.01). Il contatto va deciso sulle primitive (intersezioni esatte),
     con i dubbi D103.
-  - `contour_shape` di una forma `other` misura `length`/`width` sul
-    poligono (`shape.py`): il bbox di un poligono inscritto è più corto
-    fino a 2·tol. Il bbox esatto di archi e cerchi è dai punti estremi.
+  - ~~`contour_shape` di `other` sul poligono~~ — fatto, D156.
 - **`test_text_budget::test_anch_02` rosso già su `0d5a512` (D138)**: `to_text`
   di anch_02 fa 200.435 caratteri contro un budget di 193.366 (+3.7%). Visto il
   19 ottobre lavorando a D140, non causato da D140 (rosso anche sull'HEAD

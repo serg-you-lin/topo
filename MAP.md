@@ -5609,3 +5609,44 @@ return type), so it is **0.22.0**. From the next item on, the bump is the
 third digit.
 `main` → **0.22.0** (G1, G2, G3, G4 closed: D145–D154; public fields removed,
 `heal()` output changes, arcs and ellipses of zero size refused).
+
+### D156 — gate G5: `contour_shape` measures `other` on the primitives; the countersink's area was the parity reading, not a bug ✅
+
+Two measurement doubts found with D145, both checked against an exact value.
+
+**`cluster.area` of `rect_with_countersink` is right.** The TODO note called the
+Ø10 circle "an inner not subtracted", comparing with outer minus the *union* of
+the inners (19293.14). But the Ø10 lies inside the Ø30: depth 2, an island in
+the void, material by the parity rule (D89). The exact value of that reading is
+200·100 − π·15² + π·5² = 19371.68; `heal()` gives 19372.16, a difference of 0.47,
+within tol × perimeter of the two circles (1.26). No code changes; a test
+(`TestHealerCountersink.test_003_area_per_parita`) now holds both the depths and
+the value. Reading the pair as one hole is a process reading (snapbend).
+
+**`contour_shape` of `other` measured the inscribed polygon.** `_generic` took
+`length`/`width` from the minimum rotated rectangle of `discretize()`: a chord
+lies inside its arc, so every curved side came out short, up to 2·tol. Measured
+on the anchoring drawings against a 1e-6 reference: up to 0.016 short — beyond
+tol. Now:
+- `segment_reach(segment, direction)` (`core/geometry/measure.py`, internal) is
+  the (min, max) of the projection of the curve itself: closed form for line,
+  arc, circle, ellipse; for a B-spline 16 samples per knot span, then every
+  local extreme that can still win refined by golden section on the parameter.
+  `Reach` keeps a spline's samples for many directions.
+- The polygon only gives the starting angle. For `other` the angle of the
+  minimum-area rectangle is searched on the primitives within ±1° of it (the two
+  differ only by the sagitta of the curved sides), and length/width are the
+  reach along the two axes. So at the returned angle the rectangle contains the
+  curve and touches it on all four sides, exactly. `polygon` (all lines) is
+  unchanged: its polygon is exact.
+- Result: within 4e-5 of the reference on every `other` of anch_01–07.
+
+**The price, chosen:** time. Searching the angle on sampled splines only was
+about 12× faster but, on nearly symmetric shapes (area almost flat with the angle),
+landed in another local minimum (3e-4 off). Federico, 23 October: correctness
+now, speed when the geometric questions move to the Rust engine (ROADMAP).
+`contour_shape` on anch_02 (133 spline shapes): 0.03 s → 5 s.
+
+Golden: anch_01 changes only `length` of one contour, 7.894 → 7.895 (reference
+7.895). anch_02–07 stay frozen for G7.
+`main` → **0.22.1**.

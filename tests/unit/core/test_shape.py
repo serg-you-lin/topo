@@ -165,6 +165,66 @@ class TestShapeKindStabile(unittest.TestCase):
         self.assertEqual(contour_shape(segs).kind, OTHER)
 
 
+class TestMisureSullePrimitive(unittest.TestCase):
+    """`length`/`width` di `other` misurati sulla curva, non sul poligono inscritto (D156)."""
+
+    def test_d_ruotata(self):
+        # semicerchio r 10 chiuso dal diametro, ruotato di 20°: 20 × 10 esatti,
+        # mentre il poligono inscritto è più corto fino a 2·tol
+        a = math.radians(20)
+        arc = ArcSeg(center=(5, 7), radius=10, start_angle=a - math.pi / 2, end_angle=a + math.pi / 2)
+        s = contour_shape([arc, LineSeg(start=arc._point_at(a + math.pi / 2),
+                                        end=arc._point_at(a - math.pi / 2))])
+        self.assertEqual(s.kind, OTHER)
+        self.assertAlmostEqual(s.length, 20, places=9)
+        self.assertAlmostEqual(s.width, 10, places=9)
+
+    def test_d_grande_oltre_la_tolleranza(self):
+        # la stessa D a r 500: la polilinea a tol 0.01 resta indietro di quasi
+        # 0.01 sulla larghezza (sagitta), la misura no
+        a = math.radians(20)
+        arc = ArcSeg(center=(0, 0), radius=500, start_angle=a - math.pi / 2, end_angle=a + math.pi / 2)
+        s = contour_shape([arc, LineSeg(start=arc._point_at(a + math.pi / 2),
+                                        end=arc._point_at(a - math.pi / 2))])
+        self.assertAlmostEqual(s.length, 1000, places=7)
+        self.assertAlmostEqual(s.width, 500, places=7)
+
+    def test_spline_misurata_sulla_curva(self):
+        from topo.core.geometry.measure import segment_reach
+        from topo.core.geometry.points import interpolate_bspline
+        pts = [(50 * math.cos(t), 50 * math.sin(t)) for t in (i * 2 * math.pi / 12 for i in range(13))]
+        cp, kn = interpolate_bspline(pts, 3)
+        spline = BSplineSeg(degree=3, control_points=cp, knots=kn)
+        dense = spline.discretize(1e-7)
+        for d in ((1, 0), (0, 1), (1, 1), (-0.3, 1)):
+            n = math.hypot(*d)
+            proj = [(p[0] * d[0] + p[1] * d[1]) / n for p in dense]
+            lo, hi = segment_reach(spline, d)
+            # la curva vera arriva almeno dove arrivano i suoi punti, e non oltre la tolleranza densa
+            self.assertLessEqual(lo, min(proj) + 1e-9)
+            self.assertGreaterEqual(hi, max(proj) - 1e-9)
+            self.assertAlmostEqual(lo, min(proj), delta=1e-6)
+            self.assertAlmostEqual(hi, max(proj), delta=1e-6)
+
+    def test_ellisse_ruotata(self):
+        from topo.core.geometry.measure import segment_reach
+        a = math.radians(20)
+        e = EllipseSeg(center=(3, 4), major_axis=(10 * math.cos(a), 10 * math.sin(a)),
+                       ratio=0.4, start_param=0, end_param=2 * math.pi)
+        half = math.hypot(10 * math.cos(a), 4 * math.sin(a))
+        lo, hi = segment_reach(e, (1, 0))
+        self.assertAlmostEqual(lo, 3 - half, places=12)
+        self.assertAlmostEqual(hi, 3 + half, places=12)
+
+    def test_arco_che_non_passa_per_l_estremo(self):
+        from topo.core.geometry.measure import segment_reach
+        # quarto in alto a destra percorso al contrario: lungo x va da 0 a r, mai a −r
+        arc = ArcSeg(center=(0, 0), radius=4, start_angle=math.pi / 2, end_angle=0, ccw=False)
+        lo, hi = segment_reach(arc, (1, 0))
+        self.assertAlmostEqual(lo, 0, places=12)
+        self.assertAlmostEqual(hi, 4, places=12)
+
+
 def _edge(seg):
     pts = seg.discretize()
     return Edge(role="unknown", start=pts[0], end=pts[-1], segment=seg)

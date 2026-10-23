@@ -21,7 +21,7 @@ from typing import Optional, Tuple
 
 from shapely.geometry import Polygon
 
-from .measure import chord_angle_deg
+from .measure import Reach, chord_angle_deg, golden_max
 from ..primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg
 
 Point = Tuple[float, float]
@@ -197,12 +197,47 @@ def _generic(segments):
     box = polygon.minimum_rotated_rectangle
     if box.geom_type != "Polygon":
         return None
+    # il poligono dà l'orientamento di partenza del rettangolo minimo; le misure
+    # sono la portata delle primitive, e per una curva anche l'angolo si
+    # rifinisce su di loro (MAP.md D156)
     corners = list(box.exterior.coords)[:4]
-    sides = [math.dist(corners[i], corners[i + 1]) for i in range(3)]
+    theta = math.atan2(corners[1][1] - corners[0][1], corners[1][0] - corners[0][0])
+    reaches = [Reach(s) for s in segments]
+    if kind == OTHER:
+        theta = _min_area_angle(reaches, theta)
+    sides = [_reach(reaches, _unit(theta)), _reach(reaches, _unit(theta + math.pi / 2))]
     i = 0 if sides[0] >= sides[1] else 1
-    angle = chord_angle_deg(corners[i], corners[i + 1])
+    angle = math.degrees(theta + i * math.pi / 2) % 180
     c = polygon.centroid
     return ContourShape(kind, (c.x, c.y), sides[i], sides[1 - i], angle, len(segments))
+
+
+_ANGLE_BRACKET = math.radians(1.0)
+
+
+def _min_area_angle(reaches, theta: float) -> float:
+    """
+    Angolo del rettangolo d'area minima attorno alle primitive, cercato a
+    ±1° dall'angolo del poligono inscritto: i due differiscono solo per la
+    sagitta dei lati curvi. Sulle portate rifinite anche per le spline: sui
+    soli campioni una forma quasi simmetrica (area piatta con l'angolo)
+    sceglie un altro minimo locale. Costa tempo, voluto (MAP.md D156).
+    """
+    def neg_area(t):
+        return -_reach(reaches, _unit(t)) * _reach(reaches, _unit(t + math.pi / 2))
+
+    best, value = golden_max(neg_area, theta - _ANGLE_BRACKET, theta + _ANGLE_BRACKET, iterations=30)
+    return best if value > neg_area(theta) else theta
+
+
+def _unit(t: float) -> Point:
+    return (math.cos(t), math.sin(t))
+
+
+def _reach(reaches, direction) -> float:
+    """Ampiezza dell'insieme dei segmenti lungo `direction`, sulle primitive."""
+    spans = [r(direction) for r in reaches]
+    return max(hi for _lo, hi in spans) - min(lo for lo, _hi in spans)
 
 
 def _length(line: LineSeg) -> float:
