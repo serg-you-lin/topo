@@ -91,10 +91,7 @@ def _make_test(name: str):
 # con D145 la topologia di anch_06. Golden
 # congelati finché non si rifanno sui disegni senza cornice (G7; dubbi D103
 # chiusi in D157; TODO, "Trovati con D145"). Uno che torna a passare fa fallire la suite.
-# Con D162 anch_01 e anch_08 guadagnano agganci (17 e 1, nessuno perso) ai pezzi
-# chiusi in loose: rossi finché Federico non li guarda nei DXF, poi si rigenerano.
-KNOWN_FAILING = {"anch_01.dxf", "anch_02.dxf", "anch_03.dxf", "anch_04.dxf", "anch_05.dxf", "anch_06.dxf",
-                 "anch_07.dxf", "anch_08.dxf"}
+KNOWN_FAILING = {"anch_02.dxf", "anch_03.dxf", "anch_04.dxf", "anch_05.dxf", "anch_06.dxf", "anch_07.dxf"}
 
 for _name in FILES:
     _test = _make_test(_name)

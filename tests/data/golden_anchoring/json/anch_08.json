@@ -107,7 +107,18 @@
         516.01,
         660.29
       ],
-      "anchored": []
+      "anchored": [
+        {
+          "in": "loose",
+          "shape": "circle",
+          "center": [
+            522.91,
+            684.84
+          ],
+          "length": 51.0,
+          "width": 51.0
+        }
+      ]
     },
     {
       "measure_is_angle": false,
