@@ -54,24 +54,28 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       scheggia, un ciclo che non è faccia); tutti in `result.loose` (bordo
       coperto al 100%), due test lo tengono. DXF da guardare:
       `_debug/2026-10-23_topo_G6_D103/`.
+- [ ] **G6b** Ogni pezzo d'ingresso esce **una volta sola** (Federico, 23
+      ottobre, entra nel cancello). Oggi `loose` contiene geometria che sta
+      già su un contorno. Misurato su tutti i fixture (lunghezza di `loose`
+      entro 0.011 da un contorno, oltre le tangenze):
+      - `island()`: regr_01 42.5 mm, anch_02 25.3, anch_04 24.8, anch_03 /
+        regr_02 22.5, anch_06 15.8, regr_04 10.3, anch_08 3.4, anch_07 1.4,
+        anch_01 1.1. Caso isolato: simbolo a goccia di anch_06,
+        `_debug/2026-10-23_topo_G6_D103/simbolo_anch06*.dxf`. Causa: outer dal
+        ripiego "unione delle facce" (D100) — `face.segments` è il bordo vero
+        (D106), `face.edges` (quello segnato come preso) è il giro del
+        cammino; gli edge del bordo vero finiscono interi in `loose`.
+      - `heal()`: `rect_overlap` a tol < 0.1 (sporgenza 0.1 agli angoli):
+        outer giusto e tutte e 4 le linee originali intere anche in `loose`
+        (+300 mm). A tol 0.2 va bene.
+      Rimedio: `loose` = resto esatto, togliendo dagli edge i tratti sul bordo
+      scelto (come `_off_faces`). Si chiude con un'invariante nella suite su
+      tutti i fixture, nelle due letture. Prima di G7: cambia i golden.
 - [ ] **G7** Zero `expectedFailure`: golden di island rifatti da zero sui
       `_noframe` (dopo che Federico ha guardato i DXF di G6),
       `test_text_budget` anch_02 spiegato, inner che si incrociano su
       anch_03/regr_02 (`KNOWN_CROSSING_INNERS`, D107: cicli fra giri
       accettati che non sono facce — non sono giri di D103, D157).
-
-**Trovato il 23 ottobre (dopo G6), da decidere con Federico se entra nel
-cancello:** `island()` mette in `loose` geometria che sta già sull'outer. Su
-anch_06 15.6 mm (heal: 1.25, solo tangenze). Caso isolato: il simbolo a goccia
-(cerchio r 1.102 + due linee quasi tangenti), `_debug/2026-10-23_topo_G6_D103/
-simbolo_anch06*.dxf`. Causa: l'outer esce dal ripiego "unione delle facce"
-(D100): `face.segments` è il bordo della goccia letto dagli edge (D106), ma
-`face.edges` — quello che `read_island` segna come preso — è il giro del
-cammino, qui un triangolino vicino alla tangenza. Le linee e l'arco grande che
-formano davvero il bordo restano `spurs`/`unclassified` e finiscono interi in
-`loose`, sopra l'outer. Rimedio probabile: togliere dagli edge non presi i
-tratti che stanno sul bordo della faccia scelta (come `_off_faces` per i
-lobi), così `loose` è il resto esatto. Cambia i golden di island: prima di G7.
 
 **Documenti — D144**
 - [ ] **G8** README / README_IT / `description` di pyproject / prima riga
