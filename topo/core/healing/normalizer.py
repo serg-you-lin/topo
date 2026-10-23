@@ -501,7 +501,7 @@ def refit_tessellations(
              and e.start != e.end
              and math.dist(e.segment.start, e.segment.end) < max_segment]
     replaced, new_edges = set(), []
-    for path, closed in _short_runs(short):
+    for path, closed in chain_runs(short):
         if len(path) < min_run:
             continue
         pts = []
@@ -533,7 +533,7 @@ def refit_tessellations(
     return [e for e in edges if id(e) not in replaced] + new_edges
 
 
-def _short_runs(short_edges: List[Edge]) -> list:
+def chain_runs(short_edges: List[Edge]) -> list:
     """Catene massimali: percorsi fra nodi di grado != 2, o anelli.
     [( [(edge, percorso_al_contrario)], chiusa )]."""
     graph = build_node_graph(short_edges)

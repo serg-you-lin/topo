@@ -39,6 +39,8 @@ from .topology.noding import GRAPH_EPSILON, NODE_DECIMALS, edge_geometry, renode
 from .topology.non_contour_edges import NonContourEdgeDetector
 from .topology.outer_face import OuterFace, outer_face
 from .healing.hierarchy import assign_cluster_refs
+from .healing.normalizer import chain_runs
+from .healing.steps import loops_to_curves
 from .healing.islands import spatial_islands
 from .healing.gap_solver import (
     free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, local_gap_fixes, MoveEndpoint,
@@ -104,17 +106,17 @@ def island(doc: Document, *, max_gap: float,
     for i, r in enumerate(readings):
         if r.outer is not None and r.nested_in is None:
             clusters[i] = _cluster(r, doc.source_path, tol)
-    owned = []   # (OpenCurve, cluster che la contiene)
+    owned = []   # (curva, cluster che la contiene)
     for i, r in enumerate(readings):
         host = clusters.get(r.nested_in) if r.nested_in is not None else clusters.get(i)
         if host is None or r.outer is None:
-            owned += [(f, host) for f in _open(r.edges)]
+            owned += [(f, host) for f in _pieces(r.edges)]
             continue
         if r.nested_in is not None:
             # D161: un'isola dentro un'altra non è un suo inner, va in `loose`
-            owned += [(f, host) for f in _open(r.edges)]
+            owned += [(f, host) for f in _pieces(r.edges)]
             continue
-        owned += [(f, host) for f in _open(r.spurs + r.outside + r.non_contour + r.unclassified)]
+        owned += [(f, host) for f in _pieces(r.spurs + r.outside + r.non_contour + r.unclassified)]
     result.clusters = sorted(clusters.values(), key=lambda c: c.outer.polygon.area, reverse=True)
     index = {id(c): k for k, c in enumerate(result.clusters)}
     for curve, host in owned:
@@ -250,4 +252,17 @@ def _contour(segments, styles, polygon, role, parent) -> Contour:
 
 def _open(edges: List[Edge]) -> list:
     return [OpenCurve(role=e.role, segments=[e.segment], styles=[e.style]) for e in edges]
+
+
+def _pieces(edges: List[Edge]) -> list:
+    """Le curve di `loose` di un'isola (D162): un pezzo che chiude da sé —
+    un segmento chiuso, o una catena in cui ogni nodo ha grado 2 — è un
+    ClosedCurve, perché non c'è niente da scegliere; il resto un OpenCurve
+    per edge, come `_open`."""
+    single = [e for e in edges if segment_is_closed(e.segment)]
+    rest = [e for e in edges if not segment_is_closed(e.segment)]
+    runs = chain_runs(rest)
+    rings = [[(e, False)] for e in single] + [path for path, closed in runs if closed]
+    ringed = {id(e) for ring in rings for e, _ in ring}
+    return loops_to_curves(rings) + _open([e for e in rest if id(e) not in ringed])
 

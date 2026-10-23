@@ -22,7 +22,7 @@ from typing import Optional, Tuple
 from shapely.geometry import Polygon
 
 from .measure import Reach, chord_angle_deg, golden_max
-from ..primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg
+from ..primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, segment_endpoints, segment_is_closed
 
 Point = Tuple[float, float]
 
@@ -91,12 +91,13 @@ def contour_shape(item, tolerance: float = SHAPE_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOLERANCE_DEG) -> Optional[ContourShape]:
     """
     Forma di un contorno chiuso (`Contour`, o qualunque oggetto con
-    `.segments`, o la lista di segmenti). None se non ci sono segmenti.
+    `.segments`, o la lista di segmenti). None se non ci sono segmenti o se,
+    in fila, non chiudono in anello (D162).
     I segmenti consecutivi sulla stessa retta o circonferenza sono prima
     ricomposti, così un lato spezzato da un nodo resta un lato.
     """
     segments = list(getattr(item, "segments", item) or [])
-    if not segments:
+    if not segments or not _closes(segments, tolerance):
         return None
     segments, _ = merge_runs(segments, [None] * len(segments))
     for rule in (_circle, _ellipse, _stadium, _rectangle):
@@ -104,6 +105,31 @@ def contour_shape(item, tolerance: float = SHAPE_TOLERANCE,
         if shape is not None:
             return shape
     return _generic(segments)
+
+
+def _closes(segments, tol) -> bool:
+    """I segmenti, in fila, fanno un anello: ognuno parte dove finisce il
+    precedente (in un verso o nell'altro) e l'ultimo torna al primo. Un pezzo
+    aperto non ha forma (D162)."""
+    if len(segments) == 1:
+        return segment_is_closed(segments[0])
+    ends = [segment_endpoints(s) for s in segments]
+    xs = [p[0] for e in ends for p in e]
+    ys = [p[1] for e in ends for p in e]
+    eps = tol * math.hypot(max(xs) - min(xs), max(ys) - min(ys))
+    for first, last in (ends[0], ends[0][::-1]):
+        here = last
+        for a, b in ends[1:]:
+            if math.dist(here, a) <= eps:
+                here = b
+            elif math.dist(here, b) <= eps:
+                here = a
+            else:
+                break
+        else:
+            if math.dist(here, first) <= eps:
+                return True
+    return False
 
 
 def _radius(seg, tol) -> Optional[float]:

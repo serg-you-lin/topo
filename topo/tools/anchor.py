@@ -21,7 +21,9 @@ from typing import Any, Iterator, Optional, Tuple
 
 from shapely.geometry import LineString, Point
 
+from ..model.curve import ClosedCurve
 from ..model.result import Result
+from ..model.role import ContourRole, is_structural_role
 from ..model.text import Text
 
 POINTER_TARGET_DISTANCE = 0.5   # mm — la punta di una freccia sta sulla linea che indica
@@ -71,7 +73,8 @@ def pointer_target(result: Result, text: Text,
     """
     L'elemento indicato dalla punta (``pointer[0]``) di ``text``, come
     percorso in ``result``: ``"clusters[0].outer"``, ``"clusters[0].inners[3]"``,
-    ``"clusters[1].holes[2]"`` (qualunque collezione di ``cluster.detected``).
+    ``"clusters[1].holes[2]"`` (qualunque collezione di ``cluster.detected``),
+    ``"loose[4]"`` (un pezzo chiuso in ``result.loose``, D162).
 
     Il bordo più vicino alla punta, se entro ``distance``; altrimenti il più
     piccolo elemento chiuso (non il contorno esterno) che contiene la punta —
@@ -120,9 +123,13 @@ def _on_boundary(elements, point, distance: float) -> Optional[str]:
 
 
 def resolve_target(result: Result, target: Optional[str]) -> Any:
-    """L'oggetto (contorno o feature) a cui punta un ``target``, o ``None``."""
+    """L'oggetto (contorno, feature o curva di ``loose``) a cui punta un ``target``, o ``None``."""
     if not target:
         return None
+    m = _LOOSE.fullmatch(target)
+    if m is not None:
+        k = int(m.group(1))
+        return result.loose[k] if k < len(result.loose) else None
     m = _TARGET.fullmatch(target)
     if m is None:
         return None
@@ -138,10 +145,13 @@ def resolve_target(result: Result, target: Optional[str]) -> Any:
 
 
 _TARGET = re.compile(r"clusters\[(\d+)\]\.(\w+)(?:\[(\d+)\])?")
+_LOOSE = re.compile(r"loose\[(\d+)\]")
 
 
 def _elements(result: Result) -> Iterator[Tuple[str, Any, bool]]:
-    """(percorso, geometria shapely, è chiuso) per contorni e feature di ogni cluster."""
+    """(percorso, geometria shapely, è chiuso) per contorni e feature di ogni
+    cluster, poi per i pezzi chiusi di ``loose`` senza un ruolo non
+    strutturale (D162): un foro letto da island(), non una cornice."""
     for ci, cluster in enumerate(result.clusters):
         if cluster.outer is not None and cluster.outer.polygon is not None:
             yield f"clusters[{ci}].outer", cluster.outer.polygon, True
@@ -153,6 +163,11 @@ def _elements(result: Result) -> Iterator[Tuple[str, Any, bool]]:
                 geom = _item_geometry(item)
                 if geom is not None:
                     yield f"clusters[{ci}].{name}[{k}]", geom, geom.geom_type == "Polygon"
+    for k, curve in enumerate(result.loose):
+        if isinstance(curve, ClosedCurve) and (curve.role == ContourRole.UNKNOWN or is_structural_role(curve.role)):
+            geom = _item_geometry(curve)
+            if geom is not None:
+                yield f"loose[{k}]", geom, geom.geom_type == "Polygon"
 
 
 def _item_geometry(item):

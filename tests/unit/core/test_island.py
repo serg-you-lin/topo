@@ -42,13 +42,15 @@ class TestIsland(unittest.TestCase):
 
     def test_isola_dentro_un_altra_va_in_loose(self):
         # D161: cornice 100x100 e una vista dentro — l'unico contorno è la
-        # cornice, i lati della vista vanno in loose con l'isola che li contiene
+        # cornice, la vista va in loose con l'isola che la contiene; i suoi
+        # lati chiudono da sé, quindi è un pezzo chiuso solo (D162)
         edges = _poly((0, 0), (100, 0), (100, 100), (0, 100)) + _poly((40, 40), (60, 40), (60, 60), (40, 60))
         result = topo.island(_doc(edges), max_gap=MAX_GAP)
         self.assertEqual(len(result.clusters), 1)
         self.assertAlmostEqual(result.clusters[0].outer.polygon.area, 10000.0)
         self.assertEqual(result.clusters[0].inners, [])
-        self.assertEqual([t.cluster_ref for t in result.loose], [0, 0, 0, 0])
+        self.assertEqual([t.cluster_ref for t in result.loose], [0])
+        self.assertAlmostEqual(result.loose[0].polygon.area, 400.0)
 
     def test_due_contorni_vicinissimi_restano_due_isole(self):
         # D99: nessuna distanza fra le viste — due contorni a 1 mm sono due isole
