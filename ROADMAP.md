@@ -146,3 +146,27 @@ Quello che rende il passaggio sicuro, quando verrà:
 - **Il modello è già pronto per questo**: le primitive portano solo
   geometria (D135), senza oggetti di una libreria di formato dentro.
 
+
+## Dopo la 1.0: le domande topologiche di heal dietro un'interfaccia (23 ottobre)
+
+Misura del 23 ottobre (`heal()` sugli 8 disegni tracciati più grandi, con
+cProfile): circa 3/4 del tempo è codice Python. Il punto più caro, da solo
+un quarto del totale, è `BSplineSeg._evaluate` (de Boor un punto alla volta);
+poi la ricerca dei capi in `gap_solver`. Il quarto restante è già C
+(shapely/GEOS, numpy). Un ciclo numerico in Rust è decine di volte più
+veloce dello stesso in Python, ma il C resta C: su `heal()` intero ci si
+aspetta qualche volta più veloce, non cento.
+
+Il passo che prepara Rust senza riscrivere tutto: heal chiede al suo motore
+due cose sole, "questi due punti sono lo stesso nodo?" e "dove si tagliano
+queste due curve?". Messe dietro un'interfaccia, dietro ci possono stare il
+motore di oggi (virgola mobile con tolleranza), uno a interi (reticolo,
+predicati esatti, snap rounding) o lo stesso riscritto in Rust. Il reticolo
+decide solo la topologia: i coefficienti scritti restano quelli del
+sorgente, altrimenti si rompe la fedeltà (D143).
+
+Il reticolo come passo d'ingresso, invece, ha senso dove la sorgente è già
+rumorosa e quantizzata: PDF vettoriali e visione artificiale. Lì la fedeltà
+è al disegno inteso, non ai numeri del file; agganciare i punti al reticolo
+della tolleranza, scartando gli outlier, può essere un passo dell'adapter.
+Per i DXF no: sposterebbe la geometria senza togliere la tolleranza a heal.
