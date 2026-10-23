@@ -4,8 +4,9 @@
 Invarianti di `heal()` che devono valere sempre, per qualunque disegno — come
 quelle di `island()` (test_island_invariants.py): non confrontano contro un
 valore congelato, o sono vere o il motore ha un difetto. Non si rigenerano
-mai. Fixture: i disegni golden di heal, `tests/data/golden/`, letti come li
-legge `tests/real/test_golden.py` (tolleranza e ruoli da `tests/data/config/`).
+mai. Fixture: ogni disegno tracciato che si legge con `heal()` (tests/drawings.py,
+D158), letto come lo legge `tests/real/test_golden.py`; i golden di heal,
+`tests/data/golden/`, con tolleranza e ruoli da `tests/data/config/`.
 
 Un golden congela un'uscita e protegge anche un difetto che c'era quando è
 stato scritto; queste no (MAP.md D111).
@@ -13,13 +14,12 @@ stato scritto; queste no (MAP.md D111).
 
 import json
 import math
-import random
 import unittest
 from dataclasses import replace
 from functools import lru_cache
 from pathlib import Path
+from typing import Optional
 
-from shapely import affinity
 from shapely.geometry import LineString, MultiPoint, Point
 from shapely.ops import unary_union
 
@@ -29,34 +29,44 @@ from topo.core.primitives import LineSeg
 from topo.core.primitives.segments import DEFAULT_TOLERANCE
 from topo.model.document import Document
 
+from tests.drawings import case_name, drawing_key, drawings_for
+from tests.invariants import MOTIONS, along_contours, known_defect, contours, geometry as _geometry, moved, orders, shape_differences
+
 DATA = Path(__file__).resolve().parent.parent.parent / "data"
 SOURCE_DIR = DATA / "golden"
 DEFAULT_HEAL_TOLERANCE = 0.5          # come tests/real/test_golden.py
 GLOBAL_NAME_ROLES = {"MARK": "engrave", "Signature": "engrave"}
-QUARTER = math.pi / 2                 # esatto sulla griglia dei nodi: nessun arrotondamento nuovo
-ROTATION = 0.7                        # radianti, un angolo qualunque: i nodi tornano sulla griglia
 # disegni con un gap largo esattamente la tolleranza: ruotato di un angolo
 # qualunque, l'arrotondamento dei nodi alla griglia (D96) lo porta di poco
-# sopra o sotto la soglia — un caso sul filo, non un difetto; il quarto di
-# giro li controlla comunque
+# sopra o sotto la soglia — un caso sul filo, non un difetto; i moti esatti
+# sulla griglia (quarto di giro, traslazione, specchio) li controllano comunque
 GAP_AT_TOLERANCE = {"Multipolis"}
 # difetti veri trovati da queste invarianti, aperti in TODO.md: quando sono
 # risolti la lista si svuota
 KNOWN_ORDER_DEPENDENT: set = set()
-SHUFFLES = 5                          # rimescolamenti per disegno, seed 0..SHUFFLES-1
+# (disegno, tolleranza) → voce del cancello: pezzi usciti due volte
+KNOWN_TWICE = {("data/gap/rect_overlap", 0.01): "G6b", ("data/gap/rect_overlap", 0.05): "G6b"}
+# disegno → voce del cancello: le corde cambiano l'outer (cave larghe quanto la
+# tolleranza, riempite solo quando ci sono le corde)
+KNOWN_CHORDS = {"data/SEGNI_TRACCIATI": "G6d"}
+# tolleranze su cui si prova che ogni pezzo esce una volta, oltre a quella del disegno
+OUT_ONCE_TOLERANCES = (DEFAULT_TOLERANCE, 0.05)
 CHORDS_PER_CLUSTER = 6
 # due letture dello stesso contorno possono differire della freccia della
 # discretizzazione lungo tutto il bordo: area di scarto ammessa per mm di perimetro
 SHAPE_BAND = 2 * DEFAULT_TOLERANCE
-GRID = 1e-6
 
 
 def _sources() -> list:
-    return sorted(p for p in SOURCE_DIR.iterdir() if p.suffix.lower() == ".dxf")
+    return drawings_for("heal")
 
 
 def _config(dxf: Path) -> dict:
+    # tolleranza e ruoli scelti per i golden di heal (test_golden.py); ogni
+    # altro disegno si legge con quelli di default
     path = DATA / "config" / f"{dxf.stem}.json"
+    if dxf.parent != SOURCE_DIR:
+        return {}
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
 
 
@@ -65,38 +75,18 @@ def _tolerance(dxf: Path) -> float:
 
 
 @lru_cache(maxsize=None)
-def _read(dxf: Path):
-    """(documento, risultato di heal) come in test_golden."""
+def _read(dxf: Path, tol: Optional[float] = None):
+    """(documento, risultato di heal) come in test_golden, alla tolleranza del
+    disegno o a `tol`."""
     rules = topo.name_rules({**GLOBAL_NAME_ROLES, **_config(dxf).get("name_roles", {})})
-    tol = _tolerance(dxf)
+    tol = _tolerance(dxf) if tol is None else tol
     doc = topo_dxf.load_dxf(str(dxf), upgrade=True, explode_inserts=True, flatten_z_flag=True,
                          tolerance=tol, role_rules=rules)
     return doc, topo.heal(doc, tolerance=tol)
 
 
-def _geometry(segment):
-    pts = segment.discretize(DEFAULT_TOLERANCE)
-    if len(pts) < 2 or all(p == pts[0] for p in pts):
-        return Point(pts[0])
-    return LineString(pts)
-
-
 def _shape_differences(before: list, after: list) -> list:
-    """I poligoni di `before` senza un gemello in `after` (differenza
-    simmetrica sotto SHAPE_BAND per mm di perimetro), accoppiati uno a uno."""
-    free = list(after)
-    missing = []
-    for poly in before:
-        band = poly.length * SHAPE_BAND
-        # sulla griglia del micron: GEOS, su due poligoni uguali a 1e-13 con
-        # vertici quasi allineati, può dare come differenza l'unione intera
-        twin = next((other for other in free
-                     if poly.symmetric_difference(other, grid_size=GRID).area <= band), None)
-        if twin is None:
-            missing.append(tuple(round(v, 2) for v in poly.bounds))
-        else:
-            free.remove(twin)
-    return missing
+    return shape_differences(before, after, SHAPE_BAND)
 
 
 def _outers(result) -> list:
@@ -108,7 +98,7 @@ def _register(cls, make, known: frozenset = frozenset()):
         test = make(dxf)
         if dxf.stem in known:
             test = unittest.expectedFailure(test)
-        setattr(cls, f"test_{dxf.stem.replace(' ', '_').replace('.', '_')}", test)
+        setattr(cls, case_name(dxf), test)
 
 
 # ---------------------------------------------------------------------------
@@ -181,6 +171,30 @@ def _make_dropped_test(dxf: Path):
 _register(TestNothingDropped, _make_dropped_test)
 
 
+class TestOutOnce(unittest.TestCase):
+    """Ogni pezzo d'ingresso esce una volta, o in un contorno o in `loose`
+    (D137, D158): nessun tratto di `loose` corre lungo un contorno. Alla
+    tolleranza del disegno e su OUT_ONCE_TOLERANCES (un'altra tolleranza
+    cambia quali gap chiude e quali angoli ripara)."""
+
+
+def _make_out_once_test(dxf: Path):
+    def test(self):
+        for tol in sorted({_tolerance(dxf), *OUT_ONCE_TOLERANCES}):
+            with self.subTest(tolerance=tol):
+                _, result = _read(dxf, tol)
+                check = lambda: self.assertEqual(along_contours(result), [],
+                                                 f"{dxf.stem} a tol {tol}: tratti di loose lungo un contorno")
+                gate = KNOWN_TWICE.get((drawing_key(dxf), tol))
+                if gate:
+                    known_defect(self, f"{drawing_key(dxf)} a tol {tol}", gate, check)
+                check()
+    return test
+
+
+_register(TestOutOnce, _make_out_once_test)
+
+
 def _vertices(contour) -> list:
     pts = []
     for seg in contour.segments:
@@ -248,7 +262,10 @@ def _make_chords_test(dxf: Path):
                                tolerance=tol)
             if again.cluster_count != 1 or _shape_differences([cluster.outer.polygon], _outers(again)):
                 broken.append(f"cluster[{ci}] (+{len(chords)} corde): {again.cluster_count} cluster")
-        self.assertEqual(broken, [], f"{dxf.stem}: le corde cambiano l'outer")
+        check = lambda: self.assertEqual(broken, [], f"{dxf.stem}: le corde cambiano l'outer")
+        if drawing_key(dxf) in KNOWN_CHORDS:
+            known_defect(self, drawing_key(dxf), KNOWN_CHORDS[drawing_key(dxf)], check)
+        check()
     return test
 
 
@@ -298,35 +315,31 @@ _register(TestRolesOfChordsDontMatter, _make_roles_test)
 
 
 class TestRigidMotion(unittest.TestCase):
-    """Ruotare il disegno prima di heal dà gli stessi pezzi ruotati: heal non
-    dipende dal sistema di riferimento (né da "il punto più a sinistra", né
-    da una griglia allineata agli assi)."""
+    """Ruotare, spostare lontano dall'origine o specchiare il disegno prima
+    di heal dà gli stessi pezzi mossi, outer e inner: heal non dipende dal
+    sistema di riferimento (né da "il punto più a sinistra", né da una
+    griglia allineata agli assi, né dal verso in cui gira un contorno, né
+    dalla grandezza delle coordinate)."""
 
 
-def _make_rotation_test(angle: float):
-    def make(dxf: Path):
-        def test(self):
-            if angle != QUARTER and dxf.stem in GAP_AT_TOLERANCE:
-                self.skipTest("gap largo esattamente la tolleranza: sul filo della soglia")
-            doc, result = _read(dxf)
-            tol = _tolerance(dxf)
-            turned = topo.heal(topo.rotate_document(doc, angle), tolerance=tol)
-            back = [affinity.rotate(p, -angle, origin=(0, 0), use_radians=True) for p in _outers(turned)]
-            self.assertEqual(turned.cluster_count, result.cluster_count, f"{dxf.stem}: ruotato cambia i pezzi")
-            self.assertEqual(_shape_differences(_outers(result), back), [],
-                             f"{dxf.stem}: ruotato cambia gli outer")
-            self.assertEqual(sorted(len(c.inners) for c in turned.clusters),
-                             sorted(len(c.inners) for c in result.clusters), f"{dxf.stem}: ruotato cambia i fori")
-        return test
-    return make
+def _make_motion_test(dxf: Path):
+    def test(self):
+        doc, result = _read(dxf)
+        tol = _tolerance(dxf)
+        outers, inners = contours(result)
+        for name, move, back, exact in MOTIONS:
+            with self.subTest(motion=name):
+                if not exact and dxf.stem in GAP_AT_TOLERANCE:
+                    self.skipTest("gap largo esattamente la tolleranza: sul filo della soglia")
+                again = topo.heal(moved(doc, move), tolerance=tol)
+                outers_again, inners_again = ([back(p) for p in ps] for ps in contours(again))
+                self.assertEqual(again.cluster_count, result.cluster_count, f"{dxf.stem}, {name}: cambia i pezzi")
+                self.assertEqual(_shape_differences(outers, outers_again), [], f"{dxf.stem}, {name}: cambia gli outer")
+                self.assertEqual(_shape_differences(inners, inners_again), [], f"{dxf.stem}, {name}: cambia i fori")
+    return test
 
 
-class TestQuarterTurn(unittest.TestCase):
-    """Lo stesso, con un quarto di giro: esatto sulla griglia dei nodi."""
-
-
-_register(TestRigidMotion, _make_rotation_test(ROTATION))
-_register(TestQuarterTurn, _make_rotation_test(QUARTER))
+_register(TestRigidMotion, _make_motion_test)
 
 
 class TestEdgeOrder(unittest.TestCase):
@@ -334,22 +347,11 @@ class TestEdgeOrder(unittest.TestCase):
     contrario, e rimescolati con seed fissi, danno gli stessi pezzi."""
 
 
-def _orders(edges: list) -> list:
-    """(nome, edge) per ogni ordine provato: al contrario, più SHUFFLES
-    rimescolamenti riproducibili."""
-    orders = [("reversed", list(reversed(edges)))]
-    for seed in range(SHUFFLES):
-        shuffled = list(edges)
-        random.Random(seed).shuffle(shuffled)
-        orders.append((f"seed {seed}", shuffled))
-    return orders
-
-
 def _make_order_test(dxf: Path):
     def test(self):
         doc, result = _read(dxf)
         tol = _tolerance(dxf)
-        for name, edges in _orders(doc.edges):
+        for name, edges in orders(doc.edges):
             with self.subTest(order=name):
                 again = topo.heal(Document(edges=edges, source_path=doc.source_path,
                                            source_meta=doc.source_meta), tolerance=tol)

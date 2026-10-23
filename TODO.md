@@ -25,7 +25,10 @@ questa sezione. Il dettaglio di ogni punto sta più sotto o in `MAP.md`.
 **Regola d'ingresso (D158, temporanea — si cancella a 1.0-ready):** dopo la
 passata delle invarianti di D143 su tutti i fixture, entra qui solo ciò che
 rende rossa una di quelle invarianti su un fixture del repo. Il resto è 1.x.
-Le invarianti invece restano nella suite per sempre.
+Le invarianti invece restano nella suite per sempre. Passata fatta il 23
+ottobre (D159): i rossi sono G6b, G6c, G6d, G7 qui sotto, ognuno nel
+registro dei difetti noti del suo test (skip con la voce del cancello; un
+caso che torna verde fa fallire il test finché non esce dalla lista).
 
 Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
 (si scrivono su una superficie ferma), ultima la pulizia.
@@ -74,13 +77,35 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
         outer giusto e tutte e 4 le linee originali intere anche in `loose`
         (+300 mm). A tol 0.2 va bene.
       Rimedio: `loose` = resto esatto, togliendo dagli edge i tratti sul bordo
-      scelto (come `_off_faces`). Si chiude con un'invariante nella suite su
-      tutti i fixture, nelle due letture. Prima di G7: cambia i golden.
-- [ ] **G7** Zero `expectedFailure`: golden di island rifatti da zero sui
-      `_noframe` (dopo che Federico ha guardato i DXF di G6),
-      `test_text_budget` anch_02 spiegato, inner che si incrociano su
-      anch_03/regr_02 (`KNOWN_CROSSING_INNERS`, D107: cicli fra giri
-      accettati che non sono facce — non sono giri di D103, D157).
+      scelto (come `_off_faces`). Prima di G7: cambia i golden.
+      **Invariante:** `TestOutOnce` nelle due letture (un tratto di `loose`
+      entro 0.01 da un contorno per più di 1 mm; heal anche a tol 0.01 e
+      0.05). Rossi: 13 disegni di island (`KNOWN["out once"]`) e
+      `rect_overlap` a 0.01/0.05 (`KNOWN_TWICE`).
+- [ ] **G6c** `island()` dipende dall'ordine delle entità e dal sistema di
+      riferimento (passata D158, 23 ottobre). Rimescolando gli edge cambiano
+      gli inner su 22 dei 31 disegni d'isole; ruotando di 0.7 rad, spostando
+      a (2.5e6, −1.5e6) o specchiando, su 20. Due famiglie viste: (a) inner
+      persi — fessure larghe 0.5 = `max_gap` (anch_02, anch_04 col solo
+      specchio, anch_01/regr_03) e un 14×14 su regr_04 anche solo
+      spostato; (b) inner che cambiano forma con l'ordine (anch_05 108 mm →
+      8.5, anch_08 204 → 695, anch_06, regr_01, anch_02) — un ciclo scelto
+      fra più giri. `heal()` invece passa tutto: ordine, rotazione,
+      traslazione, specchio, outer e inner. Causa da trovare prima del
+      rimedio. **Invariante:** `TestEdgeOrder`, `TestRigidMotion` di island
+      (`KNOWN["edge order"]`, `KNOWN["rigid motion"]`). Prima di G7.
+- [ ] **G6d** `heal()` su `SEGNI_TRACCIATI` (tol 0.5): tre cave larghe
+      0.4–0.5 mm restano nell'outer letto da solo e si riempiono quando ci
+      sono le corde (`TestChordsKeepTheOuter`, `KNOWN_CHORDS`): l'esito su
+      una fessura larga quanto la tolleranza dipende da edge che non la
+      toccano.
+- [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
+      rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF di
+      G6), `test_text_budget` anch_02 spiegato, inner che si incrociano
+      (D107: cicli fra giri accettati che non sono facce — non sono giri di
+      D103, D157) — con la passata D158 sono anch_03/regr_02 e 10 disegni di
+      `golden_anchoring/` (`KNOWN["inners cross"]`), più il roundtrip di
+      anch_03/regr_02/anch_03_noframe (`KNOWN["roundtrip"]`).
 
 **Documenti — D144**
 - [ ] **G8** README / README_IT / `description` di pyproject / prima riga

@@ -5740,3 +5740,40 @@ must keep green, and a new fixture gets them for free.
 on today's fixtures *is* the rest of the gate. After that sweep, an item
 enters the gate only if it turns one of these invariants red on a fixture in
 the repo; a defect found by eye that no invariant sees is a 1.x fix.
+
+### D159 — the D158 sweep: every invariant on every tracked drawing, known defects registered per case
+
+**Where they run.** `tests/drawings.py` lists every DXF tracked by git with
+its reading (D152, the list `test_fidelity` already used); the invariant
+tests of both readings now take their fixtures from it, not from
+`golden/` and `golden_islands/` alone: 185 drawings read with `heal()`, 31
+with `island()`. A drawing added to the repo gets every invariant.
+
+**What was added.** `translated(dx, dy)` and `mirrored()` (y → −y) on every
+primitive, next to `rotated`: a mirrored arc or elliptic arc changes the
+sign of its angles and its direction, because the point at angle *a* goes to
+−*a*; the circle grid anchored at angle 0 (D145) is symmetric, so a mirrored
+arc has the mirrored vertices. Tested on a grid of cases (negative
+coordinates, near zero, 3·10⁶ from the origin). The invariants, shared in
+`tests/invariants.py`: rigid motion (rotation 0.7 rad, quarter turn,
+translation to (2.5e6, −1.5e6), mirror) comparing outers *and* inners, edge
+order, and **every piece out once**: no stretch of `loose` lies within 0.01
+(two discretizations of one curve, chords on the same side) of a contour for
+more than 1 mm — a crossing does that only under ~1°, a tangency only past
+R ≈ 12 mm. For `heal()` it also runs at tol 0.01 and 0.05, because a
+tolerance changes which gaps close and which corners are repaired.
+
+**Known defects, per case.** A red case is registered with its gate item
+(`KNOWN` in the island tests, `KNOWN_TWICE` / `KNOWN_CHORDS` in heal's):
+it runs, must fail, and shows as a skip naming the item; when it passes the
+test fails until the case is removed. An `expectedFailure` on a whole test
+would hide a new red in the same drawing and say nothing when it heals.
+
+**Result.** `heal()` passes motion, mirror, far translation and order on all
+185 drawings; red only `rect_overlap` at tol < 0.1 (out once, G6b) and
+`SEGNI_TRACCIATI` (chords change the outer, G6d). `island()` is red on order
+(22 of 31) and rigid motion (20 of 31) — G6c —, out once (13, G6b), inners
+crossing and roundtrip (G7). Order dependence is a defect, not one of the
+"ambiguous cases" D143 leaves open: an ambiguous case may be decided either
+way, but by the geometry, and the same geometry listed in another order is
+the same case.
