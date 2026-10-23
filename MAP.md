@@ -5538,3 +5538,34 @@ written with `to_dxf` and read back with `document_from_msp(skip_layers=())`
    exclude everything.
 Mutation check: a bulge off by 0.1% in the writer fails 77 sub-tests. Suite
 time 90 → 154 s.
+
+### D153 — an ellipse discretizes on its parameter grid, like an arc on its circle's (D145): within `tol` by construction, a piece is a piece of the whole ✅
+Gate G4. `EllipseSeg.discretize` sampled uniformly by the smallest radius of
+curvature, then halved a piece while its *parametric midpoint* was farther
+than `tol` from the chord. Two faults, measured on 200 random ellipses:
+- **Out of tolerance on flat ellipses.** On an ellipse with ratio below
+  ~0.006 the sharp tips at the ends of the major axis are not at the
+  parametric midpoint of a piece. The midpoint passed and the piece stayed
+  too coarse: 0.0152 at a 18.6, ratio 0.0054; 0.0113 at a 139, ratio 0.0027.
+- **Same curve, different polygon.** An ellipse in two halves gave 169
+  vertices, the whole one 171, not the same points. That is the fault D145
+  removed for circles.
+
+The rule: an ellipse is the circle of radius `a` (semi-major axis) seen through
+a linear map with factors 1 and `ratio`, and that map never lengthens a
+vector. A point of the circle within `tol` of its chord maps to a point within
+`tol` of the mapped chord. So the circle's grid (`_circle_sides(a, tol)`,
+k·2π/N) taken on the *parameter* keeps the ellipse within `tol`: a proof,
+not an estimate, and no subdivision is needed. As for an arc, the exact ends
+plus every grid point between them (`_grid_angles`). The four quarters are
+the whole ellipse, a reversed ellipse gives the same points backwards, and the
+grid starts at the major axis, so it rotates with the ellipse. A `ratio`
+above 1 (outside the format) uses the larger factor as the radius.
+Vertex count is the same order as before (161 against 171 on a 40×16
+ellipse). `MIN_SEGMENTS_ARC` and `FALLBACK_ANGLE_DEG` are removed: nothing
+uses them any more. `_adaptive_polyline` stays, for splines.
+Proof: `test_discretize_tolerance` (flat ellipse, rotated partial clockwise
+ellipse far from the origin, quarters = whole, reversed); the two new
+invariants fail on the old code. No golden changed. Arcs were measured again
+(300 random: radius 0.001–3000, centers at 1e5, both directions): all within
+`tol`, nothing to change.

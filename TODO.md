@@ -41,7 +41,8 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       catena). Ogni disegno con la sua lettura: `golden_islands/` e
       `golden_anchoring/` → `island()`, il resto → `heal()`.
 - [ ] **G4** `ArcSeg`/`EllipseSeg.discretize` verificati contro la
-      tolleranza come i cerchi in D145.
+      tolleranza come i cerchi in D145. Fatto (D153): archi già entro `tol`,
+      ellisse sulla griglia del parametro. Resta il raggio 0:
       `ArcSeg.discretize` con raggio 0 dà ZeroDivisionError (`_grid_angles`):
       ci sono archi di raggio 0 in disegni scritti da `island()` (D113,
       locali).
