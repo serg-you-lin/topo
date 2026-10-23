@@ -107,6 +107,25 @@ class TestIsland(unittest.TestCase):
         self.assertAlmostEqual(result.clusters[0].outer.polygon.area, 400.0)
         self.assertEqual(sum(1 for t in result.loose if t.role == "frame"), 4)
 
+    def test_giro_che_ricalca_un_foro_entro_max_gap_va_in_loose(self):
+        # D103, D157: un cerchio a 0.4 dentro il foro non ha un bordo suo a
+        # max_gap 0.5 — un inner solo, il secondo cerchio intero in loose
+        # con l'isola che lo contiene
+        edges = _poly((0, 0), (100, 0), (100, 100), (0, 100)) + [
+            _circle((50, 50), 5), _circle((50, 50), 4.6)]
+        result = topo.island(_doc(edges), max_gap=MAX_GAP)
+        self.assertEqual([[s.radius for s in i.segments] for i in result.clusters[0].inners], [[5]])
+        self.assertEqual([[s.radius for s in t.segments] for t in result.loose], [[4.6]])
+        self.assertEqual(result.loose[0].cluster_ref, 0)
+
+    def test_giro_che_ricalca_un_foro_oltre_max_gap_resta_inner(self):
+        # D157: la stessa coppia con max_gap 0.2 — 0.4 è oltre il contatto, due inner
+        edges = _poly((0, 0), (100, 0), (100, 100), (0, 100)) + [
+            _circle((50, 50), 5), _circle((50, 50), 4.6)]
+        result = topo.island(_doc(edges), max_gap=0.2)
+        self.assertEqual(sorted(s.radius for i in result.clusters[0].inners for s in i.segments), [4.6, 5])
+        self.assertEqual(result.loose, [])
+
     def test_niente_di_chiuso_invalido(self):
         result = topo.island(_doc([_line((0, 0), (5, 0))]), max_gap=MAX_GAP)
         self.assertFalse(result.is_valid)

@@ -89,8 +89,8 @@ def _make_test(name: str):
 # Fallimenti attesi, mai golden rigenerati per farli passare: con D145 e D156
 # cambiano length/width delle forme `other` (ora misurate sulle primitive) e
 # con D145 la topologia di anch_06. Golden
-# congelati finché i disegni non sono senza cornice e i dubbi D103 chiariti
-# (TODO, "Trovati con D145"). Uno che torna a passare fa fallire la suite.
+# congelati finché non si rifanno sui disegni senza cornice (G7; dubbi D103
+# chiusi in D157; TODO, "Trovati con D145"). Uno che torna a passare fa fallire la suite.
 KNOWN_FAILING = {"anch_02.dxf", "anch_03.dxf", "anch_04.dxf", "anch_05.dxf", "anch_06.dxf", "anch_07.dxf"}
 
 for _name in FILES:
