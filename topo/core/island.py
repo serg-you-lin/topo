@@ -218,12 +218,10 @@ def read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandRe
 def _drop_boundary_duplicates(loops: list, reference: Optional[Polygon], band: float) -> list:
     """Scarta un giro chiuso il cui intero bordo sta entro `band` dal bordo di
     un giro più grande già accettato (il contorno esterno `reference`, o un
-    altro giro già tenuto, in ordine di area): non è una feature annidata,
-    è la stessa curva ritracciata un po' spostata (entro tolleranza+gap) —
-    tipicamente la parete visibile di un foro in una vista isometrica,
-    quasi sovrapposta alla sua stessa apertura. Raffina D71 ("ogni giro
-    chiuso è un inner"), che resta corretto per isole scollegate ma non per
-    un giro che segue quasi lo stesso bordo di un altro già tenuto."""
+    altro giro già tenuto, in ordine di area): a `band` = tolleranza +
+    max_gap i due bordi si toccano ovunque, quindi il giro non ha un bordo
+    suo e non aggiunge un contorno. I suoi edge restano nel resto e vanno in
+    `loose` (D103, D157). Raffina D71 ("ogni giro chiuso è un inner")."""
     accepted: List[Polygon] = [reference] if reference is not None else []
     scored = []
     for loop in loops:

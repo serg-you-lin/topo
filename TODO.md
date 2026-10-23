@@ -49,10 +49,16 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       D89; scarto 0.47 entro tol × perimetro, ora provato da un test);
       `contour_shape` `length`/`width` di `other` misurati sulle primitive
       (prima fino a 0.016 corti, ora ≤ 4e-5 dal riferimento a 1e-6).
-- [ ] **G6** I 4 dubbi D103 verificati (guardati e classificati, non
-      risolti per forza) e il giro scartato come duplicato in `result.loose`.
+- [x] **G6** I 4 dubbi D103 — fatto, D157: 56 giri scartati, tutti senza
+      un bordo loro a tol + max_gap (fantasmi annidati, doppioni veri, una
+      scheggia, un ciclo che non è faccia); tutti in `result.loose` (bordo
+      coperto al 100%), due test lo tengono. DXF da guardare:
+      `_debug/2026-10-23_topo_G6_D103/`.
 - [ ] **G7** Zero `expectedFailure`: golden di island rifatti da zero sui
-      `_noframe` (dopo G6), `test_text_budget` anch_02 spiegato.
+      `_noframe` (dopo che Federico ha guardato i DXF di G6),
+      `test_text_budget` anch_02 spiegato, inner che si incrociano su
+      anch_03/regr_02 (`KNOWN_CROSSING_INNERS`, D107: cicli fra giri
+      accettati che non sono facce — non sono giri di D103, D157).
 
 **Documenti — D144**
 - [ ] **G8** README / README_IT / `description` di pyproject / prima riga
@@ -290,7 +296,7 @@ Poi topo 1.0.0, e snapbend 1.0.0 dietro.
   cornice per i golden di island, gli originali restano per i testi e per
   snapdraw (gli `anch_*` servono anche ad `anchor_texts`, e i testi del
   cartiglio sparirebbero). Poi i golden di island si rifanno da zero su
-  quelle, dopo i dubbi D103. Fino ad allora: `KNOWN_FAILING` in
+  quelle (G7; i dubbi D103 sono chiusi, D157). Fino ad allora: `KNOWN_FAILING` in
   `test_golden_anchoring` (anch_02–07) e `test_text_budget` (anch_02, anch_06),
   fallimenti attesi, mai rigenerati.
   Non è una richiesta a topo la "provenienza" dei pezzi tagliati (quale
@@ -340,7 +346,7 @@ Poi topo 1.0.0, e snapbend 1.0.0 dietro.
     passa da `circle` a `other` (2 linee + arco) cambiando solo la
     discretizzazione dell'arco, e l'estremo di una linea si sposta di 0.023
     (> 0.01). Il contatto va deciso sulle primitive (intersezioni esatte),
-    con i dubbi D103.
+    prima di rifare i golden di island (G7).
   - ~~`contour_shape` di `other` sul poligono~~ — fatto, D156.
 - **`test_text_budget::test_anch_02` rosso già su `0d5a512` (D138)**: `to_text`
   di anch_02 fa 200.435 caratteri contro un budget di 193.366 (+3.7%). Visto il
@@ -472,48 +478,24 @@ da guardare a occhio: `_debug/*_D106_prima.dxf` / `*_D106_dopo.dxf`
 Due invarianti nuove (D107): `TestNothingDropped` (verde 15/15) e
 `TestInnersDontCross` (rosso apposta su anch_03/regr_02, il filo qui sotto).
 Golden delle isole: **si rigenerano tutti insieme quando i dubbi D103 sono
-chiariti**, guardando prima i DXF — deciso con Federico il 12 ottobre.
+chiariti** (lo sono, D157), guardando prima i DXF — deciso con Federico il
+12 ottobre. Si fa in G7.
 
-**Filo rimasto, lasciato apposta (è territorio D103, sotto):** round-trip di
+**Filo rimasto, in G7 (non è D103, D157):** round-trip di
 `anch_03`/`regr_02`, l'isola da 5806 mm² passa da 28 a 15 inner. Già rosso
 su `06b89b1`. Causa: giri inner che si **sovrappongono in parte** fra loro
 (es. 18.7 + 71.1 mm², unione 76.6): cicli di LoopFinder che non sono facce;
-rileggendo, i contorni sovrapposti si fondono. Si decide insieme ai dubbi
-D103 qui sotto (forellini di anch_03, inner "nipoti"): 27 coppie
+rileggendo, i contorni sovrapposti si fondono. Nessuno di questi giri è
+scartato da D103 (verificato in D157): 27 coppie
 sovrapposte su anch_03, 25 su anch_02, quasi tutte contenimento pieno.
 
-## APERTO — 4 dubbi su D103 (`_drop_boundary_duplicates`), non verificati, segnalati da Federico il 12 ottobre guardando `_debug/*_ghosts.dxf`
+## CHIUSO (23 ottobre, MAP.md D157) — 4 dubbi su D103
 
-**Bloccanti per la 1.0 (D143):** la promessa geometrica copre anche
-`island()`, quindi vanno verificati, non esclusi.
-
-Nessuno di questi quattro è stato controllato sul codice — sono dubbi legittimi,
-non ancora confermati né respinti:
-- **`anch_02`/`anch_03`** (50 e 4 giri scartati sui forellini del pattern di
-  foratura): potrebbero essere inner annidati legittimi ("inner nipoti",
-  profondità 2), non duplicati — da confrontare con come `heal()` tratta lo
-  stesso tipo di nesting.
-- **`anch_06`** (1 giro scartato, sovrapposto all'outer): potrebbe essere un
-  simbolo di disegno vero, non un duplicato del bordo.
-- **`anch_07`/`regr_05`** (1 giro scartato, 0.07 mm²): dovrebbe forse finire in
-  `non_contour`/trash, non nel bucket "duplicato scartato".
-
-Script per rigenerare i DXF con i giri scartati in rosso (layer
-`FANTASMA_SCARTATO`): `_debug/mark_ghosts.py` era nello scratchpad della
-sessione, non salvato nel repo — da riscrivere se serve (richiama
-`island_mod._drop_boundary_duplicates` con uno spy, poi `topo.to_dxf` +
-`ezdxf` per disegnare i giri scartati in rosso sopra al resto).
-
-**`regr_04.cluster[0].inner[0]` (il "bordo doppio in un giro"): chiarito in
-D106** — non era `merge_runs` (verificato corretto) ma due mezzelune fra due
-cerchi tangenti internamente, giro a otto, e `build_polygon` che teneva un lobo
-solo. Ora sono due inner.
-
-**Non toccare `anch_02`/gli altri golden islands finché i dubbi D103 qui sopra
-(e gli inner sovrapposti di anch_03) non sono chiariti**: rigenerare qualsiasi
-golden ora rischia di congelare un numero sbagliato. Nota: D106 cambia già
-`regr_04` islands[1] (1 → 2 inner) e `anch_02` (+4 strisce) — da tenerne conto
-quando si rigenera.
+Verificati uno a uno: ogni giro scartato ha tutto il bordo entro tol +
+max_gap da un contorno già tenuto (non ha un bordo suo alla distanza di
+contatto di `island()`), lo scarto segue `max_gap` e i suoi edge sono in
+`loose`. DXF con i giri scartati in rosso: `_debug/2026-10-23_topo_G6_D103/`.
+Restano per G7 gli inner che si incrociano su anch_03/regr_02.
 
 ---
 

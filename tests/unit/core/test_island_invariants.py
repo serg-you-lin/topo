@@ -28,7 +28,7 @@ SOURCE_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "golden_is
 # della discretizzazione più la griglia dei nodi dell'unione di facce (D106)
 BOUNDS_TOLERANCE = DEFAULT_TOLERANCE + GRAPH_EPSILON
 # inner che si sovrappongono in parte (cicli che non sono facce): difetto noto,
-# dentro i dubbi su D103 (TODO.md); quando è risolto questa lista si svuota
+# non dovuto a D103 (D157), resta per G7; quando è risolto questa lista si svuota
 KNOWN_CROSSING_INNERS = {"anch_03", "regr_02"}
 
 
@@ -147,7 +147,7 @@ class TestInnersDontCross(unittest.TestCase):
     """Due inner della stessa isola o sono disgiunti o uno contiene l'altro
     (un foro dentro un foro): sovrapposti in parte sono due cicli che non
     sono facce. Margine: una fascia larga BOUNDS_TOLERANCE lungo il bordo
-    del più piccolo. Fallimento atteso su anch_03/regr_02 (TODO, dubbi D103)."""
+    del più piccolo. Fallimento atteso su anch_03/regr_02 (TODO, G7)."""
 
 
 def _make_cross_test(dxf: Path):

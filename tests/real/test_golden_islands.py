@@ -70,8 +70,8 @@ def _make_test(dxf: Path, golden: Path):
     return test
 
 
-# golden fermi apposta: D102/D103 li hanno spostati e non si rigenerano finché
-# i dubbi su D103 (TODO.md) non sono chiariti — si rigenerano tutti insieme,
+# golden fermi apposta: D102/D103 li hanno spostati; i dubbi su D103 sono
+# chiusi (D157) e si rigenerano tutti insieme in G7,
 # guardando prima i DXF; allora questa lista si svuota
 KNOWN_STALE = {"anch_02", "anch_03", "anch_06", "anch_07", "regr_01", "regr_02", "regr_04", "regr_05"}
 

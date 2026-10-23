@@ -5650,3 +5650,69 @@ now, speed when the geometric questions move to the Rust engine (ROADMAP).
 Golden: anch_01 changes only `length` of one contour, 7.894 → 7.895 (reference
 7.895). anch_02–07 stay frozen for G7.
 `main` → **0.22.1**.
+
+### D157 — gate G6: the four doubts on D103 checked one by one; a dropped loop has no boundary of its own at the contact distance, and its edges are in `loose` ✅
+
+Checked on every `golden_islands` drawing by intercepting
+`_drop_boundary_duplicates` (`island()`, max_gap 0.5, tol 0.01): 56 loops
+dropped, on anch_02 (50), anch_03 (4), anch_06 (1), anch_07 (1); regr_02 and
+regr_05 drop the same loops as anch_03 and anch_07 (same geometry). For each
+loop: the host it was matched to, the directed distance of its boundary from
+the host's and back, the share of its area inside the host, and how much of
+its boundary is in the output.
+
+**What the rule says, in geometry.** A loop is dropped when every point of its
+boundary lies within `band` = tolerance + max_gap of the boundary of a larger
+loop already accepted. In `island()` two curves closer than max_gap touch (D98,
+D99), so such a loop touches an accepted contour all along: it has no boundary
+of its own at the reading's contact distance and adds no contour. The
+docstring said it was "the wall of a hole in an isometric view": that is an
+interpretation of one drawing, now removed (non-negotiable 8). The threshold is
+the caller's parameter, and the drops follow it exactly: on anch_02, 50 at
+max_gap 0.5, 1 at 0.34 and 0.25 (only the true duplicate is left); on anch_03,
+4 at 0.5 and 0.34, 0 at 0.25.
+
+**The four doubts:**
+1. **anch_02/anch_03, "grandchild inners at depth 2?"** — 48 of anch_02's 50
+   and all 4 of anch_03's are a closed loop fully inside another (share
+   inside 1.000), with the boundaries within band in *both* directions: 18 at
+   0.504/0.505 (11.3 mm² inside 16.3), 30 at 0.351 (4.96 inside 7.24), 4 at
+   0.31 (3.01 inside 4.62). The ring between the two is narrower than band
+   everywhere, so at max_gap 0.5 there is one contour, not two. `heal()` keeps
+   both (anch_02: 16.287 and 11.326 as two inners; anch_03: 4.623 an outer
+   with 3.011 inside) because its contact distance is tol, 0.01, and 0.3–0.5
+   is far beyond it. Two readings, two resolutions; not a contradiction.
+2. **anch_06, "a real drawing symbol overlapping the outer?"** — no: a single
+   circle of Ø≈1.07 drawn twice, Hausdorff distance 0 between the two. The
+   second copy is the dropped loop. anch_02's 50th is the same kind: a ring of
+   42 lines retracing a 5.56 mm² outline within 0.004.
+3. **anch_07/regr_05, "0.07 mm² should go to the trash, not a discard
+   bucket"** — there is no discard bucket: a dropped loop's edges stay in the
+   rest of the island and go to `non_contour`/`unclassified`, hence to
+   `loose` with the island's `cluster_ref`. The loop is a sliver along the
+   outer, mean width 0.068 (wider than tol, so D106's thin-face rule does not
+   take it; narrower than max_gap).
+4. **Not in the TODO list, found here:** one anch_02 loop (3.09 mm²) is only
+   33% inside its host, a Ø5 circle: it is the perimeter around the circle's
+   edge, a line and the 3/4 arc of r 3 drawn around it — a cycle that is not a
+   face. The rule drops it for the same reason as the others (every point of
+   its boundary within 0.503 of the circle); the faces it encloses (a lens
+   0.5 wide inside the circle, the 0.5 ring between r 2.5 and r 3) are all
+   narrower than band.
+
+**Dropped loops are in `loose`:** for all 56, the share of the boundary
+covered by `result.loose` (within 0.011) is 1.000. `TestNothingDropped` would
+not see a lost one (it measures at max_gap, and a dropped loop is by
+definition within band of a contour), so two unit tests in `test_island.py`
+hold it on two concentric circles 0.4 apart: at max_gap 0.5 one inner and the
+other circle whole in `loose` with `cluster_ref` 0; at max_gap 0.2 two inners.
+
+**Not D103, left for G7:** the inners that cross on anch_03/regr_02
+(`KNOWN_CROSSING_INNERS`, D107) are cycles that are not faces *among accepted
+loops*, none of them dropped by this rule. They were filed "inside the D103
+doubts"; they are a separate defect, and G7 (zero `expectedFailure`) now names
+them. The island goldens can be regenerated (G7) once Federico has looked at
+the dropped loops: DXFs in `_debug/2026-10-23_topo_G6_D103/` (layer
+`GIRO_SCARTATO`, red).
+
+No change to `island()` output. `main` → **0.22.2**.
