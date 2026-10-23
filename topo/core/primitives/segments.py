@@ -23,9 +23,6 @@ Point = Tuple[float, float]
 # COSTANTI DI DISCRETIZZAZIONE — MODIFICARE QUI PER CAMBIARE COMPORTAMENTO
 # ---------------------------------------------------------------------------
 
-# Numero minimo di segmenti per il campionamento iniziale dell'ellisse
-MIN_SEGMENTS_ARC = 32
-
 # Lati minimi della griglia di un cerchio; un arco ne prende la sua parte (D145)
 MIN_SEGMENTS_CIRCLE = 64
 
@@ -35,9 +32,6 @@ _GRID_SNAP = 1e-9
 
 # Numero massimo di segmenti per tratto di spline (evita esplosione di punti)
 MAX_SEGMENTS_SPLINE = 100
-
-# Angolo fisso (gradi) per archi con raggio molto piccolo
-FALLBACK_ANGLE_DEG = 10
 
 # Tolleranza predefinita se non specificata
 DEFAULT_TOLERANCE = 0.01
@@ -322,10 +316,7 @@ def _refine_segment(
     tratto rumoroso che non converge mai; nessun tetto sul totale, che
     lascerebbe il resto della curva a corde grosse fuori tolleranza.
 
-    `evaluate` è un callable `t -> Point` — condiviso da `BSplineSeg`
-    (De Boor, curvatura variabile) ed `EllipseSeg` (parametrizzazione
-    ellittica esatta, curvatura variabile): stessa esigenza di
-    campionamento adattivo, math diversa a monte.
+    `evaluate` è un callable `t -> Point` (De Boor per `BSplineSeg`).
     """
     tm = (t0 + t1) / 2
     pm = evaluate(tm)
@@ -653,33 +644,27 @@ class EllipseSeg:
 
     def discretize(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
-        Discretizza in polilinea con suddivisione adattiva (`_adaptive_polyline`,
-        condivisa con `BSplineSeg`): la curvatura di un'ellisse non è costante
-        come quella di un cerchio (è massima agli estremi dell'asse minore,
-        raggio di curvatura b²/a), quindi un angolo-per-segmento fisso alla
-        `ArcSeg.discretize` sotto o sovra-campionerebbe a seconda del punto.
-
-        Il campionamento iniziale usa il raggio di curvatura minimo (il punto
-        più "stretto" della curva, agli estremi dell'asse maggiore) nella
-        stessa formula a sagitta di `ArcSeg` — solo per dimensionare il primo
-        giro di punti: la correttezza finale viene comunque dalla
-        suddivisione adattiva, non da questa stima.
+        Discretizza sulla griglia del parametro (D153): l'ellisse è il cerchio
+        del semiasse maggiore `a` visto attraverso una mappa lineare che non
+        allunga nessun vettore (fattori 1 e ratio), quindi i vertici k·2π/N di
+        `_circle_sides(a, tolerance)` portati sull'ellisse restano entro
+        `tolerance` come sul cerchio. Gli estremi esatti più i punti di griglia
+        fra loro, come `ArcSeg`: un'ellisse tagliata in pezzi dà il poligono
+        dell'ellisse intera, una percorsa al contrario gli stessi punti.
         """
         total_angle = self._sweep()
         if total_angle < 1e-12:
             pt = self._point_at(self.start_param)
             return [pt, pt]
 
-        semi_major = math.hypot(*self.major_axis)
-        min_curvature_radius = semi_major * self.ratio * self.ratio  # b²/a
-
-        angle_per_segment = (_sagitta_step(min_curvature_radius, tolerance)
-                             or math.radians(FALLBACK_ANGLE_DEG))
-
-        n_initial = max(MIN_SEGMENTS_ARC, int(math.ceil(total_angle / angle_per_segment)))
-        t_end = self.start_param + total_angle if self.ccw else self.start_param - total_angle
-
-        return _adaptive_polyline(self._point_at, self.start_param, t_end, n_initial, tolerance)
+        # ratio > 1 (fuori dal formato, ma possibile): il fattore più grande è ratio
+        radius = math.hypot(*self.major_axis) * max(1.0, self.ratio)
+        sides = _circle_sides(radius, tolerance)
+        if self.ccw:
+            params = _grid_angles(self.start_param, self.start_param + total_angle, radius, sides)
+        else:
+            params = _grid_angles(self.start_param - total_angle, self.start_param, radius, sides)[::-1]
+        return [self._point_at(t) for t in params]
 
     def reversed(self) -> "EllipseSeg":
         """Stessa ellisse fisica, percorsa al contrario: scambia i parametri e nega ccw."""

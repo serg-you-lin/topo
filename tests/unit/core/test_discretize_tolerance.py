@@ -71,6 +71,47 @@ class TestDiscretizeWithinTolerance(unittest.TestCase):
                 curve = _samples(e._point_at, 0.0, 2 * math.pi, 20000)
                 self.assertLessEqual(_deviation(e.discretize(TOL), curve), TOL)
 
+    def test_flat_ellipse(self):
+        # D153: una suddivisione che guarda solo il punto medio usciva di 0.0113
+        # (a 139, ratio 0.0027), lo spigolo vivo agli estremi dell'asse maggiore
+        e = EllipseSeg((0.0, 0.0), (139.0, 0.0), 0.0027, 0.0, 2 * math.pi)
+        curve = _samples(e._point_at, 0.0, 2 * math.pi, 40000)
+        self.assertLessEqual(_deviation(e.discretize(TOL), curve), TOL)
+
+    def test_rotated_partial_clockwise_ellipse(self):
+        a = 300.0
+        axis = (a * math.cos(0.7), a * math.sin(0.7))
+        e = EllipseSeg((1e4, -3e4), axis, 0.05, 2.0, -1.5, ccw=False)
+        curve = _samples(e._point_at, 2.0, -1.5, 20000)
+        self.assertLessEqual(_deviation(e.discretize(TOL), curve), TOL)
+
+
+class TestEllipseOnParameterGrid(unittest.TestCase):
+    """
+    D153: un'ellisse usa la griglia del suo parametro, così la stessa ellisse
+    dà lo stesso poligono comunque il file l'abbia tagliata.
+    """
+
+    def _ellipse(self, t0, t1, ccw=True):
+        return EllipseSeg((3.0, -2.0), (40.0, 30.0), 0.4, t0, t1, ccw)
+
+    def _same(self, pts_a, pts_b):
+        self.assertEqual(len(pts_a), len(pts_b))
+        for p, q in zip(pts_a, pts_b):
+            self.assertAlmostEqual(p[0], q[0], places=9)
+            self.assertAlmostEqual(p[1], q[1], places=9)
+
+    def test_four_quarters_are_the_ellipse(self):
+        whole = self._ellipse(0.0, 2 * math.pi).discretize(TOL)
+        joined = [whole[0]]
+        for q in range(4):
+            joined += self._ellipse(q * math.pi / 2, (q + 1) * math.pi / 2).discretize(TOL)[1:]
+        self._same(joined, whole)
+
+    def test_reversed_ellipse_gives_the_same_points_backwards(self):
+        fwd = self._ellipse(0.37, 2.9).discretize(TOL)
+        self._same(self._ellipse(0.37, 2.9).reversed().discretize(TOL), fwd[::-1])
+
 
 class TestArcOnCircleGrid(unittest.TestCase):
     """
