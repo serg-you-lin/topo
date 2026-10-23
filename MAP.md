@@ -5590,3 +5590,22 @@ too), and `ArcSeg.from_chord` refuses a null chord. In the adapter:
 Proof: `tests/integration/test_degenerate_curves.py` (all five fail on the old
 code); 683 local drawings load, 376 heal without errors, no zero-radius arc
 left in any source or result.
+D112 already met this NaN arc, on the writing side: a lone near-full arc was
+written with a zero chord and read back as a NaN arc. D112 stopped topo from
+writing it, so it now becomes a `CircleSeg`. The reading side stayed open, and
+the 4 local drawings were most likely written before D112. D154 closes the
+reading side for any file.
+
+### D155 — each closed gate item is one micro bump and one push ✅
+Federico, 23 October: "micro bump e push per ogni passo del cancello chiuso".
+Until 1.0-ready, closing an item of the D148 gate ends with a version bump in
+`pyproject.toml`, recorded here, and a push of `main`. The bump is the third
+digit, unless the item removes or renames a public name, which bumps the
+second, as before (0.21.0). A consumer then always sees the gate's progress as
+a version, and nothing waits unpushed.
+The first push under this rule carries everything since 0.21.0. That includes
+D149/D150 (public fields removed from `Result`) and D151 (`loops_to_curves`
+return type), so it is **0.22.0**. From the next item on, the bump is the
+third digit.
+`main` → **0.22.0** (G1, G2, G3, G4 closed: D145–D154; public fields removed,
+`heal()` output changes, arcs and ellipses of zero size refused).
