@@ -160,7 +160,9 @@ def _parse_polyline(entity, rev) -> list:
         else:
             x2, y2, _ = points[i + 1]
         
-        if abs(bulge) > 1e-9:
+        # una corda nulla col bulge è un arco di raggio 0, un punto: resta il
+        # tratto nullo che darebbe senza bulge (D154)
+        if abs(bulge) > 1e-9 and (x1, y1) != (x2, y2):
             primitives.append(ArcSeg.from_chord(start=(x1, y1), end=(x2, y2), bulge=bulge))
         else:
             primitives.append(LineSeg(start=(x1, y1), end=(x2, y2)))

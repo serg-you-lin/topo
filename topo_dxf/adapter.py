@@ -9,6 +9,7 @@ UNICO punto di conversione DXF → primitive.
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import List, Optional, Sequence, Tuple
 
 from ezdxf.colors import aci2rgb, int2rgb
@@ -241,6 +242,8 @@ class DxfAdapter:
         self.ignore_layers = ignore_layers or set()
         self.skip_layers = {s.lower() for s in skip_layers}
         self.role_rules = list(role_rules)
+        # un messaggio per tipo di entità degenere scartata da to_edges (D154)
+        self.warnings: List[str] = []
 
     def to_edges(self) -> List[Edge]:
         """Traduce entità DXF in Edge."""
@@ -262,6 +265,16 @@ class DxfAdapter:
 
         edges = []
         seen_segment_keys = set()
+        degenerate = Counter()
+
+        def _parse(entity, dtype):
+            # una curva di misura nulla (raggio 0, asse nullo) è un punto: la
+            # primitiva la rifiuta, qui diventa un avviso invece di un crash
+            try:
+                return DxfEntityDispatcher(entity).parse()
+            except ValueError:
+                degenerate[dtype] += 1
+                return None
 
         def _append_edge(role, segment, style=None):
             key = _segment_key(segment)
@@ -285,14 +298,14 @@ class DxfAdapter:
 
             # CIRCLE → CircleSeg (preservato!)
             if dtype == "CIRCLE":
-                prim = DxfEntityDispatcher(entity).parse()
+                prim = _parse(entity, dtype)
                 if isinstance(prim, CircleSeg):
                     edges.append(Edge.of(prim, role, style))
                 continue
 
             # LWPOLYLINE / POLYLINE → segmenti
             if dtype in ("LWPOLYLINE", "POLYLINE"):
-                primitives = DxfEntityDispatcher(entity).parse() or []
+                primitives = _parse(entity, dtype) or []
                 if not isinstance(primitives, list):
                     primitives = [primitives]
                 for segment in primitives:
@@ -304,10 +317,12 @@ class DxfAdapter:
             if dtype not in _SUPPORTED_TYPES:
                 continue
 
-            prim = DxfEntityDispatcher(entity).parse()
+            prim = _parse(entity, dtype)
             if prim is None:
                 continue
 
             edges.append(Edge.of(prim, role, style))
 
+        for dtype, n in sorted(degenerate.items()):
+            self.warnings.append(f"{n} {dtype} degeneri (raggio o asse nullo) ignorati: un punto, non una curva")
         return edges

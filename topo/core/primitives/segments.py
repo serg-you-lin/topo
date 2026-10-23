@@ -166,6 +166,11 @@ class ArcSeg:
     end_angle: float    # radianti
     ccw: bool = True
 
+    def __post_init__(self):
+        # raggio 0 è un punto, non una curva: come CircleSeg (D154)
+        if not self.radius > 0:
+            raise ValueError(f"Raggio deve essere positivo: {self.radius}")
+
     def _sweep(self) -> float:
         """Angolo spazzato in radianti, sempre positivo."""
         return _angular_sweep(self.start_angle, self.end_angle, self.ccw)
@@ -233,6 +238,9 @@ class ArcSeg:
 
         ccw = bulge > 0
         half_chord = math.hypot(end[0] - start[0], end[1] - start[1]) / 2.0
+        if not half_chord > 0:
+            # corda nulla: raggio 0, con numpy un arco NaN invece di un errore (D154)
+            raise ValueError("corda nulla: un punto, non un arco")
         sweep = 4.0 * math.atan(abs(bulge))          # angolo spazzato totale
         radius = half_chord / math.sin(sweep / 2.0)
 
@@ -561,7 +569,7 @@ class CircleSeg:
     radius: float
     
     def __post_init__(self):
-        if self.radius <= 0:
+        if not self.radius > 0:
             raise ValueError(f"Raggio deve essere positivo: {self.radius}")
 
     def reversed(self) -> "CircleSeg":
@@ -623,6 +631,11 @@ class EllipseSeg:
     start_param: float   # radianti
     end_param: float     # radianti
     ccw: bool = True
+
+    def __post_init__(self):
+        # asse nullo o ratio 0 è un punto o un segmento, non un'ellisse (D154)
+        if not (math.hypot(*self.major_axis) > 0 and self.ratio > 0):
+            raise ValueError(f"Ellisse degenere: asse {self.major_axis}, ratio {self.ratio}")
 
     def _sweep(self) -> float:
         """Angolo (parametro) spazzato in radianti, sempre positivo."""
