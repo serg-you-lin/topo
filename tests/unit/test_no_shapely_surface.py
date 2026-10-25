@@ -1,7 +1,8 @@
 """
 tests/unit/test_no_shapely_surface.py
 
-Guardiano di D166: nessun tipo shapely nella superficie pubblica di topo.
+Guardiano di D166 e D169: nessun tipo shapely o numpy nella superficie
+pubblica di topo.
 Due controlli: le firme e i campi dichiarati di ogni nome pubblico, e gli
 oggetti veri che escono da `heal`, `island`, `topo.steps` e `topo.geometry`,
 percorsi campo per campo e proprietà per proprietà. Solo `to_shapely` lo
@@ -13,6 +14,7 @@ import inspect
 import re
 from pathlib import Path
 
+import numpy as np
 import pytest
 from shapely.geometry.base import BaseGeometry
 
@@ -75,7 +77,7 @@ def _walk(obj, path, seen, found, depth=0):
     if id(obj) in seen or depth > 8:
         return
     seen.add(id(obj))
-    if isinstance(obj, BaseGeometry):
+    if isinstance(obj, (BaseGeometry, np.ndarray, np.generic)):
         found.append(path)
         return
     if isinstance(obj, (str, bytes, int, float, bool, type(None))):

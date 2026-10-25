@@ -6264,3 +6264,33 @@ Values that moved besides names: `Result.clusters` order is deterministic
 3); `bbox` is exact everywhere it is read.
 
 `main` → **0.23.0** (D155: public names removed, second digit).
+
+### D169 — dependencies are replaceable details behind the API; one is replaced, or topo ported, only on a measure ✅
+
+Federico, 25 October 2026, after weighing "numpy as a heavy dependency" and
+"a Rust core with a Python API". D167 says how a port is judged; this says
+when a dependency goes and why not now.
+
+**Why not now.** Dropping numpy saves 0 MB: shapely requires it, and so does
+ezdxf behind `topo_dxf`, so every DXF user installs it anyway. topo's own
+numpy is two files (Gauss-Legendre nodes in `integrals`, small least-squares
+systems in `points`). What shapely still does is noding thousands of edges,
+building faces (`polygonize`, union) and the spatial index — the numerically
+hard part, where GEOS has years of fixes a hand-written module would have to
+rediscover on real drawings. Small pure-Python geometry libraries do points
+and vectors, not noding or faces.
+
+**What makes them replaceable is the API, so that is what is kept.** No
+shapely or numpy type in topo's public surface: no signature names one, and
+no value reachable from what the readings, steps and facts return is one —
+primitives store plain Python floats whatever they are built from (an ezdxf
+polyline gave `np.float64` coordinates; `_plain` in `segments.py` converts
+at construction). `test_no_shapely_surface` guards both libraries.
+
+**When.** After 1.0, piece by piece, each piece accepted as D167 accepts a
+port (same goldens, invariants, fidelity on every fixture): topo's direct
+numpy; the spatial index (a bbox index of topo's); then `polygonize` against
+topo's loop finder. Noding stays with GEOS until a real case needs otherwise.
+A Rust core is started on one of two measured reasons: reading time on real
+drawings, or a host without Python (a CAM kernel's SDK). The first step for
+either is an inventory: each shapely/numpy operation used → what replaces it.

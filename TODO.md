@@ -148,6 +148,11 @@ report di scostamento di `heal()` per entità (D149), PDF (`topo_pdf`), modello 
 strisce (D142), D147 (estremi sui T, branch `d147-t-ends`),
 criterio del punto medio di `_refine_segment`, curve da equazione, fatti di
 riconoscimento, snapfence, richieste dei consumer che aggiungono nomi.
+Dipendenze (D169): misurare i tempi di `heal()`/`island()` su tutte le
+fixture; inventario operazione shapely/numpy → cosa la sostituisce; poi, un
+pezzo alla volta e solo a pari golden: numpy diretto (`integrals`, `points`),
+indice spaziale nostro, `polygonize` contro il cercatore di giri. Il noding
+resta a GEOS. Un core Rust solo su una misura (tempi, o un host senza Python).
 Decisi con Federico il 25 ottobre, da fare in 1.x:
 - **warning sui pezzi d'ingresso che coincidono** (un `CIRCLE` ripassato da
   una polilinea, anch_06): è un difetto del disegno, topo lo dice e non ne
