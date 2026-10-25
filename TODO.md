@@ -116,9 +116,19 @@ giudicano nei loro repo, mai rigenerando alla cieca.
 
 **Dopo la 1.0 (1.x, additivo — non toccare finché il cancello è aperto):**
 report di scostamento di `heal()` per entità (D149), PDF (`topo_pdf`), modello `Curve`/`as_analytic`/firma dei contorni, viewer,
-strisce (D142), D147 (estremi sui T, branch `d147-t-ends`), cerchi doppi,
+strisce (D142), D147 (estremi sui T, branch `d147-t-ends`),
 criterio del punto medio di `_refine_segment`, curve da equazione, fatti di
 riconoscimento, snapfence, richieste dei consumer che aggiungono nomi.
+Decisi con Federico il 25 ottobre, da fare in 1.x:
+- **warning sui pezzi d'ingresso che coincidono** (un `CIRCLE` ripassato da
+  una polilinea, anch_06): è un difetto del disegno, topo lo dice e non ne
+  cancella nessuno (D137); cosa farne è del consumer. Sostituisce "cerchi
+  doppi".
+- **terza lettura, la rete**: i gruppi di pezzi che si toccano o si
+  incrociano, coi punti di contatto, senza contorni né dentro/fuori. È la
+  domanda sotto `heal()` e `island()` (che già raggruppano e rendono piana
+  la rete, solo internamente), per chi usa la geometria senza leggerla come
+  pezzo o come vista.
 
 ## FATTO (23 ottobre) — shape dei pezzi chiusi in loose (D162)
 
