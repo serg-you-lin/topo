@@ -26,7 +26,7 @@ from topo import to_shapely
 
 MAX_GAP = 0.5
 SOURCES = drawings_for("island")
-# lo stesso contorno può dare un `.polygon` diverso di tanto così: la freccia
+# lo stesso contorno può dare un poligono diverso di tanto così: la freccia
 # della discretizzazione più la griglia dei nodi dell'unione di facce (D106)
 BOUNDS_TOLERANCE = DEFAULT_TOLERANCE + GRAPH_EPSILON
 # due letture dello stesso contorno, ognuna fuori di BOUNDS_TOLERANCE: area di
@@ -83,8 +83,8 @@ class TestPolygonValidity(unittest.TestCase):
     un'area calcolata per cancellazione di segno, non la forma vera."""
 
     def _assert_valid(self, contour, where):
-        self.assertTrue(to_shapely(contour).is_valid, f"{where}: .polygon non è una forma semplice")
-        self.assertGreater(to_shapely(contour).area, 0, f"{where}: .polygon ha area nulla")
+        self.assertTrue(to_shapely(contour).is_valid, f"{where}: il poligono non è una forma semplice")
+        self.assertGreater(to_shapely(contour).area, 0, f"{where}: il poligono ha area nulla")
 
 
 def _make_validity_test(dxf: Path):

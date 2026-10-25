@@ -32,7 +32,7 @@ from .core.healing.steps import (
     split_non_finite, split_labeled, close_free_gaps, dangling_splines, find_non_contour_edges,
     find_joining_edges, free_ends, close_near_full_arcs, NEAR_FULL_ARC_MISSING,
     repair_merged_corners, find_loops, LoopSearch, structural_loops,
-    loops_to_curves, polygonize_edges, polygons_to_curves,
+    loops_to_curves, polygonize_to_curves,
     labeled_curves, build_hierarchy,
 )
 from .core.topology.loop_finder import edges_to_open_curves
@@ -47,6 +47,6 @@ __all__ = [
     "find_non_contour_edges", "find_joining_edges", "free_ends",
     "close_near_full_arcs", "NEAR_FULL_ARC_MISSING", "repair_merged_corners",
     "find_loops", "LoopSearch", "structural_loops",
-    "loops_to_curves", "polygonize_edges", "polygons_to_curves",
+    "loops_to_curves", "polygonize_to_curves",
     "edges_to_open_curves", "labeled_curves", "build_hierarchy",
 ]

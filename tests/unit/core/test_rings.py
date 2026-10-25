@@ -9,9 +9,14 @@ griglia di punti lontani dal bordo — ogni primitiva, i due versi, un salto.
 import math
 
 import pytest
-from shapely.geometry import Point as SPoint, Polygon
+import random
 
-from topo.core.geometry.rings import ring_bbox, ring_contains, ring_perimeter, ring_points
+from shapely.geometry import LineString, Point as SPoint, Polygon
+from shapely.ops import split
+
+from topo.core.geometry.rings import (
+    ring_bbox, ring_contains, ring_covers_chord, ring_perimeter, ring_points, ring_split_by_chord,
+)
 from topo.core.primitives.segments import ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, LineSeg
 
 EPS = 1e-12
@@ -89,6 +94,53 @@ def test_contains_come_il_poligono_fine_lontano_dal_bordo(name, reverse):
             assert ring_contains(ring, p) == polygon.contains(SPoint(p)), p
             checked += 1
     assert checked > n * n // 2
+
+
+def _chords(ring, polygon, n=150, seed=7):
+    """Corde a caso nel bbox allargato, lontane da un tocco tangente: ogni
+    incontro col bordo è un incrocio netto o non c'è (il poligono fine e
+    le primitive possono differire solo lì)."""
+    rnd = random.Random(seed)
+    xmin, ymin, xmax, ymax = ring_bbox(ring)
+    w, h = xmax - xmin, ymax - ymin
+    out = []
+    while len(out) < n:
+        a = (xmin - w / 4 + rnd.random() * w * 1.5, ymin - h / 4 + rnd.random() * h * 1.5)
+        b = (xmin - w / 4 + rnd.random() * w * 1.5, ymin - h / 4 + rnd.random() * h * 1.5)
+        line = LineString([a, b])
+        if line.length < 1e-3 or min(polygon.exterior.distance(SPoint(p)) for p in (a, b)) < 1e-2:
+            continue
+        # niente tangenze: spostata di ±1e-2 la corda incontra il bordo lo stesso numero di volte
+        if len({_meets(line.offset_curve(d), polygon) for d in (-1e-2, 1e-2)}) != 1:
+            continue
+        out.append((a, b))
+    return out
+
+
+def _meets(line, polygon):
+    hit = line.intersection(polygon.exterior)
+    return len(getattr(hit, "geoms", [hit])) if not hit.is_empty else 0
+
+
+@pytest.mark.parametrize("name", sorted(RINGS))
+def test_corda_che_divide_e_corda_coperta_come_shapely(name):
+    ring = RINGS[name]
+    polygon = Polygon(ring_points(ring, 1e-5))
+    for a, b in _chords(ring, polygon):
+        line = LineString([a, b])
+        assert ring_split_by_chord(ring, a, b) == (len(split(polygon, line).geoms) >= 2), (a, b)
+        assert ring_split_by_chord(_reversed(ring), a, b) == ring_split_by_chord(ring, a, b)
+        assert ring_covers_chord(ring, a, b) == polygon.buffer(1e-6).covers(line), (a, b)
+
+
+def test_corda_sul_bordo_e_tocco():
+    ring = _rounded_rectangle()              # 30×12, raccordi r=2.5
+    assert not ring_split_by_chord(ring, (-10.0, -6.0), (10.0, -6.0))     # sul lato
+    assert ring_covers_chord(ring, (-10.0, -6.0), (10.0, -6.0))
+    assert not ring_split_by_chord(ring, (-20.0, 6.0), (20.0, 6.0))       # lungo il lato in alto
+    assert ring_split_by_chord(ring, (0.0, -7.0), (0.0, 7.0))
+    assert ring_split_by_chord(ring, (0.0, -6.0), (0.0, 6.0))             # da bordo a bordo, capi sul bordo
+    assert not ring_split_by_chord(ring, (0.0, -6.0), (0.0, 0.0))         # entra e si ferma
 
 
 @pytest.mark.parametrize("name", sorted(RINGS))

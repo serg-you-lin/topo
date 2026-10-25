@@ -17,8 +17,6 @@ import math
 from dataclasses import dataclass
 from typing import Iterable, List, Optional, Sequence, Tuple
 
-from shapely.geometry import box
-
 from ..primitives.segments import LineSeg
 
 Interval = Tuple[float, float]
@@ -108,35 +106,39 @@ def _covered_at(lines: Sequence[AxisLine], at: float, lo: float, hi: float, tol:
 @dataclass(frozen=True)
 class CoveredRectangle:
     """
-    Un rettangolo allineato agli assi i cui quattro lati sono coperti da tratti.
+    An axis-aligned rectangle whose four sides are covered by strokes.
 
-    polygon: il rettangolo (shapely)
-    items:   i tratti che stanno sui suoi lati, compresi quelli corti collineari
+    bbox:  (xmin, ymin, xmax, ymax) of the rectangle
+    items: the strokes lying on its sides, short collinear ones included
     """
-    polygon: object
+    bbox: Bounds
     items: tuple
 
     @property
-    def bbox(self) -> Bounds:
-        return tuple(self.polygon.bounds)
+    def segments(self) -> List[LineSeg]:
+        """The rectangle as four `LineSeg`, counter-clockwise from (xmin, ymin)."""
+        x0, y0, x1, y1 = self.bbox
+        corners = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+        return [LineSeg(corners[k], corners[(k + 1) % 4]) for k in range(4)]
 
     @property
     def area(self) -> float:
-        return self.polygon.area
+        x0, y0, x1, y1 = self.bbox
+        return (x1 - x0) * (y1 - y0)
 
     @property
     def long_side(self) -> float:
-        minx, miny, maxx, maxy = self.polygon.bounds
+        minx, miny, maxx, maxy = self.bbox
         return max(maxx - minx, maxy - miny)
 
     @property
     def short_side(self) -> float:
-        minx, miny, maxx, maxy = self.polygon.bounds
+        minx, miny, maxx, maxy = self.bbox
         return min(maxx - minx, maxy - miny)
 
     @property
     def ratio(self) -> float:
-        """Lato lungo / lato corto; 0 per un rettangolo degenere."""
+        """Long side / short side; 0 for a degenerate rectangle."""
         s = self.short_side
         return (self.long_side / s) if s else 0.0
 
@@ -178,7 +180,7 @@ def covered_rectangles(items: Sequence, min_side: float, eps: float = AXIS_EPS,
                     if key in seen:
                         continue
                     seen.add(key)
-                    out.append(CoveredRectangle(box(x_lo, y_lo, x_hi, y_hi),
+                    out.append(CoveredRectangle(tuple(map(float, (x_lo, y_lo, x_hi, y_hi))),
                                                 tuple(_on_border(x_lo, y_lo, x_hi, y_hi, items, tol))))
     return out
 

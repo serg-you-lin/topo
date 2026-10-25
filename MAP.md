@@ -6142,6 +6142,49 @@ type.** Agreed with Federico point by point.
   fixtures build contours from `topo.geometry.polygon(...)`. Suite 2723
   passed, 183 s.
 
+**Implemented, step 5 (G13, 25 October 2026): `topo.geometry` and
+`topo.steps` take and return no shapely type.** Names agreed with Federico.
+- `splits_polygon(polygon, …)` → `splits_contour(contour, start, end,
+  reach=0.0)`: a contour, a ring of `segments` or the segment list. Renamed
+  because the argument changed: a caller passing a polygon gets a
+  `NameError`, not a silent wrong answer. On the primitives (D167):
+  `rings.ring_split_by_chord` cuts the chord where it meets the boundary
+  (`intersections`, jumps included) and a stretch between two meets whose
+  midpoint is strictly inside cuts the region. Why that is enough: a ring
+  is simply connected, so a cross-cut from boundary to boundary always
+  splits it; a touch, or a stretch along the boundary, has no inside
+  midpoint. A meet counts as on the boundary by construction (on splines
+  and ellipses `intersections` is only within 1e-4; re-testing it at 1e-6
+  is what failed first).
+- `bridged_runs(segments, bridges)`: `bridges` are contours (or rings of
+  segments), a gap is bridged if `rings.ring_covers_chord` (ends and every
+  piece's midpoint in the closed region — the old `buffer(1e-6).covers`).
+  A stroke, here and in `are_collinear`/`group_collinear_lines`, is a
+  `(start, end)` pair or anything with `start`/`end`; a `LineString` is no
+  longer read.
+- Both checked against shapely on the eight rings of `test_rings` (both
+  directions, 150 random chords each, tangent chords left out): same
+  answer everywhere. A run over every fixture was not done yet.
+- `CoveredRectangle` carries `bbox` (floats) and `items`; `segments` gives
+  the four sides; `area`/`long_side`/`short_side`/`ratio` read the bbox.
+- `OuterFace.polygon` is private (`_polygon`, read by `curve_polygon`), as
+  on contours.
+- `topo.steps.polygonize_edges` + `polygons_to_curves` → one step,
+  `polygonize_to_curves(edges, tolerance) -> list[ClosedCurve]`. The two
+  stay inside `core/healing/steps.py` because `heal`'s fallback also needs
+  the faces for `off_faces`; only the merged step is public.
+- Found on the way: the fallback gave the OUTER curve the face polygon
+  *with its holes* while its segments are the outer ring only, so
+  `to_shapely(outer)` was 84 mm² for a 100 mm² ring. Its polygon is now its
+  ring (`Polygon(poly.exterior)`); the holes are their own INNER curves. No
+  golden moved.
+- Guardian `tests/unit/test_no_shapely_surface.py`: no annotation of any
+  name in `__all__` of `topo`, `topo.geometry`, `topo.steps`, `topo.model`,
+  `topo_dxf` names a shapely type (except `to_shapely`), and walking every
+  public field and property of what `heal`, `island`, `split`,
+  `outer_face`, `polygonize_to_curves`, `covered_rectangles` and
+  `contour_shape` return finds no shapely object. Suite 2890 passed, 184 s.
+
 ### D167 — topo's code is written ready for a Rust port; the tests judge the port, not a reading of the Rust
 
 Decided by Federico, 25 October 2026. He will not learn to read Rust well,

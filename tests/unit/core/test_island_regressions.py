@@ -14,6 +14,7 @@ from pathlib import Path
 import topo
 import topo_dxf
 from topo.core.island import read_island
+from topo import to_shapely
 
 FIXTURES = Path(__file__).resolve().parent.parent.parent / "data" / "regressions"
 TOLERANCE = 0.05
@@ -31,8 +32,8 @@ class TestTangentSpike(unittest.TestCase):
         reading = read_island(doc.edges, tolerance=TOLERANCE, max_gap=MAX_GAP)
         self.assertIsNotNone(reading.outer)
         # 1011.359 a discretizzazione fine; 1011.27 coi punti di ezdxf (D135)
-        self.assertAlmostEqual(reading.outer.polygon.area, 1011.35, places=1)
-        max_x = max(x for x, _ in reading.outer.polygon.exterior.coords)
+        self.assertAlmostEqual(to_shapely(reading.outer).area, 1011.35, places=1)
+        max_x = max(x for x, _ in to_shapely(reading.outer).exterior.coords)
         # pulito (D99) = 1506.30; rotto (D100, oggi) = 1506.63 (spike di 0.33mm)
         self.assertLess(max_x, 1506.4,
                          "vertice spurio sulla punta arrotondata, oltre la curva liscia")

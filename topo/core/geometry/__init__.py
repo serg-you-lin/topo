@@ -8,7 +8,7 @@ decide il consumatore.
 Pubblici (qui sotto):
     build.py          costruire forme come segmenti: polygon, rectangle, regular_polygon, circle, ellipse, stadium
     shape.py          forma di un contorno chiuso; cerchi concentrici; archi attorno a un cerchio
-    lines.py          una corda che divide un poligono; file di tratti collineari unite attraverso dei poligoni; tratteggio di un segmento
+    lines.py          una corda che divide un contorno; file di tratti collineari unite attraverso dei contorni; tratteggio di un segmento
     regions.py        punto su un contorno (vertice, raccordo, lato); tratto tagliato da una regione; contorno meno regione
     axis.py           rettangoli coperti da tratti, linee che li attraversano, lati sul bordo di un altro, quota sugli assi;
                       tratti sugli assi, tratti dentro un riquadro, intervalli uniti
@@ -32,7 +32,7 @@ from .shape import (
     concentric_groups, ConcentricGroup,
     arcs_around, ArcAround,
 )
-from .lines import splits_polygon, bridged_runs, CollinearRun, dash_line, group_collinear_lines
+from .lines import splits_contour, bridged_runs, CollinearRun, dash_line, group_collinear_lines
 from .measure import (
     segment_length, length_inside, chord_angle_deg,
     track_points, track_length, track_shape_type,
@@ -49,7 +49,7 @@ __all__ = [
     "contour_shape", "ContourShape", "ShapeKind",
     "concentric_groups", "ConcentricGroup",
     "arcs_around", "ArcAround",
-    "splits_polygon", "bridged_runs", "CollinearRun", "dash_line", "group_collinear_lines",
+    "splits_contour", "bridged_runs", "CollinearRun", "dash_line", "group_collinear_lines",
     "segment_length", "length_inside", "chord_angle_deg",
     "track_points", "track_length", "track_shape_type",
     "point_on_contour", "ContourPoint", "nearest_point", "cut_by", "contour_minus", "intersections",

@@ -226,8 +226,8 @@ consumatore (snapdraw) compone gli stessi passi come gli serve.
    - se non chiude ancora: loop sul grafo clusterizzato tollerante (con
      warning: la discrepanza sopravvive nell'output)
    - se nessun gradino chiude, `heal()` passa all'ultima spiaggia:
-     `polygonize_edges` sui segmenti discretizzati, che dà già i contorni
-     (`polygons_to_curves`, geometria nativa persa)
+     `polygonize_to_curves` sui segmenti discretizzati, che dà già i contorni
+     (geometria nativa persa)
 6. **loop → curva** (`structural_loops`, `loops_to_curves`): un loop con un
    edge di ruolo non strutturale non è contorno; un loop senza area (o un
    micro-cerchio) torna come curve aperte, che finiscono in `loose` (D151)

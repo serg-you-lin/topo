@@ -4,8 +4,8 @@ test_geometry.py
 Test unitari per le funzioni pure di topo.core.geometry.
 
 Copre:
-  - are_collinear         : verifica collinearità di due LineString (topo/core/lines.py, D93)
-  - group_collinear_lines : raggruppa LineString collineari
+  - are_collinear         : verifica collinearità di due tratti (topo/core/lines.py, D93)
+  - group_collinear_lines : raggruppa tratti collineari
   - dash_line             : tratteggio di un segmento, capi ancorati e vuoti uguali
 """
 
@@ -48,9 +48,9 @@ def make_arc(cx, cy, radius, start_angle, end_angle):
     )
 
 
-def make_line(x1, y1, x2, y2) -> LineString:
-    """Crea una LineString shapely."""
-    return LineString([(x1, y1), (x2, y2)])
+def make_line(x1, y1, x2, y2) -> LineSeg:
+    """Un tratto di topo."""
+    return LineSeg((x1, y1), (x2, y2))
 
 
 # ---------------------------------------------------------------------------

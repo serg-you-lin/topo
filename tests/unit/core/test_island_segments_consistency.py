@@ -1,14 +1,14 @@
 # tests/unit/core/test_island_segments_consistency.py
 
 """
-Per ogni contorno letto da `island()`, `.polygon` (la forma geometrica finita,
+Per ogni contorno letto da `island()`, il poligono (`to_shapely`, la forma geometrica finita,
 quella che SVG/view_model disegnano) e `.segments` (i pezzi grezzi che `to_dxf`
 scrive) devono descrivere la stessa forma: sono due rappresentazioni dello
 stesso contorno, non due letture indipendenti. Trovato il 12 ottobre: su
 `regr_04.dxf`, un contorno esterno di vista isometrica (l'unione di più facce,
 D100) aveva `.segments` scollegati (26 giunzioni rotte su 84) che coprivano un
 terzo dell'area vera — invisibile sia a `test_golden_islands.py` (confronta
-solo bbox+conteggio) sia a SVG/view_model (leggono solo `.polygon`).
+solo bbox+conteggio) sia a SVG/view_model (leggono solo il poligono).
 Non è un golden: non confronta contro un valore congelato, è un'invariante
 sempre vera per definizione — non va mai rigenerato, va solo fatto passare.
 """
@@ -41,7 +41,7 @@ class TestIslandSegmentsConsistency(unittest.TestCase):
         sym = poly.symmetric_difference(rebuilt).area
         tol = max(poly.area * 0.01, poly.length * OUTLINE_BAND)
         self.assertLess(sym, tol,
-                         f"{where}: .polygon (area={poly.area:.4f}) e .segments "
+                         f"{where}: il poligono (area={poly.area:.4f}) e .segments "
                          f"(area={rebuilt.area:.4f}) descrivono forme diverse "
                          f"(differenza simmetrica={sym:.4f})")
 
