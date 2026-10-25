@@ -41,7 +41,7 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       1.x, D149 (riapre D143 su questo punto): è additivo; resta bloccante
       la prova G3.
 
-- [ ] **G13** Nessun tipo shapely nella superficie pubblica (D166, deciso con
+- [x] **G13** Nessun tipo shapely nella superficie pubblica (D166, deciso con
       Federico il 25 ottobre): un contorno espone solo tipi di topo —
       `segments`, `bbox`, `area` e `centroid` esatti (con G12), `contains(p)`,
       i punti del giro discretizzato entro una tolleranza. Una conversione
@@ -55,9 +55,10 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       sulle primitive ✅ · 2 verso e ordine dall'integrale ✅ · 3
       `to_shapely` e interno senza `.polygon` ✅ (`to_shapely(cluster)`
       pari-dispari, confermato) · 4 via `.polygon` dal modello ✅ · 5 ✅
-      (`splits_contour`, `polygonize_to_curves`; manca la controprova di
-      `splits_contour`/`bridged_runs` su tutte le fixture) · 6 documenti,
-      D168, 0.23.0.
+      (`splits_contour`, `polygonize_to_curves`; controprova di
+      `splits_contour`/`bridged_runs` su tutte le fixture: 4550 contorni,
+      54 600 corde, 0 differenze) · 6 documenti, D168, 0.23.0 ✅.
+      Chiuso 25 ottobre (MAP D168: tabella vecchio → nuovo per i consumer).
 - [x] **G12** Area esatta (D165, entra nel cancello per decisione di
       Federico, 25 ottobre): `area` di un contorno è l'integrale di Green
       sui suoi `segments` (linea, arco, ellisse in forma chiusa, spline per

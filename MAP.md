@@ -6164,7 +6164,10 @@ type.** Agreed with Federico point by point.
   longer read.
 - Both checked against shapely on the eight rings of `test_rings` (both
   directions, 150 random chords each, tangent chords left out): same
-  answer everywhere. A run over every fixture was not done yet.
+  answer everywhere. Then over every fixture in `tests/examples` (heal,
+  12 random chords per contour, tangent chords left out): 4550 contours,
+  54 600 chords, 0 differences; 454 contours skipped because their fine
+  polygon is not valid for shapely (rings that touch themselves).
 - `CoveredRectangle` carries `bbox` (floats) and `items`; `segments` gives
   the four sides; `area`/`long_side`/`short_side`/`ratio` read the bbox.
 - `OuterFace.polygon` is private (`_polygon`, read by `curve_polygon`), as
@@ -6217,3 +6220,47 @@ intersection exists (line, arc, circle among themselves) it may replace the
 polygon later; between splines the numbers stay numeric anyway. The node
 grid (D113, 1 µm) is what makes the topology integer-ready (ROADMAP, the
 interface "same node? / where do they cross?").
+
+### D168 — G13 closed: what replaces each shapely name, for the consumers; 0.23.0
+
+Closed 25 October 2026, steps 1–6 of D166 ("Implemented" paragraphs there).
+topo's public surface — `__all__` of `topo`, `topo.geometry`, `topo.steps`,
+`topo.model`, `topo_dxf` — takes and returns no shapely type except
+`topo.to_shapely`, the explicit conversion. `test_no_shapely_surface`
+keeps it so: annotations of every public name, and every public field and
+property of what the readings, the steps and the geometry facts return.
+
+**What the contract says about shapely.** It is a dependency of topo
+(installed with it), not a promise of topo: a consumer that calls shapely
+itself declares it in its own dependencies, because a Rust core (D167)
+could drop it. A question about one contour is a fact of the contour; only
+overlay, buffer, WKT go through `to_shapely`.
+
+**Old → new**, for snapbend, snapdraw, snapfence, smoother (they adapt,
+D140; topo writes nothing in their repos):
+
+| before | now |
+|---|---|
+| `c.polygon.area` | `c.area` (exact, D165) |
+| `c.polygon.bounds` | `c.bbox` (exact: arcs at their true extremes) |
+| `c.polygon.centroid` | `c.centroid` (a tuple; `ValueError` if no area) |
+| `c.polygon.contains(Point(p))` | `c.contains(p)` (boundary within 1e-6 counts as inside) |
+| `c.polygon.exterior.coords` | `c.points(tolerance)` (first point not repeated) |
+| `c.polygon.exterior.length` | `sum(topo.geometry.segment_length(s) for s in c.segments)` |
+| `c.polygon.buffer(…)`, `.wkt`, `.symmetric_difference(…)`, `a.polygon.contains(b.polygon)` | `topo.to_shapely(c)` and the same shapely call |
+| `Contour(polygon=p, segments=s, …)`, `Hole(polygon=…)` | `Contour(segments=s, …)` — no `polygon` argument |
+| `cluster.polygon_with_holes` | `topo.to_shapely(cluster)` (even-odd: an island in a hole is material) |
+| overlay void: `is_void` + `polygon` | `is_void` + `segments` of a closed ring |
+| overlay contour drawn closed because it has `polygon` | closed if `ClosedCurve`, `is_void`, or its segments close a ring (`topo.model.feature_closed`) |
+| `topo.geometry.splits_polygon(cluster.outer.polygon, a, b, reach)` | `topo.geometry.splits_contour(cluster.outer, a, b, reach)` |
+| `topo.geometry.bridged_runs(pieces, [i.polygon …])` | `bridged_runs(pieces, [i …])` — contours as bridges |
+| a stroke as `LineString` (`group_collinear_lines`, `bridged_runs`, `are_collinear`) | `(start, end)`, or anything with `start`/`end` |
+| `CoveredRectangle.polygon` | `.bbox`, `.segments` (`to_shapely(rect)` if a polygon is needed) |
+| `OuterFace.polygon` | `topo.to_shapely(face)` |
+| `topo.steps.polygonize_edges` + `polygons_to_curves` | `topo.steps.polygonize_to_curves(edges, tolerance)` |
+
+Values that moved besides names: `Result.clusters` order is deterministic
+(exact area, then bbox corner — step 2); JSON perimeters are exact (step
+3); `bbox` is exact everywhere it is read.
+
+`main` → **0.23.0** (D155: public names removed, second digit).
