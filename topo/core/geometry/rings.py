@@ -91,19 +91,83 @@ def ring_contains(segments: Sequence, point: Point, tolerance: float = ON_BOUNDA
     ed ellisse in forma chiusa; la spline sulla sua polilinea entro
     `tolerance` / 2, che lontano dal bordo dà lo stesso numero.
     """
+    winding = _winding(segments, point, tolerance)
+    return winding is None or winding != 0
+
+
+def ring_covers_chord(segments: Sequence, start: Point, end: Point,
+                      tolerance: float = ON_BOUNDARY) -> bool:
+    """La corda `start`→`end` sta tutta nella regione chiusa del giro: i capi
+    dentro o sul bordo, e ogni pezzo fra due incontri col bordo col punto
+    medio dentro o sul bordo."""
+    cuts = [t for t, _ in _chord_cuts(segments, start, end, tolerance)]
+    return (ring_contains(segments, start, tolerance) and ring_contains(segments, end, tolerance)
+            and all(ring_contains(segments, _lerp(start, end, (t0 + t1) / 2), tolerance)
+                    for t0, t1 in zip(cuts, cuts[1:])))
+
+
+def ring_split_by_chord(segments: Sequence, start: Point, end: Point,
+                        tolerance: float = ON_BOUNDARY) -> bool:
+    """
+    La corda `start`→`end` divide la regione del giro in due o più parti:
+    un suo pezzo va da bordo a bordo passando dentro (punto medio dentro,
+    non sul bordo). Un giro è semplicemente connesso, quindi un taglio da
+    bordo a bordo lo divide sempre; un tocco o un tratto sul bordo no.
+    """
+    meets = [t for t, on_boundary in _chord_cuts(segments, start, end, tolerance) if on_boundary]
+    for t0, t1 in zip(meets, meets[1:]):
+        winding = _winding(segments, _lerp(start, end, (t0 + t1) / 2), tolerance)
+        if winding is not None and winding != 0:
+            return True
+    return False
+
+
+def _winding(segments: Sequence, point: Point, tolerance: float):
+    """Numero di avvolgimento del giro attorno a `point`; None se `point` sta
+    sul bordo entro `tolerance`."""
     if not segments:
         raise ValueError("ring_contains(): giro vuoto")
     turn = 0.0
     for segment in segments:
         swept = _swept(segment, point, tolerance)
         if swept is None:
-            return True
+            return None
         turn += swept
     for a, b in ring_jumps(segments):
         if _line_distance(point, a, b) <= tolerance:
-            return True
+            return None
         turn += _chord_angle(point, a, b)
-    return round(turn / (2 * math.pi)) != 0
+    return round(turn / (2 * math.pi))
+
+
+def _chord_cuts(segments: Sequence, start: Point, end: Point,
+                tolerance: float) -> List[Tuple[float, bool]]:
+    """(t, sul bordo) lungo `start`→`end`, t in [0, 1]: i due capi e i punti
+    dove la corda incontra il bordo (salti compresi), in ordine, senza
+    doppioni. Un capo è sul bordo se ci sta entro `tolerance`; un incontro
+    lo è per costruzione (su spline ed ellissi entro `CURVE_TOLERANCE`)."""
+    from .intersections import intersections
+    length = math.dist(start, end)
+    if length == 0:
+        return [(0.0, _winding(segments, start, tolerance) is None)]
+    chord = LineSeg(start, end)
+    ux, uy = (end[0] - start[0]) / length, (end[1] - start[1]) / length
+    edges = list(segments) + [LineSeg(a, b) for a, b in ring_jumps(segments)]
+    cuts = [(min(1.0, max(0.0, ((p[0] - start[0]) * ux + (p[1] - start[1]) * uy) / length)), True)
+            for edge in edges for p in intersections(chord, edge)]
+    cuts += [(0.0, _winding(segments, start, tolerance) is None),
+             (1.0, _winding(segments, end, tolerance) is None)]
+    out: List[Tuple[float, bool]] = []
+    for t, on_boundary in sorted(cuts):
+        if out and (t - out[-1][0]) * length <= tolerance:
+            out[-1] = (out[-1][0], out[-1][1] or on_boundary)
+        else:
+            out.append((t, on_boundary))
+    return out
+
+
+def _lerp(a: Point, b: Point, t: float) -> Point:
+    return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
 
 
 # ---------------------------------------------------------------------------

@@ -31,7 +31,7 @@ from ..model.document import Document
 from ..model.curve import OpenCurve
 from ..model.result import Result
 from ..model.role import ContourRole, is_structural_role
-from .primitives.polygon_builder import with_polygon
+from .primitives.polygon_builder import curve_polygon, with_polygon
 from .primitives.segments import segment_is_closed
 from .topology.edge import Edge
 from .topology.graph import build_node_graph
@@ -143,11 +143,11 @@ def read_islands(edges: List[Edge], tolerance: float, max_gap: float) -> List[Is
     """
     readings = [read_island(isl.edges, tolerance, max_gap=max_gap)
                 for isl in spatial_islands(edges, max(tolerance, max_gap))]
-    outers = [(j, r.outer.polygon.buffer(tolerance), ring_area(r.outer.segments))
+    outers = [(j, curve_polygon(r.outer).buffer(tolerance), ring_area(r.outer.segments))
               for j, r in enumerate(readings) if r.outer is not None]
     for i, r in enumerate(readings):
         if r.outer is not None:
-            small, area = r.outer.polygon, ring_area(r.outer.segments)
+            small, area = curve_polygon(r.outer), ring_area(r.outer.segments)
         else:
             small, area = unary_union([edge_geometry(e) for e in r.edges]), 0.0
         hosts = [(j, big_area) for j, probe, big_area in outers
@@ -176,7 +176,7 @@ def read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandRe
         reading.spurs = list(face.spurs)
     rest = [e for e in pieces if id(e) not in taken] + (face.rest if face is not None else [])
     if face is not None:
-        probe = face.polygon.buffer(tolerance)
+        probe = curve_polygon(face).buffer(tolerance)
         reading.outside = [e for e in rest if not probe.contains(edge_geometry(e))]
         outside_ids = {id(e) for e in reading.outside}
         rest = [e for e in rest if id(e) not in outside_ids]
@@ -240,7 +240,7 @@ def _drop_redundant_meets(fixes: list, graph) -> list:
 
 def _cluster(reading: IslandReading, source_file: str, tolerance: float) -> Cluster:
     face = reading.outer
-    outer = _contour(face.segments, face.styles, face.polygon, ContourRole.OUTER, None)
+    outer = _contour(face.segments, face.styles, curve_polygon(face), ContourRole.OUTER, None)
     return Cluster(outer=outer, source_file=source_file)
 
 

@@ -5,6 +5,7 @@ from topo.core.topology.outer_face import outer_face
 from topo.core.topology.noding import split_at_crossings
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, CircleSeg
+from topo import to_shapely
 
 
 def _line(p1, p2):
@@ -25,19 +26,19 @@ class TestOuterFace(unittest.TestCase):
         # la diagonale divide il quadrato in due facce: il contorno esterno è il quadrato
         edges = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + [_line((0, 0), (10, 10))]
         face = _face(edges)
-        self.assertAlmostEqual(face.polygon.area, 100.0)
+        self.assertAlmostEqual(to_shapely(face).area, 100.0)
         self.assertEqual(len(face.edges), 4)
 
     def test_asse_che_sporge_e_una_sporgenza(self):
         # un asse che attraversa il quadrato ed esce dai due lati
         edges = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + [_line((-3, 5), (13, 5))]
         face = _face(edges)
-        self.assertAlmostEqual(face.polygon.area, 100.0)
+        self.assertAlmostEqual(to_shapely(face).area, 100.0)
         self.assertEqual(len(face.spurs), 2)
 
     def test_l_con_rientro(self):
         edges = _poly((0, 0), (10, 0), (10, 4), (4, 4), (4, 10), (0, 10))
-        self.assertAlmostEqual(_face(edges).polygon.area, 64.0)
+        self.assertAlmostEqual(to_shapely(_face(edges)).area, 64.0)
 
     def test_punto_piu_a_sinistra_a_meta_di_un_arco(self):
         # vista stretta dentro un cerchio che la attraversa: il nodo più a
@@ -46,9 +47,9 @@ class TestOuterFace(unittest.TestCase):
         circle = Edge(role="unknown", start=(8, 0), end=(8, 0),
                       segment=CircleSeg(center=(0, 0), radius=8))
         face = _face(view + [circle])
-        self.assertGreater(face.polygon.area, 3.14 * 64)
+        self.assertGreater(to_shapely(face).area, 3.14 * 64)
         # la parte di vista che esce sopra il cerchio è contorno
-        self.assertGreater(face.polygon.bounds[3], 19.9)
+        self.assertGreater(to_shapely(face).bounds[3], 19.9)
 
     def test_nessun_giro(self):
         self.assertIsNone(_face([_line((0, 0), (5, 0))]))

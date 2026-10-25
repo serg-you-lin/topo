@@ -354,7 +354,8 @@ def polygons_to_curves(polygons: List[Polygon]) -> List[ClosedCurve]:
     for poly in polygons:
         if not poly.is_valid:
             poly = poly.buffer(0)
-        outer = loop_to_closed_curve([], role=ContourRole.OUTER, polygon=poly,
+        # il poligono di un contorno è il suo giro: i buchi sono curve a parte
+        outer = loop_to_closed_curve([], role=ContourRole.OUTER, polygon=Polygon(poly.exterior),
                                      segments=_ring_segments(poly.exterior.coords))
         if outer is not None:
             curves.append(outer)
@@ -364,6 +365,16 @@ def polygons_to_curves(polygons: List[Polygon]) -> List[ClosedCurve]:
             if inner is not None:
                 curves.append(inner)
     return curves
+
+
+def polygonize_to_curves(edges: List[Edge], tolerance: float) -> List[ClosedCurve]:
+    """
+    Last resort when no graph closes: the faces of the whole drawing,
+    discretized and snapped at `tolerance`, as closed curves — an OUTER per
+    face boundary, an INNER per hole, made of `LineSeg` (the native geometry
+    is lost). What `heal()` does when `find_loops` finds nothing.
+    """
+    return polygons_to_curves(polygonize_edges(edges, tolerance))
 
 
 def labeled_curves(edges: List[Edge]) -> list:

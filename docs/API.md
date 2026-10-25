@@ -316,8 +316,7 @@ topo.steps.find_loops(edges, non_contour_ids, tolerance) -> LoopSearch
 topo.steps.repair_merged_corners(edges, tolerance, exclude_ids=frozenset()) -> tuple[list[Edge], int, list]
 topo.steps.structural_loops(loops, is_structural=None) -> list[loop]
 topo.steps.loops_to_curves(loops) -> list[ClosedCurve | OpenCurve]
-topo.steps.polygonize_edges(edges, tolerance) -> list[Polygon]
-topo.steps.polygons_to_curves(polygons) -> list[ClosedCurve]
+topo.steps.polygonize_to_curves(edges, tolerance) -> list[ClosedCurve]
 topo.steps.edges_to_open_curves(edges, exclude_ids) -> list[OpenCurve | ClosedCurve]
 topo.steps.labeled_curves(edges) -> list[OpenCurve | ClosedCurve]
 topo.steps.build_hierarchy(features, label="", source_file="", is_structural=None)
@@ -341,8 +340,7 @@ topo.steps.build_hierarchy(features, label="", source_file="", is_structural=Non
 | `repair_merged_corners` | `list[Edge]` → `(edge, n_riparati, cluster_saltati)` | il secondo gradino da solo: angoli fusi dal clustering portati all'intersezione reale; cluster di 3+ estremi saltati. |
 | `structural_loops` | loop → loop | tiene i loop senza edge di ruolo non strutturale. |
 | `loops_to_curves` | loop → `list[ClosedCurve \| OpenCurve]` | un `ClosedCurve` per loop, geometria nativa; un loop che non fa un contorno (area nulla, micro-cerchio) torna come un `OpenCurve` per edge, mai perso (D151). |
-| `polygonize_edges` | `list[Edge]` → `list[Polygon]` | ultima spiaggia quando `find_loops` non chiude: le facce dell'intero disegno discretizzato. |
-| `polygons_to_curves` | `list[Polygon]` → `list[ClosedCurve]` | OUTER dal bordo, INNER dai buchi, a `LineSeg` (la geometria nativa è persa). |
+| `polygonize_to_curves` | `list[Edge]` → `list[ClosedCurve]` | ultima spiaggia quando `find_loops` non chiude: le facce dell'intero disegno discretizzato, un OUTER per bordo e un INNER per buco, a `LineSeg` (la geometria nativa è persa). |
 | `edges_to_open_curves` | `list[Edge]` → feature | gli edge non assorbiti da un loop (`exclude_ids`) come feature aperte. |
 | `labeled_curves` | `list[Edge]` → feature | gli etichettati di `split_labeled`, col ruolo intatto. |
 | `build_hierarchy` | feature → `(cluster, loose)` | albero di contenimento: ogni radice un `Cluster`, i discendenti `inners` con `depth`/`parent`. |
@@ -462,7 +460,7 @@ Nessuna **muta** l'input: ritornano liste/oggetti nuovi.
 | campo | tipo | significato |
 |---|---|---|
 | `edges` | `list[Edge]` | gli edge dell'isola, come arrivano |
-| `outer` | `OuterFace \| None` | contorno esterno (`polygon`, `segments`, `edges`, `spurs`) |
+| `outer` | `OuterFace \| None` | contorno esterno (`segments`, `styles`, `edges`, `spurs`; il poligono con `topo.to_shapely(outer)`) |
 | `inner_loops` | `list[loop]` | giri chiusi dentro, come dal `LoopFinder` |
 | `spurs` | `list[Edge]` | percorsi andata e ritorno dal contorno |
 | `outside` | `list[Edge]` | pezzi dell'isola rimasti fuori dal contorno (rete staccata) |
@@ -571,14 +569,17 @@ lo applica il consumatore (D91).
 
 ---
 
-### `splits_polygon`
+### `splits_contour`
 
 ```python
-topo.geometry.splits_polygon(polygon, start, end, reach=0.0) -> bool
+topo.geometry.splits_contour(contour, start, end, reach=0.0) -> bool
 ```
 
-La corda `start`-`end`, prolungata di `reach` ai due capi, divide il poligono
-(shapely) in due o più parti. Fatto geometrico: che quella corda sia una piega
+La corda `start`-`end`, prolungata di `reach` ai due capi, divide la regione
+del contorno in due o più parti: un suo tratto va da bordo a bordo passando
+dentro; un tocco o un tratto sul bordo non divide. `contour` è un `Contour`,
+qualunque cosa porti un giro chiuso di `segments`, o la lista di segmenti.
+Calcolato sulle primitive (D166, D167): un arco è l'arco vero, non le corde. Fatto geometrico: che quella corda sia una piega
 lo decide il consumatore (snapbend la prolunga di 1 mm, D93).
 
 **Non muta** niente.
@@ -592,8 +593,10 @@ topo.geometry.bridged_runs(segments, bridges, tolerance=0.1, angle_tolerance=1e-
 ```
 
 File di due o più tratti sulla stessa retta in cui lo spazio fra un tratto e il
-successivo sta tutto dentro uno dei poligoni di `bridges` (per esempio i vuoti
-di un pezzo). Un tratto è una `LineString` o una coppia `(start, end)`;
+successivo sta tutto dentro uno dei contorni di `bridges` (per esempio i vuoti
+di un pezzo; un `Contour`, un giro di `segments` o la lista di segmenti, bordo
+compreso, calcolato sulle primitive). Un tratto è una coppia `(start, end)` o
+qualunque cosa porti `start`/`end` (un `LineSeg`, un `Edge`);
 `tolerance` è la distanza massima dalla retta, `angle_tolerance` la differenza
 di direzione in radianti. I tratti rimasti da soli non compaiono.
 
@@ -719,8 +722,8 @@ almeno `min_side`. Non usa `polygonize`: un bordo pieno di tacche resta un
 rettangolo, una cornice a doppio bordo ne dà due. Che un rettangolo sia una
 cornice o un cartiglio lo decide il consumatore (snapdraw, D94).
 
-`CoveredRectangle`: `polygon`, `items` (i tratti sui suoi lati), `bbox`, `area`,
-`long_side`, `short_side`, `ratio`.
+`CoveredRectangle`: `bbox`, `items` (i tratti sui suoi lati), `segments` (i
+quattro lati come `LineSeg`), `area`, `long_side`, `short_side`, `ratio`.
 
 **Non muta** niente.
 

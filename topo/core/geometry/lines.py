@@ -1,12 +1,14 @@
 """
 topo/core/geometry/lines.py
 ----------------------------
-Fatti fra rette e poligoni: distanza da una retta, tratti sulla stessa retta,
-file di tratti unite attraverso dei poligoni, una corda che divide un
-poligono, il tratteggio di un segmento. Geometria pura: che quella corda sia una piega lo dice il
-consumatore (MAP.md D93).
+Fatti fra rette e contorni: distanza da una retta, tratti sulla stessa retta,
+file di tratti unite attraverso dei contorni, una corda che divide un
+contorno, il tratteggio di un segmento. Geometria pura: che quella corda sia
+una piega lo dice il consumatore (MAP.md D93). Le domande su un contorno si
+fanno sulle sue primitive (`rings`, D166, D167).
 
-Un tratto è una `LineString` o una coppia di punti `(start, end)`.
+Un tratto è una coppia di punti `(start, end)` o qualunque cosa porti
+`start`/`end` (un `LineSeg`, un `Edge`).
 """
 
 from __future__ import annotations
@@ -15,8 +17,7 @@ import math
 from dataclasses import dataclass
 from typing import Sequence, Tuple
 
-from shapely.geometry import LineString
-from shapely.ops import split
+from .rings import ON_BOUNDARY, ring_bbox, ring_covers_chord, ring_split_by_chord
 
 Point = Tuple[float, float]
 
@@ -25,10 +26,9 @@ COLLINEAR_ANGLE_TOLERANCE = 1e-6  # differenza massima di direzione, radianti
 
 
 def _ends(item) -> Tuple[Point, Point]:
-    """I due capi di un tratto: `LineString` (primo e ultimo punto) o `(start, end)`."""
-    if hasattr(item, "coords"):
-        coords = list(item.coords)
-        return tuple(coords[0]), tuple(coords[-1])
+    """I due capi di un tratto: `(start, end)`, o `item.start`/`item.end`."""
+    if hasattr(item, "start") and hasattr(item, "end"):
+        return tuple(item.start[:2]), tuple(item.end[:2])
     start, end = item
     return tuple(start), tuple(end)
 
@@ -79,15 +79,24 @@ def group_collinear_lines(lines: list, tolerance: float = COLLINEAR_TOLERANCE,
     return groups
 
 
-def splits_polygon(polygon, start: Point, end: Point, reach: float = 0.0) -> bool:
-    """La corda `start`-`end`, prolungata di `reach` ai due capi, divide `polygon` in due o più parti."""
+def splits_contour(contour, start: Point, end: Point, reach: float = 0.0) -> bool:
+    """
+    True if the chord `start`-`end`, extended by `reach` at both ends, cuts
+    the region of `contour` in two or more parts: some stretch of it runs
+    from boundary to boundary through the inside. A touch, or a stretch along
+    the boundary, does not cut. `contour` is a `Contour`, anything with a
+    closed ring of `segments`, or the segment list itself (MAP.md D166).
+    """
     dx, dy = end[0] - start[0], end[1] - start[1]
     norm = math.hypot(dx, dy)
     if norm == 0:
         return False
     ux, uy = dx / norm * reach, dy / norm * reach
-    cutter = LineString([(start[0] - ux, start[1] - uy), (end[0] + ux, end[1] + uy)])
-    return len(split(polygon, cutter).geoms) >= 2
+    return ring_split_by_chord(_ring(contour), (start[0] - ux, start[1] - uy), (end[0] + ux, end[1] + uy))
+
+
+def _ring(item) -> list:
+    return list(getattr(item, "segments", item) or [])
 
 
 @dataclass(frozen=True)
@@ -106,10 +115,13 @@ class CollinearRun:
 def bridged_runs(segments: Sequence, bridges: Sequence, tolerance: float = COLLINEAR_TOLERANCE,
                  angle_tolerance: float = COLLINEAR_ANGLE_TOLERANCE) -> list[CollinearRun]:
     """
-    File di due o più tratti sulla stessa retta in cui lo spazio fra un tratto
-    e il successivo sta tutto dentro uno dei poligoni di `bridges`. Un tratto
-    sta in una sola fila; quelli rimasti da soli non compaiono.
+    Runs of two or more strokes on one line where the gap between a stroke
+    and the next lies wholly inside one of `bridges` (contours, items with a
+    closed ring of `segments`, or segment lists; boundary included). A
+    stroke is a `(start, end)` pair or anything with `start`/`end`; it
+    belongs to one run at most, strokes left alone are not returned.
     """
+    rings = [(r, ring_bbox(r)) for r in map(_ring, bridges) if r]
     ends = [_ends(s) for s in segments]
     runs: list[CollinearRun] = []
     used: set[int] = set()
@@ -128,8 +140,7 @@ def bridged_runs(segments: Sequence, bridges: Sequence, tolerance: float = COLLI
                         for lo, hi in [sorted(ends[j], key=along)]), key=lambda t: t[0])
         chain = [spans[0]]
         for span in spans[1:]:
-            gap = LineString([chain[-1][2], span[1]])
-            if gap.length > 0 and any(p.buffer(1e-6).covers(gap) for p in bridges):
+            if _bridged(chain[-1][2], span[1], rings):
                 chain.append(span)
                 continue
             if len(chain) >= 2:
@@ -138,6 +149,16 @@ def bridged_runs(segments: Sequence, bridges: Sequence, tolerance: float = COLLI
         if len(chain) >= 2:
             runs.append(CollinearRun(chain[0][1], chain[-1][2], tuple(t[3] for t in chain)))
     return runs
+
+
+def _bridged(a: Point, b: Point, rings: list) -> bool:
+    """Lo spazio `a`→`b` sta tutto dentro uno dei giri (bordo compreso)."""
+    if math.dist(a, b) == 0:
+        return False
+    e = ON_BOUNDARY
+    lo_x, hi_x, lo_y, hi_y = min(a[0], b[0]), max(a[0], b[0]), min(a[1], b[1]), max(a[1], b[1])
+    return any(box[0] - e <= lo_x and hi_x <= box[2] + e and box[1] - e <= lo_y and hi_y <= box[3] + e
+               and ring_covers_chord(ring, a, b) for ring, box in rings)
 
 
 def dash_line(start: Point, end: Point, head: float, tail: float,

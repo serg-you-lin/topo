@@ -354,10 +354,9 @@ class TestLoopsToCurves(unittest.TestCase):
 class TestPolygonize(unittest.TestCase):
 
     def test_001_bordo_esterno_e_buco(self):
-        polygons = topo.steps.polygonize_edges(_square(0, 0, 10) + _square(3, 3, 4), 0.1)
-        curves = topo.steps.polygons_to_curves(polygons)
-        roles = sorted((f.role, round(to_shapely(f).area)) for f in curves)
-        self.assertIn((ContourRole.OUTER, 84), roles)
+        curves = topo.steps.polygonize_to_curves(_square(0, 0, 10) + _square(3, 3, 4), 0.1)
+        roles = sorted((f.role, round(f.area)) for f in curves)
+        self.assertIn((ContourRole.OUTER, 100), roles)
         self.assertIn((ContourRole.INNER, 16), roles)
 
 

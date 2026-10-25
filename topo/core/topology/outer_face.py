@@ -45,11 +45,12 @@ class OuterFace:
     loop:      list                         # [(Edge, reversed)] come dal LoopFinder
     segments:  list                         # primitive orientate del contorno
     styles:    list
-    polygon:   Polygon
     spurs:     List[Edge] = field(default_factory=list)   # percorsi andata e ritorno
     # i tratti fuori dal bordo degli edge del giro che ci corrono sopra solo
     # in parte (ripiego D100): Edge nuovi, il resto esatto di quegli edge (G6b)
     rest:      List[Edge] = field(default_factory=list)
+    # il poligono della faccia, per le domande fra più curve (curve_polygon, D166)
+    _polygon:  Optional[Polygon] = field(default=None, repr=False, compare=False)
 
     @property
     def edges(self) -> List[Edge]:
@@ -91,8 +92,8 @@ def outer_face(edges: List[Edge], epsilon: float = 0.0) -> Optional[OuterFace]:
     # chi sta nel contorno è contorno, non sporgenza
     in_loop = {id(e) for e, _ in loop}
     spurs = [e for e in spurs if id(e) not in in_loop]
-    return OuterFace(loop=loop, segments=segments, styles=styles, polygon=polygon, spurs=spurs,
-                     rest=rest)
+    return OuterFace(loop=loop, segments=segments, styles=styles, spurs=spurs, rest=rest,
+                     _polygon=polygon)
 
 
 def outer_face_passes(graph: Graph, component, n_edges: int) -> dict:
