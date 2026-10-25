@@ -41,6 +41,13 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       1.x, D149 (riapre D143 su questo punto): è additivo; resta bloccante
       la prova G3.
 
+- [ ] **G12** Area esatta (D165, entra nel cancello per decisione di
+      Federico, 25 ottobre): `area` di un contorno è l'integrale di Green
+      sui suoi `segments` (linea, arco, ellisse in forma chiusa, spline per
+      polinomi), non l'area del poligono discretizzato. Non dipende più da
+      `tol` e non sottostima più gli archi. Cambia il valore di un nome
+      pubblico: va fatto prima della 1.0.
+
 **Promessa — D143, provata sui fixture**
 - [x] **G3** Test di fedeltà a due vie — `tests/real/test_fidelity.py`
       (D152): Hausdorff ≤ tolleranza (heal) / `max_gap` (island) e

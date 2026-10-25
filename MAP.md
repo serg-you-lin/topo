@@ -5936,3 +5936,27 @@ real edge, and its free end meets the next free end through the normal gap
 closing. Of the 31 island drawings only regr_01 changes (top view back as
 one island, 630–1810 × 967–1032, holes inside it in `loose` per D161); the
 suite and every heal golden are unchanged.
+
+### D165 — the area of a contour is exact, integrated on its segments; it enters the gate
+
+Decided by Federico, 25 October 2026. `area` is today `polygon.area`: the
+area of the polygon discretized within `tol` (D145). Its chords lie inside
+every convex arc, so the error has one sign (outers and holes both
+underestimated, never compensating), is bounded by about `tol × perimeter`,
+and the number changes with the tolerance the drawing is read at — a fact
+about the reading, not about the part (a Ø20 hole at tol 0.01: 313.76
+instead of 314.16).
+
+Rule. By Green's theorem the area of a closed region is an integral over its
+boundary, and topo knows the boundary exactly: the `segments`. Each
+primitive contributes a closed form — a line its shoelace term, an arc the
+same term on its chord plus the signed circular segment ½r²(Δθ − sin Δθ), an
+ellipse its own closed form, a polynomial spline an exact polynomial
+integral (a rational one by quadrature to machine precision). Holes subtract
+as in D89. Exact *for the model* — the healed contour, gaps closed within
+`tol` — which is the promise of D143.
+
+Why before 1.0, against the D148 freeze: no name changes, but the value of a
+public name does, by about 0.1 %. Changing what a number means after 1.0 is
+worse than adding a name; the work is one function per primitive in
+`topo/core/geometry/`.
