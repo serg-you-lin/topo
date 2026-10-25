@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`80` modules · `446` module-level functions · `60` classes · `14915` lines of code.
+`80` modules · `450` module-level functions · `60` classes · `15015` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -116,7 +116,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `covered_rectangles` | func | `topo/core/geometry/axis.py:144` | I rettangoli allineati agli assi con ogni lato coperto almeno per |
 | `CoveredRectangle` | class | `topo/core/geometry/axis.py:109` | Un rettangolo allineato agli assi i cui quattro lati sono coperti da tratti. |
 | `_crossing` | func | `topo/core/primitives/fitting.py:155` |  |
-| `_crossing_warnings` | func | `topo/core/heal.py:207` | Lati di contorno che si attraversano senza un nodo (D132): il disegno è |
+| `_crossing_warnings` | func | `topo/core/heal.py:210` | Lati di contorno che si attraversano senza un nodo (D132): il disegno è |
 | `_crossings` | func | `topo/core/topology/noding.py:184` | Incroci reali (non sul prolungamento) fra `seg` e un cutter. |
 | `Curve` | class | `topo/model/curve.py:38` | Radice della gerarchia. Porta solo identità semantica e traceability. |
 | `cut_by` | func | `topo/core/geometry/regions.py:284` | I pezzi di `segment` fuori (`keep="outside"`) o dentro (`keep="inside"`) |
@@ -175,11 +175,12 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `extract_drawings_from_page` | func | `topo_pdf/extractor_adapter.py:23` | Estrae i disegni vettoriali dalla pagina PDF e normalizza l'output. |
 | `extract_keyed_entities` | func | `topo_dxf/sanitize.py:201` | Produce la lista (key, entity) per tutte le entità del msp. |
 | `_f` | func | `topo_dxf/text_extractor.py:570` |  |
-| `face_segments` | func | `topo/core/topology/rim.py:29` | (segments, styles) lungo il bordo esterno di `polygon`, in senso |
-| `_faces_union_loop` | func | `topo/core/topology/outer_face.py:180` | (loop, segments, styles, polygon) sul bordo dell'unione delle facce |
+| `face_segments` | func | `topo/core/topology/rim.py:31` | (segments, styles, used) lungo il bordo esterno di `polygon`, in senso |
+| `_faces_union_loop` | func | `topo/core/topology/outer_face.py:185` | (loop, segments, styles, polygon) sul bordo dell'unione delle facce |
 | `Facing` | class | `topo/tools/strips.py:41` | Una regione vuota (`region`, un contorno di profondità dispari) e le |
 | `facing_boundaries` | func | `topo/tools/strips.py:54` | Fatto 1: un `Facing` per ogni regione vuota di `cluster`, nell'ordine di `cluster.inners`. |
 | `_fallback_anchor` | func | `topo_dxf/text_extractor.py:137` | Cerca un qualsiasi attributo-punto usabile. |
+| `_farthest` | func | `topo/core/topology/rim.py:140` | La distanza massima da `ring` del tratto di `geom` da `d0` a `d1`, sui |
 | `_feature_entries` | func | `topo/io/view_model.py:61` | Un elemento dell'overlay (MAP.md D90) → una voce per contorno: ruolo, |
 | `feature_role` | func | `topo/model/role.py:91` | Il ruolo con cui si disegna un contorno di un elemento dell'overlay (D90): |
 | `_features` | func | `topo/io/view_model.py:91` | `cluster.detected` per nome → lista di voci disegnabili. |
@@ -189,7 +190,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `find_non_contour_edges` | func | `topo/core/healing/steps.py:158` | id(edge) degli Edge che non chiudono un contorno (catene fra due nodi di |
 | `_first_coord` | func | `topo/core/topology/graph.py:362` |  |
 | `_first_point` | func | `topo/io/text.py:152` | Un punto che sta sul segmento, per dire in quale pezzo cade. |
-| `_first_step` | func | `topo/core/topology/outer_face.py:137` | L'edge che contiene il punto più a sinistra del componente, percorso |
+| `_first_step` | func | `topo/core/topology/outer_face.py:142` | L'edge che contiene il punto più a sinistra del componente, percorso |
 | `fit_circle_kasa` | func | `topo/core/geometry/points.py:47` | Fit algebrico (Kasa) ai minimi quadrati di un cerchio su `points`: minimizza |
 | `_fit_curve` | func | `topo/core/primitives/fitting.py:132` | Un pezzo curvo: arco per gli estremi se basta (e `arcs`), altrimenti spline entro `tolerance` per gli estremi. |
 | `_flatten_virtual` | func | `topo_dxf/text_extractor.py:471` | Espande `virtual_entities()` ricorsivamente sugli INSERT (frecce a blocco). |
@@ -216,7 +217,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `group_collinear_lines` | func | `topo/core/geometry/lines.py:61` | Tratti raggruppati per retta: [[L1, L2], [L3], ...]. Ogni gruppo prende la |
 | `_h` | func | `topo/inspect.py:36` |  |
 | `_header` | func | `topo_dxf/inspect.py:28` |  |
-| `heal` | func | `topo/core/heal.py:42` | Legge `doc` dall'interno: un Cluster per contorno esterno chiuso, |
+| `heal` | func | `topo/core/heal.py:43` | Legge `doc` dall'interno: un Cluster per contorno esterno chiuso, |
 | `HierarchyBuilder` | class | `topo/core/healing/hierarchy.py:150` |  |
 | `_hits` | func | `topo/core/geometry/strips.py:135` |  |
 | `inject` | func | `topo/tools/inject.py:39` | Arricchisce i Cluster con i dati estratti da un `data_injector` esterno. |
@@ -241,12 +242,12 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_joined` | func | `topo/core/geometry/shape.py:409` |  |
 | `_key_for` | func | `topo_dxf/sanitize.py:154` | Restituisce una chiave hashable che identifica univocamente |
 | `labeled_curves` | func | `topo/core/healing/steps.py:369` | Gli Edge messi da parte da split_labeled() come curve col loro ruolo |
-| `_largest_loop` | func | `topo/core/topology/outer_face.py:206` | (loop, segments, styles, polygon) del giro di area massima. |
+| `_largest_loop` | func | `topo/core/topology/outer_face.py:217` | (loop, segments, styles, polygon) del giro di area massima. |
 | `_Layers` | class | `topo_dxf/writer.py:302` | I layer di un documento in scrittura (D128): il nome viene dalla scelta |
 | `_leader_text` | func | `topo_dxf/text_extractor.py:378` |  |
 | `_leader_vertices` | func | `topo_dxf/text_extractor.py:415` |  |
 | `_least_squares` | func | `topo/core/geometry/points.py:299` | Spline di grado `degree` con `count` punti di controllo ai minimi quadrati |
-| `_leaving_angle` | func | `topo/core/topology/outer_face.py:159` | Direzione con cui `edge` lascia `node`, letta a DIRECTION_SAMPLE (o a |
+| `_leaving_angle` | func | `topo/core/topology/outer_face.py:164` | Direzione con cui `edge` lascia `node`, letta a DIRECTION_SAMPLE (o a |
 | `_length` | func | `topo/core/geometry/regions.py:104` |  |
 | `_length` | func | `topo/core/geometry/shape.py:269` |  |
 | `_length` | func | `topo/core/primitives/fitting.py:164` |  |
@@ -273,7 +274,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `LoopFinder` | class | `topo/core/topology/loop_finder.py:28` |  |
 | `loops_to_curves` | func | `topo/core/healing/steps.py:298` | Un ClosedCurve per loop, col ruolo del primo edge. Un loop che non fa un |
 | `LoopSearch` | class | `topo/core/healing/steps.py:41` | Come find_loops() ha chiuso (o non chiuso) i giri, gradino per gradino. |
-| `_loose_ends_warnings` | func | `topo/core/heal.py:188` | Quello che resta aperto anche quando qualcosa si chiude (D111): gli |
+| `_loose_ends_warnings` | func | `topo/core/heal.py:191` | Quello che resta aperto anche quando qualcosa si chiude (D111): gli |
 | `_loose_entry` | func | `topo/io/view_model.py:101` |  |
 | `_make_inner` | func | `topo/core/healing/hierarchy.py:92` |  |
 | `_make_polygon` | func | `topo/core/primitives/polygon_builder.py:48` |  |
@@ -308,6 +309,8 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `normalize_ocs` | func | `topo_dxf/sanitize.py:19` | Normalizza il vettore di estrusione di tutte le entità OCS nel modelspace. |
 | `normalize_role` | func | `topo/model/role.py:113` | Ripulisce una stringa-ruolo che arriva dal chiamante (``RoleRule``, |
 | `num_segments_for_bulge` | func | `topo/core/geometry/measure.py:33` | Numero di segmenti per discretizzare un arco dato il suo bulge. |
+| `off_faces` | func | `topo/core/topology/rim.py:64` | (presi, resto) di `edges` rispetto alle facce `polygons` lette senza |
+| `off_rim` | func | `topo/core/topology/rim.py:84` | I tratti di `edge` che il bordo non ha preso: `taken` sono i capi (a, b) |
 | `offset_from_line` | func | `topo/core/geometry/points.py:166` | Distanza con segno di `p` dalla retta a->b (positiva a sinistra). |
 | `_on_arc` | func | `topo/core/geometry/intersections.py:129` |  |
 | `_on_arc` | func | `topo/core/healing/outer_scan.py:127` |  |
@@ -323,9 +326,9 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `Opened` | class | `topo/tools/strips.py:123` | `boundaries`: ogni bordo toccato da una striscia, con le catene aperte di |
 | `outer_candidate_edges` | func | `topo/core/healing/outer_scan.py:72` | Per ogni asse, una quota rappresentativa (punto medio) fra ogni coppia |
 | `_outer_entity` | func | `topo_dxf/xdata.py:17` | L'entità su layer OuterContour che porta gli XDATA: prima una polilinea, |
-| `outer_face` | func | `topo/core/topology/outer_face.py:59` | Contorno esterno della rete `edges` (già piana: split_at_crossings). I |
-| `outer_face_passes` | func | `topo/core/topology/outer_face.py:92` | {id(edge): quante volte il bordo della faccia esterna di `component` |
-| `_outer_face_walk` | func | `topo/core/topology/outer_face.py:107` | [(edge, dal nodo, al nodo)] lungo il bordo della faccia esterna. |
+| `outer_face` | func | `topo/core/topology/outer_face.py:62` | Contorno esterno della rete `edges` (già piana: split_at_crossings). I |
+| `outer_face_passes` | func | `topo/core/topology/outer_face.py:97` | {id(edge): quante volte il bordo della faccia esterna di `component` |
+| `_outer_face_walk` | func | `topo/core/topology/outer_face.py:112` | [(edge, dal nodo, al nodo)] lungo il bordo della faccia esterna. |
 | `_outer_polygons` | func | `topo/tools/split.py:151` | (cluster, poligono dell'outer) per ogni cluster che ne ha uno. |
 | `OuterCandidates` | class | `topo/core/healing/outer_scan.py:54` | Edge candidati a bordo esterno, con i raggi che li hanno scelti. |
 | `OuterFace` | class | `topo/core/topology/outer_face.py:42` | Il contorno esterno trovato, e cosa il percorso ha scartato. |
@@ -392,7 +395,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `Result` | class | `topo/model/result.py:12` | Risultato completo di una sessione topo su un file DXF. |
 | `_result_bbox_center` | func | `topo/tools/rotate.py:219` | Centro del bbox unito degli outer di tutti i cluster — vedi `rotate_to_longest`. |
 | `_reversed` | func | `topo/core/geometry/regions.py:192` |  |
-| `_rim_runs` | func | `topo/core/topology/rim.py:87` | [((edge, verso), primo vertice, ultimo vertice)] lungo l'anello: copertura greedy |
+| `_rim_runs` | func | `topo/core/topology/rim.py:173` | [((edge, verso), primo vertice, ultimo vertice)] lungo l'anello: copertura greedy |
 | `_ring_points` | func | `topo/core/geometry/strips.py:47` |  |
 | `_ring_segments` | func | `topo/core/healing/steps.py:414` |  |
 | `_role` | func | `topo/inspect.py:47` | Nome del ruolo come stringa piatta ('outer'), non 'ContourRole.OUTER'. |
@@ -420,7 +423,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `save_xml` | func | `topo/io/exporter.py:171` | Salva i metadati in XML secondo lo schema di metadata_schema.py. |
 | `_scan_axis` | func | `topo/core/healing/outer_scan.py:184` |  |
 | `_scan_bbox` | func | `topo/io/svg.py:180` | bbox da tutti i punti del view model — fallback quando vm['bbox'] è None. |
-| `_search_warnings` | func | `topo/core/heal.py:219` | Cosa racconta heal() dei gradini della scala di find_loops(). |
+| `_search_warnings` | func | `topo/core/heal.py:222` | Cosa racconta heal() dei gradini della scala di find_loops(). |
 | `_seg_end_point` | func | `topo_dxf/exporter.py:101` |  |
 | `segment_endpoints` | func | `topo/core/primitives/segments.py:574` | (start, end) di un segmento primitivo, in coordinate XY non arrotondate. |
 | `segment_is_closed` | func | `topo/core/primitives/segments.py:600` | True se gli endpoint del segmento coincidono entro ``tolerance``. |
@@ -429,14 +432,14 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `segment_reach` | func | `topo/core/geometry/measure.py:144` | (min, max) della proiezione dei punti di `segment` sul versore |
 | `segments_from_loop` | func | `topo/core/topology/loop_finder.py:161` | Segmenti nativi di un loop, orientati nel verso di percorrenza. |
 | `segments_to_pts_with_bulge` | func | `topo_dxf/exporter.py:109` |  |
-| `_sense` | func | `topo/core/topology/rim.py:77` | +1 se il lato p→q va nel verso di `geom` vicino a `mid`, -1 se contro. |
+| `_sense` | func | `topo/core/topology/rim.py:163` | +1 se il lato p→q va nel verso di `geom` vicino a `mid`, -1 se contro. |
 | `set_schema` | func | `topo/io/exporter.py:101` | Imposta uno schema esterno come schema attivo. |
 | `_shape` | func | `topo/io/svg.py:29` |  |
 | `ShapeKind` | class | `topo/core/geometry/shape.py:30` | Le sei forme di `contour_shape`, elenco chiuso e stabile (MAP.md D136). |
 | `_shown_text` | func | `topo_dxf/text_extractor.py:236` | La stringa che la quota mostra: l'override con ``<>`` sostituito dalla |
 | `_shown_value` | func | `topo_dxf/text_extractor.py:249` | La misura come la mostra il disegno (precisione, virgola), o calcolata. |
 | `_side` | func | `topo/core/geometry/regions.py:203` | +1 dentro, -1 fuori, 0 sul bordo. |
-| `_side_cover` | func | `topo/core/topology/rim.py:60` | Per ogni lato dell'anello, gli (edge, verso) che distano meno di `band` |
+| `_side_cover` | func | `topo/core/topology/rim.py:146` | Per ogni lato dell'anello, gli (edge, verso) che distano meno di `band` |
 | `sides_on_border` | func | `topo/core/geometry/axis.py:231` | I lati di `bounds` ("left", "bottom", "right", "top") che stanno sul |
 | `_signed_area` | func | `topo/core/geometry/regions.py:187` |  |
 | `_signed_turn` | func | `topo/core/primitives/fitting.py:56` | Svolta con segno (gradi) in `b` andando da `a` a `c`: positiva a sinistra. |
@@ -470,6 +473,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `splits_polygon` | func | `topo/core/geometry/lines.py:82` | La corda `start`-`end`, prolungata di `reach` ai due capi, divide `polygon` in due o più parti. |
 | `stadium` | func | `topo/core/geometry/build.py:70` | Stadio fuori tutto `length` × `width` (due semicerchi di raggio |
 | `_stadium` | func | `topo/core/geometry/shape.py:176` |  |
+| `_stretch` | func | `topo/core/topology/rim.py:131` | I vertici di `geom` da `d0` a `d1` (ascisse curvilinee; `d1` oltre la |
 | `Strip` | class | `topo/core/geometry/strips.py:76` | Una striscia fra i contorni `a` e `b`. `a_at`/`b_at`: dove la sua linea |
 | `strip_between` | func | `topo/core/geometry/strips.py:152` | La striscia di larghezza `width` fra gli anelli `a` e `b`, nel punto |
 | `structural_loops` | func | `topo/core/healing/steps.py:287` | I loop in cui ogni edge con ruolo deciso è strutturale: un solo edge non |
@@ -502,7 +506,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `track_shape_type` | func | `topo/core/geometry/measure.py:75` | `"line"` se la traccia è un solo segmento retto (2 vertici), altrimenti `"curve"`. |
 | `transform_point` | func | `topo_pdf/geometry_adapter.py:27` | Converte un punto da punti PDF (pt) a millimetri (mm) |
 | `_translate_point` | func | `topo/core/primitives/segments.py:88` | `pt` spostato di (`dx`, `dy`). |
-| `_trimmed` | func | `topo/core/topology/rim.py:142` | `seg` da `a` a `b`: un capo entro `band` da un estremo di `seg` è |
+| `_trimmed` | func | `topo/core/topology/rim.py:228` | `seg` da `a` a `b`: un capo entro `band` da un estremo di `seg` è |
 | `_turn` | func | `topo/core/geometry/points.py:196` | Di quanto gira (gradi, 0..180) chi va da `back` ad `at` e poi a `forward`. |
 | `turn_corners` | func | `topo/core/geometry/points.py:225` | Indici degli spigoli di una sequenza campionata: vertici Douglas-Peucker |
 | `unconnected_regions` | func | `topo/tools/strips.py:102` | Fatto 4: le regioni piene di `cluster` (contorni di profondità pari |
@@ -764,14 +768,14 @@ _topo/core/geometry_input.py_
 - `load_geometry(entities: List[Dict[str, Any]], tolerance: float=DEFAULT_NODE_TOLERANCE, source_path: str='') -> Document` — L161 — Costruisce un Document da una lista di descrizioni geometriche pure —
 - `load_segments(segments, tolerance: float=DEFAULT_NODE_TOLERANCE, role: str='unknown', source_path: str='') -> Document` — L206 — Un Document da segmenti di topo (`LineSeg`, `ArcSeg`, `CircleSeg`,
 
-#### `topo/core/heal.py` — 238 lines
+#### `topo/core/heal.py` — 241 lines
 
 _core/heal.py_
 
-- `heal(doc: Document, tolerance: Optional[float]=None, label: str='', source_file: str='', is_structural: Optional[Callable[[str], bool]]=None) -> Result` — L42 — Legge `doc` dall'interno: un Cluster per contorno esterno chiuso,
-- `_loose_ends_warnings(edges: list, non_contour_ids: set, epsilon: float) -> list[str]` — L188 — Quello che resta aperto anche quando qualcosa si chiude (D111): gli
-- `_crossing_warnings(contour: list, tolerance: float) -> list[str]` — L207 — Lati di contorno che si attraversano senza un nodo (D132): il disegno è
-- `_search_warnings(search: LoopSearch, tolerance: float) -> list[str]` — L219 — Cosa racconta heal() dei gradini della scala di find_loops().
+- `heal(doc: Document, tolerance: Optional[float]=None, label: str='', source_file: str='', is_structural: Optional[Callable[[str], bool]]=None) -> Result` — L43 — Legge `doc` dall'interno: un Cluster per contorno esterno chiuso,
+- `_loose_ends_warnings(edges: list, non_contour_ids: set, epsilon: float) -> list[str]` — L191 — Quello che resta aperto anche quando qualcosa si chiude (D111): gli
+- `_crossing_warnings(contour: list, tolerance: float) -> list[str]` — L210 — Lati di contorno che si attraversano senza un nodo (D132): il disegno è
+- `_search_warnings(search: LoopSearch, tolerance: float) -> list[str]` — L222 — Cosa racconta heal() dei gradini della scala di find_loops().
 
 #### `topo/core/healing/__init__.py` — 0 lines
 
@@ -1031,29 +1035,33 @@ _non_contour_edges.py_
 - **class** `NonContourEdgeDetector` — L45
   - methods: `__init__`, `detect`
 
-#### `topo/core/topology/outer_face.py` — 214 lines
+#### `topo/core/topology/outer_face.py` — 225 lines
 
 _core/topology/outer_face.py_
 
 - **class** `OuterFace` — L42 — Il contorno esterno trovato, e cosa il percorso ha scartato.
   - methods: `edges`
-- `outer_face(edges: List[Edge], epsilon: float=0.0) -> Optional[OuterFace]` — L59 — Contorno esterno della rete `edges` (già piana: split_at_crossings). I
-- `outer_face_passes(graph: Graph, component, n_edges: int) -> dict` — L92 — {id(edge): quante volte il bordo della faccia esterna di `component`
-- `_outer_face_walk(graph: Graph, component, n_edges: int) -> list` — L107 — [(edge, dal nodo, al nodo)] lungo il bordo della faccia esterna.
-- `_first_step(graph: Graph, component)` — L137 — L'edge che contiene il punto più a sinistra del componente, percorso
-- `_leaving_angle(edge: Edge, node, graph: Graph) -> float` — L159 — Direzione con cui `edge` lascia `node`, letta a DIRECTION_SAMPLE (o a
-- `_faces_union_loop(edges: List[Edge], epsilon: float)` — L180 — (loop, segments, styles, polygon) sul bordo dell'unione delle facce
-- `_largest_loop(edges: List[Edge], epsilon: float)` — L206 — (loop, segments, styles, polygon) del giro di area massima.
+- `outer_face(edges: List[Edge], epsilon: float=0.0) -> Optional[OuterFace]` — L62 — Contorno esterno della rete `edges` (già piana: split_at_crossings). I
+- `outer_face_passes(graph: Graph, component, n_edges: int) -> dict` — L97 — {id(edge): quante volte il bordo della faccia esterna di `component`
+- `_outer_face_walk(graph: Graph, component, n_edges: int) -> list` — L112 — [(edge, dal nodo, al nodo)] lungo il bordo della faccia esterna.
+- `_first_step(graph: Graph, component)` — L142 — L'edge che contiene il punto più a sinistra del componente, percorso
+- `_leaving_angle(edge: Edge, node, graph: Graph) -> float` — L164 — Direzione con cui `edge` lascia `node`, letta a DIRECTION_SAMPLE (o a
+- `_faces_union_loop(edges: List[Edge], epsilon: float)` — L185 — (loop, segments, styles, polygon) sul bordo dell'unione delle facce
+- `_largest_loop(edges: List[Edge], epsilon: float)` — L217 — (loop, segments, styles, polygon) del giro di area massima.
 
-#### `topo/core/topology/rim.py` — 154 lines
+#### `topo/core/topology/rim.py` — 240 lines
 
 _topo/core/topology/rim.py_
 
-- `face_segments(edges: List[Edge], polygon: Polygon, band: float)` — L29 — (segments, styles) lungo il bordo esterno di `polygon`, in senso
-- `_side_cover(pts: list, geoms: list, band: float) -> List[set]` — L60 — Per ogni lato dell'anello, gli (edge, verso) che distano meno di `band`
-- `_sense(geom, mid, p, q, step: float) -> int` — L77 — +1 se il lato p→q va nel verso di `geom` vicino a `mid`, -1 se contro.
-- `_rim_runs(pts: list, geoms: list, cover: List[set]) -> list` — L87 — [((edge, verso), primo vertice, ultimo vertice)] lungo l'anello: copertura greedy
-- `_trimmed(seg, a, b, via, band: float)` — L142 — `seg` da `a` a `b`: un capo entro `band` da un estremo di `seg` è
+- `face_segments(edges: List[Edge], polygon: Polygon, band: float)` — L31 — (segments, styles, used) lungo il bordo esterno di `polygon`, in senso
+- `off_faces(edges: List[Edge], polygons: list, band: float)` — L64 — (presi, resto) di `edges` rispetto alle facce `polygons` lette senza
+- `off_rim(edge: Edge, taken: list, ring, band: float) -> List[Edge]` — L84 — I tratti di `edge` che il bordo non ha preso: `taken` sono i capi (a, b)
+- `_stretch(geom, d0: float, d1: float) -> list` — L131 — I vertici di `geom` da `d0` a `d1` (ascisse curvilinee; `d1` oltre la
+- `_farthest(geom, d0: float, d1: float, ring) -> float` — L140 — La distanza massima da `ring` del tratto di `geom` da `d0` a `d1`, sui
+- `_side_cover(pts: list, geoms: list, band: float) -> List[set]` — L146 — Per ogni lato dell'anello, gli (edge, verso) che distano meno di `band`
+- `_sense(geom, mid, p, q, step: float) -> int` — L163 — +1 se il lato p→q va nel verso di `geom` vicino a `mid`, -1 se contro.
+- `_rim_runs(pts: list, geoms: list, cover: List[set]) -> list` — L173 — [((edge, verso), primo vertice, ultimo vertice)] lungo l'anello: copertura greedy
+- `_trimmed(seg, a, b, via, band: float)` — L228 — `seg` da `a` a `b`: un capo entro `band` da un estremo di `seg` è
 
 ### `topo/` (root)
 
@@ -1545,7 +1553,7 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/core/geometry/shape.py` | `topo.core.geometry.measure` · `topo.core.primitives.segments` |
 | `topo/core/geometry/strips.py` | `topo.core.geometry.intersections` · `topo.core.geometry.regions` · `topo.core.primitives.segments` |
 | `topo/core/geometry_input.py` | `topo.core.geometry.build` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.model.document` · `topo.model.role` |
-| `topo/core/heal.py` | `topo.core.healing.hierarchy` · `topo.core.healing.normalizer` · `topo.core.healing.steps` · `topo.core.topology.loop_finder` · `topo.core.topology.noding` · `topo.model.document` · `topo.model.result` · `topo.model.role` · `topo.rules.validator` |
+| `topo/core/heal.py` | `topo.core.healing.hierarchy` · `topo.core.healing.normalizer` · `topo.core.healing.steps` · `topo.core.topology.loop_finder` · `topo.core.topology.noding` · `topo.core.topology.rim` · `topo.model.document` · `topo.model.result` · `topo.model.role` · `topo.rules.validator` |
 | `topo/core/healing/gap_solver.py` | `topo.core.geometry.intersections` · `topo.core.geometry.measure` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.model.role` |
 | `topo/core/healing/hierarchy.py` | `topo.core.geometry.measure` · `topo.core.geometry.regions` · `topo.core.topology.loop_finder` · `topo.model.cluster` · `topo.model.contour` · `topo.model.curve` · `topo.model.role` |
 | `topo/core/healing/islands.py` | `topo.core.topology.edge` · `topo.core.topology.noding` |

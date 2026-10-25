@@ -41,6 +41,9 @@ MAX_GAP = 0.5            # quello di snapdraw, come test_golden_islands
 SAMPLE_TOL = 0.01        # passo della discretizzazione su cui si misura
 COEFF_EPS = 1e-9         # "identico" in virgola mobile
 DUPLICATE_EPS = 0.05     # due curve così vicine sono un doppione da fondere
+CUT_EPS = 2e-6           # un pezzo tagliato sta sulla sua spline (taglio esatto)
+CUT_SAMPLE = 1e-6        # errore di corda nel confronto, sotto CUT_EPS
+CUT_GAP = 0.02           # un tratto più corto resta dentro la fascia del bordo (2·GRAPH_EPSILON)
 
 
 def _lines_and_samples(edges):
@@ -116,6 +119,23 @@ def _untouched_curves(edges) -> list:
     return out
 
 
+def _cut_in_pieces(coeffs, source_edges, written_edges) -> bool:
+    """Vero se la spline `coeffs` del sorgente esce tagliata, non rifittata:
+    in pezzi che stanno su di lei entro CUT_EPS e la coprono tutta, a
+    meno di CUT_GAP. Una
+    lettura la taglia dove un bordo la lascia a metà (G6b: il resto va in
+    `loose`, la parte sul bordo nel contorno)."""
+    if coeffs[0] != "spline":
+        return False
+    source = next(e.segment for e in source_edges if _coefficients(e.segment) == coeffs)
+    line = LineString(source.discretize(CUT_SAMPLE))
+    zone = line.buffer(CUT_EPS)
+    on = [LineString(pts) for e in written_edges
+          if isinstance(e.segment, topo.primitives.BSplineSeg)
+          and len(pts := e.segment.discretize(CUT_SAMPLE)) >= 2 and zone.covers(LineString(pts))]
+    return len(on) >= 2 and line.length - sum(g.length for g in on) <= CUT_GAP
+
+
 def _round_trip(rel: str, reading: str):
     path = project_root / rel
     if reading == "island":
@@ -155,6 +175,7 @@ def _make_fidelity_test(rel: str, reading: str):
         written = [c for c in map(_coefficients, (e.segment for e in back.edges)) if c]
         missing = [c for c in _untouched_curves(doc.edges)
                    if not any(_same(c, w, COEFF_EPS) for w in written)]
+        missing = [c for c in missing if not _cut_in_pieces(c, doc.edges, back.edges)]
         self.assertEqual(missing, [], "curve non toccate riscritte con altri coefficienti")
     return test
 

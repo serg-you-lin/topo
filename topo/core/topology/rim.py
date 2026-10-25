@@ -14,36 +14,40 @@ Puro: solo Edge, primitive e shapely.
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 from typing import List
 
 from shapely import STRtree
 from shapely.geometry import Point as ShapelyPoint, Polygon
 from shapely.geometry.polygon import orient
+from shapely.ops import substring, unary_union
 
 from .edge import Edge
 from .noding import edge_geometry
-from ..primitives.segments import LineSeg, segment_endpoints
+from ..primitives.segments import LineSeg, segment_endpoints, segment_is_closed
 from ..primitives.trim import sub_segment
 
 
 def face_segments(edges: List[Edge], polygon: Polygon, band: float):
     """
-    (segments, styles) lungo il bordo esterno di `polygon`, in senso
+    (segments, styles, used) lungo il bordo esterno di `polygon`, in senso
     antiorario. Un lato del bordo sta su un edge se dista meno di `band` da
     lui; il bordo si divide fra gli edge col minor numero di cambi
     (`_rim_runs`), e ogni tratto è il suo edge tagliato fra i due capi
     (`sub_segment`) — intero se lo copre tutto. Un edge che corre sul bordo
     solo in parte (un incrocio che shapely nodifica e la rete piana no) dà
-    così proprio la sua parte.
+    così proprio la sua parte. `used`: {indice dell'edge: [(a, b)]}, i capi
+    dei tratti che il bordo ha preso da ognuno (`off_rim`).
     """
     pts = list(orient(polygon, 1.0).exterior.coords)[:-1]
     n = len(pts)
     geoms = [edge_geometry(e) for e in edges]
     runs = _rim_runs(pts, geoms, _side_cover(pts, geoms, band))
-    segments, styles = [], []
+    segments, styles, used = [], [], {}
     for (j, _), first, last in runs:
         edge = edges[j]
         a, b = pts[first % n], pts[last % n]
+        used.setdefault(j, []).append((a, b))
         via = pts[(first + 1) % n] if last - first > 1 else ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
         piece = _trimmed(edge.segment, a, b, via, band)
         if piece is None:
@@ -54,7 +58,89 @@ def face_segments(edges: List[Edge], polygon: Polygon, band: float):
             chain = [piece]
         segments += chain
         styles += [edge.style] * len(chain)
-    return segments, styles
+    return segments, styles, used
+
+
+def off_faces(edges: List[Edge], polygons: list, band: float):
+    """
+    (presi, resto) di `edges` rispetto alle facce `polygons` lette senza
+    grafo (il ripiego polygonize di heal): `presi` gli id degli edge su cui
+    corre il bordo di una faccia, anche solo in parte; `resto` i loro tratti
+    fuori da ogni bordo, come Edge nuovi (`off_rim`). Così ogni pezzo
+    d'ingresso esce una volta, nel contorno o in `loose` (G6b).
+    """
+    used, rings = {}, []
+    for polygon in polygons:
+        for ring in [polygon.exterior, *polygon.interiors]:
+            rings.append(ring)
+            _, _, taken = face_segments(edges, Polygon(ring), band)
+            for j, ends in taken.items():
+                used.setdefault(j, []).extend(ends)
+    border = unary_union(rings)
+    rest = [piece for j in sorted(used) for piece in off_rim(edges[j], used[j], border, band)]
+    return {id(edges[j]) for j in used}, rest
+
+
+def off_rim(edge: Edge, taken: list, ring, band: float) -> List[Edge]:
+    """
+    I tratti di `edge` che il bordo non ha preso: `taken` sono i capi (a, b)
+    dei tratti usati (`face_segments`), `ring` l'anello del bordo. L'edge si
+    taglia in quei capi e resta ogni pezzo che si allontana dall'anello più
+    di `band` (la sua distanza massima, non quella del punto medio: una
+    sporgenza corta parte dal bordo); un capo originale dell'edge tiene il
+    suo nodo. Vuoto
+    se il bordo prende l'edge intero (G6b: ogni pezzo d'ingresso esce una
+    volta, o nel contorno o in `loose`).
+    """
+    geom = edge_geometry(edge)
+    if geom.geom_type != "LineString" or geom.length <= band:
+        return []
+    length = geom.length
+    closed = segment_is_closed(edge.segment)
+    cuts = sorted({round(geom.project(ShapelyPoint(q)), 9) for a, b in taken for q in (a, b)})
+    if closed:
+        spans = list(zip(cuts, cuts[1:] + [cuts[0] + length])) if cuts else []
+    else:
+        bounds = [0.0] + [c for c in cuts if band < c < length - band] + [length]
+        spans = list(zip(bounds, bounds[1:]))
+    out = []
+    for d0, d1 in spans:
+        if _farthest(geom, d0, d1, ring) <= band:
+            continue
+        mid = geom.interpolate((d0 + d1) / 2 % length)
+        a, b = geom.interpolate(d0 % length), geom.interpolate(d1 % length)
+        a, b = (a.x, a.y), (b.x, b.y)
+        if not closed:
+            a = edge.start if d0 == 0.0 else a
+            b = edge.end if d1 == length else b
+        piece = sub_segment(edge.segment, a, b, (mid.x, mid.y))
+        if piece is None:
+            # spline senza taglio esatto: il tratto della sua discretizzazione
+            coords = _stretch(geom, d0, d1)
+            chain = [LineSeg(start=coords[i], end=coords[i + 1]) for i in range(len(coords) - 1)]
+        else:
+            chain = [piece]
+        for seg in chain:
+            s0, s1 = segment_endpoints(seg)
+            out.append(replace(edge, segment=seg,
+                               start=edge.start if seg is chain[0] and a == edge.start else s0,
+                               end=edge.end if seg is chain[-1] and b == edge.end else s1))
+    return out
+
+
+def _stretch(geom, d0: float, d1: float) -> list:
+    """I vertici di `geom` da `d0` a `d1` (ascisse curvilinee; `d1` oltre la
+    lunghezza gira sull'anello di una curva chiusa)."""
+    length = geom.length
+    if d1 <= length:
+        return list(substring(geom, d0, d1).coords)
+    return list(substring(geom, d0, length).coords) + list(substring(geom, 0.0, d1 - length).coords)[1:]
+
+
+def _farthest(geom, d0: float, d1: float, ring) -> float:
+    """La distanza massima da `ring` del tratto di `geom` da `d0` a `d1`, sui
+    vertici della sua discretizzazione."""
+    return max(ring.distance(ShapelyPoint(q)) for q in _stretch(geom, d0, d1))
 
 
 def _side_cover(pts: list, geoms: list, band: float) -> List[set]:

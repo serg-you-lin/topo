@@ -22,6 +22,7 @@ from ..model.result import Result
 from ..model.role import is_structural_role
 from .topology.loop_finder import edges_to_open_curves
 from .topology.noding import interior_crossings
+from .topology.rim import off_faces
 from .healing.hierarchy import assign_cluster_refs
 from .healing.normalizer import (
     merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
@@ -121,9 +122,10 @@ def heal(doc: Document, tolerance: Optional[float] = None, label: str = "",
                                                 tol if search.method == "tolerant" else 0.0)
 
     # Scala finita senza loop: ultima spiaggia polygonize, che dà già i
-    # ClosedCurve (OUTER dal bordo, INNER dai buchi) — nessun edge "in loop".
+    # ClosedCurve (OUTER dal bordo, INNER dai buchi); in `loose` va solo
+    # quello che nessun bordo prende (G6b).
     loop_edge_ids = set()
-    closed = []
+    closed, rest = [], []
     if search.loops:
         kept = structural_loops(search.loops, structural)
         loop_edge_ids = {id(e) for loop in kept for e, _ in loop}
@@ -133,6 +135,7 @@ def heal(doc: Document, tolerance: Optional[float] = None, label: str = "",
         result.warnings.append("Nessun loop trovato via grafo, uso polygonize come fallback.")
         polygons = polygonize_edges(edges, tol)
         closed = polygons_to_curves(polygons)
+        loop_edge_ids, rest = off_faces(edges, polygons, tol)
         if polygons:
             result.warnings.append(
                 f"Geometria ricostruita via fallback polygonize "
@@ -144,7 +147,7 @@ def heal(doc: Document, tolerance: Optional[float] = None, label: str = "",
                 "potrebbero essere marcature o geometria aperta."
             )
 
-    curves = closed + edges_to_open_curves(edges, exclude_ids=loop_edge_ids)
+    curves = closed + edges_to_open_curves(edges + rest, exclude_ids=loop_edge_ids)
     if not curves:
         result.errors.append("Nessuna geometria chiusa trovata dopo healing.")
         result.is_valid = False

@@ -32,7 +32,7 @@ from .edge import Edge
 from .noding import edge_geometry
 from .graph import Graph, build_node_graph
 from .loop_finder import LoopFinder, loop_geometry
-from .rim import face_segments
+from .rim import face_segments, off_rim
 from ..primitives.segments import DEFAULT_TOLERANCE
 
 DIRECTION_SAMPLE = 3.0   # mm — la direzione di un edge a un nodo si legge fin qui (al massimo a metà edge)
@@ -46,6 +46,9 @@ class OuterFace:
     styles:    list
     polygon:   Polygon
     spurs:     List[Edge] = field(default_factory=list)   # percorsi andata e ritorno
+    # i tratti fuori dal bordo degli edge del giro che ci corrono sopra solo
+    # in parte (ripiego D100): Edge nuovi, il resto esatto di quegli edge (G6b)
+    rest:      List[Edge] = field(default_factory=list)
 
     @property
     def edges(self) -> List[Edge]:
@@ -81,12 +84,14 @@ def outer_face(edges: List[Edge], epsilon: float = 0.0) -> Optional[OuterFace]:
         best = united
     if best is None:
         return None
-    loop, segments, styles, polygon = best
+    loop, segments, styles, polygon = best[:4]
+    rest = best[4] if len(best) > 4 else []
     # il percorso conta due volte anche un edge che il giro scelto (D100) usa:
     # chi sta nel contorno è contorno, non sporgenza
     in_loop = {id(e) for e, _ in loop}
     spurs = [e for e in spurs if id(e) not in in_loop]
-    return OuterFace(loop=loop, segments=segments, styles=styles, polygon=polygon, spurs=spurs)
+    return OuterFace(loop=loop, segments=segments, styles=styles, polygon=polygon, spurs=spurs,
+                     rest=rest)
 
 
 def outer_face_passes(graph: Graph, component, n_edges: int) -> dict:
@@ -183,7 +188,9 @@ def _faces_union_loop(edges: List[Edge], epsilon: float):
     rete non chiude nessuna faccia. Se gli edge del bordo non si chiudono in
     un giro del grafo, il poligono è l'unione, il giro sono gli edge che ci
     stanno sopra per intero, e i segmenti si leggono percorrendo l'anello
-    dell'unione (`rim.face_segments`, D106)."""
+    dell'unione (`rim.face_segments`, D106); un edge che ci corre sopra
+    solo in parte è del giro, e il suo resto (`rim.off_rim`) è il quinto
+    elemento."""
     faces = list(polygonize(shapely.unary_union([edge_geometry(e) for e in edges],
                                                 grid_size=max(epsilon, 1e-6))))
     if not faces:
@@ -199,8 +206,12 @@ def _faces_union_loop(edges: List[Edge], epsilon: float):
     if not on_rim:
         return None
     outer = Polygon(region.exterior)
-    segments, styles = face_segments(edges, outer, band)
-    return [(e, False) for e in on_rim], segments, styles, outer
+    segments, styles, used = face_segments(edges, outer, band)
+    on_rim_ids = {id(e) for e in on_rim}
+    partial = [edges[j] for j in sorted(used) if id(edges[j]) not in on_rim_ids]
+    rest = [piece for j in sorted(used) if id(edges[j]) not in on_rim_ids
+            for piece in off_rim(edges[j], used[j], region.exterior, band)]
+    return [(e, False) for e in on_rim + partial], segments, styles, outer, rest
 
 
 def _largest_loop(edges: List[Edge], epsilon: float):
