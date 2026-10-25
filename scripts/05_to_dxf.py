@@ -19,6 +19,7 @@ import _paths  # noqa: F401  — chdir alla radice del repo
 import os
 import topo
 import topo_dxf
+from topo import to_shapely
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT     = r"tests/lab/3d_1.dxf"
@@ -54,7 +55,7 @@ print(f"completo         -> {path}")
 print("   layer:", sorted(l.dxf.name for l in out.layers if l.dxf.name.isupper() or l.dxf.name[0].isupper()))
 
 # 2. solo le parti che passano un filtro (callable(cluster) -> bool)
-big = topo_dxf.to_dxf(result, doc, filter_cluster=lambda p: p.outer.polygon.area > 1000)
+big = topo_dxf.to_dxf(result, doc, filter_cluster=lambda p: to_shapely(p.outer).area > 1000)
 path = os.path.join(OUTDIR, f"{base}_big_only.dxf")
 big.saveas(path)
 print(f"filter_cluster area -> {path}")

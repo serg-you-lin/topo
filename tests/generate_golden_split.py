@@ -33,6 +33,7 @@ sys.path.insert(0, str(project_root))
 import topo
 import topo_dxf
 from topo_dxf.layers import role_to_dxf_layer
+from topo import to_shapely
 
 MULTIPLI_DIR      = project_root / "tests" / "data" / "golden_multipli"
 GOLDEN_DIR        = MULTIPLI_DIR / "golden"
@@ -101,15 +102,15 @@ def generate(force: bool = False, only: str = None):
                     "part_index":          part_index,
                     "area_mm2":            round(cluster.area, 4),
                     "inners_count":        len(inners),
-                    "outer_perimeter_mm":  round(cluster.outer.polygon.exterior.length, 4),
-                    "inner_perimeter_mm":  round(sum(i.polygon.exterior.length for i in inners), 4),
+                    "outer_perimeter_mm":  round(to_shapely(cluster.outer).exterior.length, 4),
+                    "inner_perimeter_mm":  round(sum(to_shapely(i).exterior.length for i in inners), 4),
                     "total_perimeter_mm":  round(
-                        cluster.outer.polygon.exterior.length +
-                        sum(i.polygon.exterior.length for i in inners),
+                        to_shapely(cluster.outer).exterior.length +
+                        sum(to_shapely(i).exterior.length for i in inners),
                         4,
                     ),
-                    "outer_wkt":     cluster.outer.polygon.wkt,
-                    "inners_wkt":    [i.polygon.wkt for i in inners],
+                    "outer_wkt":     to_shapely(cluster.outer).wkt,
+                    "inners_wkt":    [to_shapely(i).wkt for i in inners],
                     "outer_layer":   role_to_dxf_layer(cluster.outer.role),
                     "inners_layers": [role_to_dxf_layer(i.role) for i in inners],
                 }

@@ -302,7 +302,8 @@ suo ruolo, o su quello di default dell'adapter (vedi la tabella nel README e
 
 - **le spline** si riemettono come `SPLINE` native, ricostruite da control points
   / knots / weights / degree (D135) — **mai discretizzate a polilinea**
-- **l'overlay**: un contorno con `polygon` si scrive chiuso, uno senza come N
+- **l'overlay**: un contorno chiuso (una `ClosedCurve`, un vuoto `is_void`,
+  segmenti che chiudono un giro — `model.feature_closed`) si scrive chiuso, gli altri come N
   entità native (`LINE`/`ARC`/`SPLINE`/`CIRCLE`), **mai come `LWPOLYLINE`**
   (D90) — così esce una curva aperta attaccata da un consumatore
 - **`loose`** si scrive sempre, sul layer del ruolo di ogni curva (`Trash`

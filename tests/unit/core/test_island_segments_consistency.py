@@ -22,6 +22,7 @@ from tests.readings import island_reading
 from topo.core.island import GRAPH_EPSILON
 from topo.core.primitives.polygon_builder import build_polygon
 from topo.core.primitives.segments import DEFAULT_TOLERANCE
+from topo import to_shapely
 
 SOURCE_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "golden_islands"
 MAX_GAP = 0.5
@@ -34,7 +35,7 @@ OUTLINE_BAND = DEFAULT_TOLERANCE + GRAPH_EPSILON
 class TestIslandSegmentsConsistency(unittest.TestCase):
 
     def _assert_same_shape(self, contour, where):
-        poly = contour.polygon
+        poly = to_shapely(contour)
         rebuilt = build_polygon(contour.segments)
         self.assertIsNotNone(rebuilt, f"{where}: .segments non formano un poligono valido")
         sym = poly.symmetric_difference(rebuilt).area

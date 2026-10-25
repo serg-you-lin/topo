@@ -10,6 +10,7 @@ from topo.core.primitives.segments import LineSeg, CircleSeg
 from topo.core.healing.normalizer import refit_tessellations
 from topo.core.healing.gap_solver import local_gap_fixes, MoveEndpoint, AddSegment
 from topo.core.primitives.segments import ArcSeg
+from topo import to_shapely
 
 # max_gap non ha default (D98); island_gap non esiste più (D99)
 MAX_GAP = 0.5
@@ -38,7 +39,7 @@ class TestIsland(unittest.TestCase):
         edges = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + _poly((50, 0), (60, 0), (60, 5), (50, 5))
         result = topo.island(_doc(edges), max_gap=MAX_GAP)
         self.assertEqual(len(result.clusters), 2)
-        self.assertEqual([round(c.outer.polygon.area) for c in result.clusters], [100, 50])
+        self.assertEqual([round(to_shapely(c.outer).area) for c in result.clusters], [100, 50])
 
     def test_isola_dentro_un_altra_va_in_loose(self):
         # D161: cornice 100x100 e una vista dentro — l'unico contorno è la
@@ -47,10 +48,10 @@ class TestIsland(unittest.TestCase):
         edges = _poly((0, 0), (100, 0), (100, 100), (0, 100)) + _poly((40, 40), (60, 40), (60, 60), (40, 60))
         result = topo.island(_doc(edges), max_gap=MAX_GAP)
         self.assertEqual(len(result.clusters), 1)
-        self.assertAlmostEqual(result.clusters[0].outer.polygon.area, 10000.0)
+        self.assertAlmostEqual(to_shapely(result.clusters[0].outer).area, 10000.0)
         self.assertEqual(result.clusters[0].inners, [])
         self.assertEqual([t.cluster_ref for t in result.loose], [0])
-        self.assertAlmostEqual(result.loose[0].polygon.area, 400.0)
+        self.assertAlmostEqual(to_shapely(result.loose[0]).area, 400.0)
 
     def test_due_contorni_vicinissimi_restano_due_isole(self):
         # D99: nessuna distanza fra le viste — due contorni a 1 mm sono due isole
@@ -110,7 +111,7 @@ class TestIsland(unittest.TestCase):
         view = _poly((40, 40), (60, 40), (60, 60), (40, 60))
         result = topo.island(_doc(frame + view), max_gap=MAX_GAP)
         self.assertEqual(len(result.clusters), 1)
-        self.assertAlmostEqual(result.clusters[0].outer.polygon.area, 400.0)
+        self.assertAlmostEqual(to_shapely(result.clusters[0].outer).area, 400.0)
         self.assertEqual(sum(1 for t in result.loose if t.role == "frame"), 4)
 
     def test_cerchi_concentrici_vicini_in_loose_a_ogni_max_gap(self):

@@ -22,6 +22,7 @@ import os
 import topo
 import topo_dxf
 from topo.tools.strips import facing_boundaries, link, open_boundaries, unconnected_regions
+from topo import to_shapely
 
 # --- CONFIG ------------------------------------------------------------
 INPUT = r"tests/data/cerchi_concentrici_detect_is_counter_tabs_join.dxf"
@@ -36,8 +37,8 @@ cluster = topo.heal(doc).clusters[0]
 links = []
 for facing in facing_boundaries(cluster):
     for region in facing.inside:
-        c = region.polygon.centroid
-        r = math.sqrt(region.polygon.area / math.pi)
+        c = to_shapely(region).centroid
+        r = math.sqrt(to_shapely(region).area / math.pi)
         for k in range(STRIP_COUNT):
             angle = 2 * math.pi * k / STRIP_COUNT
             at = (c.x + r * math.cos(angle), c.y + r * math.sin(angle))

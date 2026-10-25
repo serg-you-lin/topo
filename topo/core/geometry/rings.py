@@ -36,6 +36,17 @@ def ring_jumps(segments: Sequence) -> Iterator[Tuple[Point, Point]]:
             yield end, start
 
 
+def ring_closes(segments: Sequence, tolerance: float = DEFAULT_TOLERANCE) -> bool:
+    """I segmenti chiudono un giro testa-coda: ognuno parte entro `tolerance`
+    da dove finisce il precedente, l'ultimo torna al primo."""
+    segments = list(segments)
+    if not segments:
+        return False
+    ends = [segment_endpoints(s) for s in segments]
+    return all(math.dist(ends[k][1], ends[(k + 1) % len(ends)][0]) <= tolerance
+               for k in range(len(ends)))
+
+
 def ring_bbox(segments: Sequence) -> Bounds:
     """(xmin, ymin, xmax, ymax) esatto delle primitive: gli estremi di archi
     ed ellissi dove la curva li tocca, non sulle corde. I salti stanno fra

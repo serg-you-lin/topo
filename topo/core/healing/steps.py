@@ -20,7 +20,7 @@ from shapely.ops import polygonize, snap, unary_union
 
 from ..geometry.measure import round_point, segment_length, track_points
 from ..primitives import LineSeg
-from ..primitives.polygon_builder import build_polygon
+from ..primitives.polygon_builder import build_polygon, with_polygon
 from ..primitives.segments import (
     DEFAULT_TOLERANCE, ArcSeg, CircleSeg, BSplineSeg, segment_endpoints,
 )
@@ -380,8 +380,8 @@ def labeled_curves(edges: List[Edge]) -> list:
         if edge.start == edge.end:
             polygon = build_polygon([seg], DEFAULT_TOLERANCE)
             if polygon is not None:
-                curves.append(ClosedCurve(role=edge.role, polygon=polygon,
-                                          segments=[seg], styles=[edge.style]))
+                curves.append(with_polygon(ClosedCurve(role=edge.role, segments=[seg],
+                                                       styles=[edge.style]), polygon))
             continue
         if len(track_points([seg])) >= 2:
             curves.append(OpenCurve(role=edge.role, segments=[seg], styles=[edge.style]))

@@ -259,7 +259,8 @@ def write_native_segments(segments: List, msp, layer: str, styles: Optional[List
     """
     Materializza segmenti aperti come geometria NATIVA, una entità DXF per
     primitiva — mai LWPOLYLINE, nemmeno per un run di linee/archi contigui.
-    È come si disegna un elemento dell'overlay senza `polygon` (MAP.md D90):
+    È come si disegna un elemento dell'overlay che non è un contorno chiuso
+    (MAP.md D90):
     una piega, un'incisione.
 
       - LineSeg    → LINE

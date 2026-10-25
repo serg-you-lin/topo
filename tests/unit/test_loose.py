@@ -17,6 +17,7 @@ import unittest
 
 import topo
 from topo.primitives import LineSeg
+from topo import to_shapely
 
 fg = topo.geometry
 
@@ -54,7 +55,7 @@ class TestClusterRef(unittest.TestCase):
 
     def test_due_parti_la_piastra_e_la_piu_grande(self):
         self.assertEqual(len(self.result.clusters), 2)
-        self.assertAlmostEqual(self.result.clusters[0].outer.polygon.area, 20000, delta=1)
+        self.assertAlmostEqual(to_shapely(self.result.clusters[0].outer).area, 20000, delta=1)
 
     def test_linea_da_lato_a_lato_sta_nella_piastra(self):
         self.assertEqual(_at(self.result, 0, -50).cluster_ref, 0)
@@ -65,7 +66,7 @@ class TestClusterRef(unittest.TestCase):
 
     def test_curva_chiusa_marcata_sta_nella_piastra(self):
         mark = next(c for c in self.result.loose if c.role == "mark")
-        self.assertIsNotNone(mark.polygon)
+        self.assertIsNotNone(to_shapely(mark))
         self.assertEqual(mark.cluster_ref, 0)
 
     def test_linea_fuori_da_tutto_non_ha_cluster(self):
@@ -148,7 +149,7 @@ class TestRotate(unittest.TestCase):
         result = topo.heal(_drawing())
         rotated = topo.rotate_result(result, math.pi / 2)
         mark = next(c for c in rotated.loose if c.role == "mark")
-        c = mark.polygon.centroid
+        c = to_shapely(mark).centroid
         self.assertAlmostEqual(c.x, 0, places=3)
         self.assertAlmostEqual(c.y, -50, places=3)
 

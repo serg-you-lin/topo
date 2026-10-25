@@ -22,6 +22,7 @@ sys.path.insert(0, str(project_root))
 import topo
 import topo_dxf
 from topo_dxf.layers import role_to_dxf_layer
+from topo import to_shapely
 
 
 EXAMPLES_DIR = project_root / "tests" / "data"
@@ -83,7 +84,7 @@ def _make_test(path):
             best_idx = None
             best_score = None
             for expected_idx in unmatched:
-                score = actual_shape.polygon.symmetric_difference(
+                score = to_shapely(actual_shape).symmetric_difference(
                     expected_polys[expected_idx]
                 ).area
                 if best_score is None or score < best_score:
@@ -147,7 +148,7 @@ def _make_test(path):
 
             # --- perimetro outer ---
             self.assertAlmostEqual(
-                round(cluster.outer.polygon.exterior.length, 4),
+                round(to_shapely(cluster.outer).exterior.length, 4),
                 expected["outer_perimeter_mm"],
                 delta=TOL_PERIMETER,
                 msg=f"{label} outer perimeter",
@@ -155,7 +156,7 @@ def _make_test(path):
 
             # --- perimetro inner totale ---
             actual_inner_p = round(
-                sum(i.polygon.exterior.length for i in inners),
+                sum(to_shapely(i).exterior.length for i in inners),
                 4,
             )
             self.assertAlmostEqual(
@@ -167,8 +168,8 @@ def _make_test(path):
 
             # --- total perimeter ---
             actual_total_p = round(
-                cluster.outer.polygon.exterior.length +
-                sum(i.polygon.exterior.length for i in inners),
+                to_shapely(cluster.outer).exterior.length +
+                sum(to_shapely(i).exterior.length for i in inners),
                 4,
             )
             self.assertAlmostEqual(
@@ -181,7 +182,7 @@ def _make_test(path):
             # --- outer shape ---
             outer = shapely_wkt.loads(expected["outer_wkt"])
             self.assertLess(
-                cluster.outer.polygon.symmetric_difference(outer).area,
+                to_shapely(cluster.outer).symmetric_difference(outer).area,
                 TOL_SHAPE,
                 msg=f"{label} outer shape",
             )
@@ -305,8 +306,8 @@ def _make_roundtrip_test(path):
         for i, cluster in enumerate(result.clusters):
             match = min(
                 unmatched,
-                key=lambda p: p.outer.polygon.centroid.distance(
-                    cluster.outer.polygon.centroid
+                key=lambda p: to_shapely(p.outer).centroid.distance(
+                    to_shapely(cluster.outer).centroid
                 ),
                 default=None,
             )
@@ -318,12 +319,12 @@ def _make_roundtrip_test(path):
                 match.area, cluster.area, delta=TOL_AREA_ROUNDTRIP, msg=f"{label} area",
             )
             self.assertAlmostEqual(
-                match.outer.polygon.exterior.length,
-                cluster.outer.polygon.exterior.length,
+                to_shapely(match.outer).exterior.length,
+                to_shapely(cluster.outer).exterior.length,
                 delta=TOL_PERIMETER, msg=f"{label} outer perimeter",
             )
             self.assertLess(
-                match.outer.polygon.symmetric_difference(cluster.outer.polygon).area,
+                to_shapely(match.outer).symmetric_difference(to_shapely(cluster.outer)).area,
                 TOL_SHAPE_ROUNDTRIP, msg=f"{label} outer shape",
             )
             self.assertEqual(

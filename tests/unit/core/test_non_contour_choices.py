@@ -18,6 +18,7 @@ import unittest
 import topo
 from topo.core.primitives import LineSeg
 from topo.core.topology.noding import interior_crossings
+from topo import to_shapely
 
 TOL = 0.01
 
@@ -43,7 +44,7 @@ class TestA_InteriorChainIsChord(unittest.TestCase):
                        + _lines((0, 150), (95, 103)) + _lines((260, 150), (165, 103)))
         self.assertEqual(result.cluster_count, 1)
         self.assertEqual(len(result.clusters[0].inners), 0)
-        self.assertAlmostEqual(result.clusters[0].outer.polygon.area, 260 * 150)
+        self.assertAlmostEqual(to_shapely(result.clusters[0].outer).area, 260 * 150)
         self.assertEqual(len(result.loose), 8)
 
 
@@ -70,7 +71,7 @@ class TestC_GrazedChordIsChord(unittest.TestCase):
                          (0, 50), (0, 49), closed=True)
         result = _heal(outline + _lines((0, 49), (100, 49)))
         self.assertEqual(result.cluster_count, 1)
-        self.assertAlmostEqual(result.clusters[0].outer.polygon.area, 100 * 50 - 1.5)
+        self.assertAlmostEqual(to_shapely(result.clusters[0].outer).area, 100 * 50 - 1.5)
         self.assertEqual(len(result.loose), 1)
 
 

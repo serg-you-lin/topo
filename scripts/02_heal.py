@@ -17,6 +17,7 @@ import _paths  # noqa: F401  — chdir alla radice del repo
 
 import topo
 import topo_dxf
+from topo import to_shapely
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT     = r"tests/data/Linee_piegatura.dxf"
@@ -43,11 +44,11 @@ for w in result.warnings:
 for i, cluster in enumerate(result.clusters):
     print(f"\nParte {i}  label={cluster.label!r}")
     print(f"   outer  : role={cluster.outer.role}  area={cluster.outer.area:.1f}  "
-          f"perimetro={cluster.outer.polygon.exterior.length:.1f}")
+          f"perimetro={to_shapely(cluster.outer).exterior.length:.1f}")
     print(f"   bbox   : {tuple(round(v, 1) for v in cluster.bbox)}")
     print(f"   inners : {len(cluster.inners)}  (contorni interni, non ancora tipati come foro)")
     for j, inner in enumerate(cluster.inners):
-        print(f"      inner {j}: area={inner.polygon.area:.1f}")
+        print(f"      inner {j}: area={to_shapely(inner).area:.1f}")
 
 # validate_result: heal() la chiama già; utile solo se costruisci un
 # Result per altre vie. MUTA il result (aggiunge warnings/errors).

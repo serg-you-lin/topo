@@ -31,6 +31,7 @@ from topo.model.document import Document
 
 from tests.drawings import case_name, drawing_key, drawings_for
 from tests.invariants import MOTIONS, along_contours, uncovered, known_defect, contours, geometry as _geometry, moved, orders, shape_differences
+from topo import to_shapely
 
 DATA = Path(__file__).resolve().parent.parent.parent / "data"
 SOURCE_DIR = DATA / "golden"
@@ -90,7 +91,7 @@ def _shape_differences(before: list, after: list) -> list:
 
 
 def _outers(result) -> list:
-    return [c.outer.polygon for c in result.clusters]
+    return [to_shapely(c.outer) for c in result.clusters]
 
 
 def _register(cls, make, known: frozenset = frozenset()):
@@ -113,8 +114,8 @@ def _make_validity_test(dxf: Path):
         for ci, cluster in enumerate(result.clusters):
             for name, contour in [("outer", cluster.outer)] + [(f"inner[{i}]", c) for i, c in
                                                                enumerate(cluster.inners)]:
-                self.assertTrue(contour.polygon.is_valid, f"{dxf.stem}.cluster[{ci}].{name} non è semplice")
-                self.assertGreater(contour.polygon.area, 0, f"{dxf.stem}.cluster[{ci}].{name} ha area nulla")
+                self.assertTrue(to_shapely(contour).is_valid, f"{dxf.stem}.cluster[{ci}].{name} non è semplice")
+                self.assertGreater(to_shapely(contour).area, 0, f"{dxf.stem}.cluster[{ci}].{name} ha area nulla")
     return test
 
 
@@ -220,7 +221,7 @@ def _chords(cluster, margin: float) -> list:
     """Coppie di corde da un vertice comune ai due estremi di un lato dritto:
     così i due estremi del lato diventano nodi di diramazione. Prima i lati
     fuori dal convex hull (la parte concava), poi gli altri."""
-    polygon = cluster.outer.polygon
+    polygon = to_shapely(cluster.outer)
     hull = polygon.convex_hull.exterior
     vertices = _vertices(cluster.outer)
     sides = [s for s in cluster.outer.segments if isinstance(s, LineSeg)]
@@ -257,7 +258,7 @@ def _make_chords_test(dxf: Path):
                 continue
             again = topo.heal(topo.load_segments(list(cluster.outer.segments) + chords, tolerance=tol),
                                tolerance=tol)
-            if again.cluster_count != 1 or _shape_differences([cluster.outer.polygon], _outers(again)):
+            if again.cluster_count != 1 or _shape_differences([to_shapely(cluster.outer)], _outers(again)):
                 broken.append(f"cluster[{ci}] (+{len(chords)} corde): {again.cluster_count} cluster")
         check = lambda: self.assertEqual(broken, [], f"{dxf.stem}: le corde cambiano l'outer")
         if drawing_key(dxf) in KNOWN_CHORDS:
@@ -283,9 +284,9 @@ def _crossing_edges(doc, result, tol: float) -> set:
             continue
         a, b = Point(edge.start[:2]), Point(edge.end[:2])
         for cluster in result.clusters:
-            ring = cluster.outer.polygon.exterior
+            ring = to_shapely(cluster.outer).exterior
             if ring.distance(a) <= tol and ring.distance(b) <= tol and \
-                    cluster.outer.polygon.contains(LineString([edge.start[:2], edge.end[:2]]).interpolate(0.5, True)):
+                    to_shapely(cluster.outer).contains(LineString([edge.start[:2], edge.end[:2]]).interpolate(0.5, True)):
                 ids.add(id(edge))
                 break
     return ids

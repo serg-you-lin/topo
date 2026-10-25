@@ -7,8 +7,8 @@ D15: HierarchyBuilder costruisce SOLO l'albero di contenimento —
 `Cluster(outer, inners=[Contour...])`, zero `Hole`. La classificazione
 hole / countersink è di `detect_flat()` (vedi tests/unit/test_detect.py).
 
-I proxy ClosedCurve/OpenCurve vengono costruiti direttamente con Polygon
-shapely e primitive native — nessun adapter DXF, nessun file reale.
+I proxy ClosedCurve/OpenCurve vengono costruiti direttamente con primitive
+native — nessun adapter DXF, nessun file reale.
 """
 
 import math
@@ -19,6 +19,8 @@ from topo.core.primitives.segments import LineSeg
 from topo.model.curve import ClosedCurve, OpenCurve
 from topo.model.role import ContourRole
 from topo.core.healing.hierarchy import HierarchyBuilder
+import topo
+from topo import to_shapely
 
 
 # ---------------------------------------------------------------------------
@@ -26,7 +28,7 @@ from topo.core.healing.hierarchy import HierarchyBuilder
 # ---------------------------------------------------------------------------
 
 def _make_proxy(polygon, *, role=ContourRole.UNKNOWN):
-    return ClosedCurve(role=role, polygon=polygon)
+    return ClosedCurve(role=role, segments=topo.geometry.polygon(polygon.exterior.coords))
 
 
 def _make_open_proxy(pts, *, role=ContourRole.UNKNOWN):
@@ -86,7 +88,7 @@ class TestOuterConInner(unittest.TestCase):
         self.assertEqual(len(self.clusters), 1)
 
     def test_outer_area(self):
-        self.assertAlmostEqual(self.clusters[0].outer.polygon.area, 10000.0, delta=1.0)
+        self.assertAlmostEqual(to_shapely(self.clusters[0].outer).area, 10000.0, delta=1.0)
 
     def test_zero_holes(self):
         self.assertEqual(len(self.clusters[0].features("holes")), 0)
@@ -195,7 +197,7 @@ class TestTrash(unittest.TestCase):
         self.assertFalse(
             any(
                 getattr(t, "polygon", None) is not None
-                and t.polygon.equals(self.outer.polygon)
+                and to_shapely(t).equals(to_shapely(self.outer))
                 for t in self.trash
             )
         )

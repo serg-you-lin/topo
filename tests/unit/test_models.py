@@ -24,6 +24,7 @@ from topo.model import (
     Edge,
 )
 from topo.model import DetectedFeatures
+import topo
 
 from topo.model.role import ContourRole
 from topo.core.primitives.segments import LineSeg
@@ -32,13 +33,17 @@ from topo.core.primitives.segments import LineSeg
 # Fake entity minimale — isola i test da ezdxf
 # ---------------------------------------------------------------------------
 
+def _ring(polygon):
+    return topo.geometry.polygon(polygon.exterior.coords)
+
+
 class _Void:
     """Un elemento dell'overlay che un consumatore dichiara vuoto del pezzo (D90)."""
     is_void = True
     role = "my_void"
 
-    def __init__(self, polygon):
-        self.polygon = polygon
+    def __init__(self, segments):
+        self.segments = segments
 
 
 class _FakeEntity:
@@ -55,33 +60,33 @@ class TestForgeContour(unittest.TestCase):
     def test_001_area(self):
         """Area calcolata correttamente."""
         poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
-        contour = Contour(polygon=poly, role="outer")
+        contour = Contour(segments=_ring(poly), role="outer")
         print(f"\n[Contour] area={contour.area}")
         self.assertEqual(contour.area, 100.0)
 
     def test_002_bbox(self):
         """Bbox calcolato correttamente."""
         poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
-        contour = Contour(polygon=poly, role="outer")
+        contour = Contour(segments=_ring(poly), role="outer")
         print(f"[Contour] bbox={contour.bbox}")
         self.assertEqual(contour.bbox, (0, 0, 10, 10))
 
     def test_003_role_unknown_preserved(self):
         """role UNKNOWN è un valore valido e viene preservato."""
         poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
-        contour = Contour(role=ContourRole.UNKNOWN, polygon=poly)
+        contour = Contour(role=ContourRole.UNKNOWN, segments=_ring(poly))
         self.assertEqual(contour.role, ContourRole.UNKNOWN)
 
     def test_004_role_inner(self):
         """role inner assegnato correttamente."""
         poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
-        contour = Contour(polygon=poly, role="inner")
+        contour = Contour(segments=_ring(poly), role="inner")
         self.assertEqual(contour.role, "inner")
 
     def test_005_role_preserved(self):
         """Role preservato correttamente."""
         poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
-        contour = Contour(polygon=poly, role="outer")
+        contour = Contour(segments=_ring(poly), role="outer")
         self.assertEqual(contour.role, "outer")
 
 
@@ -141,7 +146,7 @@ class TestForgeCluster(unittest.TestCase):
     def _make_outer(self, coords=None):
         if coords is None:
             coords = [(0,0), (100,0), (100,100), (0,100)]
-        return Contour(role=ContourRole.OUTER, polygon=Polygon(coords))
+        return Contour(role=ContourRole.OUTER, segments=_ring(Polygon(coords)))
 
     def test_001_no_holes_area(self):
         """Area corretta senza fori."""
@@ -158,20 +163,18 @@ class TestForgeCluster(unittest.TestCase):
         """Area netta = outer - un vuoto dell'overlay (is_void, D90)."""
         import math
         outer = self._make_outer()
-        hole_poly = Point((50, 50)).buffer(5.0, resolution=64)
         cluster = Cluster(outer=outer, detected=DetectedFeatures())
-        cluster.detected.attach("holes", [_Void(polygon=hole_poly)])
+        cluster.detected.attach("holes", [_Void(topo.geometry.circle(5.0, (50, 50)))])
         expected = 10000.0 - math.pi * 25.0
         print(f"\n[Cluster with hole] area={cluster.area:.4f} expected≈{expected:.4f}")
         self.assertAlmostEqual(cluster.area, expected, delta=0.01)
 
-    def test_004_polygon_with_holes(self):
-        """polygon_with_holes restituisce Polygon Shapely con foro."""
+    def test_004_to_shapely_with_void(self):
+        """to_shapely toglie dal materiale il vuoto dell'overlay."""
         outer = self._make_outer()
-        hole_poly = Point((50, 50)).buffer(5.0, resolution=64)
         cluster = Cluster(outer=outer, detected=DetectedFeatures())
-        cluster.detected.attach("holes", [_Void(polygon=hole_poly)])
-        result_poly = cluster.polygon_with_holes
+        cluster.detected.attach("holes", [_Void(topo.geometry.circle(5.0, (50, 50)))])
+        result_poly = topo.to_shapely(cluster)
         print(f"[Cluster] interiors={len(list(result_poly.interiors))}")
         self.assertEqual(len(list(result_poly.interiors)), 1)
 
@@ -204,7 +207,7 @@ class TestForgeCluster(unittest.TestCase):
         p1 = Cluster(outer=self._make_outer())
         p2 = Cluster(outer=self._make_outer())
         inner_poly = Polygon([(10,10), (20,10), (20,20), (10,20)])
-        p1.inners.append(Contour(role=ContourRole.INNER, polygon=inner_poly))
+        p1.inners.append(Contour(role=ContourRole.INNER, segments=_ring(inner_poly)))
         print(f"[Cluster] p1.inners={len(p1.inners)} p2.inners={len(p2.inners)}")
         self.assertEqual(len(p2.inners), 0)
 
@@ -217,7 +220,7 @@ class TestForgeResult(unittest.TestCase):
 
     def _make_result(self):
         outer_poly = Polygon([(0,0), (50,0), (50,50), (0,50)])
-        outer = Contour(role=ContourRole.OUTER, polygon=outer_poly)
+        outer = Contour(role=ContourRole.OUTER, segments=_ring(outer_poly))
         cluster  = Cluster(outer=outer, label="pezzo_1", source_file="test.dxf")
         return Result(clusters=[cluster], source_file="test.dxf")
 

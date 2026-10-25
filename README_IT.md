@@ -103,7 +103,7 @@ import topo, topo_dxf
 doc    = topo_dxf.load_dxf("tavola.dxf")   # cornice / cartiglio marcati per ruolo, o tolti
 result = topo.island(doc, max_gap=0.5)
 for cluster in result.clusters:              # una vista (o un pezzo) per isola
-    print(cluster.outer.polygon.area, len(cluster.inners))
+    print(cluster.outer.area, len(cluster.inners))
 ```
 
 `heal()` legge un disegno di sagome piane separate dall'interno (quali giri si chiudono, chi sta

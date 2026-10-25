@@ -28,6 +28,7 @@ from topo.core.topology.loop_finder import LoopFinder
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, ArcSeg
 from topo.model.role import ContourRole
+from topo import to_shapely
 
 
 # ---------------------------------------------------------------------------
@@ -344,7 +345,7 @@ class TestSplitArcStubs(unittest.TestCase):
         self.assertEqual(self.result.cluster_count, 1)
 
     def test_area_corretta(self):
-        poly = self.result.clusters[0].outer.polygon
+        poly = to_shapely(self.result.clusters[0].outer)
         self.assertAlmostEqual(poly.area, 1000.0 * 500.0, delta=500.0)
 
     def test_stub_non_perse_finiscono_in_trash(self):

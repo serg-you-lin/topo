@@ -10,13 +10,15 @@ None` finché nessuno ci ha scritto.
 `DetectedFeature` è il contratto minimo dichiarato per chi vuole tipizzare —
 non imposto a runtime (MAP.md D5: "convenzione, non gerarchia"). I renderer
 leggono di ogni elemento solo `role` e la geometria (`contours`, oppure
-`segments` + `polygon`) — MAP.md D90.
+`segments`; un vuoto lo dichiara con `is_void`) — MAP.md D90.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Protocol, runtime_checkable
+
+from topo.core.geometry.rings import ring_closes
 
 
 @runtime_checkable
@@ -72,3 +74,16 @@ class DetectedFeatures:
     def __repr__(self) -> str:
         counts = {k: len(v) for k, v in self._store.items()}
         return f"DetectedFeatures({counts})"
+
+
+def feature_closed(contour, item) -> bool:
+    """
+    True if a contour of an overlay item is drawn as a closed ring: it is a
+    `ClosedCurve`, its item declares itself a void of the part (`is_void`),
+    or its `segments` close a ring head to tail (MAP.md D90, D166).
+    Otherwise they are drawn as they are, one primitive each (a bend).
+    """
+    from .curve import ClosedCurve
+    if isinstance(contour, ClosedCurve) or getattr(item, "is_void", False):
+        return True
+    return ring_closes(getattr(contour, "segments", None) or [])

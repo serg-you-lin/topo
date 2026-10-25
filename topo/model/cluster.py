@@ -6,9 +6,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, List, Optional
 
-from shapely.geometry import Polygon
-
 from topo.core.geometry.integrals import ring_area
+from topo.core.primitives.polygon_builder import curve_polygon
 from topo.model.contour import Contour
 
 
@@ -44,7 +43,8 @@ class Cluster:
     def overlay_voids(self) -> list:
         """
         Gli elementi dell'overlay che sono vuoti del pezzo: chi li ha letti
-        dichiara `is_void = True` e porta un `polygon` (MAP.md D90). Un
+        dichiara `is_void = True` e porta i `segments` di un giro chiuso
+        (MAP.md D90). Un
         consumatore che toglie un contorno da `inners` per farne un suo
         elemento (un foro di snapbend) non cambia l'area del pezzo.
         """
@@ -52,21 +52,8 @@ class Cluster:
             return []
         return [
             item for _name, items in self.detected.items() for item in items
-            if getattr(item, "is_void", False) and getattr(item, "polygon", None) is not None
+            if getattr(item, "is_void", False) and getattr(item, "segments", None)
         ]
-
-    @property
-    def polygon_with_holes(self) -> Polygon:
-        all_inners = (
-            [v.polygon for v in self.overlay_voids]
-            + [i.polygon for i in self.inners]
-        )
-        if not all_inners:
-            return self.outer.polygon
-        return Polygon(
-            self.outer.polygon.exterior.coords,
-            [p.exterior.coords for p in all_inners],
-        )
 
     @property
     def bbox(self):
@@ -114,13 +101,18 @@ class Cluster:
                 "maxx": round(self.bbox[2], 4),
                 "maxy": round(self.bbox[3], 4),
             },
-            "outer":  list(self.outer.polygon.exterior.coords),
-            "inners": [list(i.polygon.exterior.coords) for i in self.inners],
+            "outer":  _ring_coords(self.outer),
+            "inners": [_ring_coords(i) for i in self.inners],
             "custom": self.custom,
         }
 
 
 def _void_area(item) -> float:
-    """Area di un vuoto dell'overlay: esatta sui suoi `segments` se li porta (D165)."""
-    segments = getattr(item, "segments", None)
-    return ring_area(segments) if segments else item.polygon.area
+    """Area di un vuoto dell'overlay, esatta sui suoi `segments` (D165)."""
+    return ring_area(item.segments)
+
+
+def _ring_coords(contour) -> list:
+    """I vertici del poligono della lettura, giro chiuso (il primo ripetuto
+    in fondo): liste di numeri, nessun tipo shapely (D166)."""
+    return list(curve_polygon(contour).exterior.coords)

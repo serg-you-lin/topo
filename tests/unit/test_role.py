@@ -18,6 +18,7 @@ from topo.model.role import (
     ContourRole, normalize_role, role_str,
     is_structural_role, STRUCTURAL_ROLES,
 )
+from topo import to_shapely
 
 
 class TestNormalizeRole(unittest.TestCase):
@@ -133,7 +134,7 @@ class TestConsumerRolesSurviveDetect(unittest.TestCase):
         self.assertEqual(len(result.clusters), 2)
         for c in result.clusters:
             self.assertEqual(c.outer.role, ContourRole.OUTER)
-            self.assertLess(c.outer.polygon.area, 20000)  # non è la cornice
+            self.assertLess(to_shapely(c.outer).area, 20000)  # non è la cornice
 
     def test_to_dxf_scrive_il_ruolo_di_consumatore_su_un_layer_suo(self):
         # D31: la cornice non finisce su "Trash" insieme alla spazzatura vera,

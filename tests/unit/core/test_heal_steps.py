@@ -21,6 +21,7 @@ from topo.model.curve import ClosedCurve, OpenCurve
 from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import ArcSeg, LineSeg, CircleSeg, BSplineSeg
+from topo import to_shapely
 
 EXAMPLES = project_root / "tests" / "data"
 
@@ -313,7 +314,7 @@ class TestLoopsToCurves(unittest.TestCase):
         kept = topo.steps.structural_loops(loops)
         self.assertEqual(len(kept), 1)
         curves = topo.steps.loops_to_curves(kept)
-        self.assertEqual([round(f.polygon.area) for f in curves], [100])
+        self.assertEqual([round(to_shapely(f).area) for f in curves], [100])
 
     @staticmethod
     def _arc_with_chords(center=(5.0, 5.0), radius=0.64, n=15):
@@ -355,7 +356,7 @@ class TestPolygonize(unittest.TestCase):
     def test_001_bordo_esterno_e_buco(self):
         polygons = topo.steps.polygonize_edges(_square(0, 0, 10) + _square(3, 3, 4), 0.1)
         curves = topo.steps.polygons_to_curves(polygons)
-        roles = sorted((f.role, round(f.polygon.area)) for f in curves)
+        roles = sorted((f.role, round(to_shapely(f).area)) for f in curves)
         self.assertIn((ContourRole.OUTER, 84), roles)
         self.assertIn((ContourRole.INNER, 16), roles)
 
@@ -401,8 +402,8 @@ class TestComposition(unittest.TestCase):
                 doc = topo_dxf.load_dxf(str(EXAMPLES / name))
                 expected = topo.heal(doc).clusters
                 got = self._compose(doc, doc.source_meta.get("tolerance", 0.05))
-                self.assertEqual([c.outer.polygon.wkt for c in got],
-                                 [c.outer.polygon.wkt for c in expected])
+                self.assertEqual([to_shapely(c.outer).wkt for c in got],
+                                 [to_shapely(c.outer).wkt for c in expected])
                 self.assertEqual([len(c.inners) for c in got], [len(c.inners) for c in expected])
 
 

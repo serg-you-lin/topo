@@ -18,14 +18,15 @@ from topo.model.role import ContourRole
 from topo.model.text import RenderedGeometry, RenderedText, Text
 from topo.tools.anchor import anchor_texts, measured_references, resolve_target
 from topo_dxf.text_extractor import _shown_text
+from topo import to_shapely
 
 # max_gap non ha default (D98); island_gap non esiste più (D99)
 MAX_GAP = 0.5
 
 
 def _part(x0, y0, x1, y1):
-    poly = Polygon([(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
-    return Cluster(outer=Contour(polygon=poly, role=ContourRole.OUTER))
+    ring = topo.geometry.polygon([(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
+    return Cluster(outer=Contour(segments=ring, role=ContourRole.OUTER))
 
 
 def _result(*clusters, texts=()):
@@ -105,7 +106,7 @@ class TestPointerTarget(unittest.TestCase):
     def _hole_at(self, result, center):
         # D161: island() non fa inner, il foro è un pezzo chiuso in loose (D162)
         return next(k for k, c in enumerate(result.loose)
-                    if c.polygon is not None and c.polygon.centroid.distance(Point(center)) < 0.1)
+                    if to_shapely(c) is not None and to_shapely(c).centroid.distance(Point(center)) < 0.1)
 
     def test_punta_sul_bordo_del_foro(self):
         result = self._island(_leader((24, 25), (40, 60)))
@@ -136,7 +137,7 @@ class TestPointerTarget(unittest.TestCase):
         from topo.model import DetectedFeatures
         result = topo.heal(_plate_with_holes())
         cluster = result.clusters[0]
-        small = min(cluster.inners, key=lambda c: c.polygon.area)
+        small = min(cluster.inners, key=lambda c: to_shapely(c).area)
         cluster.inners = [c for c in cluster.inners if c is not small]
         cluster.detected = DetectedFeatures()
         cluster.detected.attach("my_circles", [small])
@@ -144,7 +145,7 @@ class TestPointerTarget(unittest.TestCase):
         anchor_texts(result)
         target = resolve_target(result, result.texts[0].target)
         self.assertIn(".my_circles[", result.texts[0].target)
-        self.assertAlmostEqual(target.polygon.centroid.x, 20, places=1)
+        self.assertAlmostEqual(to_shapely(target).centroid.x, 20, places=1)
 
 
 class TestMeasuredReferences(unittest.TestCase):

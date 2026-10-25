@@ -100,7 +100,7 @@ import topo, topo_dxf
 doc    = topo_dxf.load_dxf("sheet.dxf")    # frame / title block marked by role, or removed
 result = topo.island(doc, max_gap=0.5)
 for cluster in result.clusters:              # one view (or part) per island
-    print(cluster.outer.polygon.area, len(cluster.inners))
+    print(cluster.outer.area, len(cluster.inners))
 ```
 
 `heal()` reads a drawing of separate flat outlines from the inside (which loops close, which is

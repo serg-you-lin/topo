@@ -35,6 +35,7 @@ sys.path.insert(0, str(project_root))
 
 import topo
 import topo_dxf
+from topo import to_shapely
 
 EXAMPLES_DIR      = project_root / "tests" / "data"
 GOLDEN_DXF_DIR    = EXAMPLES_DIR / "golden"
@@ -59,16 +60,16 @@ def _geometry(result, source_file: str) -> dict:
     golden = {"source_file": source_file, "cluster_count": result.cluster_count, "clusters": []}
     for cluster in result.clusters:
         inners = sorted(cluster.inners, key=lambda x: x.area, reverse=True)
-        outer_p = cluster.outer.polygon.exterior.length
-        inner_p = sum(i.polygon.exterior.length for i in inners)
+        outer_p = to_shapely(cluster.outer).exterior.length
+        inner_p = sum(to_shapely(i).exterior.length for i in inners)
         golden["clusters"].append({
             "area_mm2":           round(cluster.area, 4),
             "outer_perimeter_mm": round(outer_p, 4),
             "inner_perimeter_mm": round(inner_p, 4),
             "total_perimeter_mm": round(outer_p + inner_p, 4),
-            "outer_wkt":          cluster.outer.polygon.wkt,
+            "outer_wkt":          to_shapely(cluster.outer).wkt,
             "inners_count":       len(inners),
-            "inners_wkt":         [i.polygon.wkt for i in inners],
+            "inners_wkt":         [to_shapely(i).wkt for i in inners],
             "inners":             [{"role": i.to_dict()["role"], "area": i.to_dict()["area"]}
                                    for i in inners],
         })
