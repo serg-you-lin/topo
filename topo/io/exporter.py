@@ -13,6 +13,8 @@ import json
 import xml.etree.ElementTree as ET
 from typing import Callable, Optional
 from xml.dom import minidom
+from ..core.geometry.rings import ring_perimeter
+from ..core.primitives.polygon_builder import curve_polygon
 from ..model import Result, Cluster
 from ..rules.metadata_schema import METADATA_FIELDS
 
@@ -55,9 +57,10 @@ def build_metadata(cluster: Cluster, schema: dict = None, extra: dict = None) ->
     outer_perimeter = 0.0
     inner_perimeter = 0.0
     try:
-        outer_perimeter = round(cluster.outer.polygon.exterior.length, 4)
+        # perimetro esatto sulle primitive (D166), non sulle corde del poligono
+        outer_perimeter = round(ring_perimeter(cluster.outer.segments), 4)
         inner_perimeter = round(
-            sum(i.polygon.exterior.length for i in cluster.inners), 4
+            sum(ring_perimeter(i.segments) for i in cluster.inners), 4
         )
     except Exception:
         pass
@@ -254,7 +257,7 @@ def to_nester_input(result: Result) -> list:
             "source_file" : cluster.source_file,
             "area"        : cluster.area,
             "bbox"        : cluster.bbox,
-            "outer_coords": list(cluster.outer.polygon.exterior.coords),
-            "holes_coords": [list(h.polygon.exterior.coords) for h in cluster.inners],
+            "outer_coords": list(curve_polygon(cluster.outer).exterior.coords),
+            "holes_coords": [list(curve_polygon(h).exterior.coords) for h in cluster.inners],
         })
     return clusters

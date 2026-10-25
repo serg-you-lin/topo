@@ -22,6 +22,7 @@ from typing import Any, Iterator, Optional, Tuple
 from shapely.geometry import LineString, Point
 
 from ..model.curve import ClosedCurve
+from ..core.primitives.polygon_builder import curve_polygon
 from ..model.result import Result
 from ..model.role import ContourRole, is_structural_role
 from ..model.text import Text
@@ -50,10 +51,11 @@ def anchor_texts(result: Result, snap_distance: float = 0.0,
     Muta i testi in-place e ritorna il ``result``.
     """
     refs = [
-        (i, p.outer.polygon)
+        (i, poly)
         for i, p in enumerate(result.clusters)
-        if p.outer is not None and p.outer.polygon is not None
-        and not p.outer.polygon.is_empty
+        if p.outer is not None
+        for poly in [curve_polygon(p.outer)]
+        if poly is not None and not poly.is_empty
     ]
     if not refs:
         return result
@@ -153,8 +155,9 @@ def _elements(result: Result) -> Iterator[Tuple[str, Any, bool]]:
     cluster, poi per i pezzi chiusi di ``loose`` senza un ruolo non
     strutturale (D162): un foro letto da island(), non una cornice."""
     for ci, cluster in enumerate(result.clusters):
-        if cluster.outer is not None and cluster.outer.polygon is not None:
-            yield f"clusters[{ci}].outer", cluster.outer.polygon, True
+        outer = curve_polygon(cluster.outer) if cluster.outer is not None else None
+        if outer is not None:
+            yield f"clusters[{ci}].outer", outer, True
         collections = [("inners", cluster.inners)]
         if cluster.detected is not None:
             collections += list(cluster.detected.items())
@@ -171,7 +174,7 @@ def _elements(result: Result) -> Iterator[Tuple[str, Any, bool]]:
 
 
 def _item_geometry(item):
-    polygon = getattr(item, "polygon", None)
+    polygon = curve_polygon(item)
     if polygon is not None and not polygon.is_empty:
         return polygon
     points = [p for seg in getattr(item, "segments", None) or [] for p in seg.discretize()]

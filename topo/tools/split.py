@@ -18,6 +18,7 @@ from typing import Callable, List, Optional
 from shapely.geometry import Point
 
 from ..core.geometry.measure import track_points
+from ..core.primitives.polygon_builder import curve_polygon
 from ..model import Cluster, Result
 
 DEFAULT_MIN_CLUSTER_AREA = 50.0  # mm²
@@ -136,7 +137,7 @@ def _local(items: list, i: int) -> list:
 
 def _probe_point(curve) -> Optional[tuple]:
     """Punto rappresentativo di una curva, per darla alla parte più vicina."""
-    poly = getattr(curve, "polygon", None)
+    poly = curve_polygon(curve)
     if poly is not None:
         c = poly.representative_point()
         return (c.x, c.y)
@@ -151,7 +152,9 @@ def _probe_point(curve) -> Optional[tuple]:
 def _outer_polygons(clusters) -> list:
     """(cluster, poligono dell'outer) per ogni cluster che ne ha uno."""
     return [
-        (c, c.outer.polygon)
+        (c, poly)
         for c in clusters
-        if c.outer is not None and c.outer.polygon is not None
+        if c.outer is not None
+        for poly in [curve_polygon(c.outer)]
+        if poly is not None
     ]

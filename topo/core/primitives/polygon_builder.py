@@ -14,6 +14,7 @@ from typing import List, Optional
 from shapely.geometry import Polygon
 
 from . import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg
+from .segments import DEFAULT_TOLERANCE
 
 
 def build_polygon(
@@ -58,3 +59,25 @@ def _make_polygon(pts: list) -> Optional[Polygon]:
     except Exception:
         return None
 
+
+
+# ---------------------------------------------------------------------------
+# Il poligono di una curva chiusa, per le operazioni fra curve
+# ---------------------------------------------------------------------------
+
+def curve_polygon(item) -> Optional[Polygon]:
+    """
+    Il poligono shapely di `item` per le domande fra più curve (contenimento,
+    vicinanza, unioni — D166, D167): quello che la lettura gli ha dato, se
+    c'è; per una curva chiusa senza, costruito una volta dai `segments` e
+    tenuto sull'oggetto. None per una curva aperta. Solo uso interno: fuori
+    da topo si passa da `topo.to_shapely`.
+    """
+    polygon = getattr(item, "polygon", None)
+    if polygon is not None:
+        return polygon
+    from ...model.curve import ClosedCurve
+    if isinstance(item, ClosedCurve) and item.segments:
+        item.polygon = build_polygon(item.segments, DEFAULT_TOLERANCE)
+        return item.polygon
+    return None

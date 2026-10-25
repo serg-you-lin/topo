@@ -33,6 +33,7 @@ from typing import Callable, Dict, List, Optional
 
 from shapely.geometry import Point
 
+from ..core.primitives.polygon_builder import curve_polygon
 from .anchor import _nearest_within
 
 
@@ -78,10 +79,11 @@ def _texts_by_part(result, snap_distance: float) -> Dict[int, List[str]]:
     `snap_distance`, altrimenti a nessuna.
     """
     refs = [
-        (i, c.outer.polygon)
+        (i, poly)
         for i, c in enumerate(result.clusters)
-        if c.outer is not None and c.outer.polygon is not None
-        and not c.outer.polygon.is_empty
+        if c.outer is not None
+        for poly in [curve_polygon(c.outer)]
+        if poly is not None and not poly.is_empty
     ]
     testi: Dict[int, List[str]] = {i: [] for i, _ in refs}
     for ann in result.texts:

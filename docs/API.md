@@ -1129,6 +1129,29 @@ conoscere. Struttura:
 }
 ```
 
+Area, perimetri e bbox sono esatti, misurati sulle primitive (D165, D166),
+non sul poligono discretizzato.
+
+### `to_shapely`
+
+```python
+topo.to_shapely(item, tolerance=None) -> Polygon | MultiPolygon | LineString
+```
+
+La conversione esplicita a shapely, per chi ha bisogno di overlay, buffer o
+WKT: il modello non espone tipi shapely (D166).
+
+| prende | restituisce |
+|---|---|
+| un contorno chiuso (`Contour`, un `ClosedCurve` di `loose`, qualunque oggetto con un anello di `segments`) | `Polygon` |
+| un `OpenCurve` | `LineString` |
+| un `Cluster` | il suo materiale per pari-dispari, come `area` (D89): l'outer coi buchi a depth 1, ogni isola a depth 2 coi suoi buchi a depth 3, …, meno i vuoti dell'overlay. `Polygon`, o `MultiPolygon` se ci sono isole dentro i fori |
+
+`tolerance=None`: il poligono della lettura, lo stesso dei test di
+contenimento di topo; un numero lo ricostruisce dai `segments` entro quella
+tolleranza. **Solleva** `ValueError` se i segmenti non racchiudono un
+poligono valido, `TypeError` se `item` non porta geometria.
+
 ### `save_xml`
 
 ```python
