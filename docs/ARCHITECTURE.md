@@ -99,7 +99,7 @@ topo/
 │   ├── heal.py       heal()             — lettura dall'interno: file → modello
 │   └── island.py     island()           — lettura per isole, dall'esterno
 │
-├── model/        IL DOMINIO topo                     (dataclass pure + shapely)
+├── model/        IL DOMINIO topo                     (dataclass pure, nessun tipo shapely — D166)
 │   ├── document.py   Document
 │   ├── result.py     Result
 │   ├── cluster.py    Cluster — il contenitore, `detected` è l'overlay

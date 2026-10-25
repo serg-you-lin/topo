@@ -1155,6 +1155,11 @@ contenimento di topo; un numero lo ricostruisce dai `segments` entro quella
 tolleranza. **Solleva** `ValueError` se i segmenti non racchiudono un
 poligono valido, `TypeError` se `item` non porta geometria.
 
+shapely è una dipendenza di topo, ma il contratto di topo non lo promette
+(D166, D168): un consumatore che chiama shapely da sé lo dichiara fra le sue
+dipendenze. Le domande su un contorno (area, bbox, baricentro, `contains`,
+una corda che lo divide) non passano da qui: sono fatti del contorno.
+
 ### `save_xml`
 
 ```python
