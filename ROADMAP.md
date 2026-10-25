@@ -131,16 +131,17 @@ roadmap, ma dopo, non prima.
 ## Il core in Rust — una direzione, non ancora una decisione (19 ottobre)
 
 Prima o poi la parte di calcolo di topo (discretizzazione, noding, facce)
-potrebbe passare in Rust per la velocità. Non c'è una data e non si comincia
-finché Federico non conosce abbastanza Rust da giudicare quello che legge.
+potrebbe passare in Rust per la velocità. Non c'è una data: si comincia
+quando Federico lo decide. Il Rust non lo deve leggere lui: lo giudicano i
+test, e da oggi il codice nuovo si scrive già pronto per il passaggio (D167).
 Quello che rende il passaggio sicuro, quando verrà:
 
 - **Python resta l'interfaccia.** Chi usa topo continua a scrivere
   `import topo`; sotto, una funzione alla volta passa a Rust (PyO3 +
   maturin). Le wheel si pubblicano già compilate: chi installa non compila.
 - **Un pezzo alla volta, coi test di oggi come arbitro.** La versione Python
-  di ogni funzione resta finché quella Rust non passa gli stessi golden e
-  gli stessi invarianti. Primo candidato: la discretizzazione di
+  di ogni funzione resta finché quella Rust non passa gli stessi golden,
+  gli stessi invarianti e la stessa fedeltà a due vie. Primo candidato: la discretizzazione di
   `BSplineSeg`/`EllipseSeg` (matematica pura, nessuna dipendenza, il
   punto più caro di `heal()` oggi).
 - **Il modello è già pronto per questo**: le primitive portano solo
