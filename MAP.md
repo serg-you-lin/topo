@@ -5960,3 +5960,28 @@ Why before 1.0, against the D148 freeze: no name changes, but the value of a
 public name does, by about 0.1 %. Changing what a number means after 1.0 is
 worse than adding a name; the work is one function per primitive in
 `topo/core/geometry/`.
+
+### D166 — no shapely type in topo's public surface; `to_shapely` is an explicit conversion outside the model
+
+Decided by Federico, 25 October 2026. `Contour.polygon` (and every public
+field or return value typed with shapely) puts an external library's type in
+topo's contract: if the core moves to Rust (ROADMAP) or shapely breaks
+compatibility, topo's surface breaks for a reason that is not topo's.
+shapely is a *representation* of the geometry, like DXF — and formats live
+outside the model (D129).
+
+Rule. A contour exposes topo's own types only: `segments` (the truth),
+`bbox`, exact `area` and `centroid` (Green's integrals, D165), `contains(p)`
+on the segments, and the ring's points discretized within a tolerance as
+plain tuples. A caller who needs overlay, buffer or WKT converts explicitly
+with `to_shapely(contour)`, which builds the polygon from those points and
+keeps working whatever the core is written in. Inside topo shapely stays
+what it is good at — spatial index, unions, polygonize — as an
+implementation detail.
+
+Measured on the consumers: about 120 `.polygon` lines in snapbend, snapdraw,
+snapfence and smoother; most are `bounds`, `exterior`, `centroid`,
+`contains`, `area`, with a direct replacement; nine are real shapely
+operations (`buffer`, `symmetric_difference`, `wkt`) and go through
+`to_shapely`. They adapt (D140). It breaks a public name, so it enters the
+gate under Surface, done first together with G12.

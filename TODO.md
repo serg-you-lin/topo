@@ -41,6 +41,16 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       1.x, D149 (riapre D143 su questo punto): è additivo; resta bloccante
       la prova G3.
 
+- [ ] **G13** Nessun tipo shapely nella superficie pubblica (D166, deciso con
+      Federico il 25 ottobre): un contorno espone solo tipi di topo —
+      `segments`, `bbox`, `area` e `centroid` esatti (con G12), `contains(p)`,
+      i punti del giro discretizzato entro una tolleranza. Una conversione
+      esplicita `to_shapely(contour)` fuori dal modello per overlay e buffer.
+      Shapely resta dentro topo come dettaglio d'implementazione. I consumer
+      si adattano loro (D140): ~120 righe `.polygon` in snapbend, snapdraw,
+      snapfence, smoother — una riga per ognuno in `## Richieste a topo` non
+      serve, è topo che rompe: va scritto nel loro TODO dalle loro sessioni.
+      Rompe un nome: si fa per prima, insieme a G12.
 - [ ] **G12** Area esatta (D165, entra nel cancello per decisione di
       Federico, 25 ottobre): `area` di un contorno è l'integrale di Green
       sui suoi `segments` (linea, arco, ellisse in forma chiusa, spline per
