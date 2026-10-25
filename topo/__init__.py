@@ -70,6 +70,9 @@ from .io.exporter         import (
 # importabile come topo.to_nester_input, ma non è in __all__ né documentato.
 # Per serializzare la geometria a un renderer/tool usa topo.to_view_model().
 from .io.exporter         import to_nester_input
+# Conversione esplicita a shapely per overlay, buffer, WKT: il modello non
+# espone tipi shapely (MAP.md D166).
+from .io.shapes           import to_shapely
 # Il viewer (to_view_model, to_svg, save_svg): importabile come topo.<nome>,
 # fuori da __all__ e dalla 1.0 stabile finché non è rifatto (MAP.md D133).
 from .io.view_model       import to_view_model
@@ -150,6 +153,7 @@ __all__ = [
     "to_json",
     "save_json",
     "save_xml",
+    "to_shapely",
     # Metadati (gli stessi come XDATA DXF: topo_dxf.write_metadata_to_dxf)
     "build_metadata",
     "set_schema",

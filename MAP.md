@@ -6070,6 +6070,38 @@ files were reordered, not regenerated. A test fixture of `test_loops` built
 a degree-1 spline with no knots, which the polygon tolerated and the
 integral refuses: the fixture now has its clamped knots.
 
+**Implemented, step 3 (G13, 25 October 2026): `topo.to_shapely`, and the
+inside reads no `.polygon`.**
+- `topo.to_shapely(item, tolerance=None)` (`topo/io/shapes.py`, a
+  conversion like a format, D129): closed curve → `Polygon`, `OpenCurve` →
+  `LineString`, `Cluster` → its material. `tolerance=None` is the polygon
+  the reading used, so a consumer sees the same vertices topo's own
+  containment tests see; a number rebuilds it from the segments.
+- A cluster converts by the **even-odd rule** of `area` (D89): every
+  contour at even depth is a shell, its odd-depth children are its holes,
+  overlay voids are subtracted — `MultiPolygon` when an island sits in a
+  hole. Why: it is the same parity `area` already uses, so the shapely area
+  and `cluster.area` agree within the discretization, and no contour is
+  lost: a depth-2 island is a piece of its own. The old
+  `polygon_with_holes` put every inner as a hole, so an island inside a
+  hole made a polygon shapely itself calls invalid. Whether an island is
+  tied to the rest (tabs, bridges) is a consumer's choice, not geometry.
+  Federico was unsure; the argument above was given and he let step 3 go
+  ahead — to confirm before 1.0.
+- Inside topo every read of a curve's polygon goes through one function,
+  `curve_polygon` (`core/primitives/polygon_builder.py`): the polygon the
+  reading gave, else built once from the segments and kept on the object,
+  `None` for an open curve. tools (anchor, inject, split, rotate), io
+  (text, view_model, exporter, inspect), the validator and the hierarchy
+  use it; step 4 only has to change where the polygon lives. Suite time
+  unchanged (182 s): nothing is built twice.
+- `to_json`/`build_metadata`: `outer_perimeter`/`inner_perimeter` are exact
+  (`ring_perimeter`), no longer the polygon's (a Ø20 hole: 62.832 instead
+  of the chords' shorter length). No golden reads them.
+- Still on polygons, by plan: `CoveredRectangle`, `OuterFace.polygon` (step
+  5), the `polygon=` handed to the constructors and the D90 overlay
+  contract (step 4).
+
 ### D167 — topo's code is written ready for a Rust port; the tests judge the port, not a reading of the Rust
 
 Decided by Federico, 25 October 2026. He will not learn to read Rust well,

@@ -23,6 +23,7 @@ from collections import Counter
 from typing import Optional, Sequence
 
 from topo.core.geometry.measure import track_points, track_shape_type
+from topo.core.primitives.polygon_builder import curve_polygon
 
 __all__ = [
     "inspect_document",
@@ -166,7 +167,7 @@ def inspect_result(result, coords: bool = False) -> None:
     if loose:
         print(f"\n{_SUB}\nloose: {len(loose)}  (curve che non sono contorno di nessun cluster)")
         kinds = Counter(
-            "closed" if getattr(t, "polygon", None) is not None
+            "closed" if curve_polygon(t) is not None
             else track_shape_type(track_points(getattr(t, "segments", []) or []))
             for t in loose
         )
@@ -202,4 +203,4 @@ def _sub_part(i: int, cluster, coords: bool) -> None:
         print(f"  custom : {cluster.custom}")
 
     if coords:
-        print(f"  outer coords: {[tuple(round(c, 1) for c in pt) for pt in o.polygon.exterior.coords]}")
+        print(f"  outer coords: {[tuple(round(c, 1) for c in pt) for pt in o.points()]}")

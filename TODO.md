@@ -53,8 +53,8 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       Rompe un nome: si fa per prima, insieme a G12.
       Passi (piano del 25 ottobre, MAP D166 "Implemented"): 1 fatti del giro
       sulle primitive ✅ · 2 verso e ordine dall'integrale ✅ · 3
-      `to_shapely` e interno senza `.polygon` (prima: tempi della suite;
-      decidere `to_shapely(cluster)` pari-dispari, MultiPolygon) · 4 via
+      `to_shapely` e interno senza `.polygon` ✅ (`to_shapely(cluster)`
+      pari-dispari: da confermare con Federico) · 4 via
       `.polygon` dal modello (prima: ragionare sui nomi) · 5 `topo.geometry`/
       `topo.steps` + test guardiano (richiedere a Federico le rinomine) · 6
       documenti, D168, 0.23.0.

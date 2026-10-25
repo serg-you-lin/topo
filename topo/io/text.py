@@ -30,6 +30,7 @@ from shapely.geometry import Point
 from shapely.prepared import prep
 
 from ..core.primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, BSplineSeg
+from ..core.primitives.polygon_builder import curve_polygon
 from ..core.geometry.shape import contour_shape
 from ..model import Result
 
@@ -202,7 +203,7 @@ def to_text(result: Result, source_name: str = "", decimals: int = 3,
     # una linea aperta dentro un cluster fa parte della sua lettura (un arco di
     # 3/4 attorno a un cerchio, una linea che lo attraversa); fuori da tutti i
     # cluster si conta soltanto
-    outers = [prep(c.outer.polygon) for c in result.clusters if getattr(c.outer, "polygon", None) is not None]
+    outers = [prep(poly) for c in result.clusters for poly in [curve_polygon(c.outer)] if poly is not None]
     unknown, by_role, outside = [], Counter(), 0
     for feature in result.loose:
         role = getattr(feature, "role", None) or "unknown"

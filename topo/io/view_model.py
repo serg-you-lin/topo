@@ -25,6 +25,7 @@ from typing import Mapping, Optional
 from ..model import Result, RoleStyle, role_style
 from ..model.role import ContourRole, feature_role, role_str as _role_str
 from ..core.geometry.measure import track_points
+from ..core.primitives.polygon_builder import curve_polygon
 
 def _color(role, role_styles: Mapping[str, RoleStyle]) -> str:
     """Hex CSS di un ruolo: la palette di topo con sopra la mappa del
@@ -52,7 +53,7 @@ def _track(segments, tolerance: float) -> list:
 
 def _contour_entry(contour, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict:
     role = getattr(contour, "role", ContourRole.UNKNOWN)
-    pts = _poly_points(getattr(contour, "polygon", None)) or _track(
+    pts = _poly_points(curve_polygon(contour)) or _track(
         getattr(contour, "segments", []), tolerance
     )
     return {"role": _role_str(role), "color": _color(role, role_styles), "points": pts, "closed": True}
@@ -79,7 +80,7 @@ def _feature_entries(item, tolerance: float, role_styles: Mapping[str, RoleStyle
     entries = []
     for contour in contours:
         c_role = feature_role(contour, role) or ContourRole.UNKNOWN
-        polygon = getattr(contour, "polygon", None)
+        polygon = curve_polygon(contour)
         pts = _poly_points(polygon) if polygon is not None else _track(
             getattr(contour, "segments", []) or [], tolerance
         )
@@ -100,7 +101,7 @@ def _features(cluster, tolerance: float, role_styles: Mapping[str, RoleStyle]) -
 
 def _loose_entry(curve, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict:
     role = getattr(curve, "role", ContourRole.UNKNOWN)
-    poly = getattr(curve, "polygon", None)
+    poly = curve_polygon(curve)
     if poly is not None:
         pts, closed = _poly_points(poly), True
     else:
@@ -119,7 +120,7 @@ def _text_entry(text) -> dict:
 
 
 def _bbox_of(clusters) -> Optional[list]:
-    boxes = [p.outer.bbox for p in clusters if p.outer is not None and p.outer.polygon is not None]
+    boxes = [p.outer.bbox for p in clusters if p.outer is not None and p.outer.segments]
     if not boxes:
         return None
     return [

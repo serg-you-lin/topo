@@ -20,6 +20,7 @@ from ..model import Result
 from ..model.document import Document
 from ..core.topology.graph import build_node_graph
 from ..core.primitives.segments import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg
+from ..core.primitives.polygon_builder import curve_polygon
 
 
 # ---------------------------------------------------------------------------
@@ -138,7 +139,7 @@ def validate_result(result: Result) -> Result:
     for i, cluster in enumerate(result.clusters):
         label = cluster.label or f"Part {i}"
 
-        poly = cluster.outer.polygon
+        poly = curve_polygon(cluster.outer)
         if poly is None:
             result.errors.append(f"{label}: poligono outer è None.")
             result.is_valid = False
@@ -159,7 +160,7 @@ def validate_result(result: Result) -> Result:
             result.is_valid = False
 
         for j, inner in enumerate(cluster.inners):
-            if not poly.contains(inner.polygon):
+            if not poly.contains(curve_polygon(inner)):
                 result.warnings.append(
                     f"{label}: inner {j} non completamente contenuto nell'outer."
                 )

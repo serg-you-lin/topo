@@ -41,6 +41,7 @@ from shapely.affinity import rotate as _shapely_rotate
 
 from ..core.geometry.measure import longest_segment, chord_angle_deg, round_point
 from ..core.primitives.segments import segment_endpoints
+from ..core.primitives.polygon_builder import curve_polygon
 from ..model.cluster import Cluster
 from ..model.contour import Contour
 from ..model.document import Document
@@ -108,8 +109,8 @@ def _rotate_contour(contour: ClosedCurve, angle_rad: float, origin: Point) -> Cl
     return replace(
         contour,
         segments=[s.rotated(angle_rad, origin) for s in contour.segments],
-        polygon=_shapely_rotate(contour.polygon, angle_rad, origin=origin, use_radians=True)
-                if contour.polygon is not None else None,
+        polygon=_shapely_rotate(curve_polygon(contour), angle_rad, origin=origin, use_radians=True)
+                if curve_polygon(contour) is not None else None,
     )
 
 
@@ -218,11 +219,7 @@ def rotate_document(
 
 def _result_bbox_center(result: Result) -> Point:
     """Centro del bbox unito degli outer di tutti i cluster — vedi `rotate_to_longest`."""
-    boxes = [
-        c.outer.polygon.bounds
-        for c in result.clusters
-        if c.outer.polygon is not None and not c.outer.polygon.is_empty
-    ]
+    boxes = [c.outer.bbox for c in result.clusters if c.outer.segments]
     if not boxes:
         return (0.0, 0.0)
     minx = min(b[0] for b in boxes)

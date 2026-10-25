@@ -7,6 +7,7 @@ from ...model.curve import ClosedCurve
 from ...model.cluster import Cluster
 from ...model.contour import Contour
 from ...model.role import ContourRole, is_structural_role
+from ...core.primitives.polygon_builder import curve_polygon
 from ...core.geometry.integrals import ring_area
 from ...core.geometry.measure import circular_geometry, track_points
 from ...core.geometry.regions import enclosing
@@ -70,7 +71,7 @@ def loop_to_closed_curve(
 
 def _place(proxy: ClosedCurve, nodes: list) -> bool:
     for node in nodes:
-        if node[0].polygon.contains(proxy.polygon):
+        if curve_polygon(node[0]).contains(curve_polygon(proxy)):
             if not _place(proxy, node[1]):
                 node[1].append([proxy, []])
             return True
@@ -231,10 +232,11 @@ def assign_cluster_refs(curves: list, clusters: list, tolerance: float) -> None:
     e buchi compresi; `None` se nessuno (`geometry.regions.enclosing`).
     """
     tracks = [
-        list(c.polygon.exterior.coords) if getattr(c, "polygon", None) is not None
+        list(poly.exterior.coords) if poly is not None
         else track_points(getattr(c, "segments", []) or [])
         for c in curves
+        for poly in [curve_polygon(c)]
     ]
-    outers = [c.outer.polygon if c.outer is not None else None for c in clusters]
+    outers = [curve_polygon(c.outer) if c.outer is not None else None for c in clusters]
     for curve, ref in zip(curves, enclosing(tracks, outers, tolerance)):
         curve.cluster_ref = ref
