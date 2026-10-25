@@ -24,8 +24,9 @@ from typing import Callable, List, Sequence, Tuple
 import numpy as np
 
 from ..primitives.segments import (
-    ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, LineSeg, _bspline_find_span, segment_endpoints,
+    ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, LineSeg, _bspline_find_span,
 )
+from .rings import ring_jumps
 
 Point = Tuple[float, float]
 Vec = Tuple[float, ...]
@@ -79,13 +80,10 @@ def ring_moments(segments: Sequence) -> Moments:
     la sua corda: senza, l'area dipenderebbe da dove sta il pezzo.
     """
     total = Moments()
-    for segment, following in zip(segments, list(segments[1:]) + list(segments[:1])):
+    for segment in segments:
         total = total + segment_moments(segment)
-        if isinstance(segment, CircleSeg) or isinstance(following, CircleSeg):
-            continue
-        end, start = segment_endpoints(segment)[1], segment_endpoints(following)[0]
-        if end != start:
-            total = total + _line_moments(end, start)
+    for end, start in ring_jumps(segments):
+        total = total + _line_moments(end, start)
     return total
 
 

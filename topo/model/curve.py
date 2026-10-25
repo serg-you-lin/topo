@@ -30,8 +30,9 @@ from typing import List, Optional, Tuple
 
 from shapely.geometry import Polygon
 
-from topo.core.geometry.integrals import ring_area
-from topo.core.primitives.segments import ArcSeg, LineSeg, BSplineSeg
+from topo.core.geometry.integrals import ring_area, ring_centroid
+from topo.core.geometry.rings import ON_BOUNDARY, ring_bbox, ring_contains, ring_points
+from topo.core.primitives.segments import ArcSeg, LineSeg, BSplineSeg, DEFAULT_TOLERANCE
 from topo.model.style import EdgeStyle
 
 
@@ -72,7 +73,27 @@ class ClosedCurve(Curve):
 
     @property
     def bbox(self) -> Tuple[float, float, float, float]:
+        """Exact (xmin, ymin, xmax, ymax) of the `segments`: arcs and ellipses
+        reach their true extremes, not their chords (MAP.md D166)."""
+        if self.segments:
+            return ring_bbox(self.segments)
         return self.polygon.bounds if self.polygon is not None else (0.0, 0.0, 0.0, 0.0)
+
+    @property
+    def centroid(self) -> Tuple[float, float]:
+        """Exact centroid of the enclosed area, integrated on the `segments`
+        (Green, MAP.md D165). `ValueError` if the ring encloses no area."""
+        return ring_centroid(self.segments)
+
+    def contains(self, point: Tuple[float, float], tolerance: float = ON_BOUNDARY) -> bool:
+        """True if `point` lies in the closed region: inside, or on the
+        boundary within `tolerance`. Computed on the `segments`."""
+        return ring_contains(self.segments, point, tolerance)
+
+    def points(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Tuple[float, float]]:
+        """The ring discretized within `tolerance`, as plain (x, y) tuples in
+        order; the first point is not repeated at the end."""
+        return ring_points(self.segments, tolerance)
 
 
 @dataclass

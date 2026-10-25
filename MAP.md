@@ -6015,6 +6015,33 @@ operations (`buffer`, `symmetric_difference`, `wkt`) and go through
 `to_shapely`. They adapt (D140). It breaks a public name, so it enters the
 gate under Surface, done first together with G12.
 
+**Implemented, step 1 (G13, 25 October 2026): the facts of a ring, on the
+primitives.** `topo/core/geometry/rings.py`: `ring_bbox`, `ring_perimeter`,
+`ring_points`, `ring_contains`, and `ring_jumps` (the chords of the gaps
+closed within `tol`, now shared with `ring_moments`). `ClosedCurve` (so
+`Contour`) gains `centroid`, `contains(point, tolerance=1e-6)` and
+`points(tolerance=0.01)`; `bbox` is computed on the segments.
+- `bbox` is exact: `segment_reach` on the two axes, so an arc or an ellipse
+  reaches its true extreme instead of the nearest chord vertex. On the 4362
+  heal contours of the fixtures the change is at most 0.0038 mm (within
+  `tol`); no golden moved.
+- `contains` is the **closed** region (decided by Federico): a point on the
+  boundary within `tolerance` is inside. A measured point lying on an edge
+  is on the part; the open-region reading would make the answer depend on
+  the last float of a coordinate. Default tolerance 1e-6, the node grid
+  (D113).
+- How: winding number of the primitives seen from the point. A line sweeps
+  its chord angle; an arc, circle or ellipse sweeps its chord angle plus a
+  full turn in its own direction exactly when the point lies in the conic
+  segment between arc and chord — tested in the conic's (cos, sin)
+  coordinates, where it is the unit disc on the side of the arc's midpoint.
+  A point on that chord is in the closed segment (the chord angle there is
+  ±π and its sign is rounding noise). A spline sweeps the angle of a
+  polyline within δ, refined only near the point: a polyline farther than
+  2δ from the point cannot differ from the curve by a turn around it.
+- Checked against the fine polygon (tol 1e-4) on every fixture contour:
+  143 363 points away from the boundary, 0 disagreements.
+
 ### D167 — topo's code is written ready for a Rust port; the tests judge the port, not a reading of the Rust
 
 Decided by Federico, 25 October 2026. He will not learn to read Rust well,
