@@ -319,6 +319,13 @@ class TestWeldDegenerateLinesegs(unittest.TestCase):
         self.assertIs(out[0], edges[0])
         self.assertIs(out[1], edges[1])
 
+    def test_punta_libera_non_e_saldata(self):
+        # D164: un tratto corto con un capo che non tocca nessuno è una punta,
+        # non un nodo doppio: saldarlo sposterebbe il capo libero di 0.03 e il
+        # gap di 0.004 verso l'arco accanto non si chiuderebbe più
+        edges = [_line((10.0, 0.0), (20.0, 0.0)), _line((10.03, 0.0), (10.0, 0.0))]
+        self.assertEqual(weld_degenerate_linesegs(edges), edges)
+
     def test_lista_vuota(self):
         self.assertEqual(weld_degenerate_linesegs([]), [])
 

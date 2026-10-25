@@ -40,6 +40,7 @@ Funzioni pubbliche:
 
 from __future__ import annotations
 import math
+from collections import Counter
 from dataclasses import dataclass, replace
 from typing import Any, Callable, Hashable, Iterable, List, Tuple
 
@@ -417,6 +418,8 @@ def weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]:
     Un gruppo di nodi saldati non supera `_DEGENERATE_LENGTH_EPS` di
     diagonale: una curva disegnata a tratti corti non collassa in un punto
     (D152). I tratti si saldano in ordine canonico, non d'ingresso (D131).
+    Un tratto con un capo libero (nessun altro edge lo tocca) resta: è una
+    punta, non un nodo doppio (D164).
     """
     edges = list(edges)
     parent: dict = {}
@@ -447,9 +450,17 @@ def weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]:
         extent[ra] = merged
         return True
 
+    # una punta libera non ha due nodi da unire: saldarla cancellerebbe il
+    # tratto e sposterebbe il capo libero, che poi nessun gap ritrova (D164)
+    degree: Counter = Counter()
+    for edge in edges:
+        degree[edge.start] += 1
+        degree[edge.end] += 1
     candidates = []
     for edge in edges:
         seg = edge.segment
+        if degree[edge.start] < 2 or degree[edge.end] < 2:
+            continue
         if isinstance(seg, LineSeg) and edge.role == ContourRole.UNKNOWN:
             length = math.hypot(seg.end[0] - seg.start[0], seg.end[1] - seg.start[1])
             if length < _DEGENERATE_LENGTH_EPS:

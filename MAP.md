@@ -5912,3 +5912,27 @@ one piece output twice:
 Not done: the polygonize contours of `heal()` stay chains of `LineSeg`;
 reading them along the edges like D106 would bring arcs back, but it is a
 new behaviour, not a G6b fix.
+
+### D164 — a short LineSeg with a free end is a tip, not a double node: it is not welded
+
+Found by Federico on 25 October 2026 looking at the G6b review files:
+`golden_islands/regr_01` read with `island()` had lost its top view since
+the D152 draft (6fffe48, 22 October) — the plate outline did not close and
+its five Ø19 holes came out as outers. The D152 review (23 October) did not
+catch it.
+
+Cause. The view is drawn as ~3500 LineSegs under 0.05 mm. Where an arc meets
+a branch of two tessellated chains, a 0.03 mm LineSeg bridged them: one end
+on the branch node, the other free, 0.004 mm from the arc's end.
+`weld_degenerate_linesegs` (D56) deleted it and moved its free end onto the
+branch node; the arc's end was then 0.026 mm from a node of degree 2, and gap
+closing, which pairs free ends only, had nothing to pair it with. Before
+D152 the unbounded union-find hid this by collapsing whole chains.
+
+Rule. A candidate is welded only if both its nodes are touched by another
+edge. Welding merges two nodes; a tip has only one, and welding it only
+deletes geometry and moves a free end (against D143). The tip stays as a
+real edge, and its free end meets the next free end through the normal gap
+closing. Of the 31 island drawings only regr_01 changes (top view back as
+one island, 630–1810 × 967–1032, holes inside it in `loose` per D161); the
+suite and every heal golden are unchanged.
