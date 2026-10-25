@@ -146,6 +146,12 @@ Decisi con Federico il 25 ottobre, da fare in 1.x:
   domanda sotto `heal()` e `island()` (che già raggruppano e rendono piana
   la rete, solo internamente), per chi usa la geometria senza leggerla come
   pezzo o come vista.
+- **da ragionare: griglia per le spline** (come D145/D153). Oggi
+  `BSplineSeg.discretize` è adattiva sul proprio intervallo: un pezzo di
+  spline tagliato (D163) non dà gli stessi vertici del tratto dell'intera.
+  Una griglia nel parametro dell'intera lo renderebbe un pezzo del suo
+  poligono. Serve solo se si vede un difetto (finti buchi/sovrapposizioni
+  fra pezzi della stessa spline); nessun rosso oggi (D167).
 
 ## FATTO (23 ottobre) — shape dei pezzi chiusi in loose (D162)
 

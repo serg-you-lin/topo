@@ -5985,3 +5985,36 @@ snapfence and smoother; most are `bounds`, `exterior`, `centroid`,
 operations (`buffer`, `symmetric_difference`, `wkt`) and go through
 `to_shapely`. They adapt (D140). It breaks a public name, so it enters the
 gate under Surface, done first together with G12.
+
+### D167 — topo's code is written ready for a Rust port; the tests judge the port, not a reading of the Rust
+
+Decided by Federico, 25 October 2026. He will not learn to read Rust well,
+so "start when Federico can judge what he reads" (ROADMAP, 19 October) would
+block the port forever. Two rules replace it.
+
+**The judge is the suite.** A Rust function replaces its Python twin only
+when, on the same drawings, it passes the same goldens, invariants and
+two-way fidelity tests (D152). Federico judges the output DXF by eye, as
+today; nobody has to read the Rust to accept it. The Python twin stays until
+then.
+
+**New geometry code is written port-ready** — the shape `rim` was already
+written in (D118):
+- pure functions over plain data (primitives, tuples of floats);
+- typed results, no mixed return types; exceptions, not `None`/`False`;
+- explicit dispatch per primitive type (an `enum` + `match` there);
+- no shapely or numpy in a signature (D166); inside, only for operations
+  with a direct Rust counterpart.
+
+**The primitive is the truth; discretization is a view.** This is how the
+two choices that look opposed — exact math per primitive (D165) and one
+discretization grid per curve (D145, D153) — fit together. A question about
+one curve (length, area, centroid, bbox, distance, a point on it) is answered
+on the primitive, exactly. A question between many curves (who touches whom,
+which faces close) is answered today on polygons; the grid exists so that
+the same curve always gives the same vertices and the polygons do not
+invent gaps or overlaps. Neither replaces the other. Where an exact
+intersection exists (line, arc, circle among themselves) it may replace the
+polygon later; between splines the numbers stay numeric anyway. The node
+grid (D113, 1 µm) is what makes the topology integer-ready (ROADMAP, the
+interface "same node? / where do they cross?").
