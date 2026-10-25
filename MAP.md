@@ -5987,6 +5987,9 @@ from earlier decisions and are not this change. Orientation and the order
 of contours (`polygon.area` in hierarchy, island, outer face) still use the
 polygon: they leave with G13.
 
+`main` → **0.22.3** (D155 micro bump: G6b closed by D163/D164, G12 by D165;
+no public name changes, the value of `area` does).
+
 ### D166 — no shapely type in topo's public surface; `to_shapely` is an explicit conversion outside the model
 
 Decided by Federico, 25 October 2026. `Contour.polygon` (and every public
