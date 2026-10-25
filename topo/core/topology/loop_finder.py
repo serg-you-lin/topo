@@ -14,6 +14,7 @@ from typing import Optional, Tuple
 
 from shapely.geometry import Polygon
 
+from ..geometry.integrals import ring_moments
 from ..primitives.polygon_builder import build_polygon
 from ..primitives.segments import DEFAULT_TOLERANCE
 from .graph import (
@@ -114,12 +115,9 @@ class LoopFinder:
 
                 pts = self._loop_to_points(chain)
                 if len(pts) >= 3:
-                    try:
-                        from shapely.geometry import LinearRing
-                        if not LinearRing(pts).is_ccw:
-                            chain = [(e, not rev) for e, rev in reversed(chain)]
-                    except Exception:
-                        pass
+                    # verso antiorario dall'area con segno sulle primitive (D166)
+                    if ring_moments(segments_from_loop(chain)).area < 0:
+                        chain = [(e, not rev) for e, rev in reversed(chain)]
                     loops.append(chain)
 
         return self._deduplicate_loops(loops)

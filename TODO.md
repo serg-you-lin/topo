@@ -51,6 +51,13 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       snapfence, smoother — una riga per ognuno in `## Richieste a topo` non
       serve, è topo che rompe: va scritto nel loro TODO dalle loro sessioni.
       Rompe un nome: si fa per prima, insieme a G12.
+      Passi (piano del 25 ottobre, MAP D166 "Implemented"): 1 fatti del giro
+      sulle primitive ✅ · 2 verso e ordine dall'integrale ✅ · 3
+      `to_shapely` e interno senza `.polygon` (prima: tempi della suite;
+      decidere `to_shapely(cluster)` pari-dispari, MultiPolygon) · 4 via
+      `.polygon` dal modello (prima: ragionare sui nomi) · 5 `topo.geometry`/
+      `topo.steps` + test guardiano (richiedere a Federico le rinomine) · 6
+      documenti, D168, 0.23.0.
 - [x] **G12** Area esatta (D165, entra nel cancello per decisione di
       Federico, 25 ottobre): `area` di un contorno è l'integrale di Green
       sui suoi `segments` (linea, arco, ellisse in forma chiusa, spline per

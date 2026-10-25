@@ -47,7 +47,7 @@ def ring_bbox(segments: Sequence) -> Bounds:
         reach = Reach(segment)
         xs.extend(reach((1.0, 0.0)))
         ys.extend(reach((0.0, 1.0)))
-    return min(xs), min(ys), max(xs), max(ys)
+    return float(min(xs)), float(min(ys)), float(max(xs)), float(max(ys))
 
 
 def ring_perimeter(segments: Sequence) -> float:

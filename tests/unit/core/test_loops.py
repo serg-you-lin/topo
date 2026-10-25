@@ -51,10 +51,11 @@ def _arc_edge(start, end, arc_pts):
         role=ContourRole.UNKNOWN,
         start=start,
         end=end,
+        # grado 1 clamped: un nodo per vertice, i due estremi doppi
         segment=BSplineSeg(
             degree=1,
             control_points=arc_pts,
-            knots=[],
+            knots=[0.0] + [float(k) for k in range(len(arc_pts))] + [float(len(arc_pts) - 1)],
         ),
     )
 

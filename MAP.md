@@ -6042,6 +6042,34 @@ closed within `tol`, now shared with `ring_moments`). `ClosedCurve` (so
 - Checked against the fine polygon (tol 1e-4) on every fixture contour:
   143 363 points away from the boundary, 0 disagreements.
 
+**Implemented, step 2 (G13, 25 October 2026): direction and order from the
+integral.** Every place where the polygon's area decided the direction or
+the order of contours now reads the exact area on the segments: the
+direction of a loop (`LoopFinder`, was `LinearRing.is_ccw`), the minimum
+area of a contour (`loop_to_closed_curve`), the order of the containment
+tree, the largest loop of an outer face and the face chosen against the
+union (`outer_face`), the nesting of islands (`read_islands`), the
+`min_area` filter of `split`, and the signed area of `regions`/`strips`
+(concavity, inward normal). Left on polygons, by D167, because they compare
+polygons with polygons or have no primitive: the union of faces and its
+0.99 ratio, `orient` of the union's ring in `rim`, the largest piece of an
+invalid ring in `polygon_builder`, every `contains`/`buffer` between curves,
+and the validator's checks of the polygon itself (they move with step 3).
+
+The order of clusters had a hidden defect: between congruent copies (equal
+area) it was the rounding noise of the polygon area, so it changed with
+where a part sits and with the discretization. **Rule** (`sort_clusters`,
+one function for `heal` and `island`): exact outer area rounded to 1e-6 mm²,
+largest first; at equal area the bbox corner `(xmin, ymin)` — between two
+congruent copies the position is the only fact that tells them apart.
+Goldens: two drawings with identical parts (`sviluppo_multiparte`, six
+copies; `example_4_polylines`, four) had their equal parts recorded in the
+noise order. Proved a permutation before touching them (each new part
+matches one golden within 1 mm², same area and inner count); the golden
+files were reordered, not regenerated. A test fixture of `test_loops` built
+a degree-1 spline with no knots, which the polygon tolerated and the
+integral refuses: the fixture now has its clamped knots.
+
 ### D167 — topo's code is written ready for a Rust port; the tests judge the port, not a reading of the Rust
 
 Decided by Federico, 25 October 2026. He will not learn to read Rust well,

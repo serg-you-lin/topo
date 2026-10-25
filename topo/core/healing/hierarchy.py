@@ -7,6 +7,7 @@ from ...model.curve import ClosedCurve
 from ...model.cluster import Cluster
 from ...model.contour import Contour
 from ...model.role import ContourRole, is_structural_role
+from ...core.geometry.integrals import ring_area
 from ...core.geometry.measure import circular_geometry, track_points
 from ...core.geometry.regions import enclosing
 
@@ -41,7 +42,7 @@ def loop_to_closed_curve(
             poly = poly.buffer(0)
         if poly.is_empty:
             return None
-        if poly.area <= MIN_CONTOUR_AREA:
+        if (ring_area(segments) if segments else poly.area) <= MIN_CONTOUR_AREA:
             return None
 
         # Guard sui micro-cerchi: un loop di una singola primitiva circolare
@@ -76,8 +77,17 @@ def _place(proxy: ClosedCurve, nodes: list) -> bool:
     return False
 
 
+def sort_clusters(clusters: list) -> list:
+    """
+    I cluster dal più grande: area esatta dell'outer (a 1e-6 mm², sotto c'è
+    solo rumore di arrotondamento), poi a pari area l'angolo (xmin, ymin)
+    del bbox — fra due copie congruenti l'unico fatto che le distingue.
+    """
+    return sorted(clusters, key=lambda c: (-round(c.outer.area, 6), c.bbox[0], c.bbox[1]))
+
+
 def _build_tree(proxies: list) -> list:
-    proxies_sorted = sorted(proxies, key=lambda p: round(p.polygon.area, 6), reverse=True)
+    proxies_sorted = sorted(proxies, key=lambda p: round(p.area, 6), reverse=True)
     roots = []
     for proxy in proxies_sorted:
         if not _place(proxy, roots):
@@ -167,8 +177,7 @@ class HierarchyBuilder:
         clusters = self._build_parts(tree)
         loose = self._collect_loose(proxies)
 
-        clusters.sort(key=lambda p: p.outer.polygon.area, reverse=True)
-        return clusters, loose
+        return sort_clusters(clusters), loose
 
     def _build_parts(self, tree: list) -> list[Cluster]:
         clusters = []
