@@ -30,6 +30,7 @@ from ..primitives.segments import (
     ArcSeg, CircleSeg, LineSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle,
 )
 from ..primitives.trim import sub_segment
+from .integrals import ring_moments
 from .intersections import CURVE_TOLERANCE, intersections
 
 Point = Tuple[float, float]
@@ -185,8 +186,8 @@ def _full_arc(seg):
 
 
 def _signed_area(ring: Sequence) -> float:
-    pts = [q for seg in ring for q in _polyline(_full_arc(seg))[:-1]]
-    return sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:] + pts[:1])) / 2
+    """Area con segno sulle primitive (Green, D165): positiva in senso antiorario."""
+    return ring_moments(ring).area
 
 
 def _reversed(ring: Sequence) -> list:

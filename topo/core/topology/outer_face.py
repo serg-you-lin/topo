@@ -29,6 +29,7 @@ from shapely.geometry import Polygon
 from shapely.ops import polygonize, unary_union
 
 from .edge import Edge
+from ..geometry.integrals import ring_area
 from .noding import edge_geometry
 from .graph import Graph, build_node_graph
 from .loop_finder import LoopFinder, loop_geometry
@@ -71,16 +72,16 @@ def outer_face(edges: List[Edge], epsilon: float = 0.0) -> Optional[OuterFace]:
         spurs += [e for e in edges if count.get(id(e), 0) >= 2]
         boundary = [e for e in edges if count.get(id(e)) == 1]
         found = _largest_loop(boundary, epsilon) if boundary else None
-        if found is not None and (best is None or found[3].area > best[3].area):
+        if found is not None and (best is None or _area(found) > _area(best)):
             best = found
     alone = _largest_loop(graph.degenerate_loops, epsilon)
-    if alone is not None and (best is None or alone[3].area > best[3].area):
+    if alone is not None and (best is None or _area(alone) > _area(best)):
         best = alone
     # D100: la faccia esterna è il bordo dell'unione delle facce chiuse di
     # tutta la rete, anche se il grafo la vede in più componenti scollegati;
     # se il giro ne racchiude meno, vale l'unione
     united = _faces_union_loop(edges, epsilon)
-    if united is not None and (best is None or united[3].area > best[3].area * (1 + 1e-6)):
+    if united is not None and (best is None or _area(united) > _area(best) * (1 + 1e-6)):
         best = united
     if best is None:
         return None
@@ -220,6 +221,11 @@ def _largest_loop(edges: List[Edge], epsilon: float):
     best = None
     for loop in LoopFinder().find(graph):
         geometry = loop_geometry(loop)
-        if geometry is not None and (best is None or geometry[2].area > best[3].area):
+        if geometry is not None and (best is None or ring_area(geometry[0]) > _area(best)):
             best = (loop, *geometry)
     return best
+
+
+def _area(found) -> float:
+    """Area esatta del giro di un candidato (loop, segments, ...), sulle primitive (D166)."""
+    return ring_area(found[1])

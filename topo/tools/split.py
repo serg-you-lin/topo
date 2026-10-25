@@ -63,7 +63,7 @@ def split(
     for i, cluster in enumerate(result.clusters):
         if not cluster_passes_min_area(cluster, min_area):
             result.warnings.append(
-                f"Part {i} scartato: area {cluster.outer.polygon.area:.2f} mm² "
+                f"Part {i} scartato: area {cluster.outer.area:.2f} mm² "
                 f"sotto soglia {min_area} mm²"
             )
             continue
@@ -82,7 +82,7 @@ def split(
 
 def cluster_passes_min_area(cluster: Cluster, min_area: float) -> bool:
     """True se la parte supera la soglia di area minima (min_area <= 0 = nessun filtro)."""
-    return not (min_area > 0 and cluster.outer.polygon.area < min_area)
+    return not (min_area > 0 and cluster.outer.area < min_area)
 
 
 def _assign(items, outers, probe_of, covering: bool) -> dict[int, list]:

@@ -34,11 +34,12 @@ from ..model.role import ContourRole, is_structural_role
 from .primitives.segments import segment_is_closed
 from .topology.edge import Edge
 from .topology.graph import build_node_graph
+from .geometry.integrals import ring_area
 from .geometry.shape import merge_runs
 from .topology.noding import GRAPH_EPSILON, NODE_DECIMALS, edge_geometry, renode, split_at_crossings
 from .topology.non_contour_edges import NonContourEdgeDetector
 from .topology.outer_face import OuterFace, outer_face
-from .healing.hierarchy import assign_cluster_refs
+from .healing.hierarchy import assign_cluster_refs, sort_clusters
 from .healing.normalizer import chain_runs
 from .healing.steps import loops_to_curves
 from .healing.islands import spatial_islands
@@ -117,7 +118,7 @@ def island(doc: Document, *, max_gap: float,
             owned += [(f, host) for f in _pieces(r.edges)]
             continue
         owned += [(f, host) for f in _pieces(r.spurs + r.outside + r.non_contour + r.unclassified)]
-    result.clusters = sorted(clusters.values(), key=lambda c: c.outer.polygon.area, reverse=True)
+    result.clusters = sort_clusters(list(clusters.values()))
     index = {id(c): k for k, c in enumerate(result.clusters)}
     for curve, host in owned:
         curve.cluster_ref = None if host is None else index[id(host)]
@@ -141,11 +142,11 @@ def read_islands(edges: List[Edge], tolerance: float, max_gap: float) -> List[Is
     """
     readings = [read_island(isl.edges, tolerance, max_gap=max_gap)
                 for isl in spatial_islands(edges, max(tolerance, max_gap))]
-    outers = [(j, r.outer.polygon.buffer(tolerance), r.outer.polygon.area)
+    outers = [(j, r.outer.polygon.buffer(tolerance), ring_area(r.outer.segments))
               for j, r in enumerate(readings) if r.outer is not None]
     for i, r in enumerate(readings):
         if r.outer is not None:
-            small, area = r.outer.polygon, r.outer.polygon.area
+            small, area = r.outer.polygon, ring_area(r.outer.segments)
         else:
             small, area = unary_union([edge_geometry(e) for e in r.edges]), 0.0
         hosts = [(j, big_area) for j, probe, big_area in outers
