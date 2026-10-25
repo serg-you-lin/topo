@@ -1396,7 +1396,13 @@ cluster.detected.attach("flange_view_hint", [...])`, poi la legge con
 ### `Contour`
 
 `role` (`ContourRole`), `polygon` (shapely), `segments` (primitive native, un
-anello testa-coda), `depth`, `parent`, proprietà `area` e `bbox`.
+anello testa-coda), `depth`, `parent`. Fatti calcolati sui `segments`, non sul
+poligono (D165, D166): `area` e `centroid` esatti (Green; `centroid` solleva
+`ValueError` se il giro non racchiude area), `bbox` esatto (archi ed ellissi
+ai loro estremi veri, non sulle corde), `contains(point, tolerance=1e-6)`
+(regione chiusa: il bordo entro `tolerance` è dentro), `points(tolerance=0.01)`
+(il giro discretizzato come tuple `(x, y)`, il primo punto non ripetuto in
+fondo). Gli stessi su ogni `ClosedCurve` di `result.loose`.
 
 ```python
 topo.Contour.from_segments(segments, role, depth=0, parent=None, tolerance=0.01) -> Contour
