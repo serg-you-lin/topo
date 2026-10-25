@@ -18,7 +18,7 @@ import ezdxf
 
 from topo.model import (
     Cluster, ContourRole, Document, Result, Text,
-    RoleStyle, feature_role, role_str, role_style,
+    RoleStyle, feature_closed, feature_role, role_str, role_style,
 )
 from .exporter import (
     dxf_pattern, ensure_linetype, write_segments, write_open_segments, write_native_segments,
@@ -280,7 +280,7 @@ def _write_attached_features(msp, cluster: Cluster, book: "_Layers") -> None:
                     continue
                 layer = book.for_role(c_role, item)
                 styles = getattr(contour, "styles", None)
-                if getattr(contour, "polygon", None) is not None:
+                if feature_closed(contour, item):
                     write_segments(segments, msp, layer, styles=styles)
                 else:
                     write_native_segments(segments, msp, layer, styles=styles)

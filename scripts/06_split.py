@@ -17,6 +17,7 @@ import _paths  # noqa: F401  — chdir alla radice del repo
 import os
 import topo
 import topo_dxf
+from topo import to_shapely
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT     = r"tests/data/golden/example_4_polylines.dxf"   # 4 parti
@@ -54,7 +55,7 @@ for part in parts:
     topo_dxf.write_metadata_to_dxf(doc_out, cluster)
     path = os.path.join(OUTDIR, f"{cluster.label}.dxf")
     doc_out.saveas(path)
-    print(f"   {path}  (area {cluster.outer.polygon.area:.0f} mm²)")
+    print(f"   {path}  (area {to_shapely(cluster.outer).area:.0f} mm²)")
 
 for w in result.warnings:
     print(f"   warn: {w}")

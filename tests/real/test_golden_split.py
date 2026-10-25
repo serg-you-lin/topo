@@ -44,6 +44,7 @@ sys.path.insert(0, str(project_root))
 import topo
 import topo_dxf
 from topo_dxf.layers import role_to_dxf_layer
+from topo import to_shapely
 
 
 MULTIPLI_DIR = project_root / "tests" / "data" / "golden_multipli"
@@ -158,10 +159,10 @@ def _get_parent_split_cache(parent_path: Path, tolerance: float) -> dict:
         part_payloads.append({
             "area": cluster.area,
             "inners_count": len(inners),
-            "outer_perimeter": cluster.outer.polygon.exterior.length,
-            "inner_perimeter": sum(i.polygon.exterior.length for i in inners),
-            "outer_wkt": cluster.outer.polygon.wkt,
-            "inners_wkt": [i.polygon.wkt for i in inners],
+            "outer_perimeter": to_shapely(cluster.outer).exterior.length,
+            "inner_perimeter": sum(to_shapely(i).exterior.length for i in inners),
+            "outer_wkt": to_shapely(cluster.outer).wkt,
+            "inners_wkt": [to_shapely(i).wkt for i in inners],
             "outer_role": cluster.outer.role,
             "inner_roles": [i.role for i in inners],
         })

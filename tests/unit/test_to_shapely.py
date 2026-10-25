@@ -61,3 +61,28 @@ def test_curva_aperta_e_una_linestring():
 def test_senza_geometria_type_error():
     with pytest.raises(TypeError):
         topo.to_shapely(object())
+
+
+def test_il_modello_non_porta_un_poligono():
+    contour = topo.Contour(segments=topo.geometry.rectangle(10, 5), role="outer")
+    assert not hasattr(contour, "polygon")
+    assert not hasattr(topo.Cluster(outer=contour), "polygon_with_holes")
+    with pytest.raises(TypeError):
+        topo.Contour(segments=topo.geometry.rectangle(10, 5), role="outer", polygon=None)
+    assert topo.to_shapely(contour).area == pytest.approx(50.0)
+
+
+class _Item:
+    def __init__(self, segments, is_void=False):
+        self.segments, self.is_void = segments, is_void
+
+
+def test_si_disegna_chiuso_un_giro_un_vuoto_o_una_curva_chiusa():
+    from topo.model import feature_closed
+    ring = topo.geometry.rectangle(10, 5)
+    open_run = ring[:3]
+    assert feature_closed(_Item(ring), _Item(ring))
+    assert not feature_closed(_Item(open_run), _Item(open_run))
+    assert feature_closed(_Item(open_run), _Item(open_run, is_void=True))
+    closed = topo.Contour(segments=open_run, role="outer")
+    assert feature_closed(closed, None)

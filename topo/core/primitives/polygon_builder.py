@@ -73,11 +73,25 @@ def curve_polygon(item) -> Optional[Polygon]:
     tenuto sull'oggetto. None per una curva aperta. Solo uso interno: fuori
     da topo si passa da `topo.to_shapely`.
     """
-    polygon = getattr(item, "polygon", None)
+    polygon = getattr(item, "_polygon", None)
     if polygon is not None:
         return polygon
     from ...model.curve import ClosedCurve
-    if isinstance(item, ClosedCurve) and item.segments:
-        item.polygon = build_polygon(item.segments, DEFAULT_TOLERANCE)
-        return item.polygon
-    return None
+    # una curva chiusa, o un vuoto dell'overlay (D90): i segments chiudono un giro
+    closed = isinstance(item, ClosedCurve) or getattr(item, "is_void", False)
+    if not closed or not getattr(item, "segments", None):
+        return None
+    polygon = build_polygon(list(item.segments), DEFAULT_TOLERANCE)
+    try:
+        item._polygon = polygon
+    except AttributeError:      # un elemento di overlay immutabile: niente cache
+        pass
+    return polygon
+
+
+def with_polygon(curve, polygon):
+    """`curve` col poligono che la lettura le ha costruito (fuso con la rete
+    piana, o col buffer(0) di un anello sporco): `curve_polygon` darà quello,
+    invece di ricostruirlo dai `segments`. Restituisce `curve`."""
+    curve._polygon = polygon
+    return curve

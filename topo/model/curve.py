@@ -5,8 +5,8 @@ Gerarchia base del dominio topo: una curva è una sequenza di segmenti,
 chiusa o aperta. Nome geometrico, non di processo (MAP.md D114).
 
 Curve
-├── ClosedCurve   — contorno chiuso (loop), ha polygon e segments
-└── OpenCurve     — tracciato aperto, ha segments ma non polygon
+├── ClosedCurve   — contorno chiuso (loop): i segments chiudono un giro
+└── OpenCurve     — tracciato aperto
 
 Tutte le entità del modello ereditano da qui:
     Hole(ClosedCurve), Contour(ClosedCurve)
@@ -19,16 +19,15 @@ Note:
       Può essere più corta di segments o vuota (geometria sintetizzata, es.
       ponti di gap-closing o il fallback polygonize): chi la consuma in
       write() tratta un indice mancante come "nessuno stile noto".
-    - polygon è Shapely Polygon — calcolato dall'adapter, non dal core
+    - nessun tipo shapely nel modello (D166): il poligono per le domande fra
+      più curve è una cache privata, `core.primitives.polygon_builder.curve_polygon`
     - role è l'unico canale semantico interno — mai leggere layer DXF nel core
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
-
-from shapely.geometry import Polygon
+from typing import Any, List, Optional, Tuple
 
 from topo.core.geometry.integrals import ring_area, ring_centroid
 from topo.core.geometry.rings import ON_BOUNDARY, ring_bbox, ring_contains, ring_points
@@ -49,35 +48,30 @@ class Curve:
 @dataclass
 class ClosedCurve(Curve):
     """
-    Curva chiusa: ha un polygon e una lista di segmenti.
-
-    Il polygon è prodotto dall'adapter (o dal polygon_builder) e passato
-    al costruttore — il core non lo ricalcola mai.
+    Curva chiusa: una lista di segmenti che chiude un giro. I suoi fatti
+    (area, bbox, baricentro, contains) sono calcolati sui segmenti (D166).
 
     Non porta `diameter` / `center`: la geometria circolare di un contorno è
     ricavata al bisogno da `core.geometry.measure.circular_geometry()` e stoccata
     sull'oggetto `Hole` da `detect_flat()` (D15), non sul contorno grezzo.
     """
-    polygon:  Polygon                          = field(default=None)
     segments: List[LineSeg | ArcSeg | BSplineSeg] = field(default_factory=list)
     styles:   List[EdgeStyle]                  = field(default_factory=list)
     cluster_ref: Optional[int]                 = None   # in result.loose: indice del cluster che la contiene (D137)
+    # poligono della lettura, solo per le domande fra più curve (curve_polygon, D166)
+    _polygon:    Any = field(default=None, init=False, repr=False, compare=False)
 
     @property
     def area(self) -> float:
         """Area esatta, integrata sui `segments` (Green, MAP.md D165): non
         dipende dalla tolleranza della discretizzazione."""
-        if self.segments:
-            return ring_area(self.segments)
-        return self.polygon.area if self.polygon is not None else 0.0
+        return ring_area(self.segments) if self.segments else 0.0
 
     @property
     def bbox(self) -> Tuple[float, float, float, float]:
         """Exact (xmin, ymin, xmax, ymax) of the `segments`: arcs and ellipses
         reach their true extremes, not their chords (MAP.md D166)."""
-        if self.segments:
-            return ring_bbox(self.segments)
-        return self.polygon.bounds if self.polygon is not None else (0.0, 0.0, 0.0, 0.0)
+        return ring_bbox(self.segments) if self.segments else (0.0, 0.0, 0.0, 0.0)
 
     @property
     def centroid(self) -> Tuple[float, float]:
@@ -99,7 +93,7 @@ class ClosedCurve(Curve):
 @dataclass
 class OpenCurve(Curve):
     """
-    Curva aperta: ha segmenti ma non un polygon.
+    Curva aperta: segmenti che non chiudono un giro.
     """
     segments:    List[LineSeg | ArcSeg | BSplineSeg] = field(default_factory=list)
     styles:      List[EdgeStyle]                  = field(default_factory=list)

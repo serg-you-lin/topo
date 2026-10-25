@@ -26,6 +26,7 @@ from shapely.ops import unary_union
 from topo.core.geometry.measure import round_point
 from topo.core.primitives.segments import DEFAULT_TOLERANCE, segment_endpoints
 from topo.model.document import Document
+from topo import to_shapely
 
 QUARTER = math.pi / 2                 # esatto sulla griglia dei nodi: nessun arrotondamento nuovo
 ROTATION = 0.7                        # radianti, un angolo qualunque: i nodi tornano sulla griglia
@@ -146,8 +147,8 @@ def shape_differences(before: list, after: list, band_per_mm: float) -> list:
 
 def contours(result) -> list:
     """(outer, inner) di `result`: i poligoni degli outer e di tutti gli inner."""
-    return ([c.outer.polygon for c in result.clusters],
-            [i.polygon for c in result.clusters for i in c.inners])
+    return ([to_shapely(c.outer) for c in result.clusters],
+            [to_shapely(i) for c in result.clusters for i in c.inners])
 
 
 class _Bands:

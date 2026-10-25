@@ -428,7 +428,7 @@ ordinati per area del contorno esterno. Nessun giro chiuso in nessuna isola →
 doc = topo_dxf.load_dxf("tavola.dxf")
 result = topo.island(doc, max_gap=0.5)
 for cluster in result.clusters:          # una vista / un pezzo per cluster
-    print(cluster.outer.polygon.area, len(cluster.inners))
+    print(cluster.outer.area, len(cluster.inners))
 ```
 
 #### I mattoni di `island()`
@@ -1399,14 +1399,14 @@ Metodo `to_dict()` → dizionario JSON-ready (usato internamente dagli export).
 
 | campo | tipo | contenuto |
 |---|---|---|
-| `outer` | `Contour` | profilo esterno (ha `polygon`, `segments`, `role`, `area`, `bbox`) |
+| `outer` | `Contour` | profilo esterno (ha `segments`, `role`, `area`, `bbox`) |
 | `inners` | `list[Contour]` | contorni chiusi dentro l'outer, senza lettura (un cerchio non è un foro, D15) |
 | `label` | `str` | etichetta, base del nome file |
 | `custom` | `dict` | dati aggiunti da un `data_injector` esterno (materiale, spessore, codice) |
 | `detected` | `Optional[DetectedFeatures]` | overlay di un consumatore — `None` finché nessuno ci ha scritto (D44, D90) |
 | `features(name)` | metodo | collezione `name` da `detected` — `[]` se `detected` è `None` o `name` non è stato scritto |
 | `summary` | property | conteggio **grezzo**, sempre disponibile: `{nome}_count: len(items)` per ogni collezione in `detected` — `{}` se `detected` è `None` |
-| `overlay_voids` | property | gli elementi dell'overlay con `is_void = True` e un `polygon`: vuoti del pezzo letti da un consumatore (D90) |
+| `overlay_voids` | property | gli elementi dell'overlay con `is_void = True` e i `segments` di un giro chiuso: vuoti del pezzo letti da un consumatore (D90) |
 | `area` | property | outer − vuoti dell'overlay − inner a depth dispari + inner a depth pari (D89, D90) |
 | `bbox` | property | `(minx, miny, maxx, maxy)` |
 
@@ -1418,8 +1418,9 @@ cluster.detected.attach("flange_view_hint", [...])`, poi la legge con
 
 ### `Contour`
 
-`role` (`ContourRole`), `polygon` (shapely), `segments` (primitive native, un
-anello testa-coda), `depth`, `parent`. Fatti calcolati sui `segments`, non sul
+`role` (`ContourRole`), `segments` (primitive native, un anello testa-coda),
+`depth`, `parent`. Nessun tipo shapely (D166): il poligono si chiede a
+`topo.to_shapely(contour)`. Fatti calcolati sui `segments`, non sul
 poligono (D165, D166): `area` e `centroid` esatti (Green; `centroid` solleva
 `ValueError` se il giro non racchiude area), `bbox` esatto (archi ed ellissi
 ai loro estremi veri, non sulle corde), `contains(point, tolerance=1e-6)`
@@ -1433,7 +1434,7 @@ topo.Contour.from_segments(segments, role, depth=0, parent=None, tolerance=0.01)
 
 Contorno da un anello di primitive scritto da un chiamante (per esempio il
 risultato di `geometry.contour_minus`): controlla che ogni segmento parta dove
-finisce il precedente e che l'ultimo chiuda sul primo, e calcola il poligono.
+finisce il precedente e che l'ultimo chiuda sul primo.
 **Solleva** `ValueError` se l'anello non chiude o non racchiude un poligono
 valido (D118).
 
@@ -1724,10 +1725,12 @@ topo_dxf.to_dxf(result, doc, layers={"bending": lambda bend: "BendUp" if is_up(b
 
 **L'overlay** (D70, D90): scrive ogni collezione di `cluster.detected`,
 senza conoscerne nessuna per nome. Di un elemento legge solo `role` e
-geometria: `item.contours` se c'è (ognuno con `segments`/`styles`/`polygon`
-ed eventualmente un suo `role`), altrimenti l'elemento stesso. Un contorno
-con `polygon` si scrive chiuso (LWPOLYLINE/CIRCLE), uno senza come una entità
-per primitiva (LINE/ARC/SPLINE). Il `role` di un contorno vince su quello
+geometria: `item.contours` se c'è (ognuno con `segments`/`styles` ed
+eventualmente un suo `role`), altrimenti l'elemento stesso. Un contorno si
+scrive chiuso (LWPOLYLINE/CIRCLE) se è una `ClosedCurve`, se l'elemento si
+dichiara vuoto (`is_void`) o se i suoi `segments` chiudono un giro
+(`topo.model.feature_closed`); altrimenti come una entità per primitiva
+(LINE/ARC/SPLINE). Il `role` di un contorno vince su quello
 dell'elemento solo se non è un ruolo del motore (`outer`/`inner`/`unknown`).
 Senza ruolo o senza geometria si salta.
 

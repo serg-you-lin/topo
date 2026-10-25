@@ -14,6 +14,7 @@ import topo
 from topo.core.primitives import ArcSeg, CircleSeg, LineSeg, BSplineSeg
 from topo.core.primitives.polygon_builder import build_polygon
 from topo.model.contour import Contour
+from topo import to_shapely
 
 g = topo.geometry
 SQUARE = g.rectangle(10, 10, center=(5, 5))          # 0..10 x 0..10, antiorario
@@ -201,7 +202,7 @@ class TestContourMinus(unittest.TestCase):
     def test_result_is_a_valid_contour(self):
         ring = g.contour_minus(L_SHAPE, g.circle(1.5, center=(5, 5)))[0]
         contour = Contour.from_segments(ring, role="outer")
-        self.assertTrue(contour.polygon.is_valid)
+        self.assertTrue(to_shapely(contour).is_valid)
 
     def test_shared_border_raises(self):
         with self.assertRaises(ValueError):

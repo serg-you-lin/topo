@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 import topo
 import topo_dxf
 from topo.model import DetectedFeatures
+from topo import to_shapely
 
 
 @dataclass
@@ -54,7 +55,7 @@ class TestAttachedExport(unittest.TestCase):
     def test_elemento_con_segments_sul_layer_del_suo_ruolo(self):
         doc, result = _plate()
         cluster = result.clusters[0]
-        single = next(i for i in cluster.inners if abs(i.polygon.area - 3.1416 * 16) < 1)
+        single = next(i for i in cluster.inners if abs(to_shapely(i).area - 3.1416 * 16) < 1)
         cluster.detected = DetectedFeatures()
         cluster.detected.attach("my_marks", [_Mark(role="my_role", segments=single.segments)])
         layers = _layers(topo_dxf.to_dxf(result, doc))
@@ -63,7 +64,7 @@ class TestAttachedExport(unittest.TestCase):
     def test_elemento_con_contours_scrive_ogni_contorno(self):
         doc, result = _plate()
         cluster = result.clusters[0]
-        pair = [i for i in cluster.inners if abs(i.polygon.centroid.x - 20) < 1e-6]
+        pair = [i for i in cluster.inners if abs(to_shapely(i).centroid.x - 20) < 1e-6]
         self.assertEqual(len(pair), 2)
         cluster.detected = DetectedFeatures()
         cluster.detected.attach("my_marks", [_Composite(role="my_seat", contours=pair)])

@@ -16,6 +16,7 @@ import topo_dxf
 from topo.core.geometry import circle, rectangle
 from topo.core.primitives.segments import ArcSeg, LineSeg
 from topo.tools.strips import facing_boundaries, gap, link, open_boundaries, unconnected_regions
+from topo import to_shapely
 
 FIXTURE = Path(__file__).resolve().parent.parent / "data" / "cerchi_concentrici_detect_is_counter_tabs_join.dxf"
 
@@ -30,7 +31,7 @@ def _window_with_two_discs():
     cluster = _cluster(rectangle(200, 120, (100, 60)), rectangle(160, 80, (100, 60)),
                        circle(10, (60, 60)), circle(10, (100, 60)))
     facing = facing_boundaries(cluster)[0]
-    left, right = sorted(facing.inside, key=lambda c: c.polygon.centroid.x)
+    left, right = sorted(facing.inside, key=lambda c: to_shapely(c).centroid.x)
     return cluster, facing, left, right
 
 
@@ -62,7 +63,7 @@ class TestFacingBoundaries(unittest.TestCase):
         self.assertEqual(len(groups), 2)
         for g in groups:
             self.assertEqual(len(g.inside), 1)
-            self.assertTrue(g.region.polygon.contains(g.inside[0].polygon))
+            self.assertTrue(to_shapely(g.region).contains(to_shapely(g.inside[0])))
 
     def test_003_nested_four_levels_pair_by_direct_parent(self):
         cluster = _cluster(circle(20), circle(15), circle(10), circle(6), circle(3))
@@ -167,7 +168,7 @@ class TestOpenBoundaries(unittest.TestCase):
         cluster = topo.heal(topo_dxf.load_dxf(str(FIXTURE))).clusters[0]
         facing = facing_boundaries(cluster)[0]
         disc = facing.inside[0]
-        c, r = disc.polygon.centroid, math.sqrt(disc.polygon.area / math.pi)
+        c, r = to_shapely(disc).centroid, math.sqrt(to_shapely(disc).area / math.pi)
         links = []
         for k in range(4):
             at = (c.x + r * math.cos(k * math.pi / 2), c.y + r * math.sin(k * math.pi / 2))

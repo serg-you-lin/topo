@@ -18,8 +18,8 @@ e così via. Puramente geometrico (contenimento fra poligoni, calcolato in
 questi due campi non cambiano.
 
 `Contour.from_segments()` costruisce un contorno da un anello di
-primitive scritto da un chiamante (D118): controlla l'anello e calcola il
-poligono, così nessuno passa `polygon` a mano.
+primitive scritto da un chiamante (D118): controlla che l'anello chiuda e
+racchiuda un'area.
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ import math
 from dataclasses import dataclass
 from typing import Optional, Sequence
 
-from topo.core.primitives.polygon_builder import build_polygon
+from topo.core.primitives.polygon_builder import build_polygon, with_polygon
 from topo.core.primitives.segments import DEFAULT_TOLERANCE, segment_endpoints
 from topo.model.curve import ClosedCurve
 
@@ -44,8 +44,8 @@ class Contour(ClosedCurve):
         """
         Contorno da un anello di primitive testa-coda: ogni segmento parte
         dove finisce il precedente (entro `tolerance`), l'ultimo chiude sul
-        primo. Il poligono lo calcola topo. ValueError se l'anello non chiude
-        o non racchiude un poligono valido.
+        primo. ValueError se l'anello non chiude o non racchiude un poligono
+        valido.
         """
         segs = list(segments)
         for k, seg in enumerate(segs):
@@ -56,7 +56,7 @@ class Contour(ClosedCurve):
         polygon = build_polygon(segs, tolerance)
         if polygon is None:
             raise ValueError("from_segments: i segmenti non racchiudono un poligono valido")
-        return cls(role=role, polygon=polygon, segments=segs, depth=depth, parent=parent)
+        return with_polygon(cls(role=role, segments=segs, depth=depth, parent=parent), polygon)
 
     def to_dict(self) -> dict:
         return {

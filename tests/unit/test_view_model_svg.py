@@ -18,6 +18,7 @@ from pathlib import Path
 import topo
 import topo_dxf
 from topo.model import DetectedFeatures
+from topo import to_shapely
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "data"
 MULTI_PART   = EXAMPLES / "golden" / "example_4_polylines.dxf"
@@ -28,7 +29,6 @@ class _Mark:
     role = "my_circle"
 
     def __init__(self, contour, center, diameter):
-        self.polygon = contour.polygon
         self.segments = contour.segments
         self._center, self._diameter = center, diameter
 
@@ -42,8 +42,8 @@ def _result(path):
     for cluster in result.clusters:
         marks = []
         for inner in cluster.inners:
-            c = inner.polygon.centroid
-            marks.append(_Mark(inner, (c.x, c.y), 2 * (inner.polygon.area / 3.141592653589793) ** 0.5))
+            c = to_shapely(inner).centroid
+            marks.append(_Mark(inner, (c.x, c.y), 2 * (to_shapely(inner).area / 3.141592653589793) ** 0.5))
         cluster.inners = []
         cluster.detected = DetectedFeatures()
         cluster.detected.attach("my_circles", marks)

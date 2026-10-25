@@ -31,6 +31,7 @@ from ..model.document import Document
 from ..model.curve import OpenCurve
 from ..model.result import Result
 from ..model.role import ContourRole, is_structural_role
+from .primitives.polygon_builder import with_polygon
 from .primitives.segments import segment_is_closed
 from .topology.edge import Edge
 from .topology.graph import build_node_graph
@@ -247,8 +248,8 @@ def _contour(segments, styles, polygon, role, parent) -> Contour:
     """Il poligono resta quello dei pezzi della rete piana; i segmenti sono
     ricomposti dove il taglio li aveva spezzati (`geometry.shape.merge_runs`)."""
     segments, styles = merge_runs(list(segments), list(styles))
-    return Contour(polygon=polygon, role=role, segments=segments,
-                        styles=styles, depth=0 if parent is None else 1, parent=parent)
+    return with_polygon(Contour(role=role, segments=segments, styles=styles,
+                                depth=0 if parent is None else 1, parent=parent), polygon)
 
 
 def _open(edges: List[Edge]) -> list:

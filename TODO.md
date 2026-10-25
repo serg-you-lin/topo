@@ -54,8 +54,7 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       Passi (piano del 25 ottobre, MAP D166 "Implemented"): 1 fatti del giro
       sulle primitive ✅ · 2 verso e ordine dall'integrale ✅ · 3
       `to_shapely` e interno senza `.polygon` ✅ (`to_shapely(cluster)`
-      pari-dispari: da confermare con Federico) · 4 via
-      `.polygon` dal modello (prima: ragionare sui nomi) · 5 `topo.geometry`/
+      pari-dispari, confermato) · 4 via `.polygon` dal modello ✅ · 5 `topo.geometry`/
       `topo.steps` + test guardiano (richiedere a Federico le rinomine) · 6
       documenti, D168, 0.23.0.
 - [x] **G12** Area esatta (D165, entra nel cancello per decisione di

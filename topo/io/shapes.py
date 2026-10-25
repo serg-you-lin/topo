@@ -69,8 +69,7 @@ def _cluster(cluster: Cluster, tolerance: Optional[float]):
         pieces.append(Polygon(outline.exterior.coords,
                               [_ring(h, tolerance).exterior.coords for h in holes]))
     material = unary_union(pieces)
-    voids = [_ring(v, tolerance) if getattr(v, "segments", None) else v.polygon
-             for v in cluster.overlay_voids]
+    voids = [_ring(v, tolerance) for v in cluster.overlay_voids]
     if voids:
         material = material.difference(unary_union(voids))
     if isinstance(material, (Polygon, MultiPolygon)):

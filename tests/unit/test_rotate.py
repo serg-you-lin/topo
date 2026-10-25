@@ -23,6 +23,7 @@ from topo.tools.rotate import (
     rotate_cluster, rotate_result, rotate_document, rotate_to_longest,
 )
 from topo.model.text import Text
+from topo import to_shapely
 
 
 def _tall_rect_with_diagonal():
@@ -82,7 +83,7 @@ class TestRotateCluster(unittest.TestCase):
         cluster = result.clusters[0]
         rotated = rotate_cluster(cluster, math.pi / 2, origin=(0, 0))
 
-        self.assertAlmostEqual(rotated.outer.polygon.bounds[0], -50.0, places=3)
+        self.assertAlmostEqual(to_shapely(rotated.outer).bounds[0], -50.0, places=3)
         # l'inner ruotato deve ancora avere come parent il NUOVO outer, non il vecchio
         self.assertIs(rotated.inners[0].parent, rotated.outer)
         self.assertIsNot(rotated.inners[0].parent, cluster.outer)
@@ -90,9 +91,9 @@ class TestRotateCluster(unittest.TestCase):
     def test_002_does_not_mutate_original(self):
         result = topo.heal(_rect_with_hole())
         cluster = result.clusters[0]
-        original_bounds = cluster.outer.polygon.bounds
+        original_bounds = to_shapely(cluster.outer).bounds
         rotate_cluster(cluster, math.pi / 2, origin=(0, 0))
-        self.assertEqual(cluster.outer.polygon.bounds, original_bounds)
+        self.assertEqual(to_shapely(cluster.outer).bounds, original_bounds)
 
 
 class TestRotateResult(unittest.TestCase):

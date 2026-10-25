@@ -34,6 +34,7 @@ import traceback
 
 import topo
 import topo_dxf
+from topo import to_shapely
 
 # --- CONFIG ----------------------------------------------------------------
 INPUT_DIR = r"tests/examples/islands"          # tutti i .dxf/.dwg qui dentro
@@ -83,7 +84,7 @@ def main():
         print(f"{stem}: {len(doc.edges)} edge, {len(readings)} isole, "
               f"{n_out} contorni esterni, {time.time() - t0:.1f}s")
         for c in result.clusters:
-            print(f"  outer {c.outer.polygon.area:.0f} mm², {len(c.inners)} inner")
+            print(f"  outer {to_shapely(c.outer).area:.0f} mm², {len(c.inners)} inner")
         suffix = ""
         if not result.is_valid:
             # to_dxf rifiuta un risultato invalido: qui lo si vuole vedere lo stesso

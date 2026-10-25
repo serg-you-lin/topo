@@ -22,6 +22,7 @@ from tests.invariants import along_contours, uncovered, known_defect, contours, 
 from tests.readings import island_reading, island_scrambled
 from topo.core.island import GRAPH_EPSILON
 from topo.core.primitives.segments import DEFAULT_TOLERANCE
+from topo import to_shapely
 
 MAX_GAP = 0.5
 SOURCES = drawings_for("island")
@@ -56,7 +57,7 @@ def _check(test, invariant: str, dxf: Path, check) -> None:
 
 
 def _snapshot(result) -> list:
-    return sorted([float(v) for v in c.outer.polygon.bounds] + [len(c.inners)]
+    return sorted([float(v) for v in to_shapely(c.outer).bounds] + [len(c.inners)]
                   for c in result.clusters)
 
 
@@ -82,8 +83,8 @@ class TestPolygonValidity(unittest.TestCase):
     un'area calcolata per cancellazione di segno, non la forma vera."""
 
     def _assert_valid(self, contour, where):
-        self.assertTrue(contour.polygon.is_valid, f"{where}: .polygon non è una forma semplice")
-        self.assertGreater(contour.polygon.area, 0, f"{where}: .polygon ha area nulla")
+        self.assertTrue(to_shapely(contour).is_valid, f"{where}: .polygon non è una forma semplice")
+        self.assertGreater(to_shapely(contour).area, 0, f"{where}: .polygon ha area nulla")
 
 
 def _make_validity_test(dxf: Path):

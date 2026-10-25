@@ -6086,8 +6086,8 @@ inside reads no `.polygon`.**
   `polygon_with_holes` put every inner as a hole, so an island inside a
   hole made a polygon shapely itself calls invalid. Whether an island is
   tied to the rest (tabs, bridges) is a consumer's choice, not geometry.
-  Federico was unsure; the argument above was given and he let step 3 go
-  ahead — to confirm before 1.0.
+  Federico was unsure; the argument above was given and he confirmed it
+  the same day ("ok, pari-dispari va bene").
 - Inside topo every read of a curve's polygon goes through one function,
   `curve_polygon` (`core/primitives/polygon_builder.py`): the polygon the
   reading gave, else built once from the segments and kept on the object,
@@ -6101,6 +6101,46 @@ inside reads no `.polygon`.**
 - Still on polygons, by plan: `CoveredRectangle`, `OuterFace.polygon` (step
   5), the `polygon=` handed to the constructors and the D90 overlay
   contract (step 4).
+
+**Implemented, step 4 (G13, 25 October 2026): the model carries no shapely
+type.** Agreed with Federico point by point.
+- `ClosedCurve.polygon` and the `polygon=` argument are gone. The polygon a
+  reading built (fused with the planar network in `island`, `buffer(0)` of
+  a dirty ring in `heal`) is a private cache, `_polygon` (not in `__init__`,
+  `repr` or `==`), set by `with_polygon` and read by `curve_polygon`, both
+  in `core/primitives/polygon_builder.py`. `dataclasses.replace` drops it,
+  so a rotated contour gets its own (`tools/rotate`). Why private and not
+  removed: the polygon is how topo answers questions between many curves
+  (D167); rebuilding it from the segments would change island's vertices
+  and cost time for nothing.
+- A consumer builds a curve from `segments` only (snapbend's `Hole` stops
+  passing `polygon`) and asks `topo.to_shapely(curve)` when it needs one —
+  that returns the cached polygon, built by nobody else. shapely is a
+  dependency of topo, so importing it costs a caller nothing new; a consumer
+  that imports it itself declares it, because topo's contract no longer
+  promises it (a Rust core could drop it).
+- `Cluster.polygon_with_holes` is gone: `topo.to_shapely(cluster)` replaces
+  it (even-odd, step 3). `ClosedCurve.area`/`bbox` no longer fall back to a
+  polygon: no segments, no geometry (0).
+- D90 overlay contract: a void is `is_void = True` plus the `segments` of a
+  closed ring (no `polygon`). A renderer draws a contour closed if it is a
+  `ClosedCurve`, its item `is_void`, or its segments close a ring head to
+  tail within 0.01 (`topo.model.feature_closed`, used by `to_dxf` and
+  `to_view_model`; `ring_closes` in `core/geometry/rings.py`). Why the
+  third case: an overlay mark that is a closed ring but not a void (a
+  circle a consumer marked) was closed before because it carried a polygon;
+  its segments say the same thing. A consumer that wants a closed ring as
+  separate primitives no longer can — a geometric fact wins over a
+  convention (non-negotiable 8).
+- `Cluster.to_dict` writes the same lists of `(x, y)` as before (the
+  reading's polygon vertices, ring closed), read through `curve_polygon`:
+  values unchanged, no golden touched.
+- `heal` builds no `ClosedCurve` without segments any more
+  (`loop_to_closed_curve` returns `None`); the hierarchy tracks classified
+  proxies by identity, not by their polygon's.
+- Tests and scripts read `topo.to_shapely(x)` where they read `x.polygon`;
+  fixtures build contours from `topo.geometry.polygon(...)`. Suite 2723
+  passed, 183 s.
 
 ### D167 — topo's code is written ready for a Rust port; the tests judge the port, not a reading of the Rust
 

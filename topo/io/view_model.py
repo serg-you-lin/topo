@@ -22,10 +22,11 @@ from __future__ import annotations
 
 from typing import Mapping, Optional
 
-from ..model import Result, RoleStyle, role_style
+from ..model import Result, RoleStyle, feature_closed, role_style
 from ..model.role import ContourRole, feature_role, role_str as _role_str
 from ..core.geometry.measure import track_points
-from ..core.primitives.polygon_builder import curve_polygon
+from ..core.primitives.polygon_builder import build_polygon, curve_polygon
+from ..core.primitives.segments import DEFAULT_TOLERANCE
 
 def _color(role, role_styles: Mapping[str, RoleStyle]) -> str:
     """Hex CSS di un ruolo: la palette di topo con sopra la mappa del
@@ -62,7 +63,7 @@ def _contour_entry(contour, tolerance: float, role_styles: Mapping[str, RoleStyl
 def _feature_entries(item, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> list:
     """
     Un elemento dell'overlay (MAP.md D90) → una voce per contorno: ruolo,
-    colore, punti, `closed` (ha un `polygon`), più i campi scalari del suo
+    colore, punti, `closed` (`model.feature_closed`), più i campi scalari del suo
     `to_dict()` se ne ha uno (un renderer disegna un cerchio vero se trova
     `center` + `diameter`).
     """
@@ -80,10 +81,11 @@ def _feature_entries(item, tolerance: float, role_styles: Mapping[str, RoleStyle
     entries = []
     for contour in contours:
         c_role = feature_role(contour, role) or ContourRole.UNKNOWN
-        polygon = curve_polygon(contour)
-        pts = _poly_points(polygon) if polygon is not None else _track(
-            getattr(contour, "segments", []) or [], tolerance
-        )
+        segments = getattr(contour, "segments", []) or []
+        closed = feature_closed(contour, item)
+        polygon = (curve_polygon(contour) or build_polygon(list(segments), DEFAULT_TOLERANCE)
+                   if closed and segments else None)
+        pts = _poly_points(polygon) if polygon is not None else _track(segments, tolerance)
         entries.append({**extra, "role": _role_str(c_role), "color": _color(c_role, role_styles),
                         "points": pts, "closed": polygon is not None})
     return entries

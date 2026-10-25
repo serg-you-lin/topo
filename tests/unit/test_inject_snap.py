@@ -19,8 +19,8 @@ from topo.model.role import ContourRole
 
 
 def _part(x0, y0, x1, y1):
-    poly = Polygon([(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
-    return Cluster(outer=Contour(polygon=poly, role=ContourRole.OUTER))
+    ring = topo.geometry.polygon([(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
+    return Cluster(outer=Contour(segments=ring, role=ContourRole.OUTER))
 
 
 def _result(*clusters, texts=()):

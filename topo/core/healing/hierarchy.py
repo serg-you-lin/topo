@@ -7,7 +7,7 @@ from ...model.curve import ClosedCurve
 from ...model.cluster import Cluster
 from ...model.contour import Contour
 from ...model.role import ContourRole, is_structural_role
-from ...core.primitives.polygon_builder import curve_polygon
+from ...core.primitives.polygon_builder import curve_polygon, with_polygon
 from ...core.geometry.integrals import ring_area
 from ...core.geometry.measure import circular_geometry, track_points
 from ...core.geometry.regions import enclosing
@@ -43,7 +43,7 @@ def loop_to_closed_curve(
             poly = poly.buffer(0)
         if poly.is_empty:
             return None
-        if (ring_area(segments) if segments else poly.area) <= MIN_CONTOUR_AREA:
+        if not segments or ring_area(segments) <= MIN_CONTOUR_AREA:
             return None
 
         # Guard sui micro-cerchi: un loop di una singola primitiva circolare
@@ -55,12 +55,7 @@ def loop_to_closed_curve(
             if diameter is not None and diameter < MIN_SINGLE_LOOP_DIAMETER:
                 return None
 
-        return ClosedCurve(
-            role=role,
-            polygon=poly,
-            segments=segments or [],
-            styles=styles or [],
-        )
+        return with_polygon(ClosedCurve(role=role, segments=segments, styles=styles or []), poly)
     except Exception:
         return None
 
@@ -111,14 +106,13 @@ def _make_inner(
         else parent_role if parent_role not in (ContourRole.UNKNOWN, ContourRole.INNER)
         else ContourRole.INNER
     )
-    return Contour(
-        polygon=proxy.polygon,
+    return with_polygon(Contour(
         role=role,
         segments=list(proxy.segments),
         styles=list(getattr(proxy, "styles", []) or []),
         depth=depth,
         parent=parent,
-    )
+    ), curve_polygon(proxy))
 
 
 def _collect_inners(
@@ -144,7 +138,7 @@ def _collect_inners(
     nesting per contenimento fra poligoni e promuove i fori.
     """
     for child_proxy, grandchildren in children:
-        classified_proxies.add(id(child_proxy.polygon))
+        classified_proxies.add(id(child_proxy))
         contour = _make_inner(child_proxy, parent_role=parent_role, depth=depth, parent=parent)
         inners.append(contour)
         if grandchildren:
@@ -170,7 +164,7 @@ class HierarchyBuilder:
     def build(self, proxies: list) -> tuple[list[Cluster], list]:
         self._classified_proxies: set[int] = set()
 
-        valid = [p for p in proxies if getattr(p, "polygon", None) is not None]
+        valid = [p for p in proxies if curve_polygon(p) is not None]
         if not valid:
             return [], self._collect_loose(proxies)
 
@@ -186,15 +180,14 @@ class HierarchyBuilder:
         for root_node in tree:
             father_proxy, children = root_node
 
-            outer = Contour(
-                polygon=father_proxy.polygon,
+            outer = with_polygon(Contour(
                 role=ContourRole.OUTER,
                 segments=list(father_proxy.segments),
                 styles=list(getattr(father_proxy, "styles", []) or []),
                 depth=0,
                 parent=None,
-            )
-            self._classified_proxies.add(id(father_proxy.polygon))
+            ), curve_polygon(father_proxy))
+            self._classified_proxies.add(id(father_proxy))
 
             inners = []
             _collect_inners(
@@ -216,7 +209,7 @@ class HierarchyBuilder:
     def _collect_loose(self, proxies: list) -> list:
         return [
             p for p in proxies
-            if id(getattr(p, "polygon", None)) not in self._classified_proxies
+            if id(p) not in self._classified_proxies
             and not self._is_structural(getattr(p, "role", ContourRole.UNKNOWN))
         ]
 
