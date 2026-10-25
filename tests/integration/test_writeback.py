@@ -406,7 +406,7 @@ class TestWritebackArcRoundTrip(unittest.TestCase):
                 continue
             with self.subTest(example=name):
                 result, msp = _pipeline(name)
-                model_area = sum(p.outer.polygon.area for p in result.clusters)
+                model_area = sum(p.outer.area for p in result.clusters)
                 written_area = self._written_outer_area(msp)
                 self.assertAlmostEqual(
                     written_area, model_area, delta=max(1.0, model_area * 1e-4),

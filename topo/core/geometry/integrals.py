@@ -24,7 +24,7 @@ from typing import Callable, List, Sequence, Tuple
 import numpy as np
 
 from ..primitives.segments import (
-    ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, LineSeg, _bspline_find_span,
+    ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, LineSeg, _bspline_find_span, segment_endpoints,
 )
 
 Point = Tuple[float, float]
@@ -72,10 +72,20 @@ def segment_moments(segment) -> Moments:
 
 
 def ring_moments(segments: Sequence) -> Moments:
-    """Somma dei contributi di un giro chiuso, nell'ordine e nel verso dati."""
+    """
+    Somma dei contributi di un giro chiuso, nell'ordine e nel verso dati. Un
+    salto fra la fine di un segmento e l'inizio del successivo (un gap chiuso
+    entro la tolleranza, coefficienti del sorgente intatti, D143) conta come
+    la sua corda: senza, l'area dipenderebbe da dove sta il pezzo.
+    """
     total = Moments()
-    for segment in segments:
+    for segment, following in zip(segments, list(segments[1:]) + list(segments[:1])):
         total = total + segment_moments(segment)
+        if isinstance(segment, CircleSeg) or isinstance(following, CircleSeg):
+            continue
+        end, start = segment_endpoints(segment)[1], segment_endpoints(following)[0]
+        if end != start:
+            total = total + _line_moments(end, start)
     return total
 
 

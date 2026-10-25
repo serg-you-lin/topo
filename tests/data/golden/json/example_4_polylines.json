@@ -3,7 +3,7 @@
   "cluster_count": 4,
   "clusters": [
     {
-      "area_mm2": 9921.5863,
+      "area_mm2": 9921.4602,
       "outer_perimeter_mm": 400.0,
       "inner_perimeter_mm": 31.4033,
       "total_perimeter_mm": 431.4033,
@@ -15,12 +15,12 @@
       "inners": [
         {
           "role": "inner",
-          "area": 78.4137
+          "area": 78.5398
         }
       ]
     },
     {
-      "area_mm2": 9921.5863,
+      "area_mm2": 9921.4602,
       "outer_perimeter_mm": 400.0,
       "inner_perimeter_mm": 31.4033,
       "total_perimeter_mm": 431.4033,
@@ -32,12 +32,12 @@
       "inners": [
         {
           "role": "inner",
-          "area": 78.4137
+          "area": 78.5398
         }
       ]
     },
     {
-      "area_mm2": 9921.5863,
+      "area_mm2": 9921.4602,
       "outer_perimeter_mm": 400.0,
       "inner_perimeter_mm": 31.4033,
       "total_perimeter_mm": 431.4033,
@@ -49,12 +49,12 @@
       "inners": [
         {
           "role": "inner",
-          "area": 78.4137
+          "area": 78.5398
         }
       ]
     },
     {
-      "area_mm2": 9921.5863,
+      "area_mm2": 9921.4602,
       "outer_perimeter_mm": 400.0,
       "inner_perimeter_mm": 31.4033,
       "total_perimeter_mm": 431.4033,
@@ -66,7 +66,7 @@
       "inners": [
         {
           "role": "inner",
-          "area": 78.4137
+          "area": 78.5398
         }
       ]
     }

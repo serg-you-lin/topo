@@ -30,6 +30,7 @@ from typing import List, Optional, Tuple
 
 from shapely.geometry import Polygon
 
+from topo.core.geometry.integrals import ring_area
 from topo.core.primitives.segments import ArcSeg, LineSeg, BSplineSeg
 from topo.model.style import EdgeStyle
 
@@ -63,6 +64,10 @@ class ClosedCurve(Curve):
 
     @property
     def area(self) -> float:
+        """Area esatta, integrata sui `segments` (Green, MAP.md D165): non
+        dipende dalla tolleranza della discretizzazione."""
+        if self.segments:
+            return ring_area(self.segments)
         return self.polygon.area if self.polygon is not None else 0.0
 
     @property
