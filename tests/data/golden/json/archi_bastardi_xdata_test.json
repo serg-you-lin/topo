@@ -3,7 +3,7 @@
   "cluster_count": 1,
   "clusters": [
     {
-      "area_mm2": 63762.6809,
+      "area_mm2": 63764.4489,
       "outer_perimeter_mm": 1250.9396,
       "inner_perimeter_mm": 279.4895,
       "total_perimeter_mm": 1530.4291,
@@ -27,55 +27,55 @@
       "inners": [
         {
           "role": "inner",
-          "area": 94.8806
+          "area": 95.0332
         },
         {
           "role": "inner",
-          "area": 94.8806
+          "area": 95.0332
         },
         {
           "role": "inner",
-          "area": 94.8806
+          "area": 95.0332
         },
         {
           "role": "inner",
-          "area": 94.8806
+          "area": 95.0332
         },
         {
           "role": "inner",
-          "area": 19.6034
+          "area": 19.635
         },
         {
           "role": "inner",
-          "area": 19.6034
+          "area": 19.635
         },
         {
           "role": "inner",
-          "area": 19.6034
+          "area": 19.635
         },
         {
           "role": "inner",
-          "area": 19.6034
+          "area": 19.635
         },
         {
           "role": "inner",
-          "area": 19.6034
+          "area": 19.635
         },
         {
           "role": "inner",
-          "area": 19.6034
+          "area": 19.635
         },
         {
           "role": "inner",
-          "area": 19.6034
+          "area": 19.635
         },
         {
           "role": "inner",
-          "area": 19.6034
+          "area": 19.635
         },
         {
           "role": "inner",
-          "area": 19.6034
+          "area": 19.635
         }
       ]
     }

@@ -5961,6 +5961,32 @@ public name does, by about 0.1 %. Changing what a number means after 1.0 is
 worse than adding a name; the work is one function per primitive in
 `topo/core/geometry/`.
 
+**Implemented (G12, 25 October 2026).** `topo/core/geometry/integrals.py`:
+`segment_moments` (area and first moments of one oriented primitive),
+`ring_moments`, `ring_area`, `ring_centroid`. Line, arc, circle and ellipse
+share one closed form (c + M cos t + N sin t, polynomials of degree ≤ 3 in
+cos, sin); a polynomial spline is exact by Gauss with 2p points per knot
+span; a rational one by Gauss halved until two levels agree to 1e-14.
+`ClosedCurve.area` and the overlay voids of `Cluster.area` use it.
+
+Two facts found on the fixtures (4144 heal curves, 1112 island curves):
+- A healed contour may jump between one segment's end and the next one's
+  start (a gap closed within `tol`, source coefficients kept, D143). The
+  jump counts as its chord, as the polygon does implicitly; without it the
+  area would change with where the part sits.
+- The error of `polygon.area` has **one sign only on convex arcs**, not in
+  general as written above: on an outer with concave fillets the chord lies
+  outside the material and the polygon *over*estimates (44 of 223 golden
+  values went down). The bound, |Δ| ≤ tol × perimeter, holds everywhere:
+  largest golden change 1.17 mm² on a 178.7 mm perimeter.
+
+Goldens: only the `area`/`area_mm2` fields were rewritten (223 values in 66
+files), copied from a full regeneration; every other field kept as it was,
+because the full regeneration also moved perimeters and WKT that were stale
+from earlier decisions and are not this change. Orientation and the order
+of contours (`polygon.area` in hierarchy, island, outer face) still use the
+polygon: they leave with G13.
+
 ### D166 — no shapely type in topo's public surface; `to_shapely` is an explicit conversion outside the model
 
 Decided by Federico, 25 October 2026. `Contour.polygon` (and every public

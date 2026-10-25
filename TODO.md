@@ -51,12 +51,16 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       snapfence, smoother — una riga per ognuno in `## Richieste a topo` non
       serve, è topo che rompe: va scritto nel loro TODO dalle loro sessioni.
       Rompe un nome: si fa per prima, insieme a G12.
-- [ ] **G12** Area esatta (D165, entra nel cancello per decisione di
+- [x] **G12** Area esatta (D165, entra nel cancello per decisione di
       Federico, 25 ottobre): `area` di un contorno è l'integrale di Green
       sui suoi `segments` (linea, arco, ellisse in forma chiusa, spline per
       polinomi), non l'area del poligono discretizzato. Non dipende più da
       `tol` e non sottostima più gli archi. Cambia il valore di un nome
       pubblico: va fatto prima della 1.0.
+      Fatto 25 ottobre (`core/geometry/integrals.py`, MAP D165
+      "Implemented"): golden aggiornati nei soli campi d'area. Il
+      baricentro c'è (`ring_centroid`), esce come `centroid` con G13.
+      Restano su `polygon.area` ordine e verso dei contorni: via con G13.
 
 **Promessa — D143, provata sui fixture**
 - [x] **G3** Test di fedeltà a due vie — `tests/real/test_fidelity.py`

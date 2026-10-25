@@ -3,7 +3,7 @@
   "cluster_count": 1,
   "clusters": [
     {
-      "area_mm2": 590889.4259,
+      "area_mm2": 590886.068,
       "outer_perimeter_mm": 3190.0,
       "inner_perimeter_mm": 524.5655,
       "total_perimeter_mm": 3714.5655,
@@ -18,19 +18,19 @@
       "inners": [
         {
           "role": "inner",
-          "area": 2461.8834
+          "area": 2463.0086
         },
         {
           "role": "inner",
-          "area": 2461.8834
+          "area": 2463.0086
         },
         {
           "role": "inner",
-          "area": 593.4036
+          "area": 593.9574
         },
         {
           "role": "inner",
-          "area": 593.4036
+          "area": 593.9574
         }
       ]
     }

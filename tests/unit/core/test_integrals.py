@@ -157,3 +157,14 @@ def test_spline_periodica_chiusa_da_sola():
     spline = BSplineSeg(3, ctrl, [float(k) for k in range(len(ctrl) + 4)])
     assert spline.periodic
     assert ring_area([spline]) == pytest.approx(_dense_area([spline]), rel=1e-11)
+
+
+def test_un_salto_fra_segmenti_conta_come_la_sua_corda():
+    # quadrato con un gap di 0.01 chiuso entro tolleranza: l'area non
+    # dipende da dove sta il pezzo
+    far = (1e5, -3e5)
+    ring = [LineSeg((0.0, 0.0), (2.0, 0.0)), LineSeg((2.0, 0.0), (2.0, 2.0)),
+            LineSeg((2.0, 2.0), (0.0, 2.0)), LineSeg((0.0, 2.0), (0.0, 0.01))]
+    moved = [s.translated(*far) for s in ring]
+    assert ring_area(ring) == pytest.approx(4.0, abs=EPS)
+    assert ring_area(moved) == pytest.approx(4.0, abs=1e-6)

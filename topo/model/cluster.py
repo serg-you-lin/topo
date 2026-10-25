@@ -8,6 +8,7 @@ from typing import Any, List, Optional
 
 from shapely.geometry import Polygon
 
+from topo.core.geometry.integrals import ring_area
 from topo.model.contour import Contour
 
 
@@ -79,7 +80,7 @@ class Cluster:
         """
         return (
             self.outer.area
-            - sum(v.polygon.area for v in self.overlay_voids)
+            - sum(_void_area(v) for v in self.overlay_voids)
             - sum(i.area if i.depth % 2 else -i.area for i in self.inners)
         )
 
@@ -117,3 +118,9 @@ class Cluster:
             "inners": [list(i.polygon.exterior.coords) for i in self.inners],
             "custom": self.custom,
         }
+
+
+def _void_area(item) -> float:
+    """Area di un vuoto dell'overlay: esatta sui suoi `segments` se li porta (D165)."""
+    segments = getattr(item, "segments", None)
+    return ring_area(segments) if segments else item.polygon.area
