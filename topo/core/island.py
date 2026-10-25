@@ -172,7 +172,7 @@ def read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandRe
     if face is not None:
         taken = {id(e) for e in face.edges} | {id(e) for e in face.spurs}
         reading.spurs = list(face.spurs)
-    rest = [e for e in pieces if id(e) not in taken]
+    rest = [e for e in pieces if id(e) not in taken] + (face.rest if face is not None else [])
     if face is not None:
         probe = face.polygon.buffer(tolerance)
         reading.outside = [e for e in rest if not probe.contains(edge_geometry(e))]

@@ -42,6 +42,7 @@ ON_CONTOUR = DEFAULT_TOLERANCE
 # lungo il contorno: un incrocio ci resta solo sotto ~1° (2·ON_CONTOUR/sin θ),
 # una tangenza solo con raggio oltre ~12 mm (2·√(2·R·ON_CONTOUR))
 ALONG = 1.0
+TWICE = 1.9                           # ingresso lungo il tratto, in lunghezze del tratto: due pezzi
 
 
 def moved(doc: Document, move) -> Document:
@@ -179,15 +180,19 @@ def _rims(result) -> list:
     return [geometry(s) for c in result.clusters for ct in [c.outer] + c.inners for s in ct.segments]
 
 
-def along_contours(result) -> list:
+def along_contours(result, doc: Document) -> list:
     """I tratti di `result.loose` che corrono lungo un contorno (entro
     ON_CONTOUR per più di ALONG mm): (lunghezza, punto) per ognuno. Ogni
     pezzo d'ingresso esce una volta — o in un contorno o in `loose` (D137) —
-    quindi la lista è vuota."""
+    quindi la lista è vuota. Un tratto dove l'ingresso di `doc` ha due pezzi
+    (un cerchio ripassato da una polilinea) non conta: sono due pezzi, e
+    ognuno esce una volta."""
     rims = _rims(result)
     if not rims:
         return []
     bands = _Bands(rims, ON_CONTOUR)
+    inputs = [geometry(e.segment) for e in doc.edges]
+    tree = STRtree(inputs)
     found = []
     for curve in result.loose:
         for segment in curve.segments:
@@ -197,10 +202,19 @@ def along_contours(result) -> list:
                 continue
             shared = loose.intersection(band)
             for piece in getattr(shared, "geoms", [shared]):
-                if piece.length > ALONG:
+                if piece.length > ALONG and not _twice_in_input(piece, inputs, tree):
                     point = piece.representative_point()
                     found.append((round(piece.length, 2), (round(point.x, 1), round(point.y, 1))))
     return found
+
+
+def _twice_in_input(piece, inputs: list, tree) -> bool:
+    """Vero se l'ingresso copre `piece` almeno due volte: la sua lunghezza
+    entro ON_CONTOUR da `piece` è quasi il doppio di `piece`."""
+    zone = piece.buffer(ON_CONTOUR)
+    near = tree.query(zone, predicate="intersects")
+    covered = sum(inputs[int(i)].intersection(zone).length for i in near)
+    return covered >= TWICE * piece.length
 
 
 def uncovered(doc: Document, result, distance: float):

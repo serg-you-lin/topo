@@ -26,7 +26,7 @@ questa sezione. Il dettaglio di ogni punto sta più sotto o in `MAP.md`.
 passata delle invarianti di D143 su tutti i fixture, entra qui solo ciò che
 rende rossa una di quelle invarianti su un fixture del repo. Il resto è 1.x.
 Le invarianti invece restano nella suite per sempre. Passata fatta il 23
-ottobre (D159): i rossi sono G6b, G6c, G6d, G7 qui sotto, ognuno nel
+ottobre (D159): i rossi sono G6c, G6d, G7 qui sotto (G6b chiuso, D163), ognuno nel
 registro dei difetti noti del suo test (skip con la voce del cancello; un
 caso che torna verde fa fallire il test finché non esce dalla lista).
 
@@ -62,26 +62,11 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       scheggia, un ciclo che non è faccia); tutti in `result.loose` (bordo
       coperto al 100%), due test lo tengono. DXF da guardare:
       `_debug/2026-10-23_topo_G6_D103/`.
-- [ ] **G6b** Ogni pezzo d'ingresso esce **una volta sola** (Federico, 23
-      ottobre, entra nel cancello). Oggi `loose` contiene geometria che sta
-      già su un contorno. Misurato su tutti i fixture (lunghezza di `loose`
-      entro 0.011 da un contorno, oltre le tangenze):
-      - `island()`: regr_01 42.5 mm, anch_02 25.3, anch_04 24.8, anch_03 /
-        regr_02 22.5, anch_06 15.8, regr_04 10.3, anch_08 3.4, anch_07 1.4,
-        anch_01 1.1. Caso isolato: simbolo a goccia di anch_06,
-        `_debug/2026-10-23_topo_G6_D103/simbolo_anch06*.dxf`. Causa: outer dal
-        ripiego "unione delle facce" (D100) — `face.segments` è il bordo vero
-        (D106), `face.edges` (quello segnato come preso) è il giro del
-        cammino; gli edge del bordo vero finiscono interi in `loose`.
-      - `heal()`: `rect_overlap` a tol < 0.1 (sporgenza 0.1 agli angoli):
-        outer giusto e tutte e 4 le linee originali intere anche in `loose`
-        (+300 mm). A tol 0.2 va bene.
-      Rimedio: `loose` = resto esatto, togliendo dagli edge i tratti sul bordo
-      scelto (come `_off_faces`). Prima di G7: cambia i golden.
-      **Invariante:** `TestOutOnce` nelle due letture (un tratto di `loose`
-      entro 0.01 da un contorno per più di 1 mm; heal anche a tol 0.01 e
-      0.05). Rossi: 13 disegni di island (`KNOWN["out once"]`) e
-      `rect_overlap` a 0.01/0.05 (`KNOWN_TWICE`).
+- [x] **G6b** Ogni pezzo d'ingresso esce una volta sola — fatto, D163: un
+      edge che il bordo prende solo in parte lascia in `loose` il suo resto
+      esatto (`rim.off_rim`), in `island()` (ripiego D100) e nel ripiego
+      polygonize di `heal()`. `KNOWN["out once"]` e `KNOWN_TWICE` vuoti.
+      DXF da guardare: `_debug/2026-10-25_topo_G6b/`.
 - [ ] **G6c** `island()` dipende dall'ordine delle entità e dal sistema di
       riferimento (passata D158, 23 ottobre). Rimescolando gli edge cambiano
       gli inner su 22 dei 31 disegni d'isole; ruotando di 0.7 rad, spostando

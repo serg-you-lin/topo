@@ -41,11 +41,6 @@ def _keys(text: str) -> frozenset:
 # invariante → (voce, disegni). Ogni caso esce come skip con la sua voce; quando
 # un caso passa il test fallisce finché non esce dalla lista (D158)
 KNOWN = {
-    # pezzi usciti due volte, in un contorno e in loose: il ripiego "unione
-    # delle facce" (D100) segna presi gli edge del cammino, non del bordo
-    "out once": ("G6b", _keys(
-        "golden_islands/regr_01 golden_islands/anch_06 golden_islands/regr_04 "
-        "golden_anchoring/anch_06_noframe")),
     # la lettura cambia con l'ordine delle entità o con un moto rigido
     "scrambled": ("G6c", _keys(
         "golden_anchoring/anch_08_noframe golden_islands/anch_08")),
@@ -167,9 +162,9 @@ class TestOutOnce(unittest.TestCase):
 
 def _make_out_once_test(dxf: Path):
     def test(self):
-        _, result = island_reading(dxf, MAX_GAP)
+        doc, result = island_reading(dxf, MAX_GAP)
         _check(self, "out once", dxf, lambda: self.assertEqual(
-            along_contours(result), [], f"{dxf.stem}: tratti di loose lungo un contorno"))
+            along_contours(result, doc), [], f"{dxf.stem}: tratti di loose lungo un contorno"))
     return test
 
 

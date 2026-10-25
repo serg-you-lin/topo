@@ -45,7 +45,7 @@ GAP_AT_TOLERANCE = {"Multipolis"}
 # risolti la lista si svuota
 KNOWN_ORDER_DEPENDENT: set = set()
 # (disegno, tolleranza) → voce del cancello: pezzi usciti due volte
-KNOWN_TWICE = {("data/gap/rect_overlap", 0.01): "G6b", ("data/gap/rect_overlap", 0.05): "G6b"}
+KNOWN_TWICE: dict = {}
 # disegno → voce del cancello: le corde cambiano l'outer (cave larghe quanto la
 # tolleranza, riempite solo quando ci sono le corde)
 KNOWN_CHORDS = {"data/SEGNI_TRACCIATI": "G6d"}
@@ -179,8 +179,8 @@ def _make_out_once_test(dxf: Path):
     def test(self):
         for tol in sorted({_tolerance(dxf), *OUT_ONCE_TOLERANCES}):
             with self.subTest(tolerance=tol):
-                _, result = _read(dxf, tol)
-                check = lambda: self.assertEqual(along_contours(result), [],
+                doc, result = _read(dxf, tol)
+                check = lambda: self.assertEqual(along_contours(result, doc), [],
                                                  f"{dxf.stem} a tol {tol}: tratti di loose lungo un contorno")
                 gate = KNOWN_TWICE.get((drawing_key(dxf), tol))
                 if gate:

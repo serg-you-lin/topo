@@ -5872,3 +5872,43 @@ which cycle to see there is the consumer's. `heal()` is untouched.
 Not done, on purpose: no new type, no new function, no path for a group of
 open curves, no open loose curves as anchor targets (a leader tip on a
 centre line would compete with the hole it crosses).
+
+### D163 — a piece the border takes only in part leaves exactly its remainder in `loose` (G6b)
+
+Gate item G6b, 25 October 2026. Every input piece comes out once: in a
+contour or in `loose` (D137). Two readings broke it where the contour is
+read from faces instead of a graph loop, because they marked as "taken"
+only the edges lying *entirely* on the border:
+
+- `island()`, outer from the union of faces (D100): an edge the border
+  runs along only in part (a crossing shapely nodes and the planar network
+  does not) gave its part to the contour (D106) and went whole to `loose`
+  too. Measured on regr_01, anch_06, regr_04, anch_06_noframe: 21 stretches,
+  up to 5 mm, within 1e-4 mm of the contour.
+- `heal()`, the last-resort `polygonize` (no graph loop closes): no edge
+  was taken at all, so every line came out twice (`rect_overlap` at tol
+  0.01 and 0.05: outer right, all four lines whole in `loose`).
+
+Rule. `rim.face_segments` now also returns which stretch of which edge
+each border run used. An edge with a run is taken; `rim.off_rim` cuts it
+at the ends of its runs and keeps, as new edges, the pieces that move away
+from the border by more than `band` — the farthest point, not the
+midpoint: a stub of length 2·band starts on the border and its midpoint is
+only band away. An original end keeps its node. `heal()` applies the same
+to every ring of every polygonize face (`rim.off_faces`) with
+`band = tolerance`, so nothing farther than the tolerance disappears
+(D143); `island()` keeps the rim band of D100 (2·GRAPH_EPSILON). Contours
+do not change: only `loose`, which loses exactly the doubled length.
+
+Two test rules made precise, because they confused two input pieces with
+one piece output twice:
+- `along_contours` (the "out once" invariant) ignores a stretch where the
+  input itself has two pieces (a circle traced again by a polyline in
+  anch_06): each comes out once.
+- the fidelity test (G3) accepts an untouched spline that comes out *cut*,
+  not refitted: pieces within 2e-6 of it covering it up to the rim band.
+  regr_04 passed before only thanks to the doubled whole copy in `loose`.
+
+Not done: the polygonize contours of `heal()` stay chains of `LineSeg`;
+reading them along the edges like D106 would bring arcs back, but it is a
+new behaviour, not a G6b fix.
