@@ -6339,3 +6339,52 @@ triaged yet (Federico: another time).
 
 `main` → **0.23.1** (D155: names added, none removed or renamed — `mirrored()`
 gains defaulted parameters, `scaled()` is new — so the third digit).
+
+### D171 — `geometry.contour_union`: two rings united, shared border included ✅
+Federico, 26 October: implement pippo's second request (union of contours
+that share a border), triaged in D170 as "another time".
+
+**What it does.** `contour_union(contour, other)` returns the rings of the
+boundary of the union, largest first. Outers keep `contour`'s direction; a
+hole closed between the two runs the opposite way. Two rings that are apart,
+or touch in one point, stay two rings. It is the counterpart of
+`contour_minus` (D118) and is built from the same parts: cut both rings, keep
+each piece by the side of the other ring its points fall on, chain the kept
+pieces.
+
+**The shared border.** A piece of one ring that lies on the other ring is
+matched to the other ring's piece with the same ends and the same middle
+point. Both rings are first brought to the same direction. So a matched pair
+running opposite ways means the interiors are on opposite sides: the two
+pieces sit side by side, and both go. A pair running the same way means the
+interiors overlap there, and the piece stays once. A piece on the border with
+no such twin raises `ValueError`. That piece runs along the other ring without
+coinciding with it, and the union has no exact border there.
+
+**Why it is exact on every primitive.** Two overlapping lines or arcs cross
+in no point. The cuts are therefore the crossings plus the ends of the other
+ring's segments: an overlap always starts and ends at an end of one of the two
+segments. A ring's own ends are not cuts, because a circle's end (its angle 0)
+is a convention, not a node. Identical splines and ellipses are not crossed
+against each other. Their discretizations would give a crossing at every
+vertex.
+
+**The output is a new contour.** Where the boundary goes on along one line
+or one circle, as with two squares side by side or two half-disks, there is
+no corner, and the pieces become one (`merge_runs`, D95). This is what pippo's
+`cancel_on_line` did by hand, for straight borders only.
+
+**Fixes found on the way.**
+- `_chain` gains `inside_left`. At a node where two pieces leave (a touch in
+  one point), it takes the one that encloses the narrowest wedge of the
+  region, so two touching rings stay two rings and not a figure eight. A piece
+  that leaves tangent and backwards counts as the full turn.
+- A piece's side is read at its middle point and, if that point is on the
+  border (a touch exactly there), at a third and two thirds of its length.
+  The middle alone made a circle tangent at its angle π look like a shared
+  border. `cut_by` and `contour_minus` use the same test.
+- `shape.merge_runs` joined two arcs across angle 0 into an arc of zero
+  sweep, because it took the second arc's end angle as it stood. It now adds
+  the two sweeps. This was latent in `island()`.
+
+`main` → **0.23.2** (D155: a public name added, third digit).

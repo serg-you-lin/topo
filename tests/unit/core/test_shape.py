@@ -7,7 +7,7 @@ import unittest
 import topo
 from topo.core.primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, BSplineSeg
 from topo.core.geometry.shape import (
-    CIRCLE, ELLIPSE, OTHER, POLYGON, RECTANGLE, STADIUM, ShapeKind, contour_shape,
+    CIRCLE, ELLIPSE, OTHER, POLYGON, RECTANGLE, STADIUM, ShapeKind, contour_shape, merge_runs,
 )
 from topo.core.topology.edge import Edge
 from topo.model.document import Document
@@ -254,6 +254,21 @@ class TestContourShapeSuIsole(unittest.TestCase):
         cluster = topo.heal(self._doc()).clusters[0]
         self.assertEqual(contour_shape(cluster.outer).kind, RECTANGLE)
         self.assertEqual(self._kinds(cluster), [CIRCLE, STADIUM])
+
+
+
+class TestMergeRuns(unittest.TestCase):
+
+    def test_arcs_across_angle_zero_add_their_sweeps(self):
+        # da 3π/2 a 2π e da 0 a π/2: un arco solo di π, non uno di ampiezza nulla
+        ring = [ArcSeg(center=(0, 0), radius=1, start_angle=3 * math.pi / 2, end_angle=2 * math.pi, ccw=True),
+                ArcSeg(center=(0, 0), radius=1, start_angle=0.0, end_angle=math.pi / 2, ccw=True),
+                LineSeg(start=(0, 1), end=(0, -1))]
+        merged, _ = merge_runs(ring, [None] * 3)
+        self.assertEqual(len(merged), 2)
+        self.assertAlmostEqual(merged[0]._sweep(), math.pi)
+        self.assertAlmostEqual(math.cos(merged[0].end_angle), 0)
+        self.assertAlmostEqual(math.sin(merged[0].end_angle), 1)
 
 
 if __name__ == "__main__":

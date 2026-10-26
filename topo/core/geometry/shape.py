@@ -408,6 +408,9 @@ def _continues(prev, prev_style, seg, style) -> bool:
 
 def _joined(prev, seg):
     if isinstance(prev, ArcSeg):
+        # le ampiezze si sommano: `seg.end_angle` da solo può essere l'angolo
+        # di partenza di `prev` a meno di un giro (arco che passa per lo 0)
+        sweep = prev._sweep() + seg._sweep()
         return ArcSeg(center=prev.center, radius=prev.radius, start_angle=prev.start_angle,
-                      end_angle=seg.end_angle, ccw=prev.ccw)
+                      end_angle=prev.start_angle + (sweep if prev.ccw else -sweep), ccw=prev.ccw)
     return LineSeg(start=prev.start, end=seg.end)

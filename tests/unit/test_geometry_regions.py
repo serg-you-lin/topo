@@ -2,7 +2,7 @@
 test_geometry_regions.py
 ------------------------
 Primitive per algoritmi di un chiamante (MAP.md D118): `intersections` fra due
-primitive, `point_on_contour`, `cut_by`, `contour_minus`,
+primitive, `point_on_contour`, `cut_by`, `contour_minus`, `contour_union`,
 `Contour.from_segments`. Ogni regione è un contorno chiuso qualunque:
 gli stessi test girano con un disco e con un rettangolo.
 """
@@ -207,6 +207,87 @@ class TestContourMinus(unittest.TestCase):
     def test_shared_border_raises(self):
         with self.assertRaises(ValueError):
             g.contour_minus(SQUARE, g.rectangle(10, 10, center=(15, 5)))
+
+
+class TestContourUnion(unittest.TestCase):
+
+    def _kinds(self, ring):
+        return [type(s).__name__ for s in ring]
+
+    def test_side_by_side_the_shared_border_disappears(self):
+        rings = g.contour_union(SQUARE, g.rectangle(10, 10, center=(15, 5)))
+        self.assertEqual(len(rings), 1)
+        self.assertAlmostEqual(_area(rings[0]), 200)
+        # dove il bordo prosegue sulla stessa retta non c'è spigolo
+        self.assertEqual(self._kinds(rings[0]), ["LineSeg"] * 4)
+
+    def test_a_shorter_neighbour_leaves_the_rest_of_the_side(self):
+        rings = g.contour_union(SQUARE, g.rectangle(4, 4, center=(12, 5)))
+        self.assertEqual(len(rings), 1)
+        self.assertAlmostEqual(_area(rings[0]), 116)
+        self.assertEqual(len(rings[0]), 8)
+
+    def test_overlapping_and_identical(self):
+        rings = g.contour_union(SQUARE, g.rectangle(10, 10, center=(10, 5)))
+        self.assertEqual([round(_area(r), 6) for r in rings], [150])
+        self.assertEqual(len(rings[0]), 4)
+        self.assertEqual([round(_area(r), 6) for r in g.contour_union(SQUARE, SQUARE)], [100])
+
+    def test_apart_inside_and_touching_in_a_point(self):
+        self.assertEqual(len(g.contour_union(SQUARE, g.circle(1, center=(50, 50)))), 2)
+        self.assertEqual([round(_area(r), 6) for r in g.contour_union(SQUARE, g.circle(1, center=(5, 5)))],
+                         [100])
+        # un tocco in un punto: due anelli, non un otto
+        for other in (g.rectangle(10, 10, center=(15, 15)), g.circle(5, center=(15, 5))):
+            rings = g.contour_union(SQUARE, other)
+            self.assertEqual(len(rings), 2)
+            self.assertAlmostEqual(sum(_area(r) for r in rings), 100 + _area(other), places=4)
+
+    def test_a_closed_gap_is_a_hole_with_the_opposite_direction(self):
+        u_shape = g.polygon([(0, 0), (9, 0), (9, 9), (6, 9), (6, 3), (3, 3), (3, 9), (0, 9)])
+        rings = g.contour_union(u_shape, g.rectangle(9, 2, center=(4.5, 10)))
+        self.assertEqual([round(_area(r), 6) for r in rings], [99, 18])
+        self.assertGreater(_signed(rings[0]), 0)
+        self.assertLess(_signed(rings[1]), 0)
+
+    def test_shared_arc_and_two_half_disks(self):
+        disk = g.circle(2)
+        notched = g.contour_minus(SQUARE, disk)[0]
+        rings = g.contour_union(notched, disk)
+        self.assertEqual(len(rings), 1)
+        self.assertAlmostEqual(_area(rings[0]), 100 + 3 * math.pi, places=3)
+        upper = [ArcSeg((0, 0), 5, 0, math.pi, True), LineSeg((-5, 0), (5, 0))]
+        lower = [ArcSeg((0, 0), 5, math.pi, 2 * math.pi, True), LineSeg((5, 0), (-5, 0))]
+        rings = g.contour_union(upper, lower)
+        self.assertEqual(self._kinds(rings[0]), ["CircleSeg"])
+        self.assertAlmostEqual(rings[0][0].radius, 5)
+
+    def test_shared_spline_border(self):
+        curve = BSplineSeg(degree=2, control_points=[(10, 0), (13, 5), (10, 10)],
+                           knots=[0, 0, 0, 1, 1, 1])
+        left = [LineSeg((0, 0), (10, 0)), curve, LineSeg((10, 10), (0, 10)), LineSeg((0, 10), (0, 0))]
+        right = [LineSeg((10, 0), (20, 0)), LineSeg((20, 0), (20, 10)), LineSeg((20, 10), (10, 10)),
+                 curve.reversed()]
+        rings = g.contour_union(left, right)
+        self.assertEqual(len(rings), 1)
+        self.assertAlmostEqual(_area(rings[0]), 200, places=3)
+        self.assertNotIn("BSplineSeg", self._kinds(rings[0]))
+
+    def test_direction_of_the_contour_is_kept(self):
+        backwards = [s.reversed() for s in reversed(SQUARE)]
+        rings = g.contour_union(backwards, g.rectangle(10, 10, center=(15, 5)))
+        self.assertLess(_signed(rings[0]), 0)
+        self.assertAlmostEqual(_area(rings[0]), 200)
+
+    def test_result_is_a_valid_contour(self):
+        ring = g.contour_union(L_SHAPE, g.rectangle(5, 5, center=(7.5, 7.5)))[0]
+        self.assertAlmostEqual(_area(ring), 100)
+        contour = Contour.from_segments(ring, role="outer")
+        self.assertTrue(to_shapely(contour).is_valid)
+
+    def test_a_border_running_along_without_coinciding_raises(self):
+        with self.assertRaises(ValueError):
+            g.contour_union(SQUARE, g.rectangle(10, 10, center=(15.00001, 5)))
 
 
 class TestContourFromSegments(unittest.TestCase):

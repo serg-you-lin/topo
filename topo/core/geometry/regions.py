@@ -3,8 +3,9 @@ topo/core/geometry/regions.py
 ------------------------------
 Un contorno chiuso e una regione: dove cade un punto sul contorno (in mezzo a
 un lato, su uno spigolo, su un raccordo), un tratto tagliato da una regione,
-un contorno meno una regione (MAP.md D118); quale contorno esterno contiene
-per intero una traccia (D137).
+un contorno meno una regione (MAP.md D118); l'unione di due contorni, anche
+con un bordo in comune (D171); quale contorno esterno contiene per intero una
+traccia (D137).
 
 Contorno e regione sono anelli di primitive testa-coda (`contour.segments`,
 `topo.geometry.circle`, `topo.geometry.rectangle`, ...): una regione è un
@@ -32,6 +33,7 @@ from ..primitives.segments import (
 from ..primitives.trim import sub_segment
 from .integrals import ring_moments
 from .intersections import CURVE_TOLERANCE, intersections
+from .shape import merge_runs
 
 Point = Tuple[float, float]
 
@@ -209,6 +211,18 @@ def _side(polygon, pt: Point) -> int:
     return 1 if polygon.contains(p) else -1
 
 
+def _piece_side(polygon, piece) -> int:
+    """Da che parte di `polygon` sta un pezzo (fra due tagli non cambia):
+    il punto medio, e se quello cade sul bordo (un tocco proprio lì) i
+    punti a un terzo e due terzi. 0 solo se ci corre sopra."""
+    span = _span(piece)
+    for f in (0.5, 1 / 3, 2 / 3):
+        side = _side(polygon, _at(piece, span * f))
+        if side:
+            return side
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # Un punto sul contorno
 # ---------------------------------------------------------------------------
@@ -295,7 +309,7 @@ def cut_by(segment, region: Sequence, keep: str = "outside") -> list:
     want = -1 if keep == "outside" else 1
     out = []
     for piece in _split(segment, points):
-        side = _side(polygon, _middle(piece))
+        side = _piece_side(polygon, piece)
         if side == 0:
             raise ValueError("un pezzo corre lungo il bordo della regione")
         if side == want:
@@ -307,8 +321,14 @@ def cut_by(segment, region: Sequence, keep: str = "outside") -> list:
 # Contorno meno regione
 # ---------------------------------------------------------------------------
 
-def _chain(pieces: list) -> List[list]:
-    """Pezzi orientati incatenati testa-coda in anelli chiusi."""
+def _chain(pieces: list, inside_left: Optional[bool] = None) -> List[list]:
+    """
+    Pezzi orientati incatenati testa-coda in anelli chiusi. Con
+    `inside_left` (la regione sta a sinistra dei pezzi, o a destra se False),
+    in un nodo da cui ripartono più pezzi si prende quello che stringe di più
+    la regione: due anelli che si toccano in un punto restano due anelli, non
+    un otto.
+    """
     left = list(pieces)
     rings = []
     while left:
@@ -316,9 +336,24 @@ def _chain(pieces: list) -> List[list]:
         start = _ends(ring[0])[0]
         while math.dist(_ends(ring[-1])[1], start) > _JOIN:
             tail = _ends(ring[-1])[1]
-            k = next((i for i, p in enumerate(left) if math.dist(_ends(p)[0], tail) <= _JOIN), None)
-            if k is None:
+            nexts = [i for i, p in enumerate(left) if math.dist(_ends(p)[0], tail) <= _JOIN]
+            if not nexts:
                 raise ValueError("i pezzi non si chiudono in un anello")
+            k = nexts[0]
+            if inside_left is not None and len(nexts) > 1:
+                # angolo dalla direzione da cui si arriva, girata, a quella in
+                # uscita: la regione sta in quello spicchio, il più stretto vince
+                tx, ty = _tangent(ring[-1], at_end=True)
+                back = math.atan2(-ty, -tx)
+                sign = 1.0 if inside_left else -1.0
+
+                def wedge(i):
+                    ox, oy = _tangent(left[i], at_end=False)
+                    w = (sign * (back - math.atan2(oy, ox))) % (2 * math.pi)
+                    # riparte tangente all'indietro (due curve che si toccano):
+                    # la sua regione gira tutto attorno, lo spicchio è il giro intero
+                    return 2 * math.pi if w < TANGENT_TOLERANCE else w
+                k = min(nexts, key=wedge)
             ring.append(left.pop(k))
         rings.append(ring)
     return rings
@@ -349,27 +384,106 @@ def contour_minus(contour: Sequence, region: Sequence) -> List[list]:
                     points.append(p)
     if len(points) < 2:
         # nessun incrocio (un tocco solo non cambia la forma)
-        if _side(region_polygon, _middle(contour[0])) == 1:
+        if _piece_side(region_polygon, contour[0]) == 1:
             return []
-        if _side(contour_polygon, _middle(region[0])) == 1:
+        if _piece_side(contour_polygon, region[0]) == 1:
             return [contour, _reversed(region) if same else [_full_arc(r) for r in region]]
         return [contour]
     kept = []
     for c in contour:
         for piece in _split(c, points):
-            side = _side(region_polygon, _middle(piece))
+            side = _piece_side(region_polygon, piece)
             if side == 0:
                 raise ValueError("il contorno corre lungo il bordo della regione")
             if side == -1:
                 kept.append(piece)
     for r in region:
         for piece in _split(r, points):
-            side = _side(contour_polygon, _middle(piece))
+            side = _piece_side(contour_polygon, piece)
             if side == 0:
                 raise ValueError("la regione corre lungo il bordo del contorno")
             if side == 1:
                 kept.append(piece.reversed() if same else piece)
     return _chain(kept)
+
+
+# ---------------------------------------------------------------------------
+# Unione di due contorni
+# ---------------------------------------------------------------------------
+
+def _twin(piece, pieces: list) -> Tuple[Optional[int], bool]:
+    """L'indice del pezzo di `pieces` che ricopre `piece` (stessi capi, stesso
+    punto medio) e se corre nello stesso verso; (None, False) se nessuno."""
+    a, b = _ends(piece)
+    mid = _middle(piece)
+    for i, q in enumerate(pieces):
+        if math.dist(_middle(q), mid) > _ON_BORDER:
+            continue
+        qa, qb = _ends(q)
+        if math.dist(qa, a) <= _JOIN and math.dist(qb, b) <= _JOIN:
+            return i, True
+        if math.dist(qa, b) <= _JOIN and math.dist(qb, a) <= _JOIN:
+            return i, False
+    return None, False
+
+
+def _same_curve(a, b) -> bool:
+    """`a` e `b` sono la stessa spline o ellisse (anche girata): incrociate
+    sulle loro discretizzazioni darebbero un punto a ogni vertice. Rette e
+    archi sovrapposti non danno punti già da sé."""
+    if isinstance(a, (LineSeg, ArcSeg, CircleSeg)) or isinstance(b, (LineSeg, ArcSeg, CircleSeg)):
+        return False
+    return _twin(a, [b])[0] is not None
+
+
+def contour_union(contour: Sequence, other: Sequence) -> List[list]:
+    """
+    L'unione degli anelli `contour` e `other` (primitive testa-coda): gli
+    anelli del bordo che ne viene, il più grande per primo. Un contorno
+    esterno ha il verso di `contour`, un foro (chiuso fra i due) quello
+    opposto; due contorni lontani restano due anelli.
+
+    Un bordo in comune è il caso che conta: dove i due si affiancano il
+    tratto comune sparisce, dove si sovrappongono resta una volta. Il tratto
+    comune deve coincidere pezzo per pezzo (stessa retta, stesso cerchio,
+    stessa curva fra gli stessi capi); un bordo che corre lungo l'altro senza
+    coincidere → ValueError. Dove il bordo prosegue sulla stessa retta o
+    sullo stesso cerchio non c'è uno spigolo: i pezzi tornano uno solo.
+    """
+    contour, other = list(contour), list(other)
+    ccw = _signed_area(contour) > 0
+    if (_signed_area(other) > 0) != ccw:
+        other = _reversed(other)
+    contour_polygon, other_polygon = _polygon(contour), _polygon(other)
+    # tagli: gli incroci, più i capi dei lati dell'altro anello, perché due
+    # tratti sovrapposti non si incrociano in un punto (i capi propri no: il
+    # capo di un cerchio è una convenzione, non un nodo)
+    crossings = [p for c in contour for o in other if not _same_curve(c, o)
+                 for p in intersections(c, o)]
+    cuts = [crossings + [q for o in other for q in _ends(o)],
+            crossings + [q for c in contour for q in _ends(c)]]
+    pieces = [(piece, _piece_side(other_polygon, piece))
+              for c in contour for piece in _split(c, cuts[0])]
+    other_pieces = [(piece, _piece_side(contour_polygon, piece))
+                    for o in other for piece in _split(o, cuts[1])]
+    on_border = [piece for piece, side in other_pieces if side == 0]
+    kept = []
+    for piece, side in pieces:
+        if side == 0:
+            k, same = _twin(piece, on_border)
+            if k is None:
+                raise ValueError("il contorno corre lungo l'altro senza coincidere")
+            on_border.pop(k)
+            if same:             # sovrapposti: l'interno è dalla stessa parte
+                kept.append(piece)
+            continue             # affiancati: il tratto comune sparisce
+        if side == -1:
+            kept.append(piece)
+    if on_border:
+        raise ValueError("l'altro contorno corre lungo il primo senza coincidere")
+    kept += [piece for piece, side in other_pieces if side == -1]
+    rings = [merge_runs(ring, [None] * len(ring))[0] for ring in _chain(kept, inside_left=ccw)]
+    return sorted(rings, key=lambda ring: -abs(_signed_area(ring)))
 
 
 # ---------------------------------------------------------------------------

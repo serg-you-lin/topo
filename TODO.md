@@ -495,11 +495,9 @@ Richieste aperte:
   origin)` uniforme, su tutte le primitive, esatti. **No**: scala non
   uniforme e affine generica (un arco diventerebbe un'ellisse); il moto
   rigido è la catena `mirrored(...).rotated(...).translated(...)`.
-- **pippo, unione di contorni con un bordo in comune** — da smistare
-  (Federico, 26 ottobre: un'altra volta). Prima lettura: fatto geometrico,
-  il contrario di `contour_minus` (D118), che sul bordo in comune oggi
-  solleva come `cut_by`; esatto su linee collineari e archi cocircolari, un
-  tratto comune di spline/ellisse senza forma chiusa → `ValueError`.
+- ~~**pippo, unione di contorni con un bordo in comune**~~ — fatto, D171:
+  `geometry.contour_union` (26 ottobre). `cancel_on_line` in
+  `lab/flat_L.py` di pippo si può togliere.
 - ~~**smoother, linguette a click** (D139/D140) e **linguette che non
   attraversano niente** (19 ottobre)~~ — fatto, D142: `tools.tabs` è
   diventato `tools.strips`, i quattro fatti di D134 più la costruzione.
