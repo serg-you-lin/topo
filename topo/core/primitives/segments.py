@@ -77,13 +77,21 @@ class LineSeg:
         """Stessa linea, spostata di (`dx`, `dy`)."""
         return LineSeg(start=_translate_point(self.start, dx, dy), end=_translate_point(self.end, dx, dy))
 
-    def mirrored(self) -> "LineSeg":
-        """Stessa linea, specchiata sull'asse x (y → −y)."""
-        return LineSeg(start=_mirror_point(self.start), end=_mirror_point(self.end))
+    def mirrored(self, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "LineSeg":
+        """Stessa linea, specchiata sulla retta per `origin` a `angle` radianti
+        (default: l'asse x, y → −y)."""
+        return LineSeg(start=_mirror_point(self.start, origin, angle),
+                       end=_mirror_point(self.end, origin, angle))
+
+    def scaled(self, factor: float, origin: Point = (0.0, 0.0)) -> "LineSeg":
+        """Stessa linea, scalata di `factor` (> 0) attorno a `origin`."""
+        factor = _check_factor(factor)
+        return LineSeg(start=_scale_point(self.start, factor, origin),
+                       end=_scale_point(self.end, factor, origin))
 
 
 # ---------------------------------------------------------------------------
-# Matematica di rotazione condivisa (ogni primitiva)
+# Trasformazioni del piano condivise (ogni primitiva): rotazione, traslazione, specchio, scala
 # ---------------------------------------------------------------------------
 
 def _rotate_point(pt: Point, angle: float, origin: Point) -> Point:
@@ -99,9 +107,28 @@ def _translate_point(pt: Point, dx: float, dy: float) -> Point:
     return (pt[0] + dx, pt[1] + dy)
 
 
-def _mirror_point(pt: Point) -> Point:
-    """`pt` specchiato sull'asse x."""
-    return (pt[0], -pt[1])
+def _mirror_point(pt: Point, origin: Point = (0.0, 0.0), angle: float = 0.0) -> Point:
+    """`pt` specchiato sulla retta per `origin` inclinata di `angle` radianti
+    sull'asse x (default: l'asse x, y → −y)."""
+    ox, oy = origin
+    x, y = pt[0] - ox, pt[1] - oy
+    cos_2a, sin_2a = math.cos(2 * angle), math.sin(2 * angle)
+    return (ox + x * cos_2a + y * sin_2a, oy + x * sin_2a - y * cos_2a)
+
+
+def _scale_point(pt: Point, factor: float, origin: Point) -> Point:
+    """`pt` scalato di `factor` attorno a `origin`."""
+    ox, oy = origin
+    return (ox + (pt[0] - ox) * factor, oy + (pt[1] - oy) * factor)
+
+
+def _check_factor(factor: float) -> float:
+    """Il fattore di una scala: positivo e finito. Uno negativo è una
+    rotazione di π più una scala, e va chiesto così."""
+    factor = float(factor)
+    if not (factor > 0 and math.isfinite(factor)):
+        raise ValueError(f"fattore di scala positivo e finito, non {factor}")
+    return factor
 
 
 # ---------------------------------------------------------------------------
@@ -258,15 +285,25 @@ class ArcSeg:
         return ArcSeg(center=_translate_point(self.center, dx, dy), radius=self.radius,
                       start_angle=self.start_angle, end_angle=self.end_angle, ccw=self.ccw)
 
-    def mirrored(self) -> "ArcSeg":
+    def mirrored(self, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "ArcSeg":
         """
-        Stesso arco, specchiato sull'asse x: il punto all'angolo `a` va
-        all'angolo `−a`, quindi gli angoli cambiano segno e il verso si
-        inverte. La griglia del cerchio (D145, ancorata all'angolo 0) è
-        simmetrica: l'arco specchiato ha i vertici specchiati.
+        Stesso arco, specchiato sulla retta per `origin` a `angle` radianti
+        (default: l'asse x): il punto all'angolo `a` va all'angolo
+        `2·angle − a`, quindi il verso si inverte. Sull'asse x la griglia del
+        cerchio (D145, ancorata all'angolo 0) è simmetrica e l'arco specchiato
+        ha i vertici specchiati; su un altro asse la curva è esatta e i
+        vertici cadono sulla griglia dell'arco nuovo.
         """
-        return ArcSeg(center=_mirror_point(self.center), radius=self.radius,
-                      start_angle=-self.start_angle, end_angle=-self.end_angle, ccw=not self.ccw)
+        return ArcSeg(center=_mirror_point(self.center, origin, angle), radius=self.radius,
+                      start_angle=2 * angle - self.start_angle, end_angle=2 * angle - self.end_angle,
+                      ccw=not self.ccw)
+
+    def scaled(self, factor: float, origin: Point = (0.0, 0.0)) -> "ArcSeg":
+        """Stesso arco, scalato di `factor` (> 0) attorno a `origin`: il centro
+        si sposta, il raggio si moltiplica, angoli e verso non cambiano."""
+        factor = _check_factor(factor)
+        return ArcSeg(center=_scale_point(self.center, factor, origin), radius=self.radius * factor,
+                      start_angle=self.start_angle, end_angle=self.end_angle, ccw=self.ccw)
 
     @classmethod
     def from_chord(cls, start: Point, end: Point, bulge: float) -> "ArcSeg":
@@ -500,11 +537,20 @@ class BSplineSeg:
                           control_points=[_translate_point(p, dx, dy) for p in self.control_points],
                           knots=list(self.knots), weights=list(self.weights) if self.weights else None)
 
-    def mirrored(self) -> "BSplineSeg":
-        """Stessa spline, specchiata sull'asse x: una mappa lineare porta la
-        curva nella curva dei punti di controllo specchiati."""
+    def mirrored(self, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "BSplineSeg":
+        """Stessa spline, specchiata sulla retta per `origin` a `angle` radianti
+        (default: l'asse x): una mappa affine porta la curva nella curva dei
+        punti di controllo specchiati."""
         return BSplineSeg(degree=self.degree,
-                          control_points=[_mirror_point(p) for p in self.control_points],
+                          control_points=[_mirror_point(p, origin, angle) for p in self.control_points],
+                          knots=list(self.knots), weights=list(self.weights) if self.weights else None)
+
+    def scaled(self, factor: float, origin: Point = (0.0, 0.0)) -> "BSplineSeg":
+        """Stessa spline, scalata di `factor` (> 0) attorno a `origin`: si
+        scalano i punti di controllo, nodi e pesi non cambiano."""
+        factor = _check_factor(factor)
+        return BSplineSeg(degree=self.degree,
+                          control_points=[_scale_point(p, factor, origin) for p in self.control_points],
                           knots=list(self.knots), weights=list(self.weights) if self.weights else None)
 
     def _evaluate(self, t: float) -> Point:
@@ -647,10 +693,15 @@ class CircleSeg:
         """Stesso cerchio, spostato di (`dx`, `dy`)."""
         return CircleSeg(center=_translate_point(self.center, dx, dy), radius=self.radius)
 
-    def mirrored(self) -> "CircleSeg":
-        """Stesso cerchio, specchiato sull'asse x (la griglia, ancorata
-        all'angolo 0, è simmetrica)."""
-        return CircleSeg(center=_mirror_point(self.center), radius=self.radius)
+    def mirrored(self, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "CircleSeg":
+        """Stesso cerchio, specchiato sulla retta per `origin` a `angle`
+        radianti (default: l'asse x): si sposta solo il centro."""
+        return CircleSeg(center=_mirror_point(self.center, origin, angle), radius=self.radius)
+
+    def scaled(self, factor: float, origin: Point = (0.0, 0.0)) -> "CircleSeg":
+        """Stesso cerchio, scalato di `factor` (> 0) attorno a `origin`."""
+        factor = _check_factor(factor)
+        return CircleSeg(center=_scale_point(self.center, factor, origin), radius=self.radius * factor)
 
     def discretize(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
@@ -788,14 +839,28 @@ class EllipseSeg:
                           ratio=self.ratio, start_param=self.start_param, end_param=self.end_param,
                           ccw=self.ccw)
 
-    def mirrored(self) -> "EllipseSeg":
+    def mirrored(self, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "EllipseSeg":
         """
-        Stessa ellisse, specchiata sull'asse x. Il semiasse minore è
-        `ratio`·(asse maggiore ruotato di +90°): specchiando l'asse maggiore
-        quello ricavato punta dalla parte opposta all'immagine del minore,
-        quindi il punto al parametro `t` va al parametro `−t` — parametri
-        col segno cambiato e verso invertito, come `ArcSeg.mirrored`.
+        Stessa ellisse, specchiata sulla retta per `origin` a `angle` radianti
+        (default: l'asse x). Il semiasse minore è `ratio`·(asse maggiore
+        ruotato di +90°): uno specchio, su qualunque asse, inverte la
+        rotazione di 90°, quindi il minore ricavato dall'asse maggiore
+        specchiato punta dalla parte opposta all'immagine del minore. Il punto
+        al parametro `t` va al parametro `−t`: parametri col segno cambiato e
+        verso invertito. `major_axis` è un vettore: si specchia sulla
+        direzione dell'asse, senza traslarlo.
         """
-        return EllipseSeg(center=_mirror_point(self.center), major_axis=_mirror_point(self.major_axis),
+        return EllipseSeg(center=_mirror_point(self.center, origin, angle),
+                          major_axis=_mirror_point(self.major_axis, (0.0, 0.0), angle),
                           ratio=self.ratio, start_param=-self.start_param, end_param=-self.end_param,
                           ccw=not self.ccw)
+
+    def scaled(self, factor: float, origin: Point = (0.0, 0.0)) -> "EllipseSeg":
+        """Stessa ellisse, scalata di `factor` (> 0) attorno a `origin`: il
+        centro si sposta, il vettore `major_axis` si allunga, `ratio` e
+        parametri non cambiano."""
+        factor = _check_factor(factor)
+        return EllipseSeg(center=_scale_point(self.center, factor, origin),
+                          major_axis=(self.major_axis[0] * factor, self.major_axis[1] * factor),
+                          ratio=self.ratio, start_param=self.start_param, end_param=self.end_param,
+                          ccw=self.ccw)

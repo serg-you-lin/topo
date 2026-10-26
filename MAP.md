@@ -6294,3 +6294,45 @@ topo's loop finder. Noding stays with GEOS until a real case needs otherwise.
 A Rust core is started on one of two measured reasons: reading time on real
 drawings, or a host without Python (a CAM kernel's SDK). The first step for
 either is an inventory: each shapely/numpy operation used → what replaces it.
+
+### D170 — segments mirror about any line and scale uniformly; no general affine map ✅
+
+Federico, 26 October 2026, triaging pippo's request (`../pippo/TODO.md`,
+`## Richieste a topo`): a view not drawn 1:1 needs its profile scaled, and a
+flat-pattern prototype moves each flange with a rigid motion that includes a
+mirror. Both are plane geometry with no process in them, so they are topo's.
+
+**What enters.** On all five primitives, next to `rotated`/`translated`:
+- `mirrored(origin=(0, 0), angle=0.0)` — the line through `origin` at
+  `angle` radians. The defaults are the x axis, so every existing call is
+  unchanged, value for value: no alias, no break. An arc's angles go to
+  `2·angle − a` and its direction reverses; an ellipse's parameters change
+  sign and its direction reverses on any axis (a reflection reverses the
+  +90° turn that derives the minor axis from the major one); a spline
+  mirrors its control points (a B-spline, rational too, is affine-invariant).
+- `scaled(factor, origin=(0, 0))` — uniform, `factor > 0` and finite,
+  else `ValueError`. Radius, ellipse axis vector and spline control points
+  scale; angles, parameters, `ratio`, knots and weights do not. A negative
+  factor is a rotation by π plus a scale, and is asked for that way.
+
+Each returns a new segment **of the same type**, exact: the image of the
+curve, not of its discretization. Off the x axis a mirrored arc's vertices
+lie on the new arc's own grid (D145), not on the mirror of the old vertices.
+
+**What does not.** A non-uniform scale or a general affine matrix: it maps a
+circle to an ellipse and an arc to an elliptical arc, so an `ArcSeg` would
+have to change type or be approximated, and the result would no longer be
+"the same segment, moved". A one-call similarity type was also left out:
+chaining (`s.mirrored(o, a).rotated(t).translated(dx, dy)`) is already one
+expression and composes exactly; a matrix type would add a check that the
+matrix is a similarity and nothing else.
+
+**Why methods, not `topo.transform.scale(seg)`.** Each primitive knows how
+it maps (an arc's radius, an ellipse's vector, a spline's control points);
+a free function would have to dispatch on the segment type, which is what
+the methods already are. `rotated`/`translated`/`mirrored` already lived
+there. Moving a whole `Cluster`/`Result` (as `rotate_result` does) was not
+asked for: it waits for a caller.
+
+The other pippo request — union of contours sharing a border — is not
+triaged yet (Federico: another time).

@@ -1321,7 +1321,14 @@ garanzie. Gli adapter sono pacchetti a parte (§9, §10):
 - **`topo.primitives`** — i segmenti nativi `LineSeg`, `ArcSeg`, `CircleSeg`,
   `BSplineSeg`, `EllipseSeg` (math puro, nessun ruolo) e
   `sub_segment(seg, a, b, via)`, il tratto di `seg` da `a` a `b` (`via`, un
-  punto interno, serve solo su una curva chiusa).
+  punto interno, serve solo su una curva chiusa). Ogni segmento ha
+  `reversed()`, `translated(dx, dy)`, `rotated(angle, origin=(0, 0))`,
+  `mirrored(origin=(0, 0), angle=0.0)` (sulla retta per `origin` a `angle`
+  radianti; di default l'asse x, y → −y) e `scaled(factor, origin=(0, 0))`
+  (`factor > 0`, uniforme, altrimenti `ValueError`): tornano un segmento
+  nuovo dello stesso tipo, esatto. Un moto rigido è la catena
+  `s.mirrored(o, a).rotated(t).translated(dx, dy)`. Niente scala non
+  uniforme né affine generica: un arco diventerebbe un'ellisse (D170).
 - **`topo.model`** — i tipi qui sotto (`Document`, `Result`, `Cluster`,
   `Contour`), le curve (`Curve`, `ClosedCurve`, `OpenCurve`), `Edge` (un
   segmento con ruolo e stile), `EdgeStyle`, i testi, le feature

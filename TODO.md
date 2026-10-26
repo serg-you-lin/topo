@@ -490,6 +490,16 @@ sperimentale finché la riscrittura di D134 non la giudica.
 
 Richieste aperte:
 
+- ~~**pippo, trasformazioni di segmenti**~~ — fatto, D170: `mirrored(origin,
+  angle)` su qualunque retta (default l'asse x di prima) e `scaled(factor,
+  origin)` uniforme, su tutte le primitive, esatti. **No**: scala non
+  uniforme e affine generica (un arco diventerebbe un'ellisse); il moto
+  rigido è la catena `mirrored(...).rotated(...).translated(...)`.
+- **pippo, unione di contorni con un bordo in comune** — da smistare
+  (Federico, 26 ottobre: un'altra volta). Prima lettura: fatto geometrico,
+  il contrario di `contour_minus` (D118), che sul bordo in comune oggi
+  solleva come `cut_by`; esatto su linee collineari e archi cocircolari, un
+  tratto comune di spline/ellisse senza forma chiusa → `ValueError`.
 - ~~**smoother, linguette a click** (D139/D140) e **linguette che non
   attraversano niente** (19 ottobre)~~ — fatto, D142: `tools.tabs` è
   diventato `tools.strips`, i quattro fatti di D134 più la costruzione.
