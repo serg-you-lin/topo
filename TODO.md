@@ -531,21 +531,6 @@ Richieste aperte:
   `contour_shape` dà quella esatta. Da unificare su `contour_shape`, provando
   i golden come in snapbend D66.
 
-## APERTO (26 ottobre) — heal(): un foro chiuso da un tratto di una linea passante
-
-Visto preparando la verifica di D171. Una piastra 9×11 attraversata da una
-linea da un lato all'altro (y=9), con tre pareti appese che chiudono un foro
-3×6 contro quella linea: `heal()` dà l'esterno e **nessun foro**, e linea e
-pareti finiscono in `loose`. Con solo il tappo 3..6 al posto della linea
-intera il foro c'è. Le pareti toccano la linea a T in (3, 9) e (6, 9). La
-linea viene esclusa come catena fra due nodi di diramazione non sul bordo
-esterno, e il warning dice che i capi delle pareti sono "a 3 mm dal nodo
-più vicino", quindi lì non c'è un nodo. Da decidere con Federico se è la
-lettura giusta di heal (la linea passante è "altro", tipo una piega) o se il
-foro va trovato lo stesso. Prova: tre righe con `load_segments` +
-`heal`, in `_debug/2026-10-26_topo_contour_union/caso4_U_barra.dxf`
-(pannello 3).
-
 ## APERTO (18 ottobre) — tre fili da ragionare con Federico
 
 - **Datum** (riferimenti di un pezzo: origine e assi da cui si misura). Il
@@ -574,6 +559,15 @@ foro va trovato lo stesso. Prova: tre righe con `load_segments` +
   foro", ma la regola per l'opzione (quali facce sono vuote: proposta
   "nessun lato sul contorno esterno") non è decisa. DXF locali in
   `tests/lab/caso_A/` (fuori da git).
+  Un secondo esempio, visto il 26 ottobre verificando D171: piastra 9×11
+  attraversata da una linea a y=9, con tre pareti appese che chiudono un
+  foro 3×6 contro quella linea. Oggi `heal()` dà l'esterno, nessun foro, e
+  linea e pareti in `loose`. Il foro non ha lati sul contorno esterno,
+  quindi con la regola proposta sarebbe vuoto. Nota: `heal()` non mette un
+  nodo nei T (D131), quindi le pareti oggi non toccano neanche la linea.
+  Con la sola regola A, a T nodati, le catene a 0 passaggi sarebbero corde
+  e il risultato sarebbe lo stesso. Prova: `load_segments` + `heal`, DXF in
+  `_debug/2026-10-26_topo_contour_union/caso4_U_barra.dxf` (pannello 3).
 - **Scelta E: un foro con un vertice in comune col contorno esterno** (D132).
   Oggi resta un foro (la sua catena è chiusa su un nodo, mai corda).
   Federico: per lui è trash (con warning). Nessun golden di heal e nessun
