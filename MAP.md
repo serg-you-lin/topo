@@ -6336,3 +6336,6 @@ asked for: it waits for a caller.
 
 The other pippo request — union of contours sharing a border — is not
 triaged yet (Federico: another time).
+
+`main` → **0.23.1** (D155: names added, none removed or renamed — `mirrored()`
+gains defaulted parameters, `scaled()` is new — so the third digit).
