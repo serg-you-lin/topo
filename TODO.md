@@ -568,11 +568,13 @@ Richieste aperte:
   Con la sola regola A, a T nodati, le catene a 0 passaggi sarebbero corde
   e il risultato sarebbe lo stesso. Prova: `load_segments` + `heal`, DXF in
   `_debug/2026-10-26_topo_contour_union/caso4_U_barra.dxf` (pannello 3).
-  Chi la chiederà (Federico, 26 ottobre): una lettura di assiemi, pezzi
-  saldati o multipezzo (il futuro snapweld; i fili sono in `snapdraw/TODO.md`
-  e `pippo/TODO.md`). Lì due pezzi a contatto chiudono facce che non sono
-  materiale, e l'opzione "foro" serve di sicuro. Sul pezzo piano di `heal()`
-  il default resta pieno.
+  Non è l'opzione "foro" (Federico, 26 ottobre). Un disegno così è un
+  assieme, pezzi saldati o multipezzo (il futuro snapweld; i fili sono in
+  `snapdraw/TODO.md` e `pippo/TODO.md`): U e barra sono **due pezzi**, la
+  linea a y=9 è il bordo dove si toccano, e il vuoto 3×6 è lo spazio fra
+  loro, non il foro di nessuno. Quella lettura spezza in pezzi lungo i bordi
+  in comune, e serve di sicuro. Sul pezzo piano di `heal()` il default resta
+  pieno.
 - **Scelta E: un foro con un vertice in comune col contorno esterno** (D132).
   Oggi resta un foro (la sua catena è chiusa su un nodo, mai corda).
   Federico: per lui è trash (con warning). Nessun golden di heal e nessun
