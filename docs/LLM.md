@@ -172,7 +172,7 @@ Three public namespaces besides the top level (D120); everything under `topo.cor
 
 | namespace | holds |
 |---|---|
-| `topo.primitives` | the native segments `LineSeg`, `ArcSeg`, `CircleSeg`, `BSplineSeg`, `EllipseSeg` (pure math, no role; coordinates stored as plain Python floats whatever they are built from, D169) and `sub_segment(seg, a, b, via)` — the piece of `seg` from `a` to `b` |
+| `topo.primitives` | the native segments `LineSeg`, `ArcSeg`, `CircleSeg`, `BSplineSeg`, `EllipseSeg` (pure math, no role; coordinates stored as plain Python floats whatever they are built from, D169) and `sub_segment(seg, a, b, via)` — the piece of `seg` from `a` to `b`. Every segment has `reversed()`, `translated(dx, dy)`, `rotated(angle, origin=(0,0))`, `mirrored(origin=(0,0), angle=0)` (about the line through `origin` at `angle` radians; default the x axis, y → −y) and `scaled(factor, origin=(0,0))` (`factor > 0`, uniform); each returns a new segment of the same type, exact (a mirrored arc reverses its direction, a scaled arc multiplies its radius). Chain them for a rigid motion: `s.mirrored(o, a).rotated(t).translated(dx, dy)`. No non-uniform scale or general affine map: it would turn an arc into an ellipse (D170) |
 | `topo.model` | the model types: `Document`, `Result`, `Cluster`, `Contour`, `Curve`, `ClosedCurve`, `OpenCurve`, `Edge` (a segment + role + style), `EdgeStyle`, `Text`, `DetectedFeature(s)`, and the roles: `ContourRole`, `role_str`, `normalize_role`, `is_structural_role`. The four most used are also `topo.Document/Result/Cluster/Contour`. |
 | `topo.steps` | the steps of `heal()` and of the island reading (see Functions) |
 
