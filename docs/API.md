@@ -692,6 +692,27 @@ sull'altro.
 
 ---
 
+### `contour_union`
+
+```python
+topo.geometry.contour_union(contour, other) -> list[list]
+```
+
+L'unione degli anelli `contour` e `other`: gli anelli del bordo che ne viene,
+ognuno testa-coda, il più grande per primo. Un anello esterno ha il verso di
+`contour`, un foro (chiuso fra i due) quello opposto. Due contorni lontani, o
+che si toccano in un punto solo, restano due anelli. Un bordo in comune è il
+caso che conta: dove i due si affiancano il tratto comune sparisce, dove si
+sovrappongono resta una volta. Dove il bordo prosegue sulla stessa retta o
+sullo stesso cerchio i pezzi tornano uno solo (due mezzi dischi danno un
+`CircleSeg`). Da passare a `Contour.from_segments` (D171).
+
+**Non muta** niente. **Solleva** `ValueError` se un bordo corre lungo l'altro
+senza coincidere pezzo per pezzo (stessa retta, stesso cerchio, stessa curva
+fra gli stessi capi).
+
+---
+
 ### `dash_line`
 
 ```python
