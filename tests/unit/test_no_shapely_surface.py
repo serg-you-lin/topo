@@ -4,7 +4,7 @@ tests/unit/test_no_shapely_surface.py
 Guardiano di D166 e D169: nessun tipo shapely o numpy nella superficie
 pubblica di topo.
 Due controlli: le firme e i campi dichiarati di ogni nome pubblico, e gli
-oggetti veri che escono da `heal`, `island`, `topo.steps` e `topo.geometry`,
+oggetti veri che escono da `heal`, `island`, `topo.experimental` e `topo.geometry`,
 percorsi campo per campo e proprietà per proprietà. Solo `to_shapely` lo
 restituisce: è la conversione esplicita.
 """
@@ -29,7 +29,7 @@ ALLOWED = {"to_shapely"}
 MODULES = {
     "topo": topo,
     "topo.geometry": topo.geometry,
-    "topo.steps": topo.steps,
+    "topo.experimental": topo.experimental,
     "topo.model": topo.model,
     "topo_dxf": topo_dxf,
 }
@@ -114,8 +114,8 @@ def _plate():
     # piastra con raccordo, foro, isola dentro un buco, e un tratto sciolto
     ring = [LineSeg((0, 0), (100, 0)), LineSeg((100, 0), (100, 60)),
             LineSeg((100, 60), (0, 60)), LineSeg((0, 60), (0, 0))]
-    segments = (ring + topo.geometry.circle(20, (40, 30)) + topo.geometry.circle(8, (40, 30))
-                + topo.geometry.stadium(20, 8, (80, 15)) + [LineSeg((120, 0), (130, 0))])
+    segments = (ring + topo.geometry.circle(20, center=(40, 30)) + topo.geometry.circle(8, center=(40, 30))
+                + topo.geometry.stadium(20, 8, center=(80, 15)) + [LineSeg((120, 0), (130, 0))])
     return topo.load_segments(segments)
 
 
@@ -136,9 +136,9 @@ def test_un_disegno_vero_non_porta_shapely():
 
 def test_passi_e_fatti_non_portano_shapely():
     doc = _plate()
-    edges = topo.steps.split_at_crossings(doc.edges, 0.01).pieces
-    assert _shapely_in(topo.steps.outer_face(edges), "outer_face") == []
-    assert _shapely_in(topo.steps.polygonize_to_curves(doc.edges, 0.1), "polygonize_to_curves") == []
+    edges = topo.experimental.split_at_crossings(doc.edges, 0.01).pieces
+    assert _shapely_in(topo.experimental.outer_face(edges), "outer_face") == []
+    assert _shapely_in(topo.experimental.polygonize_to_curves(doc.edges, 0.1), "polygonize_to_curves") == []
     frame = [LineSeg(a, b) for a, b in (((0, 0), (200, 0)), ((200, 0), (200, 100)),
                                          ((200, 100), (0, 100)), ((0, 100), (0, 0)))]
     rects = topo.geometry.covered_rectangles(frame, min_side=50)

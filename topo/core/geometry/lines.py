@@ -58,7 +58,7 @@ def are_collinear(a, b, tolerance: float = COLLINEAR_TOLERANCE,
     return all(point_line_distance(q, a0, a1) <= tolerance for q in (b0, b1))
 
 
-def group_collinear_lines(lines: list, tolerance: float = COLLINEAR_TOLERANCE,
+def group_collinear_lines(lines: list, *, tolerance: float = COLLINEAR_TOLERANCE,
                           angle_tolerance: float = COLLINEAR_ANGLE_TOLERANCE) -> list:
     """
     Tratti raggruppati per retta: [[L1, L2], [L3], ...]. Ogni gruppo prende la
@@ -79,7 +79,7 @@ def group_collinear_lines(lines: list, tolerance: float = COLLINEAR_TOLERANCE,
     return groups
 
 
-def splits_contour(contour, start: Point, end: Point, reach: float = 0.0) -> bool:
+def splits_contour(contour, start: Point, end: Point, *, reach: float = 0.0) -> bool:
     """
     True if the chord `start`-`end`, extended by `reach` at both ends, cuts
     the region of `contour` in two or more parts: some stretch of it runs
@@ -112,7 +112,7 @@ class CollinearRun:
     members: Tuple[int, ...]
 
 
-def bridged_runs(segments: Sequence, bridges: Sequence, tolerance: float = COLLINEAR_TOLERANCE,
+def bridged_runs(segments: Sequence, bridges: Sequence, *, tolerance: float = COLLINEAR_TOLERANCE,
                  angle_tolerance: float = COLLINEAR_ANGLE_TOLERANCE) -> list[CollinearRun]:
     """
     Runs of two or more strokes on one line where the gap between a stroke
@@ -162,7 +162,7 @@ def _bridged(a: Point, b: Point, rings: list) -> bool:
 
 
 def dash_line(start: Point, end: Point, head: float, tail: float,
-              middle: float = 0.0, n_middle: int = 0) -> list[Tuple[Point, Point]]:
+              *, middle: float = 0.0, n_middle: int = 0) -> list[Tuple[Point, Point]]:
     """
     Il segmento `start`→`end` ridotto a tratti: uno lungo `head` che parte da
     `start`, uno lungo `tail` che finisce in `end`, e `n_middle` tratti lunghi

@@ -177,7 +177,7 @@ def _cutters(edge):
         return [("arc", seg)]
     if isinstance(seg, CircleSeg):
         return [("arc", _circle_as_arc(seg))]
-    pts = seg.discretize(DEFAULT_TOLERANCE)
+    pts = seg.discretize(tolerance=DEFAULT_TOLERANCE)
     return [("line", pts[i], pts[i + 1]) for i in range(len(pts) - 1)]
 
 
@@ -290,7 +290,7 @@ def _split_circle(edge, near, tol, decimals):
 
 def edge_geometry(edge: Edge):
     """L'edge come geometria shapely: LineString discretizzata, Point se degenere."""
-    pts = edge.segment.discretize(DEFAULT_TOLERANCE)
+    pts = edge.segment.discretize(tolerance=DEFAULT_TOLERANCE)
     if len(pts) < 2 or all(p == pts[0] for p in pts):
         return Point(pts[0])
     return LineString(pts)

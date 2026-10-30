@@ -6,8 +6,8 @@ API topo usate:
     split    Result -> list[Result], uno per parte (senza formato). NON tocca il disco;
              topo_dxf.to_dxf ne scrive uno.
 
-Per salvare davvero: itera il risultato e chiama .saveas(), oppure usa
-split_to_files() (vedi 07). Le parti sotto min_area (mm²) vengono scartate.
+Per salvare davvero: itera il risultato e chiama .saveas() (vedi 07).
+Le parti sotto min_area (mm²) vengono scartate.
 
     python 06_split.py
 """

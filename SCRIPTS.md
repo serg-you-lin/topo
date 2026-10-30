@@ -28,21 +28,21 @@ OUTDIR = r"pipeline_output"                   # scritto in <repo>/pipeline_outpu
 | # | script | funzioni topo | cosa mostra |
 |---|--------|----------------|-------------|
 | 00 | `00_inspect.py` | `topo_dxf.inspect_file`, `topo_dxf.inspect_dxf`, `inspect_document`, `inspect_result` | l'ispettore a 3 livelli — il primo strumento su un file che non torna |
-| 01 | `01_load_and_validate.py` | `topo_dxf.load_dxf`, `topo_dxf.document_from_msp`, `validate` | aprire un file → `Document`; validare l'input |
+| 01 | `01_load_and_validate.py` | `topo_dxf.load_dxf`, `topo_dxf.document_from_msp`, `validate_document` | aprire un file → `Document`; validare l'input |
 | 02 | `02_heal.py` | `heal`, `validate_result` | ricostruzione topologia → parti, albero outer/inner (niente fori) |
 | 05 | `05_to_dxf.py` | `topo_dxf.to_dxf` | render del modello in un DXF nuovo; `filter_cluster`, `include_trash` |
 | 06 | `06_split.py` | `split` + `topo_dxf.to_dxf` | un `Result` per parte (puro, senza formato), poi un DXF ciascuno; `namer`, `exclude_types` |
-| 07 | `07_split_to_files.py` | `topo_dxf.split_to_files` | pipeline multi-pezzo completa su disco |
+| 07 | `07_split_to_files.py` | `heal` → `split` → `to_dxf` | pipeline multi-pezzo completa su disco |
 | 08 | `08_inject.py` | `inject` | arricchimento CAM dai testi del disegno (`result.texts`, niente ezdxf) |
 | 09 | `09_export.py` | `to_json`, `save_json`, `save_xml`, `to_nester_input` | metadati fuori da topo |
-| 10 | `10_metadata_xdata.py` | `topo_dxf.write_metadata_to_dxf`, `topo_dxf.read_metadata_from_dxf`, `set_schema` | metadati DENTRO il DXF (XDATA) + schema custom |
+| 10 | `10_metadata_xdata.py` | `topo_dxf.write_metadata_to_dxf`, `topo_dxf.read_metadata_from_dxf`, `schema=` | metadati DENTRO il DXF (XDATA) + schema custom |
 | 11 | `11_batch_heal.py` | `topo_dxf.load_dxf` + `heal` + `topo_dxf.to_dxf` | heal di tutti i DXF di una cartella → `X_healed.dxf` + `.json` a fianco |
 | 12 | `12_to_svg.py` | `to_view_model`, `to_svg`, `save_svg` | JSON per un renderer esterno + SVG del modello |
 | 14 | `14_style_classification.py` | `RoleRule`, `name_rules`, `load_dxf(role_rules=...)` | assegnare il ruolo da nome, tratteggio, colore o una combinazione (D63) |
 | 16 | `16_strips_on_fixture.py` | `tools.strips` (sperimentale) | quattro strisce fra un disco e la regione vuota che lo contiene; la politica sta nello script (D134, D142) |
 | 17 | `17_rotate_to_longest_outer.py` | `rotate_to_longest` (fuori da `__all__`, D46), `tools.rotate.longest_structural_segment` | ruota un `Result` già sano così il lato più lungo dell'outer è orizzontale |
 | 18 | `18_outer_scan.py` | `core.healing.outer_scan.outer_candidate_edges` (non esportato) | candidati a bordo esterno per ray casting — idea da cui è nata la lettura per isole, oggi non usata da `island()` |
-| 20 | `20_island.py` | `island`, `read_islands` | lettura per isole su tutti i disegni di `tests/examples/islands`, un layer DXF per decisione |
+| 20 | `20_island.py` | `island`, `experimental.read_islands` | lettura per isole su tutti i disegni di `tests/examples/islands`, un layer DXF per decisione |
 
 `11_batch_heal.py` accetta una cartella come argomento (`python
 scripts/11_batch_heal.py path/`) e `--tol`; senza argomenti processa

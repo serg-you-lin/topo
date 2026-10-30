@@ -33,7 +33,7 @@ def build_polygon(
 
     pts: list = []
     for i, prim in enumerate(primitives):
-        seg_pts = prim.discretize(tolerance)
+        seg_pts = prim.discretize(tolerance=tolerance)
         if i == 0:
             pts.extend(seg_pts)
         else:

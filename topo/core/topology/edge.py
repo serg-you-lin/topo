@@ -15,7 +15,7 @@ il core a definirne la forma, esattamente come per le primitive.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import KW_ONLY, dataclass, field
 from typing import Optional, Tuple, Union
 
 from ..primitives.segments import (
@@ -57,6 +57,7 @@ class Edge:
     start:   Tuple[float, float]
     end:     Tuple[float, float]
     segment: Segment
+    _: KW_ONLY
     style:   EdgeStyle = field(default_factory=EdgeStyle)
 
     @classmethod

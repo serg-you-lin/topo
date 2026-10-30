@@ -6,7 +6,7 @@ import unittest
 import topo
 from topo.core.geometry.lines import CollinearRun, are_collinear, bridged_runs, point_line_distance, splits_contour
 
-PART = topo.Contour(segments=topo.geometry.rectangle(100, 50, (50, 25)), role="outer")
+PART = topo.Contour(segments=topo.geometry.rectangle(100, 50, center=(50, 25)), role="outer")
 
 
 class TestSplitsContour(unittest.TestCase):
@@ -27,7 +27,7 @@ class TestSplitsContour(unittest.TestCase):
 
 class TestBridgedRuns(unittest.TestCase):
 
-    HOLE = topo.geometry.rectangle(4, 10, (40, 25))
+    HOLE = topo.geometry.rectangle(4, 10, center=(40, 25))
 
     def test_due_tratti_uniti_attraverso_un_foro(self):
         segments = [((40, 30), (40, 50)), ((40, 0), (40, 20))]
@@ -50,7 +50,7 @@ class TestBridgedRuns(unittest.TestCase):
     def test_ponte_rotondo(self):
         # lo spazio passa dentro un cerchio Ø12: il bordo vero, non le corde
         segments = [((40, 0), (40, 19)), ((40, 31), (40, 50))]
-        self.assertEqual(len(bridged_runs(segments, [topo.geometry.circle(6.0, (40, 25))])), 1)
+        self.assertEqual(len(bridged_runs(segments, [topo.geometry.circle(6.0, center=(40, 25))])), 1)
 
     def test_api_pubblica(self):
         self.assertIs(topo.geometry.bridged_runs, bridged_runs)

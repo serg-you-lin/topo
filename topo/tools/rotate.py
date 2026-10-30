@@ -106,7 +106,7 @@ def longest_structural_segment(
 # ---------------------------------------------------------------------------
 
 def _rotate_contour(contour: ClosedCurve, angle_rad: float, origin: Point) -> ClosedCurve:
-    rotated = replace(contour, segments=[s.rotated(angle_rad, origin) for s in contour.segments])
+    rotated = replace(contour, segments=[s.rotated(angle_rad, origin=origin) for s in contour.segments])
     polygon = curve_polygon(contour)
     if polygon is not None:
         with_polygon(rotated, _shapely_rotate(polygon, angle_rad, origin=origin, use_radians=True))
@@ -156,7 +156,7 @@ def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) 
     """
     new_clusters = [rotate_cluster(c, angle_rad, origin) for c in result.clusters]
     new_loose = [
-        replace(t, segments=[s.rotated(angle_rad, origin) for s in t.segments])
+        replace(t, segments=[s.rotated(angle_rad, origin=origin) for s in t.segments])
         if isinstance(t, OpenCurve) else _rotate_contour(t, angle_rad, origin)
         for t in result.loose
     ]
@@ -199,7 +199,7 @@ def rotate_document(
     """
     new_edges: List = []
     for edge in doc.edges:
-        seg = edge.segment.rotated(angle_rad, origin)
+        seg = edge.segment.rotated(angle_rad, origin=origin)
         start, end = segment_endpoints(seg)
         new_edges.append(replace(edge, segment=seg, start=round_point(start), end=round_point(end)))
 

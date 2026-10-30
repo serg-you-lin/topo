@@ -34,7 +34,7 @@ def _point(x, nd: int = 2) -> str:
     return f"({x[0]:.{nd}f}, {x[1]:.{nd}f})"
 
 
-def inspect_dxf(path: str, entities: bool = True, limit: Optional[int] = 40) -> None:
+def inspect_dxf(path: str, *, entities: bool = True, limit: Optional[int] = 40) -> None:
     """
     Apre un DXF/DWG con ezdxf e stampa cosa contiene, senza toccare topo.
 
@@ -113,7 +113,7 @@ def _describe_dxf_entity(e) -> str:
 
 def inspect_file(
     path: str,
-    tolerance: float = DEFAULT_NODE_TOLERANCE,
+    *, tolerance: float = DEFAULT_NODE_TOLERANCE,
     role_rules: Sequence[RoleRule] = (),
     run_heal: bool = True,
     entities: bool = True,

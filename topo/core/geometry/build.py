@@ -34,13 +34,13 @@ def polygon(points: Sequence[Point]) -> List[LineSeg]:
     return [LineSeg(start=pts[i], end=pts[(i + 1) % len(pts)]) for i in range(len(pts))]
 
 
-def rectangle(length: float, width: float, center: Point = (0.0, 0.0), angle: float = 0.0) -> List[LineSeg]:
+def rectangle(length: float, width: float, *, center: Point = (0.0, 0.0), angle: float = 0.0) -> List[LineSeg]:
     """Rettangolo `length` × `width` centrato in `center`, lato lungo a `angle` gradi."""
     h, w = length / 2, width / 2
     return polygon(_place([(-h, -w), (h, -w), (h, w), (-h, w)], center, angle))
 
 
-def regular_polygon(sides: int, radius: float, center: Point = (0.0, 0.0), angle: float = 0.0) -> List[LineSeg]:
+def regular_polygon(sides: int, radius: float, *, center: Point = (0.0, 0.0), angle: float = 0.0) -> List[LineSeg]:
     """Poligono regolare di `sides` lati inscritto nel cerchio di raggio `radius`; il primo vertice a `angle` gradi."""
     if sides < 3:
         raise ValueError(f"regular_polygon(): servono almeno 3 lati, non {sides}")
@@ -49,12 +49,12 @@ def regular_polygon(sides: int, radius: float, center: Point = (0.0, 0.0), angle
                           center, angle))
 
 
-def circle(radius: float, center: Point = (0.0, 0.0)) -> List[CircleSeg]:
+def circle(radius: float, *, center: Point = (0.0, 0.0)) -> List[CircleSeg]:
     """Il cerchio di raggio `radius` in `center`."""
     return [CircleSeg(center=tuple(center), radius=radius)]
 
 
-def ellipse(length: float, width: float, center: Point = (0.0, 0.0), angle: float = 0.0) -> List[EllipseSeg]:
+def ellipse(length: float, width: float, *, center: Point = (0.0, 0.0), angle: float = 0.0) -> List[EllipseSeg]:
     """
     L'ellisse di assi `length` × `width` centrata in `center`, asse lungo a
     `angle` gradi. `length` >= `width` > 0.
@@ -67,7 +67,7 @@ def ellipse(length: float, width: float, center: Point = (0.0, 0.0), angle: floa
                        start_param=0.0, end_param=2 * math.pi)]
 
 
-def stadium(length: float, width: float, center: Point = (0.0, 0.0), angle: float = 0.0) -> list:
+def stadium(length: float, width: float, *, center: Point = (0.0, 0.0), angle: float = 0.0) -> list:
     """
     Stadio fuori tutto `length` × `width` (due semicerchi di raggio
     `width / 2` uniti da due lati paralleli), asse lungo a `angle` gradi.

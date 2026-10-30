@@ -192,8 +192,8 @@ class TestWritebackTrash(unittest.TestCase):
         with self.assertRaises(ValueError):
             topo_dxf.to_dxf(result, doc, allow_invalid=False)
         with self.assertRaises(ValueError):
-            topo.to_svg(result, allow_invalid=False)
-        self.assertIn("<svg", topo.to_svg(result))
+            topo.experimental.to_svg(result, allow_invalid=False)
+        self.assertIn("<svg", topo.experimental.to_svg(result))
 
 
 # ---------------------------------------------------------------------------
@@ -344,6 +344,9 @@ class TestWritebackTexts(unittest.TestCase):
             msp.add_line((0, 10 * i), (50, 10 * i), dxfattribs={"layer": layer})
         self.assertEqual(len(topo_dxf.document_from_msp(msp).edges), 2)
         self.assertEqual(len(topo_dxf.document_from_msp(msp, skip_layers=()).edges), 4)
+        # una funzione decide da sé (D176): qui una parte del nome
+        skip = lambda name: "trash" in name.lower()
+        self.assertEqual(len(topo_dxf.document_from_msp(msp, skip_layers=skip).edges), 2)
 
 
 # ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@ Document restituito.
 import os
 import sys
 import shutil
-from typing import Sequence
+from typing import Callable, Sequence, Union
 
 import ezdxf
 from ezdxf.addons import odafc
@@ -218,14 +218,14 @@ def _upgrade_to_r2010(doc, sink: list = None, verbose: bool = False) -> object:
 
 def load_dxf(
     path: str,
+    *,
     upgrade: bool = False,
     explode_inserts: bool = True,
-    flatten_z_flag: bool = True,
+    flatten_z: bool = True,
     verbose: bool = False,
     tolerance: float = DEFAULT_NODE_TOLERANCE,
     role_rules: Sequence[RoleRule] = (),
-    ignore_layers=None,
-    skip_layers: Sequence[str] = SKIP_LAYERS,
+    skip_layers: Union[Sequence[str], Callable[[str], bool]] = SKIP_LAYERS,
 ) -> Document:
     """
     Apre un documento DXF o DWG e lo traduce in un Document.
@@ -246,18 +246,18 @@ def load_dxf(
                          primitive. Passa False solo se vuoi ignorare i blocchi
                          di proposito: un INSERT non esploso viene scartato e la
                          sua geometria sparisce dall'output.
-        flatten_z_flag:  passa flatten_z a sanitize()
+        flatten_z:       se True (default), riporta sul piano le entità con Z != 0
         verbose:         se True, stampa dettaglio entità in sanitize
         tolerance:       tolleranza di arrotondamento dei nodi topologici;
                          viene ripresa da heal() se non specificata lì
         role_rules:      regole del chiamante che assegnano il ruolo agli
                          Edge in fase di traduzione (RoleRule, D63); il nome
                          valutato da `name`/`name_contains` è il layer
-        ignore_layers:   layer da escludere dalla geometria (per sottostringa,
-                         senza distinguere maiuscole)
-        skip_layers:     layer da saltare per nome esatto (senza distinguere
-                         maiuscole): di default `SKIP_LAYERS`, quelli che il
-                         writer usa per `loose` e testi, così un file
+        skip_layers:     layer la cui geometria si salta (D176): nomi esatti,
+                         senza distinguere maiuscole, oppure una funzione
+                         `nome -> bool` (una parte del nome, una regex,
+                         quello che serve). Di default `SKIP_LAYERS`, quelli
+                         che il writer usa per `loose` e testi, così un file
                          scritto da topo si rilegge pulito; `()` legge tutto
 
     Returns:
@@ -265,7 +265,7 @@ def load_dxf(
         per heal(). La diagnostica sul file grezzo (audit, INSERT non esplosi,
         Z != 0 riportate sul piano, duplicati rimossi) finisce in
         `doc.warnings`; con verbose=True viene anche stampata.
-        `topo.validate(doc)` rilancia queste warnings.
+        `topo.validate_document(doc)` rilancia queste warnings.
     """
     warnings: list = []
 
@@ -310,18 +310,11 @@ def load_dxf(
     if removed > 0:
         _emit(warnings, f"{removed} entità duplicate rimosse dal modelspace", verbose)
 
-    flattened = sanitize(msp, flatten_z_flag=flatten_z_flag, verbose=verbose)
+    flattened = sanitize(msp, flatten_z_flag=flatten_z, verbose=verbose)
     if flattened:
         _emit(warnings, f"{flattened} entità con Z != 0 riportate sul piano", verbose)
 
-    ignore = {s.lower() for s in (ignore_layers or [])}
-
-    adapter = DxfAdapter(
-        msp,
-        ignore_layers=ignore,
-        role_rules=role_rules,
-        skip_layers=skip_layers,
-    )
+    adapter = DxfAdapter(msp, role_rules=role_rules, skip_layers=skip_layers)
     edges = adapter.to_edges()
     for msg in adapter.warnings:
         _emit(warnings, msg, verbose)
@@ -337,7 +330,6 @@ def load_dxf(
         "$INSUNITS":     doc.header.get("$INSUNITS", 4),
         "$MEASUREMENT":  doc.header.get("$MEASUREMENT", 1),
         "tolerance":     tolerance,
-        "ignore_layers": sorted(ignore),
     }
 
     return Document(
@@ -351,11 +343,11 @@ def load_dxf(
 
 def document_from_msp(
     msp,
+    *,
     tolerance: float = DEFAULT_NODE_TOLERANCE,
     role_rules: Sequence[RoleRule] = (),
-    ignore_layers=None,
     source_path: str = "",
-    skip_layers: Sequence[str] = SKIP_LAYERS,
+    skip_layers: Union[Sequence[str], Callable[[str], bool]] = SKIP_LAYERS,
 ) -> Document:
     """
     Costruisce un Document da un modelspace ezdxf già aperto.
@@ -364,13 +356,9 @@ def document_from_msp(
     o è già stato preparato altrove. Non fa audit/upgrade/sanitize: si assume
     che il msp sia già pronto.
 
-    `role_rules`, `ignore_layers`, `skip_layers`: vedi `load_dxf()`.
+    `role_rules`, `skip_layers`: vedi `load_dxf()`.
     """
-    ignore = {s.lower() for s in (ignore_layers or [])}
-
-    adapter = DxfAdapter(
-        msp, ignore_layers=ignore, role_rules=role_rules, skip_layers=skip_layers,
-    )
+    adapter = DxfAdapter(msp, role_rules=role_rules, skip_layers=skip_layers)
     edges = adapter.to_edges()
     texts = DxfTextExtractor(msp, role_rules).extract()
 
@@ -379,7 +367,6 @@ def document_from_msp(
         "$INSUNITS":     header.get("$INSUNITS", 4) if header else 4,
         "$MEASUREMENT":  header.get("$MEASUREMENT", 1) if header else 1,
         "tolerance":     tolerance,
-        "ignore_layers": sorted(ignore),
     }
     return Document(
         edges=edges, texts=texts,

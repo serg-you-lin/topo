@@ -27,7 +27,7 @@ def _area(ring):
 
 
 def _signed(ring):
-    pts = [q for s in ring for q in s.discretize(1e-4)[:-1]]
+    pts = [q for s in ring for q in s.discretize(tolerance=1e-4)[:-1]]
     return sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:] + pts[:1])) / 2
 
 

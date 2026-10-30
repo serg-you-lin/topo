@@ -550,8 +550,8 @@ class TestArcSegToBulge(unittest.TestCase):
                      end_angle=math.radians(140), ccw=True)
         rev = arc.reversed()
 
-        pts_fwd = arc.discretize(0.01)
-        pts_rev = rev.discretize(0.01)
+        pts_fwd = arc.discretize(tolerance=0.01)
+        pts_rev = rev.discretize(tolerance=0.01)
         self.assertEqual(len(pts_fwd), len(pts_rev))
         for (xf, yf), (xr, yr) in zip(pts_fwd, reversed(pts_rev)):
             self.assertAlmostEqual(xf, xr, places=6)

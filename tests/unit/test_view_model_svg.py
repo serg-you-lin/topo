@@ -54,7 +54,7 @@ class TestViewModel(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.result = _result(MULTI_PART)
-        cls.vm = topo.to_view_model(cls.result)
+        cls.vm = topo.experimental.to_view_model(cls.result)
 
     def test_json_serializable(self):
         json.dumps(self.vm)
@@ -90,14 +90,14 @@ class TestViewModel(unittest.TestCase):
                 self.assertIsInstance(pt[0], (int, float))
 
     def test_toggles_drop_sections(self):
-        vm = topo.to_view_model(self.result, include_loose=False,
+        vm = topo.experimental.to_view_model(self.result, include_loose=False,
                                  include_texts=False)
         self.assertNotIn("loose", vm)
         self.assertNotIn("annotations", vm)
 
     def test_invalid_result_does_not_raise(self):
         empty = topo.Result(clusters=[], is_valid=False, errors=["boom"])
-        vm = topo.to_view_model(empty)
+        vm = topo.experimental.to_view_model(empty)
         self.assertFalse(vm["is_valid"])
         self.assertEqual(vm["clusters"], [])
         self.assertIsNone(vm["bbox"])
@@ -107,7 +107,7 @@ class TestToSvg(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.result = _result(MULTI_PART)
-        cls.svg = topo.to_svg(cls.result)
+        cls.svg = topo.experimental.to_svg(cls.result)
 
     def test_is_well_formed_xml(self):
         root = ET.fromstring(self.svg)
@@ -121,19 +121,19 @@ class TestToSvg(unittest.TestCase):
         self.assertIn("<circle", self.svg)
 
     def test_overlay_circles_as_polygons_when_disabled(self):
-        svg = topo.to_svg(self.result, true_circles=False)
+        svg = topo.experimental.to_svg(self.result, true_circles=False)
         self.assertEqual(svg.count("<circle"), 0)
 
     def test_one_group_per_part(self):
         self.assertEqual(len(re.findall(r'data-cluster="', self.svg)), 4)
 
     def test_transparent_background(self):
-        svg = topo.to_svg(self.result, background=None)
+        svg = topo.experimental.to_svg(self.result, background=None)
         self.assertNotIn("<rect", svg.split("<g")[0])
 
     def test_empty_result_returns_valid_svg(self):
         empty = topo.Result(clusters=[], is_valid=False)
-        ET.fromstring(topo.to_svg(empty))
+        ET.fromstring(topo.experimental.to_svg(empty))
 
 
 if __name__ == "__main__":

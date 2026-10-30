@@ -25,33 +25,31 @@ def _outer_entity(doc):
     return None
 
 
-def write_metadata_to_dxf(doc, cluster: Cluster, extra: Optional[dict] = None):
+def write_metadata_to_dxf(doc, cluster: Cluster, *, extra: Optional[dict] = None,
+                          schema: Optional[dict] = None) -> None:
     """
     Scrive i metadati come XDATA sull'entità OuterContour.
-    I campi seguono metadata_schema.py — stessa fonte di save_json e save_xml.
+    I campi seguono metadata_schema.py — stessa fonte di save_json e save_xml;
+    `schema` lo sostituisce per questa chiamata sola.
     Supporta LWPOLYLINE, POLYLINE e CIRCLE su layer OuterContour.
 
     `extra`: campi extra del chiamante per questo cluster — vedi `save_json`.
+
+    Solleva `ValueError` se `doc` non ha un'entità su OuterContour (D176:
+    prima stampava un avviso e non scriveva niente).
     """
-    try:
-        outer_entity = _outer_entity(doc)
+    outer_entity = _outer_entity(doc)
+    if outer_entity is None:
+        raise ValueError("write_metadata_to_dxf(): nessuna entità su OuterContour")
 
-        if outer_entity is None:
-            print("  [WARN] write_metadata_to_dxf: nessuna entità su OuterContour.")
-            return
+    app_id = 'TOPO'
+    if app_id not in doc.appids:
+        doc.appids.add(app_id)
 
-        app_id = 'TOPO'
-        if app_id not in doc.appids:
-            doc.appids.add(app_id)
-
-        meta = build_metadata(cluster, extra=extra)
-
-        outer_entity.set_xdata(app_id, [
-            (1000, json.dumps(meta, ensure_ascii=False)),
-        ])
-
-    except Exception as ex:
-        print(f"  [WARN] write_metadata_to_dxf: {ex}")
+    meta = build_metadata(cluster, schema=schema, extra=extra)
+    outer_entity.set_xdata(app_id, [
+        (1000, json.dumps(meta, ensure_ascii=False)),
+    ])
 
 
 def read_metadata_from_dxf(doc) -> dict:

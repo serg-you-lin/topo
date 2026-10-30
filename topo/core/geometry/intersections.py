@@ -113,7 +113,7 @@ def _exact_parts(seg) -> list:
     rette fitte (`CURVE_TOLERANCE`): non hanno un'intersezione in forma chiusa."""
     if isinstance(seg, (LineSeg, ArcSeg, CircleSeg)):
         return [seg]
-    pts = [tuple(q[:2]) for q in seg.discretize(CURVE_TOLERANCE)]
+    pts = [tuple(q[:2]) for q in seg.discretize(tolerance=CURVE_TOLERANCE)]
     return [LineSeg(start=a, end=b) for a, b in zip(pts, pts[1:]) if a != b]
 
 

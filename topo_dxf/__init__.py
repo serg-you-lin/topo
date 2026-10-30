@@ -13,7 +13,6 @@ pubblici di topo (MAP.md D123, D124, D129). topo non sa che esiste.
 
     for part in topo.split(result):                  # un Result per parte
         topo_dxf.to_dxf(part, doc).saveas(f"{part.clusters[0].label}.dxf")
-    topo_dxf.split_to_files(doc, "output/")          # heal + split + saveas
 
 I layer e i colori sono scelte del chiamante (`layers=`, `role_styles=`);
 quello che non dice è il default di questo adapter (`layers.py`).
@@ -28,7 +27,6 @@ except ImportError as exc:  # pragma: no cover - dipende dall'ambiente
 
 from .loader import load_dxf, document_from_msp
 from .writer import to_dxf
-from .recipes import split_to_files
 from .xdata import write_metadata_to_dxf, read_metadata_from_dxf
 from .inspect import inspect_dxf, inspect_file
 from .layers import (
@@ -46,7 +44,6 @@ __all__ = [
     "load_dxf",
     "document_from_msp",
     "to_dxf",
-    "split_to_files",
     "write_metadata_to_dxf",
     "read_metadata_from_dxf",
     "inspect_dxf",

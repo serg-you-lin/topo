@@ -35,7 +35,7 @@ from .shape import (
 from .lines import splits_contour, bridged_runs, CollinearRun, dash_line, group_collinear_lines
 from .measure import (
     segment_length, length_inside, chord_angle_deg,
-    track_points, track_length, track_shape_type,
+    track_points, track_length,
 )
 from .regions import point_on_contour, ContourPoint, nearest_point, cut_by, contour_minus, contour_union
 from .intersections import intersections
@@ -51,7 +51,7 @@ __all__ = [
     "arcs_around", "ArcAround",
     "splits_contour", "bridged_runs", "CollinearRun", "dash_line", "group_collinear_lines",
     "segment_length", "length_inside", "chord_angle_deg",
-    "track_points", "track_length", "track_shape_type",
+    "track_points", "track_length",
     "point_on_contour", "ContourPoint", "nearest_point", "cut_by", "contour_minus", "contour_union", "intersections",
     "covered_rectangles", "CoveredRectangle", "spanning_lines", "sides_on_border", "axis_aligned_share",
     "axis_lines", "AxisLine", "items_inside", "merge_intervals",

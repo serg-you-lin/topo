@@ -35,7 +35,7 @@ from .layers import (
 def to_dxf(
     result: Result,
     source_doc: Optional[Document] = None,
-    filter_cluster: Optional[Callable[[Cluster], bool]] = None,
+    *, filter_cluster: Optional[Callable[[Cluster], bool]] = None,
     include_texts: bool = True,
     include_loose: bool = True,
     text_layer: str = LAYER_ANNOTATION,
@@ -332,7 +332,7 @@ class _Layers:
 
     def for_role(self, role, element: object = None) -> str:
         """Il layer di `role` per `element`, creato se serve."""
-        name = role_to_dxf_layer(role, element, self.layers)
+        name = role_to_dxf_layer(role, element, layers=self.layers)
         self.ensure(name, role)
         return name
 

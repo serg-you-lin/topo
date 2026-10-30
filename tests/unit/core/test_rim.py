@@ -72,7 +72,7 @@ class TestFaceSegments(unittest.TestCase):
         arc = ArcSeg(center=(0, 0), radius=5, start_angle=0, end_angle=math.pi, ccw=True)
         edges = [_line((-5, 0), (5, 0)),
                  Edge(role="unknown", start=(5, 0), end=(-5, 0), segment=arc)]
-        polygon = Polygon(arc.discretize(0.01))
+        polygon = Polygon(arc.discretize(tolerance=0.01))
         segments, _, _ = face_segments(edges, polygon, BAND)
         self.assertEqual(sorted(type(s).__name__ for s in segments), ["ArcSeg", "LineSeg"])
 

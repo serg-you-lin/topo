@@ -54,7 +54,7 @@ LayerChoice = Union[str, Callable[[object], str]]
 LayerMap = Mapping[str, LayerChoice]
 
 
-def role_to_dxf_layer(role, element: object = None, layers: Optional[LayerMap] = None) -> str:
+def role_to_dxf_layer(role, element: object = None, *, layers: Optional[LayerMap] = None) -> str:
     """
     Nome del layer DXF per `role`. La scelta del chiamante (`layers`, chiavi
     già normalizzate a slug) vince: un nome, o la funzione chiamata con

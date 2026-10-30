@@ -35,7 +35,7 @@ def _rounded_square(size=10.0, n=20):
 
 
 def _max_distance(primitives, points):
-    line = LineString([q for s in primitives for q in s.discretize(1e-4)])
+    line = LineString([q for s in primitives for q in s.discretize(tolerance=1e-4)])
     return max(line.distance(SPoint(p)) for p in points)
 
 

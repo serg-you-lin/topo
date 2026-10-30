@@ -95,7 +95,7 @@ def island(doc: Document, *, max_gap: float,
             "topo.island() richiede un Document da topo_dxf.load_dxf(); "
             f"ricevuto {type(doc).__name__}"
         )
-    tol = doc.node_tolerance(tolerance)
+    tol = doc.node_tolerance(override=tolerance)
     structural = is_structural or is_structural_role
     labeled = [e for e in doc.edges if e.role != ContourRole.UNKNOWN and not structural(e.role)]
     labeled_ids = {id(e) for e in labeled}

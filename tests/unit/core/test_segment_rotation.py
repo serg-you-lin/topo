@@ -52,7 +52,7 @@ class TestArcSegRotated(unittest.TestCase):
         seg = ArcSeg(center=(0, 0), radius=4, start_angle=0.0, end_angle=math.pi, ccw=True)
         angle = math.radians(30)
         rotated = seg.rotated(angle, origin=(0, 0))
-        pts = rotated.discretize(0.01)
+        pts = rotated.discretize(tolerance=0.01)
         self.assertAlmostEqual(pts[0][0], 4 * math.cos(angle), places=9)
         self.assertAlmostEqual(pts[0][1], 4 * math.sin(angle), places=9)
         self.assertAlmostEqual(pts[-1][0], -4 * math.cos(angle), places=9)

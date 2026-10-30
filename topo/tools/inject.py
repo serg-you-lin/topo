@@ -37,12 +37,13 @@ from ..core.primitives.polygon_builder import curve_polygon
 from .anchor import _nearest_within
 
 
-def inject(result, data_injector: Optional[Callable] = None,
-           snap_distance: float = 0.0):
+def inject(result, *, data_injector: Optional[Callable] = None,
+           snap_distance: float = 0.0) -> None:
     """
     Arricchisce i Cluster con i dati estratti da un `data_injector` esterno.
 
-    Muta `result.clusters[i].custom` in-place e ritorna il `result`.
+    **Muta** `result.clusters[i].custom` (e `result.warnings` se il
+    `data_injector` fallisce) e ritorna `None` (D176).
 
     Args:
         result:        Result prodotto da heal() (+ la lettura di un consumatore).
@@ -54,7 +55,7 @@ def inject(result, data_injector: Optional[Callable] = None,
                        `anchor_texts`). Default 0.0: solo contenimento.
     """
     if not result.clusters or data_injector is None:
-        return result
+        return
 
     testi = _texts_by_part(result, snap_distance)
     for i, cluster in enumerate(result.clusters):
@@ -68,8 +69,6 @@ def inject(result, data_injector: Optional[Callable] = None,
             result.warnings.append(
                 f"data_injector fallito su {cluster.label}: {ex}"
             )
-
-    return result
 
 
 def _texts_by_part(result, snap_distance: float) -> Dict[int, List[str]]:

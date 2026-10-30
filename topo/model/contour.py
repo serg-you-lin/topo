@@ -24,7 +24,7 @@ racchiuda un'area.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import KW_ONLY, dataclass
 from typing import Optional, Sequence
 
 from topo.core.primitives.polygon_builder import build_polygon, with_polygon
@@ -34,6 +34,7 @@ from topo.model.curve import ClosedCurve
 
 @dataclass
 class Contour(ClosedCurve):
+    _: KW_ONLY
     depth:  int                        = 0
     parent: Optional["Contour"]   = None
 

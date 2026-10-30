@@ -75,7 +75,7 @@ def ring_points(segments: Sequence, tolerance: float = DEFAULT_TOLERANCE) -> Lis
     """
     pts: List[Point] = []
     for segment in segments:
-        seg_pts = [tuple(p) for p in segment.discretize(tolerance)]
+        seg_pts = [tuple(p) for p in segment.discretize(tolerance=tolerance)]
         if pts and seg_pts and pts[-1] == seg_pts[0]:
             seg_pts = seg_pts[1:]
         pts.extend(seg_pts)
@@ -279,7 +279,7 @@ def _clear_polyline(segment, point: Point, tolerance: float):
     """
     delta = max(DEFAULT_TOLERANCE, tolerance)
     while True:
-        pts = segment.discretize(delta)
+        pts = segment.discretize(tolerance=delta)
         d = _polyline_distance(point, pts)
         if d > max(2 * delta, tolerance + delta):
             return pts

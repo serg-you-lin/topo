@@ -118,7 +118,7 @@ def _make_test(path):
                 str(dxf_path),
                 upgrade=True,
                 explode_inserts=True,
-                flatten_z_flag=True,
+                flatten_z=True,
                 tolerance=config.get("tolerance", DEFAULT_TOLERANCE),
                 role_rules=topo.name_rules(name_roles),
             ),
@@ -281,12 +281,12 @@ def _make_roundtrip_test(path):
         result = _pipeline(
             topo_dxf.load_dxf(
                 str(dxf_path), upgrade=True, explode_inserts=True,
-                flatten_z_flag=True, tolerance=tol, role_rules=topo.name_rules(name_roles),
+                flatten_z=True, tolerance=tol, role_rules=topo.name_rules(name_roles),
             )
         )
         source_doc = topo_dxf.load_dxf(
             str(dxf_path), upgrade=True, explode_inserts=True,
-            flatten_z_flag=True, tolerance=tol, role_rules=topo.name_rules(name_roles),
+            flatten_z=True, tolerance=tol, role_rules=topo.name_rules(name_roles),
         )
         doc_out = topo_dxf.to_dxf(result, source_doc)
         rt_result = _pipeline(

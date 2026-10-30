@@ -190,7 +190,7 @@ class TestRotate(unittest.TestCase):
 
     def test_curva_chiusa_sciolta_ruota_col_resto(self):
         result = topo.heal(_drawing())
-        rotated = topo.rotate_result(result, math.pi / 2)
+        rotated = topo.experimental.rotate_result(result, math.pi / 2)
         mark = next(c for c in rotated.loose if c.role == "mark")
         c = to_shapely(mark).centroid
         self.assertAlmostEqual(c.x, 0, places=3)

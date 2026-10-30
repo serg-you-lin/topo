@@ -21,7 +21,6 @@ import os
 
 import topo
 import topo_dxf
-from topo.tools.strips import facing_boundaries, link, open_boundaries, unconnected_regions
 from topo import to_shapely
 
 # --- CONFIG ------------------------------------------------------------
@@ -35,17 +34,17 @@ doc = topo_dxf.load_dxf(INPUT)
 cluster = topo.heal(doc).clusters[0]
 
 links = []
-for facing in facing_boundaries(cluster):
+for facing in topo.experimental.facing_boundaries(cluster):
     for region in facing.inside:
         c = to_shapely(region).centroid
         r = math.sqrt(to_shapely(region).area / math.pi)
         for k in range(STRIP_COUNT):
             angle = 2 * math.pi * k / STRIP_COUNT
             at = (c.x + r * math.cos(angle), c.y + r * math.sin(angle))
-            links.append(link(facing, facing.region, region, at, STRIP_WIDTH, placed=links))
-print(f"{len(links)} strisce, regioni non collegate: {len(unconnected_regions(cluster, links))}")
+            links.append(topo.experimental.link(facing, facing.region, region, at, STRIP_WIDTH, placed=links))
+print(f"{len(links)} strisce, regioni non collegate: {len(topo.experimental.unconnected_regions(cluster, links))}")
 
-opened = open_boundaries(links)
+opened = topo.experimental.open_boundaries(links)
 touched = {id(c) for c, _ in opened.boundaries}
 segments = [s for c in (cluster.outer, *cluster.inners) if id(c) not in touched for s in c.segments]
 for contour, chains in opened.boundaries:

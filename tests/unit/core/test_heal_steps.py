@@ -58,7 +58,7 @@ class TestSplitLabeled(unittest.TestCase):
 
     def test_001_ruolo_non_strutturale_messo_da_parte(self):
         mark = _line((2, 2), (5, 5), role="engrave")
-        kept, labeled = topo.steps.split_labeled(_square(0, 0, 10) + [mark])
+        kept, labeled = topo.experimental.split_labeled(_square(0, 0, 10) + [mark])
         self.assertEqual(len(kept), 4)
         self.assertEqual(labeled, [mark])
 
@@ -66,10 +66,10 @@ class TestSplitLabeled(unittest.TestCase):
         # D30: senza predicato un "hole" non Ã¨ strutturale, con il predicato
         # del chiamante che lo riconosce sÃ¬
         hole = _circle((5, 5), 1, role="hole")
-        _, labeled = topo.steps.split_labeled(_square(0, 0, 10) + [hole])
+        _, labeled = topo.experimental.split_labeled(_square(0, 0, 10) + [hole])
         self.assertEqual(labeled, [hole])
         is_structural = lambda role: topo.is_structural_role(role) or role == "hole"
-        kept, labeled = topo.steps.split_labeled(_square(0, 0, 10) + [hole], is_structural)
+        kept, labeled = topo.experimental.split_labeled(_square(0, 0, 10) + [hole], is_structural)
         self.assertEqual(labeled, [])
         self.assertIn(hole, kept)
 
@@ -80,15 +80,15 @@ class TestCloseFreeGaps(unittest.TestCase):
         edges = _square(0, 0, 10)
         edges[0] = _line((0, 0), (9.95, 0))
         # prima serve un gradino oltre il grafo esatto, dopo basta quello
-        self.assertNotEqual(topo.steps.find_loops(edges, set(), 0.1).method, "exact")
-        search = topo.steps.find_loops(topo.steps.close_free_gaps(edges, 0.1), set(), 0.1)
+        self.assertNotEqual(topo.experimental.find_loops(edges, set(), 0.1).method, "exact")
+        search = topo.experimental.find_loops(topo.experimental.close_free_gaps(edges, 0.1), set(), 0.1)
         self.assertEqual(search.method, "exact")
         self.assertEqual(len(search.loops), 1)
 
     def test_002_gap_sopra_tolleranza_intatto(self):
         edges = _square(0, 0, 10)
         edges[0] = _line((0, 0), (9, 0))
-        self.assertEqual(topo.steps.close_free_gaps(edges, 0.1), edges)
+        self.assertEqual(topo.experimental.close_free_gaps(edges, 0.1), edges)
 
 
 class TestDanglingSplines(unittest.TestCase):
@@ -97,8 +97,8 @@ class TestDanglingSplines(unittest.TestCase):
         spline = Edge(role=ContourRole.UNKNOWN, start=(0.0, 0.0), end=(5.0, 5.0),
                       segment=BSplineSeg(degree=1, control_points=[(0.0, 0.0), (5.0, 5.0)],
                                         knots=[0, 0, 1, 1]))
-        self.assertEqual(topo.steps.dangling_splines([spline]), [spline])
-        self.assertEqual(topo.steps.dangling_splines(_square(0, 0, 10)), [])
+        self.assertEqual(topo.experimental.dangling_splines([spline]), [spline])
+        self.assertEqual(topo.experimental.dangling_splines(_square(0, 0, 10)), [])
 
 
 class TestFindNonContourEdges(unittest.TestCase):
@@ -107,13 +107,13 @@ class TestFindNonContourEdges(unittest.TestCase):
         diagonal = _line((0.0, 0.0), (1.0, 2.0))
         edges = [_line((0.0, 0.0), (1.0, 0.0)), _line((1.0, 0.0), (1.0, 2.0)),
                  _line((1.0, 2.0), (0.0, 2.0)), _line((0.0, 2.0), (0.0, 0.0)), diagonal]
-        self.assertEqual(topo.steps.find_non_contour_edges(edges, 0.01), {id(diagonal)})
+        self.assertEqual(topo.experimental.find_non_contour_edges(edges, 0.01), {id(diagonal)})
 
     def test_002_linea_fra_due_quadrati_esclusa(self):
         # percorsa andata e ritorno dal bordo esterno: non Ã¨ contorno di nessuno
         joint = _line((10.0, 10.0), (20.0, 20.0))
         edges = _square(0, 0, 10) + _square(20, 20, 10) + [joint]
-        self.assertEqual(topo.steps.find_non_contour_edges(edges, 0.01), {id(joint)})
+        self.assertEqual(topo.experimental.find_non_contour_edges(edges, 0.01), {id(joint)})
 
 
 class TestLooseEnds(unittest.TestCase):
@@ -127,12 +127,12 @@ class TestLooseEnds(unittest.TestCase):
         self.edges = _square(0, 0, 10) + _square(20, 20, 10) + [self.joint, self.stub]
 
     def test_001_la_linea_che_unisce_due_forme(self):
-        candidates = topo.steps.find_non_contour_edges(self.edges + [self.chord], 0.01)
-        self.assertEqual(topo.steps.find_joining_edges(self.edges + [self.chord], candidates), [self.joint],
+        candidates = topo.experimental.find_non_contour_edges(self.edges + [self.chord], 0.01)
+        self.assertEqual(topo.experimental.find_joining_edges(self.edges + [self.chord], candidates), [self.joint],
                          "la diagonale di un quadrato Ã¨ una corda, non unisce niente")
 
     def test_002_estremo_libero_e_distanza(self):
-        ends = topo.steps.free_ends(self.edges)
+        ends = topo.experimental.free_ends(self.edges)
         self.assertEqual([p for p, _ in ends], [(13.0, -4.0)])
         self.assertAlmostEqual(ends[0][1], 5.0)
 
@@ -150,8 +150,8 @@ class TestLooseEnds(unittest.TestCase):
         # l'angolo rotto lo chiude solo il grafo tollerante (D57): sui suoi
         # nodi i due capi dell'angolo sono uno, libero resta il moncone
         edges = _broken_square(spur=True)
-        self.assertEqual([p for p, _ in topo.steps.free_ends(edges)], [(10.0, 0.0), (10.1, -5.0)])
-        self.assertEqual([p for p, _ in topo.steps.free_ends(edges, epsilon=0.1)], [(10.1, -5.0)])
+        self.assertEqual([p for p, _ in topo.experimental.free_ends(edges)], [(10.0, 0.0), (10.1, -5.0)])
+        self.assertEqual([p for p, _ in topo.experimental.free_ends(edges, epsilon=0.1)], [(10.1, -5.0)])
 
 
 def _arc(radius, missing_deg, center=(0.0, 0.0)):
@@ -189,8 +189,8 @@ class TestShortElementsAndTolerance(unittest.TestCase):
     def test_003_ogni_estremo_chiude_un_gap_solo(self):
         # tre estremi entro tol: si accoppiano i due piÃ¹ vicini, il terzo resta libero
         edges = [_line((0, 0), (10, 0)), _line((10.2, 0), (20, 0)), _line((10.5, 0.6), (10.5, 10))]
-        healed = topo.steps.close_free_gaps(edges, 1.0)
-        self.assertEqual(len(topo.steps.free_ends(healed)), 4, "i due capi esterni e i due del moncone")
+        healed = topo.experimental.close_free_gaps(edges, 1.0)
+        self.assertEqual(len(topo.experimental.free_ends(healed)), 4, "i due capi esterni e i due del moncone")
 
 
 class TestCloseNearFullArcs(unittest.TestCase):
@@ -199,7 +199,7 @@ class TestCloseNearFullArcs(unittest.TestCase):
 
     def _close(self, seg, tolerance, **kw):
         doc = topo.load_segments([seg], tolerance=0.01)
-        edges, n = topo.steps.close_near_full_arcs(list(doc.edges), tolerance, **kw)
+        edges, n = topo.experimental.close_near_full_arcs(list(doc.edges), tolerance, **kw)
         return type(edges[0].segment).__name__, n
 
     def test_001_export_rotto_diventa_cerchio(self):
@@ -219,7 +219,7 @@ class TestCloseNearFullArcs(unittest.TestCase):
         arc = _arc(10.0, 1.0)
         end = arc._point_at(arc.end_angle)
         doc = topo.load_segments([arc, LineSeg(end, (end[0] + 5, end[1]))], tolerance=0.01)
-        _, n = topo.steps.close_near_full_arcs(list(doc.edges), 1.0)
+        _, n = topo.experimental.close_near_full_arcs(list(doc.edges), 1.0)
         self.assertEqual(n, 0)
 
     def test_007_punta_di_spigolo_coi_capi_fusi_non_si_chiude(self):
@@ -228,7 +228,7 @@ class TestCloseNearFullArcs(unittest.TestCase):
         a, b = arc._point_at(arc.start_angle), arc._point_at(arc.end_angle)
         doc = topo.load_segments([LineSeg((20, 0.3), a), arc, LineSeg(b, (20, -0.3))], tolerance=0.1)
         self.assertEqual(doc.edges[1].start, doc.edges[1].end, "premessa: capi fusi")
-        _, n = topo.steps.close_near_full_arcs(list(doc.edges), 0.1)
+        _, n = topo.experimental.close_near_full_arcs(list(doc.edges), 0.1)
         self.assertEqual(n, 0)
 
 
@@ -268,24 +268,24 @@ class TestFindLoops(unittest.TestCase):
     """Un caso per gradino della scala: LoopSearch.method dice quale ha chiuso."""
 
     def test_001_grafo_esatto(self):
-        search = topo.steps.find_loops(_square(0, 0, 10), set(), 0.1)
+        search = topo.experimental.find_loops(_square(0, 0, 10), set(), 0.1)
         self.assertEqual(search.method, "exact")
         self.assertEqual(len(search.loops), 1)
 
     def test_002_riparazione_angoli(self):
-        search = topo.steps.find_loops(_broken_square(), set(), 0.1)
+        search = topo.experimental.find_loops(_broken_square(), set(), 0.1)
         self.assertEqual(search.method, "corner_repair")
         self.assertEqual(search.repaired, 1)
         self.assertEqual(len(search.loops), 1)
 
     def test_003_riparazione_anche_con_un_loop_chiuso_altrove(self):
         # D57: il cerchio chiuso non blinda l'angolo rotto dalla riparazione
-        search = topo.steps.find_loops(_broken_square() + [_circle((50, 5), 2)], set(), 0.1)
+        search = topo.experimental.find_loops(_broken_square() + [_circle((50, 5), 2)], set(), 0.1)
         self.assertEqual(search.repaired, 1)
         self.assertEqual(len(search.loops), 2)
 
     def test_004_grafo_tollerante(self):
-        search = topo.steps.find_loops(_broken_square(spur=True), set(), 0.1)
+        search = topo.experimental.find_loops(_broken_square(spur=True), set(), 0.1)
         self.assertEqual(search.method, "tolerant")
         self.assertEqual(search.repaired, 0)
         self.assertEqual(len(search.skipped_corners), 1)
@@ -293,7 +293,7 @@ class TestFindLoops(unittest.TestCase):
 
     def test_005_nessun_gradino_chiude(self):
         edges = [_line((0, 0), (10, 0)), _line((20, 0), (20, 10))]
-        search = topo.steps.find_loops(edges, set(), 0.1)
+        search = topo.experimental.find_loops(edges, set(), 0.1)
         self.assertEqual(search.method, "none")
         self.assertEqual(search.loops, [])
         self.assertEqual(len(search.open_nodes), 4)
@@ -301,7 +301,7 @@ class TestFindLoops(unittest.TestCase):
     def test_006_riparazione_non_tocca_gli_edge_in_ingresso(self):
         edges = _broken_square()
         before = [e.segment for e in edges]
-        topo.steps.find_loops(edges, set(), 0.1)
+        topo.experimental.find_loops(edges, set(), 0.1)
         self.assertEqual([e.segment for e in edges], before)
 
 
@@ -309,11 +309,11 @@ class TestLoopsToCurves(unittest.TestCase):
 
     def test_001_loop_con_un_edge_non_strutturale_scartato(self):
         engraved = _square(20, 0, 5, role="engrave")
-        loops = topo.steps.find_loops(_square(0, 0, 10) + engraved, set(), 0.1).loops
+        loops = topo.experimental.find_loops(_square(0, 0, 10) + engraved, set(), 0.1).loops
         self.assertEqual(len(loops), 2)
-        kept = topo.steps.structural_loops(loops)
+        kept = topo.experimental.structural_loops(loops)
         self.assertEqual(len(kept), 1)
-        curves = topo.steps.loops_to_curves(kept)
+        curves = topo.experimental.loops_to_curves(kept)
         self.assertEqual([round(to_shapely(f).area) for f in curves], [100])
 
     @staticmethod
@@ -327,15 +327,15 @@ class TestLoopsToCurves(unittest.TestCase):
 
     def test_002_giro_senza_area_torna_come_curve_aperte(self):
         doc = topo.load_segments(self._arc_with_chords())
-        loops = topo.steps.find_loops(doc.edges, set(), 0.01).loops
+        loops = topo.experimental.find_loops(doc.edges, set(), 0.01).loops
         self.assertEqual(len(loops), 1)
-        curves = topo.steps.loops_to_curves(loops)
+        curves = topo.experimental.loops_to_curves(loops)
         self.assertEqual(len(curves), 16)
         self.assertTrue(all(isinstance(c, OpenCurve) for c in curves))
 
     def test_003_micro_cerchio_torna_come_curva_aperta(self):
-        loops = topo.steps.find_loops([_circle((0.0, 0.0), 0.01)], set(), 0.001).loops
-        curves = topo.steps.loops_to_curves(loops)
+        loops = topo.experimental.find_loops([_circle((0.0, 0.0), 0.01)], set(), 0.001).loops
+        curves = topo.experimental.loops_to_curves(loops)
         self.assertEqual(len(curves), 1)
         self.assertIsInstance(curves[0], OpenCurve)
         self.assertIsInstance(curves[0].segments[0], CircleSeg)
@@ -354,7 +354,7 @@ class TestLoopsToCurves(unittest.TestCase):
 class TestPolygonize(unittest.TestCase):
 
     def test_001_bordo_esterno_e_buco(self):
-        curves = topo.steps.polygonize_to_curves(_square(0, 0, 10) + _square(3, 3, 4), 0.1)
+        curves = topo.experimental.polygonize_to_curves(_square(0, 0, 10) + _square(3, 3, 4), 0.1)
         roles = sorted((f.role, round(f.area)) for f in curves)
         self.assertIn((ContourRole.OUTER, 100), roles)
         self.assertIn((ContourRole.INNER, 16), roles)
@@ -363,15 +363,15 @@ class TestPolygonize(unittest.TestCase):
 class TestLabeledAndHierarchy(unittest.TestCase):
 
     def test_001_labeled_curves_chiuso_e_aperto(self):
-        curves = topo.steps.labeled_curves([_circle((5, 5), 1, role="engrave"),
+        curves = topo.experimental.labeled_curves([_circle((5, 5), 1, role="engrave"),
                                       _line((0, 0), (3, 0), role="engrave")])
         self.assertIsInstance(curves[0], ClosedCurve)
         self.assertIsInstance(curves[1], OpenCurve)
         self.assertTrue(all(f.role == "engrave" for f in curves))
 
     def test_002_quadrato_dentro_quadrato(self):
-        loops = topo.steps.find_loops(_square(0, 0, 10) + _square(3, 3, 4), set(), 0.1).loops
-        clusters, trash = topo.steps.build_hierarchy(topo.steps.loops_to_curves(loops), label="p")
+        loops = topo.experimental.find_loops(_square(0, 0, 10) + _square(3, 3, 4), set(), 0.1).loops
+        clusters, trash = topo.experimental.build_hierarchy(topo.experimental.loops_to_curves(loops), label="p")
         self.assertEqual(len(clusters), 1)
         self.assertEqual(len(clusters[0].inners), 1)
         self.assertEqual(clusters[0].inners[0].depth, 1)
@@ -383,16 +383,16 @@ class TestComposition(unittest.TestCase):
     """I passi composti a mano nell'ordine di heal() danno i cluster di heal()."""
 
     def _compose(self, doc, tol):
-        edges = topo.steps.weld_degenerate_linesegs(topo.steps.merge_cocircular_overlaps(
-            topo.steps.merge_collinear_overlaps(list(doc.edges))))
-        edges, labeled = topo.steps.split_labeled(edges)
-        edges = topo.steps.close_free_gaps(edges, tol)
-        search = topo.steps.find_loops(edges, topo.steps.find_non_contour_edges(edges, tol), tol)
-        kept = topo.steps.structural_loops(search.loops)
+        edges = topo.experimental.weld_degenerate_linesegs(topo.experimental.merge_cocircular_overlaps(
+            topo.experimental.merge_collinear_overlaps(list(doc.edges))))
+        edges, labeled = topo.experimental.split_labeled(edges)
+        edges = topo.experimental.close_free_gaps(edges, tol)
+        search = topo.experimental.find_loops(edges, topo.experimental.find_non_contour_edges(edges, tol), tol)
+        kept = topo.experimental.structural_loops(search.loops)
         in_loops = {id(e) for loop in kept for e, _ in loop}
-        curves = topo.steps.loops_to_curves(kept) + topo.steps.edges_to_open_curves(
+        curves = topo.experimental.loops_to_curves(kept) + topo.experimental.edges_to_open_curves(
                                        search.edges, exclude_ids=in_loops)
-        clusters, _ = topo.steps.build_hierarchy(curves)
+        clusters, _ = topo.experimental.build_hierarchy(curves)
         return clusters
 
     def test_001_stessi_cluster_di_heal(self):

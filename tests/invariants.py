@@ -48,7 +48,7 @@ TWICE = 1.9                           # ingresso lungo il tratto, in lunghezze d
 
 def moved(doc: Document, move) -> Document:
     """`doc` con ogni segmento passato per `move` (segmento → segmento) e i
-    nodi sulla griglia del caricamento, come `topo.rotate_document`."""
+    nodi sulla griglia del caricamento, come `topo.experimental.rotate_document`."""
     edges = []
     for edge in doc.edges:
         seg = move(edge.segment)
@@ -102,7 +102,7 @@ def orders(edges: list) -> list:
 
 def geometry(segment):
     """Il segmento come geometria shapely, discretizzato a DEFAULT_TOLERANCE."""
-    pts = segment.discretize(DEFAULT_TOLERANCE)
+    pts = segment.discretize(tolerance=DEFAULT_TOLERANCE)
     if len(pts) < 2 or all(p == pts[0] for p in pts):
         return Point(pts[0])
     return LineString(pts)

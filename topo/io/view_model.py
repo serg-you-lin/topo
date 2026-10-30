@@ -31,7 +31,7 @@ from ..core.primitives.segments import DEFAULT_TOLERANCE
 def _color(role, role_styles: Mapping[str, RoleStyle]) -> str:
     """Hex CSS di un ruolo: la palette di topo con sopra la mappa del
     chiamante (`role_style`, D128) — qui solo tradotta."""
-    r, g, b = role_style(role, role_styles).color
+    r, g, b = role_style(role, role_styles=role_styles).color
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
@@ -49,7 +49,7 @@ def _poly_points(polygon) -> list:
 
 def _track(segments, tolerance: float) -> list:
     """Traccia aperta (lista di segmenti nativi) discretizzata a lista di [x, y]."""
-    return _round_points(track_points(segments, tolerance))
+    return _round_points(track_points(segments, tolerance=tolerance))
 
 
 def _contour_entry(contour, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict:

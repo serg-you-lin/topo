@@ -52,7 +52,7 @@ class TestToText(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.result = _plate()
-        cls.text = topo.to_text(cls.result, "plate.dxf")
+        cls.text = topo.experimental.to_text(cls.result, "plate.dxf")
         print(cls.text)
 
     def test_001_header_and_sections(self):
@@ -95,12 +95,12 @@ class TestToText(unittest.TestCase):
         self.assertIn("from (5,5) to (20,15)", spline)
         self.assertIn("length", spline)
         self.assertNotIn("ctrl", self.text)
-        exact = topo.to_text(self.result, spline_data=True)
+        exact = topo.experimental.to_text(self.result, spline_data=True)
         self.assertIn("ctrl (5,5) (10,15) (15,5) (20,15)", exact)
         self.assertNotIn("knots", exact, "nodi bloccati e uniformi: non si scrivono")
 
     def test_008_decimals(self):
-        text = topo.to_text(self.result, decimals=1)
+        text = topo.experimental.to_text(self.result, decimals=1)
         self.assertIn("circle D10 centre (20,25)", text)
         self.assertNotIn(".000", self.text)
 
@@ -120,7 +120,7 @@ class TestToText(unittest.TestCase):
             from topo.model import DetectedFeatures
             cluster.detected = DetectedFeatures()
         cluster.detected.add("countersinks", Countersink("test", 0.9, 7.8))
-        text = topo.to_text(result)
+        text = topo.experimental.to_text(result)
         self.assertIn("C1.countersinks[1]: Countersink source=test confidence=0.9 top_diameter=7.8", text)
 
     def test_010_save_text(self):
@@ -128,7 +128,7 @@ class TestToText(unittest.TestCase):
         from pathlib import Path
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "plate.topo.md"
-            topo.save_text(self.result, path, "plate.dxf")
+            topo.experimental.save_text(self.result, path, "plate.dxf")
             self.assertEqual(path.read_text(encoding="utf-8"), self.text)
 
 

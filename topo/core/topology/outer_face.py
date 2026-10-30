@@ -148,7 +148,7 @@ def _first_step(graph: Graph, component):
     best = None   # (punto più a sinistra, edge, suoi punti, indice)
     for node in component:
         for edge, _ in graph[node]:
-            pts = edge.segment.discretize(DEFAULT_TOLERANCE)
+            pts = edge.segment.discretize(tolerance=DEFAULT_TOLERANCE)
             i = min(range(len(pts)), key=lambda k: (pts[k][0], pts[k][1]))
             if best is None or (pts[i][0], pts[i][1]) < best[0]:
                 best = ((pts[i][0], pts[i][1]), edge, pts, i)
@@ -167,7 +167,7 @@ def _leaving_angle(edge: Edge, node, graph: Graph) -> float:
     """Direzione con cui `edge` lascia `node`, letta a DIRECTION_SAMPLE (o a
     metà edge): un raccordo tangente a una retta si distingue da lei solo
     più avanti, non al primo micron."""
-    pts = edge.segment.discretize(DEFAULT_TOLERANCE)
+    pts = edge.segment.discretize(tolerance=DEFAULT_TOLERANCE)
     if graph.canonical(edge.start) != node:
         pts = list(reversed(pts))
     total = sum(math.dist(pts[i], pts[i + 1]) for i in range(len(pts) - 1))

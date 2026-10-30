@@ -30,8 +30,8 @@ from ..model.text import Text
 POINTER_TARGET_DISTANCE = 0.5   # mm — la punta di una freccia sta sulla linea che indica
 
 
-def anchor_texts(result: Result, snap_distance: float = 0.0,
-                 pointer_distance: float = POINTER_TARGET_DISTANCE) -> Result:
+def anchor_texts(result: Result, *, snap_distance: float = 0.0,
+                 pointer_distance: float = POINTER_TARGET_DISTANCE) -> None:
     """
     Assegna ``cluster_ref`` a ogni testo di ``result.texts``.
 
@@ -48,7 +48,7 @@ def anchor_texts(result: Result, snap_distance: float = 0.0,
     `pointer_target`), per ogni testo con ``measured_points`` ``references``
     (vedi `measured_references`).
 
-    Muta i testi in-place e ritorna il ``result``.
+    **Muta** i testi di ``result`` e ritorna ``None`` (D176).
     """
     refs = [
         (i, poly)
@@ -58,7 +58,7 @@ def anchor_texts(result: Result, snap_distance: float = 0.0,
         if poly is not None and not poly.is_empty
     ]
     if not refs:
-        return result
+        return
 
     for text in result.texts:
         text.cluster_ref = _assign(text.position, refs, snap_distance)
@@ -66,8 +66,6 @@ def anchor_texts(result: Result, snap_distance: float = 0.0,
             text.target = pointer_target(result, text, pointer_distance)
         if text.measured_points:
             text.references = measured_references(result, text, pointer_distance)
-
-    return result
 
 
 def pointer_target(result: Result, text: Text,

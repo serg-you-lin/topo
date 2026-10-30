@@ -22,7 +22,7 @@ import math
 from collections import Counter
 from typing import Optional, Sequence
 
-from topo.core.geometry.measure import track_points, track_shape_type
+from topo.core.geometry.measure import track_points
 from topo.core.primitives.polygon_builder import curve_polygon
 
 __all__ = [
@@ -54,7 +54,7 @@ def _role(r) -> str:
 # LIVELLO 2 — Document: edge, primitive, grafo
 # ===========================================================================
 
-def inspect_document(doc, graph: bool = True, limit: Optional[int] = 60) -> None:
+def inspect_document(doc, *, graph: bool = True, limit: Optional[int] = 60) -> None:
     """
     Stampa un Document prodotto da un adapter (`topo_dxf.load_dxf`, …) o da
     `topo.load_geometry`: cosa ha estratto e tradotto. Per partire da un
@@ -139,7 +139,7 @@ def _describe_segment(seg) -> str:
 # LIVELLO 3 — Result: il modello
 # ===========================================================================
 
-def inspect_result(result, coords: bool = False) -> None:
+def inspect_result(result, *, coords: bool = False) -> None:
     """
     Stampa un Result dopo heal(): il prodotto vero di topo.
 
@@ -168,7 +168,7 @@ def inspect_result(result, coords: bool = False) -> None:
         print(f"\n{_SUB}\nloose: {len(loose)}  (curve che non sono contorno di nessun cluster)")
         kinds = Counter(
             "closed" if curve_polygon(t) is not None
-            else track_shape_type(track_points(getattr(t, "segments", []) or []))
+            else ("line" if len(track_points(getattr(t, "segments", []) or [])) == 2 else "curve")
             for t in loose
         )
         roles = Counter(_role(getattr(t, "role", "?")) for t in loose)

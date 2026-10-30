@@ -74,7 +74,6 @@ topo_dxf/         ADAPTER DXF/DWG                      (conosce ezdxf; extra [dx
 ├── writer.py         to_dxf                            (+ exporter: segmenti → entità)
 ├── layers.py         i layer di default, SKIP_LAYERS, role_to_dxf_layer
 ├── xdata.py          write/read_metadata_to_dxf
-├── recipes.py        split_to_files — heal + split + to_dxf + salvataggio
 └── inspect.py        inspect_dxf, inspect_file
 topo_pdf/         ADAPTER PDF — sperimentale, congelato (conosce fitz; extra [pdf])
 ```
@@ -130,8 +129,11 @@ topo/
 │   └── exporter.py   build_metadata / save_json / save_xml
 │
 ├── rules/        REGOLE di dominio                     (schema, validazione)
-└── inspect.py    ispezione: inspect_document, inspect_result (il livello del
-                  file è dell'adapter: topo_dxf.inspect_dxf)
+├── inspect.py    ispezione: inspect_document, inspect_result (il livello del
+│                 file è dell'adapter: topo_dxf.inspect_dxf)
+└── experimental.py  tutto ciò che si usa senza promessa di stabilità: passi di
+                  heal/island, viewer, to_text, rotate_*, simplify_points,
+                  strisce (D175 C, D176)
 ```
 
 `pipeline/` non esiste più (MAP.md D22): metteva insieme tre cose diverse —
@@ -191,7 +193,8 @@ lavora sul `Document`.
 ### 2. `heal` → `Result` (topologia)
 
 Il passo difficile. Lavora su `doc.edges`, zero `ezdxf`. `heal()` è una
-ricetta: ogni passo è una funzione pubblica in `core/healing/steps.py` (D62),
+ricetta: ogni passo è una funzione in `core/healing/steps.py` (D62), esposta in
+`topo.experimental` (D176),
 `heal()` le compone in quest'ordine e scrive i warning che le raccontano. Un
 consumatore (snapdraw) compone gli stessi passi come gli serve.
 

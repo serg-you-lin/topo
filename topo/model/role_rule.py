@@ -11,7 +11,7 @@ e consegna al core solo il ruolo risultante (MAP.md D63).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import KW_ONLY, dataclass
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 from .role import ContourRole, normalize_role
@@ -53,6 +53,7 @@ class RoleRule:
                         di base ("cyan", "red", ...)
     """
     role:          str
+    _: KW_ONLY
     name:          Optional[str]              = None
     name_contains: Optional[str]              = None
     dashed:        Optional[bool]             = None
@@ -81,7 +82,7 @@ class RoleRule:
         """True se la regola guarda l'aspetto (tratto o colore), non solo il nome."""
         return self.dashed is not None or self.dash is not None or self.color is not None
 
-    def matches(self, name: str, style: Optional[EdgeStyle] = None) -> bool:
+    def matches(self, name: str, *, style: Optional[EdgeStyle] = None) -> bool:
         """
         True se l'elemento (nome del gruppo sorgente + aspetto) soddisfa la
         regola. `style=None` = la sorgente non ha un aspetto da confrontare
@@ -106,7 +107,7 @@ class RoleRule:
 def resolve_role(rules: Sequence[RoleRule], name: str, style: Optional[EdgeStyle] = None) -> str:
     """Ruolo della prima regola che matcha, in ordine; `unknown` se nessuna."""
     for rule in rules:
-        if rule.matches(name, style):
+        if rule.matches(name, style=style):
             return rule.role
     return ContourRole.UNKNOWN.value
 

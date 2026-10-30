@@ -83,7 +83,7 @@ def _make_test(path: Path):
         if dxf_path is None:
             self.skipTest(golden["source_file"])
         doc = topo_dxf.load_dxf(
-            dxf_path, explode_inserts=True, flatten_z_flag=True, verbose=False
+            dxf_path, explode_inserts=True, flatten_z=True, verbose=False
         )
         result = topo.heal(doc)
         anchor_texts(result)

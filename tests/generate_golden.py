@@ -113,7 +113,7 @@ def generate(force: bool = False, only: str = None):
 
             def _load():
                 return topo_dxf.load_dxf(
-                    dxf_path, upgrade=True, explode_inserts=True, flatten_z_flag=True,
+                    dxf_path, upgrade=True, explode_inserts=True, flatten_z=True,
                     tolerance=tolerance, verbose=False, role_rules=topo.name_rules(name_roles),
                 )
 

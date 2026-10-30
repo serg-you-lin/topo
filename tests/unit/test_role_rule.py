@@ -78,38 +78,38 @@ class TestRoleRule(unittest.TestCase):
 
     def test_nome_ignora_le_maiuscole(self):
         rule = topo.RoleRule("bending", name="Piega")
-        self.assertTrue(rule.matches("PIEGA", CONTINUA))
-        self.assertFalse(rule.matches("Pieghe", CONTINUA))
+        self.assertTrue(rule.matches("PIEGA", style=CONTINUA))
+        self.assertFalse(rule.matches("Pieghe", style=CONTINUA))
 
     def test_nome_contiene(self):
         rule = topo.RoleRule("construction", name_contains="constr")
-        self.assertTrue(rule.matches("Construction_lines", CONTINUA))
-        self.assertFalse(rule.matches("Taglio", CONTINUA))
+        self.assertTrue(rule.matches("Construction_lines", style=CONTINUA))
+        self.assertFalse(rule.matches("Taglio", style=CONTINUA))
 
     def test_condizioni_tutte_vere_insieme(self):
         # il caso del snapdraw: tratteggiata E nome "construction"
         rule = topo.RoleRule("construction", name_contains="construction", dashed=True)
-        self.assertTrue(rule.matches("construction", TRATTEGGIATA))
-        self.assertFalse(rule.matches("construction", CONTINUA))
-        self.assertFalse(rule.matches("0", TRATTEGGIATA))
+        self.assertTrue(rule.matches("construction", style=TRATTEGGIATA))
+        self.assertFalse(rule.matches("construction", style=CONTINUA))
+        self.assertFalse(rule.matches("0", style=TRATTEGGIATA))
 
     def test_solo_continue(self):
         rule = topo.RoleRule("outer", dashed=False)
-        self.assertTrue(rule.matches("", CONTINUA))
-        self.assertFalse(rule.matches("", TRATTEGGIATA))
+        self.assertTrue(rule.matches("", style=CONTINUA))
+        self.assertFalse(rule.matches("", style=TRATTEGGIATA))
 
     def test_forma_del_tratto(self):
         # la regola ISO 128 del snapdraw: catena → costruzione, il tratteggio no
         rule = topo.RoleRule("construction", dash="chain")
-        self.assertTrue(rule.matches("", TRATTO_PUNTO))
-        self.assertTrue(rule.matches("", DUE_TRATTI))
-        self.assertFalse(rule.matches("", TRATTEGGIATA))
-        self.assertFalse(rule.matches("", CONTINUA))
-        self.assertTrue(topo.RoleRule("x", dash="UNIFORM").matches("", PUNTINATA))
+        self.assertTrue(rule.matches("", style=TRATTO_PUNTO))
+        self.assertTrue(rule.matches("", style=DUE_TRATTI))
+        self.assertFalse(rule.matches("", style=TRATTEGGIATA))
+        self.assertFalse(rule.matches("", style=CONTINUA))
+        self.assertTrue(topo.RoleRule("x", dash="UNIFORM").matches("", style=PUNTINATA))
 
     def test_dashed_include_le_catene(self):
         # dashed resta "ha almeno un vuoto": vale per le due famiglie
-        self.assertTrue(topo.RoleRule("x", dashed=True).matches("", TRATTO_PUNTO))
+        self.assertTrue(topo.RoleRule("x", dashed=True).matches("", style=TRATTO_PUNTO))
 
     def test_dash_sconosciuto_solleva(self):
         with self.assertRaises(ValueError):
@@ -117,8 +117,8 @@ class TestRoleRule(unittest.TestCase):
 
     def test_colore_per_nome_rgb_o_hex(self):
         for key in ("cyan", "CYAN", (0, 255, 255), "#00ffff"):
-            self.assertTrue(topo.RoleRule("engrave", color=key).matches("", CIANO), msg=repr(key))
-        self.assertFalse(topo.RoleRule("engrave", color="red").matches("", CIANO))
+            self.assertTrue(topo.RoleRule("engrave", color=key).matches("", style=CIANO), msg=repr(key))
+        self.assertFalse(topo.RoleRule("engrave", color="red").matches("", style=CIANO))
 
     def test_colore_sconosciuto_solleva(self):
         with self.assertRaises(ValueError):

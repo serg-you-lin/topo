@@ -22,7 +22,7 @@ class TestSubSegment(unittest.TestCase):
 
     def _assert_on(self, piece, curve_distance, tol=1e-6):
         # ogni punto del tratto sta sulla curva originale
-        for pt in piece.discretize(0.001):
+        for pt in piece.discretize(tolerance=0.001):
             self.assertLess(curve_distance(pt), tol)
 
     def test_retta(self):
@@ -56,8 +56,8 @@ class TestSubSegment(unittest.TestCase):
         right = sub_segment(circle, top, bottom, (5, 0))
         self.assertAlmostEqual(left._sweep(), math.pi)
         self.assertAlmostEqual(right._sweep(), math.pi)
-        self.assertLess(min(p[0] for p in left.discretize(0.01)), -4.9)
-        self.assertGreater(max(p[0] for p in right.discretize(0.01)), 4.9)
+        self.assertLess(min(p[0] for p in left.discretize(tolerance=0.01)), -4.9)
+        self.assertGreater(max(p[0] for p in right.discretize(tolerance=0.01)), 4.9)
 
     def test_ellisse(self):
         ellipse = EllipseSeg(center=(0, 0), major_axis=(10, 0), ratio=0.5,

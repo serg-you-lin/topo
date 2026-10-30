@@ -84,8 +84,8 @@ class _OnCurve:
     curva di partenza; gli estremi sono gli estremi trasformati (verso incluso)."""
 
     def assert_on_curve(self, seg, moved, back, scale: float):
-        reference = seg.discretize(FINE)
-        for q in moved.discretize(0.01):
+        reference = seg.discretize(tolerance=FINE)
+        for q in moved.discretize(tolerance=0.01):
             d = _distance_to_polyline(back(q), reference)
             self.assertLessEqual(d, 2 * FINE + RELATIVE * max(1.0, scale), f"{q} fuori di {d}")
 
@@ -104,8 +104,8 @@ class TestTranslated(unittest.TestCase):
         for name, seg in _segments():
             for dx, dy in OFFSETS:
                 with self.subTest(segment=name, offset=(dx, dy)):
-                    before = seg.discretize(0.01)
-                    after = seg.translated(dx, dy).discretize(0.01)
+                    before = seg.discretize(tolerance=0.01)
+                    after = seg.translated(dx, dy).discretize(tolerance=0.01)
                     self.assertEqual(len(after), len(before))
                     scale = max(abs(dx), abs(dy), *(abs(c) for p in before for c in p))
                     for p, q in zip(before, after):
@@ -126,12 +126,12 @@ class TestMirrored(unittest.TestCase):
     def test_punti_specchiati_sull_asse_x(self):
         for name, seg in _segments():
             with self.subTest(segment=name):
-                before = seg.discretize(0.01)
+                before = seg.discretize(tolerance=0.01)
                 if isinstance(seg, CircleSeg):
                     # un cerchio non ha verso: specchiato è percorso ancora
                     # CCW, gli stessi vertici in ordine inverso
                     before = before[::-1]
-                after = seg.mirrored().discretize(0.01)
+                after = seg.mirrored().discretize(tolerance=0.01)
                 self.assertEqual(len(after), len(before))
                 for p, q in zip(before, after):
                     self.assertTrue(_close((p[0], -p[1]), q, 100.0), f"{p} → {q}")
@@ -146,8 +146,8 @@ class TestMirrored(unittest.TestCase):
     def test_due_volte_torna_al_segmento(self):
         for name, seg in _segments():
             with self.subTest(segment=name):
-                again = seg.mirrored().mirrored().discretize(0.01)
-                for p, q in zip(seg.discretize(0.01), again):
+                again = seg.mirrored().mirrored().discretize(tolerance=0.01)
+                for p, q in zip(seg.discretize(tolerance=0.01), again):
                     self.assertTrue(_close(p, q, 100.0), f"{p} → {q}")
 
 
@@ -158,7 +158,7 @@ class TestMirroredOnAxis(unittest.TestCase, _OnCurve):
         for name, seg in _segments():
             for origin, angle in AXES:
                 with self.subTest(segment=name, axis=(origin, angle)):
-                    moved = seg.mirrored(origin, angle)
+                    moved = seg.mirrored(origin=origin, angle=angle)
                     self.assertIs(type(moved), type(seg))
                     scale = max(1e2, *map(abs, origin))
                     self.assert_on_curve(seg, moved, lambda q: _mirror(q, origin, angle), scale)
@@ -168,7 +168,7 @@ class TestMirroredOnAxis(unittest.TestCase, _OnCurve):
         for name, seg in _segments():
             for origin, angle in AXES:
                 with self.subTest(segment=name, axis=(origin, angle)):
-                    again = seg.mirrored(origin, angle).mirrored(origin, angle)
+                    again = seg.mirrored(origin=origin, angle=angle).mirrored(origin=origin, angle=angle)
                     scale = max(1e2, *map(abs, origin))
                     self.assert_ends(seg, again, lambda p: p, scale)
                     self.assert_on_curve(seg, again, lambda q: q, scale)
@@ -177,7 +177,7 @@ class TestMirroredOnAxis(unittest.TestCase, _OnCurve):
         # il default è lo specchio di sempre, campo per campo
         for name, seg in _segments():
             with self.subTest(segment=name):
-                self.assertEqual(seg.mirrored(), seg.mirrored((0.0, 0.0), 0.0))
+                self.assertEqual(seg.mirrored(), seg.mirrored(origin=(0.0, 0.0), angle=0.0))
 
 
 class TestScaled(unittest.TestCase, _OnCurve):
@@ -186,7 +186,7 @@ class TestScaled(unittest.TestCase, _OnCurve):
         for name, seg in _segments():
             for factor, origin in FACTORS:
                 with self.subTest(segment=name, factor=factor, origin=origin):
-                    moved = seg.scaled(factor, origin)
+                    moved = seg.scaled(factor, origin=origin)
                     self.assertIs(type(moved), type(seg))
                     scale = max(1e2, *map(abs, origin)) * max(1.0, factor)
                     self.assert_on_curve(seg, moved, lambda q: _scale(q, 1 / factor, origin), scale)
@@ -194,7 +194,7 @@ class TestScaled(unittest.TestCase, _OnCurve):
 
     def test_raggio_e_assi_moltiplicati(self):
         arc = ArcSeg(center=(1.0, 2.0), radius=3.0, start_angle=0.3, end_angle=2.1, ccw=False)
-        big = arc.scaled(2.5, (1.0, 2.0))
+        big = arc.scaled(2.5, origin=(1.0, 2.0))
         self.assertEqual((big.center, big.radius, big.start_angle, big.end_angle, big.ccw),
                          ((1.0, 2.0), 7.5, 0.3, 2.1, False))
         self.assertEqual(CircleSeg(center=(2.0, 0.0), radius=4.0).scaled(0.5),

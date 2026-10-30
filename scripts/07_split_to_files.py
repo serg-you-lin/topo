@@ -3,11 +3,11 @@
 ============================================================
 
 API topo usate:
-    split_to_files    heal -> split -> .saveas() per parte
-                      È L'UNICA funzione della pipeline che scrive su disco.
+    heal -> split -> to_dxf(...).saveas() per parte: quattro righe del
+    chiamante (la vecchia `split_to_files` le faceva in una, D176).
 
-Ritorna il Result (per poterci fare save_json dopo). Nome file:
-f"{cluster.label}.dxf" dove cluster.label = namer(i, cluster), senza namer f"{label}_P{i+1}".
+Nome file: f"{cluster.label}.dxf" dove cluster.label = namer(i, cluster),
+senza namer f"{label}_P{i+1}".
 
     python 07_split_to_files.py
 """
@@ -26,17 +26,15 @@ LABEL     = "P-1024"
 
 doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE)
 
-result = topo_dxf.split_to_files(
-    doc,
-    output_folder=OUTDIR,
-    label=LABEL,
-    source_file=INPUT,
-    namer=lambda i, cluster: f"{LABEL}_P{i + 1}",
-    min_area=50.0,
-    include_texts=True,
-)
+import os
 
-print(f"parti scritte : {result.cluster_count}  ->  {OUTDIR}/")
+result = topo.heal(doc, label=LABEL, source_file=INPUT)
+os.makedirs(OUTDIR, exist_ok=True)
+parts = topo.split(result, namer=lambda i, cluster: f"{LABEL}_P{i + 1}", min_area=50.0)
+for part in parts:
+    topo_dxf.to_dxf(part, doc).saveas(f"{OUTDIR}/{part.clusters[0].label}.dxf")
+
+print(f"parti scritte : {len(parts)}  ->  {OUTDIR}/")
 print(f"is_valid      : {result.is_valid}")
 for w in result.warnings:
     print(f"   warn: {w}")

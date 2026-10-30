@@ -240,12 +240,12 @@ class TestHealerDeduplication(unittest.TestCase):
 class TestValidateInput(unittest.TestCase):
 
     def test_001_detects_open_lines(self):
-        check = topo.validate(topo_dxf.load_dxf(load("rect_lines.dxf")))
+        check = topo.validate_document(topo_dxf.load_dxf(load("rect_lines.dxf")))
         self.assertGreater(len(check.warnings), 0)
         self.assertTrue(check.is_valid)
 
     def test_002_clean_file_no_errors(self):
-        check = topo.validate(topo_dxf.load_dxf(load("pline_with_hole.dxf")))
+        check = topo.validate_document(topo_dxf.load_dxf(load("pline_with_hole.dxf")))
         self.assertEqual(len(check.errors), 0)
         self.assertTrue(check.is_valid)
 

@@ -22,7 +22,7 @@ from shapely.geometry import LineString
 from topo.core.primitives.segments import ArcSeg, LineSeg
 from topo.core.geometry.lines import are_collinear, group_collinear_lines, dash_line
 from topo.core.geometry.measure import (
-    track_points, track_length, track_shape_type, segment_length, longest_segment,
+    track_points, track_length, segment_length, longest_segment,
     chord_angle_deg, length_inside,
 )
 from topo.core.geometry.points import (
@@ -200,7 +200,7 @@ class TestGroupCollinearLines(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# track_points / track_length / track_shape_type
+# track_points / track_length
 # ---------------------------------------------------------------------------
 
 class TestTrackHelpers(unittest.TestCase):
@@ -210,7 +210,6 @@ class TestTrackHelpers(unittest.TestCase):
         pts = track_points([seg])
         self.assertEqual(pts, [(0, 0), (10, 0)])
         self.assertAlmostEqual(track_length(pts), 10.0)
-        self.assertEqual(track_shape_type(pts), "line")
 
     def test_002_chain_dedups_shared_vertex(self):
         a = LineSeg(start=(0, 0), end=(10, 0))
@@ -218,13 +217,11 @@ class TestTrackHelpers(unittest.TestCase):
         pts = track_points([a, b])
         self.assertEqual(pts, [(0, 0), (10, 0), (10, 5)])
         self.assertAlmostEqual(track_length(pts), 15.0)
-        self.assertEqual(track_shape_type(pts), "curve")
 
-    def test_003_arc_is_curve(self):
+    def test_003_arc_is_discretized(self):
         arc = make_arc(0, 0, 5, 0, 90)
         pts = track_points([arc])
         self.assertGreater(len(pts), 2)
-        self.assertEqual(track_shape_type(pts), "curve")
 
     def test_004_empty(self):
         self.assertEqual(track_points([]), [])
@@ -293,7 +290,7 @@ class TestPointSequenceMath(unittest.TestCase):
         self.assertLess(len(control), 30)
         self.assertEqual(control[0], pts[0])
         self.assertEqual(control[-1], pts[-1])
-        curve = LineString(BSplineSeg(degree=3, control_points=control, knots=knots).discretize(1e-4))
+        curve = LineString(BSplineSeg(degree=3, control_points=control, knots=knots).discretize(tolerance=1e-4))
         from shapely.geometry import Point as SPoint
         self.assertLessEqual(max(curve.distance(SPoint(p)) for p in pts), 0.1)
 
@@ -385,7 +382,7 @@ class TestInterpolateBspline(unittest.TestCase):
         self.assertEqual(len(knots), len(pts) + degree + 1)
         curve = BSplineSeg(degree=degree, control_points=ctrl, knots=knots)
         from shapely.geometry import Point
-        dense = LineString(curve.discretize(0.001))
+        dense = LineString(curve.discretize(tolerance=0.001))
         for p in pts:
             # ogni punto di fit sta sulla curva
             self.assertLess(dense.distance(Point(p)), 0.002)

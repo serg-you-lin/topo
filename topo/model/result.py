@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import KW_ONLY, dataclass
 from dataclasses import field
 from typing import Any, List, Optional, Sequence
 from .curve import ClosedCurve, OpenCurve
@@ -31,6 +31,7 @@ class Result:
                     contiene.
     """
     clusters:               List[Cluster]        = field(default_factory=list)
+    _: KW_ONLY
     source_file:         str                    = ""
     is_valid:            bool                   = True
     warnings:            List[str]              = field(default_factory=list)
@@ -47,7 +48,7 @@ class Result:
         return bool(self.warnings or self.errors)
 
     def promote(self, curves: OpenCurve | ClosedCurve | Sequence[OpenCurve | ClosedCurve],
-                cluster: Cluster, name: str, item: Optional[Any] = None) -> None:
+                cluster: Cluster, name: str, *, item: Optional[Any] = None) -> None:
         """
         Toglie `curves` (una curva o più) da `loose` e mette un solo `item`
         nella collezione `name` di `cluster.detected`, creandolo se manca
