@@ -16,7 +16,7 @@ from topo.model.contour import Contour
 from topo.model.result import Result
 from topo.model.role import ContourRole
 from topo.model.text import RenderedGeometry, RenderedText, Text
-from topo.tools.anchor import anchor_texts, measured_references, resolve_target
+from topo.tools.anchor import anchor_texts, measured_references
 from topo_dxf.text_extractor import _shown_text
 from topo import to_shapely
 
@@ -112,17 +112,16 @@ class TestPointerTarget(unittest.TestCase):
     def test_punta_sul_bordo_del_foro(self):
         result = self._island(_leader((24, 25), (40, 60)))
         k = self._hole_at(result, (20, 25))
-        self.assertEqual(result.texts[0].target, f"loose[{k}]")
-        self.assertIs(resolve_target(result, result.texts[0].target), result.loose[k])
+        self.assertIs(result.texts[0].target, result.loose[k])
 
     def test_punta_dentro_il_foro(self):
         result = self._island(_leader((72, 27), (90, 70)))
         k = self._hole_at(result, (70, 25))
-        self.assertEqual(result.texts[0].target, f"loose[{k}]")
+        self.assertIs(result.texts[0].target, result.loose[k])
 
     def test_punta_sul_contorno_esterno(self):
         result = self._island(_leader((100, 40), (120, 60)))
-        self.assertEqual(result.texts[0].target, "clusters[0].outer")
+        self.assertIs(result.texts[0].target, result.clusters[0].outer)
 
     def test_freccia_lontana_nessun_target(self):
         # freccia di sezione: si ferma a 5 mm dal pezzo
@@ -144,9 +143,54 @@ class TestPointerTarget(unittest.TestCase):
         cluster.detected.attach("my_circles", [small])
         result.texts = [_leader((24, 25), (40, 60))]
         anchor_texts(result)
-        target = resolve_target(result, result.texts[0].target)
-        self.assertIn(".my_circles[", result.texts[0].target)
-        self.assertAlmostEqual(to_shapely(target).centroid.x, 20, places=1)
+        self.assertIs(result.texts[0].target, small)
+        self.assertAlmostEqual(to_shapely(small).centroid.x, 20, places=1)
+
+
+class TestTargetIsTheObject(unittest.TestCase):
+    """D177: `target`/`references` sono gli oggetti, non posizioni nel
+    risultato — restano giusti quando le collezioni cambiano dopo."""
+
+    def _island(self):
+        result = topo.island(_plate_with_holes(), max_gap=MAX_GAP)
+        result.texts = [_leader((24, 25), (40, 60)),
+                        Text(position=(40, 40), measured_points=[(60, 25), (80, 25)])]
+        anchor_texts(result)
+        return result
+
+    def test_promote_non_sposta_il_target(self):
+        # promuovere una curva che sta prima in loose spostava "loose[k]"
+        result = self._island()
+        hole, big = result.texts[0].target, result.texts[1].references[0]
+        before = [c for c in result.loose if c is not hole][0]
+        result.promote(before, result.clusters[0], "mine")
+        self.assertIs(result.texts[0].target, hole)
+        self.assertIs(result.texts[1].references[0], big)
+
+    def test_promote_del_target_stesso(self):
+        result = self._island()
+        hole = result.texts[0].target
+        result.promote(hole, result.clusters[0], "holes")
+        self.assertIs(result.texts[0].target, hole)
+        self.assertIs(result.clusters[0].features("holes")[0], hole)
+
+    def test_split_punta_alle_copie_della_parte(self):
+        result = self._island()
+        part = topo.split(result)[0]
+        target = part.texts[0].target
+        self.assertTrue(any(target is c for c in part.loose))
+        self.assertFalse(any(target is c for c in result.loose))
+        self.assertTrue(any(part.texts[1].references[0] is c for c in part.loose))
+        # l'originale non cambia
+        self.assertTrue(any(result.texts[0].target is c for c in result.loose))
+
+    def test_repr_e_uguaglianza_senza_i_riferimenti(self):
+        result = self._island()
+        text = result.texts[0]
+        self.assertNotIn("target", repr(text))
+        self.assertEqual(text, Text(position=text.position, text=text.text,
+                                    pointer=list(text.pointer), cluster_ref=text.cluster_ref,
+                                    source_kind=text.source_kind))
 
 
 class TestMeasuredReferences(unittest.TestCase):
@@ -162,21 +206,21 @@ class TestMeasuredReferences(unittest.TestCase):
         dim = Text(position=(40, 40), measured_points=[(60, 25), (80, 25)])
         result = self._result(dim)
         self.assertEqual(len(dim.references), 1)
-        hole = resolve_target(result, dim.references[0])
+        hole = dim.references[0]
         self.assertAlmostEqual(topo.geometry.contour_shape(hole).diameter, 20)
 
     def test_raggio_sul_foro(self):
         dim = Text(position=(40, 40), measured_points=[(20, 29)])
         result = self._result(dim)
-        self.assertAlmostEqual(topo.geometry.contour_shape(resolve_target(result, dim.references[0])).diameter, 8)
+        self.assertAlmostEqual(topo.geometry.contour_shape(dim.references[0]).diameter, 8)
 
     def test_lineare_fra_due_elementi(self):
         # dal bordo sinistro del pezzo al bordo sinistro del foro Ø8
         dim = Text(position=(8, 60), measured_points=[(0, 25), (16, 25)])
         result = self._result(dim)
-        self.assertEqual(dim.references[0], "clusters[0].outer")
+        self.assertIs(dim.references[0], result.clusters[0].outer)
         self.assertEqual(len(dim.references), 2)
-        self.assertAlmostEqual(topo.geometry.contour_shape(resolve_target(result, dim.references[1])).diameter, 8)
+        self.assertAlmostEqual(topo.geometry.contour_shape(dim.references[1]).diameter, 8)
 
     def test_punti_fuori_dalla_geometria(self):
         dim = Text(position=(0, 0), measured_points=[(-20, -20), (200, 200)])

@@ -17,14 +17,15 @@ Divisione dei compiti:
     - agente → legge e modifica questi oggetti; un writer li riemette.
 
 ``cluster_ref`` è l'indice in ``result.clusters``, non un ``id()`` — così resta
-valido dopo serializzazione. ``target`` e ``references`` sono percorsi
-(es. ``"clusters[0].inners[3]"``).
+valido dopo serializzazione. ``target`` e ``references`` sono gli oggetti
+stessi (contorno, feature, curva di ``loose``): restano giusti se un consumer
+riordina le collezioni o promuove una curva (D177).
 """
 
 from __future__ import annotations
 
 from dataclasses import KW_ONLY, dataclass, field
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from .role import ContourRole, normalize_role
 
@@ -98,11 +99,11 @@ class Text:
     cluster_ref:      Optional[int]    = None   # indice in result.clusters della parte che lo contiene
     source_kind:      str              = ""
     pointer:          List[Point]      = field(default_factory=list)
-    target:           Optional[str]    = None
+    target:           Optional[Any]    = field(default=None, repr=False, compare=False)
     measured_points:  List[Point]      = field(default_factory=list)
     measure:          Optional[float]  = None
     measure_is_angle: bool             = False
-    references:       List[str]        = field(default_factory=list)
+    references:       List[Any]        = field(default_factory=list, repr=False, compare=False)
     rendered:         RenderedGeometry = field(default_factory=RenderedGeometry)
 
     def __post_init__(self):

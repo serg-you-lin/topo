@@ -6601,3 +6601,55 @@ now and fixed in a 1.x, or fixed before 1.0.
 | `seg.mirrored(o, a)`, `seg.rotated(t, o)`, `seg.discretize(tol)` | `seg.mirrored(origin=o, angle=a)`, `seg.rotated(t, origin=o)`, `seg.discretize(tolerance=tol)` |
 
 `main` → **0.25.0** (D155: public names removed and renamed, second digit).
+
+### D177 — G14 point 11: `Text.target`/`references` are the objects, not paths ✅
+Federico, 30 October, reopening D174's bound ("no rewrites") for point 11
+only. Options weighed: experimental now and fixed in a 1.x; a stable string
+kept honest by `promote`/`split`; a stable id on every element; removal. He
+chose the fix before 1.0.
+
+**Why.** A path such as `"clusters[0].inners[3]"` or `"loose[4]"` is a
+position in one list at one moment. `Result.promote` takes curves out of
+`loose`, so `"loose[k]"` written earlier silently named another curve.
+`split` left the paths as they were, so in a part they named nothing or the
+wrong curve. And the collections of `cluster.detected` are a consumer's:
+any reorder there after `anchor_texts` moved the paths, and topo cannot
+remap what it does not manage. D66's argument ("it survives serialization")
+did not hold either: no writer emits `target`/`references`, only the text
+report reads them. A reference to the object is right whatever happens to
+the lists around it.
+
+**Still geometry (D138).** What is anchored is a fact between a point and an
+element: the nearest boundary within `distance`, else the smallest closed
+element covering the point. Whether the text is a dimension or a callout is
+still the consumer's reading; only the 0.5 default knows about drawings, and
+it is an option.
+
+**What changed.**
+- `Text.target: object | None`, `Text.references: list` — the element
+  itself (a contour, an item of `detected`, a closed curve of `loose`). Both
+  `repr=False, compare=False`: a contour in a text's repr is noise, and two
+  texts are equal for what they are, not for what was anchored to them.
+- `pointer_target`/`measured_references` return objects. Their `distance`
+  is keyword-only (rule 1, missed in D176). Ties are broken by the element's
+  place in the result as before, so the golden of `golden_anchoring/` is
+  unchanged.
+- `resolve_target` removed: nothing to resolve.
+- `split` relinks each text to its part: contours and features are the same
+  objects, loose curves are copies and the references follow the copies; an
+  element of another part is not in that `Result`, so `target` becomes
+  `None` and the reference leaves `references`. The caller's texts do not
+  change.
+- `deepcopy` of a `Result` keeps the links (the memo maps them to the copies).
+- The text report labels the object (`C1`, `C1.3`, `C1.holes[2]`, `loose[4]`).
+
+**For the consumers:**
+
+| old | new |
+|---|---|
+| `topo.resolve_target(result, t.target)` | `t.target` |
+| `t.target == "clusters[0].outer"` | `t.target is result.clusters[0].outer` |
+| the collection from the path (`path.split(".")`) | look the object up: `item in cluster.inners` by identity, `cluster.detected.items()` |
+| `pointer_target(r, t, 0.3)` | `pointer_target(r, t, distance=0.3)` |
+
+`main` → **0.26.0** (D155: a public name removed, second digit).

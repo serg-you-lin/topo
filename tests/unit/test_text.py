@@ -31,13 +31,13 @@ def _plate():
     doc = topo.load_geometry(entities, tolerance=0.01)
     result = topo.heal(doc)
     # l'ordine degli inners non è garantito: la freccia punta al cerchio, cercato per forma
-    circle = next(j for j, c in enumerate(result.clusters[0].inners)
+    circle = next(c for c in result.clusters[0].inners
                   if topo.geometry.contour_shape(c).kind == "circle")
     result.texts = [
-        Text(position=(50, 60), text="100", measure=100.0, references=["clusters[0].outer"]),
+        Text(position=(50, 60), text="100", measure=100.0, references=[result.clusters[0].outer]),
         Text(position=(20, 40), text="Ø10", measure=10.0),
         Text(position=(30, 45), text="30°", measure=30.0, measure_is_angle=True),
-        Text(position=(25, 30), pointer=[(25, 30)], target=f"clusters[0].inners[{circle}]"),
+        Text(position=(25, 30), pointer=[(25, 30)], target=circle),
         Text(position=(50, -10), text="PIASTRA", cluster_ref=None),
     ]
     return result

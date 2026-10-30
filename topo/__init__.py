@@ -38,7 +38,7 @@ Document dalla geometria.
 from .core.geometry_input import load_geometry, load_segments
 from .core.heal          import heal
 from .tools.inject       import inject
-from .tools.anchor       import anchor_texts, measured_references, pointer_target, resolve_target
+from .tools.anchor       import anchor_texts, measured_references, pointer_target
 # Un Result per parte, senza formato: ogni exporter ne scrive una (D124, D129)
 from .tools.split        import split, DEFAULT_MIN_CLUSTER_AREA
 from .rules.validator     import validate_document, validate_result
@@ -115,7 +115,6 @@ __all__ = [
     "anchor_texts",
     "pointer_target",
     "measured_references",
-    "resolve_target",
     "geometry",
     "experimental",
     "primitives",

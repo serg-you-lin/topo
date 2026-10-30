@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import dataclasses
 import math
-import re
 from collections import Counter
 from pathlib import Path
 from typing import Any, Optional
@@ -37,7 +36,6 @@ from ..model import Result
 FORMAT_VERSION = 1
 """Versione del formato, scritta in testa: cambia quando cambia la sintassi."""
 
-_PATH = re.compile(r"clusters\[(\d+)\]\.(\w+)(?:\[(\d+)\])?$")
 
 
 class _Writer:
@@ -51,6 +49,15 @@ class _Writer:
             self.ids[id(cluster.outer)] = f"C{i}"
             for j, inner in enumerate(cluster.inners, start=1):
                 self.ids[id(inner)] = f"C{i}.{j}"
+        # le etichette di ciò a cui un testo può puntare: in più le feature e le curve sciolte
+        self.refs = dict(self.ids)
+        for i, cluster in enumerate(result.clusters, start=1):
+            if cluster.detected is not None:
+                for name, items in cluster.detected.items():
+                    for k, item in enumerate(items, start=1):
+                        self.refs.setdefault(id(item), f"C{i}.{name}[{k}]")
+        for k, curve in enumerate(result.loose):
+            self.refs.setdefault(id(curve), f"loose[{k}]")
 
     def num(self, value: float) -> str:
         text = f"{value:.{self.decimals}f}".rstrip("0").rstrip(".")
@@ -62,19 +69,10 @@ class _Writer:
     def deg(self, radians: float) -> str:
         return self.num(math.degrees(radians) % 360.0)
 
-    def label(self, path: Optional[str]) -> Optional[str]:
-        """`clusters[0].inners[2]` → `C1.3`; una collezione di `detected` → `C1.holes[1]`."""
-        if not path:
-            return None
-        m = _PATH.match(path)
-        if m is None:
-            return path
-        cluster, name, index = int(m.group(1)) + 1, m.group(2), m.group(3)
-        if name == "outer":
-            return f"C{cluster}"
-        if name == "inners" and index is not None:
-            return f"C{cluster}.{int(index) + 1}"
-        return f"C{cluster}.{name}[{int(index) + 1}]" if index is not None else f"C{cluster}.{name}"
+    def label(self, item) -> str:
+        """Un contorno → `C1`/`C1.3`; una feature di `detected` → `C1.holes[1]`;
+        una curva sciolta → `loose[4]` (D177: `target`/`references` sono oggetti)."""
+        return self.refs.get(id(item), "(not in this result)")
 
     # --- geometria ---------------------------------------------------------
 
@@ -235,7 +233,7 @@ def to_text(result: Result, source_name: str = "", decimals: int = 3,
                             f"no element found")
         elif a.pointer:
             text = f" '{a.text}'" if a.text else ""
-            if a.target:
+            if a.target is not None:
                 out.append(f"pointer{text} at {w.pt(a.position)} -> {w.label(a.target)}")
             else:
                 lost.append(f"pointer{text} at {w.pt(a.position)}: points at nothing")
