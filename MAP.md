@@ -6388,3 +6388,28 @@ no corner, and the pieces become one (`merge_runs`, D95). This is what pippo's
   the two sweeps. This was latent in `island()`.
 
 `main` → **0.23.2** (D155: a public name added, third digit).
+
+### D172 — `promote` takes several curves as one item ✅
+Federico, 30 October: triage snapdraw's request (its TODO, `## Richieste a
+topo`). A feature with a seat (a hole and its counterbore) is two closed
+curves in `loose` and one thing for snapdraw, so `tag_features` removed the
+curves from `loose` by hand instead of calling `promote` (snapdraw D39).
+
+**Why it enters topo.** It is not a reading: what the curves are stays the
+caller's. It is D137's promise — a curve is never in two places and never
+lost — applied to a group. Done by hand in a consumer, that promise is no
+longer kept by topo.
+
+**What it does.** `promote(result, curves, cluster, name, item=None)`:
+`curves` is one curve or a sequence. All checks run before anything changes,
+so a failure leaves `result` as it was: a curve not in `loose`, a curve given
+twice, an empty sequence, a foreign cluster raise `ValueError`.
+
+**`item` is required for more than one curve.** With one curve the curve
+itself is a fair item: it carries geometry and role. A list of curves says
+nothing about what they are together, and the only reason to group them is
+that the caller made one object of them. So that object is asked for, not
+invented.
+
+Positional calls are unchanged (the parameter was renamed `curve` →
+`curves`; no caller passed it by keyword). `main` → **0.23.3** (D155).

@@ -932,29 +932,36 @@ for part in topo.split(result, min_area=100.0):
 ```python
 topo.promote(
     result: Result,
-    curve: OpenCurve | ClosedCurve,   # un elemento di result.loose
+    curves,                           # un elemento di result.loose, o più d'uno
     cluster: Cluster,                 # un elemento di result.clusters
     name: str,                        # la collezione di cluster.detected
     item=None,                        # cosa attaccare: la curva stessa se None
 ) -> None
 ```
 
-**Una curva sciolta diventa parte di un cluster** (D137). Toglie `curve` da
-`result.loose` e mette `item` nella collezione `name` di `cluster.detected`,
-creandolo se manca. `item` è quello che il chiamante ha fatto della curva (un
-suo oggetto con `role` e geometria, D90), o la curva stessa.
+**Curve sciolte diventano parte di un cluster** (D137, D172). Toglie `curves`
+(una curva, o una sequenza) da `result.loose` e mette **un solo** `item`
+nella collezione `name` di `cluster.detected`, creandolo se manca. `item` è
+quello che il chiamante ha fatto delle curve (un suo oggetto con `role` e
+geometria, D90); con una curva sola può mancare, e allora è la curva stessa.
+Più curve lette come una cosa sola — un foro e la sua sede — sono un item.
 
-Cosa sia la curva lo decide chi chiama, e non conta dove sta: una linea
+Cosa siano le curve lo decide chi chiama, e non conta dove stanno: una linea
 dentro il pezzo che un consumatore legge come asse, una guida fuori dal pezzo
 che indica un suo dettaglio. topo non promuove niente da sé.
 
-**Solleva `ValueError`** se `curve` non è in `result.loose` o `cluster` non è
-in `result.clusters`: una curva non sta mai in due posti, né si perde.
+**Solleva `ValueError`**, senza toccare niente, se una curva non è in
+`result.loose` o è data due volte, se `curves` è vuoto, se `cluster` non è in
+`result.clusters`, o se le curve sono più d'una e `item` manca: una curva non
+sta mai in due posti, né si perde.
 
 ```python
 for curve in list(result.loose):
     if curve.cluster_ref is not None and is_axis(curve):   # la lettura è tua
         topo.promote(result, curve, result.clusters[curve.cluster_ref], "axes")
+
+# un foro con la sua sede: due curve, un item
+topo.promote(result, [hole, seat], view, "features", item=my_counterbore)
 ```
 
 ---

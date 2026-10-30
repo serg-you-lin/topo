@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`83` modules · `504` module-level functions · `61` classes · `16013` lines of code.
+`83` modules · `504` module-level functions · `61` classes · `16027` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -392,7 +392,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_polyline_distance` | func | `topo/core/geometry/rings.py:291` |  |
 | `_polyline_points` | func | `topo_dxf/text_extractor.py:517` |  |
 | `_probe_point` | func | `topo/tools/split.py:138` | Punto rappresentativo di una curva, per darla alla parte più vicina. |
-| `promote` | func | `topo/tools/promote.py:20` | Toglie `curve` da `result.loose` e mette `item` (la curva stessa se |
+| `promote` | func | `topo/tools/promote.py:22` | Toglie `curves` (una curva o più) da `result.loose` e mette un solo |
 | `_radius` | func | `topo/core/geometry/shape.py:135` | Raggio di un pezzo di cerchio; un'ellisse ad assi uguali è un cerchio, esattamente. |
 | `_raw_linetype_pattern` | func | `topo_dxf/adapter.py:40` | Pattern grezzo (lunghezza totale + tratti con segno, `+` = tratto, |
 | `Reach` | class | `topo/core/geometry/measure.py:155` | `segment_reach` di un segmento fissato, per molte direzioni. |
@@ -1412,11 +1412,11 @@ _topo/tools/non_contour.py_
 
 - `non_contour_candidates(doc: Document, tolerance: Optional[float]=None) -> List[Edge]` — L41 — Edge di `doc.edges` che il criterio topologico di `heal()` escluderebbe dal
 
-#### `topo/tools/promote.py` — 41 lines
+#### `topo/tools/promote.py` — 55 lines
 
 _topo/tools/promote.py_
 
-- `promote(result: Result, curve: OpenCurve \| ClosedCurve, cluster: Cluster, name: str, item: Optional[Any]=None) -> None` — L20 — Toglie `curve` da `result.loose` e mette `item` (la curva stessa se
+- `promote(result: Result, curves: OpenCurve \| ClosedCurve \| Sequence[OpenCurve \| ClosedCurve], cluster: Cluster, name: str, item: Optional[Any]=None) -> None` — L22 — Toglie `curves` (una curva o più) da `result.loose` e mette un solo
 
 #### `topo/tools/rotate.py` — 259 lines
 

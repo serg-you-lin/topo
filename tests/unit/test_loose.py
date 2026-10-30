@@ -115,6 +115,49 @@ class TestPromote(unittest.TestCase):
         self.assertTrue(any(c is line for c in self.result.loose))
 
 
+class TestPromoteGroup(unittest.TestCase):
+    """Più curve, un solo item (D172): un foro e la sua sede."""
+
+    def setUp(self):
+        self.result = topo.heal(_drawing())
+        self.line = _at(self.result, 0, -50)
+        self.guide = _at(self.result, 150, 0)
+        self.plate = self.result.clusters[0]
+        self.before = len(self.result.loose)
+
+    def test_due_curve_un_item(self):
+        topo.promote(self.result, [self.line, self.guide], self.plate, "pairs", item="coppia")
+        self.assertEqual(self.plate.detected.get("pairs"), ["coppia"])
+        self.assertEqual(len(self.result.loose), self.before - 2)
+        self.assertFalse(any(c is self.line or c is self.guide for c in self.result.loose))
+
+    def test_una_curva_in_lista_e_la_curva_stessa(self):
+        topo.promote(self.result, [self.line], self.plate, "lines")
+        self.assertIs(self.plate.detected.get("lines")[0], self.line)
+
+    def test_senza_item_solleva_e_non_tocca(self):
+        with self.assertRaises(ValueError):
+            topo.promote(self.result, [self.line, self.guide], self.plate, "pairs")
+        self.assertEqual(len(self.result.loose), self.before)
+        self.assertIsNone(self.plate.detected)
+
+    def test_una_curva_assente_non_sposta_le_altre(self):
+        topo.promote(self.result, self.guide, self.plate, "guides")
+        with self.assertRaises(ValueError):
+            topo.promote(self.result, [self.line, self.guide], self.plate, "pairs", item="coppia")
+        self.assertTrue(any(c is self.line for c in self.result.loose))
+        self.assertEqual(self.plate.detected.get("pairs"), [])
+
+    def test_doppione_solleva(self):
+        with self.assertRaises(ValueError):
+            topo.promote(self.result, [self.line, self.line], self.plate, "pairs", item="coppia")
+        self.assertEqual(len(self.result.loose), self.before)
+
+    def test_vuoto_solleva(self):
+        with self.assertRaises(ValueError):
+            topo.promote(self.result, [], self.plate, "pairs", item="niente")
+
+
 class TestSplit(unittest.TestCase):
 
     def setUp(self):
