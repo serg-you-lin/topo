@@ -161,6 +161,11 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       `stress_8_angles.py` (codice prima di D180) i micro-casi, costruiti
       con l'API di topo, e farli girare a 8 angoli in un test unitario
       veloce; allora `EXTRA_ANGLES` sui disegni interi può tornare vuoto.
+      Per ripartire: codice vecchio = `3ea516b^` (un worktree); ogni
+      ritaglio vale solo se è instabile lì e stabile su main; chi non si
+      riproduce ritagliato resta allo stress a mano, elencato. Opzioni da
+      far scegliere: A micro-casi + `EXTRA_ANGLES` vuoto (~3:25, consigliata),
+      B micro-casi e secondo angolo tenuto (~3:50), C niente.
 - [ ] **G10** Rewrite della history (`git filter-repo` + `--message-callback`,
       un solo force-push), contro le liste di D76–D78.
 - [x] **G11** `scripts/release_check.py` — scritto il 22 ottobre: suite
