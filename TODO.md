@@ -140,6 +140,14 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       tocca (union-find dei contatti, non un epsilon a posteriori). Poi il
       test a più angoli, leggendo una volta sola i disegni gemelli. Costo
       di tempo da misurare: il WIP rallentava `island()` del ~30%.
+      Ripartenza (chat nuova, Federico ha detto di procedere col
+      rifacimento): la prova a 8 angoli è in
+      `_debug/2026-10-30_topo_G6c/stress_8_angles.py` (da lanciare dalla
+      radice del repo, ~2.5 min; diventa il test a più angoli). Su `main`
+      dà 20 casi: anch_03/regr_02 a 6 angoli, regr_04 a 2. Le tracce utili
+      sono nel branch `g6c-noding-wip` (tagli di spline con `trim.cut_at`,
+      parametri della discretizzazione in `BSplineSeg._params`, tangenza
+      mancata `_grazing`): idee da riprendere, non codice da unire.
 - [ ] **G6d** `heal()` su `SEGNI_TRACCIATI` (tol 0.5): tre cave larghe
       0.4–0.5 mm restano nell'outer letto da solo e si riempiono quando ci
       sono le corde (`TestChordsKeepTheOuter`, `KNOWN_CHORDS`): l'esito su
