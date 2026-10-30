@@ -649,7 +649,7 @@ _topo/core/geometry/axis.py_
 - `_covered_at(lines: Sequence[AxisLine], at: float, lo: float, hi: float, tol: float) -> float` — L98
 - **class** `CoveredRectangle` — L107 — An axis-aligned rectangle whose four sides are covered by strokes.
   - methods: `segments`, `area`, `long_side`, `short_side`, `ratio`
-- `covered_rectangles(items: Sequence, min_side: float, *, eps: float=AXIS_EPS, cluster_tolerance: float=CLUSTER_TOLERANCE, coverage: float=SIDE_COVERAGE) -> List[CoveredRectangle]` — L146 — I rettangoli allineati agli assi con ogni lato coperto almeno per
+- `covered_rectangles(items: Sequence, *, min_side: float, eps: float=AXIS_EPS, cluster_tolerance: float=CLUSTER_TOLERANCE, coverage: float=SIDE_COVERAGE) -> List[CoveredRectangle]` — L146 — I rettangoli allineati agli assi con ogni lato coperto almeno per
 - `_on_border(x_lo, y_lo, x_hi, y_hi, items, tol) -> list` — L188
 - `spanning_lines(bounds: Bounds, items: Iterable, *, coverage: float=SIDE_COVERAGE, eps: float=AXIS_EPS, cluster_tolerance: float=CLUSTER_TOLERANCE) -> Tuple[List[float], List[float]]` — L201 — (ys, xs): le coordinate delle linee strettamente interne a `bounds` (bordo
 - `items_inside(bounds: Bounds, items: Iterable, *, margin: float=0.0) -> list` — L223 — I tratti con entrambi i capi dentro `bounds` allargato di `margin`, nell'ordine dato.

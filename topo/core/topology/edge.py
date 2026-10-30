@@ -61,7 +61,7 @@ class Edge:
     style:   EdgeStyle = field(default_factory=EdgeStyle)
 
     @classmethod
-    def of(cls, segment: Segment, role: str, style: Optional[EdgeStyle] = None) -> "Edge":
+    def of(cls, segment: Segment, role: str, *, style: Optional[EdgeStyle] = None) -> "Edge":
         """
         L'Edge di `segment`: gli estremi sulla griglia dei nodi di topo (D113),
         che un adapter non deve conoscere. Una curva chiusa (cerchio, spline o
