@@ -49,41 +49,41 @@ class TestDiscretizeWithinTolerance(unittest.TestCase):
     def test_circle_every_radius(self):
         for r in RADII:
             with self.subTest(r=r):
-                poly = CircleSeg((0.0, 0.0), r).discretize(TOL)
+                poly = CircleSeg((0.0, 0.0), r).discretize(tolerance=TOL)
                 curve = _samples(lambda t: (r * math.cos(t), r * math.sin(t)), 0.0, 2 * math.pi)
                 self.assertLessEqual(_deviation(poly, curve), TOL)
 
     def test_circle_sides_grow_with_radius(self):
         # nessun tetto: a r 2000 servono ~π·√(r/2·tol) ≈ 994 lati
-        self.assertGreater(len(CircleSeg((0.0, 0.0), 2000.0).discretize(TOL)) - 1, 900)
+        self.assertGreater(len(CircleSeg((0.0, 0.0), 2000.0).discretize(tolerance=TOL)) - 1, 900)
 
     def test_arc_every_radius(self):
         for r in RADII:
             with self.subTest(r=r):
                 arc = ArcSeg((0.0, 0.0), r, 0.0, 1.5 * math.pi)
                 curve = _samples(lambda t: (r * math.cos(t), r * math.sin(t)), 0.0, 1.5 * math.pi)
-                self.assertLessEqual(_deviation(arc.discretize(TOL), curve), TOL)
+                self.assertLessEqual(_deviation(arc.discretize(tolerance=TOL), curve), TOL)
 
     def test_ellipse_every_scale_and_ratio(self):
         for a, ratio in ((10.0, 1.0), (100.0, 0.5), (500.0, 0.1), (2000.0, 0.02), (1.0, 0.05)):
             with self.subTest(a=a, ratio=ratio):
                 e = EllipseSeg((0.0, 0.0), (a, 0.0), ratio, 0.0, 2 * math.pi)
                 curve = _samples(e._point_at, 0.0, 2 * math.pi, 20000)
-                self.assertLessEqual(_deviation(e.discretize(TOL), curve), TOL)
+                self.assertLessEqual(_deviation(e.discretize(tolerance=TOL), curve), TOL)
 
     def test_flat_ellipse(self):
         # D153: una suddivisione che guarda solo il punto medio usciva di 0.0113
         # (a 139, ratio 0.0027), lo spigolo vivo agli estremi dell'asse maggiore
         e = EllipseSeg((0.0, 0.0), (139.0, 0.0), 0.0027, 0.0, 2 * math.pi)
         curve = _samples(e._point_at, 0.0, 2 * math.pi, 40000)
-        self.assertLessEqual(_deviation(e.discretize(TOL), curve), TOL)
+        self.assertLessEqual(_deviation(e.discretize(tolerance=TOL), curve), TOL)
 
     def test_rotated_partial_clockwise_ellipse(self):
         a = 300.0
         axis = (a * math.cos(0.7), a * math.sin(0.7))
         e = EllipseSeg((1e4, -3e4), axis, 0.05, 2.0, -1.5, ccw=False)
         curve = _samples(e._point_at, 2.0, -1.5, 20000)
-        self.assertLessEqual(_deviation(e.discretize(TOL), curve), TOL)
+        self.assertLessEqual(_deviation(e.discretize(tolerance=TOL), curve), TOL)
 
 
 class TestEllipseOnParameterGrid(unittest.TestCase):
@@ -102,15 +102,15 @@ class TestEllipseOnParameterGrid(unittest.TestCase):
             self.assertAlmostEqual(p[1], q[1], places=9)
 
     def test_four_quarters_are_the_ellipse(self):
-        whole = self._ellipse(0.0, 2 * math.pi).discretize(TOL)
+        whole = self._ellipse(0.0, 2 * math.pi).discretize(tolerance=TOL)
         joined = [whole[0]]
         for q in range(4):
-            joined += self._ellipse(q * math.pi / 2, (q + 1) * math.pi / 2).discretize(TOL)[1:]
+            joined += self._ellipse(q * math.pi / 2, (q + 1) * math.pi / 2).discretize(tolerance=TOL)[1:]
         self._same(joined, whole)
 
     def test_reversed_ellipse_gives_the_same_points_backwards(self):
-        fwd = self._ellipse(0.37, 2.9).discretize(TOL)
-        self._same(self._ellipse(0.37, 2.9).reversed().discretize(TOL), fwd[::-1])
+        fwd = self._ellipse(0.37, 2.9).discretize(tolerance=TOL)
+        self._same(self._ellipse(0.37, 2.9).reversed().discretize(tolerance=TOL), fwd[::-1])
 
 
 class TestArcOnCircleGrid(unittest.TestCase):
@@ -122,10 +122,10 @@ class TestArcOnCircleGrid(unittest.TestCase):
     R = 50.0
 
     def _circle(self):
-        return CircleSeg((3.0, -2.0), self.R).discretize(TOL)
+        return CircleSeg((3.0, -2.0), self.R).discretize(tolerance=TOL)
 
     def _arc(self, a0, a1, ccw=True):
-        return ArcSeg((3.0, -2.0), self.R, a0, a1, ccw).discretize(TOL)
+        return ArcSeg((3.0, -2.0), self.R, a0, a1, ccw).discretize(tolerance=TOL)
 
     def _same(self, pts_a, pts_b):
         self.assertEqual(len(pts_a), len(pts_b))
@@ -155,7 +155,7 @@ class TestArcOnCircleGrid(unittest.TestCase):
 
     def test_reversed_arc_gives_the_same_points_backwards(self):
         fwd = self._arc(0.37, 2.9)
-        back = ArcSeg((3.0, -2.0), self.R, 0.37, 2.9).reversed().discretize(TOL)
+        back = ArcSeg((3.0, -2.0), self.R, 0.37, 2.9).reversed().discretize(tolerance=TOL)
         self._same(back, fwd[::-1])
 
     def test_arc_shorter_than_a_step_is_one_chord(self):

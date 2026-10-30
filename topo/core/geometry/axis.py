@@ -31,7 +31,7 @@ SIDE_COVERAGE = 0.85       # frazione minima di un lato coperta dai tratti
 # Intervalli
 # ---------------------------------------------------------------------------
 
-def merge_intervals(intervals: Iterable[Interval], tolerance: float = 0.0) -> List[Interval]:
+def merge_intervals(intervals: Iterable[Interval], *, tolerance: float = 0.0) -> List[Interval]:
     """Unisce gli intervalli che si sovrappongono o distano al più `tolerance`, in ordine."""
     merged: List[Interval] = []
     for a, b in sorted(intervals):
@@ -82,7 +82,7 @@ class AxisLine:
     at: float
 
 
-def axis_lines(items: Iterable, eps: float = AXIS_EPS) -> Tuple[List[AxisLine], List[AxisLine]]:
+def axis_lines(items: Iterable, *, eps: float = AXIS_EPS) -> Tuple[List[AxisLine], List[AxisLine]]:
     """(orizzontali, verticali): i tratti che si scostano dall'asse al più di `eps`; gli altri non compaiono."""
     horiz: List[AxisLine] = []
     vert: List[AxisLine] = []
@@ -143,7 +143,7 @@ class CoveredRectangle:
         return (self.long_side / s) if s else 0.0
 
 
-def covered_rectangles(items: Sequence, min_side: float, eps: float = AXIS_EPS,
+def covered_rectangles(items: Sequence, min_side: float, *, eps: float = AXIS_EPS,
                        cluster_tolerance: float = CLUSTER_TOLERANCE,
                        coverage: float = SIDE_COVERAGE) -> List[CoveredRectangle]:
     """
@@ -156,7 +156,7 @@ def covered_rectangles(items: Sequence, min_side: float, eps: float = AXIS_EPS,
     items = list(items)
     if len(items) < 4:
         return []
-    horiz, vert = axis_lines(items, eps)
+    horiz, vert = axis_lines(items, eps=eps)
     long_h = [h for h in horiz if (h.hi - h.lo) >= min_side]
     long_v = [v for v in vert if (v.hi - v.lo) >= min_side]
     if len(long_h) < 2 or len(long_v) < 2:
@@ -198,7 +198,7 @@ def _on_border(x_lo, y_lo, x_hi, y_hi, items, tol) -> list:
     return owned
 
 
-def spanning_lines(bounds: Bounds, items: Iterable, coverage: float = SIDE_COVERAGE,
+def spanning_lines(bounds: Bounds, items: Iterable, *, coverage: float = SIDE_COVERAGE,
                    eps: float = AXIS_EPS,
                    cluster_tolerance: float = CLUSTER_TOLERANCE) -> Tuple[List[float], List[float]]:
     """
@@ -206,7 +206,7 @@ def spanning_lines(bounds: Bounds, items: Iterable, coverage: float = SIDE_COVER
     escluso, entro `2 * eps`) che lo attraversano per almeno `coverage` della
     larghezza (le orizzontali) o dell'altezza (le verticali), ordinate.
     """
-    horiz, vert = axis_lines(items, eps)
+    horiz, vert = axis_lines(items, eps=eps)
     xmin, ymin, xmax, ymax = bounds
     tol = 2 * eps
     ys = [y for y in cluster_values([h.at for h in horiz if ymin + tol < h.at < ymax - tol], cluster_tolerance)
@@ -220,7 +220,7 @@ def spanning_lines(bounds: Bounds, items: Iterable, coverage: float = SIDE_COVER
 # Misure
 # ---------------------------------------------------------------------------
 
-def items_inside(bounds: Bounds, items: Iterable, margin: float = 0.0) -> list:
+def items_inside(bounds: Bounds, items: Iterable, *, margin: float = 0.0) -> list:
     """I tratti con entrambi i capi dentro `bounds` allargato di `margin`, nell'ordine dato."""
     minx, miny, maxx, maxy = bounds[0] - margin, bounds[1] - margin, bounds[2] + margin, bounds[3] + margin
 
@@ -230,14 +230,14 @@ def items_inside(bounds: Bounds, items: Iterable, margin: float = 0.0) -> list:
     return [i for i in items if inside(i.start) and inside(i.end)]
 
 
-def sides_on_border(bounds: Bounds, border: Bounds, tolerance: float) -> List[str]:
+def sides_on_border(bounds: Bounds, border: Bounds, *, tolerance: float) -> List[str]:
     """I lati di `bounds` ("left", "bottom", "right", "top") che stanno sul
     lato omologo di `border`, entro `tolerance`."""
     names = ("left", "bottom", "right", "top")
     return [n for n, a, b in zip(names, bounds, border) if abs(a - b) <= tolerance]
 
 
-def axis_aligned_share(segments: Iterable, angle_tolerance: float) -> Optional[float]:
+def axis_aligned_share(segments: Iterable, *, angle_tolerance: float) -> Optional[float]:
     """
     Frazione della lunghezza dei `LineSeg` di `segments` orizzontale o
     verticale entro `angle_tolerance` gradi; None se non ci sono `LineSeg`.

@@ -26,7 +26,7 @@ Note:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import KW_ONLY, dataclass, field
 from typing import Any, List, Optional, Tuple
 
 from topo.core.geometry.integrals import ring_area, ring_centroid
@@ -56,6 +56,7 @@ class ClosedCurve(Curve):
     sull'oggetto `Hole` da `detect_flat()` (D15), non sul contorno grezzo.
     """
     segments: List[LineSeg | ArcSeg | BSplineSeg] = field(default_factory=list)
+    _: KW_ONLY
     styles:   List[EdgeStyle]                  = field(default_factory=list)
     cluster_ref: Optional[int]                 = None   # in result.loose: indice del cluster che la contiene (D137)
     # poligono della lettura, solo per le domande fra più curve (curve_polygon, D166)
@@ -79,12 +80,12 @@ class ClosedCurve(Curve):
         (Green, MAP.md D165). `ValueError` if the ring encloses no area."""
         return ring_centroid(self.segments)
 
-    def contains(self, point: Tuple[float, float], tolerance: float = ON_BOUNDARY) -> bool:
+    def contains(self, point: Tuple[float, float], *, tolerance: float = ON_BOUNDARY) -> bool:
         """True if `point` lies in the closed region: inside, or on the
         boundary within `tolerance`. Computed on the `segments`."""
         return ring_contains(self.segments, point, tolerance)
 
-    def points(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Tuple[float, float]]:
+    def points(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Tuple[float, float]]:
         """The ring discretized within `tolerance`, as plain (x, y) tuples in
         order; the first point is not repeated at the end."""
         return ring_points(self.segments, tolerance)
@@ -96,5 +97,6 @@ class OpenCurve(Curve):
     Curva aperta: segmenti che non chiudono un giro.
     """
     segments:    List[LineSeg | ArcSeg | BSplineSeg] = field(default_factory=list)
+    _: KW_ONLY
     styles:      List[EdgeStyle]                  = field(default_factory=list)
     cluster_ref: Optional[int]                    = None   # in result.loose: indice del cluster che la contiene (D99, D137)

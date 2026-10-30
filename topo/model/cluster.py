@@ -3,7 +3,7 @@ model/cluster.py
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import KW_ONLY, dataclass, field
 from typing import Any, List, Optional
 
 from topo.core.geometry.integrals import ring_area
@@ -14,6 +14,7 @@ from topo.model.contour import Contour
 @dataclass
 class Cluster:
     outer:         Contour
+    _: KW_ONLY
     inners:        List[Contour]                      = field(default_factory=list)
     label:         str                                     = ""
     source_file:   str                                     = ""

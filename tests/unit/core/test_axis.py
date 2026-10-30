@@ -72,7 +72,7 @@ class TestMeasures(unittest.TestCase):
     def test_quota_allineata_agli_assi(self):
         segs = [LineSeg(start=(0, 0), end=(30, 0)), LineSeg(start=(0, 0), end=(10, 10 * 3 ** 0.5))]
         self.assertAlmostEqual(axis_aligned_share(segs, angle_tolerance=2.0), 30 / 50)
-        self.assertIsNone(axis_aligned_share([ArcSeg(center=(0, 0), radius=1, start_angle=0, end_angle=1)], 2.0))
+        self.assertIsNone(axis_aligned_share([ArcSeg(center=(0, 0), radius=1, start_angle=0, end_angle=1)], angle_tolerance=2.0))
 
     def test_orizzontali_e_verticali(self):
         horiz, vert = axis_lines(_rect(0, 0, 10, 5))
@@ -85,11 +85,11 @@ class TestSidesOnBorder(unittest.TestCase):
 
     def test_riquadro_nell_angolo(self):
         # in basso a destra: tocca il lato basso e il destro del bordo
-        self.assertEqual(topo.geometry.sides_on_border((300, 10, 400, 60), (10, 10, 400, 280), 1.0),
+        self.assertEqual(topo.geometry.sides_on_border((300, 10, 400, 60), (10, 10, 400, 280), tolerance=1.0),
                          ["bottom", "right"])
 
     def test_riquadro_in_mezzo(self):
-        self.assertEqual(topo.geometry.sides_on_border((150, 100, 250, 125), (10, 10, 400, 280), 1.0), [])
+        self.assertEqual(topo.geometry.sides_on_border((150, 100, 250, 125), (10, 10, 400, 280), tolerance=1.0), [])
 
 
 if __name__ == "__main__":

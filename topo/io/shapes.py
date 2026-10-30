@@ -19,7 +19,7 @@ from ..core.primitives.segments import DEFAULT_TOLERANCE
 from ..model import Cluster, OpenCurve
 
 
-def to_shapely(item, tolerance: Optional[float] = None):
+def to_shapely(item, *, tolerance: Optional[float] = None):
     """
     Convert topo geometry to a shapely object (MAP.md D166).
 
@@ -42,7 +42,7 @@ def to_shapely(item, tolerance: Optional[float] = None):
     if not segments:
         raise TypeError(f"to_shapely(): {type(item).__name__} non porta `segments`")
     if isinstance(item, OpenCurve):
-        return LineString(track_points(segments, tolerance or DEFAULT_TOLERANCE))
+        return LineString(track_points(segments, tolerance=tolerance or DEFAULT_TOLERANCE))
     return _ring(item, tolerance)
 
 

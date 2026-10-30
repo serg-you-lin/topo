@@ -160,7 +160,7 @@ class GeometryReader:
 
 def load_geometry(
     entities: List[Dict[str, Any]],
-    tolerance: float = DEFAULT_NODE_TOLERANCE,
+    *, tolerance: float = DEFAULT_NODE_TOLERANCE,
     source_path: str = "",
 ) -> Document:
     """
@@ -205,7 +205,7 @@ def load_geometry(
 
 def load_segments(
     segments,
-    tolerance: float = DEFAULT_NODE_TOLERANCE,
+    *, tolerance: float = DEFAULT_NODE_TOLERANCE,
     role: str = "unknown",
     source_path: str = "",
 ) -> Document:

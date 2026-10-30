@@ -27,7 +27,7 @@ def test_contorno_e_il_poligono_della_lettura():
     cluster = _nested()
     assert topo.to_shapely(cluster.outer).equals(Polygon([(-50, -30), (50, -30), (50, 30), (-50, 30)]))
     hole = next(i for i in cluster.inners if i.depth == 1 and i.area > 1000)
-    coarse, fine = topo.to_shapely(hole, 0.1), topo.to_shapely(hole, 0.001)
+    coarse, fine = topo.to_shapely(hole, tolerance=0.1), topo.to_shapely(hole, tolerance=0.001)
     exact = math.pi * 20 ** 2
     assert exact - coarse.area > exact - fine.area > 0
     assert len(fine.exterior.coords) > len(coarse.exterior.coords)
@@ -35,7 +35,7 @@ def test_contorno_e_il_poligono_della_lettura():
 
 def test_cluster_pari_dispari_come_l_area():
     cluster = _nested()
-    material = topo.to_shapely(cluster, 0.001)
+    material = topo.to_shapely(cluster, tolerance=0.001)
     assert isinstance(material, MultiPolygon) and len(material.geoms) == 2
     assert material.is_valid
     # il poligono sta entro tol × perimetro dall'area esatta (D165)

@@ -2,9 +2,9 @@
 17_rotate_to_longest_outer.py — allinea il segmento OUTER più lungo all'orizzontale
 ====================================================================================
 
-API topo usate (sperimentali — importabili come topo.rotate_to_longest,
+API topo usate (sperimentali — importabili come topo.experimental.rotate_to_longest,
 non ancora in __all__/docs, vedi MAP.md D46):
-    topo.rotate_to_longest      Result -> (Result ruotato,
+    topo.experimental.rotate_to_longest      Result -> (Result ruotato,
                                   angle_deg applicato) — UN SOLO heal() in
                                   tutto (quello fatto qui sotto): una
                                   rotazione rigida non cambia la topologia,
@@ -43,7 +43,7 @@ result = topo.heal(doc, tolerance=TOLERANCE)  # unico heal() di tutto lo script
 _, length, angle_deg = longest_structural_segment(result)  # include_inners=False
 print(f"outer più lungo PRIMA : {length:.1f}mm a {angle_deg:.1f}°")
 
-rotated_result, applied_deg = topo.rotate_to_longest(result)
+rotated_result, applied_deg = topo.experimental.rotate_to_longest(result)
 print(f"rotazione applicata   : {applied_deg:.1f}°")
 
 _, length2, angle_deg2 = longest_structural_segment(rotated_result)

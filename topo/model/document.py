@@ -13,7 +13,7 @@ non viene più toccato fino a write().
     source_path : percorso del file aperto
     warnings    : diagnostica raccolta da load_dxf() sul file grezzo — audit,
                   INSERT non esplosi, entità con Z != 0 riportate sul piano,
-                  duplicati rimossi. topo.validate(doc) le rilancia.
+                  duplicati rimossi. topo.validate_document(doc) le rilancia.
 
 Nessun campo porta un riferimento a ezdxf: edges e texts sono dati puri
 prodotti dall'adapter, source_meta è un dizionario di primitivi.
@@ -21,7 +21,7 @@ prodotti dall'adapter, source_meta è un dizionario di primitivi.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import KW_ONLY, dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from .text import Text
@@ -42,12 +42,13 @@ class Document:
     Result che ne deriva — mai su entità ezdxf.
     """
     edges:       List["Edge"]        = field(default_factory=list)
+    _: KW_ONLY
     texts:       List[Text]           = field(default_factory=list)
     source_meta: Dict[str, Any]      = field(default_factory=dict)
     source_path: str                 = ""
     warnings:    List[str]           = field(default_factory=list)
 
-    def node_tolerance(self, override: Optional[float] = None) -> float:
+    def node_tolerance(self, *, override: Optional[float] = None) -> float:
         """La tolleranza dei nodi: `override` se dato, altrimenti quella del load."""
         if override is not None:
             return override

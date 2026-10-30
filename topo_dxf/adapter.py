@@ -10,7 +10,7 @@ UNICO punto di conversione DXF → primitive.
 from __future__ import annotations
 
 from collections import Counter
-from typing import List, Optional, Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 from ezdxf.colors import aci2rgb, int2rgb
 
@@ -220,6 +220,19 @@ def _segment_key(segment) -> tuple:
 # DxfAdapter
 # ---------------------------------------------------------------------------
 
+def layer_skipper(skip_layers) -> Callable[[str], bool]:
+    """
+    Il predicato "questo layer si salta" da `skip_layers` (D176): una
+    funzione `nome -> bool` passa così com'è e riceve il nome del layer come
+    sta nel file; una sequenza di nomi vale per nome esatto, senza
+    distinguere maiuscole.
+    """
+    if callable(skip_layers):
+        return skip_layers
+    names = {s.lower() for s in skip_layers}
+    return lambda layer: layer.lower() in names
+
+
 class DxfAdapter:
     """
     Adapter DXF che traduce entità DXF in Edge del dominio Topo.
@@ -233,35 +246,23 @@ class DxfAdapter:
         self,
         msp,
         exclude_ids: Optional[set] = None,
-        ignore_layers: Optional[set] = None,
         role_rules: Sequence[RoleRule] = (),
-        skip_layers: Sequence[str] = (),
+        skip_layers: Union[Sequence[str], Callable[[str], bool]] = (),
     ):
         self.msp = msp
         self.exclude_ids = exclude_ids or set()
-        self.ignore_layers = ignore_layers or set()
-        self.skip_layers = {s.lower() for s in skip_layers}
+        self.skip_layer = layer_skipper(skip_layers)
         self.role_rules = list(role_rules)
         # un messaggio per tipo di entità degenere scartata da to_edges (D154)
         self.warnings: List[str] = []
 
     def to_edges(self) -> List[Edge]:
         """Traduce entità DXF in Edge."""
-        ignore = {s.lower() for s in self.ignore_layers}
-
         def _is_excluded(entity) -> bool:
             if id(entity) in self.exclude_ids:
                 return True
-            layer = (
-                entity.dxf.layer.lower()
-                if entity.dxf.hasattr("layer")
-                else ""
-            )
-            if layer in self.skip_layers:
-                return True
-            if not ignore:
-                return False
-            return any(sl in layer for sl in ignore)
+            layer = entity.dxf.layer if entity.dxf.hasattr("layer") else ""
+            return self.skip_layer(layer)
 
         edges = []
         seen_segment_keys = set()

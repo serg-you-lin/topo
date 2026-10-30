@@ -52,7 +52,8 @@ def _element(result, path):
 
 
 def snapshot(dxf_path: Path) -> dict:
-    result = topo.anchor_texts(island_reading(dxf_path, MAX_GAP)[1])
+    result = island_reading(dxf_path, MAX_GAP)[1]
+    topo.anchor_texts(result)
     entries = []
     for t in result.texts:
         if t.rendered.is_empty():   # una stringa sola: niente da agganciare

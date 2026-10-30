@@ -33,11 +33,11 @@ class TestRoleStyle(unittest.TestCase):
 
     def test_la_mappa_aggiunge_senza_riscrivere(self):
         mine = {"hole": RoleStyle(color=(255, 0, 255))}
-        self.assertEqual(role_style("hole", mine).color, (255, 0, 255))
-        self.assertEqual(role_style("outer", mine).color, (0, 255, 0))
+        self.assertEqual(role_style("hole", role_styles=mine).color, (255, 0, 255))
+        self.assertEqual(role_style("outer", role_styles=mine).color, (0, 255, 0))
 
     def test_la_mappa_cambia_un_campo_e_tiene_gli_altri(self):
-        style = role_style("outer", {"outer": RoleStyle(lineweight=0.3)})
+        style = role_style("outer", role_styles={"outer": RoleStyle(lineweight=0.3)})
         self.assertEqual(style.color, (0, 255, 0))
         self.assertEqual(style.lineweight, 0.3)
 
@@ -57,12 +57,12 @@ class TestUnaPalettePerOgniFormato(unittest.TestCase):
         self.assertEqual(tuple(aci2rgb(color_for_role("hole"))), CONSUMER_ROLE_STYLE.color)
 
     def test_svg_traduce_la_palette(self):
-        vm = topo.to_view_model(self._result())
+        vm = topo.experimental.to_view_model(self._result())
         self.assertEqual(vm["clusters"][0]["outer"]["color"], "#00ff00")
         self.assertEqual(vm["palette"]["inner"], "#ffff00")
 
     def test_svg_con_la_mappa_del_consumer(self):
-        vm = topo.to_view_model(self._result(), role_styles={"hole": RoleStyle(color=(255, 0, 255))})
+        vm = topo.experimental.to_view_model(self._result(), role_styles={"hole": RoleStyle(color=(255, 0, 255))})
         self.assertEqual(vm["palette"]["hole"], "#ff00ff")
         self.assertEqual(vm["palette"]["outer"], "#00ff00")
 

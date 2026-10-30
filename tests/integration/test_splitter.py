@@ -1,6 +1,6 @@
 
 """
-Test Suite per writeback.split() e split_to_files().
+Test Suite per writeback.split() e la ricetta heal → split → file.
 
 Struttura
 ---------
@@ -116,6 +116,19 @@ def _split_files(result, source_doc, out_dir, *, min_area=DEFAULT_MIN_CLUSTER_AR
     return paths
 
 
+def _split_to_files(doc, output_folder, label="", source_file="", tolerance=None,
+                    namer=None, min_area=DEFAULT_MIN_CLUSTER_AREA, is_structural=None,
+                    **write_kwargs):
+    """heal → split → to_dxf + saveas per parte: la ricetta che era
+    `topo_dxf.split_to_files`, tolta dalla superficie (D176) e tenuta qui
+    come scatola nera dei test d'integrazione."""
+    result = topo.heal(doc, tolerance=tolerance, label=label, source_file=source_file,
+                       is_structural=is_structural)
+    if result.is_valid and result.clusters:
+        _split_files(result, doc, output_folder, min_area=min_area, namer=namer, **write_kwargs)
+    return result
+
+
 # ---------------------------------------------------------------------------
 # UNIT TEST — writeback.split()
 # ---------------------------------------------------------------------------
@@ -175,12 +188,13 @@ class TestUnitSplitOutput(unittest.TestCase):
         self.assertTrue(len(generated) > 0)
         self.assertEqual(Path(generated[0]).stem, "pezzo_1")
 
-    def test_005_cluster_label_aggiornata(self):
-        """Dopo split(), cluster.label corrisponde al nome file usato."""
+    def test_005_cluster_label_della_parte_originale_intatto(self):
+        """Il label della parte dà il nome file; il cluster originale non cambia (D176)."""
         self._assert_heal_found_parts()
+        before = self.result.clusters[0].label
         generated = _split_files(self.result, self.doc, self.out_dir)
-        nome_file = Path(generated[0]).stem
-        self.assertEqual(self.result.clusters[0].label, nome_file)
+        self.assertEqual(Path(generated[0]).stem, f"{before}_P1")
+        self.assertEqual(self.result.clusters[0].label, before)
 
     def test_006_min_area_scarta_part_sotto_soglia(self):
         """Part con area sotto min_area vengono scartati e producono un warning."""
@@ -353,7 +367,7 @@ class TestIntegrationPipeline(unittest.TestCase):
     def _run(self, dxf_name, label, **kwargs):
         out_dir = tempfile.mkdtemp()
         doc = ezdxf.readfile(str(EXAMPLES_DIR / dxf_name))
-        result = topo_dxf.split_to_files(
+        result = _split_to_files(
             topo_dxf.document_from_msp(doc.modelspace()),
             output_folder=out_dir, label=label, **kwargs
         )
@@ -397,7 +411,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         msp.add_text("NOTA", dxfattribs={
             "insert": (50, 50), "height": 5, "layer": "0"
         })
-        topo_dxf.split_to_files(topo_dxf.document_from_msp(msp), output_folder=out_dir, label="test",
+        _split_to_files(topo_dxf.document_from_msp(msp), output_folder=out_dir, label="test",
                              include_texts=False)
         for f in Path(out_dir).glob("*.dxf"):
             out_msp = ezdxf.readfile(str(f)).modelspace()
@@ -409,7 +423,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         out_dir = tempfile.mkdtemp()
         doc = ezdxf.readfile(str(EXAMPLES_DIR / "two_parts.dxf"))
         namer = lambda i, cluster: f"custom_{i + 1:02d}"
-        topo_dxf.split_to_files(topo_dxf.document_from_msp(doc.modelspace()), output_folder=out_dir,
+        _split_to_files(topo_dxf.document_from_msp(doc.modelspace()), output_folder=out_dir,
                              label="two_parts", namer=namer)
         names = {f.stem for f in Path(out_dir).glob("*.dxf")}
         self.assertIn("custom_01", names,
@@ -419,7 +433,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         """msp vuoto → nessun file generato."""
         out_dir = tempfile.mkdtemp()
         doc = ezdxf.new("R2010")
-        topo_dxf.split_to_files(topo_dxf.document_from_msp(doc.modelspace()), output_folder=out_dir,
+        _split_to_files(topo_dxf.document_from_msp(doc.modelspace()), output_folder=out_dir,
                              label="empty")
         files = list(Path(out_dir).glob("*.dxf"))
         self.assertEqual(len(files), 0,
@@ -436,7 +450,7 @@ class TestIntegrationContours(unittest.TestCase):
         out_dir = tempfile.mkdtemp()
         doc = ezdxf.readfile(str(EXAMPLES_DIR / dxf_name))
         print([ (e.dxftype(), e.dxf.layer) for e in doc.modelspace() ])
-        topo_dxf.split_to_files(topo_dxf.document_from_msp(doc.modelspace()), output_folder=out_dir,
+        _split_to_files(topo_dxf.document_from_msp(doc.modelspace()), output_folder=out_dir,
                              label=label, **kwargs)
         return _read_children(out_dir)
 
@@ -533,7 +547,7 @@ class TestIntegrationContours(unittest.TestCase):
             out_dir = tempfile.mkdtemp()
             try:
                 doc = ezdxf.readfile(str(src))
-                topo_dxf.split_to_files(topo_dxf.document_from_msp(doc.modelspace()),
+                _split_to_files(topo_dxf.document_from_msp(doc.modelspace()),
                                      output_folder=out_dir, label=src.stem)
                 for child in Path(out_dir).glob("*.dxf"):
                     child_doc = ezdxf.readfile(str(child))
@@ -557,7 +571,7 @@ class TestIntegrationLayers(unittest.TestCase):
     def setUp(self):
         self.out_dir = tempfile.mkdtemp()
         doc = ezdxf.readfile(str(EXAMPLES_DIR / "two_parts.dxf"))
-        topo_dxf.split_to_files(topo_dxf.document_from_msp(doc.modelspace()),
+        _split_to_files(topo_dxf.document_from_msp(doc.modelspace()),
                              output_folder=self.out_dir, label="test")
         self.files = list(Path(self.out_dir).glob("*.dxf"))
         self.assertTrue(len(self.files) > 0,

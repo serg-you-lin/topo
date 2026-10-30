@@ -45,7 +45,7 @@ def num_segments_for_bulge(bulge: float) -> int:
 # stoccati sul modello. Chi li consuma — detect_flat(), write._write_loose,
 # inspect() — li ricava con queste funzioni.
 
-def track_points(segments, tolerance: Optional[float] = None) -> List[Point]:
+def track_points(segments, *, tolerance: Optional[float] = None) -> List[Point]:
     """
     Vertici di una traccia aperta come catena di segmenti nativi.
 
@@ -54,7 +54,7 @@ def track_points(segments, tolerance: Optional[float] = None) -> List[Point]:
     """
     pts: List[Point] = []
     for seg in segments or []:
-        seg_pts = seg.discretize() if tolerance is None else seg.discretize(tolerance)
+        seg_pts = seg.discretize() if tolerance is None else seg.discretize(tolerance=tolerance)
         if not seg_pts:
             continue
         if pts and math.dist(pts[-1], seg_pts[0]) < 1e-9:
@@ -72,14 +72,9 @@ def track_length(pts) -> float:
     )
 
 
-def track_shape_type(pts) -> str:
-    """`"line"` se la traccia è un solo segmento retto (2 vertici), altrimenti `"curve"`."""
-    return "line" if len(pts) == 2 else "curve"
-
-
 # ---------------------------------------------------------------------------
 # Lunghezza e angolo di UNA primitiva nativa — mai stoccati sul modello,
-# sempre derivati (stesso principio di track_length/track_shape_type sopra,
+# sempre derivati (stesso principio di track_length sopra,
 # ma su un singolo segmento invece che su una catena)
 # ---------------------------------------------------------------------------
 

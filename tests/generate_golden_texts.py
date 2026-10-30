@@ -72,7 +72,7 @@ def generate(force: bool = False, only: str = None) -> None:
             skipped += 1
             continue
         try:
-            doc = topo_dxf.load_dxf(dxf_path, explode_inserts=True, flatten_z_flag=True,
+            doc = topo_dxf.load_dxf(dxf_path, explode_inserts=True, flatten_z=True,
                                  verbose=False)
             result = topo.heal(doc)
             anchor_texts(result)

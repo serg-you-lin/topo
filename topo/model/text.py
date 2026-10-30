@@ -23,7 +23,7 @@ valido dopo serializzazione. ``target`` e ``references`` sono percorsi
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import KW_ONLY, dataclass, field
 from typing import List, Optional, Tuple
 
 from .role import ContourRole, normalize_role
@@ -36,6 +36,7 @@ class RenderedText:
     """Una stringa dentro l'immagine appiattita di un testo (`Text.rendered`)."""
     content:  str
     position: Point
+    _: KW_ONLY
     height:   float = 2.5
     rotation: float = 0.0
 
@@ -50,6 +51,7 @@ class RenderedGeometry:
     LEADER sta in un blocco anonimo, non nei campi dell'entità; la si conserva
     qui e un writer la ri-materializza.
     """
+    _: KW_ONLY
     strokes: List[List[Point]]  = field(default_factory=list)  # polilinee aperte
     fills:   List[List[Point]]  = field(default_factory=list)  # polilinee chiuse
     texts:   List[RenderedText] = field(default_factory=list)
@@ -87,6 +89,7 @@ class Text:
     """
     position:         Point
     text:             str              = ""
+    _: KW_ONLY
     height:           float            = 2.5
     rotation:         float            = 0.0
     width_factor:     float            = 1.0

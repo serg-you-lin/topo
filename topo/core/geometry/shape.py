@@ -87,7 +87,7 @@ class ContourShape:
                 "sides": self.sides}
 
 
-def contour_shape(item, tolerance: float = SHAPE_TOLERANCE,
+def contour_shape(item, *, tolerance: float = SHAPE_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOLERANCE_DEG) -> Optional[ContourShape]:
     """
     Forma di un contorno chiuso (`Contour`, o qualunque oggetto con
@@ -304,7 +304,7 @@ class ConcentricGroup:
         return tuple(s.length for s in self.shapes)
 
 
-def concentric_groups(items, tolerance: float = CONCENTRIC_TOLERANCE) -> list[ConcentricGroup]:
+def concentric_groups(items, *, tolerance: float = CONCENTRIC_TOLERANCE) -> list[ConcentricGroup]:
     """
     Partizione dei contorni circolari di `items` per centro: ogni cerchio sta
     in un solo gruppo, anche da solo. Un cerchio entra nel gruppo il cui
@@ -341,7 +341,7 @@ class ArcAround:
 
 
 def arcs_around(center: Point, radius: float, arcs,
-                tolerance: float = CONCENTRIC_TOLERANCE) -> list[ArcAround]:
+                *, tolerance: float = CONCENTRIC_TOLERANCE) -> list[ArcAround]:
     """
     Gli archi di `arcs` col centro entro `tolerance` da `center` e raggio
     maggiore di `radius`, dal più vicino al cerchio al più lontano.

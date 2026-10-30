@@ -5,7 +5,7 @@ Un Result per parte (MAP.md D124, D129). Scegliere le parti è una decisione
 sul modello, non su un formato: quali cluster tenere (`min_area`), come si
 chiamano (`namer` → `cluster.label`), quali curve sciolte e quali testi
 viaggiano con ognuna. Ogni exporter scrive poi una parte nel suo formato
-(`topo_dxf.to_dxf`, `topo.to_svg`, `topo.to_text`): lo stesso split esporta
+(`topo_dxf.to_dxf`, `topo.experimental.to_svg`, `topo.experimental.to_text`): lo stesso split esporta
 parti in DXF, SVG o PDF.
 """
 
@@ -26,7 +26,7 @@ DEFAULT_MIN_CLUSTER_AREA = 50.0  # mm²
 
 def split(
     result: Result,
-    namer: Optional[Callable[[int, Cluster], str]] = None,
+    *, namer: Optional[Callable[[int, Cluster], str]] = None,
     min_area: float = DEFAULT_MIN_CLUSTER_AREA,
 ) -> List[Result]:
     """
@@ -42,10 +42,15 @@ def split(
     `None` altrimenti). Una curva promossa (`result.promote`) sta già nel suo
     cluster. Gli altri campi del `Result` (sorgente, avvisi) sono copiati.
 
-    `namer(i, cluster)` — se passato — assegna `cluster.label`, così il nome
-    di un file resta ricavabile a valle (`f"{cluster.label}.dxf"`); senza,
-    la parte i-esima è `f"{label}_P{i + 1}"`. Una parte sotto `min_area` mm²
-    (`<= 0`: nessun filtro) è scartata con un avviso in `result.warnings`.
+    `namer(i, cluster)` — se passato — dà il `label` del cluster della
+    parte, così il nome di un file resta ricavabile a valle
+    (`f"{cluster.label}.dxf"`); senza, la parte i-esima è
+    `f"{label}_P{i + 1}"`. Una parte sotto `min_area` mm² (`<= 0`: nessun
+    filtro) è scartata con un avviso in `result.warnings` e in quelli di
+    ogni parte: anche se le scarta tutte, lo scarto si legge.
+
+    **Muta** solo `result.warnings` (D176): il cluster di una parte è una
+    copia col suo `label`, l'originale non cambia.
 
     Solleva `ValueError` se `result` non è valido: un file per parte non ha
     senso senza parti (D83).
@@ -60,19 +65,18 @@ def split(
     loose_of = _assign_loose(result, outers)
     texts_of = _assign(result.texts, outers, lambda a: a.position, covering=True)
 
+    kept = [i for i, c in enumerate(result.clusters) if cluster_passes_min_area(c, min_area)]
+    result.warnings.extend(
+        f"Part {i} scartato: area {c.outer.area:.2f} mm² sotto soglia {min_area} mm²"
+        for i, c in enumerate(result.clusters) if i not in kept
+    )
     parts: List[Result] = []
-    for i, cluster in enumerate(result.clusters):
-        if not cluster_passes_min_area(cluster, min_area):
-            result.warnings.append(
-                f"Part {i} scartato: area {cluster.outer.area:.2f} mm² "
-                f"sotto soglia {min_area} mm²"
-            )
-            continue
-
-        cluster.label = namer(i, cluster) if namer else f"{cluster.label}_P{i + 1}"
+    for i in kept:
+        cluster = result.clusters[i]
+        label = namer(i, cluster) if namer else f"{cluster.label}_P{i + 1}"
         parts.append(replace(
             result,
-            clusters=[cluster],
+            clusters=[replace(cluster, label=label)],
             loose=_local(loose_of.get(id(cluster), []), i),
             texts=_local(texts_of.get(id(cluster), []), i),
             warnings=list(result.warnings),

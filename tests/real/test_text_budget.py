@@ -33,8 +33,9 @@ FILES = [f"anch_{i:02d}.dxf" for i in range(1, 9)]
 
 
 def reading(dxf_path: Path) -> str:
-    result = topo.anchor_texts(island_reading(dxf_path, MAX_GAP)[1], snap_distance=5.0)
-    return topo.to_text(result, dxf_path.name)
+    result = island_reading(dxf_path, MAX_GAP)[1]
+    topo.anchor_texts(result, snap_distance=5.0)
+    return topo.experimental.to_text(result, dxf_path.name)
 
 
 class TestTextBudget(unittest.TestCase):

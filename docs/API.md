@@ -21,24 +21,32 @@ in fondo.
 **Come si scrive una chiamata.** `import topo` (e `import topo_dxf` se leggi o
 scrivi DXF), poi ogni nome con il suo percorso intero: `topo.heal(...)`,
 `topo_dxf.load_dxf(...)`, `topo.Result`,
-`topo.geometry.contour_shape(...)`, `topo.steps.find_loops(...)`. Mai
-`from topo.steps import find_loops` o `from topo import steps`: un nome letto
-da solo a metà di uno script non dice di chi è, `topo.steps.find_loops` sì.
+`topo.geometry.contour_shape(...)`, `topo.experimental.find_loops(...)`. Mai
+`from topo.experimental import find_loops`: un nome letto da solo a metà di
+uno script non dice di chi è, `topo.experimental.find_loops` sì.
 Tutti gli esempi di questo documento sono scritti così (MAP.md D119).
+
+**La promessa** (MAP.md D175, D176). Ogni nome di questo documento è stabile
+tranne quelli di `topo.experimental`, che si usano ma possono cambiare in una
+minor. Dalla 1.0 un nome stabile che cambia forma arriva col nome nuovo, il
+vecchio resta con un `FutureWarning` per due minor e poi sparisce. In ogni
+firma i **dati** sono posizionali e le **opzioni** si passano solo per nome
+(il `*` della firma): `topo.heal(doc, tolerance=0.5)`, mai `topo.heal(doc, 0.5)`.
+Una funzione che modifica il suo argomento ritorna `None`.
 
 ---
 
 ## Indice
 
 1. [Geometria in ingresso](#1-geometria-in-ingresso) — `load_segments`, `load_geometry`, `RoleRule`, `name_rules`, scrivere un adapter
-2. [Validazione](#2-validazione) — `validate`, `validate_result`
+2. [Validazione](#2-validazione) — `validate_document`, `validate_result`
 3. [Elaborazione](#3-elaborazione) — `heal` / `island` e i suoi mattoni (core), `split`, `anchor_texts` / `inject` (tools)
-4. [Export](#4-export) — `save_json`, `to_json`, `save_xml`, `to_view_model`, `to_svg`, `save_svg`
-5. [Metadati](#5-metadati) — `build_metadata`, `set_schema`
+4. [Export](#4-export) — `save_json`, `to_json`, `save_xml`, `to_shapely`; sperimentali `to_view_model`, `to_svg`, `save_svg`
+5. [Metadati](#5-metadati) — `build_metadata`
 6. [Ispezione / debug](#6-ispezione--debug) — `inspect_document`, `inspect_result`
 7. [Tipi di dominio](#7-tipi-di-dominio)
 8. [Il flusso completo, in ordine](#8-il-flusso-completo-in-ordine)
-9. [`topo_dxf` — l'adapter DXF](#9-topo_dxf--ladapter-dxf) — `load_dxf`, `document_from_msp`, `to_dxf`, `split_to_files`, XDATA, `inspect_dxf` / `inspect_file`, i layer di default
+9. [`topo_dxf` — l'adapter DXF](#9-topo_dxf--ladapter-dxf) — `load_dxf`, `document_from_msp`, `to_dxf`, XDATA, `inspect_dxf` / `inspect_file`, i layer di default
 10. [`topo_pdf` — l'adapter PDF](#10-topo_pdf--ladapter-pdf) — `load_pdf` (sperimentale)
 
 ---
@@ -53,7 +61,7 @@ applica.
 ### `RoleRule`
 
 ```python
-topo.RoleRule(role, name=None, name_contains=None, dashed=None, dash=None, color=None)
+topo.RoleRule(role, *, name=None, name_contains=None, dashed=None, dash=None, color=None)
 ```
 
 Una regola: se **tutte** le condizioni date sono vere, la linea prende `role`.
@@ -99,7 +107,7 @@ rules.append(topo.RoleRule("bending", dashed=True))   # dopo i nomi
 ### `load_segments`
 
 ```python
-topo.load_segments(segments, tolerance=0.05, role="unknown", source_path="") -> Document
+topo.load_segments(segments, *, tolerance=0.05, role="unknown", source_path="") -> Document
 ```
 
 Un `Document` da segmenti di topo (`LineSeg`, `ArcSeg`, `CircleSeg`, …) o
@@ -120,7 +128,7 @@ result = topo.heal(doc)     # un pezzo: outer 200×100, un inner 100×50
 ```python
 topo.load_geometry(
     entities,
-    tolerance=0.05,
+    *, tolerance=0.05,
     source_path="",
 ) -> Document
 ```
@@ -152,7 +160,7 @@ topo_dxf.to_dxf(result)
 
 ```python
 # entità "spline" — i campi sono quelli di BSplineSeg, presi 1:1
-segments = topo.simplify_points(points, tolerance=0.01, scale=25.0, arcs=False)
+segments = topo.experimental.simplify_points(points, tolerance=0.01, scale=25.0, arcs=False)
 doc = topo.load_geometry([
     {
         "type": "spline",
@@ -183,7 +191,7 @@ non importano `topo.core`/`tools`/`io`/`rules` (D129). Quello che gli serve:
 |---|---|
 | `topo.primitives.LineSeg` … `EllipseSeg` | la geometria letta dalla sorgente, nativa (mai discretizzata dall'adapter) |
 | `topo.model.Edge.of(segment, role, style=None) -> Edge` | l'`Edge` di un segmento: estremi sulla griglia dei nodi di topo (D113), che l'adapter non deve conoscere; un cerchio, una spline o un'ellisse chiusi hanno un nodo solo |
-| `topo.model.EdgeStyle(linetype="", linetype_desc="", dash=None, color=None)` | l'aspetto effettivo dell'entità sorgente, senza parole di un formato (D126): `dash` sono segni con segno (`> 0` tratto, `0` punto, `< 0` vuoto; `()` continuo, `None` non noto — un dash-array `[3, 1]` è `(3, -1)`), `color` è `(r, g, b)`. L'adapter risolve l'ereditarietà (uno stile "del layer") prima di consegnarlo |
+| `topo.model.EdgeStyle(*, linetype="", linetype_desc="", dash=None, color=None)` | l'aspetto effettivo dell'entità sorgente, senza parole di un formato (D126): `dash` sono segni con segno (`> 0` tratto, `0` punto, `< 0` vuoto; `()` continuo, `None` non noto — un dash-array `[3, 1]` è `(3, -1)`), `color` è `(r, g, b)`. L'adapter risolve l'ereditarietà (uno stile "del layer") prima di consegnarlo |
 | `topo.model.RoleRule`, `topo.model.resolve_role(rules, name, style) -> str` | il ruolo di un'entità dalle regole del chiamante: la prima che matcha, altrimenti `unknown` |
 | `topo.model.Document`, `topo.model.DEFAULT_NODE_TOLERANCE` | il risultato dell'adapter e la tolleranza di default che `heal()` chiuderà |
 | `topo.model.Text`, `RenderedGeometry`, `RenderedText` | i testi letti dalla sorgente, ognuno col suo `role` (D127, D138; il gruppo sorgente non resta nel modello, D128) |
@@ -191,7 +199,7 @@ non importano `topo.core`/`tools`/`io`/`rules` (D129). Quello che gli serve:
 Per riscrivere in un formato: `topo.primitives.segment_endpoints(segment)` dà i
 due estremi di un segmento, `topo.model.feature_role(contour, item_role)` il
 ruolo con cui si disegna un contorno di un elemento rilevato,
-`topo.model.role_style(role, role_styles)` come si disegna: la palette di
+`topo.model.role_style(role, *, role_styles=None)` come si disegna: la palette di
 topo con sopra la mappa del chiamante (D128). Un exporter non sceglie colori,
 traduce quello che `role_style` gli dà nella codifica del suo formato.
 
@@ -205,10 +213,10 @@ doc = topo.model.Document(edges=edges, source_path=str(path))
 
 ## 2. Validazione
 
-### `validate`
+### `validate_document`
 
 ```python
-topo.validate(doc: Document) -> Result
+topo.validate_document(doc: Document) -> Result
 ```
 
 Valida l'**input** prima di `heal()`. Non modifica niente. Ritorna un
@@ -223,7 +231,7 @@ Valida l'**input** prima di `heal()`. Non modifica niente. Ritorna un
 **Solleva** `TypeError` se non gli passi un `Document`.
 
 ```python
-check = topo.validate(doc)
+check = topo.validate_document(doc)
 if not check.is_valid:
     raise SystemExit(check.errors)
 for w in check.warnings:
@@ -233,11 +241,11 @@ for w in check.warnings:
 ### `validate_result`
 
 ```python
-topo.validate_result(result: Result) -> Result
+topo.validate_result(result: Result) -> None
 ```
 
-Valida l'**output** dopo `heal()`. **Muta** il `result` passato: aggiunge
-`warnings` / `errors` e può mettere `is_valid = False`. Controlla, per ogni cluster:
+Valida l'**output** dopo `heal()`. **Muta** il `result` passato e ritorna
+`None` (D176): aggiunge `warnings` / `errors` e può mettere `is_valid = False`. Controlla, per ogni cluster:
 poligono outer valido e non vuoto, area > 0, ogni inner contenuto nell'outer.
 
 Viene **già chiamata automaticamente da `heal()`** — la usi a mano solo se
@@ -251,14 +259,14 @@ costruisci un `Result` per altre vie.
 dall'interno e una dall'esterno — il chiamante sceglie quella adatta al
 disegno; `split`, `anchor_texts` / `inject` sono stadi opzionali su un
 `Result` (`topo/tools/`, il caller sceglie quali e in che ordine). Scrivere
-in un formato è di un adapter: `topo_dxf.to_dxf` e `topo_dxf.split_to_files`
-(§9); `to_svg`/`to_view_model`/`to_text` sono in §4. Fori, pieghe, incisioni sono
-una lettura di processo, in snapbend (`snapbend.flat`, MAP.md D88). Tutto resta accessibile come `topo.<nome>`.
+in un formato è di un adapter: `topo_dxf.to_dxf` (§9); `to_svg`/`to_view_model`
+sono in §4, sperimentali. Fori, pieghe, incisioni sono
+una lettura di processo, in snapbend (`snapbend.flat`, MAP.md D88).
 
 ### `heal`
 
 ```python
-topo.heal(doc: Document, tolerance=None, label="", source_file="",
+topo.heal(doc: Document, *, tolerance=None, label="", source_file="",
            is_structural=None) -> Result
 ```
 
@@ -291,7 +299,11 @@ resta piena per la diagnostica).
 result = topo.heal(doc, tolerance=0.5, label="P-1024")
 ```
 
-#### I passi di `heal()`
+#### I passi di `heal()` — sperimentali
+
+Stanno in `topo.experimental` (D175 C, D176): si usano, ma renderli stabili
+congelerebbe com'è fatto l'algoritmo dentro. Un passo che una ricetta vera
+dimostra solido si promuove a stabile in una minor.
 
 `heal()` è una ricetta: compone questi passi, nell'ordine sotto, e scrive i
 warning che li raccontano. Esposti per chi compone la sua (snapdraw: per esempio
@@ -300,26 +312,26 @@ un contorno dentro un altro — D62). Stessi pezzi di `heal()`, nessun criterio
 duplicato.
 
 ```python
-topo.steps.merge_collinear_overlaps(edges) -> list[Edge]
-topo.steps.merge_cocircular_overlaps(edges) -> list[Edge]
-topo.steps.weld_degenerate_linesegs(edges) -> list[Edge]
-topo.steps.split_non_finite(edges) -> tuple[list[Edge], list[Edge]]
-topo.steps.split_labeled(edges, is_structural=None) -> tuple[list[Edge], list[Edge]]
-topo.steps.close_near_full_arcs(edges, tolerance, max_missing_angle=NEAR_FULL_ARC_MISSING)
+topo.experimental.merge_collinear_overlaps(edges) -> list[Edge]
+topo.experimental.merge_cocircular_overlaps(edges) -> list[Edge]
+topo.experimental.weld_degenerate_linesegs(edges) -> list[Edge]
+topo.experimental.split_non_finite(edges) -> tuple[list[Edge], list[Edge]]
+topo.experimental.split_labeled(edges, is_structural=None) -> tuple[list[Edge], list[Edge]]
+topo.experimental.close_near_full_arcs(edges, tolerance, max_missing_angle=NEAR_FULL_ARC_MISSING)
     -> tuple[list[Edge], int]
-topo.steps.close_free_gaps(edges, tolerance) -> list[Edge]
-topo.steps.dangling_splines(edges) -> list[Edge]
-topo.steps.find_non_contour_edges(edges, tolerance) -> set[int]
-topo.steps.find_joining_edges(edges, candidate_ids) -> list[Edge]
-topo.steps.free_ends(edges, epsilon=0.0) -> list[tuple[point, float]]
-topo.steps.find_loops(edges, non_contour_ids, tolerance) -> LoopSearch
-topo.steps.repair_merged_corners(edges, tolerance, exclude_ids=frozenset()) -> tuple[list[Edge], int, list]
-topo.steps.structural_loops(loops, is_structural=None) -> list[loop]
-topo.steps.loops_to_curves(loops) -> list[ClosedCurve | OpenCurve]
-topo.steps.polygonize_to_curves(edges, tolerance) -> list[ClosedCurve]
-topo.steps.edges_to_open_curves(edges, exclude_ids) -> list[OpenCurve | ClosedCurve]
-topo.steps.labeled_curves(edges) -> list[OpenCurve | ClosedCurve]
-topo.steps.build_hierarchy(features, label="", source_file="", is_structural=None)
+topo.experimental.close_free_gaps(edges, tolerance) -> list[Edge]
+topo.experimental.dangling_splines(edges) -> list[Edge]
+topo.experimental.find_non_contour_edges(edges, tolerance) -> set[int]
+topo.experimental.find_joining_edges(edges, candidate_ids) -> list[Edge]
+topo.experimental.free_ends(edges, epsilon=0.0) -> list[tuple[point, float]]
+topo.experimental.find_loops(edges, non_contour_ids, tolerance) -> LoopSearch
+topo.experimental.repair_merged_corners(edges, tolerance, exclude_ids=frozenset()) -> tuple[list[Edge], int, list]
+topo.experimental.structural_loops(loops, is_structural=None) -> list[loop]
+topo.experimental.loops_to_curves(loops) -> list[ClosedCurve | OpenCurve]
+topo.experimental.polygonize_to_curves(edges, tolerance) -> list[ClosedCurve]
+topo.experimental.edges_to_open_curves(edges, exclude_ids) -> list[OpenCurve | ClosedCurve]
+topo.experimental.labeled_curves(edges) -> list[OpenCurve | ClosedCurve]
+topo.experimental.build_hierarchy(features, label="", source_file="", is_structural=None)
     -> tuple[list[Cluster], list]
 ```
 
@@ -361,11 +373,11 @@ Nessuno **muta** l'input: ritornano liste/oggetti nuovi.
 
 ```python
 # la ricetta di heal() fino ai contorni chiusi, senza gerarchia
-edges, labeled = topo.steps.split_labeled(doc.edges, is_structural)
-edges = topo.steps.close_free_gaps(edges, 0.1)
-search = topo.steps.find_loops(edges, topo.steps.find_non_contour_edges(edges, 0.1), 0.1)
+edges, labeled = topo.experimental.split_labeled(doc.edges, is_structural)
+edges = topo.experimental.close_free_gaps(edges, 0.1)
+search = topo.experimental.find_loops(edges, topo.experimental.find_non_contour_edges(edges, 0.1), 0.1)
 print(search.method, len(search.loops))
-curves = topo.steps.loops_to_curves(topo.steps.structural_loops(search.loops, is_structural))
+curves = topo.experimental.loops_to_curves(topo.experimental.structural_loops(search.loops, is_structural))
 ```
 
 ---
@@ -429,18 +441,18 @@ for cluster in result.clusters:          # una vista / un pezzo per cluster
     print(cluster.outer.area, len(cluster.inners))
 ```
 
-#### I mattoni di `island()`
+#### I mattoni di `island()` — sperimentali
 
-Esposti per chi compone la sua ricetta (snapdraw: togliere cornice e cartiglio
+In `topo.experimental`, come i passi di `heal()`. Esposti per chi compone la sua ricetta (snapdraw: togliere cornice e cartiglio
 per ruolo, poi leggere le viste) — stessi pezzi, nessun criterio duplicato.
 
 ```python
-topo.read_islands(edges, tolerance, max_gap) -> list[IslandReading]
-topo.read_island(edges, tolerance, max_gap) -> IslandReading
-topo.steps.spatial_islands(edges, gap_tolerance) -> list[Island]
-topo.steps.split_at_crossings(edges, tolerance, decimals=3) -> NodedEdges
-topo.steps.outer_face(edges, epsilon=0.0) -> OuterFace | None
-topo.steps.refit_tessellations(edges, max_segment=0.1, min_run=10,
+topo.experimental.read_islands(edges, tolerance, max_gap) -> list[IslandReading]
+topo.experimental.read_island(edges, tolerance, max_gap) -> IslandReading
+topo.experimental.spatial_islands(edges, gap_tolerance) -> list[Island]
+topo.experimental.split_at_crossings(edges, tolerance, decimals=3) -> NodedEdges
+topo.experimental.outer_face(edges, epsilon=0.0) -> OuterFace | None
+topo.experimental.refit_tessellations(edges, max_segment=0.1, min_run=10,
                           tolerance=0.02, node_decimals=3) -> list[Edge]
 ```
 
@@ -455,7 +467,7 @@ topo.steps.refit_tessellations(edges, max_segment=0.1, min_run=10,
 
 Nessuna **muta** l'input: ritornano liste/oggetti nuovi.
 
-`IslandReading` — cosa è stato deciso su un'isola, pezzo per pezzo:
+`topo.experimental.IslandReading` — cosa è stato deciso su un'isola, pezzo per pezzo:
 
 | campo | tipo | significato |
 |---|---|---|
@@ -480,11 +492,11 @@ angle=20))` ridà 80, 30, 20 (D96):
 | costruttore | forma |
 |---|---|
 | `polygon(points)` | il poligono per i punti dati, chiuso da solo; almeno 3 punti |
-| `rectangle(length, width, center=(0, 0), angle=0)` | rettangolo, lato lungo a `angle` gradi |
-| `regular_polygon(sides, radius, center=(0, 0), angle=0)` | poligono regolare inscritto nel cerchio di raggio `radius`, primo vertice a `angle` |
-| `circle(radius, center=(0, 0))` | un `CircleSeg` |
-| `ellipse(length, width, center=(0, 0), angle=0)` | un `EllipseSeg` intero, assi `length` × `width` (`length` >= `width`), asse lungo a `angle` |
-| `stadium(length, width, center=(0, 0), angle=0)` | due semicerchi veri (`ArcSeg`) e due lati paralleli; fuori tutto `length` × `width` |
+| `rectangle(length, width, *, center=(0, 0), angle=0)` | rettangolo, lato lungo a `angle` gradi |
+| `regular_polygon(sides, radius, *, center=(0, 0), angle=0)` | poligono regolare inscritto nel cerchio di raggio `radius`, primo vertice a `angle` |
+| `circle(radius, *, center=(0, 0))` | un `CircleSeg` |
+| `ellipse(length, width, *, center=(0, 0), angle=0)` | un `EllipseSeg` intero, assi `length` × `width` (`length` >= `width`), asse lungo a `angle` |
+| `stadium(length, width, *, center=(0, 0), angle=0)` | due semicerchi veri (`ArcSeg`) e due lati paralleli; fuori tutto `length` × `width` |
 
 Rombi, trapezi e ogni altra forma con lati dritti sono un `polygon`.
 
@@ -502,7 +514,7 @@ garanzie. L'elenco con `file:riga` è in `docs/INDEX.md`.
 ### `contour_shape`
 
 ```python
-topo.geometry.contour_shape(item, tolerance=0.01, angle_tolerance=1.0) -> ContourShape | None
+topo.geometry.contour_shape(item, *, tolerance=0.01, angle_tolerance=1.0) -> ContourShape | None
 ```
 
 La forma di un contorno chiuso (`Contour`, un oggetto con `.segments`
@@ -535,7 +547,7 @@ ricomposizione), `diameter` (solo cerchio), `.to_dict()`.
 ### `concentric_groups`
 
 ```python
-topo.geometry.concentric_groups(items, tolerance=0.1) -> list[ConcentricGroup]
+topo.geometry.concentric_groups(items, *, tolerance=0.1) -> list[ConcentricGroup]
 ```
 
 I contorni circolari di `items` (come per `contour_shape`) raggruppati per
@@ -554,7 +566,7 @@ come accoppiarli lo decide il consumatore (D91).
 ### `arcs_around`
 
 ```python
-topo.geometry.arcs_around(center, radius, arcs, tolerance=0.1) -> list[ArcAround]
+topo.geometry.arcs_around(center, radius, arcs, *, tolerance=0.1) -> list[ArcAround]
 ```
 
 Gli `ArcSeg` di `arcs` concentrici al cerchio (`center`, `radius`) entro
@@ -572,7 +584,7 @@ lo applica il consumatore (D91).
 ### `splits_contour`
 
 ```python
-topo.geometry.splits_contour(contour, start, end, reach=0.0) -> bool
+topo.geometry.splits_contour(contour, start, end, *, reach=0.0) -> bool
 ```
 
 La corda `start`-`end`, prolungata di `reach` ai due capi, divide la regione
@@ -589,7 +601,7 @@ lo decide il consumatore (snapbend la prolunga di 1 mm, D93).
 ### `bridged_runs`
 
 ```python
-topo.geometry.bridged_runs(segments, bridges, tolerance=0.1, angle_tolerance=1e-6) -> list[CollinearRun]
+topo.geometry.bridged_runs(segments, bridges, *, tolerance=0.1, angle_tolerance=1e-6) -> list[CollinearRun]
 ```
 
 File di due o più tratti sulla stessa retta in cui lo spazio fra un tratto e il
@@ -626,7 +638,7 @@ loro incontro è un tratto (D118).
 ### `point_on_contour`, `ContourPoint`
 
 ```python
-topo.geometry.point_on_contour(segments, point, tolerance=0.01, angle_tolerance=1e-3) -> ContourPoint | None
+topo.geometry.point_on_contour(segments, point, *, tolerance=0.01, angle_tolerance=1e-3) -> ContourPoint | None
 ```
 
 Dove cade `point` sull'anello `segments` (testa-coda, come `contour.segments`).
@@ -659,7 +671,7 @@ dove cade il risultato sul contorno si passa a `point_on_contour` (D140).
 ### `cut_by`
 
 ```python
-topo.geometry.cut_by(segment, region, keep="outside") -> list
+topo.geometry.cut_by(segment, region, *, keep="outside") -> list
 ```
 
 I pezzi di `segment` fuori (`"outside"`) o dentro (`"inside"`) la regione
@@ -716,7 +728,7 @@ fra gli stessi capi).
 ### `dash_line`
 
 ```python
-topo.geometry.dash_line(start, end, head, tail, middle=0.0, n_middle=0) -> list[tuple[Point, Point]]
+topo.geometry.dash_line(start, end, head, tail, *, middle=0.0, n_middle=0) -> list[tuple[Point, Point]]
 ```
 
 Il segmento `start`→`end` ridotto a tratti: uno lungo `head` attaccato a
@@ -733,7 +745,7 @@ sia una piega lo decide il consumatore (D115).
 ### `covered_rectangles`
 
 ```python
-topo.geometry.covered_rectangles(items, min_side, eps=0.5, cluster_tolerance=1.5, coverage=0.85) -> list[CoveredRectangle]
+topo.geometry.covered_rectangles(items, min_side, *, eps=0.5, cluster_tolerance=1.5, coverage=0.85) -> list[CoveredRectangle]
 ```
 
 I rettangoli allineati agli assi i cui quattro lati sono coperti almeno per
@@ -753,7 +765,7 @@ quattro lati come `LineSeg`), `area`, `long_side`, `short_side`, `ratio`.
 ### `spanning_lines`
 
 ```python
-topo.geometry.spanning_lines(bounds, items, coverage=0.85, eps=0.5, cluster_tolerance=1.5) -> (list[float], list[float])
+topo.geometry.spanning_lines(bounds, items, *, coverage=0.85, eps=0.5, cluster_tolerance=1.5) -> (list[float], list[float])
 ```
 
 `(ys, xs)`: le linee strettamente interne a `bounds` che lo attraversano per
@@ -766,7 +778,7 @@ almeno `coverage` della larghezza (orizzontali) o dell'altezza (verticali).
 ### `sides_on_border`
 
 ```python
-topo.geometry.sides_on_border(bounds, border, tolerance) -> list[str]
+topo.geometry.sides_on_border(bounds, border, *, tolerance) -> list[str]
 ```
 
 I lati di `bounds` (`"left"`, `"bottom"`, `"right"`, `"top"`) che stanno sul
@@ -780,7 +792,7 @@ un altro. Lista vuota se non ne tocca nessuno.
 ### `axis_aligned_share`
 
 ```python
-topo.geometry.axis_aligned_share(segments, angle_tolerance) -> float | None
+topo.geometry.axis_aligned_share(segments, *, angle_tolerance) -> float | None
 ```
 
 Frazione della lunghezza dei `LineSeg` orizzontale o verticale entro
@@ -793,7 +805,7 @@ Frazione della lunghezza dei `LineSeg` orizzontale o verticale entro
 ### `axis_lines`
 
 ```python
-topo.geometry.axis_lines(items, eps=0.5) -> (list[AxisLine], list[AxisLine])
+topo.geometry.axis_lines(items, *, eps=0.5) -> (list[AxisLine], list[AxisLine])
 ```
 
 `(orizzontali, verticali)`: i tratti (`items`, oggetti con `start`/`end`) che
@@ -808,7 +820,7 @@ asse: x per un orizzontale), `at` (la coordinata costante, media dei due capi).
 ### `items_inside`
 
 ```python
-topo.geometry.items_inside(bounds, items, margin=0.0) -> list
+topo.geometry.items_inside(bounds, items, *, margin=0.0) -> list
 ```
 
 I tratti con entrambi i capi dentro `bounds` = `(xmin, ymin, xmax, ymax)`
@@ -821,7 +833,7 @@ allargato di `margin`, nell'ordine dato.
 ### `merge_intervals`
 
 ```python
-topo.geometry.merge_intervals(intervals, tolerance=0.0) -> list[tuple[float, float]]
+topo.geometry.merge_intervals(intervals, *, tolerance=0.0) -> list[tuple[float, float]]
 ```
 
 Gli intervalli `(a, b)` uniti dove si sovrappongono o distano al più
@@ -834,7 +846,7 @@ Gli intervalli `(a, b)` uniti dove si sovrappongono o distano al più
 ### `group_collinear_lines`
 
 ```python
-topo.geometry.group_collinear_lines(lines, tolerance=COLLINEAR_TOLERANCE, angle_tolerance=COLLINEAR_ANGLE_TOLERANCE) -> list[list]
+topo.geometry.group_collinear_lines(lines, *, tolerance=COLLINEAR_TOLERANCE, angle_tolerance=COLLINEAR_ANGLE_TOLERANCE) -> list[list]
 ```
 
 I tratti (`start`/`end`) raggruppati per retta: `[[L1, L2], [L3], ...]`. Ogni
@@ -866,19 +878,18 @@ topo.geometry.chord_angle_deg(a, b) -> float
 
 ---
 
-### `track_points`, `track_length`, `track_shape_type`
+### `track_points`, `track_length`
 
 ```python
-topo.geometry.track_points(segments, tolerance=None) -> list[Point]
+topo.geometry.track_points(segments, *, tolerance=None) -> list[Point]
 topo.geometry.track_length(pts) -> float
-topo.geometry.track_shape_type(pts) -> str
 ```
 
 Una traccia aperta (piega, incisione, frammento non chiuso) è una catena di
 segmenti nativi. `track_points` ne dà i vertici (il `discretize()` di ogni
 segmento, senza ripetere il punto di giunzione); `track_length` la lunghezza
-della polilinea; `track_shape_type` dice `"line"` se è un solo tratto dritto
-(2 vertici), altrimenti `"curve"`.
+della polilinea. Un solo tratto dritto è `len(track_points(segments)) == 2`
+(`track_shape_type`, che lo diceva come stringa, è tolto: D176).
 
 **Non mutano** niente.
 
@@ -890,7 +901,7 @@ della polilinea; `track_shape_type` dice `"line"` se è un solo tratto dritto
 ```python
 topo.split(
     result: Result,
-    namer=None,
+    *, namer=None,
     min_area=50.0,               # topo.DEFAULT_MIN_CLUSTER_AREA, mm²
 ) -> list[Result]
 ```
@@ -910,10 +921,10 @@ parte va in DXF, SVG o testo allo stesso modo.
 
 | parametro | significato |
 |---|---|
-| `namer` | `callable(i, cluster) -> str` — assegna `cluster.label`, così il nome di un file resta ricavabile (`f"{cluster.label}.dxf"`). Senza, `f"{label}_P{i+1}"`. |
-| `min_area` | le parti con area sotto soglia (mm²) sono scartate con un avviso in `result.warnings`; `<= 0` nessun filtro. |
+| `namer` | `callable(i, cluster) -> str` — dà il `label` del cluster della parte, così il nome di un file resta ricavabile (`f"{cluster.label}.dxf"`). Senza, `f"{label}_P{i+1}"`. |
+| `min_area` | le parti con area sotto soglia (mm²) sono scartate con un avviso in `result.warnings` e in quelli di ogni parte; `<= 0` nessun filtro. |
 
-**Muta** `cluster.label` di ogni parte tenuta e `result.warnings`.
+**Muta** solo `result.warnings` (gli avvisi di scarto: anche se le scarta tutte, lo scarto si legge). Il cluster di ogni parte è una copia col suo `label`; l'originale non cambia (D176).
 **Ritorna** le parti nell'ordine dei cluster tenuti.
 **Solleva `ValueError`** se `result.is_valid` è `False`: un file per parte
 non ha senso senza parti.
@@ -922,7 +933,7 @@ non ha senso senza parti.
 for part in topo.split(result, min_area=100.0):
     name = part.clusters[0].label
     topo_dxf.to_dxf(part, doc).saveas(f"{name}.dxf")
-    topo.save_svg(part, f"{name}.svg")
+    topo.experimental.save_svg(part, f"{name}.svg")
 ```
 
 ---
@@ -943,8 +954,8 @@ di `EdgeStyle` e senza formato (D37, D128). Vale per un ruolo del motore
 (`"outer"`, `"inner"`, `"unknown"`) come per uno di un consumatore — snapbend
 (`"hole"`, ...), snapdraw (`"frame"`, `"title_block"`, ...) — nessuno è
 privilegiato. Il dizionario `{ruolo: RoleStyle}` è del chiamante e lo passa a
-ogni exporter: `to_svg`, `to_view_model`, `topo_dxf.to_dxf`,
-`topo_dxf.split_to_files`. Sotto c'è sempre la palette di topo; un campo
+ogni exporter: `topo_dxf.to_dxf` e, sperimentali, `to_svg` e `to_view_model`.
+Sotto c'è sempre la palette di topo; un campo
 `None` resta quello della palette. Dove finisce un ruolo (un layer DXF) non è
 qui: è `topo_dxf.to_dxf(layers=...)`.
 
@@ -952,15 +963,15 @@ qui: è `topo_dxf.to_dxf(layers=...)`.
 ai ruoli che heal e island producono, uguale per ogni formato: `outer` verde
 (0, 255, 0), `inner` giallo (255, 255, 0), `unknown` rosso (255, 0, 0); ogni
 altro ruolo è grigio (`CONSUMER_ROLE_STYLE`, (128, 128, 128)) finché il
-chiamante non gli dà un colore. `topo.model.role_style(ruolo, role_styles)`
+chiamante non gli dà un colore. `topo.model.role_style(ruolo, role_styles=...)`
 risolve uno stile: la palette, con sopra i campi non `None` della mappa del
 chiamante. Ogni exporter la chiama e traduce soltanto (ACI o true color in
 DXF, hex in SVG): chi scrive un adapter non sceglie colori.
 
 ```python
 topo.model.role_style("outer")                                   # verde
-topo.model.role_style("hole", snapbend.flat.ROLE_STYLES)         # magenta di snapbend
-topo.model.role_style("outer", {"outer": topo.RoleStyle(lineweight=0.3)})   # verde, 0.3 mm
+topo.model.role_style("hole", role_styles=snapbend.flat.ROLE_STYLES)   # magenta di snapbend
+topo.model.role_style("outer", role_styles={"outer": topo.RoleStyle(lineweight=0.3)})   # verde, 0.3 mm
 ```
 
 In DXF: un colore della palette diventa il suo indice ACI esatto (3, 2, 1, 8);
@@ -982,8 +993,8 @@ topo_dxf.to_dxf(result, doc, role_styles={
 ### `anchor_texts`
 
 ```python
-topo.anchor_texts(result: Result, snap_distance=0.0,
-                  pointer_distance=0.5) -> Result
+topo.anchor_texts(result: Result, *, snap_distance=0.0,
+                  pointer_distance=0.5) -> None
 ```
 
 Collega i testi alla geometria. Per ogni testo `cluster_ref` = indice del
@@ -992,7 +1003,7 @@ cluster il cui contorno esterno ne contiene la posizione (con
 testo con `pointer` anche `target` — vedi `pointer_target`; per ogni testo
 con `measured_points` `references` — vedi `measured_references`.
 
-**Muta** i testi di `result` in-place. **Ritorna** lo stesso `result`.
+**Muta** i testi di `result` e ritorna `None` (D176).
 
 ### `pointer_target`
 
@@ -1045,13 +1056,13 @@ spostato i fori da `inners` a `holes`: ancorare dopo aver scelto le feature).
 ```python
 topo.inject(
     result: Result,
-    data_injector=None,
+    *, data_injector=None,
     snap_distance: float = 0.0,
-) -> Result
+) -> None
 ```
 
-Arricchimento **opzionale** dai testi. **Muta** `result.clusters[i].custom` in-place e
-ritorna il `result`. Fa **una cosa**: se passi `data_injector` —
+Arricchimento **opzionale** dai testi. **Muta** `result.clusters[i].custom` (e
+`result.warnings` se il `data_injector` fallisce) e ritorna `None` (D176). Fa **una cosa**: se passi `data_injector` —
 `callable(cluster, list[str]) -> dict` — gli passa i testi di
 `result.texts` che ricadono dentro l'outer di ogni parte e mette il dict
 restituito in `cluster.custom` (codice pezzo, materiale, spessore, …). Senza
@@ -1079,19 +1090,21 @@ topo.inject(result, data_injector=leggi_cartiglio, snap_distance=5.0)
 ## 4. Export
 
 Tutti leggono lo schema da `topo/rules/metadata_schema.py` — **una sola fonte**
-per i nomi dei campi. Cambia quel file (o usa `set_schema`) per adattarti al tuo
-CAM.
+per i nomi dei campi. Per adattarti al tuo CAM passa uno schema tuo come
+`schema=` (§5).
 
 ### `save_json` / `to_json`
 
 ```python
 topo.save_json(
-    result: Result, path, indent=2,
+    result: Result, path, *, indent=2,
     extra_metadata: Callable[[Cluster], dict] = None,
+    schema: dict = None,
 ) -> None   # scrive su file
 topo.to_json(
-    result: Result, indent=2,
+    result: Result, *, indent=2,
     extra_metadata: Callable[[Cluster], dict] = None,
+    schema: dict = None,
 ) -> str    # ritorna la stringa
 ```
 
@@ -1100,7 +1113,8 @@ Metadati per parte secondo schema — **niente coordinate**. `extra_metadata`
 ritorna finiscono nell'output **fuori dallo schema** — passarla è già la
 scelta esplicita del chiamante, stesso idioma di `data_injector`. Serve per
 una detection tua (fori per tipo, una `FlangeViewHint`) che topo non può
-conoscere. Struttura:
+conoscere. `schema`, se passato, sostituisce lo schema dei metadati per questa
+chiamata sola (vedi §5). Struttura:
 
 ```json
 {
@@ -1127,7 +1141,7 @@ non sul poligono discretizzato.
 ### `to_shapely`
 
 ```python
-topo.to_shapely(item, tolerance=None) -> Polygon | MultiPolygon | LineString
+topo.to_shapely(item, *, tolerance=None) -> Polygon | MultiPolygon | LineString
 ```
 
 La conversione esplicita a shapely, per chi ha bisogno di overlay, buffer o
@@ -1154,22 +1168,23 @@ una corda che lo divide) non passano da qui: sono fatti del contorno.
 ```python
 topo.save_xml(
     result: Result, path,
-    extra_metadata: Callable[[Cluster], dict] = None,
+    *, extra_metadata: Callable[[Cluster], dict] = None,
+    schema: dict = None,
 ) -> None
 ```
 
-Stessi campi di `save_json` (`extra_metadata` incluso), in XML
+Stessi campi di `save_json` (`extra_metadata` e `schema` inclusi), in XML
 (`<topo><clusters><cluster>…`).
 
 > **Il viewer** — `to_view_model`, `to_svg`, `save_svg` — è **fuori dalla
-> 1.0 stabile** (MAP.md D133): si importa come `topo.<nome>` ma non è in
-> `__all__`, e verrà rifatto (TODO, "Rifare il viewer"). Le firme qui sotto
-> valgono oggi, senza garanzia che restino.
+> 1.0 stabile** (MAP.md D133): sta in `topo.experimental` (D176) e verrà
+> rifatto (TODO, "Rifare il viewer"). Le firme qui sotto valgono oggi, senza
+> garanzia che restino.
 
 ### `to_view_model`
 
 ```python
-topo.to_view_model(
+topo.experimental.to_view_model(
     result: Result,
     tolerance=0.05,
     include_loose=True,
@@ -1182,14 +1197,14 @@ topo.to_view_model(
 solo metadati). Lo consuma `to_svg` e lo consumerebbe un front-end esterno
 (dashboard JS che disegna con SVG/Canvas).
 
-> `to_text(result) -> str` / `save_text(result, path)` — la lettura per un
-> modello linguistico (`<nome>.topo.md`) — è **sperimentale**, fuori da
-> `__all__` finché non ha un chiamante vero (MAP.md D84). Firma e sezioni in
+> `topo.experimental.to_text(result) -> str` / `save_text(result, path)` — la
+> lettura per un modello linguistico (`<nome>.topo.md`) — è **sperimentale**
+> finché non ha un chiamante vero (MAP.md D84, D176). Firma e sezioni in
 > `docs/LLM.md`, insieme a una tabella di cosa dà ogni uscita.
 
-> `to_nester_input(result) -> list[dict]` esiste ancora (`label`, `bbox`,
-> `outer_coords`, `holes_coords` per parte) ma è **sperimentale**, fuori da
-> `__all__` — scritto per un nester mai realizzato (MAP.md D18). Per serializzare
+> `topo.experimental.to_nester_input(result) -> list[dict]` esiste ancora
+> (`label`, `bbox`, `outer_coords`, `holes_coords` per parte) ma è
+> **sperimentale** — scritto per un nester mai realizzato (MAP.md D18, D176). Per serializzare
 > la geometria usa `to_view_model`.
 
 Tutta la geometria è **discretizzata a polilinee** (`points: [[x, y], …]`):
@@ -1199,7 +1214,7 @@ scalari del `to_dict()` dell'elemento — chi porta `center` + `diameter` si pu�
 disegnare come cerchio vero. Coordinate nel sistema del sorgente (Y in alto).
 
 ```python
-vm = topo.to_view_model(result, role_styles=None)   # {ruolo: RoleStyle} del chiamante: ne legge il colore
+vm = topo.experimental.to_view_model(result, role_styles=None)   # {ruolo: RoleStyle} del chiamante: ne legge il colore
 vm["clusters"][0]["outer"]        # {"role": "outer", "color": "#00ff00", "points": [...], "closed": true}
 vm["clusters"][0]["features"]     # {"holes": [{"role": "hole", "points": [...], "diameter": ..., ...}], ...}
 vm["palette"]                  # {"outer": "#00ff00", ...} + i ruoli che role_styles colora
@@ -1211,7 +1226,7 @@ Non muta `result`, non solleva su `result` non valido (torna il dict con
 ### `to_svg` / `save_svg`
 
 ```python
-topo.to_svg(
+topo.experimental.to_svg(
     result: Result,
     tolerance=0.05,
     include_loose=True,
@@ -1225,7 +1240,7 @@ topo.to_svg(
     allow_invalid=True,       # False → ValueError su un result non valido
     role_styles=None,         # {ruolo: RoleStyle}: il colore di ogni ruolo, come in topo_dxf.to_dxf
 ) -> str
-topo.save_svg(result, path, **kwargs) -> None
+topo.experimental.save_svg(result, path, **kwargs) -> None
 ```
 
 Renderer SVG del modello (MAP.md D12) — per visualizzazione (UI/report/
@@ -1247,7 +1262,7 @@ Un `result` non valido viene disegnato lo stesso. `allow_invalid=False` →
 `ValueError`, stesso contratto di `topo_dxf.to_dxf` (D83).
 
 ```python
-topo.save_svg(result, "pezzo.svg")
+topo.experimental.save_svg(result, "pezzo.svg")
 ```
 
 ---
@@ -1257,22 +1272,18 @@ topo.save_svg(result, "pezzo.svg")
 ### `build_metadata`
 
 ```python
-topo.build_metadata(cluster: Cluster, schema: dict = None, extra: dict = None) -> dict
+topo.build_metadata(cluster: Cluster, *, schema: dict = None, extra: dict = None) -> dict
 ```
 
-I metadati di un cluster secondo lo schema attivo (`metadata_schema.py`, o
-quello di `set_schema`): la fonte unica che usano `save_json`, `save_xml` e,
+I metadati di un cluster secondo lo schema (`metadata_schema.py`, o quello
+passato come `schema`): la fonte unica che usano `save_json`, `save_xml` e,
 come XDATA in un DXF, `topo_dxf.write_metadata_to_dxf` (§9). `extra` aggiunge
 campi del chiamante. Non muta niente.
 
-### `set_schema`
-
-```python
-topo.set_schema(schema: dict) -> None
-```
-
-Sostituisce lo schema metadati attivo a runtime. Da usare quando `topo` è
-installato con pip e non puoi editare `metadata_schema.py`. Struttura:
+**Uno schema tuo** si passa per chiamata, come `schema=` a `build_metadata`,
+`save_json`, `to_json`, `save_xml` e `topo_dxf.write_metadata_to_dxf`: niente
+schema globale, due chiamanti nello stesso processo non si pestano i piedi
+(`set_schema` è tolto, D176). Struttura:
 `{chiave_interna: (nome_output, default, sorgente)}` con `sorgente` ∈
 `{"cluster", "custom", "calculated"}`.
 
@@ -1285,7 +1296,7 @@ di un file, è dell'adapter (`topo_dxf.inspect_dxf`, e `topo_dxf.inspect_file`
 che stampa i tre in fila, §9). Tutti stampano su stdout.
 
 ```python
-topo.inspect_document(doc, graph=True, limit=60) -> None
+topo.inspect_document(doc, *, graph=True, limit=60) -> None
 ```
 **Livello 2** — un `Document`: `source_meta`, warning del loader,
 gli `Edge` (ruolo, primitiva, endpoint), i testi, e il
@@ -1293,7 +1304,7 @@ grafo dei nodi (nodi totali, loop degeneri, nodi di branching, estremi liberi).
 "Cosa ha capito l'adapter."
 
 ```python
-topo.inspect_result(result, coords=False) -> None
+topo.inspect_result(result, *, coords=False) -> None
 ```
 **Livello 3** — un `Result`: validità, warning/errori, e per ogni parte
 outer/inner, le collezioni di `cluster.detected` (quello che un consumatore ha
@@ -1311,19 +1322,19 @@ garanzie. Gli adapter sono pacchetti a parte (§9, §10):
   `BSplineSeg`, `EllipseSeg` (math puro, nessun ruolo) e
   `sub_segment(seg, a, b, via)`, il tratto di `seg` da `a` a `b` (`via`, un
   punto interno, serve solo su una curva chiusa). Ogni segmento ha
-  `reversed()`, `translated(dx, dy)`, `rotated(angle, origin=(0, 0))`,
-  `mirrored(origin=(0, 0), angle=0.0)` (sulla retta per `origin` a `angle`
-  radianti; di default l'asse x, y → −y) e `scaled(factor, origin=(0, 0))`
+  `reversed()`, `translated(dx, dy)`, `rotated(angle, *, origin=(0, 0))`,
+  `mirrored(*, origin=(0, 0), angle=0.0)` (sulla retta per `origin` a `angle`
+  radianti; di default l'asse x, y → −y) e `scaled(factor, *, origin=(0, 0))`
   (`factor > 0`, uniforme, altrimenti `ValueError`): tornano un segmento
   nuovo dello stesso tipo, esatto. Un moto rigido è la catena
-  `s.mirrored(o, a).rotated(t).translated(dx, dy)`. Niente scala non
+  `s.mirrored(origin=o, angle=a).rotated(t).translated(dx, dy)`. Niente scala non
   uniforme né affine generica: un arco diventerebbe un'ellisse (D170).
 - **`topo.model`** — i tipi qui sotto (`Document`, `Result`, `Cluster`,
   `Contour`), le curve (`Curve`, `ClosedCurve`, `OpenCurve`), `Edge` (un
   segmento con ruolo e stile), `EdgeStyle`, i testi, le feature
   rilevate e i ruoli: `ContourRole`, `role_str`, `normalize_role`,
   `is_structural_role`. I quattro più usati stanno anche in `topo.<Nome>`.
-- **`topo.steps`** — i passi di `heal()` e della lettura per isole (§3).
+- **`topo.experimental`** — quello che si usa senza promessa di stabilità (D175 C, D176): i passi di `heal()` e i mattoni di `island()` (§3), il viewer (§4), `to_text`, `rotate_*`, `simplify_points`, `to_nester_input`.
 
 ```python
 import topo
@@ -1342,14 +1353,14 @@ core: dopo di lui, `ezdxf` non si tocca più.
 |---|---|---|
 | `edges` | `list[Edge]` | geometria tradotta in primitive pure — input di `heal()` |
 | `texts` | `list[Text]` | i testi della sorgente |
-| `source_meta` | `dict` | `$INSUNITS`, `$MEASUREMENT`, `tolerance`, `ignore_layers` |
+| `source_meta` | `dict` | `$INSUNITS`, `$MEASUREMENT`, `tolerance` |
 | `source_path` | `str` | percorso del file |
 | `warnings` | `list[str]` | diagnostica del loader sul file grezzo |
 
 `node_tolerance(override=None) -> float`: la distanza sotto cui due estremi
 sono lo stesso nodo — `override` se dato, altrimenti `source_meta["tolerance"]`,
 altrimenti `DEFAULT_NODE_TOLERANCE` (0.05, `model/document.py`). È la lettura
-che usano `heal`, `island` e `validate` quando `tolerance` non è passata (D86).
+che usano `heal`, `island` e `validate_document` quando `tolerance` non è passata (D86).
 
 ### `Text`
 
@@ -1406,7 +1417,7 @@ result.promote(
     curves,                           # un elemento di result.loose, o più d'uno
     cluster: Cluster,                 # un elemento di result.clusters
     name: str,                        # la collezione di cluster.detected
-    item=None,                        # cosa attaccare: la curva stessa se None
+    *, item=None,                     # cosa attaccare: la curva stessa se None
 ) -> None
 ```
 
@@ -1503,7 +1514,7 @@ finisce in `loose` col ruolo intatto e l'output la scrive sul layer
 ### `non_contour_candidates`
 
 ```python
-topo.non_contour_candidates(doc: Document, tolerance=None) -> list[Edge]
+topo.non_contour_candidates(doc: Document, *, tolerance=None) -> list[Edge]
 ```
 
 Edge di `doc.edges` che il criterio topologico di `heal()` escluderebbe dal
@@ -1551,7 +1562,7 @@ import topo, topo_dxf
 doc = topo_dxf.load_dxf("pezzo.dxf", tolerance=0.5)
 
 # 2. valida l'input (opzionale ma consigliato)
-check = topo.validate(doc)
+check = topo.validate_document(doc)
 if not check.is_valid:
     raise SystemExit(check.errors)
 
@@ -1600,14 +1611,13 @@ non dice è il default di questo adapter.
 ```python
 topo_dxf.load_dxf(
     path,
-    upgrade=False,
+    *, upgrade=False,
     explode_inserts=True,
-    flatten_z_flag=True,
+    flatten_z=True,
     verbose=False,
     tolerance=0.05,
     role_rules=(),
-    ignore_layers=None,
-    skip_layers=SKIP_LAYERS,          # ("Trash", "Annotation")
+    skip_layers=SKIP_LAYERS,          # ("Trash", "Annotation"), o una funzione nome -> bool
 ) -> Document
 ```
 
@@ -1621,15 +1631,14 @@ funzione il documento `ezdxf` sorgente sparisce.
 | `path` | percorso `.dxf` o `.dwg`. Per il `.dwg` vedi la sezione **DWG** qui sotto. |
 | `upgrade` | forza l'upgrade a R2010 anche se non necessario. |
 | `explode_inserts` | `True` (default): esplode i blocchi in primitive. **Metti `False` solo se vuoi ignorare i blocchi di proposito** — un `INSERT` non esploso viene scartato e la sua geometria sparisce. |
-| `flatten_z_flag` | riporta sul piano le entità con Z ≠ 0. |
+| `flatten_z` | riporta sul piano le entità con Z ≠ 0. |
 | `tolerance` | tolleranza di arrotondamento dei nodi topologici. Viene salvata in `source_meta` e riletta da `heal()` se non gliela ripassi. |
 | `role_rules` | lista di `RoleRule` — assegnano il **ruolo** agli `Edge` già in fase di traduzione. Valutate in ordine, vince la prima che matcha, nessuna → `unknown`. Il nome valutato da `name`/`name_contains` è il layer; `dashed` e `color` guardano l'aspetto **effettivo** (un'entità `ByLayer` viene risolta al linetype/colore del suo layer). Il layer non esce dall'adapter: l'`Edge` porta solo il ruolo (MAP.md D63). Vedi **`RoleRule`** sotto. |
-| `ignore_layers` | lista di layer da escludere dalla geometria (per sottostringa, maiuscole ignorate). |
-| `skip_layers` | layer da saltare per **nome esatto** (maiuscole ignorate). Di default `topo_dxf.SKIP_LAYERS`, i layer che il writer usa per `loose` e testi: un file scritto da topo si rilegge pulito, e `Trash_old` si legge. `()` legge tutto (D129). |
+| `skip_layers` | i layer la cui geometria si salta. Una sequenza vale per **nome esatto** (maiuscole ignorate); una funzione `nome -> bool` decide da sé, col nome come sta nel file: una parte del nome, una regex, un tuo algoritmo (`skip_layers=lambda n: "quote" in n.lower()`, D176). Di default `topo_dxf.SKIP_LAYERS`, i layer che il writer usa per `loose` e testi: un file scritto da topo si rilegge pulito, e `Trash_old` si legge. `()` legge tutto (D129). |
 
 **Ritorna** un `Document`. La diagnostica sul file grezzo (audit, INSERT non
 esplosi, Z≠0, duplicati rimossi, tipi non ri-materializzabili in output) finisce
-in `doc.warnings`; `topo.validate(doc)` la rilancia.
+in `doc.warnings`; `topo.validate_document(doc)` la rilancia.
 
 **Solleva** `FileNotFoundError`, `EnvironmentError` (DWG senza `ODA_PATH`),
 `RuntimeError` (conversione DWG fallita), o le eccezioni di lettura di `ezdxf`.
@@ -1697,9 +1706,8 @@ questa stessa guida nel messaggio.
 ```python
 topo_dxf.document_from_msp(
     msp,
-    tolerance=0.05,
+    *, tolerance=0.05,
     role_rules=(),
-    ignore_layers=None,
     source_path="",
     skip_layers=SKIP_LAYERS,
 ) -> Document
@@ -1707,8 +1715,7 @@ topo_dxf.document_from_msp(
 
 Costruisce un `Document` da un `modelspace` `ezdxf` **già aperto**. Utile per
 i test o per geometria generata a mano. **Non** fa audit / upgrade / sanitize: si
-assume che il `msp` sia già pronto. `role_rules`, `ignore_layers`,
-`skip_layers` funzionano come in `load_dxf()` — vedi sopra.
+assume che il `msp` sia già pronto. `role_rules` e `skip_layers` funzionano come in `load_dxf()` — vedi sopra.
 
 ```python
 import ezdxf
@@ -1724,7 +1731,7 @@ document = topo_dxf.document_from_msp(msp, tolerance=0.5)
 topo_dxf.to_dxf(
     result: Result,
     source_doc: Document = None,
-    filter_cluster=None,
+    *, filter_cluster=None,
     include_texts=True,
     include_loose=True,
     text_layer="Annotation",
@@ -1787,55 +1794,16 @@ topo_dxf.to_dxf(result, doc, allow_invalid=False).saveas("macchina.dxf")  # solo
 
 ---
 
-### `split_to_files`
-
-```python
-topo_dxf.split_to_files(
-    doc: Document,
-    output_folder,
-    label="",
-    source_file="",
-    tolerance=None,
-    namer=None,
-    include_texts=True,
-    min_area=50.0,
-    exclude_types=None,
-    text_layer="Annotation",
-    is_structural=None,
-    role_styles=None,
-    layers=None,
-) -> Result
-```
-
-Flusso multi-pezzo + salvataggio su disco: `topo.heal → topo.split →
-to_dxf + .saveas()` per parte (`is_structural` passa a `heal`;
-`include_texts`, `text_layer`, `role_styles`, `layers`,
-`exclude_types` a `to_dxf`). È un ciclo che puoi scrivere tu (§3, `split`).
-Una lettura di processo (fori, pieghe) si fa sul result con `heal` + la
-detection + `split`, non qui. **È l'unica funzione che scrive su disco.**
-Il nome file è `f"{cluster.label}.dxf"`, dove `cluster.label` è quello che assegna
-`namer(i, cluster)`; senza `namer` diventa `f"{label}_P{i+1}"` (es. `batch_P1.dxf`).
-
-**Ritorna** il `Result` (per poterci fare `save_json` dopo). Se il risultato
-non è valido, ritorna il result senza scrivere niente.
-
-```python
-result = topo_dxf.split_to_files(doc, "output/", label="batch")
-topo.save_json(result, "batch.json")
-```
-
----
-
 ### `inspect_dxf` / `inspect_file`
 
 ```python
-topo_dxf.inspect_dxf(path, entities=True, limit=40) -> None
+topo_dxf.inspect_dxf(path, *, entities=True, limit=40) -> None
 ```
 **Livello 1** — entità DXF grezze: versione, header, conteggio per tipo e per
 layer, dettaglio di ogni entità. Non tocca `topo`.
 
 ```python
-topo_dxf.inspect_file(path, tolerance=0.05, role_rules=(),
+topo_dxf.inspect_file(path, *, tolerance=0.05, role_rules=(),
                    run_heal=True, entities=True, coords=False) -> None
 ```
 Orchestratore: apre il file e stampa i tre livelli in fila. `run_heal=False` per
@@ -1850,7 +1818,7 @@ topo_dxf.inspect_file("pezzo.dxf", role_rules=[topo.RoleRule("bending", dashed=T
 ### `write_metadata_to_dxf` / `read_metadata_from_dxf`
 
 ```python
-topo_dxf.write_metadata_to_dxf(doc, cluster: Cluster, extra: dict = None) -> None
+topo_dxf.write_metadata_to_dxf(doc, cluster: Cluster, *, extra: dict = None, schema: dict = None) -> None
 topo_dxf.read_metadata_from_dxf(doc) -> dict
 ```
 
@@ -1859,7 +1827,10 @@ un dict diretto qui, non una callback, perché opera già su un singolo
 cluster; sotto c'è `topo.build_metadata`) come XDATA `TOPO` sull'entità del
 layer `OuterContour`. `doc` è un
 `Drawing` `ezdxf` (tipicamente quello restituito da `to_dxf`). `read_`
-ritorna `{}` se non trova niente.
+ritorna `{}` se non trova niente. `schema` come in `save_json`.
+
+**Solleva** `ValueError` se `doc` non ha un'entità su `OuterContour` (D176:
+prima stampava un avviso e non scriveva niente).
 
 ```python
 doc_out = topo_dxf.to_dxf(result, doc)
@@ -1884,7 +1855,7 @@ chiamante non passa `layers=`:
 | `topo_dxf.SKIP_LAYERS` | `("Trash", "Annotation")` | quelli che `load_dxf` salta rileggendo |
 
 ```python
-topo_dxf.role_to_dxf_layer(role, element=None, layers: LayerMap = None) -> str
+topo_dxf.role_to_dxf_layer(role, element=None, *, layers: LayerMap = None) -> str
 ```
 
 Il layer di un ruolo come lo sceglie `to_dxf`: la mappa del chiamante (un

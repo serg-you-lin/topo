@@ -28,8 +28,8 @@ def _cluster(*shapes):
 
 def _window_with_two_discs():
     """Riquadro 200×120 con una finestra 160×80; dentro, due dischi r=10 a 20 l'uno dall'altro."""
-    cluster = _cluster(rectangle(200, 120, (100, 60)), rectangle(160, 80, (100, 60)),
-                       circle(10, (60, 60)), circle(10, (100, 60)))
+    cluster = _cluster(rectangle(200, 120, center=(100, 60)), rectangle(160, 80, center=(100, 60)),
+                       circle(10, center=(60, 60)), circle(10, center=(100, 60)))
     facing = facing_boundaries(cluster)[0]
     left, right = sorted(facing.inside, key=lambda c: to_shapely(c).centroid.x)
     return cluster, facing, left, right
@@ -56,9 +56,9 @@ class TestFacingBoundaries(unittest.TestCase):
 
     def test_002_cousins_never_face_each_other(self):
         # due finestre, un disco in ognuna: due gruppi, ognuno col suo disco
-        cluster = _cluster(rectangle(200, 100, (100, 50)),
-                           rectangle(60, 60, (50, 50)), circle(10, (50, 50)),
-                           rectangle(60, 60, (150, 50)), circle(10, (150, 50)))
+        cluster = _cluster(rectangle(200, 100, center=(100, 50)),
+                           rectangle(60, 60, center=(50, 50)), circle(10, center=(50, 50)),
+                           rectangle(60, 60, center=(150, 50)), circle(10, center=(150, 50)))
         groups = facing_boundaries(cluster)
         self.assertEqual(len(groups), 2)
         for g in groups:
@@ -102,7 +102,7 @@ class TestLink(unittest.TestCase):
             self.assertAlmostEqual(side.start[1], side.end[1], places=9)   # orizzontali: perpendicolari ai due cerchi
 
     def test_002_from_a_straight_side_it_leaves_perpendicular(self):
-        cluster = _cluster(rectangle(100, 100, (50, 50)), rectangle(80, 80, (50, 50)), rectangle(20, 40, (50, 50)))
+        cluster = _cluster(rectangle(100, 100, center=(50, 50)), rectangle(80, 80, center=(50, 50)), rectangle(20, 40, center=(50, 50)))
         facing = facing_boundaries(cluster)[0]
         island = facing.inside[0]
         s = link(facing, facing.region, island, (60, 45), 2.0).strip   # sul lato destro dell'isola

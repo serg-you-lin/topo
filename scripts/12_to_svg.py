@@ -41,7 +41,7 @@ doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(N
 result = topo.heal(doc, label=base)
 
 # 1. view model — il JSON per un renderer esterno
-vm = topo.to_view_model(result, tolerance=0.05)
+vm = topo.experimental.to_view_model(result, tolerance=0.05)
 cluster = vm["clusters"][0]
 print(f"parti          : {vm['cluster_count']}")
 print(f"bbox           : {vm['bbox']}")
@@ -56,7 +56,7 @@ with open(vm_path, "w", encoding="utf-8") as f:
 print(f"\nview model     -> {vm_path}")
 
 # 2. SVG — sfondo scuro, fori come cerchi veri
-topo.save_svg(
+topo.experimental.save_svg(
     result,
     os.path.join(OUTDIR, f"{base}.svg"),
     tolerance=0.05,
@@ -66,7 +66,7 @@ topo.save_svg(
 )
 
 # variante: sfondo trasparente, senza trash, per incollarlo in un documento
-topo.save_svg(
+topo.experimental.save_svg(
     result,
     os.path.join(OUTDIR, f"{base}_clean.svg"),
     include_loose=False,

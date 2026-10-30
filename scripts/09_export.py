@@ -44,7 +44,7 @@ topo.save_xml(result,  os.path.join(OUTDIR, f"{base}.xml"))
 print(f"scritti {base}.json e {base}.xml in {OUTDIR}/")
 
 # input per un nester: coordinate, non nomi
-nester = topo.to_nester_input(result)
+nester = topo.experimental.to_nester_input(result)
 p0 = nester[0]
 print(f"\nnester_input[0]: label={p0['label']}  area={p0['area']:.0f}  "
       f"outer_coords={len(p0['outer_coords'])} punti  "

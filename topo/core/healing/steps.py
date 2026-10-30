@@ -338,7 +338,7 @@ def polygonize_edges(edges: List[Edge], tolerance: float) -> List[Polygon]:
     for edge in edges:
         if edge.segment is None:
             continue
-        pts = edge.segment.discretize(DEFAULT_TOLERANCE)
+        pts = edge.segment.discretize(tolerance=DEFAULT_TOLERANCE)
         if len(pts) >= 2:
             lines.append(LineString(pts))
     merged = unary_union(lines)

@@ -85,9 +85,8 @@ result = topo.heal(doc, label="batch")
 for part in topo.split(result):                 # un Result per pezzo, senza formato
     name = part.clusters[0].label               # batch_P1, batch_P2, ... (o namer=...)
     topo_dxf.to_dxf(part, doc).saveas(f"output/{name}.dxf")
-    topo.save_svg(part, f"output/{name}.svg")   # lo stesso pezzo, un altro formato
+    topo.experimental.save_svg(part, f"output/{name}.svg")   # lo stesso pezzo, un altro formato
 
-topo_dxf.split_to_files(doc, "output/", label="batch")   # heal + split + salvataggio, in una chiamata
 topo.save_json(result, "batch.json")
 ```
 
@@ -127,7 +126,7 @@ import topo, topo_dxf
 fg = topo.geometry
 doc = topo.load_segments(fg.rectangle(200, 100) + fg.rectangle(100, 50))
 result = topo.heal(doc)                # un pezzo: outer 200×100, un inner 100×50
-topo.save_svg(result, "due_rettangoli.svg")             # senza adapter
+topo.experimental.save_svg(result, "due_rettangoli.svg")   # senza adapter
 topo_dxf.to_dxf(result, doc).saveas("due_rettangoli.dxf")
 ```
 
@@ -194,7 +193,7 @@ topo.load_segments(segs)  ──►  Document   l'adapter è l'unico codice che 
                           ▼
    split(result)                 ──►  list[Result]     uno per pezzo, senza formato
    topo_dxf.to_dxf(result, doc)  ──►  ezdxf Drawing    render — un Result intero o un pezzo
-   to_svg(result)                ──►  stringa SVG      render — per una UI / un report (fuori dall'API stabile 1.0, D133)
+   to_svg(result)                ──►  stringa SVG      render — per una UI / un report (`topo.experimental`, fuori dall'API stabile 1.0, D133)
    to_view_model(result)         ──►  dict (geometria completa) per un renderer esterno (fuori dall'API stabile 1.0)
    to_text(result)               ──►  Markdown         sperimentale: una lettura per un modello linguistico (D84)
    save_json / save_xml                                export del modello (metadati)

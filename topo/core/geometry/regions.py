@@ -50,7 +50,7 @@ _ON_BORDER = 5e-5          # un punto medio più vicino di così al bordo ci cor
 # ---------------------------------------------------------------------------
 
 def _polyline(seg) -> List[Point]:
-    return [tuple(q[:2]) for q in seg.discretize(CURVE_TOLERANCE)]
+    return [tuple(q[:2]) for q in seg.discretize(tolerance=CURVE_TOLERANCE)]
 
 
 def _span(seg) -> float:
@@ -247,7 +247,7 @@ class ContourPoint:
     concave:  bool
 
 
-def point_on_contour(segments: Sequence, point: Point, tolerance: float = DEFAULT_TOLERANCE,
+def point_on_contour(segments: Sequence, point: Point, *, tolerance: float = DEFAULT_TOLERANCE,
                      angle_tolerance: float = TANGENT_TOLERANCE) -> Optional[ContourPoint]:
     """
     Dove cade `point` sull'anello `segments` (testa-coda): su un vertice, su
@@ -296,7 +296,7 @@ def nearest_point(segments: Sequence, point: Point) -> Point:
 # Un tratto tagliato da una regione
 # ---------------------------------------------------------------------------
 
-def cut_by(segment, region: Sequence, keep: str = "outside") -> list:
+def cut_by(segment, region: Sequence, *, keep: str = "outside") -> list:
     """
     I pezzi di `segment` fuori (`keep="outside"`) o dentro (`keep="inside"`)
     la regione chiusa `region`, nel verso di `segment`. Un pezzo che corre

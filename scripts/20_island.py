@@ -8,7 +8,7 @@ API topo usate:
                                    (outer = contorno esterno, inners = giri
                                    chiusi dentro; isole annidate → interno
                                    di quella che le contiene)
-    topo.read_islands(edges, tolerance, max_gap)
+    topo.experimental.read_islands(edges, tolerance, max_gap)
                                 -> [IslandReading]: per ogni pezzo cosa è
                                    stato deciso, pezzo per pezzo
 
@@ -75,7 +75,7 @@ def main():
         try:
             doc = topo_dxf.load_dxf(path, tolerance=TOLERANCE)
             result = topo.island(doc, tolerance=TOLERANCE, max_gap=MAX_GAP)
-            readings = topo.read_islands(doc.edges, TOLERANCE, max_gap=MAX_GAP)
+            readings = topo.experimental.read_islands(doc.edges, TOLERANCE, max_gap=MAX_GAP)
         except Exception as exc:
             print(f"{stem}: ERRORE {type(exc).__name__}: {exc}")
             traceback.print_exc(limit=3)

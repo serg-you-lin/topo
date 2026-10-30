@@ -119,7 +119,7 @@ def _pieces(edge: Edge) -> list:
     if isinstance(seg, CircleSeg):
         return [_Arc(edge, seg.center, seg.radius, 0.0, 2 * math.pi, True)]
     if isinstance(seg, (BSplineSeg, EllipseSeg)):
-        pts = seg.discretize(DEFAULT_TOLERANCE)
+        pts = seg.discretize(tolerance=DEFAULT_TOLERANCE)
         return [_Line(edge, pts[i], pts[i + 1]) for i in range(len(pts) - 1)]
     return []
 

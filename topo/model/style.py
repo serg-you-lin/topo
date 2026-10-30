@@ -23,7 +23,7 @@ topo e del chiamante, mai di un formato.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, fields, replace
+from dataclasses import KW_ONLY, dataclass, fields, replace
 from typing import Mapping, Optional, Tuple
 
 from .role import ContourRole, role_str
@@ -54,6 +54,7 @@ class EdgeStyle:
                         `[3, 1]` è `(3, -1)`.
         color         : colore effettivo (r, g, b) 0–255, None se non noto
     """
+    _: KW_ONLY
     linetype:      str                          = ""
     linetype_desc: str                          = ""
     dash:          Optional[Tuple[float, ...]]  = None
@@ -95,6 +96,7 @@ class RoleStyle:
         dash       : il tratto, segni con segno come in `EdgeStyle.dash`
         lineweight : spessore in mm
     """
+    _: KW_ONLY
     color:      Optional[Tuple[int, int, int]] = None
     linetype:   Optional[str]                  = None
     dash:       Optional[Tuple[float, ...]]    = None
@@ -114,7 +116,7 @@ DEFAULT_ROLE_STYLES: Mapping[str, RoleStyle] = {
 CONSUMER_ROLE_STYLE = RoleStyle(color=(128, 128, 128))            # grigio
 
 
-def role_style(role, role_styles: Optional[Mapping[str, RoleStyle]] = None) -> RoleStyle:
+def role_style(role, *, role_styles: Optional[Mapping[str, RoleStyle]] = None) -> RoleStyle:
     """
     Come si disegna `role`: la palette di topo (o il grigio di un ruolo di
     consumatore), con sopra i campi non `None` del `RoleStyle` che il

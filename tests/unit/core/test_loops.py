@@ -210,7 +210,7 @@ def _loop_to_polygon(loop) -> Polygon:
     """Converte un Loop in Polygon Shapely."""
     pts = []
     for edge, rev in loop:
-        coords = list(edge.segment.discretize(0.01))
+        coords = list(edge.segment.discretize(tolerance=0.01))
         if rev:
             coords = list(reversed(coords))
         pts.append(coords[0])
@@ -239,10 +239,10 @@ class TestLoopFinderRect(unittest.TestCase):
         first_edge, first_rev = loop[0]
         last_edge,  last_rev  = loop[-1]
 
-        first_coords = list(first_edge.segment.discretize(0.01))
+        first_coords = list(first_edge.segment.discretize(tolerance=0.01))
         first_start = first_coords[0] if not first_rev else first_coords[-1]
 
-        last_coords = list(last_edge.segment.discretize(0.01))
+        last_coords = list(last_edge.segment.discretize(tolerance=0.01))
         last_exit = last_coords[-1] if not last_rev else last_coords[0]
 
         self.assertAlmostEqual(first_start[0], last_exit[0], places=1)

@@ -6518,3 +6518,86 @@ warned alias for two minors.
 
 Step 2 of G14 will show that the real surface is about 150 names with the
 submodules, not 97.
+
+### D176 — G14 step 2: the public surface measured against D175, all breaks in one release ✅
+Federico, 30 October, after the pass over every public name (table in his
+debug folder): points 1–10 approved, point 11 left for later. Measured
+against D175's rules only, not against how the consumers call topo.
+
+**What changed, and the rule behind each.**
+1. *Options by name only* (rule 1). Every public function, method and
+   container: data positional, options after `*`. Containers use
+   `dataclasses.KW_ONLY` after their data fields (`Cluster(outer, *, ...)`,
+   `Contour(role, segments, *, ...)`, `Text(position, text, *, ...)`,
+   `RoleRule(role, *, ...)`, `RoleStyle(*, ...)`, `EdgeStyle(*, ...)`, `Edge(role,
+   start, end, segment, *, style)`). Primitives unchanged, their arguments are
+   all data; their methods follow the rule (`discretize(*, tolerance)`,
+   `rotated(angle, *, origin)`, `mirrored(*, origin, angle)`, `scaled(factor, *,
+   origin)`). A tolerance is an option even when required, as `island`'s
+   `max_gap` already was. One exception, declared: `DetectedFeatures.get(name,
+   default)` keeps `dict.get`'s protocol.
+2. *A mutating function returns `None`* (rule 3): `anchor_texts`, `inject`,
+   `validate_result`. They mutated and returned the same object, which reads
+   like a copy.
+3. *`split` no longer renames the caller's clusters* (rule 3): each part's
+   cluster is a copy with its label. It still appends the drop notices to
+   `result.warnings`, declared: when every part is dropped there is no part
+   to carry them, and a silent drop is forbidden (non-negotiable 7).
+4. *`set_schema` removed* (rule 3, global state): the schema is `schema=` on
+   `build_metadata`, `save_json`, `to_json`, `save_xml`,
+   `topo_dxf.write_metadata_to_dxf`.
+5. *One way to skip layers* (rule 2): `ignore_layers` (substring) removed;
+   `skip_layers` takes exact names or a function `name -> bool`, which covers
+   substring, regex and any algorithm on the name. Federico asked for the
+   substring case not to be lost.
+6. *Names* (rule 5): `validate` → `validate_document` (pairs with
+   `validate_result`, `inspect_document`/`inspect_result`);
+   `load_dxf(flatten_z_flag=)` → `flatten_z=`.
+7. *`geometry.track_shape_type` removed* (rule 6): it returned `"line"`/`"curve"`
+   for `len(pts) == 2`.
+8. *`topo_dxf.split_to_files` removed* (rule 2): `heal` → `split` → `to_dxf` in
+   one call with eleven options copied from those functions. The loop is four
+   lines of the caller's (script 07).
+9. *`topo.experimental`* (D175 C): `topo/steps.py` became
+   `topo/experimental.py`, with `read_island`, `read_islands`,
+   `IslandReading`, and every name that was "experimental, importable as
+   `topo.<name>`, not in `__all__`" (`simplify_points`, `rotate_*`,
+   `to_nester_input`, `to_view_model`, `to_svg`, `save_svg`, `to_text`,
+   `save_text`) and the strips of D142 (`facing_boundaries`, `gap`, `link`,
+   `unconnected_regions`, `open_boundaries` and their types), which consumers
+   imported from the internal `topo.tools.strips`. Experimental is one place
+   now, not a comment in `__init__.py`.
+10. *Internal names*: none after all. `feature_closed`, `feature_role`,
+    `resolve_role`, `DEFAULT_NODE_TOLERANCE`, `CONSUMER_ROLE_STYLE` are used by
+    `topo_dxf`, i.e. by anyone writing a format adapter: public by D175 A. They
+    get their cards in G9.
+
+**Found on the way.** `topo_dxf.write_metadata_to_dxf` caught every
+exception and printed a warning without writing anything (rule 7): it now
+raises `ValueError` when there is no `OuterContour` entity.
+
+**Left for later (point 11).** `Text.target`/`references` point to elements by
+a string path (`"clusters[0].inners[3]"`) that breaks when the result
+changes; `resolve_target` turns it back. Fixing it means pointing at the
+object, a rewrite outside G14's bound. To decide with Federico: experimental
+now and fixed in a 1.x, or fixed before 1.0.
+
+**For the consumers** (each adapts in its own session):
+
+| old | new |
+|---|---|
+| `f(data, opt_value)` | `f(data, opt=opt_value)` — every option by name |
+| `r = topo.anchor_texts(result)` / `topo.inject(...)` / `topo.validate_result(...)` | call, then use `result` |
+| `topo.split(...)` renaming `result.clusters[i].label` | read the label from `part.clusters[0].label` |
+| `topo.set_schema(s)` | `schema=s` on each call |
+| `load_dxf(ignore_layers=["x"])` | `skip_layers=lambda n: "x" in n.lower()` |
+| `load_dxf(flatten_z_flag=)` | `flatten_z=` |
+| `topo.validate(doc)` | `topo.validate_document(doc)` |
+| `topo.geometry.track_shape_type(pts)` | `len(pts) == 2` |
+| `topo_dxf.split_to_files(doc, folder, ...)` | `heal` → `split` → `to_dxf(...).saveas()` |
+| `topo.steps.<x>`, `topo.read_island(s)`, `topo.IslandReading` | `topo.experimental.<x>` |
+| `topo.to_svg`/`save_svg`/`to_view_model`/`to_text`/`save_text`/`simplify_points`/`rotate_*`/`to_nester_input` | `topo.experimental.<same>` |
+| `from topo.tools.strips import ...` | `topo.experimental.<name>` |
+| `seg.mirrored(o, a)`, `seg.rotated(t, o)`, `seg.discretize(tol)` | `seg.mirrored(origin=o, angle=a)`, `seg.rotated(t, origin=o)`, `seg.discretize(tolerance=tol)` |
+
+`main` → **0.25.0** (D155: public names removed and renamed, second digit).

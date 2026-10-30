@@ -38,7 +38,7 @@ from ..core.topology.edge import Edge
 from ..core.healing.steps import find_non_contour_edges
 
 
-def non_contour_candidates(doc: Document, tolerance: Optional[float] = None) -> List[Edge]:
+def non_contour_candidates(doc: Document, *, tolerance: Optional[float] = None) -> List[Edge]:
     """
     Edge di `doc.edges` che il criterio topologico di `heal()` escluderebbe dal
     grafo dei contorni — candidati a "qualcos'altro", senza dire cosa.
@@ -47,5 +47,5 @@ def non_contour_candidates(doc: Document, tolerance: Optional[float] = None) -> 
                fallback di heal()).
     """
     edges = list(doc.edges)
-    excluded_ids = find_non_contour_edges(edges, doc.node_tolerance(tolerance))
+    excluded_ids = find_non_contour_edges(edges, doc.node_tolerance(override=tolerance))
     return [e for e in edges if id(e) in excluded_ids]

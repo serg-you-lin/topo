@@ -43,7 +43,7 @@ ZOOMS: dict[str, list[tuple[float, float, float, float]]] = {}
 
 def _plot_edges(ax, edges, **kw):
     for e in edges:
-        pts = e.segment.discretize(0.05)
+        pts = e.segment.discretize(tolerance=0.05)
         ax.plot([p[0] for p in pts], [p[1] for p in pts], **kw)
 
 

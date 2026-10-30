@@ -164,7 +164,7 @@ class TestForgeCluster(unittest.TestCase):
         import math
         outer = self._make_outer()
         cluster = Cluster(outer=outer, detected=DetectedFeatures())
-        cluster.detected.attach("holes", [_Void(topo.geometry.circle(5.0, (50, 50)))])
+        cluster.detected.attach("holes", [_Void(topo.geometry.circle(5.0, center=(50, 50)))])
         expected = 10000.0 - math.pi * 25.0
         print(f"\n[Cluster with hole] area={cluster.area:.4f} expected≈{expected:.4f}")
         self.assertAlmostEqual(cluster.area, expected, delta=0.01)
@@ -173,7 +173,7 @@ class TestForgeCluster(unittest.TestCase):
         """to_shapely toglie dal materiale il vuoto dell'overlay."""
         outer = self._make_outer()
         cluster = Cluster(outer=outer, detected=DetectedFeatures())
-        cluster.detected.attach("holes", [_Void(topo.geometry.circle(5.0, (50, 50)))])
+        cluster.detected.attach("holes", [_Void(topo.geometry.circle(5.0, center=(50, 50)))])
         result_poly = topo.to_shapely(cluster)
         print(f"[Cluster] interiors={len(list(result_poly.interiors))}")
         self.assertEqual(len(list(result_poly.interiors)), 1)

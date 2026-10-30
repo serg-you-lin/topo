@@ -40,7 +40,7 @@ from .healing.steps import (
 # API pubblica
 # ---------------------------------------------------------------------------
 
-def heal(doc: Document, tolerance: Optional[float] = None, label: str = "",
+def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
          source_file: str = "",
          is_structural: Optional[Callable[[str], bool]] = None) -> Result:
     """
@@ -63,7 +63,7 @@ def heal(doc: Document, tolerance: Optional[float] = None, label: str = "",
             "topo.heal() richiede un Document da topo_dxf.load_dxf(); "
             f"ricevuto {type(doc).__name__}"
         )
-    tol = doc.node_tolerance(tolerance)
+    tol = doc.node_tolerance(override=tolerance)
     structural = is_structural or is_structural_role
 
     result = Result(source_file=source_file)

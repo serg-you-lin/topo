@@ -55,7 +55,7 @@ class LineSeg:
     def __post_init__(self):
         self.start, self.end = _plain(self.start), _plain(self.end)
 
-    def discretize(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
+    def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
         Una linea è già esatta: restituisce solo i due endpoint.
         La tolleranza non serve ma la accettiamo per uniformità di interfaccia.
@@ -66,7 +66,7 @@ class LineSeg:
         """Stessa linea, percorsa al contrario."""
         return LineSeg(start=self.end, end=self.start)
 
-    def rotated(self, angle: float, origin: Point = (0.0, 0.0)) -> "LineSeg":
+    def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "LineSeg":
         """Stessa linea, ruotata di `angle` radianti attorno a `origin`."""
         return LineSeg(
             start=_rotate_point(self.start, angle, origin),
@@ -77,13 +77,13 @@ class LineSeg:
         """Stessa linea, spostata di (`dx`, `dy`)."""
         return LineSeg(start=_translate_point(self.start, dx, dy), end=_translate_point(self.end, dx, dy))
 
-    def mirrored(self, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "LineSeg":
+    def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "LineSeg":
         """Stessa linea, specchiata sulla retta per `origin` a `angle` radianti
         (default: l'asse x, y → −y)."""
         return LineSeg(start=_mirror_point(self.start, origin, angle),
                        end=_mirror_point(self.end, origin, angle))
 
-    def scaled(self, factor: float, origin: Point = (0.0, 0.0)) -> "LineSeg":
+    def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "LineSeg":
         """Stessa linea, scalata di `factor` (> 0) attorno a `origin`."""
         factor = _check_factor(factor)
         return LineSeg(start=_scale_point(self.start, factor, origin),
@@ -231,7 +231,7 @@ class ArcSeg:
         """Angolo spazzato in radianti, sempre positivo."""
         return _angular_sweep(self.start_angle, self.end_angle, self.ccw)
 
-    def discretize(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
+    def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
         Discretizza l'arco sulla griglia del suo cerchio (D145): gli estremi
         esatti più i vertici di `CircleSeg.discretize` che cadono fra loro, così
@@ -266,7 +266,7 @@ class ArcSeg:
             ccw=not self.ccw,
         )
 
-    def rotated(self, angle: float, origin: Point = (0.0, 0.0)) -> "ArcSeg":
+    def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "ArcSeg":
         """
         Stesso arco fisico, ruotato di `angle` radianti attorno a `origin`:
         il centro trasla con la rotazione, `start_angle`/`end_angle` si
@@ -285,7 +285,7 @@ class ArcSeg:
         return ArcSeg(center=_translate_point(self.center, dx, dy), radius=self.radius,
                       start_angle=self.start_angle, end_angle=self.end_angle, ccw=self.ccw)
 
-    def mirrored(self, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "ArcSeg":
+    def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "ArcSeg":
         """
         Stesso arco, specchiato sulla retta per `origin` a `angle` radianti
         (default: l'asse x): il punto all'angolo `a` va all'angolo
@@ -298,7 +298,7 @@ class ArcSeg:
                       start_angle=2 * angle - self.start_angle, end_angle=2 * angle - self.end_angle,
                       ccw=not self.ccw)
 
-    def scaled(self, factor: float, origin: Point = (0.0, 0.0)) -> "ArcSeg":
+    def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "ArcSeg":
         """Stesso arco, scalato di `factor` (> 0) attorno a `origin`: il centro
         si sposta, il raggio si moltiplica, angoli e verso non cambiano."""
         factor = _check_factor(factor)
@@ -521,7 +521,7 @@ class BSplineSeg:
             weights=list(reversed(self.weights)) if self.weights else None,
         )
 
-    def rotated(self, angle: float, origin: Point = (0.0, 0.0)) -> "BSplineSeg":
+    def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "BSplineSeg":
         """Stessa spline, ruotata di `angle` radianti attorno a `origin`: si
         ruotano i punti di controllo, nodi e pesi non cambiano."""
         return BSplineSeg(
@@ -537,7 +537,7 @@ class BSplineSeg:
                           control_points=[_translate_point(p, dx, dy) for p in self.control_points],
                           knots=list(self.knots), weights=list(self.weights) if self.weights else None)
 
-    def mirrored(self, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "BSplineSeg":
+    def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "BSplineSeg":
         """Stessa spline, specchiata sulla retta per `origin` a `angle` radianti
         (default: l'asse x): una mappa affine porta la curva nella curva dei
         punti di controllo specchiati."""
@@ -545,7 +545,7 @@ class BSplineSeg:
                           control_points=[_mirror_point(p, origin, angle) for p in self.control_points],
                           knots=list(self.knots), weights=list(self.weights) if self.weights else None)
 
-    def scaled(self, factor: float, origin: Point = (0.0, 0.0)) -> "BSplineSeg":
+    def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "BSplineSeg":
         """Stessa spline, scalata di `factor` (> 0) attorno a `origin`: si
         scalano i punti di controllo, nodi e pesi non cambiano."""
         factor = _check_factor(factor)
@@ -598,7 +598,7 @@ class BSplineSeg:
         w = ws[degree]
         return (xs[degree], ys[degree]) if w == 0 else (xs[degree] / w, ys[degree] / w)
 
-    def discretize(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
+    def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
         Discretizza la spline in polilinea valutando la curva vera (non il
         poligono di controllo) via `_evaluate()`, con suddivisione adattiva
@@ -685,7 +685,7 @@ class CircleSeg:
         """Un cerchio è simmetrico: invertirlo lo lascia identico."""
         return CircleSeg(center=self.center, radius=self.radius)
 
-    def rotated(self, angle: float, origin: Point = (0.0, 0.0)) -> "CircleSeg":
+    def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "CircleSeg":
         """Stesso cerchio, ruotato di `angle` radianti attorno a `origin` (solo il centro si sposta)."""
         return CircleSeg(center=_rotate_point(self.center, angle, origin), radius=self.radius)
 
@@ -693,17 +693,17 @@ class CircleSeg:
         """Stesso cerchio, spostato di (`dx`, `dy`)."""
         return CircleSeg(center=_translate_point(self.center, dx, dy), radius=self.radius)
 
-    def mirrored(self, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "CircleSeg":
+    def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "CircleSeg":
         """Stesso cerchio, specchiato sulla retta per `origin` a `angle`
         radianti (default: l'asse x): si sposta solo il centro."""
         return CircleSeg(center=_mirror_point(self.center, origin, angle), radius=self.radius)
 
-    def scaled(self, factor: float, origin: Point = (0.0, 0.0)) -> "CircleSeg":
+    def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "CircleSeg":
         """Stesso cerchio, scalato di `factor` (> 0) attorno a `origin`."""
         factor = _check_factor(factor)
         return CircleSeg(center=_scale_point(self.center, factor, origin), radius=self.radius * factor)
 
-    def discretize(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
+    def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
         Discretizza il cerchio in polilinea chiusa sulla sua griglia
         (`_circle_sides`, ancorata all'angolo 0): sagitta <= tolerance, lati
@@ -781,7 +781,7 @@ class EllipseSeg:
             self.center[1] + math.cos(t) * my + math.sin(t) * ny,
         )
 
-    def discretize(self, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
+    def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
         Discretizza sulla griglia del parametro (D153): l'ellisse è il cerchio
         del semiasse maggiore `a` visto attraverso una mappa lineare che non
@@ -816,7 +816,7 @@ class EllipseSeg:
             ccw=not self.ccw,
         )
 
-    def rotated(self, angle: float, origin: Point = (0.0, 0.0)) -> "EllipseSeg":
+    def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "EllipseSeg":
         """
         Stessa ellisse fisica, ruotata di `angle` radianti attorno a `origin`:
         il centro trasla con la rotazione, `major_axis` (vettore) ruota
@@ -839,7 +839,7 @@ class EllipseSeg:
                           ratio=self.ratio, start_param=self.start_param, end_param=self.end_param,
                           ccw=self.ccw)
 
-    def mirrored(self, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "EllipseSeg":
+    def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "EllipseSeg":
         """
         Stessa ellisse, specchiata sulla retta per `origin` a `angle` radianti
         (default: l'asse x). Il semiasse minore è `ratio`·(asse maggiore
@@ -855,7 +855,7 @@ class EllipseSeg:
                           ratio=self.ratio, start_param=-self.start_param, end_param=-self.end_param,
                           ccw=not self.ccw)
 
-    def scaled(self, factor: float, origin: Point = (0.0, 0.0)) -> "EllipseSeg":
+    def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "EllipseSeg":
         """Stessa ellisse, scalata di `factor` (> 0) attorno a `origin`: il
         centro si sposta, il vettore `major_axis` si allunga, `ratio` e
         parametri non cambiano."""

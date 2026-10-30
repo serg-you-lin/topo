@@ -83,6 +83,14 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       lista delle regole → tabella, Federico sceglie, tutte le rotture in
       **una** release; (3) test che bloccano le regole verificabili a
       macchina. Non si allarga: niente nomi nuovi, niente rifacimenti.
+      Passo 2 fatto (D176, 0.25.0): punti 1–10. **Aperto il punto 11**:
+      `Text.target`/`references` puntano con una stringa
+      (`"clusters[0].inners[3]"`) che si rompe se il risultato cambia —
+      sperimentale ora e sistemato in una 1.x, o sistemato prima della 1.0?
+      Da decidere con Federico. Poi il passo 3 (test delle regole).
+      Consumer da adeguare (tabella vecchio → nuovo in D176): snapbend,
+      snapdraw, smoother (`simplify_points`, strisce), pippo (`mirrored`,
+      `rotated`).
 
 **Promessa — D143, provata sui fixture**
 - [x] **G3** Test di fedeltà a due vie — `tests/real/test_fidelity.py`

@@ -195,7 +195,7 @@ class TestMisureSullePrimitive(unittest.TestCase):
         pts = [(50 * math.cos(t), 50 * math.sin(t)) for t in (i * 2 * math.pi / 12 for i in range(13))]
         cp, kn = interpolate_bspline(pts, 3)
         spline = BSplineSeg(degree=3, control_points=cp, knots=kn)
-        dense = spline.discretize(1e-7)
+        dense = spline.discretize(tolerance=1e-7)
         for d in ((1, 0), (0, 1), (1, 1), (-0.3, 1)):
             n = math.hypot(*d)
             proj = [(p[0] * d[0] + p[1] * d[1]) / n for p in dense]

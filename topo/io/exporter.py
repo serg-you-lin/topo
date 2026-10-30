@@ -23,7 +23,7 @@ from ..rules.metadata_schema import METADATA_FIELDS
 # Unica fonte di verità per i metadati
 # ---------------------------------------------------------------------------
 
-def build_metadata(cluster: Cluster, schema: dict = None, extra: dict = None) -> dict:
+def build_metadata(cluster: Cluster, *, schema: Optional[dict] = None, extra: Optional[dict] = None) -> dict:
     """
     Costruisce il dict dei metadati per un Cluster
     applicando lo schema definito in metadata_schema.py.
@@ -101,26 +101,14 @@ def build_metadata(cluster: Cluster, schema: dict = None, extra: dict = None) ->
     return meta
 
 
-def set_schema(schema: dict):
-    """
-    Imposta uno schema esterno come schema attivo.
-    Usare quando la libreria è installata con pip e non si può
-    modificare metadata_schema.py direttamente.
-
-    Args:
-        schema: dict con struttura {chiave: (nome_output, default, sorgente)}
-    """
-    global METADATA_FIELDS
-    METADATA_FIELDS = schema
-
-
 # ---------------------------------------------------------------------------
 # Export JSON
 # ---------------------------------------------------------------------------
 
 def save_json(
-    result: Result, path: str, indent: int = 2,
+    result: Result, path: str, *, indent: int = 2,
     extra_metadata: Optional[Callable[[Cluster], dict]] = None,
+    schema: Optional[dict] = None,
 ):
     """
     Salva i metadati in JSON secondo lo schema di metadata_schema.py.
@@ -131,6 +119,9 @@ def save_json(
     `data_injector`: callback esplicita, mai auto-discovery. Serve
     a un consumatore con una detection propria (es. una `FlangeViewHint` sua)
     che topo non può conoscere (MAP.md D44).
+
+    `schema` sostituisce lo schema di metadata_schema.py per questa chiamata
+    sola (D176: niente schema globale).
     """
     output = {
         "source_file" : result.source_file,
@@ -139,7 +130,7 @@ def save_json(
         "warnings"    : result.warnings,
         "errors"      : result.errors,
         "clusters"       : [
-            build_metadata(cluster, extra=extra_metadata(cluster) if extra_metadata else None)
+            build_metadata(cluster, schema=schema, extra=extra_metadata(cluster) if extra_metadata else None)
             for cluster in result.clusters
         ],
     }
@@ -149,10 +140,11 @@ def save_json(
 
 
 def to_json(
-    result: Result, indent: int = 2,
+    result: Result, *, indent: int = 2,
     extra_metadata: Optional[Callable[[Cluster], dict]] = None,
+    schema: Optional[dict] = None,
 ) -> str:
-    """Restituisce i metadati come stringa JSON secondo schema. Vedi `save_json` per `extra_metadata`."""
+    """Restituisce i metadati come stringa JSON secondo schema. Vedi `save_json` per `extra_metadata` e `schema`."""
     output = {
         "source_file" : result.source_file,
         "is_valid"    : result.is_valid,
@@ -160,7 +152,7 @@ def to_json(
         "warnings"    : result.warnings,
         "errors"      : result.errors,
         "clusters"       : [
-            build_metadata(cluster, extra=extra_metadata(cluster) if extra_metadata else None)
+            build_metadata(cluster, schema=schema, extra=extra_metadata(cluster) if extra_metadata else None)
             for cluster in result.clusters
         ],
     }
@@ -172,12 +164,13 @@ def to_json(
 # ---------------------------------------------------------------------------
 
 def save_xml(
-    result: Result, path: str,
+    result: Result, path: str, *,
     extra_metadata: Optional[Callable[[Cluster], dict]] = None,
+    schema: Optional[dict] = None,
 ):
     """
     Salva i metadati in XML secondo lo schema di metadata_schema.py.
-    Vedi `save_json` per `extra_metadata`.
+    Vedi `save_json` per `extra_metadata` e `schema`.
     Struttura:
         <topo>
             <source_file>...</source_file>
@@ -212,7 +205,7 @@ def save_xml(
 
     clusters_el = ET.SubElement(root, "clusters")
     for cluster in result.clusters:
-        meta = build_metadata(cluster, extra=extra_metadata(cluster) if extra_metadata else None)
+        meta = build_metadata(cluster, schema=schema, extra=extra_metadata(cluster) if extra_metadata else None)
         cluster_el = ET.SubElement(clusters_el, "cluster")
         _dict_to_xml(meta, cluster_el)
 

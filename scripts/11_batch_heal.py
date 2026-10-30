@@ -69,7 +69,7 @@ def main(argv):
             doc = topo_dxf.load_dxf(
                 str(src),
                 explode_inserts=True,
-                flatten_z_flag=True,
+                flatten_z=True,
                 role_rules=topo.name_rules(NAME_ROLES),
                 tolerance=tol,
                 verbose=False,

@@ -44,7 +44,7 @@ class TestEllipseSegClosed(unittest.TestCase):
     def test_full_ellipse_discretize_closes_polyline(self):
         seg = EllipseSeg(center=(3, -2), major_axis=(10, 0), ratio=0.4,
                           start_param=0.0, end_param=2 * math.pi)
-        pts = seg.discretize(0.01)
+        pts = seg.discretize(tolerance=0.01)
         self.assertAlmostEqual(pts[0][0], pts[-1][0], places=6)
         self.assertAlmostEqual(pts[0][1], pts[-1][1], places=6)
 
@@ -84,7 +84,7 @@ class TestEllipseSegPointAt(unittest.TestCase):
         radius = 7.0
         ellipse = EllipseSeg(center=(2, -3), major_axis=(radius, 0), ratio=1.0,
                               start_param=0.0, end_param=2 * math.pi)
-        pts = ellipse.discretize(0.01)
+        pts = ellipse.discretize(tolerance=0.01)
         for x, y in pts:
             d = math.hypot(x - 2, y - (-3))
             self.assertAlmostEqual(d, radius, places=4)
@@ -99,14 +99,14 @@ class TestEllipseSegDiscretize(unittest.TestCase):
         seg = EllipseSeg(center=(0, 0), major_axis=(50, 0), ratio=0.1,
                           start_param=0.0, end_param=2 * math.pi)
         tolerance = 0.05
-        pts = seg.discretize(tolerance)
+        pts = seg.discretize(tolerance=tolerance)
         max_dev = _max_deviation_from_ellipse(seg, pts)
         self.assertLess(max_dev, tolerance * 5)  # i punti VALUTATI stanno sulla curva
 
     def test_zero_sweep_returns_degenerate_point(self):
         seg = EllipseSeg(center=(0, 0), major_axis=(10, 0), ratio=0.5,
                           start_param=1.0, end_param=1.0, ccw=True)
-        pts = seg.discretize(0.01)
+        pts = seg.discretize(tolerance=0.01)
         self.assertEqual(len(pts), 2)
         self.assertEqual(pts[0], pts[1])
 
@@ -126,8 +126,8 @@ class TestEllipseSegReversed(unittest.TestCase):
                           start_param=math.radians(20), end_param=math.radians(140),
                           ccw=True)
         rev = seg.reversed()
-        fwd_pts = seg.discretize(0.01)
-        rev_pts = rev.discretize(0.01)
+        fwd_pts = seg.discretize(tolerance=0.01)
+        rev_pts = rev.discretize(tolerance=0.01)
         self.assertEqual(len(fwd_pts), len(rev_pts))
         for (xf, yf), (xr, yr) in zip(fwd_pts, reversed(rev_pts)):
             self.assertAlmostEqual(xf, xr, places=6)

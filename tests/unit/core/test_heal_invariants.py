@@ -81,7 +81,7 @@ def _read(dxf: Path, tol: Optional[float] = None):
     disegno o a `tol`."""
     rules = topo.name_rules({**GLOBAL_NAME_ROLES, **_config(dxf).get("name_roles", {})})
     tol = _tolerance(dxf) if tol is None else tol
-    doc = topo_dxf.load_dxf(str(dxf), upgrade=True, explode_inserts=True, flatten_z_flag=True,
+    doc = topo_dxf.load_dxf(str(dxf), upgrade=True, explode_inserts=True, flatten_z=True,
                          tolerance=tol, role_rules=rules)
     return doc, topo.heal(doc, tolerance=tol)
 
@@ -196,7 +196,7 @@ _register(TestOutOnce, _make_out_once_test)
 def _vertices(contour) -> list:
     pts = []
     for seg in contour.segments:
-        for p in (seg.discretize(DEFAULT_TOLERANCE)[0], seg.discretize(DEFAULT_TOLERANCE)[-1]):
+        for p in (seg.discretize(tolerance=DEFAULT_TOLERANCE)[0], seg.discretize(tolerance=DEFAULT_TOLERANCE)[-1]):
             p = (float(p[0]), float(p[1]))
             if all(math.dist(p, q) > 1e-6 for q in pts):
                 pts.append(p)

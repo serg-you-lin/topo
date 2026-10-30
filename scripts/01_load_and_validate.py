@@ -31,7 +31,7 @@ doc = topo_dxf.load_dxf(
     tolerance=TOLERANCE,        # salvata in source_meta, riusata da heal()
     role_rules=topo.name_rules(NAME_ROLES),        # assegna il ruolo agli Edge già in fase di traduzione
     explode_inserts=True,
-    flatten_z_flag=True,
+    flatten_z=True,
     verbose=False,
 )
 
@@ -50,7 +50,7 @@ for e in doc.edges[:5]:
           f"{tuple(round(c, 1) for c in e.start)} -> {tuple(round(c, 1) for c in e.end)}")
 
 # 2. validate (input) ----------------------------------------------------
-check = topo.validate(doc)
+check = topo.validate_document(doc)
 print(f"\nvalidate.is_valid : {check.is_valid}")
 for e in check.errors:
     print(f"   ERROR: {e}")

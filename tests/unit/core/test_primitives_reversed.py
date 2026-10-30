@@ -14,7 +14,7 @@ from topo.core.primitives.segments import LineSeg, ArcSeg, CircleSeg
 
 
 def _arc_len(seg, tol=0.01):
-    pts = seg.discretize(tol)
+    pts = seg.discretize(tolerance=tol)
     return sum(math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1])
                for i in range(len(pts) - 1))
 
@@ -31,8 +31,8 @@ class TestReversed(unittest.TestCase):
                    start_angle=math.radians(20), end_angle=math.radians(140), ccw=True)
         r = s.reversed()
         self.assertFalse(r.ccw)
-        fwd = s.discretize(0.01)
-        rev = r.discretize(0.01)
+        fwd = s.discretize(tolerance=0.01)
+        rev = r.discretize(tolerance=0.01)
         self.assertEqual(len(fwd), len(rev))
         for (xf, yf), (xr, yr) in zip(fwd, reversed(rev)):
             self.assertAlmostEqual(xf, xr, places=6)

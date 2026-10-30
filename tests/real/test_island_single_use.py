@@ -29,7 +29,7 @@ class TestIslandSingleUse(unittest.TestCase):
         for name in FILES:
             with self.subTest(name=name):
                 doc = topo_dxf.load_dxf(str(SOURCE_DIR / name))
-                for i, r in enumerate(read_islands(doc.edges, doc.node_tolerance(None), MAX_GAP)):
+                for i, r in enumerate(read_islands(doc.edges, doc.node_tolerance(override=None), MAX_GAP)):
                     if r.outer is None:
                         continue
                     both = {id(e) for e in r.outer.edges} & {id(e) for e in r.spurs}

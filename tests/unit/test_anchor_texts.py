@@ -101,7 +101,8 @@ class TestPointerTarget(unittest.TestCase):
     def _island(self, *leaders):
         result = topo.island(_plate_with_holes(), max_gap=MAX_GAP)
         result.texts = list(leaders)
-        return anchor_texts(result)
+        anchor_texts(result)
+        return result
 
     def _hole_at(self, result, center):
         # D161: island() non fa inner, il foro è un pezzo chiuso in loose (D162)
@@ -154,7 +155,8 @@ class TestMeasuredReferences(unittest.TestCase):
     def _result(self, *dims):
         result = topo.island(_plate_with_holes(), max_gap=MAX_GAP)
         result.texts = list(dims)
-        return anchor_texts(result)
+        anchor_texts(result)
+        return result
 
     def test_diametro_sul_foro(self):
         dim = Text(position=(40, 40), measured_points=[(60, 25), (80, 25)])

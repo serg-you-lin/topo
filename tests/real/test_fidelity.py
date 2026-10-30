@@ -49,7 +49,7 @@ CUT_GAP = 0.02           # un tratto più corto resta dentro la fascia del bordo
 def _lines_and_samples(edges):
     lines, samples = [], []
     for e in edges:
-        pts = e.segment.discretize(SAMPLE_TOL) if e.segment is not None else [e.start, e.end]
+        pts = e.segment.discretize(tolerance=SAMPLE_TOL) if e.segment is not None else [e.start, e.end]
         if len(pts) >= 2 and LineString(pts).length > 0:
             lines.append(LineString(pts))
         samples += pts
@@ -128,11 +128,11 @@ def _cut_in_pieces(coeffs, source_edges, written_edges) -> bool:
     if coeffs[0] != "spline":
         return False
     source = next(e.segment for e in source_edges if _coefficients(e.segment) == coeffs)
-    line = LineString(source.discretize(CUT_SAMPLE))
+    line = LineString(source.discretize(tolerance=CUT_SAMPLE))
     zone = line.buffer(CUT_EPS)
     on = [LineString(pts) for e in written_edges
           if isinstance(e.segment, topo.primitives.BSplineSeg)
-          and len(pts := e.segment.discretize(CUT_SAMPLE)) >= 2 and zone.covers(LineString(pts))]
+          and len(pts := e.segment.discretize(tolerance=CUT_SAMPLE)) >= 2 and zone.covers(LineString(pts))]
     return len(on) >= 2 and line.length - sum(g.length for g in on) <= CUT_GAP
 
 

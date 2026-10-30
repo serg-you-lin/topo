@@ -6,7 +6,7 @@ restituisce warning/errori dentro un Result.
 
 Due validazioni distinte, entrambe utili:
 
-    validate(doc)        — INPUT, prima di heal(). Prende il Document di
+    validate_document(doc) — INPUT, prima di heal(). Prende il Document di
                            topo_dxf.load_dxf() e segnala i problemi che
                            renderebbero l'healing inutile o sbagliato.
     validate_result(res) — OUTPUT, dopo heal(). Controlla che i cluster prodotti
@@ -27,7 +27,7 @@ from ..core.primitives.polygon_builder import curve_polygon
 # INPUT — prima di heal()
 # ---------------------------------------------------------------------------
 
-def validate(doc: Document) -> Result:
+def validate_document(doc: Document) -> Result:
     """
     Valida l'input prima di heal().
 
@@ -47,7 +47,7 @@ def validate(doc: Document) -> Result:
     """
     if not isinstance(doc, Document):
         raise TypeError(
-            "topo.validate() richiede un Document da topo_dxf.load_dxf(); "
+            "topo.validate_document() richiede un Document da topo_dxf.load_dxf(); "
             f"ricevuto {type(doc).__name__}"
         )
 
@@ -55,7 +55,7 @@ def validate(doc: Document) -> Result:
     edges = doc.edges
 
     # diagnostica raccolta da load_dxf() sul file grezzo (audit, INSERT,
-    # Z != 0, duplicati): la rilanciamo così validate() è l'unico punto da
+    # Z != 0, duplicati): la rilanciamo così validate_document() è l'unico punto da
     # guardare prima di heal().
     result.warnings.extend(doc.warnings)
 
@@ -126,10 +126,11 @@ def validate(doc: Document) -> Result:
 # OUTPUT — dopo heal()
 # ---------------------------------------------------------------------------
 
-def validate_result(result: Result) -> Result:
+def validate_result(result: Result) -> None:
     """
     Valida i Cluster dentro un Result già popolato da heal().
-    Aggiunge warning ed errori direttamente nel result passato.
+    **Muta** `result`: aggiunge warning ed errori e abbassa `is_valid`;
+    ritorna `None` (D176).
 
     Controlli per ogni cluster:
       - poligono outer valido (non self-intersecting) e non vuoto
@@ -164,5 +165,3 @@ def validate_result(result: Result) -> Result:
                 result.warnings.append(
                     f"{label}: inner {j} non completamente contenuto nell'outer."
                 )
-
-    return result
