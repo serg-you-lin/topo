@@ -191,6 +191,14 @@ Decisi con Federico il 25 ottobre, da fare in 1.x:
   Una griglia nel parametro dell'intera lo renderebbe un pezzo del suo
   poligono. Serve solo se si vede un difetto (finti buchi/sovrapposizioni
   fra pezzi della stessa spline); nessun rosso oggi (D167).
+Deciso con Federico il 30 ottobre, da fare in 1.x:
+- **in `island()` i pezzi dello stesso cerchio/retta si ricompongono anche
+  in `loose`** (richiesta snapdraw/pippo, misure in "richieste dalla
+  superficie"): un cerchio attraversato da linee esce oggi in archi aperti.
+  Estendere a `loose` la ricomposizione di D65: archi che coprono un cerchio
+  intero → `ClosedCurve`, tratti collineari riuniti. Non sceglie cicli (D161).
+  Ammesso in 1.x perché D143 non promette il numero di segmenti. Fino ad
+  allora i consumer ricompongono da sé (pippo `_orphan_circles`).
 
 ## FATTO (23 ottobre) — shape dei pezzi chiusi in loose (D162)
 
@@ -511,6 +519,18 @@ trova e non la richiede. Nemmeno il codice già scritto entra perché c'è: D139
 sperimentale finché la riscrittura di D134 non la giudica.
 
 Richieste aperte:
+
+- **snapdraw/pippo, un cerchio attraversato da altre linee resta un pezzo
+  chiuso** (30 ottobre; smistata da Federico lo stesso giorno: 1.x, voce in
+  "Dopo la 1.0" in cima al file). Misurato: piastra con
+  un Ø8.5 attraversato da due linee. `heal()` lo dà intero come inner;
+  `island()` lo dà in `loose` come 5 `ArcSeg` aperti (la rete piana lo
+  spezza agli incroci e D162 ricompone solo i pezzi senza diramazioni; anche
+  le due linee escono in 6 tratti). D65 ricompone già i tratti dello stesso
+  cerchio, ma solo nei contorni. Nessuna invariante D143 diventa rossa
+  (fedele entro tolleranza, completo, deterministico), quindi per D174 va in
+  "Dopo la 1.0"; D143 non promette il numero di segmenti, quindi in 1.x
+  cambiarlo resta nella promessa.
 
 - ~~**snapdraw, `promote` di più curve come un solo item**~~ — fatto, D172
   (30 ottobre): `result.promote([foro, sede], cluster, name, item=...)`
