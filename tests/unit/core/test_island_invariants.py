@@ -18,10 +18,10 @@ import topo
 import topo_dxf
 
 from tests.drawings import case_name, drawing_key, drawings_for
-from tests.invariants import ROTATION, along_contours, uncovered, known_defect, contours, shape_differences, unscrambled
+from tests.invariants import along_contours, uncovered, known_defect, contours, scrambled, shape_differences, unscrambled
 from tests.readings import geometry_key, island_reading, island_scrambled
 from topo.core.island import GRAPH_EPSILON
-from topo.core.primitives.segments import DEFAULT_TOLERANCE
+from topo.core.primitives.segments import DEFAULT_TOLERANCE, CircleSeg, LineSeg
 from topo import to_shapely
 
 MAX_GAP = 0.5
@@ -184,12 +184,6 @@ def _differences(result, again, back=lambda p: p) -> list:
     return found
 
 
-# angoli in più di ROTATION (D180): un contatto deciso male cambia la lettura
-# solo ad alcuni angoli; sui disegni del repo, prima di D180, 0.13 vedeva
-# tutti i casi instabili di una prova a otto angoli e ROTATION nessuno. Ogni
-# angolo costa una lettura per disegno (~25 s di suite): la prova larga è
-# fuori dalla suite (TODO.md, G6c)
-EXTRA_ANGLES = (0.13,)
 _SCRAMBLED: dict = {}   # impronta della geometria -> differenze: i gemelli si leggono una volta
 
 
@@ -197,20 +191,16 @@ class TestScrambled(unittest.TestCase):
     """Lo stesso disegno scritto in un altro modo — entità in un altro ordine,
     ruotato, lontano dall'origine, specchiato — dà le stesse isole: la
     lettura non dipende né dall'ordine del file né dal sistema di
-    riferimento (D143, D158). Una lettura per angolo, tutto il resto
-    insieme (D160); a più angoli, una volta per geometria (D180)."""
+    riferimento (D143, D158). Una lettura sola, tutto insieme (D160), una
+    volta per geometria (D180); gli altri angoli li provano i micro-casi
+    (TestScrambledMicro)."""
 
 
 def _scrambled_differences(dxf: Path) -> list:
     doc, result = island_reading(dxf, MAX_GAP)
     key = geometry_key(doc)
     if key not in _SCRAMBLED:
-        found = []
-        for seed, angle in enumerate((ROTATION,) + EXTRA_ANGLES):
-            again = island_scrambled(dxf, MAX_GAP, angle, seed)
-            found += [f"{angle} rad: {d}" for d in
-                      _differences(result, again, lambda p, a=angle: unscrambled(p, a))]
-        _SCRAMBLED[key] = found
+        _SCRAMBLED[key] = _differences(result, island_scrambled(dxf, MAX_GAP), unscrambled)
     return _SCRAMBLED[key]
 
 
@@ -224,6 +214,51 @@ def _make_scrambled_test(dxf: Path):
 
 for _dxf in SOURCES:
     setattr(TestScrambled, case_name(_dxf), _make_scrambled_test(_dxf))
+
+
+# otto angoli qualunque: sui disegni interi ognuno costava una lettura per
+# disegno (~25 s di suite), sui micro-casi pochi millisecondi
+ANGLES = (0.13, 0.41, 0.97, 1.33, 1.9, 2.47, 3.01, 4.4)
+# ritagli minimi dei disegni del repo che, prima di D180, cambiavano lettura
+# con l'angolo, e a ROTATION no: ognuno era instabile sul codice di 3ea516b^
+# ed è stabile da D180 (TODO.md, Tempo della suite)
+MICRO_CASES = {
+    # anch_03, anch_03_noframe, regr_02: una V di 60° col cerchio inscritto che
+    # taglia ogni lato di 0.004; prima instabile a 6 angoli su 8
+    "v_col_cerchio": [
+        LineSeg(start=(746.518400822, 390.9160859284), end=(754.018400822, 395.2910859284)),
+        LineSeg(start=(754.018400822, 395.2910859284), end=(739.018400822, 403.8625144998001)),
+        CircleSeg(center=(748.5175721479, 395.281296222), radius=2.7545675962),
+    ],
+    # regr_04 ridotto a blocchi: due rette quasi allineate, sfalsate di 0.04,
+    # inizi a 0.042; prima davano un contorno degenere a 4 angoli su 8
+    "rette_sfalsate": [
+        LineSeg(start=(1068.899871006625, 584.2766554286404), end=(1063.209502662657, 586.5054223191735)),
+        LineSeg(start=(1068.884100771032, 584.2375217405909), end=(1069.529957804885, 583.9735163747837)),
+    ],
+}
+
+
+class TestScrambledMicro(unittest.TestCase):
+    """Come TestScrambled, a otto angoli, sui contatti che un angolo solo non
+    vede: un contatto deciso male cambia la lettura solo ad alcuni angoli
+    (D180). Un caso nuovo entra qui come ritaglio minimo, non come angolo in
+    più sui disegni interi."""
+
+
+def _make_micro_test(segments: list):
+    def test(self):
+        doc = topo.load_segments(segments)
+        result = topo.island(doc, max_gap=MAX_GAP)
+        for seed, angle in enumerate(ANGLES):
+            again = topo.island(scrambled(doc, angle, seed), max_gap=MAX_GAP)
+            self.assertEqual(_differences(result, again, lambda p: unscrambled(p, angle)), [],
+                             f"{angle} rad: scritto in un altro modo cambia le isole")
+    return test
+
+
+for _name, _segments in MICRO_CASES.items():
+    setattr(TestScrambledMicro, f"test_{_name}", _make_micro_test(_segments))
 
 
 if __name__ == "__main__":

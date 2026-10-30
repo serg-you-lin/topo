@@ -6818,3 +6818,30 @@ regr_04; `test_noding.py::TestContattoDecisoUnaVolta` (T within 0.01 shares the
 node, a T on a spline cuts it, a missed tangency is a contact, two T's 0.03 apart
 stay two nodes each equal to its stem, a 0.008 side keeps two ends) — four red
 on the old code.
+
+### D181 — Extra angles held by micro-cases, not by whole drawings ✅
+
+**Problem.** D180 held its angle-dependence with `TestScrambled` reading every
+distinct geometry at a second angle (0.13). Each angle costs one `island()`
+reading per drawing, ~25 s of suite; the suite stood at 3:48, over its budget.
+
+**Decision (option A of three; B kept the second angle on top, C did nothing).**
+The 20 unstable cases of the eight-angle stress on the code before D180
+(`3ea516b^`) were cropped to the smallest set of edges still unstable there, and
+each crop was kept only if it is stable on D180. Two remain, written with
+`topo.load_segments` in `TestScrambledMicro` (`test_island_invariants.py`) and
+read at eight angles, scrambled, far and mirrored:
+- a 60° V with an inscribed circle cutting each side by 0.004 (18 of the 20
+  cases: anch_03, its noframe twin, regr_02);
+- two nearly collinear lines 0.04 apart, ends 0.042 apart: regr_04 reduced by
+  dropping edges in blocks while any angle stays unstable (a reduction keeps
+  *an* instability of the drawing, not necessarily the very same face).
+`EXTRA_ANGLES` is gone; whole drawings are read once, at ROTATION.
+
+**Why.** A contact decided badly shows at some angles only, and only where the
+contact is: the contact itself is the case, the rest of the drawing is cost.
+A new angle-dependent contact enters as a crop, never as one more angle on
+whole drawings.
+
+**Measured.** Suite 3:48 → 3:23. Both micro-cases red on `3ea516b^`, green on
+D180, 0.6 s together.

@@ -166,6 +166,9 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       riproduce ritagliato resta allo stress a mano, elencato. Scelta il
       30 ottobre: **A**, micro-casi + `EXTRA_ANGLES` vuoto (~3:25); scartate
       B (micro-casi e secondo angolo tenuto, ~3:50) e C (niente).
+      Fatto (D181): due micro-casi a 8 angoli in `TestScrambledMicro`,
+      `EXTRA_ANGLES` tolto, suite 3:48 → 3:23 — ancora sopra il tetto:
+      restano `test_fidelity` sulle spline e le letture di `island()`.
 - [ ] **Passata sui disegni di snapdraw** (decisa il 30 ottobre, dopo A):
       113 DXF distinti di snapdraw non sono in topo (per contenuto). Uno
       script a mano, fuori dalla suite, li legge senza copiarli (sola
