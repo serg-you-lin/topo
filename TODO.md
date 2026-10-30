@@ -119,7 +119,8 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       esatto (`rim.off_rim`), in `island()` (ripiego D100) e nel ripiego
       polygonize di `heal()`. `KNOWN["out once"]` e `KNOWN_TWICE` vuoti.
       DXF da guardare: `_debug/2026-10-25_topo_G6b/`.
-- [ ] **G6c** `island()` dipende dall'ordine delle entità e dal sistema di
+- [ ] **G6c** ← **si riparte da qui** (30 ottobre: G14 punto 11 e regola 1
+      chiusi, D177/D178). `island()` dipende dall'ordine delle entità e dal sistema di
       riferimento (passata D158, 23 ottobre). Rimescolando gli edge cambiano
       gli inner su 22 dei 31 disegni d'isole; ruotando di 0.7 rad, spostando
       a (2.5e6, −1.5e6) o specchiando, su 20. Due famiglie viste: (a) inner
