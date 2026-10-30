@@ -11,12 +11,12 @@ testo va con quale pezzo).
 
 Popola ``Text.cluster_ref`` (indice della parte contenitrice), ``Text.target``
 (l'elemento su cui cade la punta di ``pointer``, D66) e ``Text.references``
-(gli elementi su cui cadono i ``measured_points``, D69).
+(gli elementi su cui cadono i ``measured_points``, D69). ``target`` e
+``references`` sono gli oggetti stessi, non percorsi nel risultato (D177).
 """
 
 from __future__ import annotations
 
-import re
 from typing import Any, Iterator, Optional, Tuple
 
 from shapely.geometry import LineString, Point
@@ -63,23 +63,23 @@ def anchor_texts(result: Result, *, snap_distance: float = 0.0,
     for text in result.texts:
         text.cluster_ref = _assign(text.position, refs, snap_distance)
         if text.pointer:
-            text.target = pointer_target(result, text, pointer_distance)
+            text.target = pointer_target(result, text, distance=pointer_distance)
         if text.measured_points:
-            text.references = measured_references(result, text, pointer_distance)
+            text.references = measured_references(result, text, distance=pointer_distance)
 
 
-def pointer_target(result: Result, text: Text,
-                   distance: float = POINTER_TARGET_DISTANCE) -> Optional[str]:
+def pointer_target(result: Result, text: Text, *,
+                   distance: float = POINTER_TARGET_DISTANCE) -> Optional[Any]:
     """
-    L'elemento indicato dalla punta (``pointer[0]``) di ``text``, come
-    percorso in ``result``: ``"clusters[0].outer"``, ``"clusters[0].inners[3]"``,
-    ``"clusters[1].holes[2]"`` (qualunque collezione di ``cluster.detected``),
-    ``"loose[4]"`` (un pezzo chiuso in ``result.loose``, D162).
+    L'elemento su cui cade la punta (``pointer[0]``) di ``text``: un contorno
+    di ``result.clusters`` (``outer`` o ``inners``), un oggetto di una
+    collezione di ``cluster.detected``, o un pezzo chiuso di ``result.loose``
+    (D162). L'oggetto stesso, non una sua posizione (D177).
 
     Il bordo più vicino alla punta, se entro ``distance``; altrimenti il più
     piccolo elemento chiuso (non il contorno esterno) che contiene la punta —
     una freccia che finisce dentro un foro; altrimenti ``None`` (una freccia
-    fuori dal pezzo). ``resolve_target`` fa il passo inverso.
+    fuori dal pezzo).
     """
     if not text.pointer:
         return None
@@ -88,74 +88,52 @@ def pointer_target(result: Result, text: Text,
     if not elements:
         return None
 
-    path = _on_boundary(elements, tip, distance)
-    if path is not None:
-        return path
+    found = _on_boundary(elements, tip, distance)
+    if found is not None:
+        return found
 
-    inside = [(geom.area, path) for path, geom, poly in elements
-              if poly and not path.endswith(".outer") and geom.covers(tip)]
-    return min(inside)[1] if inside else None
+    inside = [(geom.area, key, item) for key, item, geom, poly, outer in elements
+              if poly and not outer and geom.covers(tip)]
+    return min(inside, key=lambda e: e[:2])[2] if inside else None
 
 
-def measured_references(result: Result, text: Text,
+def measured_references(result: Result, text: Text, *,
                         distance: float = POINTER_TARGET_DISTANCE) -> list:
     """
-    Gli elementi su cui cadono i ``measured_points`` di ``text``, come
-    percorsi in ``result`` (stesso formato di ``target``): per ogni punto
-    l'elemento il cui bordo passa entro ``distance``, a parità il più
-    piccolo. Senza doppioni, nell'ordine dei punti. Due punti opposti su un
-    cerchio danno un elemento (il cerchio), due capi uno o due.
+    Gli elementi su cui cadono i ``measured_points`` di ``text`` (gli oggetti
+    stessi, come ``target``): per ogni punto l'elemento il cui bordo passa
+    entro ``distance``, a parità il più piccolo. Senza doppioni, nell'ordine
+    dei punti. Due punti opposti su un cerchio danno un elemento (il
+    cerchio), due capi uno o due.
     """
     elements = list(_elements(result))
     refs = []
     for point in text.measured_points:
-        path = _on_boundary(elements, Point(point), distance) if elements else None
-        if path is not None and path not in refs:
-            refs.append(path)
+        item = _on_boundary(elements, Point(point), distance) if elements else None
+        if item is not None and not any(item is r for r in refs):
+            refs.append(item)
     return refs
 
 
-def _on_boundary(elements, point, distance: float) -> Optional[str]:
+def _on_boundary(elements, point, distance: float) -> Optional[Any]:
     """L'elemento col bordo più vicino a ``point``, se entro ``distance``."""
-    dist, _, path = min((geom.boundary.distance(point) if poly else geom.distance(point),
-                         _size(geom, poly), path) for path, geom, poly in elements)
-    return path if dist <= distance else None
+    dist, _, _, item = min(((geom.boundary.distance(point) if poly else geom.distance(point),
+                             _size(geom, poly), key, item)
+                            for key, item, geom, poly, _ in elements),
+                           key=lambda e: e[:3])
+    return item if dist <= distance else None
 
 
-def resolve_target(result: Result, target: Optional[str]) -> Any:
-    """L'oggetto (contorno, feature o curva di ``loose``) a cui punta un ``target``, o ``None``."""
-    if not target:
-        return None
-    m = _LOOSE.fullmatch(target)
-    if m is not None:
-        k = int(m.group(1))
-        return result.loose[k] if k < len(result.loose) else None
-    m = _TARGET.fullmatch(target)
-    if m is None:
-        return None
-    ci, name, k = int(m.group(1)), m.group(2), m.group(3)
-    if ci >= len(result.clusters):
-        return None
-    cluster = result.clusters[ci]
-    if name == "outer":
-        return cluster.outer
-    items = cluster.inners if name == "inners" else cluster.features(name)
-    k = int(k) if k is not None else -1
-    return items[k] if 0 <= k < len(items) else None
-
-
-_TARGET = re.compile(r"clusters\[(\d+)\]\.(\w+)(?:\[(\d+)\])?")
-_LOOSE = re.compile(r"loose\[(\d+)\]")
-
-
-def _elements(result: Result) -> Iterator[Tuple[str, Any, bool]]:
-    """(percorso, geometria shapely, è chiuso) per contorni e feature di ogni
-    cluster, poi per i pezzi chiusi di ``loose`` senza un ruolo non
-    strutturale (D162): un foro letto da island(), non una cornice."""
+def _elements(result: Result) -> Iterator[Tuple[str, Any, Any, bool, bool]]:
+    """(chiave, oggetto, geometria shapely, è chiuso, è un contorno esterno)
+    per contorni e feature di ogni cluster, poi per i pezzi chiusi di
+    ``loose`` senza un ruolo non strutturale (D162): un foro letto da
+    island(), non una cornice. La chiave è il posto dell'oggetto nel
+    risultato e serve solo a rompere le parità in modo deterministico."""
     for ci, cluster in enumerate(result.clusters):
         outer = curve_polygon(cluster.outer) if cluster.outer is not None else None
         if outer is not None:
-            yield f"clusters[{ci}].outer", outer, True
+            yield f"clusters[{ci}].outer", cluster.outer, outer, True, True
         collections = [("inners", cluster.inners)]
         if cluster.detected is not None:
             collections += list(cluster.detected.items())
@@ -163,12 +141,12 @@ def _elements(result: Result) -> Iterator[Tuple[str, Any, bool]]:
             for k, item in enumerate(items):
                 geom = _item_geometry(item)
                 if geom is not None:
-                    yield f"clusters[{ci}].{name}[{k}]", geom, geom.geom_type == "Polygon"
+                    yield f"clusters[{ci}].{name}[{k}]", item, geom, geom.geom_type == "Polygon", False
     for k, curve in enumerate(result.loose):
         if isinstance(curve, ClosedCurve) and (curve.role == ContourRole.UNKNOWN or is_structural_role(curve.role)):
             geom = _item_geometry(curve)
             if geom is not None:
-                yield f"loose[{k}]", geom, geom.geom_type == "Polygon"
+                yield f"loose[{k}]", curve, geom, geom.geom_type == "Polygon", False
 
 
 def _item_geometry(item):

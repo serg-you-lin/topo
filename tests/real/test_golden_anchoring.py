@@ -39,10 +39,23 @@ GOLDEN_DIR = SOURCE_DIR / "json"
 FILES = [f"anch_{i:02d}.dxf" for i in range(1, 9)]
 
 
-def _element(result, path):
+def _collection(result, item) -> str:
+    """Dove sta l'elemento agganciato: "outer", "inners", "loose" (D162) o il
+    nome di una collezione di `detected` — senza indice (D177)."""
+    for cluster in result.clusters:
+        if item is cluster.outer:
+            return "outer"
+        if any(item is c for c in cluster.inners):
+            return "inners"
+        for name, items in (cluster.detected.items() if cluster.detected is not None else []):
+            if any(item is c for c in items):
+                return name
+    return "loose" if any(item is c for c in result.loose) else "?"
+
+
+def _element(result, item):
     """L'elemento agganciato: collezione + forma, senza indice."""
-    item = topo.resolve_target(result, path)
-    collection = path.rsplit(".", 1)[-1].split("[")[0]   # "outer", "inners", "loose" (D162)
+    collection = _collection(result, item)
     shape = topo.geometry.contour_shape(item) if item is not None else None
     if shape is None:
         return {"in": collection, "shape": None}
@@ -58,10 +71,10 @@ def snapshot(dxf_path: Path) -> dict:
     for t in result.texts:
         if t.rendered.is_empty():   # una stringa sola: niente da agganciare
             continue
-        paths = t.references + ([t.target] if t.target else [])
+        items = t.references + ([t.target] if t.target is not None else [])
         entries.append({"measure_is_angle": t.measure_is_angle, "text": t.text,
                         "position": [round(t.position[0], 2), round(t.position[1], 2)],
-                        "anchored": [_element(result, p) for p in paths]})
+                        "anchored": [_element(result, item) for item in items]})
     entries.sort(key=lambda e: (e["position"], e["text"]))
     return {"source_file": dxf_path.name, "texts": entries}
 

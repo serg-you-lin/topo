@@ -41,6 +41,10 @@ def split(
     `cluster_ref` riferito alla parte (0 se il suo cluster la contiene,
     `None` altrimenti). Una curva promossa (`result.promote`) sta già nel suo
     cluster. Gli altri campi del `Result` (sorgente, avvisi) sono copiati.
+    `Text.target`/`references` di un testo puntano agli elementi della sua
+    parte (le copie delle curve sciolte); un elemento di un'altra parte non
+    sta in quel `Result`: `target` diventa `None`, il riferimento esce da
+    `references` (D177).
 
     `namer(i, cluster)` — se passato — dà il `label` del cluster della
     parte, così il nome di un file resta ricavabile a valle
@@ -74,11 +78,14 @@ def split(
     for i in kept:
         cluster = result.clusters[i]
         label = namer(i, cluster) if namer else f"{cluster.label}_P{i + 1}"
+        loose = _local(loose_of.get(id(cluster), []), i)
+        texts = _local(texts_of.get(id(cluster), []), i)
+        _relink(texts, cluster, loose_of.get(id(cluster), []), loose)
         parts.append(replace(
             result,
             clusters=[replace(cluster, label=label)],
-            loose=_local(loose_of.get(id(cluster), []), i),
-            texts=_local(texts_of.get(id(cluster), []), i),
+            loose=loose,
+            texts=texts,
             warnings=list(result.warnings),
             errors=list(result.errors),
         ))
@@ -137,6 +144,19 @@ def _local(items: list, i: int) -> list:
         local.cluster_ref = 0 if item.cluster_ref == i else None
         out.append(local)
     return out
+
+
+def _relink(texts: list, cluster: Cluster, loose: list, local_loose: list) -> None:
+    """Riporta `target`/`references` dei testi di una parte sugli elementi
+    della parte: i contorni e le feature del cluster sono gli stessi oggetti,
+    le curve sciolte sono copie. Il resto non sta nella parte (D177)."""
+    own = {id(c): c for c in [cluster.outer, *cluster.inners]}
+    if cluster.detected is not None:
+        own.update((id(item), item) for _, items in cluster.detected.items() for item in items)
+    own.update((id(orig), copy_) for orig, copy_ in zip(loose, local_loose))
+    for text in texts:
+        text.target = own.get(id(text.target)) if text.target is not None else None
+        text.references = [own[id(r)] for r in text.references if id(r) in own]
 
 
 def _probe_point(curve) -> Optional[tuple]:

@@ -1008,14 +1008,15 @@ con `measured_points` `references` — vedi `measured_references`.
 ### `pointer_target`
 
 ```python
-topo.pointer_target(result: Result, text: Text,
-                    distance=0.5) -> str | None
+topo.pointer_target(result: Result, text: Text, *,
+                    distance=0.5) -> Any | None
 ```
 
-L'elemento su cui cade la punta (`pointer[0]`) di `text`, come percorso in
-`result`: `"clusters[0].outer"`, `"clusters[0].inners[3]"`,
-`"clusters[1].holes[2]"` — qualunque collezione di `cluster.detected`, quindi
-vale dopo la lettura di un consumatore come dopo `island`.
+L'elemento su cui cade la punta (`pointer[0]`) di `text`: l'oggetto stesso —
+un contorno di `result.clusters` (`outer`, `inners`), un oggetto di una
+collezione di `cluster.detected`, o un pezzo chiuso di `result.loose` (D162).
+Non una sua posizione nel risultato (D177): resta giusto se dopo un consumer
+riordina le collezioni o promuove una curva (`Result.promote`).
 
 Regola: il bordo più vicino alla punta, se entro `distance` (a parità, vince
 l'elemento più piccolo); altrimenti il più piccolo elemento chiuso, non il
@@ -1027,27 +1028,17 @@ altrimenti `None` (freccia fuori dal pezzo). Non legge la stringa.
 ### `measured_references`
 
 ```python
-topo.measured_references(result: Result, text: Text,
-                         distance=0.5) -> list[str]
+topo.measured_references(result: Result, text: Text, *,
+                         distance=0.5) -> list
 ```
 
-Gli elementi su cui cadono i `measured_points` di `text`, come percorsi in
-`result` (stesso formato di `target`): per ogni punto l'elemento il cui bordo
-passa entro `distance` (a parità il più piccolo). Senza doppioni,
-nell'ordine dei punti: due punti opposti su un cerchio danno il cerchio, due
-capi uno o due elementi. Non legge la stringa.
+Gli elementi su cui cadono i `measured_points` di `text`, gli oggetti stessi
+come `target`: per ogni punto l'elemento il cui bordo passa entro `distance`
+(a parità il più piccolo). Senza doppioni, nell'ordine dei punti: due punti
+opposti su un cerchio danno il cerchio, due capi uno o due elementi. Non
+legge la stringa.
 
 **Non muta** niente.
-
-### `resolve_target`
-
-```python
-topo.resolve_target(result: Result, target: str | None) -> Any
-```
-
-Il passo inverso: il contorno o la feature a cui punta un `target`, o `None`
-se il percorso non esiste più in `result` (per esempio dopo una detection che ha
-spostato i fori da `inners` a `holes`: ancorare dopo aver scelto le feature).
 
 ---
 
@@ -1377,11 +1368,11 @@ dice già: il formato resta in `source_kind`.
 | `cluster_ref` | indice del cluster che lo contiene (da `anchor_texts`) |
 | `source_kind` | il tipo di entità nel formato sorgente (`"TEXT"`, `"MTEXT"`, `"DIMENSION"`, `"LEADER"`, `"MULTILEADER"` in un DXF) |
 | `pointer` | una polilinea che parte dalla punta (`pointer[0]`): dove il testo indica |
-| `target` | l'elemento su cui cade la punta (da `anchor_texts`) |
+| `target` | l'elemento su cui cade la punta, l'oggetto stesso (da `anchor_texts`, D177); fuori da `repr` e da `==` |
 | `measured_points` | i punti sulla geometria fra cui è stato misurato il numero: due capi; due punti opposti di un cerchio; un punto di un arco |
 | `measure` | il numero che la sorgente dice di aver misurato; `None` se non lo dice (un PDF) |
 | `measure_is_angle` | `measure` è un angolo, non una lunghezza |
-| `references` | gli elementi su cui cadono i `measured_points` (da `anchor_texts`) |
+| `references` | gli elementi su cui cadono i `measured_points`, gli oggetti stessi (da `anchor_texts`, D177); fuori da `repr` e da `==` |
 | `rendered` | l'immagine che la sorgente disegna attorno alla stringa (linee, frecce, altri testi): `to_dxf` riscrive quella invece della sola stringa |
 
 `role` dice cosa è il testo per chi lo usa (`"title_block"`, `"part_code"`,
