@@ -163,9 +163,27 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       veloce; allora `EXTRA_ANGLES` sui disegni interi può tornare vuoto.
       Per ripartire: codice vecchio = `3ea516b^` (un worktree); ogni
       ritaglio vale solo se è instabile lì e stabile su main; chi non si
-      riproduce ritagliato resta allo stress a mano, elencato. Opzioni da
-      far scegliere: A micro-casi + `EXTRA_ANGLES` vuoto (~3:25, consigliata),
-      B micro-casi e secondo angolo tenuto (~3:50), C niente.
+      riproduce ritagliato resta allo stress a mano, elencato. Scelta il
+      30 ottobre: **A**, micro-casi + `EXTRA_ANGLES` vuoto (~3:25); scartate
+      B (micro-casi e secondo angolo tenuto, ~3:50) e C (niente).
+- [ ] **Passata sui disegni di snapdraw** (decisa il 30 ottobre, dopo A):
+      113 DXF distinti di snapdraw non sono in topo (per contenuto). Uno
+      script a mano, fuori dalla suite, li legge senza copiarli (sola
+      lettura; `drafts/disegni_da_anonimizzare/` ha dati cliente e
+      `pipeline_output/` è geometria già passata da topo: valgono meno),
+      lancia `heal()` e `island()` e controlla gli invarianti di
+      `tests/invariants.py` (`is_valid`, niente perso, stabile a rimescolo e
+      rotazione); i falliti vanno in `_debug`. Un fallito entra nella suite
+      solo come micro-caso costruito con l'API di topo, mai come fixture.
+- [ ] **Generatore di disegni credibili** (deciso il 30 ottobre, dopo la
+      passata su snapdraw): compone forme geometriche vere (contorni con
+      raccordi, cerchi e asole dentro, archi tangenti, spline, annidamenti),
+      poi le guasta come i file veri (piccoli buchi, ripassati, segmenti
+      spezzati, versi invertiti, ordine rimescolato, rotazioni). La risposta
+      è nota per costruzione (contorni, contenimento, aree): ogni disegno è
+      un test senza golden. Nella suite pochi semi fissi (tetto di tempo);
+      passate grandi a mano. Da decidere lì: `hypothesis` come dipendenza
+      di test, per ridurre da solo un fallito al caso minimo.
 - [ ] **G10** Rewrite della history (`git filter-repo` + `--message-callback`,
       un solo force-push), contro le liste di D76–D78.
 - [x] **G11** `scripts/release_check.py` — scritto il 22 ottobre: suite
