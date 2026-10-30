@@ -25,7 +25,9 @@ questa sezione. Il dettaglio di ogni punto sta più sotto o in `MAP.md`.
 **Regola d'ingresso (D158, temporanea — si cancella a 1.0-ready):** dopo la
 passata delle invarianti di D143 su tutti i fixture, entra qui solo ciò che
 rende rossa una di quelle invarianti su un fixture del repo. Il resto è 1.x.
-Le invarianti invece restano nella suite per sempre. Passata fatta il 23
+Le invarianti invece restano nella suite per sempre. Le richieste dei
+consumer, finché il cancello è aperto, vanno tutte in "Dopo la 1.0" (D174;
+D172 è entrata per errore). Passata fatta il 23
 ottobre (D159): i rossi sono G6c, G6d, G7 qui sotto (G6b chiuso, D163), ognuno nel
 registro dei difetti noti del suo test (skip con la voce del cancello; un
 caso che torna verde fa fallire il test finché non esce dalla lista).
@@ -69,6 +71,18 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       "Implemented"): golden aggiornati nei soli campi d'area. Il
       baricentro c'è (`ring_centroid`), esce come `centroid` con G13.
       Restano su `polygon.area` ordine e verso dei contorni: via con G13.
+- [ ] **G14** Allineare la superficie a come una libreria matura fa le sue
+      API, una volta sola (D174, riapre D148: Federico, 30 ottobre). Il
+      metro è la pratica di scikit-learn/numpy/shapely, **non** come i
+      consumer di Federico chiamano topo (sono suoi: di parte). Tre passi,
+      ognuno con una fine: (1) la regola — cos'è pubblico, la promessa di
+      compatibilità sul modello scikit-learn, il namespace sperimentale, le
+      regole di forma — letta da Federico prima di scriverla, poi D## e
+      riga in CLAUDE.md; (2) una passata sui nomi pubblici (41 `topo`, 40
+      `topo.geometry`, 16 `topo_dxf`, più i sottomoduli esposti) con la sola
+      lista delle regole → tabella, Federico sceglie, tutte le rotture in
+      **una** release; (3) test che bloccano le regole verificabili a
+      macchina. Non si allarga: niente nomi nuovi, niente rifacimenti.
 
 **Promessa — D143, provata sui fixture**
 - [x] **G3** Test di fedeltà a due vie — `tests/real/test_fidelity.py`

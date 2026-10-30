@@ -6436,3 +6436,29 @@ the question came up.
 Consumers to update in their own sessions: snapbend (`flat/detect.py`, two
 calls), snapdraw (`tag_features`, still to adopt D172). `main` → **0.24.0**
 (D155: a public name removed, second digit).
+
+### D174 — reopening D148: the gate gets G14, one alignment of the API with mature-library practice ✅
+Federico, 30 October. topo has bumped 0.x.0 for a long time, because each
+step in a consumer showed that some name should be shaped differently, and
+the name was changed. After 1.0 that must not continue as a major bump every
+week, and "then it is a 2.0" is not an answer to a design wish: it only moves
+today's churn to the first digit.
+
+**The yardstick.** The consumers today (snapdraw, snapbend, smoother, pippo,
+snapfence) are all Federico's, so how they call topo is biased evidence. The
+surface is judged once against how a mature library designs and evolves its
+API. The closest case is scikit-learn: years at 0.x, then a 1.0 that declared
+the surface stable rather than breaking it, with a written deprecation policy
+from then on.
+
+**Why in the gate.** Before 1.0 a break costs nothing. After 1.0 every fix
+becomes a deprecation to carry. Federico: "ho bisogno di essere più
+tranquillo possibile alla release".
+
+**Bounded.** Three steps (TODO.md G14): the rule, read by Federico before it
+is written; one pass over the public names against that rule only, giving a
+table he decides on, with all breaks in one release; tests for whatever the
+machine can check. No new names, no rewrites.
+
+Also: while the gate is open, consumer requests go to "after 1.0", which is
+what D158 already says. D172 should have gone there, and entered by mistake.
