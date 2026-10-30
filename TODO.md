@@ -28,7 +28,7 @@ rende rossa una di quelle invarianti su un fixture del repo. Il resto è 1.x.
 Le invarianti invece restano nella suite per sempre. Le richieste dei
 consumer, finché il cancello è aperto, vanno tutte in "Dopo la 1.0" (D174;
 D172 è entrata per errore). Passata fatta il 23
-ottobre (D159): i rossi sono G6c, G6d, G7 qui sotto (G6b chiuso, D163), ognuno nel
+ottobre (D159): i rossi sono G6d, G7 qui sotto (G6b chiuso, D163; G6c, D179), ognuno nel
 registro dei difetti noti del suo test (skip con la voce del cancello; un
 caso che torna verde fa fallire il test finché non esce dalla lista).
 
@@ -119,20 +119,15 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       esatto (`rim.off_rim`), in `island()` (ripiego D100) e nel ripiego
       polygonize di `heal()`. `KNOWN["out once"]` e `KNOWN_TWICE` vuoti.
       DXF da guardare: `_debug/2026-10-25_topo_G6b/`.
-- [ ] **G6c** ← **si riparte da qui** (30 ottobre: G14 punto 11 e regola 1
-      chiusi, D177/D178). `island()` dipende dall'ordine delle entità e dal sistema di
-      riferimento (passata D158, 23 ottobre). Rimescolando gli edge cambiano
-      gli inner su 22 dei 31 disegni d'isole; ruotando di 0.7 rad, spostando
-      a (2.5e6, −1.5e6) o specchiando, su 20. Due famiglie viste: (a) inner
-      persi — fessure larghe 0.5 = `max_gap` (anch_02, anch_04 col solo
-      specchio, anch_01/regr_03) e un 14×14 su regr_04 anche solo
-      spostato; (b) inner che cambiano forma con l'ordine (anch_05 108 mm →
-      8.5, anch_08 204 → 695, anch_06, regr_01, anch_02) — un ciclo scelto
-      fra più giri. `heal()` invece passa tutto: ordine, rotazione,
-      traslazione, specchio, outer e inner. Causa da trovare prima del
-      rimedio. **Invariante:** `TestEdgeOrder`, `TestRigidMotion` di island
-      (`KNOWN["edge order"]`, `KNOWN["rigid motion"]`). Prima di G7.
-- [ ] **G6d** `heal()` su `SEGNI_TRACCIATI` (tol 0.5): tre cave larghe
+- [x] **G6c** `island()` non dipende più da ordine e sistema di
+      riferimento — fatto, D179 (30 ottobre). Dopo D161 restava un outer di
+      anch_08 che cambiava ruotando di 0.7 rad: il ripiego D100 (unione
+      delle facce) arrotondava la rete su una griglia di 0.01 fissa agli
+      assi, e due punti a 0.003 si toccavano solo se cadevano nella stessa
+      cella. Ora i contatti del ripiego si decidono per distanza (nodi del
+      grafo, linee entro epsilon collegate). `KNOWN` di island vuoto. DXF da
+      guardare: `_debug/2026-10-30_topo_G6c/`.
+- [ ] **G6d** ← **si riparte da qui** `heal()` su `SEGNI_TRACCIATI` (tol 0.5): tre cave larghe
       0.4–0.5 mm restano nell'outer letto da solo e si riempiono quando ci
       sono le corde (`TestChordsKeepTheOuter`, `KNOWN_CHORDS`): l'esito su
       una fessura larga quanto la tolleranza dipende da edge che non la
@@ -193,6 +188,10 @@ Decisi con Federico il 25 ottobre, da fare in 1.x:
   Una griglia nel parametro dell'intera lo renderebbe un pezzo del suo
   poligono. Serve solo se si vede un difetto (finti buchi/sovrapposizioni
   fra pezzi della stessa spline); nessun rosso oggi (D167).
+Trovato con G6c (D179), da fare in 1.x:
+- **il ripiego D100 senza edge interi sul bordo dell'unione** restituisce
+  `None` e vince il giro più piccolo: una V col cerchio inscritto (lati che
+  lo sfiorano) si legge come il solo cerchio. Nessun rosso sui fixture.
 Deciso con Federico il 30 ottobre, da fare in 1.x:
 - **in `island()` i pezzi dello stesso cerchio/retta si ricompongono anche
   in `loose`** (richiesta snapdraw/pippo, misure in "richieste dalla

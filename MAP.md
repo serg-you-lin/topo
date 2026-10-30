@@ -6702,3 +6702,52 @@ nothing to hold until the first deprecation.
 | `covered_rectangles(items, 50)` | `covered_rectangles(items, min_side=50)` |
 
 `main` stays **0.26.0**: not pushed yet, same release as D177.
+
+### D179 — G6c: D100's union of faces decides contacts by distance, not by a grid cell ✅
+
+What was left of G6c after D161: on `anch_08` (and `anch_08_noframe`) one outer
+changed when the drawing was turned by 0.7 rad — 48 mm² apart, two small faces
+at the two ends of an isometric part. Order of the entities, translation far
+from the origin, a quarter turn and the mirror did not change it.
+
+**Cause.** The walk on the graph (`_outer_face_walk`) was identical in both
+frames: it decides contacts by distance (`cluster_points` at `GRAPH_EPSILON`,
+a rigid motion keeps distances). On this part it stops short (16 311 of
+48 465 mm²) because of a T on the interior of a spline, which `split_at_crossings`
+does not cut (splines and ellipses stay whole, only used as knives), so D100's
+fallback — the union of the closed faces — gives the outer. That fallback
+built the network with `unary_union(..., grid_size=epsilon)`: GEOS snap-rounds
+every vertex onto a 0.01 mm grid fixed to the axes and the origin. Two points
+0.003 apart touch only if they fall into the same cell; turn the drawing and
+the cell boundary moves. Here a line ends 0.003 from the side of a tessellated
+ellipse: in one frame the face closed, in the other it did not. The grid also
+did work nothing else did, by luck of position: T's on spline interiors (regr_04,
+0.0005 and 0.0001 mm) and a line that misses an inscribed circle by 0.0037
+without crossing it (anch_06). Removing the grid without replacing that work
+lost them (regr_04 6 islands instead of 4, anch_06's tip face).
+
+**Fix** (`outer_face._network`): the fallback's network is built with the
+contacts decided by distance, the criterion of D101 and of the graph: endpoints
+moved onto the graph's nodes (`_on_nodes`), two lines that do not touch but pass
+within `epsilon` linked at their nearest points (a T on a spline, a line
+grazing a circle), a free endpoint within `epsilon` of a line linked to it;
+the union then runs on `UNION_GRID = 1e-6`, below the node grid (D113), where
+only arithmetic decides. A rigid motion keeps every one of these distances.
+
+**Measured on the 31 island drawings, old against new:** only `anch_08` changes
+in shape (+47.9 mm², the two faces, now in every frame: the arc and the line
+that close them are the outermost geometry). `anch_06`, `regr_01`, `regr_04`
+move by slivers 0.003–0.004 mm thick on average (the old grid's rounding; the
+new outer lies on the input, up to 0.038 mm where it follows a spline's hook the
+grid flattened). Goldens unchanged (they store bbox and inner count). `island()`
+~8% slower (~45 ms per drawing). `heal()` does not use this code.
+
+**Held by:** `TestScrambled` with an empty `KNOWN` (anch_08 out of the list);
+`tests/unit/core/test_outer_face.py::TestContattiPerDistanza` — a square whose
+base is a spline, sides ending 0.004 above it, read at fractions of the old
+cell and turned (red on the old code at dy 0.002, 0.004 and 2.0 rad), and a V
+with an inscribed circle missed by 0.004 (red without the line-to-line links).
+
+**Left open, 1.x:** when no edge lies entirely on the rim of the union,
+`_faces_union_loop` returns `None` and the walk's smaller loop wins (the V with
+its circle reads as the circle alone). Not red on any fixture (D158).
