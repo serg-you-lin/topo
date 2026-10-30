@@ -38,7 +38,7 @@ Output: set[int]  — id() degli Edge da escludere dal grafo dei contorni
 
 from .graph import Graph, build_node_graph
 from .edge import Edge
-from .noding import GRAPH_EPSILON, edge_geometry, split_at_crossings
+from .noding import GRAPH_EPSILON, NodedEdges, edge_geometry, split_at_crossings
 from .outer_face import outer_face_passes
 
 
@@ -47,7 +47,9 @@ class NonContourEdgeDetector:
     def __init__(self, tolerance: float = 0.1):
         self.tolerance = tolerance
 
-    def detect(self, graph: Graph, edges: list[Edge]) -> set[int]:
+    def detect(self, graph: Graph, edges: list[Edge], planar: bool = False) -> set[int]:
+        """id(edge) delle catene che non sono contorno. `planar`: gli edge sono
+        già la rete piana di `split_at_crossings` (island), non si rispezzano."""
         branching = set(graph.branching_nodes())
         if not branching:
             return set()
@@ -62,7 +64,8 @@ class NonContourEdgeDetector:
         if not candidates:
             return set()
 
-        noded = split_at_crossings(edges, self.tolerance)
+        noded = (NodedEdges(pieces=list(edges), parent={id(e): e for e in edges}) if planar
+                 else split_at_crossings(edges, self.tolerance))
         plane = build_node_graph(noded.pieces, epsilon=GRAPH_EPSILON)
         wanted = {id(e) for e in candidates}
         outside = {}   # id(edge) -> lunghezza dei suoi pezzi che confinano con l'esterno

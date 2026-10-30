@@ -266,7 +266,9 @@ come contorno. `island` parte da un fatto globale, cosa sta fuori:
    estremi reali, catene tassellate rifittate come archi/spline, merge/weld di
    `heal`, gap fino a `max_gap` senza mai spostare un estremo più di così
    (anche `max_gap` è del chiamante, D98)
-4. **rete piana** (`split_at_crossings`): ogni incrocio diventa un nodo
+4. **rete piana** (`split_at_crossings`, D180): ogni contatto, deciso una
+   volta per coppia sulle curve vere, diventa un nodo condiviso da tutti gli
+   edge che tocca
 5. **faccia esterna** (`outer_face`): si parte dal punto più a sinistra della
    geometria, a ogni nodo si gira il meno possibile in senso antiorario; un
    edge percorso andata e ritorno è una sporgenza (asse, segno)
@@ -356,6 +358,10 @@ coincidono davvero. Serve in tre modi:
    d'incrocio quando l'angolo è piccolo). Trattarle come due nodi lascia uno
    sliver fra loro che può spaccare in due una faccia che doveva restare una
    sola (MAP.md D100, la causa isolata e risolta alla radice da D101).
+   Con D180 il contatto si decide una volta sola per coppia e dà un nodo
+   condiviso: l'identità di nodo (T, due estremi, tangenza mancata) è entro
+   `GRAPH_EPSILON`, come già faceva il grafo; `tolerance` fonde solo gli
+   incontri di una stessa coppia, perché su tutta la rete percola (D101).
 
 Un gap 4× la tolleranza **non** viene chiuso — è una scelta, non un bug: se il
 file ha buchi grossi, o sono voluti o l'unità di misura è sbagliata. Workaround:

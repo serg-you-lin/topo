@@ -26,7 +26,7 @@ from pathlib import Path
 
 import numpy as np
 from shapely import STRtree, points
-from shapely.geometry import LineString
+from shapely.geometry import LineString, box
 
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
@@ -119,7 +119,15 @@ def _untouched_curves(edges) -> list:
     return out
 
 
-def _cut_in_pieces(coeffs, source_edges, written_edges) -> bool:
+def _written_splines(written_edges):
+    """(spline, indice sui loro rettangoli) delle spline scritte: la
+    discretizzazione fine si fa solo per quelle vicine a una curva."""
+    splines = [e.segment for e in written_edges if isinstance(e.segment, topo.primitives.BSplineSeg)]
+    boxes = [box(*LineString(s.discretize(tolerance=SAMPLE_TOL)).buffer(SAMPLE_TOL).bounds) for s in splines]
+    return splines, STRtree(boxes)
+
+
+def _cut_in_pieces(coeffs, source_edges, written) -> bool:
     """Vero se la spline `coeffs` del sorgente esce tagliata, non rifittata:
     in pezzi che stanno su di lei entro CUT_EPS e la coprono tutta, a
     meno di CUT_GAP. Una
@@ -130,9 +138,9 @@ def _cut_in_pieces(coeffs, source_edges, written_edges) -> bool:
     source = next(e.segment for e in source_edges if _coefficients(e.segment) == coeffs)
     line = LineString(source.discretize(tolerance=CUT_SAMPLE))
     zone = line.buffer(CUT_EPS)
-    on = [LineString(pts) for e in written_edges
-          if isinstance(e.segment, topo.primitives.BSplineSeg)
-          and len(pts := e.segment.discretize(tolerance=CUT_SAMPLE)) >= 2 and zone.covers(LineString(pts))]
+    splines, tree = written
+    near = (splines[k].discretize(tolerance=CUT_SAMPLE) for k in sorted(tree.query(zone)))
+    on = [g for pts in near if len(pts) >= 2 and zone.covers(g := LineString(pts))]
     return len(on) >= 2 and line.length - sum(g.length for g in on) <= CUT_GAP
 
 
@@ -175,7 +183,9 @@ def _make_fidelity_test(rel: str, reading: str):
         written = [c for c in map(_coefficients, (e.segment for e in back.edges)) if c]
         missing = [c for c in _untouched_curves(doc.edges)
                    if not any(_same(c, w, COEFF_EPS) for w in written)]
-        missing = [c for c in missing if not _cut_in_pieces(c, doc.edges, back.edges)]
+        if missing:
+            written_splines = _written_splines(back.edges)
+            missing = [c for c in missing if not _cut_in_pieces(c, doc.edges, written_splines)]
         self.assertEqual(missing, [], "curve non toccate riscritte con altri coefficienti")
     return test
 

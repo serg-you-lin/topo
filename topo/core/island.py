@@ -182,7 +182,7 @@ def read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandRe
         rest = [e for e in rest if id(e) not in outside_ids]
     # D161: dentro il contorno nessun inner, tutto il resto va in `loose`
     full_graph = build_node_graph(pieces, epsilon=GRAPH_EPSILON)
-    non_contour_ids = NonContourEdgeDetector(tolerance).detect(full_graph, pieces)
+    non_contour_ids = NonContourEdgeDetector(tolerance).detect(full_graph, pieces, planar=True)
     reading.non_contour = [e for e in rest if id(e) in non_contour_ids]
     reading.unclassified = [e for e in rest if id(e) not in non_contour_ids]
     return reading

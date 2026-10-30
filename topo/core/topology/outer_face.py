@@ -26,7 +26,6 @@ from typing import List, Optional
 
 import numpy as np
 import shapely
-from shapely import STRtree
 from shapely.geometry import Polygon
 from shapely.ops import polygonize, unary_union
 
@@ -169,7 +168,10 @@ def _first_step(graph: Graph, component):
 def _leaving_angle(edge: Edge, node, graph: Graph) -> float:
     """Direzione con cui `edge` lascia `node`, letta a DIRECTION_SAMPLE (o a
     metà edge): un raccordo tangente a una retta si distingue da lei solo
-    più avanti, non al primo micron."""
+    più avanti, non al primo micron. Si misura dal nodo, non dal primo punto
+    della curva: un contatto entro tolerance (D180) mette il nodo fino a
+    tanto dalla curva, e due pezzi paralleli a quella distanza lo lasciano
+    con direzioni diverse."""
     pts = edge.segment.discretize(tolerance=DEFAULT_TOLERANCE)
     if graph.canonical(edge.start) != node:
         pts = list(reversed(pts))
@@ -184,7 +186,7 @@ def _leaving_angle(edge: Edge, node, graph: Graph) -> float:
                       pts[i][1] + t * (pts[i + 1][1] - pts[i][1]))
             break
         walked += step
-    return math.atan2(target[1] - pts[0][1], target[0] - pts[0][0])
+    return math.atan2(target[1] - node[1], target[0] - node[0])
 
 
 def _faces_union_loop(edges: List[Edge], epsilon: float):
@@ -219,41 +221,11 @@ def _faces_union_loop(edges: List[Edge], epsilon: float):
 
 
 def _network(edges: List[Edge], epsilon: float):
-    """La rete di `edges` come linee shapely spezzate ai contatti, coi
-    contatti decisi per distanza (G6c): gli estremi sui nodi del grafo, e due
-    linee che non si toccano ma passano entro `epsilon` sono collegate nel
-    punto più vicino — il T su una spline o un'ellisse, che il noding non
-    spezza, una retta che sfiora un cerchio senza incrociarlo. Una griglia
-    `epsilon` fissa agli assi li cuciva solo se cadevano nella stessa cella,
-    e la cella cambia ruotando o spostando il disegno."""
+    """La rete di `edges` come linee shapely, con gli estremi sui nodi del
+    grafo. I contatti li ha già decisi il noding, una volta sola sulle curve
+    (D180): qui nessun collegamento per distanza fra discretizzazioni."""
     graph = build_node_graph(edges, epsilon=epsilon)
-    network = shapely.unary_union(_on_nodes(edges, graph), grid_size=UNION_GRID)
-    lines = list(getattr(network, "geoms", [network]))
-    if epsilon <= 0 or not lines:
-        return network
-    lines = np.array(lines, dtype=object)
-    tree = STRtree(lines)
-    # due linee che non si toccano ma passano entro `epsilon`: una retta
-    # quasi tangente a un cerchio senza incrociarlo, un estremo sull'interno
-    # di una spline
-    a, b = tree.query(lines, predicate="dwithin", distance=epsilon)
-    a, b = a[a < b], b[a < b]
-    apart = shapely.disjoint(lines[a], lines[b])
-    links = list(shapely.shortest_line(lines[a[apart]], lines[b[apart]]))
-    # un estremo libero entro `epsilon` da una linea che la sua tocca altrove
-    ends = np.vstack([shapely.get_coordinates(shapely.get_point(lines, 0)),
-                      shapely.get_coordinates(shapely.get_point(lines, -1))])
-    points, count = np.unique(ends, axis=0, return_counts=True)
-    free = shapely.points(points[count == 1])
-    p, q = tree.query(free, predicate="dwithin", distance=epsilon)
-    gap = shapely.distance(free[p], lines[q])
-    p, q, gap = p[gap > 0], q[gap > 0], gap[gap > 0]
-    order = np.lexsort((gap, p))
-    nearest = order[np.unique(p[order], return_index=True)[1]]
-    links += list(shapely.shortest_line(free[p[nearest]], lines[q[nearest]]))
-    if not links:
-        return network
-    return shapely.unary_union(list(lines) + links, grid_size=UNION_GRID)
+    return shapely.unary_union(_on_nodes(edges, graph), grid_size=UNION_GRID)
 
 
 def _on_nodes(edges: List[Edge], graph: Graph) -> list:

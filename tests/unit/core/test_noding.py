@@ -72,6 +72,62 @@ class TestSplitAtCrossings(unittest.TestCase):
         self.assertEqual(len(pieces_of(line)), 2)
 
 
+class TestContattoDecisoUnaVolta(unittest.TestCase):
+    """D180: ogni contatto si decide una volta per coppia, sulle curve vere,
+    e dà un nodo solo, la stessa tupla per tutti gli edge che tocca."""
+
+    def _pieces_of(self, noded, parent):
+        return [p for p in noded.pieces if noded.parent_of(p) is parent]
+
+    def test_t_a_meno_di_un_centesimo_condivide_il_nodo(self):
+        # il gambo finisce 0.004 sopra la base: la base si taglia e il suo
+        # nodo è l'estremo del gambo, non la proiezione arrotondata
+        base, stem = _line((0, 0), (10, 0)), _line((5, 0.004), (5, 5))
+        noded = split_at_crossings([base, stem], tolerance=0.05)
+        cuts = {p.end for p in self._pieces_of(noded, base)[:-1]}
+        self.assertEqual(cuts, {stem.start})
+
+    def test_t_su_una_spline_la_taglia(self):
+        from topo.core.primitives.segments import BSplineSeg
+        spline = BSplineSeg(degree=2, control_points=[(0, 0), (5, 2), (10, 0)],
+                            knots=[0, 0, 0, 1, 1, 1])
+        top = spline._evaluate(0.5)
+        curve = Edge(role="unknown", start=(0.0, 0.0), end=(10.0, 0.0), segment=spline)
+        stem = _line((round(top[0], 3), round(top[1] + 0.002, 3)), (5, 8))
+        noded = split_at_crossings([curve, stem], tolerance=0.05)
+        halves = self._pieces_of(noded, curve)
+        self.assertEqual(len(halves), 2)
+        self.assertTrue(all(isinstance(p.segment, BSplineSeg) for p in halves))
+        self.assertEqual(halves[0].end, stem.start)
+        self.assertEqual(halves[1].start, stem.start)
+
+    def test_tangenza_mancata_e_un_contatto(self):
+        # una retta passa 0.004 fuori da un cerchio senza toccarlo: un nodo
+        # condiviso, e il cerchio, toccato una volta sola, resta intero
+        c, line = _circle((0, 0), 5), _line((-10, 5.004), (10, 5.004))
+        noded = split_at_crossings([c, line], tolerance=0.05)
+        self.assertEqual(len(self._pieces_of(noded, line)), 2)
+        self.assertIn(c, noded.pieces)
+
+    def test_due_t_vicini_restano_due_nodi_ognuno_col_suo_gambo(self):
+        # due gambi a 0.03 l'uno dall'altro (< tolerance, > GRAPH_EPSILON): due
+        # contatti di coppie diverse, due nodi, ognuno uguale al suo gambo
+        base = _line((0, 0), (10, 0))
+        a, b = _line((5, 0), (5, 5)), _line((5.03, 0), (5.03, -5))
+        noded = split_at_crossings([base, a, b], tolerance=0.05)
+        nodes = [p.end for p in self._pieces_of(noded, base)[:-1]]
+        self.assertEqual(nodes, [a.start, b.start])
+
+    def test_un_lato_corto_non_sparisce(self):
+        # un lato di 0.008 fra due rette: i suoi due estremi non diventano
+        # un nodo solo, anche se ognuno è entro GRAPH_EPSILON dall'altro
+        left, short, right = _line((0, 0), (5, 0)), _line((5, 0), (5.008, 0)), _line((5.008, 0), (10, 3))
+        noded = split_at_crossings([left, short, right], tolerance=0.05)
+        piece = self._pieces_of(noded, short)
+        self.assertEqual(len(piece), 1)
+        self.assertNotEqual(piece[0].start, piece[0].end)
+
+
 class TestRenode(unittest.TestCase):
 
     def test_nodi_dal_punto_reale(self):
