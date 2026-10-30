@@ -32,7 +32,7 @@ Tutti gli esempi di questo documento sono scritti così (MAP.md D119).
 
 1. [Geometria in ingresso](#1-geometria-in-ingresso) — `load_segments`, `load_geometry`, `RoleRule`, `name_rules`, scrivere un adapter
 2. [Validazione](#2-validazione) — `validate`, `validate_result`
-3. [Elaborazione](#3-elaborazione) — `heal` / `island` e i suoi mattoni (core), `split`, `promote`, `anchor_texts` / `inject` (tools)
+3. [Elaborazione](#3-elaborazione) — `heal` / `island` e i suoi mattoni (core), `split`, `anchor_texts` / `inject` (tools)
 4. [Export](#4-export) — `save_json`, `to_json`, `save_xml`, `to_view_model`, `to_svg`, `save_svg`
 5. [Metadati](#5-metadati) — `build_metadata`, `set_schema`
 6. [Ispezione / debug](#6-ispezione--debug) — `inspect_document`, `inspect_result`
@@ -903,7 +903,7 @@ un testo alla parte che lo contiene; quelli che nessuna parte contiene
 vanno alla più vicina al suo contorno esterno fra **tutte** le parti (anche
 quelle scartate da `min_area`). Niente viene duplicato, niente perso: ogni
 elemento è copiato con `cluster_ref` riferito alla parte (`0` se il suo
-cluster la contiene, `None` altrimenti). Una curva promossa (`promote`) sta
+cluster la contiene, `None` altrimenti). Una curva promossa (`Result.promote`) sta
 già in `cluster.detected` e viaggia col suo cluster. Gli altri campi
 (sorgente, avvisi) sono copiati. Ogni writer prende un `Result`, quindi una
 parte va in DXF, SVG o testo allo stesso modo.
@@ -923,45 +923,6 @@ for part in topo.split(result, min_area=100.0):
     name = part.clusters[0].label
     topo_dxf.to_dxf(part, doc).saveas(f"{name}.dxf")
     topo.save_svg(part, f"{name}.svg")
-```
-
----
-
-### `promote`
-
-```python
-topo.promote(
-    result: Result,
-    curves,                           # un elemento di result.loose, o più d'uno
-    cluster: Cluster,                 # un elemento di result.clusters
-    name: str,                        # la collezione di cluster.detected
-    item=None,                        # cosa attaccare: la curva stessa se None
-) -> None
-```
-
-**Curve sciolte diventano parte di un cluster** (D137, D172). Toglie `curves`
-(una curva, o una sequenza) da `result.loose` e mette **un solo** `item`
-nella collezione `name` di `cluster.detected`, creandolo se manca. `item` è
-quello che il chiamante ha fatto delle curve (un suo oggetto con `role` e
-geometria, D90); con una curva sola può mancare, e allora è la curva stessa.
-Più curve lette come una cosa sola — un foro e la sua sede — sono un item.
-
-Cosa siano le curve lo decide chi chiama, e non conta dove stanno: una linea
-dentro il pezzo che un consumatore legge come asse, una guida fuori dal pezzo
-che indica un suo dettaglio. topo non promuove niente da sé.
-
-**Solleva `ValueError`**, senza toccare niente, se una curva non è in
-`result.loose` o è data due volte, se `curves` è vuoto, se `cluster` non è in
-`result.clusters`, o se le curve sono più d'una e `item` manca: una curva non
-sta mai in due posti, né si perde.
-
-```python
-for curve in list(result.loose):
-    if curve.cluster_ref is not None and is_axis(curve):   # la lettura è tua
-        topo.promote(result, curve, result.clusters[curve.cluster_ref], "axes")
-
-# un foro con la sua sede: due curve, un item
-topo.promote(result, [hole, seat], view, "features", item=my_counterbore)
 ```
 
 ---
@@ -1432,11 +1393,47 @@ Prodotto da `heal()`, arricchito da un consumatore / `inject()`.
 | `clusters` | `list[Cluster]` | un elemento per contorno esterno chiuso |
 | `is_valid` | `bool` | **controllalo prima di `split` o di scrivere (`topo_dxf.to_dxf`)** |
 | `warnings` / `errors` | `list[str]` | diagnostica |
-| `loose` | `list[OpenCurve \| ClosedCurve]` | ogni curva che non è contorno di nessun cluster: catene che non chiudono niente, tracce aperte, curve chiuse con un ruolo non strutturale (D137). `curve.cluster_ref` = indice del cluster il cui contorno esterno la contiene tutta, bordo e buchi compresi (una linea da lato a lato, una croce dentro un foro); `None` altrimenti. Con `island()` anche l'isola che la curva tocca (D99). Un consumatore la sposta in `cluster.detected` con `promote` |
+| `loose` | `list[OpenCurve \| ClosedCurve]` | ogni curva che non è contorno di nessun cluster: catene che non chiudono niente, tracce aperte, curve chiuse con un ruolo non strutturale (D137). `curve.cluster_ref` = indice del cluster il cui contorno esterno la contiene tutta, bordo e buchi compresi (una linea da lato a lato, una croce dentro un foro); `None` altrimenti. Con `island()` anche l'isola che la curva tocca (D99). Un consumatore la sposta in `cluster.detected` con `result.promote` |
 | `texts` | `list[Text]` | copiati da `heal()` dal `Document` |
 | `cluster_count` | property | `len(clusters)` |
 
 Metodo `to_dict()` → dizionario JSON-ready (usato internamente dagli export).
+
+#### `Result.promote`
+
+```python
+result.promote(
+    curves,                           # un elemento di result.loose, o più d'uno
+    cluster: Cluster,                 # un elemento di result.clusters
+    name: str,                        # la collezione di cluster.detected
+    item=None,                        # cosa attaccare: la curva stessa se None
+) -> None
+```
+
+**Curve sciolte diventano parte di un cluster** (D137, D172, D173). Toglie `curves`
+(una curva, o una sequenza) da `result.loose` e mette **un solo** `item`
+nella collezione `name` di `cluster.detected`, creandolo se manca. `item` è
+quello che il chiamante ha fatto delle curve (un suo oggetto con `role` e
+geometria, D90); con una curva sola può mancare, e allora è la curva stessa.
+Più curve lette come una cosa sola — un foro e la sua sede — sono un item.
+
+Cosa siano le curve lo decide chi chiama, e non conta dove stanno: una linea
+dentro il pezzo che un consumatore legge come asse, una guida fuori dal pezzo
+che indica un suo dettaglio. topo non promuove niente da sé.
+
+**Solleva `ValueError`**, senza toccare niente, se una curva non è in
+`result.loose` o è data due volte, se `curves` è vuoto, se `cluster` non è in
+`result.clusters`, o se le curve sono più d'una e `item` manca: una curva non
+sta mai in due posti, né si perde.
+
+```python
+for curve in list(result.loose):
+    if curve.cluster_ref is not None and is_axis(curve):   # la lettura è tua
+        result.promote(curve, result.clusters[curve.cluster_ref], "axes")
+
+# un foro con la sua sede: due curve, un item
+result.promote([hole, seat], view, "features", item=my_counterbore)
+```
 
 ### `Cluster`
 

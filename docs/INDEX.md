@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`83` modules · `504` module-level functions · `61` classes · `16027` lines of code.
+`82` modules · `503` module-level functions · `61` classes · `16005` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -392,7 +392,6 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_polyline_distance` | func | `topo/core/geometry/rings.py:291` |  |
 | `_polyline_points` | func | `topo_dxf/text_extractor.py:517` |  |
 | `_probe_point` | func | `topo/tools/split.py:138` | Punto rappresentativo di una curva, per darla alla parte più vicina. |
-| `promote` | func | `topo/tools/promote.py:22` | Toglie `curves` (una curva o più) da `result.loose` e mette un solo |
 | `_radius` | func | `topo/core/geometry/shape.py:135` | Raggio di un pezzo di cerchio; un'ellisse ad assi uguali è un cerchio, esattamente. |
 | `_raw_linetype_pattern` | func | `topo_dxf/adapter.py:40` | Pattern grezzo (lunghezza totale + tratti con segno, `+` = tratto, |
 | `Reach` | class | `topo/core/geometry/measure.py:155` | `segment_reach` di un segmento fissato, per molte direzioni. |
@@ -418,7 +417,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `resolve_role` | func | `topo/model/role_rule.py:106` | Ruolo della prima regola che matcha, in ordine; `unknown` se nessuna. |
 | `resolve_target` | func | `topo/tools/anchor.py:127` | L'oggetto (contorno, feature o curva di ``loose``) a cui punta un ``target``, o ``None``. |
 | `_restore_corners` | func | `topo/core/primitives/fitting.py:176` | Gli spigoli vivi che il campionamento ha smussato. Un pezzo curvo più |
-| `Result` | class | `topo/model/result.py:12` | Risultato completo di una sessione topo su un file DXF. |
+| `Result` | class | `topo/model/result.py:13` | Risultato completo di una sessione topo su un file DXF. |
 | `_result_bbox_center` | func | `topo/tools/rotate.py:219` | Centro del bbox unito degli outer di tutti i cluster — vedi `rotate_to_longest`. |
 | `_reversed` | func | `topo/core/geometry/regions.py:195` |  |
 | `_rim_runs` | func | `topo/core/topology/rim.py:173` | [((edge, verso), primo vertice, ultimo vertice)] lungo l'anello: copertura greedy |
@@ -626,7 +625,7 @@ Same name defined at module level in different modules. Not automatically a bug 
 
 ### `topo/` (root)
 
-#### `topo/__init__.py` — 184 lines
+#### `topo/__init__.py` — 182 lines
 
 _topo_
 
@@ -1302,10 +1301,10 @@ _model/document.py_
 - **class** `Document` — L37 — Documento di dominio prodotto da load_dxf() / load_svg() / load_pdf().
   - methods: `node_tolerance`
 
-#### `topo/model/result.py` — 57 lines
+#### `topo/model/result.py` — 92 lines
 
-- **class** `Result` — L12 — Risultato completo di una sessione topo su un file DXF.
-  - methods: `cluster_count`, `has_issues`, `to_dict`
+- **class** `Result` — L13 — Risultato completo di una sessione topo su un file DXF.
+  - methods: `cluster_count`, `has_issues`, `promote`, `to_dict`
 
 #### `topo/model/role.py` — 150 lines
 
@@ -1411,12 +1410,6 @@ _inject.py_
 _topo/tools/non_contour.py_
 
 - `non_contour_candidates(doc: Document, tolerance: Optional[float]=None) -> List[Edge]` — L41 — Edge di `doc.edges` che il criterio topologico di `heal()` escluderebbe dal
-
-#### `topo/tools/promote.py` — 55 lines
-
-_topo/tools/promote.py_
-
-- `promote(result: Result, curves: OpenCurve \| ClosedCurve \| Sequence[OpenCurve \| ClosedCurve], cluster: Cluster, name: str, item: Optional[Any]=None) -> None` — L22 — Toglie `curves` (una curva o più) da `result.loose` e mette un solo
 
 #### `topo/tools/rotate.py` — 259 lines
 
@@ -1669,7 +1662,7 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 
 | module | imports |
 |---|---|
-| `topo/__init__.py` | `topo` · `topo.core` · `topo.core.geometry_input` · `topo.core.heal` · `topo.core.island` · `topo.core.primitives.fitting` · `topo.inspect` · `topo.io.exporter` · `topo.io.shapes` · `topo.io.svg` · `topo.io.text` · `topo.io.view_model` · `topo.model` · `topo.model.role` · `topo.model.role_rule` · `topo.model.style` · `topo.rules.validator` · `topo.tools.anchor` · `topo.tools.inject` · `topo.tools.non_contour` · `topo.tools.promote` · `topo.tools.rotate` · `topo.tools.split` |
+| `topo/__init__.py` | `topo` · `topo.core` · `topo.core.geometry_input` · `topo.core.heal` · `topo.core.island` · `topo.core.primitives.fitting` · `topo.inspect` · `topo.io.exporter` · `topo.io.shapes` · `topo.io.svg` · `topo.io.text` · `topo.io.view_model` · `topo.model` · `topo.model.role` · `topo.model.role_rule` · `topo.model.style` · `topo.rules.validator` · `topo.tools.anchor` · `topo.tools.inject` · `topo.tools.non_contour` · `topo.tools.rotate` · `topo.tools.split` |
 | `topo/core/geometry/__init__.py` | `topo.core.geometry.axis` · `topo.core.geometry.build` · `topo.core.geometry.intersections` · `topo.core.geometry.lines` · `topo.core.geometry.measure` · `topo.core.geometry.regions` · `topo.core.geometry.shape` |
 | `topo/core/geometry/axis.py` | `topo.core.primitives.segments` |
 | `topo/core/geometry/build.py` | `topo.core.primitives.segments` |
@@ -1714,7 +1707,7 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/model/curve.py` | `topo.core.geometry.integrals` · `topo.core.geometry.rings` · `topo.core.primitives.segments` · `topo.model.style` |
 | `topo/model/detected.py` | `topo.core.geometry.rings` · `topo.model.curve` |
 | `topo/model/document.py` | `topo.core.topology.edge` · `topo.model.text` |
-| `topo/model/result.py` | `topo.model.cluster` · `topo.model.curve` · `topo.model.text` |
+| `topo/model/result.py` | `topo.model.cluster` · `topo.model.curve` · `topo.model.detected` · `topo.model.text` |
 | `topo/model/role_rule.py` | `topo.model.role` · `topo.model.style` |
 | `topo/model/style.py` | `topo.model.role` |
 | `topo/model/text.py` | `topo.model.role` |
@@ -1725,7 +1718,6 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/tools/anchor.py` | `topo.core.primitives.polygon_builder` · `topo.model.curve` · `topo.model.result` · `topo.model.role` · `topo.model.text` |
 | `topo/tools/inject.py` | `topo.core.primitives.polygon_builder` · `topo.tools.anchor` |
 | `topo/tools/non_contour.py` | `topo.core.healing.steps` · `topo.core.topology.edge` · `topo.model.document` |
-| `topo/tools/promote.py` | `topo.model.cluster` · `topo.model.curve` · `topo.model.detected` · `topo.model.result` |
 | `topo/tools/rotate.py` | `topo.core.geometry.measure` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.model.cluster` · `topo.model.contour` · `topo.model.curve` · `topo.model.document` · `topo.model.result` |
 | `topo/tools/split.py` | `topo.core.geometry.measure` · `topo.core.primitives.polygon_builder` · `topo.model` |
 | `topo/tools/strips.py` | `topo.core.geometry.strips` · `topo.core.primitives.segments` |

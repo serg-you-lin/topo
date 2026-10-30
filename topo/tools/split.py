@@ -39,7 +39,7 @@ def split(
     fra TUTTE le parti (anche quelle scartate da `min_area`). Niente viene
     duplicato: ogni elemento sta in una parte sola, copiato con
     `cluster_ref` riferito alla parte (0 se il suo cluster la contiene,
-    `None` altrimenti). Una curva promossa (`topo.promote`) sta già nel suo
+    `None` altrimenti). Una curva promossa (`result.promote`) sta già nel suo
     cluster. Gli altri campi del `Result` (sorgente, avvisi) sono copiati.
 
     `namer(i, cluster)` — se passato — assegna `cluster.label`, così il nome
