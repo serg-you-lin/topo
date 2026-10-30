@@ -41,11 +41,7 @@ def _keys(text: str) -> frozenset:
 # difetti veri trovati da queste invarianti, aperti nel cancello (TODO.md):
 # invariante → (voce, disegni). Ogni caso esce come skip con la sua voce; quando
 # un caso passa il test fallisce finché non esce dalla lista (D158)
-KNOWN = {
-    # la lettura cambia con l'ordine delle entità o con un moto rigido
-    "scrambled": ("G6c", _keys(
-        "golden_anchoring/anch_08_noframe golden_islands/anch_08")),
-}
+KNOWN: dict = {}
 
 
 def _check(test, invariant: str, dxf: Path, check) -> None:

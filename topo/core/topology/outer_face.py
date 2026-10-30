@@ -24,7 +24,9 @@ import math
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+import numpy as np
 import shapely
+from shapely import STRtree
 from shapely.geometry import Polygon
 from shapely.ops import polygonize, unary_union
 
@@ -37,6 +39,7 @@ from .rim import face_segments, off_rim
 from ..primitives.segments import DEFAULT_TOLERANCE
 
 DIRECTION_SAMPLE = 3.0   # mm — la direzione di un edge a un nodo si legge fin qui (al massimo a metà edge)
+UNION_GRID = 1e-6        # mm — griglia dell'unione delle facce (D100): sotto quella dei nodi, decide solo l'aritmetica
 
 
 @dataclass
@@ -186,15 +189,14 @@ def _leaving_angle(edge: Edge, node, graph: Graph) -> float:
 
 def _faces_union_loop(edges: List[Edge], epsilon: float):
     """(loop, segments, styles, polygon) sul bordo dell'unione delle facce
-    chiuse della rete, coi nodi sulla griglia `epsilon` (D100); None se la
+    chiuse della rete, coi contatti entro `epsilon` (D100, `_network`); None se la
     rete non chiude nessuna faccia. Se gli edge del bordo non si chiudono in
     un giro del grafo, il poligono è l'unione, il giro sono gli edge che ci
     stanno sopra per intero, e i segmenti si leggono percorrendo l'anello
     dell'unione (`rim.face_segments`, D106); un edge che ci corre sopra
     solo in parte è del giro, e il suo resto (`rim.off_rim`) è il quinto
     elemento."""
-    faces = list(polygonize(shapely.unary_union([edge_geometry(e) for e in edges],
-                                                grid_size=max(epsilon, 1e-6))))
+    faces = list(polygonize(_network(edges, epsilon)))
     if not faces:
         return None
     union = unary_union(faces)
@@ -214,6 +216,62 @@ def _faces_union_loop(edges: List[Edge], epsilon: float):
     rest = [piece for j in sorted(used) if id(edges[j]) not in on_rim_ids
             for piece in off_rim(edges[j], used[j], region.exterior, band)]
     return [(e, False) for e in on_rim + partial], segments, styles, outer, rest
+
+
+def _network(edges: List[Edge], epsilon: float):
+    """La rete di `edges` come linee shapely spezzate ai contatti, coi
+    contatti decisi per distanza (G6c): gli estremi sui nodi del grafo, e due
+    linee che non si toccano ma passano entro `epsilon` sono collegate nel
+    punto più vicino — il T su una spline o un'ellisse, che il noding non
+    spezza, una retta che sfiora un cerchio senza incrociarlo. Una griglia
+    `epsilon` fissa agli assi li cuciva solo se cadevano nella stessa cella,
+    e la cella cambia ruotando o spostando il disegno."""
+    graph = build_node_graph(edges, epsilon=epsilon)
+    network = shapely.unary_union(_on_nodes(edges, graph), grid_size=UNION_GRID)
+    lines = list(getattr(network, "geoms", [network]))
+    if epsilon <= 0 or not lines:
+        return network
+    lines = np.array(lines, dtype=object)
+    tree = STRtree(lines)
+    # due linee che non si toccano ma passano entro `epsilon`: una retta
+    # quasi tangente a un cerchio senza incrociarlo, un estremo sull'interno
+    # di una spline
+    a, b = tree.query(lines, predicate="dwithin", distance=epsilon)
+    a, b = a[a < b], b[a < b]
+    apart = shapely.disjoint(lines[a], lines[b])
+    links = list(shapely.shortest_line(lines[a[apart]], lines[b[apart]]))
+    # un estremo libero entro `epsilon` da una linea che la sua tocca altrove
+    ends = np.vstack([shapely.get_coordinates(shapely.get_point(lines, 0)),
+                      shapely.get_coordinates(shapely.get_point(lines, -1))])
+    points, count = np.unique(ends, axis=0, return_counts=True)
+    free = shapely.points(points[count == 1])
+    p, q = tree.query(free, predicate="dwithin", distance=epsilon)
+    gap = shapely.distance(free[p], lines[q])
+    p, q, gap = p[gap > 0], q[gap > 0], gap[gap > 0]
+    order = np.lexsort((gap, p))
+    nearest = order[np.unique(p[order], return_index=True)[1]]
+    links += list(shapely.shortest_line(free[p[nearest]], lines[q[nearest]]))
+    if not links:
+        return network
+    return shapely.unary_union(list(lines) + links, grid_size=UNION_GRID)
+
+
+def _on_nodes(edges: List[Edge], graph: Graph) -> list:
+    """Le geometrie di `edges` con gli estremi sui nodi del grafo: due estremi
+    entro `epsilon` si toccano per distanza, come nella camminata, non perché
+    cadono nella stessa cella di una griglia fissa agli assi (G6c). Un pezzo
+    chiuso da sé (cerchio) resta com'è."""
+    geometries = [edge_geometry(e) for e in edges]
+    lines = [k for k, g in enumerate(geometries) if g.geom_type == "LineString"]
+    coords, owner = shapely.get_coordinates([geometries[k] for k in lines], return_index=True)
+    first = np.searchsorted(owner, np.arange(len(lines)))
+    last = np.append(first[1:], len(owner)) - 1
+    for n, k in enumerate(lines):
+        if edges[k].start != edges[k].end:
+            coords[first[n]] = graph.canonical(edges[k].start)
+            coords[last[n]] = graph.canonical(edges[k].end)
+    others = [g for g in geometries if g.geom_type != "LineString"]
+    return list(shapely.linestrings(coords, indices=owner)) + others
 
 
 def _largest_loop(edges: List[Edge], epsilon: float):
