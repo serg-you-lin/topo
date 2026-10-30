@@ -125,11 +125,10 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       identità entro GRAPH_EPSILON; `tolerance` fonde solo gli incontri di
       una stessa coppia, D101). Prova a 8 angoli: 20 → 0 instabili.
       `TestScrambled` legge ogni geometria distinta a due angoli (0.7 e
-      0.13; i gemelli una volta). **Da guardare (Federico):**
-      `_debug/2026-10-30_topo_G6c/anch_03_1_old.dxf` contro `anch_03_2_new.dxf`,
-      le due V col cerchio inscritto a x 745–754 e 769–777, y 392–398: prima
-      il contorno era il solo cerchio, ora V più cerchio. Se va bene, nessun
-      golden da rifare (passano). La prova larga resta
+      0.13; i gemelli una volta). anch_03, le due V col cerchio inscritto
+      (x 745–754 e 769–777, y 392–398): prima il contorno era il solo
+      cerchio, ora V più cerchio — guardato da Federico il 30 ottobre, il
+      nuovo è giusto; nessun golden da rifare. La prova larga resta
       `_debug/2026-10-30_topo_G6c/stress_8_angles.py` (~3 min, fuori suite:
       ogni angolo in più nella suite costa ~25 s). Il branch locale
       `g6c-noding-wip` si può cancellare.
@@ -158,6 +157,10 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       `island()` per angolo e per disegno), `test_fidelity` sui disegni con
       molte spline (anch_02, anch_03), le letture di `island()` (+10% con D180,
       spline in Python). Da decidere: quali letture condividere o togliere.
+      Idea di Federico: ritagliare dai 20 casi instabili di
+      `stress_8_angles.py` (codice prima di D180) i micro-casi, costruiti
+      con l'API di topo, e farli girare a 8 angoli in un test unitario
+      veloce; allora `EXTRA_ANGLES` sui disegni interi può tornare vuoto.
 - [ ] **G10** Rewrite della history (`git filter-repo` + `--message-callback`,
       un solo force-push), contro le liste di D76–D78.
 - [x] **G11** `scripts/release_check.py` — scritto il 22 ottobre: suite
