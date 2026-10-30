@@ -75,7 +75,7 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       API, una volta sola (D174, riapre D148: Federico, 30 ottobre). Il
       metro è la pratica di scikit-learn/numpy/shapely, **non** come i
       consumer di Federico chiamano topo (sono suoi: di parte). Tre passi,
-      ognuno con una fine: (1) la regola — cos'è pubblico, la promessa di
+      ognuno con una fine: (1) ✅ D175 la regola — cos'è pubblico, la promessa di
       compatibilità sul modello scikit-learn, il namespace sperimentale, le
       regole di forma — letta da Federico prima di scriverla, poi D## e
       riga in CLAUDE.md; (2) una passata sui nomi pubblici (41 `topo`, 40

@@ -6462,3 +6462,59 @@ machine can check. No new names, no rewrites.
 
 Also: while the gate is open, consumer requests go to "after 1.0", which is
 what D158 already says. D172 should have gone there, and entered by mistake.
+
+### D175 — G14 step 1: what is public, the compatibility promise, the form rules ✅
+Federico, 30 October: "la cosa migliore per uno come me. non voglio
+rilasciare la 2.0 tra 6 mesi". The model is scikit-learn's, and step 2 of
+G14 measures every public name against this entry only.
+
+**A. What is public.** The names in `__all__` of `topo`, `topo.geometry`,
+`topo_dxf` and of the public submodules, with their public attributes and
+methods, each with a card in `docs/API.md`. A submodule, or a name in it, is
+public if a user meets it in a result or needs it to build input. The
+building blocks of an algorithm are not. Everything else is internal and
+changes freely. Applied: `primitives` public; `model` public for the types a
+user meets, the rest judged name by name; `steps` (the pieces of `heal`) goes
+to experimental, because making it stable would freeze how the algorithm is
+built inside, while the recipes thread is still open.
+
+**B. The promise (scikit-learn's model, not strict semver).**
+- Patch 1.0.x: fixes only.
+- Minor 1.x.0: additions and deprecations. A name that changes shape arrives
+  under its new form; the old one stays and emits `FutureWarning` for two
+  minors, then goes, in a minor.
+- Major: none planned. Removing a deprecated name is not a reason for one.
+- A break is: a name removed or renamed, a default changed, a return type
+  changed, a documented behavior changed. Making a result honor the
+  documented invariants (D143) is a fix.
+- Every deprecated name carries the version it goes in, and a test fails
+  when topo reaches that version and the name is still there. For one
+  person, removal must not depend on anyone's memory.
+
+**C. Experimental.** `topo.experimental` (or a name declared outside the
+stable part, as D133 does): the promise does not apply. What is not sure at
+1.0 goes there instead of being half-fixed. Promoting a name to stable is an
+addition, so it is done in a minor; the old experimental name stays as a
+warned alias for two minors.
+
+**D. Form rules** (the list for step 2, and only this list):
+1. Data positional, options by name only (keyword-only). The data is what a
+   function works on; an option is how it works. An option added later
+   breaks no call. Today `island` does this and `heal` does not.
+   (scikit-learn made it mandatory at 1.0, SLEP009.)
+2. One way to do one thing: no duplicates.
+3. Mutation is declared: a function returns a new object, or mutates its
+   argument and says so. (pandas removed `inplace` for lack of this.)
+4. A method when it keeps an invariant of its object (`Result.promote`,
+   D173); a function when it computes. (shapely 2.0.)
+5. Consistent names: verbs for functions, nouns for types and properties,
+   one name for one concept everywhere.
+6. Typed, stable returns: no loose dicts, no silent `None` instead of an
+   error.
+7. Standard errors: `ValueError`/`TypeError` with a message that says what is
+   wrong.
+8. Every public name has its card in `docs/API.md` and an English docstring
+   (G9).
+
+Step 2 of G14 will show that the real surface is about 150 names with the
+submodules, not 97.

@@ -77,7 +77,12 @@ snapbend's `tests/gen_index.py` — change it in one, copy to the other.
    State the geometric or mathematical reason directly.
 9. **Never regenerate a golden to make a test pass** without first proving the code
    is right.
-10. **No client data in git.** Drawings under `tests/examples/` are anonymized by
+10. **Stability over churn (D174, D175).** After 1.0 a design change goes in a
+    minor: new form added, old one deprecated with `FutureWarning` for two
+    minors, then removed. No major is planned, and "then it is a 2.0" is
+    never an argument. The public surface is judged against D175's rules and
+    mature-library practice, never only by how Federico's own consumers call it.
+11. **No client data in git.** Drawings under `tests/examples/` are anonymized by
     Federico before they enter the repo. Never commit or push an original client
     drawing, a client name, an original file name or part code, or any line that
     maps an anonymized fixture back to its origin — not in code, docs, MAP.md or
