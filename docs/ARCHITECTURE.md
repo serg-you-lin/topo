@@ -49,7 +49,7 @@ niente, il modello è abbastanza ricco da tenere anche ciò che non ha classific
 - ogni curva che non è contorno di nessun cluster → `result.loose`
   (segmenti puri, formato-indipendenti; `cluster_ref` dice quale cluster la
   contiene, D137). Cosa sia lo decide un consumatore, che la sposta in
-  `cluster.detected` con `topo.promote`
+  `cluster.detected` con `result.promote` (D173)
 - testi → `result.texts` (`Text`, un tipo solo, D138: la stringa, la
   polilinea che indica, i punti fra cui è stato misurato il numero, e
   l'immagine disegnata attorno come primitive)
@@ -101,7 +101,8 @@ topo/
 │
 ├── model/        IL DOMINIO topo                     (dataclass pure, nessun tipo shapely — D166)
 │   ├── document.py   Document
-│   ├── result.py     Result
+│   ├── result.py     Result — `promote()` sposta curve da `loose` a
+│   │                 `cluster.detected`, mai in due posti (D137, D173)
 │   ├── cluster.py    Cluster — il contenitore, `detected` è l'overlay
 │   │                 di un consumatore (vocabolario aperto per nome — D44)
 │   ├── detected.py   DetectedFeatures — il contenitore dell'overlay (D44, D90)

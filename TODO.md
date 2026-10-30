@@ -491,9 +491,11 @@ sperimentale finché la riscrittura di D134 non la giudica.
 Richieste aperte:
 
 - ~~**snapdraw, `promote` di più curve come un solo item**~~ — fatto, D172
-  (30 ottobre): `promote(result, [foro, sede], cluster, name, item=...)`,
-  tutto o niente; `item` obbligatorio con più curve. Da fare in snapdraw:
-  `tag_features` chiama `promote` per feature invece di filtrare `loose`.
+  (30 ottobre): `result.promote([foro, sede], cluster, name, item=...)`
+  (metodo di `Result` da D173), tutto o niente; `item` obbligatorio con più
+  curve. Da fare in snapdraw: `tag_features` chiama `result.promote` per
+  feature invece di filtrare `loose`. Da fare in snapbend (D173):
+  `topo.promote(result, …)` → `result.promote(…)` in `flat/detect.py`.
 - ~~**pippo, trasformazioni di segmenti**~~ — fatto, D170: `mirrored(origin,
   angle)` su qualunque retta (default l'asse x di prima) e `scaled(factor,
   origin)` uniforme, su tutte le primitive, esatti. **No**: scala non

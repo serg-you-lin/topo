@@ -6413,3 +6413,26 @@ invented.
 
 Positional calls are unchanged (the parameter was renamed `curve` →
 `curves`; no caller passed it by keyword). `main` → **0.23.3** (D155).
+
+### D173 — reopening D137's placement: `promote` becomes a method of `Result` ✅
+Federico, 30 October, asking whether `promote` is a tool. It is not.
+`tools/` holds stages that compute something on a Document/Result (`split`,
+`anchor_texts`, `strips`). `promote` computes nothing: it moves an object
+between two containers of `Result` (`loose` → `cluster.detected`) and keeps
+D137's promise that a curve is never in two places and never lost. That
+promise belongs to `Result`, so `Result` keeps it, the way `DetectedFeatures`
+keeps its own `add`. It imports only `model` types, so the dependency rule
+(D44) is untouched.
+
+**Why now.** After 1.0 removing `topo.promote` is a break (2.0); adding
+`result.promote` beside it in a 1.x would leave two ways to do one thing.
+The ARCHITECTURE tree did not list `tools/promote.py` at all, which is how
+the question came up.
+
+| old | new |
+|---|---|
+| `topo.promote(result, curves, cluster, name, item=None)` | `result.promote(curves, cluster, name, item=None)` |
+
+Consumers to update in their own sessions: snapbend (`flat/detect.py`, two
+calls), snapdraw (`tag_features`, still to adopt D172). `main` → **0.24.0**
+(D155: a public name removed, second digit).
