@@ -6751,3 +6751,70 @@ with an inscribed circle missed by 0.004 (red without the line-to-line links).
 **Left open, 1.x:** when no edge lies entirely on the rim of the union,
 `_faces_union_loop` returns `None` and the walk's smaller loop wins (the V with
 its circle reads as the circle alone). Not red on any fixture (D158).
+
+### D180 — G6c: a contact is decided once, on the true curves, and gives one shared node ✅
+
+D179 fixed one frame-dependence of D100's fallback, but turning the drawings by
+eight angles instead of one still gave 20 unstable readings (anch_03/regr_02 at
+six angles, regr_04 at two). The common cause: a contact was decided several
+times, by different criteria, sometimes on discretizations — the noding cut a
+T within `tolerance` at the rounded projection, then the graph re-judged "same
+node" within `GRAPH_EPSILON`; two cuts within `tolerance` on one edge merged
+keeping the first while the other edge stayed at its own end; the STRtree
+prefilter measured on chords up to 0.01 inside an arc; D179's links and
+`unary_union` crossed discretizations; splines and ellipses were never cut, and
+a near miss of a tangency was no contact.
+
+**Rule** (`noding.split_at_crossings`, rewritten):
+- every pair of nearby edges is judged once, on the true curves (closed form
+  for lines, arcs, circles; splines and ellipses on their discretization at the
+  node grid, 1e-3, D113). A contact is a crossing, an endpoint within
+  `GRAPH_EPSILON` of the other curve (a T, or two ends), or two curves passing
+  within `GRAPH_EPSILON` without crossing (the missed tangency, at the midpoint);
+- several meetings of the *same pair* within `tolerance` along either edge are
+  one contact (D101's two roots of a near-tangent line and arc);
+- every contact unites a stop on each edge (union-find); two stops on one edge
+  within `GRAPH_EPSILON` are one node, and one within `GRAPH_EPSILON` of the
+  edge's end is that end. Never both ends of one edge: a short side does not
+  vanish. The node is the group's smallest input endpoint if it has one (as
+  `cluster_points`), else the mean of its contact points — one tuple for every
+  edge the contact touches, so the graph has nothing left to re-judge;
+- every type is cut, splines and ellipses included (`sub_segment`); a periodic
+  spline stays whole.
+
+**Why `GRAPH_EPSILON` and not `tolerance` for node identity.** Tried first:
+a T within `tolerance` sharing the node. With heal's 0.5 it percolates — on
+`output_polylines/BB_P1` a chain of T's and a crossing joined both ends of a
+0.65 mm side, and on `gap_parallelo_healed` a corner 0.1 from a parallel side
+became a node of that side; 17 `TestChordsKeepTheOuter` reds. D101 had already
+rejected `tolerance` as a network-wide node radius for the same reason. The
+old code never connected a T beyond `GRAPH_EPSILON` either (it cut at the
+projection, the graph then kept the two nodes apart), so the effective rule is
+unchanged; what changes is that it is decided once. `tolerance` keeps the one
+job D101 gave it, scoped to a single pair.
+
+**Also changed:** the outer-face walk reads an edge's leaving direction from the
+node, not from the curve's first point (a node can sit up to `GRAPH_EPSILON`
+off the curve, and two parallel pieces must leave it at different angles);
+D100's fallback network no longer adds D179's distance links (the noding made
+those contacts); `NonContourEdgeDetector.detect(..., planar=True)` does not
+re-node `island()`'s already planar pieces; `NodedEdges.crossings` gives D132's
+interior crossings from the union-find (`interior_crossings` reads it).
+
+**Measured.** Eight angles (`_debug/2026-10-30_topo_G6c/stress_8_angles.py`):
+20 → 0 unstable. All drawings, old against new: `heal()` identical everywhere;
+`island()` changes shape only on anch_03/regr_02/anch_03_noframe — the two V's
+with an inscribed circle now read as V plus circle (29.0 mm²) instead of the
+circle alone (23.8 mm²), the case D179 left open for 1.x — and elsewhere only
+the count of `loose` pieces (circles and splines cut at their contacts). Goldens
+unchanged. Time: `island()` +10% on the 31 drawings (20.9 → 23.0 s), `heal()`
++6%; most of it is the spline discretization and `sub_segment` (De Boor in
+Python, already the first job after 1.0).
+
+**Held by:** `TestScrambled` reads every distinct geometry at two angles
+(ROTATION and 0.13; twins such as regr_02/anch_03 once, `tests/readings.py
+geometry_key`) — red on the old code for anch_03, anch_03_noframe, regr_02,
+regr_04; `test_noding.py::TestContattoDecisoUnaVolta` (T within 0.01 shares the
+node, a T on a spline cuts it, a missed tangency is a contact, two T's 0.03 apart
+stay two nodes each equal to its stem, a 0.008 side keeps two ends) — four red
+on the old code.

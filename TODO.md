@@ -28,7 +28,7 @@ rende rossa una di quelle invarianti su un fixture del repo. Il resto è 1.x.
 Le invarianti invece restano nella suite per sempre. Le richieste dei
 consumer, finché il cancello è aperto, vanno tutte in "Dopo la 1.0" (D174;
 D172 è entrata per errore). Passata fatta il 23
-ottobre (D159): i rossi sono G6c, G6d, G7 qui sotto (G6b chiuso, D163), ognuno nel
+ottobre (D159): i rossi sono G6d, G7 qui sotto (G6b chiuso, D163; G6c, D180), ognuno nel
 registro dei difetti noti del suo test (skip con la voce del cancello; un
 caso che torna verde fa fallire il test finché non esce dalla lista).
 
@@ -119,35 +119,20 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       esatto (`rim.off_rim`), in `island()` (ripiego D100) e nel ripiego
       polygonize di `heal()`. `KNOWN["out once"]` e `KNOWN_TWICE` vuoti.
       DXF da guardare: `_debug/2026-10-25_topo_G6b/`.
-- [ ] **G6c** ← **si riparte da qui** — riaperto il 30 ottobre. D179
-      ha tolto la griglia del ripiego D100 (anch_08 visto da Federico: il
-      nuovo è giusto), ma il test ruota di un solo angolo. Con 8 angoli,
-      su HEAD restano instabili anch_03/regr_02 (V con cerchio inscritto)
-      e regr_04 (4→6 isole). Causa comune, trovata: **un contatto si decide
-      più volte, con criteri diversi, e a volte sulle discretizzazioni**:
-      (1) il noding giudica un T entro `tolerance` (0.05 sui fixture) ma il
-      nodo del taglio è la proiezione arrotondata, e poi il grafo rigiudica
-      "stesso nodo" entro GRAPH_EPSILON = 0.01; (2) due tagli entro
-      tolerance si fondono tenendo il primo, e l'altro edge resta al suo
-      estremo; (3) il prefiltro STRtree misura sulle discretizzazioni (corde
-      fino a 0.01 dentro un arco) e scarta vicini veri; (4) i collegamenti
-      di D179 e `unary_union` incrociano discretizzazioni; (5) spline ed
-      ellissi non si tagliano, e la tangenza mancata non è un contatto.
-      Ogni rimedio locale ne scopre un altro (branch locale
-      `g6c-noding-wip`: 23 casi instabili). **Da decidere con Federico**:
-      un disegno del noding in cui ogni contatto è deciso una volta sola
-      sulle primitive e produce un nodo condiviso da tutti gli edge che
-      tocca (union-find dei contatti, non un epsilon a posteriori). Poi il
-      test a più angoli, leggendo una volta sola i disegni gemelli. Costo
-      di tempo da misurare: il WIP rallentava `island()` del ~30%.
-      Ripartenza (chat nuova, Federico ha detto di procedere col
-      rifacimento): la prova a 8 angoli è in
-      `_debug/2026-10-30_topo_G6c/stress_8_angles.py` (da lanciare dalla
-      radice del repo, ~2.5 min; diventa il test a più angoli). Su `main`
-      dà 20 casi: anch_03/regr_02 a 6 angoli, regr_04 a 2. Le tracce utili
-      sono nel branch `g6c-noding-wip` (tagli di spline con `trim.cut_at`,
-      parametri della discretizzazione in `BSplineSeg._params`, tangenza
-      mancata `_grazing`): idee da riprendere, non codice da unire.
+- [x] **G6c** Un contatto deciso una volta sola — fatto, D180: il noding
+      giudica ogni coppia di edge una volta, sulle curve vere (spline ed
+      ellissi comprese, ora tagliate), e dà un nodo condiviso (union-find,
+      identità entro GRAPH_EPSILON; `tolerance` fonde solo gli incontri di
+      una stessa coppia, D101). Prova a 8 angoli: 20 → 0 instabili.
+      `TestScrambled` legge ogni geometria distinta a due angoli (0.7 e
+      0.13; i gemelli una volta). **Da guardare (Federico):**
+      `_debug/2026-10-30_topo_G6c/anch_03_1_old.dxf` contro `anch_03_2_new.dxf`,
+      le due V col cerchio inscritto a x 745–754 e 769–777, y 392–398: prima
+      il contorno era il solo cerchio, ora V più cerchio. Se va bene, nessun
+      golden da rifare (passano). La prova larga resta
+      `_debug/2026-10-30_topo_G6c/stress_8_angles.py` (~3 min, fuori suite:
+      ogni angolo in più nella suite costa ~25 s). Il branch locale
+      `g6c-noding-wip` si può cancellare.
 - [ ] **G6d** `heal()` su `SEGNI_TRACCIATI` (tol 0.5): tre cave larghe
       0.4–0.5 mm restano nell'outer letto da solo e si riempiono quando ci
       sono le corde (`TestChordsKeepTheOuter`, `KNOWN_CHORDS`): l'esito su
@@ -168,6 +153,11 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       dei nomi pubblici in inglese, con un controllo nella suite.
 
 **Pulizia**
+- [ ] **Tempo della suite** (30 ottobre, dopo D180): 3:48, sopra il tetto di
+      2.5–3 min (era già 3:10 prima). Il grosso: `TestScrambled` (una lettura
+      `island()` per angolo e per disegno), `test_fidelity` sui disegni con
+      molte spline (anch_02, anch_03), le letture di `island()` (+10% con D180,
+      spline in Python). Da decidere: quali letture condividere o togliere.
 - [ ] **G10** Rewrite della history (`git filter-repo` + `--message-callback`,
       un solo force-push), contro le liste di D76–D78.
 - [x] **G11** `scripts/release_check.py` — scritto il 22 ottobre: suite
@@ -216,8 +206,9 @@ Deciso con Federico il 30 ottobre, primo lavoro dopo la 1.0:
   per un core Rust.
 Trovato con G6c (D179), da fare in 1.x:
 - **il ripiego D100 senza edge interi sul bordo dell'unione** restituisce
-  `None` e vince il giro più piccolo: una V col cerchio inscritto (lati che
-  lo sfiorano) si legge come il solo cerchio. Nessun rosso sui fixture.
+  `None` e vince il giro più piccolo. La V col cerchio inscritto dei fixture
+  ora si legge giusta perché il noding (D180) fa del lato che sfiora il
+  cerchio un contatto; il ripiego resta da sistemare in generale.
 Deciso con Federico il 30 ottobre, da fare in 1.x:
 - **in `island()` i pezzi dello stesso cerchio/retta si ricompongono anche
   in `loose`** (richiesta snapdraw/pippo, misure in "richieste dalla

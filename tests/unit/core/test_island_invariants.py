@@ -18,8 +18,8 @@ import topo
 import topo_dxf
 
 from tests.drawings import case_name, drawing_key, drawings_for
-from tests.invariants import along_contours, uncovered, known_defect, contours, shape_differences, unscrambled
-from tests.readings import island_reading, island_scrambled
+from tests.invariants import ROTATION, along_contours, uncovered, known_defect, contours, shape_differences, unscrambled
+from tests.readings import geometry_key, island_reading, island_scrambled
 from topo.core.island import GRAPH_EPSILON
 from topo.core.primitives.segments import DEFAULT_TOLERANCE
 from topo import to_shapely
@@ -184,17 +184,39 @@ def _differences(result, again, back=lambda p: p) -> list:
     return found
 
 
+# angoli in più di ROTATION (D180): un contatto deciso male cambia la lettura
+# solo ad alcuni angoli; sui disegni del repo, prima di D180, 0.13 vedeva
+# tutti i casi instabili di una prova a otto angoli e ROTATION nessuno. Ogni
+# angolo costa una lettura per disegno (~25 s di suite): la prova larga è
+# fuori dalla suite (TODO.md, G6c)
+EXTRA_ANGLES = (0.13,)
+_SCRAMBLED: dict = {}   # impronta della geometria -> differenze: i gemelli si leggono una volta
+
+
 class TestScrambled(unittest.TestCase):
     """Lo stesso disegno scritto in un altro modo — entità in un altro ordine,
     ruotato, lontano dall'origine, specchiato — dà le stesse isole: la
     lettura non dipende né dall'ordine del file né dal sistema di
-    riferimento (D143, D158). Tutto in una lettura sola (D160)."""
+    riferimento (D143, D158). Una lettura per angolo, tutto il resto
+    insieme (D160); a più angoli, una volta per geometria (D180)."""
+
+
+def _scrambled_differences(dxf: Path) -> list:
+    doc, result = island_reading(dxf, MAX_GAP)
+    key = geometry_key(doc)
+    if key not in _SCRAMBLED:
+        found = []
+        for seed, angle in enumerate((ROTATION,) + EXTRA_ANGLES):
+            again = island_scrambled(dxf, MAX_GAP, angle, seed)
+            found += [f"{angle} rad: {d}" for d in
+                      _differences(result, again, lambda p, a=angle: unscrambled(p, a))]
+        _SCRAMBLED[key] = found
+    return _SCRAMBLED[key]
 
 
 def _make_scrambled_test(dxf: Path):
     def test(self):
-        _, result = island_reading(dxf, MAX_GAP)
-        found = _differences(result, island_scrambled(dxf, MAX_GAP), unscrambled)
+        found = _scrambled_differences(dxf)
         _check(self, "scrambled", dxf,
                lambda: self.assertEqual(found, [], f"{dxf.stem}: scritto in un altro modo cambia le isole"))
     return test

@@ -70,23 +70,23 @@ MOTIONS = [
 ]
 
 
-def scrambled(doc: Document) -> Document:
-    """`doc` scritto in un altro modo, tutto insieme: edge rimescolati (seed 0),
-    ruotati di ROTATION, spostati di FAR e specchiati. Una lettura sola al
+def scrambled(doc: Document, angle: float = ROTATION, seed: int = 0) -> Document:
+    """`doc` scritto in un altro modo, tutto insieme: edge rimescolati (`seed`),
+    ruotati di `angle`, spostati di FAR e specchiati. Una lettura sola al
     posto di una per moto e per ordine (D160): se la lettura dipende da una
     qualunque di queste cose, cambia anche qui; quale sia lo dice la
     diagnosi, che prova i moti e gli ordini uno alla volta."""
     edges = list(doc.edges)
-    random.Random(0).shuffle(edges)
-    return moved(replace(doc, edges=edges), lambda s: s.rotated(ROTATION).translated(*FAR).mirrored())
+    random.Random(seed).shuffle(edges)
+    return moved(replace(doc, edges=edges), lambda s: s.rotated(angle).translated(*FAR).mirrored())
 
 
-def unscrambled(poly):
-    """Il poligono shapely di una lettura di `scrambled(doc)` riportato nel
-    sistema di `doc`."""
+def unscrambled(poly, angle: float = ROTATION):
+    """Il poligono shapely di una lettura di `scrambled(doc, angle)` riportato
+    nel sistema di `doc`."""
     poly = affinity.scale(poly, 1.0, -1.0, origin=(0, 0))
     poly = affinity.translate(poly, -FAR[0], -FAR[1])
-    return affinity.rotate(poly, -ROTATION, origin=(0, 0), use_radians=True)
+    return affinity.rotate(poly, -angle, origin=(0, 0), use_radians=True)
 
 
 def orders(edges: list) -> list:
