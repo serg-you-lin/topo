@@ -85,7 +85,10 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       macchina. Non si allarga: niente nomi nuovi, niente rifacimenti.
       Passo 2 fatto (D176, 0.25.0): punti 1–10. Punto 11 fatto (D177,
       0.26.0): `Text.target`/`references` sono gli oggetti, via
-      `resolve_target`. **Prossimo: il passo 3** (test delle regole).
+      `resolve_target`. Passo 3: regola 1 fatta (D178,
+      `test_surface_rules.py`, più 3 firme che D176 aveva perso); restano
+      la regola 8 (con G9) e il test di rimozione delle deprecazioni (vuoto
+      finché non ce n'è una).
       Consumer da adeguare (tabelle vecchio → nuovo in D176 e D177): snapbend,
       snapdraw, smoother (`simplify_points`, strisce), pippo (`mirrored`,
       `rotated`).

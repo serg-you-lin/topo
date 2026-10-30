@@ -143,7 +143,7 @@ class CoveredRectangle:
         return (self.long_side / s) if s else 0.0
 
 
-def covered_rectangles(items: Sequence, min_side: float, *, eps: float = AXIS_EPS,
+def covered_rectangles(items: Sequence, *, min_side: float, eps: float = AXIS_EPS,
                        cluster_tolerance: float = CLUSTER_TOLERANCE,
                        coverage: float = SIDE_COVERAGE) -> List[CoveredRectangle]:
     """

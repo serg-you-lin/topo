@@ -190,7 +190,7 @@ non importano `topo.core`/`tools`/`io`/`rules` (D129). Quello che gli serve:
 | nome | a cosa serve |
 |---|---|
 | `topo.primitives.LineSeg` … `EllipseSeg` | la geometria letta dalla sorgente, nativa (mai discretizzata dall'adapter) |
-| `topo.model.Edge.of(segment, role, style=None) -> Edge` | l'`Edge` di un segmento: estremi sulla griglia dei nodi di topo (D113), che l'adapter non deve conoscere; un cerchio, una spline o un'ellisse chiusi hanno un nodo solo |
+| `topo.model.Edge.of(segment, role, *, style=None) -> Edge` | l'`Edge` di un segmento: estremi sulla griglia dei nodi di topo (D113), che l'adapter non deve conoscere; un cerchio, una spline o un'ellisse chiusi hanno un nodo solo |
 | `topo.model.EdgeStyle(*, linetype="", linetype_desc="", dash=None, color=None)` | l'aspetto effettivo dell'entità sorgente, senza parole di un formato (D126): `dash` sono segni con segno (`> 0` tratto, `0` punto, `< 0` vuoto; `()` continuo, `None` non noto — un dash-array `[3, 1]` è `(3, -1)`), `color` è `(r, g, b)`. L'adapter risolve l'ereditarietà (uno stile "del layer") prima di consegnarlo |
 | `topo.model.RoleRule`, `topo.model.resolve_role(rules, name, style) -> str` | il ruolo di un'entità dalle regole del chiamante: la prima che matcha, altrimenti `unknown` |
 | `topo.model.Document`, `topo.model.DEFAULT_NODE_TOLERANCE` | il risultato dell'adapter e la tolleranza di default che `heal()` chiuderà |
@@ -204,7 +204,7 @@ topo con sopra la mappa del chiamante (D128). Un exporter non sceglie colori,
 traduce quello che `role_style` gli dà nella codifica del suo formato.
 
 ```python
-edges = [topo.model.Edge.of(seg, topo.model.resolve_role(rules, name, style), style)
+edges = [topo.model.Edge.of(seg, topo.model.resolve_role(rules, name, style), style=style)
          for seg, name, style in read_my_format(path)]
 doc = topo.model.Document(edges=edges, source_path=str(path))
 ```
@@ -745,7 +745,7 @@ sia una piega lo decide il consumatore (D115).
 ### `covered_rectangles`
 
 ```python
-topo.geometry.covered_rectangles(items, min_side, *, eps=0.5, cluster_tolerance=1.5, coverage=0.85) -> list[CoveredRectangle]
+topo.geometry.covered_rectangles(items, *, min_side, eps=0.5, cluster_tolerance=1.5, coverage=0.85) -> list[CoveredRectangle]
 ```
 
 I rettangoli allineati agli assi i cui quattro lati sono coperti almeno per
@@ -1471,7 +1471,7 @@ ai loro estremi veri, non sulle corde), `contains(point, tolerance=1e-6)`
 fondo). Gli stessi su ogni `ClosedCurve` di `result.loose`.
 
 ```python
-topo.Contour.from_segments(segments, role, depth=0, parent=None, tolerance=0.01) -> Contour
+topo.Contour.from_segments(segments, role, *, depth=0, parent=None, tolerance=0.01) -> Contour
 ```
 
 Contorno da un anello di primitive scritto da un chiamante (per esempio il

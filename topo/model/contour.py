@@ -39,7 +39,7 @@ class Contour(ClosedCurve):
     parent: Optional["Contour"]   = None
 
     @classmethod
-    def from_segments(cls, segments: Sequence, role: str, depth: int = 0,
+    def from_segments(cls, segments: Sequence, role: str, *, depth: int = 0,
                       parent: Optional["Contour"] = None,
                       tolerance: float = DEFAULT_TOLERANCE) -> "Contour":
         """

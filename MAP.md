@@ -6653,3 +6653,52 @@ it is an option.
 | `pointer_target(r, t, 0.3)` | `pointer_target(r, t, distance=0.3)` |
 
 `main` → **0.26.0** (D155: a public name removed, second digit).
+
+### D178 — G14 step 3, rule 1: what D176's pass missed, and the test that holds it ✅
+Federico, 30 October, after D177 found `distance` still positional on
+`pointer_target`/`measured_references`: "come mai è stata violata la regola?
+può esserci qualche altra violazione?"
+
+**Why D176 missed names.** Its scan (the table in the debug folder) had
+three holes. (1) A name whose "decision" column already held another point
+was skipped for rule 1: `pointer_target`/`measured_references` were "11", and
+point 11 was postponed whole. (2) It read functions and constructors, not
+methods: the primitives' methods were fixed by hand, the model's were not.
+(3) It listed only parameters with a default, while D176 itself says a
+required tolerance is an option.
+
+**Found and fixed** (stable surface, keyword-only now):
+`Contour.from_segments(segments, role, *, depth, parent, tolerance)`,
+`Edge.of(segment, role, *, style)` (as `Edge(...)` already was),
+`geometry.covered_rectangles(items, *, min_side, ...)` (a threshold).
+Kept positional as data, on purpose: `to_dxf(result, source_doc)` (the
+document it writes onto), `role_to_dxf_layer(role, element)` (what goes to
+the caller's function), `resolve_role(rules, name, style)` (the edge's style,
+like its name), `dash_line(start, end, head, tail)` (the dashes are what it
+makes), `sub_segment(seg, a, b, via)` (a point). `topo.experimental` keeps
+positional options (`to_svg` has 11): outside the promise, fixed when a name
+is promoted.
+
+**The test** (`tests/unit/test_surface_rules.py`): every public callable of
+`topo`, `topo.geometry`, `topo.primitives`, `topo.model`, `topo_dxf`, methods
+included, declares its positional parameters in one table, all data. A new
+name or parameter fails until someone decides data (add it to the table) or
+option (after `*`): a person still judges, but can no longer forget. A name
+that reads like an option (`tolerance`, `distance`, `eps`, `min_*`,
+`include_*`, …) fails even if declared, except the declared
+`DetectedFeatures.get(name, default)`. Checked: undoing the `Edge.of` fix
+turns it red on that parameter.
+
+Step 3 stays open for the other machine-checkable rules: rule 8 (card in
+`docs/API.md`, English docstring — with G9) and B's removal test, which has
+nothing to hold until the first deprecation.
+
+**For the consumers:**
+
+| old | new |
+|---|---|
+| `Contour.from_segments(ring, role, d, p, tol)` | `Contour.from_segments(ring, role, depth=d, parent=p, tolerance=tol)` |
+| `Edge.of(seg, role, style)` | `Edge.of(seg, role, style=style)` |
+| `covered_rectangles(items, 50)` | `covered_rectangles(items, min_side=50)` |
+
+`main` stays **0.26.0**: not pushed yet, same release as D177.

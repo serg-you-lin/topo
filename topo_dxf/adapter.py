@@ -282,7 +282,7 @@ class DxfAdapter:
             if key in seen_segment_keys:
                 return
             seen_segment_keys.add(key)
-            edges.append(Edge.of(segment, role, style))
+            edges.append(Edge.of(segment, role, style=style))
 
         for entity in self.msp:
             if _is_excluded(entity):
@@ -301,7 +301,7 @@ class DxfAdapter:
             if dtype == "CIRCLE":
                 prim = _parse(entity, dtype)
                 if isinstance(prim, CircleSeg):
-                    edges.append(Edge.of(prim, role, style))
+                    edges.append(Edge.of(prim, role, style=style))
                 continue
 
             # LWPOLYLINE / POLYLINE → segmenti
@@ -322,7 +322,7 @@ class DxfAdapter:
             if prim is None:
                 continue
 
-            edges.append(Edge.of(prim, role, style))
+            edges.append(Edge.of(prim, role, style=style))
 
         for dtype, n in sorted(degenerate.items()):
             self.warnings.append(f"{n} {dtype} degeneri (raggio o asse nullo) ignorati: un punto, non una curva")
