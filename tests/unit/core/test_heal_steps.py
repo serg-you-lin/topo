@@ -227,6 +227,34 @@ class TestGapAtTolerance(unittest.TestCase):
             self.assertEqual([len(c.inners) for c in result.clusters], [1], name)
 
 
+class TestTiedGapPartners(unittest.TestCase):
+
+    def test_simbolo_simmetrico_letto_uguale_a_ogni_moto(self):
+        # G6e (drw_0015): due orizzontali e una verticale in mezzo; ogni capo
+        # della verticale ha due compagni alla stessa distanza. Chi vinceva lo
+        # decidevano le coordinate; ora nessuno, e heal() lo dice (D185)
+        from shapely.geometry import LineString
+        from tests.invariants import MOTIONS, moved
+        x, y = -71565.8225, -3048.0985
+        pieces = [LineSeg(start=(x - 0.25, y), end=(x + 0.25, y)),
+                  LineSeg(start=(x - 0.25, y + 0.375), end=(x + 0.25, y + 0.375)),
+                  LineSeg(start=(x, y + 0.125), end=(x, y + 0.625))]
+        doc = topo.load_segments(pieces, tolerance=0.5)
+
+        def reading(d, back):
+            healed = topo.experimental.close_free_gaps(list(d.edges), 0.5)
+            return sorted(tuple(c for p in back(LineString(e.segment.discretize())).coords for c in p)
+                          for e in healed)
+
+        base = reading(doc, lambda g: g)
+        for name, move, back, _ in MOTIONS:
+            again = reading(moved(doc, move), back)
+            self.assertEqual(len(again), len(base), name)
+            for a, b in zip(again, base):
+                self.assertTrue(len(a) == len(b) and max(abs(u - v) for u, v in zip(a, b)) < 1e-6, name)
+        self.assertIn("stessa distanza", " ".join(topo.heal(doc, tolerance=0.5).warnings))
+
+
 class TestCloseNearFullArcs(unittest.TestCase):
     """D112: un arco diventa cerchio solo se il gap Ã¨ entro tolleranza (Ã¨ un
     gap) E l'angolo mancante Ã¨ entro la soglia (Ã¨ un cerchio)."""

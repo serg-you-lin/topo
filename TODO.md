@@ -170,7 +170,14 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       **C** `find_non_contour_edges` esclude insiemi diversi anche coi moti
       esatti (drw_0017: 125/123/105/127); **D** gap uguale alla tolleranza
       (regr_03: cava da 0.5, tol 0.5, `d <= tol` deciso dall'ultimo bit) —
-      D183, fatta (10 stabili); poi il fallback (2_parti_saldate). Da
+      D183, fatta (10 stabili); **E** compagni a pari merito nel gap
+      solver (simbolo simmetrico di drw_0015) — D185, fatta. Restano: **F**
+      `weld_degenerate_linesegs` cambia coi moti esatti (J0118158, j0080281,
+      j0097092, regr_01: nodi per cella di griglia, rimedio come D184);
+      **C** (drw_0017, j0080281, J0118158); merge collineare ruotato su
+      file tassellati (regr_01, j0097092, +51 edge); j0099552/regr_02 (stessi
+      conti, forme diverse); drw_0016/drw_0025 (gap 484/483); i due
+      `shuffle` (J0116004A, U07010Z21); il fallback (2_parti_saldate). Da
       misurare: gli stessi confini in `island()` (max_gap).
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
       rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF di

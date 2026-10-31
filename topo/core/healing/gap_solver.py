@@ -18,6 +18,7 @@ Tipi pubblici:
 
 Funzioni pubbliche:
     compute_gap_fixes — dato un insieme di endpoint liberi, calcola i fix
+    ambiguous_gap_ends — gli estremi che non scelgono fra compagni a pari merito
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ import math
 from dataclasses import dataclass
 from typing import Any, Callable, List, Optional, Tuple, Union
 
-from ..geometry.measure import round_point
+from ..geometry.measure import FLOAT_NOISE, round_point
 from ..geometry.intersections import (
     _distance, _line_intersection, _circle_line_intersections,
     _circle_circle_intersections, _closest_to,
@@ -195,18 +196,14 @@ def compute_gap_fixes(
     if len(endpoints) < 2:
         return []
 
-    pairs = []
-    for i, ep_a in enumerate(endpoints):
-        for j in range(i + 1, len(endpoints)):
-            ep_b = endpoints[j]
-            if ep_a.ref is ep_b.ref:
-                continue
-            d = _distance(ep_a.pt, ep_b.pt)
-            if d <= tolerance:
-                # a parità di distanza decidono le coordinate, mai l'ordine del file
-                pairs.append((d, sorted((tuple(ep_a.pt), tuple(ep_b.pt))), i, j))
+    pairs = _gap_pairs(endpoints, tolerance)
     if pairwise:
-        pairs.sort(key=lambda p: (p[0], p[1]))
+        # un estremo con due compagni più vicini a pari merito non sceglie: in
+        # una figura simmetrica nessuna regola dà lo stesso compagno in ogni
+        # riferimento. Resta aperto, e heal() lo dice (D185)
+        ambiguous = _ambiguous(endpoints, pairs)
+        pairs = sorted((p for p in pairs if p[2] not in ambiguous and p[3] not in ambiguous),
+                       key=lambda p: (p[0], p[1]))
 
     fixes: List[GapFix] = []
     taken: set = set()
@@ -224,6 +221,37 @@ def compute_gap_fixes(
         fixes.extend(_within_reach(_get_solver(ep_a.kind, ep_b.kind)(ep_a, ep_b),
                                    ep_a, ep_b, tolerance))
     return fixes
+
+
+def ambiguous_gap_ends(endpoints: List[GapEndpoint], tolerance: float) -> List[Point2D]:
+    """Gli estremi che `compute_gap_fixes(pairwise=True)` lascia aperti perché
+    i loro due compagni più vicini entro `tolerance` sono a pari merito
+    (distanze uguali entro FLOAT_NOISE, D185)."""
+    return [endpoints[k].pt for k in sorted(_ambiguous(endpoints, _gap_pairs(endpoints, tolerance)))]
+
+
+def _gap_pairs(endpoints: List[GapEndpoint], tolerance: float) -> list:
+    """(d, coordinate ordinate, i, j) per ogni coppia di estremi di edge diversi entro `tolerance`."""
+    pairs = []
+    for i, ep_a in enumerate(endpoints):
+        for j in range(i + 1, len(endpoints)):
+            ep_b = endpoints[j]
+            if ep_a.ref is ep_b.ref:
+                continue
+            d = _distance(ep_a.pt, ep_b.pt)
+            if d <= tolerance:
+                # a parità di distanza decidono le coordinate, mai l'ordine del file
+                pairs.append((d, sorted((tuple(ep_a.pt), tuple(ep_b.pt))), i, j))
+    return pairs
+
+
+def _ambiguous(endpoints: List[GapEndpoint], pairs: list) -> set:
+    """Indici degli estremi i cui due compagni più vicini distano uguale entro FLOAT_NOISE."""
+    near: dict = {}
+    for d, _, i, j in pairs:
+        near.setdefault(i, []).append(d)
+        near.setdefault(j, []).append(d)
+    return {k for k, ds in near.items() if len(ds) > 1 and abs(sorted(ds)[1] - sorted(ds)[0]) <= FLOAT_NOISE}
 
 
 def _within_reach(fixes: List[GapFix], ep_a: GapEndpoint, ep_b: GapEndpoint,

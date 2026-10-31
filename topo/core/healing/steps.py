@@ -33,6 +33,7 @@ from ...model.curve import ClosedCurve, OpenCurve
 from ...model.role import ContourRole, is_structural_role
 from .gap_solver import (
     free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, gap_endpoints_at_nodes,
+    ambiguous_gap_ends,
 )
 from .hierarchy import HierarchyBuilder, loop_to_closed_curve
 
@@ -144,6 +145,12 @@ def close_free_gaps(edges: List[Edge], tolerance: float) -> List[Edge]:
     if not fixes:
         return list(edges)
     return apply_gap_fixes(edges, fixes)
+
+
+def ambiguous_free_ends(edges: List[Edge], tolerance: float) -> List[Tuple[float, float]]:
+    """Gli estremi liberi che `close_free_gaps` lascia aperti: due compagni
+    più vicini a pari merito, nessuno scelto (D185)."""
+    return ambiguous_gap_ends(free_endpoints_from_edges(edges, build_node_graph(edges)), tolerance)
 
 
 def dangling_splines(edges: List[Edge]) -> List[Edge]:

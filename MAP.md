@@ -6930,3 +6930,25 @@ reading in its own frame loses two "holes" 146 mm long and 0 high (area 0.11)
 becomes stable on its own: the remaining reds pass through other families.
 Held by `test_normalizer.py::TestSameCarrierUnderMotion` (the drw_0016 pair,
 the drw_0015 verticals, the drw_0016 pair as arcs; all red on the old code).
+
+### D185 — G6e: an end with two equally near partners closes no gap, and heal() says so ✅
+
+Decided by Federico, 31 October 2026 (of three: close with every tied
+partner, which breaks D112's one-gap-per-end; leave the frame to decide).
+
+**Problem.** On drw_0015 a small symmetric figure (two parallel strokes and
+one between them) gives each end of the middle stroke two partners at the
+same distance. `compute_gap_fixes` paired by distance, ties broken by
+coordinates, so a rotation chose the other one. In a symmetric figure no
+rule on coordinates gives the same partner in every frame.
+
+**Rule.** With `pairwise=True` (heal) an end whose two nearest partners
+within the tolerance are equally far (within `FLOAT_NOISE`) is left open; its
+partners still pair with others. `heal()` lists those ends in a warning
+(`steps.ambiguous_free_ends`, `gap_solver.ambiguous_gap_ends`). It is D111's
+stance: what topology cannot decide is left to the drawing, and said.
+
+**Measured.** drw_0015 becomes stable; j0099552 and regr_02 had ties too but
+stay red through another path (same counts, different shapes). Suite and
+goldens unchanged, 3:22. Held by `test_heal_steps.py::TestTiedGapPartners`
+(the drw_0015 figure under every motion, red on the old code at rotation).
