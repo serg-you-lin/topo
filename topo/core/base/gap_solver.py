@@ -85,6 +85,10 @@ class AddSegment:
     """
     pt_a: Point2D
     pt_b: Point2D
+    # i nodi già decisi degli estremi che collega (D187): il segmento si
+    # attacca lì, non alla cella di griglia del punto reale
+    node_a: Optional[Point2D] = None
+    node_b: Optional[Point2D] = None
 
 
 GapFix = Union[MoveEndpoint, AddSegment]
@@ -138,7 +142,7 @@ def _solve_spline_any(
 ) -> List[GapFix]:
     # Le spline non hanno una geometria analitica semplice da intersecare —
     # fallback diretto al segmento di chiusura.
-    return [AddSegment(pt_a=ep_a.pt, pt_b=ep_b.pt)]
+    return [_bridge(ep_a, ep_b)]
 
 
 # Registry: (kind_a, kind_b) → solver
@@ -156,11 +160,22 @@ _SOLVERS = {
 }
 
 
+def _bridge(ep_a: GapEndpoint, ep_b: GapEndpoint) -> AddSegment:
+    """Il segmento fra due estremi, attaccato ai loro nodi."""
+    return AddSegment(pt_a=ep_a.pt, pt_b=ep_b.pt, node_a=_node(ep_a), node_b=_node(ep_b))
+
+
+def _node(ep: GapEndpoint) -> Optional[Point2D]:
+    if isinstance(ep.ref, Edge):
+        return ep.ref.start if ep.role == "start" else ep.ref.end
+    return None
+
+
 def _get_solver(kind_a: str, kind_b: str):
     solver = _SOLVERS.get((kind_a, kind_b))
     if solver is None:
         # kind sconosciuto → fallback AddSegment
-        return lambda a, b: [AddSegment(pt_a=a.pt, pt_b=b.pt)]
+        return lambda a, b: [_bridge(a, b)]
     return solver
 
 
@@ -260,7 +275,7 @@ def _within_reach(fixes: List[GapFix], ep_a: GapEndpoint, ep_b: GapEndpoint,
     for fix in fixes:
         if isinstance(fix, MoveEndpoint) and _distance(origin[(id(fix.ref), fix.role)],
                                                        fix.new_pt) > reach:
-            return [AddSegment(pt_a=ep_a.pt, pt_b=ep_b.pt)]
+            return [_bridge(ep_a, ep_b)]
     return fixes
 
 
@@ -284,7 +299,7 @@ def _meet_or_bridge(ix: Optional[Point2D], ep_a: GapEndpoint, ep_b: GapEndpoint)
     """Se le due geometrie si incontrano in `ix`, porta lì entrambi gli estremi;
     altrimenti chiudi il gap con un segmento."""
     if ix is None:
-        return [AddSegment(pt_a=ep_a.pt, pt_b=ep_b.pt)]
+        return [_bridge(ep_a, ep_b)]
     return [
         MoveEndpoint(ref=ep_a.ref, role=ep_a.role, new_pt=ix),
         MoveEndpoint(ref=ep_b.ref, role=ep_b.role, new_pt=ix),
@@ -419,12 +434,14 @@ def apply_gap_fixes(edges: List[Edge], fixes: List[GapFix]) -> List[Edge]:
         elif isinstance(fix, AddSegment):
             a = (float(fix.pt_a[0]), float(fix.pt_a[1]))
             b = (float(fix.pt_b[0]), float(fix.pt_b[1]))
-            if round_point(a) == round_point(b):
+            node_a = fix.node_a if fix.node_a is not None else round_point(a)
+            node_b = fix.node_b if fix.node_b is not None else round_point(b)
+            if node_a == node_b:
                 continue
             added.append(Edge(
                 role=ContourRole.UNKNOWN,
-                start=round_point(a),
-                end=round_point(b),
+                start=node_a,
+                end=node_b,
                 segment=LineSeg(start=a, end=b),
             ))
 
