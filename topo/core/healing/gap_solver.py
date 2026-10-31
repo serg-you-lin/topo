@@ -18,7 +18,6 @@ Tipi pubblici:
 
 Funzioni pubbliche:
     compute_gap_fixes — dato un insieme di endpoint liberi, calcola i fix
-    local_gap_fixes   — scarta i fix che spostano un estremo troppo lontano
 """
 
 from __future__ import annotations
@@ -222,25 +221,22 @@ def compute_gap_fixes(
             continue
         else:
             taken.add((key_a, key_b))
-        fixes.extend(_get_solver(ep_a.kind, ep_b.kind)(ep_a, ep_b))
+        fixes.extend(_within_reach(_get_solver(ep_a.kind, ep_b.kind)(ep_a, ep_b),
+                                   ep_a, ep_b, tolerance))
     return fixes
 
 
-def local_gap_fixes(fixes: List[GapFix], max_move: float) -> List[GapFix]:
-    """
-    Solo i fix che non spostano un estremo più di `max_move`: due rette quasi
-    parallele con gli estremi vicini si incontrano lontanissimo, e
-    prolungarle fin lì non è chiudere un gap. `heal()` non lo usa.
-    """
-    kept = []
+def _within_reach(fixes: List[GapFix], ep_a: GapEndpoint, ep_b: GapEndpoint,
+                  reach: float) -> List[GapFix]:
+    """Un incontro che sposta un estremo più di `reach` non chiude il gap: due
+    rette quasi parallele si incontrano lontanissimo, e se lo fanno lo decide
+    l'ultimo bit dei double (D60, G6e). Al suo posto il segmento fra i due."""
+    origin = {(id(ep.ref), ep.role): ep.pt for ep in (ep_a, ep_b)}
     for fix in fixes:
-        if isinstance(fix, MoveEndpoint) and isinstance(fix.ref, Edge):
-            start, end = segment_endpoints(fix.ref.segment)
-            old = start if fix.role == "start" else end
-            if _distance(old, fix.new_pt) > max_move:
-                continue
-        kept.append(fix)
-    return kept
+        if isinstance(fix, MoveEndpoint) and _distance(origin[(id(fix.ref), fix.role)],
+                                                       fix.new_pt) > reach:
+            return [AddSegment(pt_a=ep_a.pt, pt_b=ep_b.pt)]
+    return fixes
 
 
 # ---------------------------------------------------------------------------

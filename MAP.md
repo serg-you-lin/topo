@@ -6845,3 +6845,34 @@ whole drawings.
 
 **Measured.** Suite 3:48 → 3:23. Both micro-cases red on `3ea516b^`, green on
 D180, 0.6 s together.
+
+### D182 — G6e: a gap is closed at a meeting within reach, never at one decided by the last bit ✅
+
+**Problem.** The snapdraw sweep (`scripts/21_sweep_invariants.py`) found 32 of
+121 drawings where a rigid motion changes `heal()`'s reading. Traced step by
+step, almost none pass through the polygonize fallback: the readings part
+already in the clean-up passes. One family is `close_free_gaps`: two parallel
+lines with their ends 0.004 apart (drw_0015, coordinates ~71500) are exactly
+parallel in the file, `_line_intersection` finds no meeting and the gap gets
+a segment; rotated, the parallelism is lost in the last bit (`abs(denom) <
+1e-10` is an absolute threshold, so far from the origin rotation noise beats
+it) and both ends were moved to the "meeting" at x = −1.8e10 mm.
+
+**Rule.** A meeting that moves an endpoint further than the tolerance does
+not close the gap: the gap gets the segment between the two ends instead
+(`gap_solver._within_reach`, inside `compute_gap_fixes`). It is D60's rule
+for `island()` ("a fix never moves an endpoint further than the gap"), now
+for both readings in one place; `local_gap_fixes`, which dropped such moves
+in `island()` alone, is gone. `repair_merged_corners` keeps an unbounded
+reach (it passes `tolerance=inf`, D57: a corner two ends of which already
+cluster).
+
+**Why the tolerance as the reach.** It is the distance under which `heal()`
+already treats two points as one; a move further than that invents geometry
+the drawing does not have, and whether it happens depends on the frame.
+
+**Measured.** Alone it makes no sweep drawing stable under a single motion
+(drw_0015 still loses a hole, through another family below); it removes
+endpoints moved by 1e10 mm. Suite and goldens unchanged, 3:23. Held by
+`test_heal_steps.py::TestCloseFreeGaps::test_003` (the drw_0015 pair at four
+angles, red on the old code at 0.7).

@@ -158,6 +158,19 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       `diagnose_heal.py`) in `_debug/2026-10-31_topo_snapdraw-sweep/`; poi
       micro-casi ritagliati come in D181 (rossi oggi), la causa per
       famiglia, il noding di D180 dove manca.
+      31 ottobre, seconda chat: quasi nessuno passa dal fallback; i passi di
+      pulizia leggono diverso già prima del grafo (attrezzi in
+      `_debug/2026-10-31_topo_G6e/`: `passes.py` conta gli edge dopo ogni
+      passo, `gaps.py` i fix del gap solver, `reclassify.py` rifà la
+      classificazione). Famiglie: **A** `merge_collinear_overlaps` /
+      `merge_cocircular_overlaps` raggruppano per chiave arrotondata
+      (`_line_key`: angolo 1e-7, offset 1e-3; cucitura a ±90°) — griglia
+      (drw_0015, drw_0016); **B** gap solver, incontro a 1e10 mm di due
+      parallele (D182, fatta: da sola non stabilizza nessun disegno);
+      **C** `find_non_contour_edges` esclude insiemi diversi anche coi moti
+      esatti (drw_0017: 125/123/105/127); **D** gap uguale alla tolleranza
+      (regr_03: cava da 0.5, tol 0.5, `d <= tol` deciso dall'ultimo bit) —
+      scelta per Federico; poi il fallback (2_parti_saldate).
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
       rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF di
       G6), `test_text_budget` anch_02 spiegato, inner che si incrociano

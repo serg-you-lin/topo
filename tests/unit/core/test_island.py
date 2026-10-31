@@ -8,7 +8,6 @@ from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, CircleSeg
 from topo.core.healing.normalizer import refit_tessellations
-from topo.core.healing.gap_solver import local_gap_fixes, MoveEndpoint, AddSegment
 from topo.core.primitives.segments import ArcSeg
 from topo import to_shapely
 
@@ -157,16 +156,6 @@ class TestRefitTessellations(unittest.TestCase):
     def test_catena_troppo_corta_non_si_tocca(self):
         chain = self._tessellated_arc(n=5)
         self.assertEqual(refit_tessellations(chain, max_segment=5.0), chain)
-
-
-class TestLocalGapFixes(unittest.TestCase):
-
-    def test_spostamento_lontano_scartato(self):
-        e = _line((0, 0), (10, 0))
-        near = MoveEndpoint(ref=e, role="end", new_pt=(10.3, 0.0))
-        far = MoveEndpoint(ref=e, role="end", new_pt=(500.0, 0.0))
-        add = AddSegment(pt_a=(0, 0), pt_b=(0, 0.3))
-        self.assertEqual(local_gap_fixes([near, far, add], max_move=0.5), [near, add])
 
 
 if __name__ == "__main__":
