@@ -1498,6 +1498,19 @@ creare una fingerprint geometrica per validare na topo part.
 ### Implementazione nuovo formato:
 Al momento in input posso avere solo dxf, ma mi sono messo in condizione di poter prendere anche svg o pdf. Da capire se implementare ad esempio almeno i pdf.
 
+### La forma dai punti, per PDF e visione (31 ottobre, chiesto da Federico in G6e)
+Riconoscere la forma da come arrivano i punti, prima di farne una catena, è
+già geometria di topo: `simplify_points` (D141: punti → rette/archi/spline,
+spigoli rifatti vivi) e `refit_tessellations` (D60). Per un adapter PDF o di
+visione è il suo passo d'ingresso, insieme al reticolo di ROADMAP ("il
+reticolo come passo d'ingresso"). Il dettaglio del formato (l'ordine dei
+punti in un path) resta dentro l'adapter, mai un criterio di heal
+(non-negoziabile 1). Cosa la forma *significa* (una lettera, un simbolo)
+è del consumatore. Una figura simmetrica non la scioglie nessuna forma:
+D185 la lascia aperta. Da fare dopo la 1.0, additivo (D174): gli estremi
+ambigui di D185, oggi solo in un warning, come dato interrogabile sul
+`Result`, perché un consumatore o una pipeline di visione li possa leggere.
+
 
 
 # I tools possibili sul motore geometrico:
