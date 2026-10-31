@@ -18,6 +18,7 @@ import math
 from typing import Callable, Optional
 
 from ..model.document import Document
+from .geometry.measure import FLOAT_NOISE
 from ..model.result import Result
 from ..model.role import is_structural_role
 from .topology.loop_finder import edges_to_open_curves
@@ -64,6 +65,9 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
             f"ricevuto {type(doc).__name__}"
         )
     tol = doc.node_tolerance(override=tolerance)
+    # un gap largo quanto la tolleranza si chiude a ogni riferimento, non a
+    # seconda dell'ultimo bit (D183): i passi confrontano con `reach`
+    reach = tol + FLOAT_NOISE
     structural = is_structural or is_structural_role
 
     result = Result(source_file=source_file)
@@ -95,11 +99,11 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
     if labeled and is_structural is None:
         result.warnings.append(_LABELED_WITHOUT_PREDICATE.format(n=len(labeled)))
 
-    edges, full_arcs = close_near_full_arcs(edges, tol)
+    edges, full_arcs = close_near_full_arcs(edges, reach)
     if full_arcs:
         result.warnings.append(f"{full_arcs} archi quasi completi (gap entro tolleranza, mancano al "
                                f"più {math.degrees(NEAR_FULL_ARC_MISSING):.0f}°) chiusi in cerchio.")
-    edges = close_free_gaps(edges, tol)
+    edges = close_free_gaps(edges, reach)
     if dangling_splines(edges):
         result.warnings.append(
             "SPLINE con endpoint non connesso trovata — "
@@ -107,19 +111,19 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
             "Verificare manualmente la correttezza del file."
         )
 
-    non_contour_ids = find_non_contour_edges(edges, tol)
+    non_contour_ids = find_non_contour_edges(edges, reach)
     if non_contour_ids:
         result.warnings.append(
             f"{len(non_contour_ids)} edge non di contorno "
             f"esclusi dal grafo (catene fra due nodi di branching, non sul bordo esterno)."
         )
 
-    search = find_loops(edges, non_contour_ids, tol)
+    search = find_loops(edges, non_contour_ids, reach)
     edges = search.edges
     result.warnings += _search_warnings(search, tol)
     if search.loops:
         result.warnings += _loose_ends_warnings(edges, non_contour_ids,
-                                                tol if search.method == "tolerant" else 0.0)
+                                                reach if search.method == "tolerant" else 0.0)
 
     # Scala finita senza loop: ultima spiaggia polygonize, che dà già i
     # ClosedCurve (OUTER dal bordo, INNER dai buchi); in `loose` va solo
@@ -130,12 +134,12 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
         kept = structural_loops(search.loops, structural)
         loop_edge_ids = {id(e) for loop in kept for e, _ in loop}
         closed = loops_to_curves(kept)
-        result.warnings += _crossing_warnings([e for e in edges if id(e) in loop_edge_ids], tol)
+        result.warnings += _crossing_warnings([e for e in edges if id(e) in loop_edge_ids], reach)
     elif edges:
         result.warnings.append("Nessun loop trovato via grafo, uso polygonize come fallback.")
-        polygons = polygonize_edges(edges, tol)
+        polygons = polygonize_edges(edges, reach)
         closed = polygons_to_curves(polygons)
-        loop_edge_ids, rest = off_faces(edges, polygons, tol)
+        loop_edge_ids, rest = off_faces(edges, polygons, reach)
         if polygons:
             result.warnings.append(
                 f"Geometria ricostruita via fallback polygonize "
@@ -157,7 +161,7 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
                                       is_structural=structural)
     result.clusters = clusters
     result.loose = loose + labeled_curves(labeled)
-    assign_cluster_refs(result.loose, clusters, tol)
+    assign_cluster_refs(result.loose, clusters, reach)
     if not clusters:
         # La geometria non compone nessun contorno esterno chiuso: il
         # risultato non è un pezzo, è un file non lavorabile. `loose` resta
