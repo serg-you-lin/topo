@@ -45,7 +45,7 @@ from .healing.normalizer import chain_runs
 from .healing.steps import loops_to_curves
 from .healing.islands import spatial_islands
 from .healing.gap_solver import (
-    free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, local_gap_fixes, MoveEndpoint,
+    free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, MoveEndpoint,
 )
 from .healing.normalizer import (
     merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
@@ -202,7 +202,6 @@ def _normalize(edges: List[Edge], tolerance: float, max_gap: float) -> List[Edge
     graph = build_node_graph(edges)
     fixes = compute_gap_fixes(free_endpoints_from_edges(edges, graph), gap, pairwise=False)
     fixes = _drop_redundant_meets(fixes, graph)
-    fixes = local_gap_fixes(fixes, gap)
     if fixes:
         edges = apply_gap_fixes(edges, fixes)
     return [e for e in edges if e.start != e.end or segment_is_closed(e.segment)]

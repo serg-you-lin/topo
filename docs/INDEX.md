@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`81` modules · `501` module-level functions · `63` classes · `16273` lines of code.
+`81` modules · `501` module-level functions · `63` classes · `16268` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -24,7 +24,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_adaptive_polyline` | func | `topo/core/primitives/segments.py:422` | Discretizza una curva parametrica valutata da `evaluate(t) -> Point` fra |
 | `_add_ellipse` | func | `topo_dxf/exporter.py:152` | Materializza una EllipseSeg come ELLIPSE nativa — mai una spline: topo |
 | `_add_spline` | func | `topo_dxf/exporter.py:124` | Materializza una BSplineSeg come SPLINE nativa, ricostruita dalla primitiva |
-| `AddSegment` | class | `topo/core/healing/gap_solver.py:84` | Istruzione: aggiungi un segmento retto tra pt_a e pt_b. |
+| `AddSegment` | class | `topo/core/healing/gap_solver.py:83` | Istruzione: aggiungi un segmento retto tra pt_a e pt_b. |
 | `anchor_texts` | func | `topo/tools/anchor.py:33` | Assegna ``cluster_ref`` a ogni testo di ``result.texts``. |
 | `_angle_diff` | func | `topo/core/geometry/shape.py:273` | Differenza fra due direzioni modulo 180, in [0, 90]. |
 | `angle_from_start` | func | `topo/core/primitives/segments.py:157` | Angolo, in [0, 2π), da percorrere partendo da `start_angle` nel verso |
@@ -32,7 +32,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_angular` | func | `topo/core/primitives/trim.py:104` |  |
 | `_angular_deviation` | func | `topo/core/topology/graph.py:378` |  |
 | `_angular_sweep` | func | `topo/core/primitives/segments.py:138` | Angolo spazzato in radianti, sempre positivo, percorrendo da `start` a |
-| `apply_gap_fixes` | func | `topo/core/healing/gap_solver.py:340` | Applica i GapFix restituendo una NUOVA lista di Edge — `edges` non viene mutata. |
+| `apply_gap_fixes` | func | `topo/core/healing/gap_solver.py:336` | Applica i GapFix restituendo una NUOVA lista di Edge — `edges` non viene mutata. |
 | `_apply_role_style` | func | `topo_dxf/writer.py:358` | Un `RoleStyle` (D37, D128) sul layer: colore in true color (l'ACI non ha |
 | `approximate_bspline` | func | `topo/core/geometry/points.py:324` | La B-spline di grado `degree` con meno punti di controllo che passa per il |
 | `_Arc` | class | `topo/core/healing/outer_scan.py:104` |  |
@@ -94,7 +94,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `ClosedCurve` | class | `topo/model/curve.py:49` | Curva chiusa: una lista di segmenti che chiude un giro. I suoi fatti |
 | `_closes` | func | `topo/core/geometry/shape.py:110` | I segmenti, in fila, fanno un anello: ognuno parte dove finisce il |
 | `_closest_to` | func | `topo/core/geometry/intersections.py:95` | Restituisce il punto più vicino a ref tra i candidati. |
-| `_cluster` | func | `topo/core/island.py:241` |  |
+| `_cluster` | func | `topo/core/island.py:240` |  |
 | `_cluster` | func | `topo/io/shapes.py:58` | Pari-dispari sulla gerarchia: ogni contorno a depth pari è un guscio, |
 | `Cluster` | class | `topo/model/cluster.py:15` |  |
 | `cluster_passes_min_area` | func | `topo/tools/split.py:95` | True se la parte supera la soglia di area minima (min_area <= 0 = nessun filtro). |
@@ -106,14 +106,14 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `color_for_role` | func | `topo_dxf/layers.py:79` | Il colore della palette di topo per `role` (D128) come indice ACI: |
 | `_color_rgb` | func | `topo/model/role_rule.py:124` | (r, g, b) da una tupla, da "#rrggbb" o da un nome di base ("cyan"). |
 | `_color_rgb` | func | `topo_dxf/adapter.py:63` | Il colore effettivo in RGB: il true color se c'è, altrimenti l'indice |
-| `compute_gap_fixes` | func | `topo/core/healing/gap_solver.py:174` | Calcola i GapFix fra gli endpoint liberi entro tolerance. I due capi |
+| `compute_gap_fixes` | func | `topo/core/healing/gap_solver.py:173` | Calcola i GapFix fra gli endpoint liberi entro tolerance. I due capi |
 | `concentric_groups` | func | `topo/core/geometry/shape.py:307` | Partizione dei contorni circolari di `items` per centro: ogni cerchio sta |
 | `ConcentricGroup` | class | `topo/core/geometry/shape.py:290` | Contorni circolari con lo stesso centro, dal raggio minore al maggiore. |
 | `_configure_odafc` | func | `topo_dxf/loader.py:107` | Punta l'addon `odafc` all'eseguibile ODA File Converter. |
 | `_conic_swept` | func | `topo/core/geometry/rings.py:216` | Angolo spazzato da c + M cos t + N sin t, t0 → t1, visto da `point` |
 | `_Contacts` | class | `topo/core/topology/noding.py:243` | Le fermate dei contatti su ogni edge e i nodi che formano (union-find). |
 | `_continues` | func | `topo/core/geometry/shape.py:390` | `seg` prosegue `prev` sulla stessa curva, nello stesso verso? |
-| `_contour` | func | `topo/core/island.py:247` | Il poligono resta quello dei pezzi della rete piana; i segmenti sono |
+| `_contour` | func | `topo/core/island.py:246` | Il poligono resta quello dei pezzi della rete piana; i segmenti sono |
 | `Contour` | class | `topo/model/contour.py:36` |  |
 | `_contour_entry` | func | `topo/io/view_model.py:55` |  |
 | `contour_minus` | func | `topo/core/geometry/regions.py:362` | L'anello `contour` meno la regione chiusa `region` (tutti e due anelli di |
@@ -155,7 +155,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `document_from_msp` | func | `topo_dxf/loader.py:344` | Costruisce un Document da un modelspace ezdxf già aperto. |
 | `douglas_peucker` | func | `topo/core/geometry/points.py:174` | Indici dei vertici che Douglas-Peucker tiene sulla polilinea aperta |
 | `drop_duplicate_points` | func | `topo/core/geometry/points.py:33` | Rimuove punti consecutivi coincidenti entro `tolerance`. |
-| `_drop_redundant_meets` | func | `topo/core/island.py:211` | Scarta un fix "incontro" (due `MoveEndpoint` sullo stesso punto, la |
+| `_drop_redundant_meets` | func | `topo/core/island.py:210` | Scarta un fix "incontro" (due `MoveEndpoint` sullo stesso punto, la |
 | `dxf_pattern` | func | `topo_dxf/exporter.py:49` | Il tratto di topo (segni con segno) nel pattern della tabella DXF, che |
 | `DxfAdapter` | class | `topo_dxf/adapter.py:236` | Adapter DXF che traduce entità DXF in Edge del dominio Topo. |
 | `DxfEntityDispatcher` | class | `topo_dxf/parser.py:20` | Centralizza il routing per tipo di entità DXF. |
@@ -176,7 +176,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_emit_string` | func | `topo_dxf/writer.py:179` |  |
 | `_emit_text` | func | `topo_dxf/writer.py:168` | Con un'immagine (`rendered`: quote e richiami della sorgente) si |
 | `enclosing` | func | `topo/core/geometry/regions.py:493` | Per ogni traccia (una sequenza di punti), l'indice in `outers` del |
-| `_endpoint_meta` | func | `topo/core/healing/gap_solver.py:253` | Dati che il solver usa per calcolare l'intersezione, per tipo di segmento. |
+| `_endpoint_meta` | func | `topo/core/healing/gap_solver.py:249` | Dati che il solver usa per calcolare l'intersezione, per tipo di segmento. |
 | `_ends` | func | `topo/core/geometry/lines.py:28` | I due capi di un tratto: `(start, end)`, o `item.start`/`item.end`. |
 | `_ends` | func | `topo/core/geometry/regions.py:115` |  |
 | `ensure_linetype` | func | `topo_dxf/exporter.py:23` | Garantisce che il linetype `name` esista in `doc` e ne ritorna il nome; |
@@ -212,20 +212,20 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `flatten_z` | func | `topo_dxf/sanitize.py:29` | Porta a 0 tutte le coordinate Z != 0 per LINE, ARC, CIRCLE, |
 | `_flattened_points` | func | `topo_dxf/text_extractor.py:509` | Punti di un ARC o CIRCLE appiattito alla sagitta `_ARC_SAGITTA`. |
 | `_fmt` | func | `topo/io/svg.py:24` | Lista di [x, y] → stringa 'x0,y0 x1,y1 …' per points= di polyline/polygon. |
-| `free_endpoints_from_edges` | func | `topo/core/healing/gap_solver.py:273` | Estrae gli endpoint liberi (grado < 2 nel grafo) dagli Edge. |
+| `free_endpoints_from_edges` | func | `topo/core/healing/gap_solver.py:269` | Estrae gli endpoint liberi (grado < 2 nel grafo) dagli Edge. |
 | `free_ends` | func | `topo/core/healing/steps.py:197` | (estremo, distanza dal nodo più vicino) per ogni estremo che nessun altro |
 | `_full_arc` | func | `topo/core/geometry/regions.py:181` | Un cerchio come arco di 360°: un arco si inverte, un CircleSeg no (è |
 | `Gap` | class | `topo/core/geometry/strips.py:40` | La distanza minima fra due contorni e i due punti, uno per contorno, dove cade. |
 | `gap` | func | `topo/core/geometry/strips.py:52` | La distanza minima fra gli anelli `a` e `b` e la coppia di punti più |
 | `gap` | func | `topo/tools/strips.py:64` | Fatto 2: distanza minima fra i bordi `a` e `b` e i due punti più vicini. |
-| `_gap_endpoints` | func | `topo/core/healing/gap_solver.py:302` | GapEndpoint per gli estremi di LINE / ARC / SPLINE il cui nodo (arrotondato) |
-| `gap_endpoints_at_nodes` | func | `topo/core/healing/gap_solver.py:285` | GapEndpoint per gli endpoint che cadono su uno dei `nodes` — tuple di |
-| `GapEndpoint` | class | `topo/core/healing/gap_solver.py:46` | Endpoint libero nel grafo topologico. |
+| `_gap_endpoints` | func | `topo/core/healing/gap_solver.py:298` | GapEndpoint per gli estremi di LINE / ARC / SPLINE il cui nodo (arrotondato) |
+| `gap_endpoints_at_nodes` | func | `topo/core/healing/gap_solver.py:281` | GapEndpoint per gli endpoint che cadono su uno dei `nodes` — tuple di |
+| `GapEndpoint` | class | `topo/core/healing/gap_solver.py:45` | Endpoint libero nel grafo topologico. |
 | `_gauss` | func | `topo/core/geometry/integrals.py:258` |  |
 | `_gauss_rule` | func | `topo/core/geometry/integrals.py:253` |  |
 | `_generic` | func | `topo/core/geometry/shape.py:219` |  |
 | `GeometryReader` | class | `topo/core/geometry_input.py:46` | Traduce descrizioni geometriche pure (dict) in Edge del dominio topo. |
-| `_get_solver` | func | `topo/core/healing/gap_solver.py:162` |  |
+| `_get_solver` | func | `topo/core/healing/gap_solver.py:161` |  |
 | `__getattr__` | func | `topo/model/__init__.py:55` |  |
 | `golden_max` | func | `topo/core/geometry/measure.py:248` | (x, f(x)) del massimo di `f` unimodale su [a, b], per sezione aurea. |
 | `_graph` | func | `topo/core/healing/steps.py:419` |  |
@@ -290,7 +290,6 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `load_pdf` | func | `topo_pdf/loader.py:22` | Apre un documento PDF, estrae le geometrie vettoriali da tutte le pagine, |
 | `load_segments` | func | `topo/core/geometry_input.py:206` | Un Document da segmenti di topo (`LineSeg`, `ArcSeg`, `CircleSeg`, |
 | `_local` | func | `topo/tools/split.py:139` | Copie di `items` con `cluster_ref` riferito al Result di una parte sola. |
-| `local_gap_fixes` | func | `topo/core/healing/gap_solver.py:229` | Solo i fix che non spostano un estremo più di `max_move`: due rette quasi |
 | `longest_segment` | func | `topo/core/geometry/measure.py:110` | `(segment, length)` del segmento più lungo in `segments` — `(None, 0.0)` |
 | `longest_structural_segment` | func | `topo/tools/rotate.py:89` | `(segment, length, angle_deg)` del segmento più lungo fra |
 | `loop_geometry` | func | `topo/core/topology/loop_finder.py:204` | (segmenti, stili, poligono) di un loop; None se i segmenti non chiudono |
@@ -306,7 +305,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_measured_points` | func | `topo_dxf/text_extractor.py:302` | I punti sulla geometria fra cui la quota misura, dai def-point: |
 | `measured_references` | func | `topo/tools/anchor.py:100` | Gli elementi su cui cadono i ``measured_points`` di ``text`` (gli oggetti |
 | `_meet` | func | `topo/core/geometry/intersections.py:136` |  |
-| `_meet_or_bridge` | func | `topo/core/healing/gap_solver.py:262` | Se le due geometrie si incontrano in `ix`, porta lì entrambi gli estremi; |
+| `_meet_or_bridge` | func | `topo/core/healing/gap_solver.py:258` | Se le due geometrie si incontrano in `ix`, porta lì entrambi gli estremi; |
 | `_meetings` | func | `topo/core/topology/noding.py:527` | Dove `a` e `b` si incrociano o si toccano: in forma chiusa fra rette, |
 | `merge_cocircular_overlaps` | func | `topo/core/healing/normalizer.py:346` | `merge_collinear_overlaps` per gli ArcSeg: fonde gruppi co-circolari |
 | `merge_collinear_overlaps` | func | `topo/core/healing/normalizer.py:90` | Fonde gruppi di LineSeg collineari (stessa retta infinita, `_line_key`) |
@@ -322,8 +321,8 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_mleader_anchor` | func | `topo_dxf/text_extractor.py:117` | Primo vertice della direttrice di un MULTILEADER. |
 | `mleader_text` | func | `topo_dxf/mtext.py:37` | Testo grezzo di un MULTILEADER (prima della pulizia), None se assente. |
 | `Moments` | class | `topo/core/geometry/integrals.py:36` | Area con segno e momenti primi (∬x dA, ∬y dA) di un tratto o di un giro. |
-| `_moved_segment` | func | `topo/core/healing/gap_solver.py:322` | Nuovo segmento con l'endpoint `role` spostato su `new_pt`. None se non gestito. |
-| `MoveEndpoint` | class | `topo/core/healing/gap_solver.py:73` | Istruzione: sposta l'endpoint role di ref al punto new_pt. |
+| `_moved_segment` | func | `topo/core/healing/gap_solver.py:318` | Nuovo segmento con l'endpoint `role` spostato su `new_pt`. None se non gestito. |
+| `MoveEndpoint` | class | `topo/core/healing/gap_solver.py:72` | Istruzione: sposta l'endpoint role di ref al punto new_pt. |
 | `name_rules` | func | `topo/model/role_rule.py:115` | Scorciatoia: {nome: ruolo} → una RoleRule(name=...) per voce. |
 | `_near_pairs` | func | `topo/core/topology/noding.py:231` | Le coppie (i < j) da giudicare. Il filtro misura sulle discretizzazioni |
 | `nearest_point` | func | `topo/core/geometry/regions.py:278` | Il punto delle primitive `segments` più vicino a `point`: anche a metà di |
@@ -349,7 +348,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_on_line` | func | `topo/core/primitives/trim.py:47` | Proiezione di `pt` sulla retta, dentro i suoi due estremi. |
 | `_on_nodes` | func | `topo/core/topology/outer_face.py:231` | Le geometrie di `edges` con gli estremi sui nodi del grafo: due estremi |
 | `_on_sweep` | func | `topo/core/geometry/measure.py:221` | True se l'angolo `t` cade nell'intervallo percorso da `start` per `sweep`. |
-| `_open` | func | `topo/core/island.py:255` |  |
+| `_open` | func | `topo/core/island.py:254` |  |
 | `open_boundaries` | func | `topo/tools/strips.py:134` | La costruzione: ogni bordo toccato si apre una volta sola, sui tagli di |
 | `open_ring` | func | `topo/core/geometry/strips.py:231` | L'anello `ring` senza i tratti coperti: ognuno è `(capo, capo, punto)`, |
 | `OpenCurve` | class | `topo/model/curve.py:95` | Curva aperta: segmenti che non chiudono un giro. |
@@ -376,7 +375,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_piece` | func | `topo/core/geometry/regions.py:123` | Il tratto di `seg` fra i parametri `s0` < `s1`, stessa primitiva. |
 | `_piece_side` | func | `topo/core/geometry/regions.py:214` | Da che parte di `polygon` sta un pezzo (fra due tagli non cambia): |
 | `_pieces` | func | `topo/core/healing/outer_scan.py:113` |  |
-| `_pieces` | func | `topo/core/island.py:259` | Le curve di `loose` di un'isola (D162): un pezzo che chiude da sé — |
+| `_pieces` | func | `topo/core/island.py:258` | Le curve di `loose` di un'isola (D162): un pezzo che chiude da sé — |
 | `_place` | func | `topo/core/geometry/build.py:21` | Ruota di `angle` gradi attorno all'origine e trasla in `center`. |
 | `_place` | func | `topo/core/healing/hierarchy.py:67` |  |
 | `_plain` | func | `topo/core/primitives/segments.py:22` | Un punto come tupla di float Python: chi passa numpy o ezdxf non lo |
@@ -496,10 +495,10 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_slug` | func | `topo_dxf/layers.py:85` |  |
 | `_snap` | func | `topo/core/geometry/strips.py:280` | Indice del primo taglio che coincide con `p` (due tagli coincidenti contano come uno). |
 | `_solid_points` | func | `topo_dxf/text_extractor.py:529` | SOLID/TRACE: 4 vertici in ordine 'a farfalla' → poligono convesso. |
-| `_solve_arc_arc` | func | `topo/core/healing/gap_solver.py:126` |  |
-| `_solve_arc_line` | func | `topo/core/healing/gap_solver.py:112` |  |
-| `_solve_line_line` | func | `topo/core/healing/gap_solver.py:100` |  |
-| `_solve_spline_any` | func | `topo/core/healing/gap_solver.py:138` |  |
+| `_solve_arc_arc` | func | `topo/core/healing/gap_solver.py:125` |  |
+| `_solve_arc_line` | func | `topo/core/healing/gap_solver.py:111` |  |
+| `_solve_line_line` | func | `topo/core/healing/gap_solver.py:99` |  |
+| `_solve_spline_any` | func | `topo/core/healing/gap_solver.py:137` |  |
 | `sort_clusters` | func | `topo/core/healing/hierarchy.py:76` | I cluster dal più grande: area esatta dell'outer (a 1e-6 mm², sotto c'è |
 | `_span` | func | `topo/core/geometry/regions.py:56` |  |
 | `_Span` | class | `topo/core/healing/normalizer.py:219` | Un edge come intervallo [lo, hi] sul suo supporto (posizione lungo la |
@@ -575,6 +574,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_with_nodes` | func | `topo/core/topology/noding.py:617` |  |
 | `with_polygon` | func | `topo/core/primitives/polygon_builder.py:92` | `curve` col poligono che la lettura le ha costruito (fuso con la rete |
 | `_within` | func | `topo/core/primitives/fitting.py:50` | Tutti i punti entro `tolerance` dalla corda primo-ultimo. |
+| `_within_reach` | func | `topo/core/healing/gap_solver.py:229` | Un incontro che sposta un estremo più di `reach` non chiude il gap: due |
 | `_write_attached_features` | func | `topo_dxf/writer.py:257` | Ogni collezione di `cluster.detected` (D70, D90): topo non sa cosa siano. |
 | `_write_loose` | func | `topo_dxf/writer.py:234` | Materializza `result.loose`, tutte: in un file per parte le ha |
 | `write_metadata_to_dxf` | func | `topo_dxf/xdata.py:28` | Scrive i metadati come XDATA sull'entità OuterContour. |
@@ -593,13 +593,13 @@ Same name defined at module level in different modules. Not automatically a bug 
 |---|---|
 | `_assign` | `topo/tools/anchor.py:165` · `topo/tools/split.py:100` |
 | `_chain` | `topo/core/geometry/regions.py:324` · `topo/core/healing/normalizer.py:235` |
-| `_cluster` | `topo/core/island.py:241` · `topo/io/shapes.py:58` |
+| `_cluster` | `topo/core/island.py:240` · `topo/io/shapes.py:58` |
 | `_color_rgb` | `topo/model/role_rule.py:124` · `topo_dxf/adapter.py:63` |
 | `_ends` | `topo/core/geometry/lines.py:28` · `topo/core/geometry/regions.py:115` |
 | `_length` | `topo/core/geometry/regions.py:107` · `topo/core/geometry/shape.py:269` · `topo/core/primitives/fitting.py:164` |
 | `_on_arc` | `topo/core/geometry/intersections.py:129` · `topo/core/healing/outer_scan.py:127` · `topo/core/topology/noding.py:605` |
 | `_on_line` | `topo/core/geometry/intersections.py:120` · `topo/core/primitives/trim.py:47` |
-| `_pieces` | `topo/core/healing/outer_scan.py:113` · `topo/core/island.py:259` |
+| `_pieces` | `topo/core/healing/outer_scan.py:113` · `topo/core/island.py:258` |
 | `_place` | `topo/core/geometry/build.py:21` · `topo/core/healing/hierarchy.py:67` |
 | `_reach` | `topo/core/geometry/shape.py:263` · `topo/core/geometry/strips.py:139` |
 | `_ring` | `topo/core/geometry/lines.py:98` · `topo/io/shapes.py:49` |
@@ -885,27 +885,27 @@ _core/heal.py_
 
 No module-level function or class.
 
-#### `topo/core/healing/gap_solver.py` — 385 lines
+#### `topo/core/healing/gap_solver.py` — 381 lines
 
 _core/healing/gap_solver.py_
 
-- **class** `GapEndpoint` — L46 — Endpoint libero nel grafo topologico.
-- **class** `MoveEndpoint` — L73 — Istruzione: sposta l'endpoint role di ref al punto new_pt.
-- **class** `AddSegment` — L84 — Istruzione: aggiungi un segmento retto tra pt_a e pt_b.
-- `_solve_line_line(ep_a: GapEndpoint, ep_b: GapEndpoint) -> List[GapFix]` — L100
-- `_solve_arc_line(ep_arc: GapEndpoint, ep_line: GapEndpoint) -> List[GapFix]` — L112
-- `_solve_arc_arc(ep_a: GapEndpoint, ep_b: GapEndpoint) -> List[GapFix]` — L126
-- `_solve_spline_any(ep_a: GapEndpoint, ep_b: GapEndpoint) -> List[GapFix]` — L138
-- `_get_solver(kind_a: str, kind_b: str)` — L162
-- `compute_gap_fixes(endpoints: List[GapEndpoint], tolerance: float, pairwise: bool=True) -> List[GapFix]` — L174 — Calcola i GapFix fra gli endpoint liberi entro tolerance. I due capi
-- `local_gap_fixes(fixes: List[GapFix], max_move: float) -> List[GapFix]` — L229 — Solo i fix che non spostano un estremo più di `max_move`: due rette quasi
-- `_endpoint_meta(segment) -> dict` — L253 — Dati che il solver usa per calcolare l'intersezione, per tipo di segmento.
-- `_meet_or_bridge(ix: Optional[Point2D], ep_a: GapEndpoint, ep_b: GapEndpoint) -> List[GapFix]` — L262 — Se le due geometrie si incontrano in `ix`, porta lì entrambi gli estremi;
-- `free_endpoints_from_edges(edges: List[Edge], graph) -> List[GapEndpoint]` — L273 — Estrae gli endpoint liberi (grado < 2 nel grafo) dagli Edge.
-- `gap_endpoints_at_nodes(edges: List[Edge], nodes: set) -> List[GapEndpoint]` — L285 — GapEndpoint per gli endpoint che cadono su uno dei `nodes` — tuple di
-- `_gap_endpoints(edges: List[Edge], keep: Callable[[Point2D], bool]) -> List[GapEndpoint]` — L302 — GapEndpoint per gli estremi di LINE / ARC / SPLINE il cui nodo (arrotondato)
-- `_moved_segment(segment, role: str, new_pt: Point2D)` — L322 — Nuovo segmento con l'endpoint `role` spostato su `new_pt`. None se non gestito.
-- `apply_gap_fixes(edges: List[Edge], fixes: List[GapFix]) -> List[Edge]` — L340 — Applica i GapFix restituendo una NUOVA lista di Edge — `edges` non viene mutata.
+- **class** `GapEndpoint` — L45 — Endpoint libero nel grafo topologico.
+- **class** `MoveEndpoint` — L72 — Istruzione: sposta l'endpoint role di ref al punto new_pt.
+- **class** `AddSegment` — L83 — Istruzione: aggiungi un segmento retto tra pt_a e pt_b.
+- `_solve_line_line(ep_a: GapEndpoint, ep_b: GapEndpoint) -> List[GapFix]` — L99
+- `_solve_arc_line(ep_arc: GapEndpoint, ep_line: GapEndpoint) -> List[GapFix]` — L111
+- `_solve_arc_arc(ep_a: GapEndpoint, ep_b: GapEndpoint) -> List[GapFix]` — L125
+- `_solve_spline_any(ep_a: GapEndpoint, ep_b: GapEndpoint) -> List[GapFix]` — L137
+- `_get_solver(kind_a: str, kind_b: str)` — L161
+- `compute_gap_fixes(endpoints: List[GapEndpoint], tolerance: float, pairwise: bool=True) -> List[GapFix]` — L173 — Calcola i GapFix fra gli endpoint liberi entro tolerance. I due capi
+- `_within_reach(fixes: List[GapFix], ep_a: GapEndpoint, ep_b: GapEndpoint, reach: float) -> List[GapFix]` — L229 — Un incontro che sposta un estremo più di `reach` non chiude il gap: due
+- `_endpoint_meta(segment) -> dict` — L249 — Dati che il solver usa per calcolare l'intersezione, per tipo di segmento.
+- `_meet_or_bridge(ix: Optional[Point2D], ep_a: GapEndpoint, ep_b: GapEndpoint) -> List[GapFix]` — L258 — Se le due geometrie si incontrano in `ix`, porta lì entrambi gli estremi;
+- `free_endpoints_from_edges(edges: List[Edge], graph) -> List[GapEndpoint]` — L269 — Estrae gli endpoint liberi (grado < 2 nel grafo) dagli Edge.
+- `gap_endpoints_at_nodes(edges: List[Edge], nodes: set) -> List[GapEndpoint]` — L281 — GapEndpoint per gli endpoint che cadono su uno dei `nodes` — tuple di
+- `_gap_endpoints(edges: List[Edge], keep: Callable[[Point2D], bool]) -> List[GapEndpoint]` — L298 — GapEndpoint per gli estremi di LINE / ARC / SPLINE il cui nodo (arrotondato)
+- `_moved_segment(segment, role: str, new_pt: Point2D)` — L318 — Nuovo segmento con l'endpoint `role` spostato su `new_pt`. None se non gestito.
+- `apply_gap_fixes(edges: List[Edge], fixes: List[GapFix]) -> List[Edge]` — L336 — Applica i GapFix restituendo una NUOVA lista di Edge — `edges` non viene mutata.
 
 #### `topo/core/healing/hierarchy.py` — 235 lines
 
@@ -991,7 +991,7 @@ _core/healing/steps.py_
 - `_graph(edges: List[Edge], exclude_ids: FrozenSet[int], epsilon: float=0.0)` — L419
 - `_ring_segments(coords) -> List[LineSeg]` — L425
 
-#### `topo/core/island.py` — 270 lines
+#### `topo/core/island.py` — 269 lines
 
 _core/island.py_
 
@@ -1000,11 +1000,11 @@ _core/island.py_
 - `read_islands(edges: List[Edge], tolerance: float, max_gap: float) -> List[IslandReading]` — L137 — I pezzi a contatto (`spatial_islands` a `max_gap`) + `read_island` per
 - `read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandReading` — L160 — Un'isola: normalizza (nodi dagli estremi reali, tassellature rifittate,
 - `_normalize(edges: List[Edge], tolerance: float, max_gap: float) -> List[Edge]` — L195 — Stessi passi di heal, ma sulla griglia fine della rete piana: prima i
-- `_drop_redundant_meets(fixes: list, graph) -> list` — L211 — Scarta un fix "incontro" (due `MoveEndpoint` sullo stesso punto, la
-- `_cluster(reading: IslandReading, source_file: str, tolerance: float) -> Cluster` — L241
-- `_contour(segments, styles, polygon, role, parent) -> Contour` — L247 — Il poligono resta quello dei pezzi della rete piana; i segmenti sono
-- `_open(edges: List[Edge]) -> list` — L255
-- `_pieces(edges: List[Edge]) -> list` — L259 — Le curve di `loose` di un'isola (D162): un pezzo che chiude da sé —
+- `_drop_redundant_meets(fixes: list, graph) -> list` — L210 — Scarta un fix "incontro" (due `MoveEndpoint` sullo stesso punto, la
+- `_cluster(reading: IslandReading, source_file: str, tolerance: float) -> Cluster` — L240
+- `_contour(segments, styles, polygon, role, parent) -> Contour` — L246 — Il poligono resta quello dei pezzi della rete piana; i segmenti sono
+- `_open(edges: List[Edge]) -> list` — L254
+- `_pieces(edges: List[Edge]) -> list` — L258 — Le curve di `loose` di un'isola (D162): un pezzo che chiude da sé —
 
 #### `topo/core/primitives/__init__.py` — 11 lines
 

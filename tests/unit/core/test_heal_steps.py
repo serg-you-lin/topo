@@ -90,6 +90,21 @@ class TestCloseFreeGaps(unittest.TestCase):
         edges[0] = _line((0, 0), (9, 0))
         self.assertEqual(topo.experimental.close_free_gaps(edges, 0.1), edges)
 
+    def test_003_parallele_si_chiudono_col_segmento_a_ogni_angolo(self):
+        # G6e (drw_0015): due rette parallele con gli estremi a 0.004. Ruotate,
+        # il parallelismo esatto si perde nell'ultimo bit e l'"incontro" cadeva
+        # a 1e10 mm; un incontro oltre la tolleranza è un segmento (D60). Lontano
+        # dall'origine, come nel disegno: lì l'errore della rotazione supera 1e-10
+        for angle in (0.0, 0.7, 0.13, math.pi / 2):
+            pieces = [LineSeg(start=(-71610.7, -3035.024), end=(-71537.6, -3035.024)),
+                      LineSeg(start=(-71537.6, -3035.028), end=(-71513.2, -3035.028))]
+            edges = [_line(s.start, s.end) for s in (p.rotated(angle) for p in pieces)]
+            healed = topo.experimental.close_free_gaps(edges, 0.5)
+            self.assertEqual(len(healed), 3, angle)
+            for before, after in zip(edges, healed):
+                self.assertLess(math.dist(before.segment.end, after.segment.end), 0.5, angle)
+                self.assertLess(math.dist(before.segment.start, after.segment.start), 0.5, angle)
+
 
 class TestDanglingSplines(unittest.TestCase):
 
