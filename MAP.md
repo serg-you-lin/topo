@@ -6876,3 +6876,30 @@ the drawing does not have, and whether it happens depends on the frame.
 endpoints moved by 1e10 mm. Suite and goldens unchanged, 3:23. Held by
 `test_heal_steps.py::TestCloseFreeGaps::test_003` (the drw_0015 pair at four
 angles, red on the old code at 0.7).
+
+### D183 — G6e: "within the tolerance" includes it, up to float noise ✅
+
+Decided by Federico, 31 October 2026 (option 1 of three: 2 was "strictly
+below", which changes today's readings; 3 left the boundary to the input).
+
+**Problem.** On 10 of the 31 sweep reds a gap is drawn exactly as wide as the
+tolerance (regr_03: a 0.5 slot, `tolerance=0.5`). `d <= tolerance` is then
+decided by the last bit: 0.4999999999 in the file's frame, 0.5000000001
+rotated, and the hole closes in one and not in the other.
+
+**Rule.** `heal()` compares every step with `reach = tolerance + FLOAT_NOISE`
+(`topo.core.geometry.measure`, 1e-6 mm; the warnings still print the
+tolerance asked for). `FLOAT_NOISE` is also `_CHAIN_GAP_EPS` in the
+normalizer, the same float guard.
+
+**Why 1e-6.** Above the noise a rigid motion adds (~1e-11 at coordinates
+~1e5) and far below the node grid (1e-3, D113): no drawn value sits on the
+new boundary, so the decision no longer depends on the frame. A gap equal to
+the tolerance closes, as it already did in the file's frame.
+
+**Measured.** Experiment with `tolerance=0.5+1e-6` on the sweep reds: 10 of
+31 become stable under every single motion (the 6530-edge drawing not run).
+Suite and goldens unchanged, 3:21. Held by
+`test_heal_steps.py::TestGapAtTolerance` (the regr_03 slot under every
+motion, red on the old code). `island()` is not touched: its gap comparisons
+are a separate question, not yet measured.

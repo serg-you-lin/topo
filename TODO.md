@@ -170,7 +170,8 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       **C** `find_non_contour_edges` esclude insiemi diversi anche coi moti
       esatti (drw_0017: 125/123/105/127); **D** gap uguale alla tolleranza
       (regr_03: cava da 0.5, tol 0.5, `d <= tol` deciso dall'ultimo bit) —
-      scelta per Federico; poi il fallback (2_parti_saldate).
+      D183, fatta (10 stabili); poi il fallback (2_parti_saldate). Da
+      misurare: gli stessi confini in `island()` (max_gap).
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
       rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF di
       G6), `test_text_budget` anch_02 spiegato, inner che si incrociano

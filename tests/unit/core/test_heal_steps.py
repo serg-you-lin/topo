@@ -208,6 +208,25 @@ class TestShortElementsAndTolerance(unittest.TestCase):
         self.assertEqual(len(topo.experimental.free_ends(healed)), 4, "i due capi esterni e i due del moncone")
 
 
+class TestGapAtTolerance(unittest.TestCase):
+
+    def test_gap_largo_quanto_la_tolleranza_si_chiude_a_ogni_moto(self):
+        # G6e (regr_03): un foro con una cava larga 0.5, tolleranza 0.5. Il
+        # confronto `d <= tol` lo decideva l'ultimo bit, diverso a ogni moto;
+        # entro la tolleranza la comprende a meno del rumore (D183)
+        from tests.invariants import MOTIONS, moved
+        hole = [LineSeg(start=(52.659, 60.616), end=(60.0, 60.616)),
+                LineSeg(start=(60.0, 60.616), end=(60.0, 70.0)),
+                LineSeg(start=(60.0, 70.0), end=(45.0, 70.0)),
+                LineSeg(start=(45.0, 70.0), end=(45.0, 60.616)),
+                LineSeg(start=(45.0, 60.616), end=(52.159, 60.616))]
+        plate = topo.geometry.rectangle(100, 100, center=(50, 60))
+        doc = topo.load_segments(plate + hole, tolerance=0.5)
+        for name, move, _, _ in [("al posto", lambda s: s, None, None)] + MOTIONS:
+            result = topo.heal(moved(doc, move), tolerance=0.5)
+            self.assertEqual([len(c.inners) for c in result.clusters], [1], name)
+
+
 class TestCloseNearFullArcs(unittest.TestCase):
     """D112: un arco diventa cerchio solo se il gap Ã¨ entro tolleranza (Ã¨ un
     gap) E l'angolo mancante Ã¨ entro la soglia (Ã¨ un cerchio)."""

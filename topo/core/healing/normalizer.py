@@ -44,6 +44,7 @@ from collections import Counter
 from dataclasses import dataclass, replace
 from typing import Any, Callable, Hashable, Iterable, List, Tuple
 
+from ..geometry.measure import FLOAT_NOISE
 from ..primitives.segments import LineSeg, ArcSeg, CircleSeg, Point, segment_endpoints
 from ..primitives.fitting import simplify_points
 from ..topology.graph import build_node_graph
@@ -57,7 +58,7 @@ from ...model.role import ContourRole
 
 _ANGLE_DECIMALS  = 7  # direzione: quasi-esatta per costruzione, non tollerante
 _OFFSET_DECIMALS = 3  # 0.001mm — "stessa retta", non "retta vicina"
-_CHAIN_GAP_EPS   = 1e-6  # guardia da rumore in virgola mobile, non tolleranza utente
+_CHAIN_GAP_EPS   = FLOAT_NOISE  # guardia da rumore in virgola mobile, non tolleranza utente
 
 
 def _line_key(p1, p2) -> Tuple[float, float]:
