@@ -44,7 +44,7 @@ healing: i nodi topologici reali (angoli, diramazioni) distano molto di più.
 import math
 from collections import defaultdict
 from dataclasses import dataclass, field, replace
-from typing import Tuple, List, Dict
+from typing import Dict, Iterable, List, Tuple
 
 from ..geometry.measure import round_point
 from ..primitives.segments import ArcSeg, CircleSeg, segment_endpoints
@@ -276,6 +276,30 @@ def cluster_points(points: list, epsilon: float) -> Dict[Tuple, Tuple]:
                         union(p, q)
 
     return {p: find(p) for p in pts}
+
+
+def connected_groups(n: int, pairs: Iterable[Tuple[int, int]]) -> List[List[int]]:
+    """
+    Gruppi connessi degli indici 0..n-1 uniti dalle coppie `pairs`
+    (union-find). Ogni gruppo in ordine crescente, i gruppi per il loro
+    indice più piccolo: l'ordine non dipende da quello delle coppie.
+    """
+    parent = list(range(n))
+
+    def find(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for i, j in pairs:
+        ri, rj = find(i), find(j)
+        if ri != rj:
+            parent[max(ri, rj)] = min(ri, rj)
+    groups: Dict[int, List[int]] = {}
+    for i in range(n):
+        groups.setdefault(find(i), []).append(i)
+    return list(groups.values())
 
 
 # ---------------------------------------------------------------------------

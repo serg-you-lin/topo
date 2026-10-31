@@ -195,6 +195,46 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
         self.assertEqual(len(merge_collinear_overlaps(edges, keep_junctions=True)), 2)
 
 
+class TestSameCarrierUnderMotion(unittest.TestCase):
+    """G6e (drw_0015, drw_0016): la stessa retta in due spezzoni si fonde a ogni
+    moto. La chiave arrotondata (angolo, offset) aveva un bordo di cella dove
+    i due cadevano da parti diverse, e una cucitura sulle verticali (D184)."""
+
+    def _merged_at_every_motion(self, pieces, merge, expected):
+        import topo
+        from tests.invariants import MOTIONS, moved
+        doc = topo.load_segments(pieces)
+        for name, move, _, _ in [("al posto", lambda s: s, None, None)] + MOTIONS:
+            self.assertEqual(len(merge(moved(doc, move).edges)), expected, name)
+
+    def test_doppione_verticale_a_cavallo_di_una_cella(self):
+        # drw_0016: x = 578.1875 è a metà fra due celle di 1e-3, il doppione a
+        # 2.5e-5 cade nell'altra; ruotati si fondevano, al posto no
+        self._merged_at_every_motion(
+            [LineSeg(start=(578.1875, 17.0), end=(578.1875, 25.0)),
+             LineSeg(start=(578.1874750603, 24.9999881745), end=(578.1874750603, 16.9999881745))],
+            merge_collinear_overlaps, 1)
+
+    def test_doppione_verticale_sulla_cucitura(self):
+        # drw_0015: 1e-11 di rumore su x manda un doppione verticale dall'altra
+        # parte della cucitura a +-90 gradi della chiave (angolo, offset)
+        self._merged_at_every_motion(
+            [LineSeg(start=(-71582.466979507, -2985.743765108251),
+                     end=(-71582.46697950704, -2991.205129665564)),
+             LineSeg(start=(-71582.46697950701, -2985.823579579326),
+                     end=(-71582.466979507, -2986.705129665514)),
+             LineSeg(start=(-71582.46697950704, -2991.705129665551),
+                     end=(-71582.46697950696, -2985.476083898161))],
+            merge_collinear_overlaps, 1)
+
+    def test_archi_dello_stesso_cerchio_a_cavallo_di_una_cella(self):
+        # come drw_0016 per i cerchi: centro a metà fra due celle, l'altro a 2.5e-5
+        self._merged_at_every_motion(
+            [ArcSeg(center=(578.1875, 20.0), radius=12.0, start_angle=0.1, end_angle=1.3, ccw=True),
+             ArcSeg(center=(578.187475, 20.0), radius=12.0, start_angle=1.2, end_angle=2.9, ccw=True)],
+            merge_cocircular_overlaps, 1)
+
+
 class TestMergeCocircularOverlaps(unittest.TestCase):
 
     def test_catena_di_frammenti_si_fonde(self):

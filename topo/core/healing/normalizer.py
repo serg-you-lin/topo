@@ -42,12 +42,13 @@ from __future__ import annotations
 import math
 from collections import Counter
 from dataclasses import dataclass, replace
-from typing import Any, Callable, Hashable, Iterable, List, Tuple
+from typing import Any, Callable, Iterable, List, Tuple
 
 from ..geometry.measure import FLOAT_NOISE
 from ..primitives.segments import LineSeg, ArcSeg, CircleSeg, Point, segment_endpoints
 from ..primitives.fitting import simplify_points
-from ..topology.graph import build_node_graph
+from ..topology.graph import build_node_graph, connected_groups
+from ..topology.noding import _near_pairs
 from ..topology.edge import Edge
 from ...model.role import ContourRole
 
@@ -56,41 +57,45 @@ from ...model.role import ContourRole
 # merge_collinear_overlaps
 # ---------------------------------------------------------------------------
 
-_ANGLE_DECIMALS  = 7  # direzione: quasi-esatta per costruzione, non tollerante
-_OFFSET_DECIMALS = 3  # 0.001mm — "stessa retta", non "retta vicina"
-_CHAIN_GAP_EPS   = FLOAT_NOISE  # guardia da rumore in virgola mobile, non tolleranza utente
+_SAME_DIRECTION = 1e-7   # seno dell'angolo fra due direzioni: quasi-esatta per costruzione, non tollerante
+_SAME_OFFSET    = 1e-3   # mm — "stessa retta / stesso cerchio", non "vicina"
+_CHAIN_GAP_EPS  = FLOAT_NOISE  # guardia da rumore in virgola mobile, non tolleranza utente
 
 
-def _line_key(p1, p2) -> Tuple[float, float]:
+def _same_line(a: LineSeg, b: LineSeg) -> bool:
     """
-    Chiave della retta infinita per p1->p2: (angolo canonico, offset).
+    `a` e `b` stanno sulla stessa retta infinita: direzioni parallele entro
+    `_SAME_DIRECTION` (seno, in qualunque verso) e ogni estremo di ognuno a
+    non più di `_SAME_OFFSET` dalla retta dell'altro. Giudicato sui
+    segmenti veri, mai su una chiave arrotondata: una cella di griglia ha
+    un bordo dove due spezzoni della stessa retta finiscono da parti
+    diverse, e il bordo si sposta col riferimento (D184, G6e).
 
-    L'angolo è canonico in [0, pi) — una retta e il suo verso opposto sono la
-    stessa retta. L'offset è la distanza con segno dall'origine lungo la
-    normale, arrotondata a una precisione FISSA (`_OFFSET_DECIMALS`) — non
-    alla tolleranza di heal del chiamante: "sono la stessa retta" è una
-    domanda di precisione geometrica (rumore in virgola mobile fra spezzoni
-    nati identici), non "sono abbastanza vicine da chiudere un gap". Usare
-    la tolleranza di heal qui (provato, poi tolto) arrotonda troppo grossolano
-    a tolleranze larghe (es. 0.5 -> offset all'intero) e fonde rette parallele
-    ma **reali e distinte** — un pattern di denti/asole a 0.5mm l'una
-    dall'altra è scomparso così in un golden reale (`fa_che_non_mi_incazzi`).
+    Soglie FISSE, non la tolleranza di heal del chiamante: "sono la stessa
+    retta" è precisione geometrica (rumore fra spezzoni nati identici), non
+    "abbastanza vicine da chiudere un gap". Con la tolleranza di heal (provato,
+    poi tolto) rette parallele **reali e distinte** a 0.5 mm si fondevano —
+    un pattern di denti/asole sparito in un golden (`fa_che_non_mi_incazzi`).
     """
-    dx, dy = p2[0] - p1[0], p2[1] - p1[1]
-    if dx < 0 or (dx == 0 and dy < 0):
-        dx, dy = -dx, -dy
+    da, db = _unit(a), _unit(b)
+    if da is None or db is None or abs(da[0] * db[1] - da[1] * db[0]) > _SAME_DIRECTION:
+        return False
+    return max(_off_line(p, a.start, da) for p in (b.start, b.end)) <= _SAME_OFFSET         and max(_off_line(p, b.start, db) for p in (a.start, a.end)) <= _SAME_OFFSET
+
+
+def _unit(seg: LineSeg):
+    dx, dy = seg.end[0] - seg.start[0], seg.end[1] - seg.start[1]
     length = math.hypot(dx, dy)
-    if length == 0:
-        return (0.0, 0.0)
-    ux, uy = dx / length, dy / length
-    angle  = round(math.atan2(uy, ux), _ANGLE_DECIMALS)
-    offset = ux * p1[1] - uy * p1[0]  # distanza con segno origine-retta
-    return (angle, round(offset, _OFFSET_DECIMALS))
+    return (dx / length, dy / length) if length else None
+
+
+def _off_line(p, origin, u) -> float:
+    return abs((p[0] - origin[0]) * u[1] - (p[1] - origin[1]) * u[0])
 
 
 def merge_collinear_overlaps(edges: Iterable[Edge], keep_junctions: bool = False) -> List[Edge]:
     """
-    Fonde gruppi di LineSeg collineari (stessa retta infinita, `_line_key`)
+    Fonde gruppi di LineSeg collineari (stessa retta infinita, `_same_line`)
     che si toccano o si sovrappongono in un solo Edge ciascuno — a catena: il
     primo membro non deve toccare/sovrapporsi all'ultimo, basta una sequenza
     di contatti/sovrapposizioni intermedi, esattamente come un fascio di
@@ -178,13 +183,12 @@ def merge_collinear_overlaps(edges: Iterable[Edge], keep_junctions: bool = False
     a un bivio — probabilmente paritario — in un golden reale,
     `staffa_scarto_doppia`, senza che una sola fusione fosse coinvolta.)
     """
-    return _merge_on_carrier(edges, LineSeg, lambda seg: _line_key(seg.start, seg.end),
-                             _line_spans, _merged_line, keep_junctions)
+    return _merge_on_carrier(edges, LineSeg, _same_line, _line_spans, _merged_line, keep_junctions)
 
 
 def _line_spans(group: List[Edge]) -> List[_Span]:
     """Span lungo la retta comune: `t` è la proiezione sulla direzione del
-    primo edge, canonica come in `_line_key`, quindi confrontabile fra edge."""
+    primo edge, in verso canonico, quindi confrontabile fra edge."""
     s0, e0 = group[0].segment.start, group[0].segment.end
     ux, uy = e0[0] - s0[0], e0[1] - s0[1]
     length0 = math.hypot(ux, uy)
@@ -256,37 +260,42 @@ def _chain(spans: List[_Span]) -> List[List[_Span]]:
 def _merge_on_carrier(
     edges: Iterable[Edge],
     segment_type: type,
-    key: Callable[[Any], Hashable],
+    same: Callable[[Any, Any], bool],
     chains_of: Callable[[List[Edge]], List[List[_Span]]],
     merged: Callable[[_Span, _Span], Tuple[Point, Point, Any]],
     keep_junctions: bool = False,
 ) -> List[Edge]:
     """
-    Raggruppa per supporto (`key`) gli edge di `segment_type` con ruolo
-    UNKNOWN, divide ogni gruppo in catene (`chains_of`) e sostituisce ogni
-    catena di 2+ con un Edge solo: (start, end, segmento) da `merged(lo, hi)`,
-    role/style del membro che viene prima in input. Il resto della lista
-    resta nell'ordine di input.
+    Raggruppa per supporto gli edge di `segment_type` con ruolo UNKNOWN —
+    due vicini con `same(a, b)`, a catena —, divide ogni gruppo in catene
+    (`chains_of`) e sostituisce ogni catena di 2+ con un Edge solo:
+    (start, end, segmento) da `merged(lo, hi)`, role/style del membro che
+    viene prima in input. Il resto della lista resta nell'ordine di input.
     """
     edges = list(edges)
     original_index = {id(e): i for i, e in enumerate(edges)}
 
-    buckets: dict = {}
+    typed = [e for e in edges if e.role == ContourRole.UNKNOWN and isinstance(e.segment, segment_type)]
+    # solo pezzi che si toccano possono fondersi: le coppie da giudicare sono
+    # le vicine, il supporto lo decide `same` sui segmenti veri
+    pairs = [(i, j) for i, j in _near_pairs(typed, _SAME_OFFSET)
+             if same(typed[i].segment, typed[j].segment)]
+    groups = connected_groups(len(typed), pairs)
+    carrier = {id(typed[i]): k for k, members in enumerate(groups) for i in members}
+    buckets = [[typed[i] for i in members] for members in groups]
+
     carriers_at: dict = {}  # nodo -> supporti degli edge che finiscono lì
     for edge in edges:
-        seg = edge.segment
         if edge.role != ContourRole.UNKNOWN:
             continue
-        carrier = key(seg) if isinstance(seg, segment_type) else id(edge)
+        key = carrier.get(id(edge), ("edge", id(edge)))
         for node in (edge.start, edge.end):
-            carriers_at.setdefault(node, set()).add(carrier)
-        if isinstance(seg, segment_type):
-            buckets.setdefault(carrier, []).append(edge)
+            carriers_at.setdefault(node, set()).add(key)
 
     replacement: dict = {}  # id(rappresentante) -> Edge fuso
     drop: set = set()       # id(edge) assorbiti da una fusione
     junction = lambda node: len(carriers_at.get(node, ())) > 1
-    for group in buckets.values():
+    for group in buckets:
         if len(group) < 2:
             continue
         chains = chains_of(group)
@@ -335,19 +344,15 @@ def _split_at_junctions(chain: List[_Span], junction: Callable[[Point], bool]) -
 _TWO_PI = 2.0 * math.pi
 
 
-def _arc_key(center, radius) -> Tuple[float, float, float]:
-    """Chiave del cerchio (centro+raggio) a precisione fissa — v. `_line_key`."""
-    return (
-        round(center[0], _OFFSET_DECIMALS),
-        round(center[1], _OFFSET_DECIMALS),
-        round(radius, _OFFSET_DECIMALS),
-    )
+def _same_circle(a: ArcSeg, b: ArcSeg) -> bool:
+    """Stesso cerchio: centri e raggi entro `_SAME_OFFSET` — v. `_same_line`."""
+    return math.dist(a.center, b.center) <= _SAME_OFFSET and abs(a.radius - b.radius) <= _SAME_OFFSET
 
 
 def merge_cocircular_overlaps(edges: Iterable[Edge]) -> List[Edge]:
     """
     `merge_collinear_overlaps` per gli ArcSeg: fonde gruppi co-circolari
-    (stesso centro+raggio, `_arc_key`) che si toccano/sovrappongono
+    (stesso centro+raggio, `_same_circle`) che si toccano/sovrappongono
     angolarmente in un solo Edge ciascuno, incatenando a catena sul dominio
     circolare [0, 2*pi) (srotolando oltre il taglio 0/2*pi quando serve).
     Se la copertura totale chiude un giro intero, il fuso ha
@@ -358,8 +363,7 @@ def merge_cocircular_overlaps(edges: Iterable[Edge]) -> List[Edge]:
     estremi conservati, mai il punto ricalcolato a piena precisione;
     preserva l'ordine di input per tutto ciò che non fonde.
     """
-    return _merge_on_carrier(edges, ArcSeg, lambda seg: _arc_key(seg.center, seg.radius),
-                             _arc_chains, _merged_arc)
+    return _merge_on_carrier(edges, ArcSeg, _same_circle, _arc_chains, _merged_arc)
 
 
 def _arc_chains(group: List[Edge]) -> List[List[_Span]]:
