@@ -7023,6 +7023,14 @@ old and the new code. Held by `tests/unit/core/test_base.py` (ends on either
 side of a grid cell become one node; dense points wider than epsilon stay;
 heal and island read the same outer under every motion).
 
+**Hole found right after (same day).** The gap solver's bridging segment
+took its nodes from `round_point` of the true ends, not from the nodes
+`prepare` had decided: where an end's node was its group's representative,
+the bridge hung free and a rotation lost two loops (drw_0028, 21 → 19).
+`AddSegment` now carries the nodes of the two ends it joins (`node_a`,
+`node_b`, set by one `_bridge`), and `apply_gap_fixes` uses them. Suite and
+goldens unchanged.
+
 ### D188 — `core/healing/` becomes `core/base/` and `core/readings/` ✅
 
 Asked by Federico, 31 October 2026. The name `healing/` said "the parts of
