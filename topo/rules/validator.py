@@ -14,7 +14,6 @@ Due validazioni distinte, entrambe utili:
                            Chiamata automaticamente da topo.heal().
 """
 
-import math
 
 from ..model import Result
 from ..model.document import Document
@@ -36,7 +35,6 @@ def validate_document(doc: Document) -> Result:
 
     Errori (is_valid = False) — il file non è lavorabile:
       - nessuna geometria
-      - coordinate non finite (NaN / inf)
       - tutti i segmenti degeneri
 
     Warning — lavorabile ma da tenere d'occhio:
@@ -67,17 +65,6 @@ def validate_document(doc: Document) -> Result:
         )
         result.is_valid = False
         return result
-
-    # --- coordinate non finite -----------------------------------------
-    non_finite = sum(
-        1 for e in edges for x, y in (e.start, e.end)
-        if not (math.isfinite(x) and math.isfinite(y))
-    )
-    if non_finite:
-        result.errors.append(
-            f"{non_finite} endpoint con coordinate non finite (NaN/inf)."
-        )
-        result.is_valid = False
 
     # --- segmenti di lunghezza nulla ----------------------------------
     zero_len = [

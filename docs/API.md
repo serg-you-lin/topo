@@ -222,8 +222,9 @@ topo.validate_document(doc: Document) -> Result
 Valida l'**input** prima di `heal()`. Non modifica niente. Ritorna un
 `Result` con solo `warnings` / `errors` / `is_valid` (`clusters` vuoto).
 
-- **`is_valid = False`** — il file non è lavorabile: nessuna geometria, coordinate
-  NaN/inf, tutti i segmenti degeneri.
+- **`is_valid = False`** — il file non è lavorabile: nessuna geometria, tutti i
+  segmenti degeneri. Una coordinata NaN/inf non arriva al documento: la
+  primitiva la rifiuta e il loader la segnala in `doc.warnings` (D190).
 - **warning** — lavorabile ma da tenere d'occhio: `LINE`/`ARC` ancora fuori da un
   contorno chiuso, endpoint che non si toccano nemmeno alla tolleranza dichiarata,
   segmenti di lunghezza nulla. Include anche le `doc.warnings` del loader.
@@ -318,7 +319,6 @@ topo.experimental.merge_collinear_overlaps(edges, keep_junctions=False) -> list[
 topo.experimental.merge_cocircular_overlaps(edges) -> list[Edge]
 topo.experimental.weld_degenerate_linesegs(edges) -> list[Edge]
 topo.experimental.refit_tessellations(edges, ...) -> list[Edge]
-topo.experimental.split_non_finite(edges) -> tuple[list[Edge], list[Edge]]
 topo.experimental.split_labeled(edges, is_structural=None) -> tuple[list[Edge], list[Edge]]
 topo.experimental.close_near_full_arcs(edges, tolerance, max_missing_angle=NEAR_FULL_ARC_MISSING)
     -> tuple[list[Edge], int]
@@ -342,9 +342,8 @@ una ricetta composta da un chiamante passano dalle stesse funzioni.
 
 | passo | prende → ritorna | cosa fa |
 |---|---|---|
-| `prepare` | `list[Edge]` → `Prepared` (`edges`, `labeled`, `broken`, `welded`) | coordinate non finite e ruoli non strutturali da parte (`split_non_finite`, `split_labeled`), poi i nodi decisi una volta: dai punti reali, gli estremi entro `GRAPH_EPSILON` sono un nodo (D180, D187). |
+| `prepare` | `list[Edge]` → `Prepared` (`edges`, `labeled`, `welded`) | ruoli non strutturali da parte (`split_labeled`), poi i nodi decisi una volta: dai punti reali, gli estremi entro `GRAPH_EPSILON` sono un nodo (D180, D187). |
 | `normalize` | `list[Edge]`, `gap` → `Normalized` (`edges` e i conteggi di ogni passo) | tassellature rifittate, doppioni fusi, tratti degeneri saldati, archi quasi completi chiusi, gap chiusi: le stesse pulizie per tutti (D189). `gap` già col margine (`reach(tolleranza)`, D183). `keep_junctions`: due pezzi collineari che si toccano solo in un innesto non si fondono (D110). |
-| `split_non_finite` | `list[Edge]` → `(finiti, non finiti)` | mette da parte gli edge con una coordinata NaN/inf: heal() li conta in `errors` e il risultato non è valido (D111). |
 | `merge_collinear_overlaps` | `list[Edge]` → `list[Edge]` | fonde le rette tracciate a spezzoni sovrapposti, giudicando "stessa retta" sui segmenti veri (D50, D184). |
 | `merge_cocircular_overlaps` | `list[Edge]` → `list[Edge]` | lo stesso sugli archi co-circolari (D52, D184). |
 | `weld_degenerate_linesegs` | `list[Edge]` → `list[Edge]` | salda i `LineSeg` sotto 0.05 mm in un nodo solo; un gruppo più largo è una curva a tratti e resta (D56, D186). |

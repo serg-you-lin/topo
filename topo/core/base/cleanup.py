@@ -1,8 +1,7 @@
 """
 topo/core/base/cleanup.py
 -------------------------
-Le pulizie di ogni lettura, una per funzione: coordinate non finite, ruoli
-non strutturali, archi quasi completi, gap fra estremi liberi, spline
+Le pulizie di ogni lettura, una per funzione: ruoli non strutturali, archi quasi completi, gap fra estremi liberi, spline
 penzolanti (D187). `prepare` e `normalize` le compongono; un chiamante con
 un'altra ricetta le compone come gli serve.
 
@@ -22,27 +21,6 @@ from ..topology.edge import Edge
 from ..topology.graph import build_node_graph
 from ...model.role import ContourRole, is_structural_role
 from .gap_solver import free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, ambiguous_gap_ends
-
-
-def split_non_finite(edges: List[Edge]) -> Tuple[List[Edge], List[Edge]]:
-    """
-    Separa gli Edge con una coordinata non finita (NaN, inf): ritorna
-    (finiti, non finiti). Un punto senza posizione non sta in nessun grafo
-    né in nessuna uscita; heal() li conta in `errors` e il risultato non è
-    valido.
-    """
-    def finite(edge: Edge) -> bool:
-        try:
-            points = [edge.start, edge.end] + list(edge.segment.discretize())
-        except (ValueError, ArithmeticError):
-            return False
-        return all(math.isfinite(v) for p in points for v in p[:2])
-
-    bad = [e for e in edges if not finite(e)]
-    if not bad:
-        return list(edges), []
-    bad_ids = {id(e) for e in bad}
-    return [e for e in edges if id(e) not in bad_ids], bad
 
 
 def split_labeled(edges: List[Edge],

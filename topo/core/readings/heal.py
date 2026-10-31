@@ -76,12 +76,8 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
 
     # le basi comuni a ogni lettura (D187)
     prepared = prepare(doc.edges, structural)
-    if prepared.broken:
-        result.errors.append(f"{len(prepared.broken)} edge con coordinate non finite (NaN/inf): "
-                             f"nessuna posizione, esclusi dalla lettura.")
-        result.is_valid = False
     if not prepared.edges and not prepared.labeled:
-        result.errors.append("Nessuna geometria con coordinate finite.")
+        result.errors.append("Nessuna geometria trovata.")
         result.is_valid = False
         return result
     labeled = prepared.labeled

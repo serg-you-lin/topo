@@ -29,7 +29,7 @@ from .core.base.normalizer import refit_tessellations
 from .core.base.prepare import prepare, Prepared, normalize, Normalized
 from .core.topology.non_contour_edges import non_contour_pieces
 from .core.base.normalizer import (merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs)
-from .core.base.cleanup import (split_non_finite, split_labeled, close_free_gaps, dangling_splines, close_near_full_arcs, NEAR_FULL_ARC_MISSING)
+from .core.base.cleanup import (split_labeled, close_free_gaps, dangling_splines, close_near_full_arcs, NEAR_FULL_ARC_MISSING)
 from .core.readings.heal_steps import (find_non_contour_edges, find_joining_edges, free_ends, structural_loops, build_hierarchy)
 from .core.base.curves import loops_to_curves, loose_curves
 from .core.readings.island import read_islands, read_island, IslandReading
@@ -51,7 +51,7 @@ __all__ = [
     "prepare", "Prepared", "normalize", "Normalized", "non_contour_pieces",
     "refit_tessellations",
     "merge_collinear_overlaps", "merge_cocircular_overlaps", "weld_degenerate_linesegs",
-    "split_non_finite", "split_labeled", "close_free_gaps", "dangling_splines",
+    "split_labeled", "close_free_gaps", "dangling_splines",
     "find_non_contour_edges", "find_joining_edges", "free_ends",
     "close_near_full_arcs", "NEAR_FULL_ARC_MISSING",
     "structural_loops", "loops_to_curves",
