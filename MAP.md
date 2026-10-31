@@ -7053,7 +7053,7 @@ snapdraw `lab/heal_repair_experiment.py`, `lab/island_rays.py`, cogo
 `fixtures/corner_bend_problem.py` — lab and fixture code, adapted on their
 side (D140), preferably to `topo.experimental`.
 
-### D189 — One ingredient per job: heal() and island() on the same network, the same faces, the same gaps ⏳ (F6 to be judged)
+### D189 — One ingredient per job: heal() and island() on the same network, the same faces, the same gaps ✅
 
 Asked by Federico, 31 October 2026: "the same flour and the same eggs for two
 recipes". D187 had put the two readings' front steps behind one function but
@@ -7112,8 +7112,13 @@ group's outer face.
 now nodes every drawing; to be measured and fixed). Goldens of heal: only F6
 changes — two flaps joined by two short sides read as one outline with two
 chords (before: two parts and an "edge joining two shapes" warning); a T gap
-of 0.45 on one short side now closes. Waiting for Federico's eye before the
-golden is touched (non-negotiable 9). Goldens of island: unchanged; `loose`
+of 0.45 on one short side now closes. Federico judged the
+DXF (31 October): the new F6 is better, the golden is regenerated at one part.
+The reading is the same under every motion and 10 edge shuffles. What it
+still says: 3 non-contour edges excluded; the two long strip sides and the
+3.7 mm stub go to `loose`. The D111 "joining edge" warning no longer fires
+there: with the gap closed the bridge is a chord inside one outline, no
+longer the only link between two shapes. Goldens of island: unchanged; `loose`
 changes count on 12 drawings (more arc pieces where ends now close on arcs).
 G6d closes (SEGNI_TRACCIATI no longer depends on the chords). Sweep reds of
 the morning (31, the 6530-edge one not run): 29 stable under every single motion;

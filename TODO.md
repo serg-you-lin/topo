@@ -188,8 +188,8 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       restano scelte della lettura.
       Metodo, da Federico: non più disegno per disegno.
       D189 (31 ottobre, branch `g6e-una-base`): una funzione per compito, heal e
-      island sulla stessa rete, facce, gap, loose. Aspetta l'occhio di Federico
-      su F6 (DXF in `_debug/2026-10-31_topo_G6e/da_guardare/`). Restano: loose di
+      island sulla stessa rete, facce, gap, loose. F6 giudicato da Federico
+      (meglio il dopo), golden rigenerato; mergiato su main. Restano: loose di
       island a pezzi dove heal dà l'edge intero (stessa regola da mettere in
       comune); J0116004A (solo ordine); drw_0017 (incroci non tagliati: rete non
       piana per heal); suite 3:44, sopra il tetto; contenimento (tre marche),
