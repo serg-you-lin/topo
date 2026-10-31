@@ -1,6 +1,6 @@
 """
-core/healing/normalizer.py
----------------------------
+topo/core/base/normalizer.py
+----------------------------
 Normalizzazione geometrica format-agnostic.
 
 Zero dipendenze da ezdxf, PDF, SVG o qualsiasi formato.

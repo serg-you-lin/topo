@@ -1,5 +1,5 @@
 """
-topo/core/healing/base.py
+topo/core/base/prepare.py
 -------------------------
 Le basi comuni di ogni lettura (D187): `heal()`, `island()` e qualunque
 ricetta un chiamante si componga partono da qui, con le stesse regole. Una
@@ -23,13 +23,8 @@ from typing import Callable, List, Optional
 
 from ..topology.edge import Edge
 from ..topology.noding import decide_nodes
-from .normalizer import (
-    merge_cocircular_overlaps, merge_collinear_overlaps, refit_tessellations,
-    weld_degenerate_linesegs,
-)
-from .steps import (
-    ambiguous_free_ends, close_free_gaps, close_near_full_arcs, split_labeled, split_non_finite,
-)
+from .normalizer import (merge_cocircular_overlaps, merge_collinear_overlaps, refit_tessellations, weld_degenerate_linesegs)
+from .cleanup import (ambiguous_free_ends, close_free_gaps, close_near_full_arcs, split_labeled, split_non_finite)
 
 
 @dataclass

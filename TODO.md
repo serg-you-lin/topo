@@ -186,7 +186,10 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       da decidere con Federico se i quattro parametri che restano diversi
       (`keep_junctions` D110, `refit` D60, `pairwise` D112, `full_arcs`)
       restano scelte della lettura.
-      Metodo, da Federico: non più disegno per disegno. Inventario nel codice
+      Metodo, da Federico: non più disegno per disegno.
+      D188: `healing/` diviso in `base/` e `readings/`; da avvisare in
+      snapdraw (`lab/heal_repair_experiment.py`, `lab/island_rays.py`) e cogo
+      (`fixtures/corner_bend_problem.py`), che importano `topo.core.healing`. Inventario nel codice
       dei punti dove heal decide per coincidenza esatta, la passata solo come
       verifica.
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island

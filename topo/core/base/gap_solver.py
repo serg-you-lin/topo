@@ -1,6 +1,6 @@
 """
-core/healing/gap_solver.py
----------------------------
+topo/core/base/gap_solver.py
+----------------------------
 Calcolo geometrico puro della chiusura dei gap tra segmenti.
 
 Zero dipendenze da ezdxf, PDF, SVG o qualsiasi formato.
@@ -27,10 +27,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, List, Optional, Tuple, Union
 
 from ..geometry.measure import FLOAT_NOISE, round_point
-from ..geometry.intersections import (
-    _distance, _line_intersection, _circle_line_intersections,
-    _circle_circle_intersections, _closest_to,
-)
+from ..geometry.intersections import (_distance, _line_intersection, _circle_line_intersections, _circle_circle_intersections, _closest_to)
 from ..primitives.segments import LineSeg, ArcSeg, BSplineSeg, segment_endpoints
 from ..topology.edge import Edge
 from ...model.role import ContourRole

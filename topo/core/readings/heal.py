@@ -1,12 +1,12 @@
 """
-core/heal.py
-------------
+topo/core/readings/heal.py
+--------------------------
 Primo modo di leggere un Document, accanto a island(): dall'interno.
 
 heal() ricostruisce la topologia (chi tocca chi, quali giri si chiudono, come
 stanno uno dentro l'altro) e trova il pezzo per contenimento. È la ricetta per
 un disegno piano — un file di taglio, un nesting di pezzi separati. I passi
-sono in `healing/steps.py`, pubblici: qui c'è solo la loro composizione di
+sono in `base/cleanup.py` (comuni, D187) e `readings/heal_steps.py`, pubblici: qui c'è solo la loro composizione di
 default, più i warning che la raccontano.
 
 Puro: solo Edge, primitive e modello, nessun formato.
@@ -17,21 +17,17 @@ from __future__ import annotations
 import math
 from typing import Callable, Optional
 
-from ..model.document import Document
-from .geometry.measure import FLOAT_NOISE
-from ..model.result import Result
-from ..model.role import is_structural_role
-from .topology.loop_finder import edges_to_open_curves
-from .topology.noding import interior_crossings
-from .topology.rim import off_faces
-from .healing.hierarchy import assign_cluster_refs
-from .healing.base import normalize, prepare
-from .healing.steps import (
-    LoopSearch, NEAR_FULL_ARC_MISSING, dangling_splines, find_non_contour_edges,
-    find_joining_edges, free_ends,
-    find_loops, structural_loops, loops_to_curves, polygonize_edges,
-    polygons_to_curves, labeled_curves, build_hierarchy,
-)
+from ...model.document import Document
+from ..geometry.measure import FLOAT_NOISE
+from ...model.result import Result
+from ...model.role import is_structural_role
+from ..topology.loop_finder import edges_to_open_curves
+from ..topology.noding import interior_crossings
+from ..topology.rim import off_faces
+from ..base.hierarchy import assign_cluster_refs
+from ..base.prepare import normalize, prepare
+from .heal_steps import (LoopSearch, find_non_contour_edges, find_joining_edges, free_ends, find_loops, structural_loops, loops_to_curves, polygonize_edges, polygons_to_curves, labeled_curves, build_hierarchy)
+from ..base.cleanup import NEAR_FULL_ARC_MISSING, dangling_splines
 
 
 # ---------------------------------------------------------------------------
@@ -172,7 +168,7 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
         result.is_valid = False
         return result
 
-    from ..rules.validator import validate_result
+    from ...rules.validator import validate_result
     validate_result(result)
     return result
 

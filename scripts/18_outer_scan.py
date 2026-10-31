@@ -3,7 +3,7 @@
 ============================================================================
 
 API topo usate (sperimentali — non ancora in __all__/docs):
-    topo.core.healing.outer_scan.outer_candidate_edges
+    topo.core.readings.outer_scan.outer_candidate_edges
         edges -> OuterCandidates (.edges, .ids, .hits_of(edge), .n_rays)
 
 Per ogni file: tutti gli edge in grigio, i candidati in rosso. Se il file ha
@@ -22,7 +22,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from topo.core.healing.outer_scan import outer_candidate_edges
+from topo.core.readings.outer_scan import outer_candidate_edges
 
 # --- CONFIG ----------------------------------------------------------------
 # Default sui fogli di vista anonimizzati che stanno in git. Per girare su un

@@ -7,7 +7,7 @@ from topo.model.document import Document
 from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, CircleSeg
-from topo.core.healing.normalizer import refit_tessellations
+from topo.core.base.normalizer import refit_tessellations
 from topo.core.primitives.segments import ArcSeg
 from topo import to_shapely
 

@@ -35,7 +35,7 @@ from typing import List, Optional
 
 from ..model.document import Document
 from ..core.topology.edge import Edge
-from ..core.healing.steps import find_non_contour_edges
+from ..core.readings.heal_steps import find_non_contour_edges
 
 
 def non_contour_candidates(doc: Document, *, tolerance: Optional[float] = None) -> List[Edge]:

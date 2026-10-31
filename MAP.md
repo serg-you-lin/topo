@@ -7022,3 +7022,25 @@ the ladder) is a rule of `find_loops` and is now tested there, green on the
 old and the new code. Held by `tests/unit/core/test_base.py` (ends on either
 side of a grid cell become one node; dense points wider than epsilon stay;
 heal and island read the same outer under every motion).
+
+### D188 — `core/healing/` becomes `core/base/` and `core/readings/` ✅
+
+Asked by Federico, 31 October 2026. The name `healing/` said "the parts of
+`heal()`" while it held the foundation of every reading, and a place that
+reads as one reading's invites fixing one reading (D187's failure). Modules
+are now grouped by job:
+- `core/base/`: `prepare.py` (was `healing/base.py`), `cleanup.py` (the steps
+  of the old `steps.py` that every reading uses: `split_non_finite`,
+  `split_labeled`, `close_near_full_arcs`, `close_free_gaps`,
+  `ambiguous_free_ends`, `dangling_splines`), `normalizer.py`,
+  `gap_solver.py`, `hierarchy.py`;
+- `core/readings/`: `heal.py`, `island.py`, `heal_steps.py` (the rest of
+  `steps.py`: the loop ladder, the fallback, non-contour, hierarchy wrapper),
+  `islands.py`, `outer_scan.py`.
+
+The public surface does not change: `topo`, `topo.geometry` and
+`topo.experimental` export names, not module paths. Internal paths broke for
+three files outside the repo that import `topo.core.healing` directly:
+snapdraw `lab/heal_repair_experiment.py`, `lab/island_rays.py`, cogo
+`fixtures/corner_bend_problem.py` — lab and fixture code, adapted on their
+side (D140), preferably to `topo.experimental`.

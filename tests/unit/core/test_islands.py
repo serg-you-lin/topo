@@ -1,7 +1,7 @@
 # tests/unit/core/test_islands.py
 
 import unittest
-from topo.core.healing.islands import spatial_islands
+from topo.core.readings.islands import spatial_islands
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, CircleSeg
 
