@@ -178,6 +178,19 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       `tests/invariants.py` (`is_valid`, niente perso, stabile a rimescolo e
       rotazione); i falliti vanno in `_debug`. Un fallito entra nella suite
       solo come micro-caso costruito con l'API di topo, mai come fixture.
+      Fatta il 31 ottobre con `scripts/21_sweep_invariants.py` (121 disegni
+      nuovi per contenuto, ~8 min): nessun crash; `island()` tiene tutte le
+      invarianti ovunque; `heal()` tiene poligoni, niente perso e una volta
+      sola, ma la lettura rimescolata cambia su **32 disegni** — quasi
+      sempre un foro o due che non si chiudono più (o uno in più), su un
+      disegno 3 → 7 outer. Da soli: rotazione 0.7 in 22, quarto di giro in
+      4, lontano in 4, specchio 1, rimescolo 1, nessuno da solo in 8 (solo
+      insieme). Quarto di giro e lontano sono esatti sulla griglia: non è
+      solo arrotondamento. Le invarianti di heal sui disegni del repo non lo
+      vedono. Rapporto ed elenco (nomi dei file solo lì) in
+      `_debug/2026-10-31_topo_snapdraw-sweep/`. Da decidere con Federico:
+      voce del cancello (D143 promette heal indipendente dal riferimento),
+      poi micro-casi ritagliati come in D181 e la causa.
 - [ ] **Generatore di disegni credibili** (deciso il 30 ottobre, dopo la
       passata su snapdraw): compone forme geometriche vere (contorni con
       raccordi, cerchi e asole dentro, archi tangenti, spline, annidamenti),
