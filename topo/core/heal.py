@@ -30,7 +30,7 @@ from .healing.normalizer import (
 )
 from .healing.steps import (
     LoopSearch, split_non_finite, split_labeled, close_near_full_arcs, NEAR_FULL_ARC_MISSING,
-    close_free_gaps, dangling_splines, find_non_contour_edges,
+    close_free_gaps, ambiguous_free_ends, dangling_splines, find_non_contour_edges,
     find_joining_edges, free_ends,
     find_loops, structural_loops, loops_to_curves, polygonize_edges,
     polygons_to_curves, labeled_curves, build_hierarchy,
@@ -103,6 +103,11 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
     if full_arcs:
         result.warnings.append(f"{full_arcs} archi quasi completi (gap entro tolleranza, mancano al "
                                f"più {math.degrees(NEAR_FULL_ARC_MISSING):.0f}°) chiusi in cerchio.")
+    ambiguous = ambiguous_free_ends(edges, reach)
+    if ambiguous:
+        first = ", ".join(f"({p[0]:.2f}, {p[1]:.2f})" for p in ambiguous[:4])
+        result.warnings.append(f"{len(ambiguous)} estremi liberi con due compagni alla stessa distanza "
+                               f"(figura simmetrica): nessun gap chiuso lì, decide il disegno ({first}).")
     edges = close_free_gaps(edges, reach)
     if dangling_splines(edges):
         result.warnings.append(
