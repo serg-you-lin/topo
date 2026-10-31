@@ -1,9 +1,9 @@
 """
-core/healing/steps.py
----------------------
-I passi di heal(), uno per funzione: edge in, edge o risultato parziale out,
-nessuno stato condiviso. heal() li compone nell'ordine di sempre; un
-chiamante con un altro disegno in mano (snapdraw) li compone come gli serve.
+topo/core/readings/heal_steps.py
+--------------------------------
+I passi propri di heal(), uno per funzione: la scala che chiude i giri,
+il fallback polygonize, i non-contorno, la gerarchia. Le basi comuni
+stanno in `core/base` (D187).
 
 Puro: solo Edge, primitive e modello, nessun formato.
 """
@@ -11,19 +11,17 @@ Puro: solo Edge, primitive e modello, nessun formato.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from typing import Callable, FrozenSet, List, Optional, Set, Tuple
 
 from shapely import STRtree
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import polygonize, snap, unary_union
 
-from ..geometry.measure import round_point, segment_length, track_points
+from ..geometry.measure import segment_length, track_points
 from ..primitives import LineSeg
 from ..primitives.polygon_builder import build_polygon, with_polygon
-from ..primitives.segments import (
-    DEFAULT_TOLERANCE, ArcSeg, CircleSeg, BSplineSeg, segment_endpoints,
-)
+from ..primitives.segments import DEFAULT_TOLERANCE
 from ..topology.edge import Edge
 from ..topology.graph import build_node_graph
 from ..topology.loop_finder import LoopFinder, loop_geometry
@@ -31,11 +29,8 @@ from ..topology.non_contour_edges import NonContourEdgeDetector
 from ...model.cluster import Cluster
 from ...model.curve import ClosedCurve, OpenCurve
 from ...model.role import ContourRole, is_structural_role
-from .gap_solver import (
-    free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, gap_endpoints_at_nodes,
-    ambiguous_gap_ends, drop_redundant_meets,
-)
-from .hierarchy import HierarchyBuilder, loop_to_closed_curve
+from ..base.gap_solver import compute_gap_fixes, apply_gap_fixes, gap_endpoints_at_nodes
+from ..base.hierarchy import HierarchyBuilder, loop_to_closed_curve
 
 
 @dataclass
@@ -53,118 +48,6 @@ class LoopSearch:
 # ---------------------------------------------------------------------------
 # API pubblica
 # ---------------------------------------------------------------------------
-
-def split_non_finite(edges: List[Edge]) -> Tuple[List[Edge], List[Edge]]:
-    """
-    Separa gli Edge con una coordinata non finita (NaN, inf): ritorna
-    (finiti, non finiti). Un punto senza posizione non sta in nessun grafo
-    né in nessuna uscita; heal() li conta in `errors` e il risultato non è
-    valido.
-    """
-    def finite(edge: Edge) -> bool:
-        try:
-            points = [edge.start, edge.end] + list(edge.segment.discretize())
-        except (ValueError, ArithmeticError):
-            return False
-        return all(math.isfinite(v) for p in points for v in p[:2])
-
-    bad = [e for e in edges if not finite(e)]
-    if not bad:
-        return list(edges), []
-    bad_ids = {id(e) for e in bad}
-    return [e for e in edges if id(e) not in bad_ids], bad
-
-
-def split_labeled(edges: List[Edge],
-                  is_structural: Optional[Callable[[str], bool]] = None
-                  ) -> Tuple[List[Edge], List[Edge]]:
-    """
-    Separa gli Edge con un ruolo già deciso e non strutturale (cornice,
-    marcatura, un manifatturiero non riconosciuto senza predicato — D30):
-    ritorna (restano nel grafo, etichettati). Senza `is_structural`, solo
-    outer/inner sono strutturali.
-    """
-    structural = is_structural or is_structural_role
-    labeled = [e for e in edges if e.role != ContourRole.UNKNOWN and not structural(e.role)]
-    if not labeled:
-        return list(edges), []
-    labeled_ids = {id(e) for e in labeled}
-    return [e for e in edges if id(e) not in labeled_ids], labeled
-
-
-NEAR_FULL_ARC_MISSING = math.radians(2.0)   # angolo mancante oltre il quale un arco non è un cerchio (D112)
-
-
-def close_near_full_arcs(edges: List[Edge], tolerance: float,
-                         max_missing_angle: float = NEAR_FULL_ARC_MISSING) -> Tuple[List[Edge], int]:
-    """
-    Un ArcSeg coi due capi liberi diventa CircleSeg (stesso centro e raggio)
-    solo se il gap fra i capi è entro `tolerance` E l'angolo mancante è entro
-    `max_missing_angle` (MAP.md D112): la tolleranza dice se il buco è un gap,
-    l'angolo se l'arco è un cerchio. `tolerance=math.inf` lascia solo l'angolo.
-    Ritorna (edge, n_archi_chiusi).
-    """
-    graph = build_node_graph(edges)
-    closed, out = 0, []
-    for edge in edges:
-        seg = edge.segment
-        if isinstance(seg, ArcSeg) and _is_near_full_arc(edge, graph, tolerance, max_missing_angle):
-            node = round_point(segment_endpoints(CircleSeg(center=seg.center, radius=seg.radius))[0])
-            edge = replace(edge, start=node, end=node,
-                           segment=CircleSeg(center=seg.center, radius=seg.radius))
-            closed += 1
-        out.append(edge)
-    return out, closed
-
-
-def _is_near_full_arc(edge: Edge, graph, tolerance: float, max_missing_angle: float) -> bool:
-    seg = edge.segment
-    if 2 * math.pi - seg._sweep() > max_missing_angle:
-        return False
-    start, end = segment_endpoints(seg)
-    if math.dist(start, end) > tolerance:
-        return False
-    # un capo che tocca altra geometria non è libero: l'arco fa parte di un giro.
-    # Capi fusi nello stesso nodo: il self-loop sta fra i degeneri, quindi il
-    # nodo deve restare senza altri edge (la punta di uno spigolo non è un cerchio)
-    if edge.start == edge.end:
-        return graph.degree(edge.start) == 0
-    return graph.degree(edge.start) == 1 and graph.degree(edge.end) == 1
-
-
-def close_free_gaps(edges: List[Edge], tolerance: float, pairwise: bool = True) -> List[Edge]:
-    """
-    Chiude i gap fra estremi liberi entro `tolerance` col gap solver
-    (estensione all'intersezione reale o linea di congiunzione).
-    `pairwise=True`: ogni estremo chiude al più un gap (D112); `False`: ogni
-    coppia, senza i secondi percorsi dove un giro li collega già.
-    """
-    graph = build_node_graph(edges)
-    endpoints = free_endpoints_from_edges(edges, graph)
-    if not endpoints:
-        return list(edges)
-    fixes = compute_gap_fixes(endpoints, tolerance, pairwise=pairwise)
-    if not pairwise:
-        fixes = drop_redundant_meets(fixes, graph)
-    if not fixes:
-        return list(edges)
-    return apply_gap_fixes(edges, fixes)
-
-
-def ambiguous_free_ends(edges: List[Edge], tolerance: float) -> List[Tuple[float, float]]:
-    """Gli estremi liberi che `close_free_gaps` lascia aperti: due compagni
-    più vicini a pari merito, nessuno scelto (D185)."""
-    return ambiguous_gap_ends(free_endpoints_from_edges(edges, build_node_graph(edges)), tolerance)
-
-
-def dangling_splines(edges: List[Edge]) -> List[Edge]:
-    """BSplineSeg aperte con almeno un estremo non collegato a nient'altro."""
-    open_splines = [e for e in edges if isinstance(e.segment, BSplineSeg) and e.start != e.end]
-    if not open_splines:
-        return []
-    graph = build_node_graph(edges)
-    return [e for e in open_splines if graph.degree(e.start) < 2 or graph.degree(e.end) < 2]
-
 
 def find_non_contour_edges(edges: List[Edge], tolerance: float) -> Set[int]:
     """

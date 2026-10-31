@@ -1,6 +1,6 @@
 """
-core/healing/islands.py
------------------------
+topo/core/readings/islands.py
+-----------------------------
 Partizione spaziale degli Edge in isole: due edge stanno nella stessa isola
 se la distanza vera fra i loro segmenti è al massimo `gap_tolerance` (a
 catena). Nessuna nozione di nodo, grafo o chiusura — solo vicinanza, quindi

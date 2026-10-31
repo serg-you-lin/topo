@@ -13,7 +13,7 @@ from pathlib import Path
 
 import topo
 import topo_dxf
-from topo.core.island import read_island
+from topo.core.readings.island import read_island
 from topo import to_shapely
 
 FIXTURES = Path(__file__).resolve().parent.parent.parent / "data" / "regressions"

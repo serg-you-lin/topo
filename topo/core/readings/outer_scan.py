@@ -1,6 +1,6 @@
 """
-core/healing/outer_scan.py
---------------------------
+topo/core/readings/outer_scan.py
+--------------------------------
 Classificazione dei bordi esterni per ray casting: quali Edge sono, ad
 almeno una quota, il primo o l'ultimo punto incontrato da un raggio che
 attraversa il disegno. Non ricostruisce il contorno — lo cuciono dopo
@@ -21,10 +21,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Tuple
 
 from ..topology.edge import Edge
-from ..primitives.segments import (
-    angle_from_start, point_on_circle,
-    LineSeg, ArcSeg, CircleSeg, BSplineSeg, EllipseSeg, DEFAULT_TOLERANCE,
-)
+from ..primitives.segments import (angle_from_start, point_on_circle, LineSeg, ArcSeg, CircleSeg, BSplineSeg, EllipseSeg, DEFAULT_TOLERANCE)
 
 Point = Tuple[float, float]
 

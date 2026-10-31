@@ -2,9 +2,7 @@
 
 import math
 import unittest
-from topo.core.healing.normalizer import (
-    merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
-)
+from topo.core.base.normalizer import (merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs)
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, ArcSeg, CircleSeg
 

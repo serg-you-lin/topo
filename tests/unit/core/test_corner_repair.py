@@ -12,7 +12,7 @@ import unittest
 from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, CircleSeg
-from topo.core.healing.steps import find_loops, repair_merged_corners
+from topo.core.readings.heal_steps import find_loops, repair_merged_corners
 from topo.core.topology.graph import build_node_graph
 from topo.core.topology.loop_finder import LoopFinder
 

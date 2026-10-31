@@ -381,7 +381,7 @@ Also recent but stable/documented already: `EllipseSeg` (5th primitive, `"ellips
 topo_dxf/        DXF/DWG adapter (loader, writer, layers, xdata, inspect)
 topo_pdf/        PDF adapter (experimental, frozen)
 topo/core/       pure geometry engine (+ geometry_input: load_geometry / load_segments): primitives (+ fitting: simplify_points), topology (+ noding, outer_face),
-                  healing (+ islands), heal(), island()
+                  base/ (the foundation of every reading: prepare, normalize, gaps, hierarchy, D187), readings/ (heal(), island() and their own steps)
 topo/model/      the domain: Document, Result, Cluster, Text, role.py, detected.py (overlay)
 topo/tools/      optional Result stages: split, anchor, inject, rotate, strips, non_contour
 topo/io/         renderers with no format dependency: svg.py, view_model.py, text.py, exporter.py (json/xml)

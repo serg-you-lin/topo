@@ -20,7 +20,7 @@ import topo_dxf
 from tests.drawings import case_name, drawing_key, drawings_for
 from tests.invariants import along_contours, uncovered, known_defect, contours, scrambled, shape_differences, unscrambled
 from tests.readings import geometry_key, island_reading, island_scrambled
-from topo.core.island import GRAPH_EPSILON
+from topo.core.readings.island import GRAPH_EPSILON
 from topo.core.primitives.segments import DEFAULT_TOLERANCE, CircleSeg, LineSeg
 from topo import to_shapely
 

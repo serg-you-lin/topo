@@ -1,4 +1,4 @@
-# topo/core/healing/hierarchy.py
+# topo/core/base/hierarchy.py
 
 from typing import Optional
 from shapely.geometry import Polygon
@@ -7,10 +7,10 @@ from ...model.curve import ClosedCurve
 from ...model.cluster import Cluster
 from ...model.contour import Contour
 from ...model.role import ContourRole, is_structural_role
-from ...core.primitives.polygon_builder import curve_polygon, with_polygon
-from ...core.geometry.integrals import ring_area
-from ...core.geometry.measure import circular_geometry, track_points
-from ...core.geometry.regions import enclosing
+from ..primitives.polygon_builder import curve_polygon, with_polygon
+from ..geometry.integrals import ring_area
+from ..geometry.measure import circular_geometry, track_points
+from ..geometry.regions import enclosing
 
 
 MIN_CONTOUR_AREA = 1e-3
@@ -28,7 +28,7 @@ def loop_to_closed_curve(
     segments: list = None,
     styles: list = None,
 ) -> Optional[ClosedCurve]:
-    from ...core.topology.loop_finder import LoopFinder
+    from ..topology.loop_finder import LoopFinder
 
     if polygon is not None:
         poly = polygon

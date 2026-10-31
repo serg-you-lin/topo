@@ -1,6 +1,6 @@
 """
-core/island.py
---------------
+topo/core/readings/island.py
+----------------------------
 Secondo modo di leggere un Document, accanto a heal(): per isole.
 
 heal() ricostruisce la topologia dall'interno (chi tocca chi, quali giri si
@@ -25,26 +25,26 @@ from typing import Callable, List, Optional
 
 from shapely.ops import unary_union
 
-from ..model.cluster import Cluster
-from ..model.contour import Contour
-from ..model.document import Document
-from ..model.curve import OpenCurve
-from ..model.result import Result
-from ..model.role import ContourRole, is_structural_role
-from .primitives.polygon_builder import curve_polygon, with_polygon
-from .primitives.segments import segment_is_closed
-from .topology.edge import Edge
-from .topology.graph import build_node_graph
-from .geometry.integrals import ring_area
-from .geometry.shape import merge_runs
-from .topology.noding import GRAPH_EPSILON, decide_nodes, edge_geometry, split_at_crossings
-from .topology.non_contour_edges import NonContourEdgeDetector
-from .topology.outer_face import OuterFace, outer_face
-from .healing.hierarchy import assign_cluster_refs, sort_clusters
-from .healing.normalizer import chain_runs
-from .healing.steps import loops_to_curves
-from .healing.islands import spatial_islands
-from .healing.base import normalize, prepare
+from ...model.cluster import Cluster
+from ...model.contour import Contour
+from ...model.document import Document
+from ...model.curve import OpenCurve
+from ...model.result import Result
+from ...model.role import ContourRole, is_structural_role
+from ..primitives.polygon_builder import curve_polygon, with_polygon
+from ..primitives.segments import segment_is_closed
+from ..topology.edge import Edge
+from ..topology.graph import build_node_graph
+from ..geometry.integrals import ring_area
+from ..geometry.shape import merge_runs
+from ..topology.noding import GRAPH_EPSILON, decide_nodes, edge_geometry, split_at_crossings
+from ..topology.non_contour_edges import NonContourEdgeDetector
+from ..topology.outer_face import OuterFace, outer_face
+from ..base.hierarchy import assign_cluster_refs, sort_clusters
+from ..base.normalizer import chain_runs
+from .heal_steps import loops_to_curves
+from .islands import spatial_islands
+from ..base.prepare import normalize, prepare
 
 
 @dataclass

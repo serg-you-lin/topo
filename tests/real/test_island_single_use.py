@@ -16,7 +16,7 @@ project_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(project_root))
 
 import topo_dxf
-from topo.core.island import read_islands
+from topo.core.readings.island import read_islands
 
 SOURCE_DIR = project_root / "tests" / "data" / "golden_anchoring"
 FILES = [f"anch_{i:02d}_noframe.dxf" for i in range(1, 9)]

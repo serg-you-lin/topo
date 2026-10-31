@@ -96,7 +96,7 @@ def check_one(path: Path) -> dict:
     """Le due letture di un disegno, con le loro invarianti."""
     import topo
     import topo_dxf
-    from topo.core.island import GRAPH_EPSILON
+    from topo.core.readings.island import GRAPH_EPSILON
     from topo.core.primitives.segments import DEFAULT_TOLERANCE
     report = {}
     try:

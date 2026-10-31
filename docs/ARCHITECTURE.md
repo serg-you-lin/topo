@@ -87,16 +87,19 @@ topo/
 │   │                 fitting.py: primitive da una sequenza di punti (simplify_points)
 │   ├── topology/     edge.py, grafo dei nodi, ricerca loop;
 │   │                 noding.py (rete piana), outer_face.py (faccia esterna)
-│   ├── healing/      chiusura gap, normalizzazione (+ tassellature), gerarchia,
-│   │                 islands.py (isole per vicinanza), steps.py (i passi di heal)
+│   ├── base/         LE BASI DI OGNI LETTURA (D187, D188): prepare.py (nodi decisi
+│   │                 una volta, normalizzazione), cleanup.py, normalizer.py,
+│   │                 gap_solver.py, hierarchy.py — heal, island e ogni ricetta
+│   │                 di un chiamante partono da qui
+│   ├── readings/     LE LETTURE: heal.py, island.py e i loro passi propri
+│   │                 (heal_steps.py, islands.py, outer_scan.py) — ognuna sceglie
+│   │                 solo come cerca il contorno
 │   ├── geometry/     LA GEOMETRIA, `topo.geometry` (D95): fatti con nomi geometrici
 │   │                 — shape (forma, cerchi concentrici, archi attorno), lines
 │   │                 (corde, file collineari), axis (rettangoli coperti) — e i
 │   │                 mattoni measure / points / intersections
 │   ├── geometry_input.py load_geometry / load_segments — geometria pura, non un
 │   │                 formato: un ingresso di topo, non un adapter (D123, D125)
-│   ├── heal.py       heal()             — lettura dall'interno: file → modello
-│   └── island.py     island()           — lettura per isole, dall'esterno
 │
 ├── model/        IL DOMINIO topo                     (dataclass pure, nessun tipo shapely — D166)
 │   ├── document.py   Document
@@ -193,11 +196,19 @@ lavora sul `Document`.
 ### 2. `heal` → `Result` (topologia)
 
 Il passo difficile. Lavora su `doc.edges`, zero `ezdxf`. `heal()` è una
-ricetta: ogni passo è una funzione in `core/healing/steps.py` (D62), esposta in
-`topo.experimental` (D176),
-`heal()` le compone in quest'ordine e scrive i warning che le raccontano. Un
-consumatore (snapdraw) compone gli stessi passi come gli serve.
+ricetta: ogni passo è una funzione (D62), esposta in `topo.experimental`
+(D176); `heal()` le compone in quest'ordine e scrive i warning che le
+raccontano. Un consumatore (snapdraw) compone gli stessi passi come gli serve.
 
+I passi 0–3 sono **le basi di ogni lettura** (`core/base/prepare.py`, D187):
+`island()` e qualunque ricetta passano dalle stesse funzioni, con le stesse
+regole; una lettura sceglie solo come cerca il contorno. Le differenze che
+restano fra le letture sono parametri con un nome di `normalize`
+(`keep_junctions`, `refit`, `pairwise`, `full_arcs`).
+
+0. **decide i nodi** (`prepare` → `decide_nodes`): dai punti reali dei
+   segmenti, gli estremi entro `GRAPH_EPSILON` l'uno dall'altro sono un nodo
+   solo — una volta, per vicinanza, mai per cella di griglia (D180, D187)
 1. **normalizza** (`merge_collinear_overlaps`, `merge_cocircular_overlaps`,
    `weld_degenerate_linesegs`): rette e archi tracciati a spezzoni fusi,
    `LineSeg` sotto 0.05 mm saldati in un nodo (D50, D52, D56)

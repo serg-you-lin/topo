@@ -18,7 +18,7 @@ from shapely.geometry import Polygon
 from topo.core.primitives.segments import LineSeg
 from topo.model.curve import ClosedCurve, OpenCurve
 from topo.model.role import ContourRole
-from topo.core.healing.hierarchy import HierarchyBuilder
+from topo.core.base.hierarchy import HierarchyBuilder
 import topo
 from topo import to_shapely
 
