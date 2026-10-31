@@ -420,64 +420,37 @@ def weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]:
     catena resta connessa. Solo i nodi (Edge.start/end) si spostano, il
     `segment` conserva il punto reale. Ordine di input preservato.
 
-    Un gruppo di nodi saldati non supera `_DEGENERATE_LENGTH_EPS` di
-    diagonale: una curva disegnata a tratti corti non collassa in un punto
-    (D152). I tratti si saldano in ordine canonico, non d'ingresso (D131).
-    Un tratto con un capo libero (nessun altro edge lo tocca) resta: è una
-    punta, non un nodo doppio (D164).
+    Si giudica il gruppo intero: i tratti corti collegati fra loro si saldano
+    tutti se i loro nodi distano al più `_DEGENERATE_LENGTH_EPS` l'uno
+    dall'altro, altrimenti nessuno — una curva disegnata a tratti corti non
+    collassa in un punto (D152) e quali tratti saldarne non lo decide un
+    ordine, che cambia col riferimento (D186). Un tratto con un capo libero
+    (nessun altro edge lo tocca) resta: è una punta, non un nodo doppio (D164).
     """
     edges = list(edges)
-    parent: dict = {}
-    extent: dict = {}   # radice -> (xmin, ymin, xmax, ymax) del gruppo
-
-    def find(p):
-        root = p
-        while parent.get(root, root) != root:
-            root = parent[root]
-        while parent.get(p, p) != root:
-            parent[p], p = root, parent.get(p, p)
-        return root
-
-    def box(root):
-        return extent.get(root, (root[0], root[1], root[0], root[1]))
-
-    def union(a, b) -> bool:
-        ra, rb = find(a), find(b)
-        if ra == rb:
-            return True
-        ba, bb = box(ra), box(rb)
-        merged = (min(ba[0], bb[0]), min(ba[1], bb[1]), max(ba[2], bb[2]), max(ba[3], bb[3]))
-        if math.hypot(merged[2] - merged[0], merged[3] - merged[1]) >= _DEGENERATE_LENGTH_EPS:
-            return False
-        if rb < ra:
-            ra, rb = rb, ra
-        parent[rb] = ra
-        extent[ra] = merged
-        return True
-
     # una punta libera non ha due nodi da unire: saldarla cancellerebbe il
     # tratto e sposterebbe il capo libero, che poi nessun gap ritrova (D164)
     degree: Counter = Counter()
     for edge in edges:
         degree[edge.start] += 1
         degree[edge.end] += 1
-    candidates = []
-    for edge in edges:
-        seg = edge.segment
-        if degree[edge.start] < 2 or degree[edge.end] < 2:
-            continue
-        if isinstance(seg, LineSeg) and edge.role == ContourRole.UNKNOWN:
-            length = math.hypot(seg.end[0] - seg.start[0], seg.end[1] - seg.start[1])
-            if length < _DEGENERATE_LENGTH_EPS:
-                candidates.append((length, min(edge.start, edge.end),
-                                   max(edge.start, edge.end), edge))
-    candidates.sort(key=lambda c: c[:3])
+    candidates = [edge for edge in edges
+                  if degree[edge.start] >= 2 and degree[edge.end] >= 2
+                  and isinstance(edge.segment, LineSeg) and edge.role == ContourRole.UNKNOWN
+                  and math.dist(edge.segment.start, edge.segment.end) < _DEGENERATE_LENGTH_EPS]
+    if not candidates:
+        return edges
 
-    degenerate_ids: set = set()
-    for _, _, _, edge in candidates:
-        if union(edge.start, edge.end):
-            degenerate_ids.add(id(edge))
-
+    nodes = sorted({p for e in candidates for p in (e.start, e.end)})
+    index = {p: k for k, p in enumerate(nodes)}
+    groups = connected_groups(len(nodes), [(index[e.start], index[e.end]) for e in candidates])
+    target: dict = {}
+    for members in groups:
+        points = [nodes[k] for k in members]
+        if len(points) > 1 and _diameter(points) <= _DEGENERATE_LENGTH_EPS:
+            # il rappresentante è il nodo minimo del gruppo, un estremo reale
+            target.update((p, points[0]) for p in points)
+    degenerate_ids = {id(e) for e in candidates if e.start in target}
     if not degenerate_ids:
         return edges
 
@@ -485,11 +458,22 @@ def weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]:
     for edge in edges:
         if id(edge) in degenerate_ids:
             continue
-        new_start, new_end = find(edge.start), find(edge.end)
+        new_start, new_end = target.get(edge.start, edge.start), target.get(edge.end, edge.end)
         if new_start != edge.start or new_end != edge.end:
             edge = replace(edge, start=new_start, end=new_end)
         result.append(edge)
     return result
+
+
+def _diameter(points: List[Point]) -> float:
+    """La distanza massima fra due punti dell'insieme: non dipende dal riferimento,
+    a differenza della diagonale della bbox."""
+    xs, ys = [p[0] for p in points], [p[1] for p in points]
+    diagonal = math.hypot(max(xs) - min(xs), max(ys) - min(ys))
+    # la diagonale sta fra il diametro e il diametro per radice di due
+    if diagonal <= _DEGENERATE_LENGTH_EPS or diagonal > 2 * _DEGENERATE_LENGTH_EPS:
+        return diagonal
+    return max(math.dist(a, b) for i, a in enumerate(points) for b in points[i + 1:])
 
 
 # ---------------------------------------------------------------------------

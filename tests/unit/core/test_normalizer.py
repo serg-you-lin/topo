@@ -327,6 +327,28 @@ class TestMergeCocircularOverlaps(unittest.TestCase):
         self.assertEqual(merge_cocircular_overlaps([]), [])
 
 
+class TestWeldUnderMotion(unittest.TestCase):
+
+    def test_arco_a_corde_uguali_saldato_uguale_a_ogni_moto(self):
+        # G6e (J0118158): un raccordo scritto a corde da 0.04 fra due lati. Con
+        # le corde tutte uguali l'ordine di saldatura lo decideva l'ultimo bit,
+        # e il tetto di 0.05 ne lasciava un'alternanza diversa a ogni moto.
+        # Ora il gruppo si giudica intero: più largo di 0.05, nessuna (D186)
+        import topo
+        from tests.invariants import MOTIONS, moved
+        center, r, n = (251.0, 21.0), 1.25, 12
+        step = 2 * math.asin(0.02 / r)
+        pts = [(center[0] + r * math.cos(k * step), center[1] + r * math.sin(k * step)) for k in range(n + 1)]
+        pieces = [LineSeg(start=(pts[0][0], pts[0][1] - 10), end=pts[0])]
+        pieces += [LineSeg(start=a, end=b) for a, b in zip(pts, pts[1:])]
+        pieces.append(LineSeg(start=pts[-1], end=(pts[-1][0] - 10, pts[-1][1])))
+        doc = topo.load_segments(pieces)
+        base = len(weld_degenerate_linesegs(doc.edges))
+        for name, move, _, _ in MOTIONS:
+            self.assertEqual(len(weld_degenerate_linesegs(moved(doc, move).edges)), base, name)
+        self.assertEqual(base, n + 2)
+
+
 class TestWeldDegenerateLinesegs(unittest.TestCase):
 
     def _chain(self):

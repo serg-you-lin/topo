@@ -171,14 +171,14 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       esatti (drw_0017: 125/123/105/127); **D** gap uguale alla tolleranza
       (regr_03: cava da 0.5, tol 0.5, `d <= tol` deciso dall'ultimo bit) —
       D183, fatta (10 stabili); **E** compagni a pari merito nel gap
-      solver (simbolo simmetrico di drw_0015) — D185, fatta. Restano: **F**
-      `weld_degenerate_linesegs` cambia coi moti esatti (J0118158, j0080281,
-      j0097092, regr_01: nodi per cella di griglia, rimedio come D184);
-      **C** (drw_0017, j0080281, J0118158); merge collineare ruotato su
-      file tassellati (regr_01, j0097092, +51 edge); j0099552/regr_02 (stessi
+      solver (simbolo simmetrico di drw_0015) — D185, fatta. **F**
+      `weld_degenerate_linesegs`, ordine di saldatura deciso dall'ultimo bit
+      lungo le corde uguali — D186, fatta (J0118158, j0097092, regr_01
+      stabili; con loro sparite anche C e merge su quei tre). Restano:
+      j0080281 (solo `far`); **C** (drw_0017); j0099552/regr_02 (stessi
       conti, forme diverse); drw_0016/drw_0025 (gap 484/483); i due
-      `shuffle` (J0116004A, U07010Z21); il fallback (2_parti_saldate). Da
-      misurare: gli stessi confini in `island()` (max_gap).
+      `shuffle` (J0116004A, U07010Z21); il fallback (2_parti_saldate); B1250136 (6530 edge, 3.5 min, 1677→1679 inner a
+      ogni moto). Da misurare: gli stessi confini in `island()` (max_gap).
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
       rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF di
       G6), `test_text_budget` anch_02 spiegato, inner che si incrociano

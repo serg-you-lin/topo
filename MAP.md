@@ -6952,3 +6952,29 @@ stance: what topology cannot decide is left to the drawing, and said.
 stay red through another path (same counts, different shapes). Suite and
 goldens unchanged, 3:22. Held by `test_heal_steps.py::TestTiedGapPartners`
 (the drw_0015 figure under every motion, red on the old code at rotation).
+
+### D186 — Reopening D152 on one point: a group of short strokes is welded whole or not at all ✅
+
+**Problem.** D152 capped a welded group at 0.05 mm and welded candidates in a
+canonical order (length, then nodes) so the groups would not depend on edge
+order. The order still depends on the frame: on J0118158 a fillet written as
+chords 0.04 mm long, all equal, was welded every other chord, and which ones
+was decided by the last bit of the lengths and by the coordinates — a
+translation picked the others. Along a chain longer than the cap, *which*
+strokes to weld has no geometric answer. The cap was also measured as the
+bounding-box diagonal, which changes with a rotation.
+
+**Rule.** The short strokes (D56's candidates, D164's tips excluded) are
+grouped by shared nodes (`connected_groups`, D184). A group whose nodes are
+all within `_DEGENERATE_LENGTH_EPS` of each other (diameter, not bbox
+diagonal) is welded whole onto its smallest node; a wider group is a curve
+drawn with short strokes and none of it is welded. D152's purpose — a curve
+does not collapse into a point — holds without an order.
+
+**Measured.** J0118158, j0097092 and regr_01 become stable under every
+single motion (on the last two the merge and non-contour differences were
+this weld seen downstream). Suite and goldens unchanged, 3:23. Slower where
+long chains of strokes now stay whole: j0097092 7.8 → 14.0 s, regr_01
+4.8 → 11.2 s for the five readings of the sweep. Held by
+`test_normalizer.py::TestWeldUnderMotion` (a fillet of twelve 0.04 chords
+between two sides; on the old code 8 edges in the file's frame, 9 rotated).
