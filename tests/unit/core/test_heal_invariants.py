@@ -49,7 +49,7 @@ KNOWN_ORDER_DEPENDENT: set = set()
 KNOWN_TWICE: dict = {}
 # disegno → voce del cancello: le corde cambiano l'outer (cave larghe quanto la
 # tolleranza, riempite solo quando ci sono le corde)
-KNOWN_CHORDS = {"data/SEGNI_TRACCIATI": "G6d"}
+KNOWN_CHORDS: dict = {}   # G6d chiuso da D189
 # tolleranze su cui si prova che ogni pezzo esce una volta, oltre a quella del disegno
 OUT_ONCE_TOLERANCES = (DEFAULT_TOLERANCE, 0.05)
 CHORDS_PER_CLUSTER = 6

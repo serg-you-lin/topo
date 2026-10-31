@@ -56,8 +56,11 @@ def fit_circle_kasa(points: List[Point]) -> Optional[Tuple[Point, float, float]]
     if len(points) < 3:
         return None
 
-    pts = np.asarray(points, dtype=float)
-    x, y = pts[:, 0], pts[:, 1]
+    pts = np.asarray(points, dtype=float)[:, :2]
+    # nel riferimento dei punti: x²+y² su coordinate grandi cancella le cifre,
+    # e il cerchio dipenderebbe da dove sta il disegno (G6e)
+    origin = pts.mean(axis=0)
+    x, y = pts[:, 0] - origin[0], pts[:, 1] - origin[1]
     a_matrix = np.column_stack([x, y, np.ones_like(x)])
     b_vector = -(x**2 + y**2)
     try:
@@ -65,13 +68,14 @@ def fit_circle_kasa(points: List[Point]) -> Optional[Tuple[Point, float, float]]
     except np.linalg.LinAlgError:
         return None
 
-    center = (-d / 2.0, -e / 2.0)
+    local = (-d / 2.0, -e / 2.0)
     radius_sq = (d**2 + e**2) / 4.0 - f
     if radius_sq <= 0:
         return None
     radius = math.sqrt(radius_sq)
+    center = (float(local[0] + origin[0]), float(local[1] + origin[1]))
 
-    residuals = np.hypot(x - center[0], y - center[1]) - radius
+    residuals = np.hypot(x - local[0], y - local[1]) - radius
     max_residual = float(np.max(np.abs(residuals)))
     return center, radius, max_residual
 
@@ -269,14 +273,18 @@ def turn_corners(points: List[Point], closed: bool, turn_deg: float, scale: floa
 
 
 def circle_through(a: Point, m: Point, b: Point) -> Optional[Tuple[Point, float]]:
-    """Il cerchio per tre punti: `(center, radius)`, None se sono allineati."""
-    den = 2 * (a[0] * (m[1] - b[1]) + m[0] * (b[1] - a[1]) + b[0] * (a[1] - m[1]))
+    """Il cerchio per tre punti: `(center, radius)`, None se sono allineati.
+    Calcolato nel riferimento di `a`: le coordinate al quadrato non perdono
+    cifre lontano dall'origine (G6e)."""
+    ox, oy = a[0], a[1]
+    a, m, b = (0.0, 0.0), (m[0] - ox, m[1] - oy), (b[0] - ox, b[1] - oy)
+    den = 2 * (m[0] * b[1] - b[0] * m[1])
     if abs(den) < 1e-12:
         return None
-    sa, sm, sb = a[0] ** 2 + a[1] ** 2, m[0] ** 2 + m[1] ** 2, b[0] ** 2 + b[1] ** 2
-    center = ((sa * (m[1] - b[1]) + sm * (b[1] - a[1]) + sb * (a[1] - m[1])) / den,
-              (sa * (b[0] - m[0]) + sm * (a[0] - b[0]) + sb * (m[0] - a[0])) / den)
-    return center, math.dist(center, a)
+    sm, sb = m[0] ** 2 + m[1] ** 2, b[0] ** 2 + b[1] ** 2
+    cx = (sm * b[1] - sb * m[1]) / den
+    cy = (sb * m[0] - sm * b[0]) / den
+    return (cx + ox, cy + oy), math.hypot(cx, cy)
 
 
 # ---------------------------------------------------------------------------

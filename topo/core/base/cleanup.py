@@ -21,7 +21,7 @@ from ..primitives.segments import ArcSeg, CircleSeg, BSplineSeg, segment_endpoin
 from ..topology.edge import Edge
 from ..topology.graph import build_node_graph
 from ...model.role import ContourRole, is_structural_role
-from .gap_solver import free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, ambiguous_gap_ends, drop_redundant_meets
+from .gap_solver import free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, ambiguous_gap_ends
 
 
 def split_non_finite(edges: List[Edge]) -> Tuple[List[Edge], List[Edge]]:
@@ -102,29 +102,25 @@ def _is_near_full_arc(edge: Edge, graph, tolerance: float, max_missing_angle: fl
     return graph.degree(edge.start) == 1 and graph.degree(edge.end) == 1
 
 
-def close_free_gaps(edges: List[Edge], tolerance: float, pairwise: bool = True) -> List[Edge]:
+def close_free_gaps(edges: List[Edge], tolerance: float) -> List[Edge]:
     """
     Chiude i gap fra estremi liberi entro `tolerance` col gap solver
-    (estensione all'intersezione reale o linea di congiunzione).
-    `pairwise=True`: ogni estremo chiude al più un gap (D112); `False`: ogni
-    coppia, senza i secondi percorsi dove un giro li collega già.
+    (estensione all'intersezione reale o linea di congiunzione), a coppie (D112).
     """
     graph = build_node_graph(edges)
     endpoints = free_endpoints_from_edges(edges, graph)
     if not endpoints:
         return list(edges)
-    fixes = compute_gap_fixes(endpoints, tolerance, pairwise=pairwise)
-    if not pairwise:
-        fixes = drop_redundant_meets(fixes, graph)
+    fixes = compute_gap_fixes(endpoints, tolerance, edges)
     if not fixes:
         return list(edges)
     return apply_gap_fixes(edges, fixes)
 
 
 def ambiguous_free_ends(edges: List[Edge], tolerance: float) -> List[Tuple[float, float]]:
-    """Gli estremi liberi che `close_free_gaps` lascia aperti: due compagni
+    """Gli estremi liberi che `close_free_gaps` lascia aperti: due punti
     più vicini a pari merito, nessuno scelto (D185)."""
-    return ambiguous_gap_ends(free_endpoints_from_edges(edges, build_node_graph(edges)), tolerance)
+    return ambiguous_gap_ends(free_endpoints_from_edges(edges, build_node_graph(edges)), tolerance, edges)
 
 
 def dangling_splines(edges: List[Edge]) -> List[Edge]:

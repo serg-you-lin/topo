@@ -28,12 +28,12 @@ def loop_to_closed_curve(
     segments: list = None,
     styles: list = None,
 ) -> Optional[ClosedCurve]:
-    from ..topology.loop_finder import LoopFinder
+    from ..topology.loop_finder import loop_points
 
     if polygon is not None:
         poly = polygon
     else:
-        pts = LoopFinder._loop_to_points(loop)
+        pts = loop_points(loop)
         if len(pts) < 3:
             return None
         poly = Polygon(pts)

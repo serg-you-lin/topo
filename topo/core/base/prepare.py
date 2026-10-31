@@ -57,33 +57,30 @@ class Normalized:
     ambiguous:      list = field(default_factory=list)   # estremi senza compagno scelto (D185)
 
 
-def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool, refit: bool,
-              pairwise: bool, full_arcs: bool) -> Normalized:
+def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normalized:
     """
-    Le pulizie di ogni lettura, nello stesso ordine e con le stesse funzioni.
-    `gap`: la distanza fino a cui due estremi liberi si chiudono. Le scelte
-    che oggi distinguono le letture, da rivedere con Federico (D187):
+    Le pulizie di ogni lettura: le stesse funzioni, nello stesso ordine, per
+    tutti (D187, D189). `gap`: la distanza fino a cui due estremi liberi si
+    chiudono, già comprensiva del margine (`geometry.measure.reach`).
+
+    Curve scritte a punti rifittate (D60 riaperto), doppioni collineari e
+    cocircolari fusi, tratti degeneri saldati, archi quasi completi chiusi,
+    gap a coppie: ogni estremo chiude al più un gap, col compagno più vicino;
+    a pari merito nessuno (D112, D185).
 
     keep_junctions: due pezzi collineari che si toccano solo in un innesto
-                    non si fondono (D110: serve a chi non noda i T)
-    refit:          le tassellature tornano primitive prima di tutto (D60)
-    pairwise:       ogni estremo chiude al più un gap, col compagno più vicino
-                    (D112); altrimenti ogni coppia entro `gap`, senza aprire un
-                    secondo percorso dove un giro li collega già
-    full_arcs:      un arco coi capi liberi che manca di poco diventa cerchio
+                    non si fondono (D110). Resta finché heal() non noda i
+                    contatti come island().
     """
     out = Normalized()
-    if refit:
-        edges = refit_tessellations(edges)
+    edges = refit_tessellations(edges)
     merged = merge_collinear_overlaps(edges, keep_junctions=keep_junctions)
     out.merged_lines, edges = len(edges) - len(merged), merged
     merged = merge_cocircular_overlaps(edges)
     out.merged_arcs, edges = len(edges) - len(merged), merged
     merged = weld_degenerate_linesegs(edges)
     out.welded, edges = len(edges) - len(merged), merged
-    if full_arcs:
-        edges, out.full_arcs = close_near_full_arcs(edges, gap)
-    if pairwise:
-        out.ambiguous = ambiguous_free_ends(edges, gap)
-    out.edges = close_free_gaps(edges, gap, pairwise=pairwise)
+    edges, out.full_arcs = close_near_full_arcs(edges, gap)
+    out.ambiguous = ambiguous_free_ends(edges, gap)
+    out.edges = close_free_gaps(edges, gap)
     return out

@@ -28,22 +28,20 @@ from shapely.ops import unary_union
 from ...model.cluster import Cluster
 from ...model.contour import Contour
 from ...model.document import Document
-from ...model.curve import OpenCurve
 from ...model.result import Result
 from ...model.role import ContourRole, is_structural_role
 from ..primitives.polygon_builder import curve_polygon, with_polygon
 from ..primitives.segments import segment_is_closed
 from ..topology.edge import Edge
-from ..topology.graph import build_node_graph
 from ..geometry.integrals import ring_area
 from ..geometry.shape import merge_runs
 from ..topology.noding import GRAPH_EPSILON, decide_nodes, edge_geometry, split_at_crossings
-from ..topology.non_contour_edges import NonContourEdgeDetector
 from ..topology.outer_face import OuterFace, outer_face
 from ..base.hierarchy import assign_cluster_refs, sort_clusters
-from ..base.normalizer import chain_runs
-from .heal_steps import loops_to_curves
+from ..base.curves import loose_curves
+from ..topology.non_contour_edges import non_contour_pieces
 from .islands import spatial_islands
+from ..geometry.measure import reach
 from ..base.prepare import normalize, prepare
 
 
@@ -101,7 +99,7 @@ def island(doc: Document, *, max_gap: float,
         result.errors.append(f"{len(prepared.broken)} edge con coordinate non finite (NaN/inf): "
                              f"nessuna posizione, esclusi dalla lettura.")
         result.is_valid = False
-    result.loose += _open(labeled)
+    result.loose += loose_curves(labeled)
     clusters = {}
     for i, r in enumerate(readings):
         if r.outer is not None and r.nested_in is None:
@@ -110,13 +108,13 @@ def island(doc: Document, *, max_gap: float,
     for i, r in enumerate(readings):
         host = clusters.get(r.nested_in) if r.nested_in is not None else clusters.get(i)
         if host is None or r.outer is None:
-            owned += [(f, host) for f in _pieces(r.edges)]
+            owned += [(f, host) for f in loose_curves(r.edges)]
             continue
         if r.nested_in is not None:
             # D161: un'isola dentro un'altra non è un suo inner, va in `loose`
-            owned += [(f, host) for f in _pieces(r.edges)]
+            owned += [(f, host) for f in loose_curves(r.edges)]
             continue
-        owned += [(f, host) for f in _pieces(r.spurs + r.outside + r.non_contour + r.unclassified)]
+        owned += [(f, host) for f in loose_curves(r.spurs + r.outside + r.non_contour + r.unclassified)]
     result.clusters = sort_clusters(list(clusters.values()))
     index = {id(c): k for k, c in enumerate(result.clusters)}
     for curve, host in owned:
@@ -164,8 +162,7 @@ def read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandRe
     """
     # i nodi di nuovo: `read_island` si può chiamare da sola (experimental)
     noded, _ = decide_nodes(edges)
-    normalized = [e for e in normalize(noded, max(tolerance, max_gap), keep_junctions=False, refit=True,
-                                       pairwise=False, full_arcs=False).edges
+    normalized = [e for e in normalize(noded, reach(max(tolerance, max_gap)), keep_junctions=False).edges
                   if e.start != e.end or segment_is_closed(e.segment)]
     noded = split_at_crossings(normalized, tolerance)
     pieces = noded.pieces
@@ -183,8 +180,7 @@ def read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandRe
         outside_ids = {id(e) for e in reading.outside}
         rest = [e for e in rest if id(e) not in outside_ids]
     # D161: dentro il contorno nessun inner, tutto il resto va in `loose`
-    full_graph = build_node_graph(pieces, epsilon=GRAPH_EPSILON)
-    non_contour_ids = NonContourEdgeDetector(tolerance).detect(full_graph, pieces, planar=True)
+    non_contour_ids = non_contour_pieces(noded, tolerance)
     reading.non_contour = [e for e in rest if id(e) in non_contour_ids]
     reading.unclassified = [e for e in rest if id(e) not in non_contour_ids]
     return reading
@@ -207,20 +203,4 @@ def _contour(segments, styles, polygon, role, parent) -> Contour:
     return with_polygon(Contour(role=role, segments=segments, styles=styles,
                                 depth=0 if parent is None else 1, parent=parent), polygon)
 
-
-def _open(edges: List[Edge]) -> list:
-    return [OpenCurve(role=e.role, segments=[e.segment], styles=[e.style]) for e in edges]
-
-
-def _pieces(edges: List[Edge]) -> list:
-    """Le curve di `loose` di un'isola (D162): un pezzo che chiude da sé —
-    un segmento chiuso, o una catena in cui ogni nodo ha grado 2 — è un
-    ClosedCurve, perché non c'è niente da scegliere; il resto un OpenCurve
-    per edge, come `_open`."""
-    single = [e for e in edges if segment_is_closed(e.segment)]
-    rest = [e for e in edges if not segment_is_closed(e.segment)]
-    runs = chain_runs(rest)
-    rings = [[(e, False)] for e in single] + [path for path, closed in runs if closed]
-    ringed = {id(e) for ring in rings for e, _ in ring}
-    return loops_to_curves(rings) + _open([e for e in rest if id(e) not in ringed])
 

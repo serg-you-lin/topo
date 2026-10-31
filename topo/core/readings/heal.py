@@ -18,15 +18,19 @@ import math
 from typing import Callable, Optional
 
 from ...model.document import Document
-from ..geometry.measure import FLOAT_NOISE
+from ..geometry.measure import reach as threshold
+from ...model.curve import ClosedCurve
 from ...model.result import Result
 from ...model.role import is_structural_role
-from ..topology.loop_finder import edges_to_open_curves
-from ..topology.noding import interior_crossings
-from ..topology.rim import off_faces
+from ..base.curves import loops_to_curves, loose_curves
+from ..topology.noding import GRAPH_EPSILON, split_at_crossings
+from ..topology.outer_face import face_loops
+from ..topology.non_contour_edges import non_contour_pieces
 from ..base.hierarchy import assign_cluster_refs
 from ..base.prepare import normalize, prepare
-from .heal_steps import (LoopSearch, find_non_contour_edges, find_joining_edges, free_ends, find_loops, structural_loops, loops_to_curves, polygonize_edges, polygons_to_curves, labeled_curves, build_hierarchy)
+from .heal_steps import (
+    find_joining_edges, free_ends, structural_loops, build_hierarchy,
+)
 from ..base.cleanup import NEAR_FULL_ARC_MISSING, dangling_splines
 
 
@@ -60,7 +64,7 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
     tol = doc.node_tolerance(override=tolerance)
     # un gap largo quanto la tolleranza si chiude a ogni riferimento, non a
     # seconda dell'ultimo bit (D183): i passi confrontano con `reach`
-    reach = tol + FLOAT_NOISE
+    reach = threshold(tol)
     structural = is_structural or is_structural_role
 
     result = Result(source_file=source_file)
@@ -84,8 +88,7 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
     if labeled and is_structural is None:
         result.warnings.append(_LABELED_WITHOUT_PREDICATE.format(n=len(labeled)))
 
-    clean = normalize(prepared.edges, reach, keep_junctions=True, refit=False,
-                      pairwise=True, full_arcs=True)
+    clean = normalize(prepared.edges, reach, keep_junctions=True)
     for count, what in ((clean.merged_lines, "segmenti collineari sovrapposti fusi"),
                         (clean.merged_arcs, "archi co-circolari sovrapposti fusi"),
                         (clean.welded + prepared.welded, "LineSeg degeneri (sub-tolleranza) saldati")):
@@ -106,47 +109,44 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
             "Verificare manualmente la correttezza del file."
         )
 
-    non_contour_ids = find_non_contour_edges(edges, reach)
-    if non_contour_ids:
+    # la rete piana, i non-contorno su di lei, i giri delle facce limitate:
+    # la stessa rete, lo stesso giudizio e lo stesso cammino di island() (D189)
+    noded = split_at_crossings(edges, tol, cut_crossings=False)
+    non_contour = non_contour_pieces(noded, tol)
+    excluded = {id(noded.parent_of(p)) for p in noded.pieces if id(p) in non_contour}
+    if excluded:
         result.warnings.append(
-            f"{len(non_contour_ids)} edge non di contorno "
+            f"{len(excluded)} edge non di contorno "
             f"esclusi dal grafo (catene fra due nodi di branching, non sul bordo esterno)."
         )
-
-    search = find_loops(edges, non_contour_ids, reach)
-    edges = search.edges
-    result.warnings += _search_warnings(search, tol)
-    if search.loops:
-        result.warnings += _loose_ends_warnings(edges, non_contour_ids,
-                                                reach if search.method == "tolerant" else 0.0)
-
-    # Scala finita senza loop: ultima spiaggia polygonize, che dà già i
-    # ClosedCurve (OUTER dal bordo, INNER dai buchi); in `loose` va solo
-    # quello che nessun bordo prende (G6b).
-    loop_edge_ids = set()
-    closed, rest = [], []
-    if search.loops:
-        kept = structural_loops(search.loops, structural)
-        loop_edge_ids = {id(e) for loop in kept for e, _ in loop}
-        closed = loops_to_curves(kept)
-        result.warnings += _crossing_warnings([e for e in edges if id(e) in loop_edge_ids], reach)
-    elif edges:
-        result.warnings.append("Nessun loop trovato via grafo, uso polygonize come fallback.")
-        polygons = polygonize_edges(edges, reach)
-        closed = polygons_to_curves(polygons)
-        loop_edge_ids, rest = off_faces(edges, polygons, reach)
-        if polygons:
-            result.warnings.append(
-                f"Geometria ricostruita via fallback polygonize "
-                f"({len(polygons)} poligoni). Verificare il risultato."
-            )
-        else:
-            result.warnings.append(
-                "LINE/ARC non formano loop chiusi — "
-                "potrebbero essere marcature o geometria aperta."
-            )
-
-    curves = closed + edges_to_open_curves(edges + rest, exclude_ids=loop_edge_ids)
+    loops = [noded.whole(loop) for loop in face_loops([p for p in noded.pieces if id(p) not in non_contour])]
+    # un giro che non diventa un contorno (senza area, D151) non prende niente:
+    # i suoi edge vanno in loose interi, come quelli che nessun giro tocca
+    closed, used = [], set()
+    for loop in structural_loops(loops, structural):
+        curves = loops_to_curves([loop])
+        if len(curves) == 1 and isinstance(curves[0], ClosedCurve):
+            closed += curves
+            used |= {id(e) for e, _ in loop}
+    kept = closed
+    if kept:
+        result.warnings += _loose_ends_warnings(noded.pieces, non_contour)
+        result.warnings += _crossing_warnings(noded.crossings)
+    else:
+        result.warnings.append("LINE/ARC non formano giri chiusi — "
+                               "potrebbero essere marcature o geometria aperta.")
+    # in loose ciò che nessun giro prende: l'edge intero se nessun suo pezzo
+    # è contorno, altrimenti i suoi pezzi rimasti
+    pieces_of: dict = {}
+    for piece in noded.pieces:
+        pieces_of.setdefault(id(noded.parent_of(piece)), []).append(piece)
+    rest = []
+    for edge in edges:
+        if id(edge) in used:
+            continue
+        pieces = pieces_of.get(id(edge), [])
+        rest += [p for p in pieces if id(p) not in used] if any(id(p) in used for p in pieces) else [edge]
+    curves = closed + loose_curves(rest)
     if not curves:
         result.errors.append("Nessuna geometria chiusa trovata dopo healing.")
         result.is_valid = False
@@ -155,7 +155,7 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
     clusters, loose = build_hierarchy(curves, label=label, source_file=source_file,
                                       is_structural=structural)
     result.clusters = clusters
-    result.loose = loose + labeled_curves(labeled)
+    result.loose = loose + loose_curves(labeled)
     assign_cluster_refs(result.loose, clusters, reach)
     if not clusters:
         # La geometria non compone nessun contorno esterno chiuso: il
@@ -187,17 +187,17 @@ _LABELED_WITHOUT_PREDICATE = (
 )
 
 
-def _loose_ends_warnings(edges: list, non_contour_ids: set, epsilon: float) -> list[str]:
+def _loose_ends_warnings(pieces: list, non_contour_ids: set) -> list[str]:
     """Quello che resta aperto anche quando qualcosa si chiude (D111): gli
-    estremi liberi (nel grafo dei loop, `epsilon`), e gli edge che uniscono
-    due forme altrimenti staccate."""
+    estremi liberi della rete, e gli edge che uniscono due forme altrimenti
+    staccate."""
     warnings = []
-    ends = free_ends(edges, epsilon)
+    ends = free_ends(pieces, GRAPH_EPSILON)
     if ends:
         first = ", ".join(f"({p[0]:.1f}, {p[1]:.1f}) a {d:.2f} mm dal nodo più vicino" for p, d in ends[:4])
         warnings.append(f"{len(ends)} estremi liberi non chiudono niente e restano in loose "
                         f"(i più vicini a un nodo: {first}).")
-    joining = find_joining_edges(edges, non_contour_ids)
+    joining = find_joining_edges(pieces, non_contour_ids)
     if joining:
         first = ", ".join(f"({e.start[0]:.1f}, {e.start[1]:.1f})→({e.end[0]:.1f}, {e.end[1]:.1f})"
                           for e in joining[:4])
@@ -206,10 +206,9 @@ def _loose_ends_warnings(edges: list, non_contour_ids: set, epsilon: float) -> l
     return warnings
 
 
-def _crossing_warnings(contour: list, tolerance: float) -> list[str]:
+def _crossing_warnings(points: list) -> list[str]:
     """Lati di contorno che si attraversano senza un nodo (D132): il disegno è
-    rotto lì, e heal() non lo ripara, lo dice."""
-    points = interior_crossings(contour, tolerance)
+    rotto lì; la rete piana li noda per leggere le facce, e heal() lo dice."""
     if not points:
         return []
     first = ", ".join(f"({p[0]:.2f}, {p[1]:.2f})" for p in points[:4])
@@ -218,23 +217,3 @@ def _crossing_warnings(contour: list, tolerance: float) -> list[str]:
             f"nell'incrocio, o accorciarli fino a farli toccare."]
 
 
-def _search_warnings(search: LoopSearch, tolerance: float) -> list[str]:
-    """Cosa racconta heal() dei gradini della scala di find_loops()."""
-    warnings = []
-    if search.repaired:
-        warnings.append(
-            f"{search.repaired} angoli chiusi all'intersezione reale dopo "
-            f"detection via clustering (epsilon={tolerance})."
-        )
-    if search.method == "tolerant":
-        warnings.append(
-            "Loop trovati solo dopo clustering tollerante "
-            f"(epsilon={tolerance}); angoli non riparati: "
-            f"{search.unrepaired_corners[:8]}. La discrepanza sopravvive nell'output."
-        )
-    if search.open_nodes:
-        warnings.append(
-            f"Grafo con {len(search.open_nodes)} estremi liberi dopo "
-            f"clustering (prime coordinate: {search.open_nodes[:8]})."
-        )
-    return warnings
