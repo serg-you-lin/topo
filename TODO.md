@@ -179,6 +179,12 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       conti, forme diverse); drw_0016/drw_0025 (gap 484/483); i due
       `shuffle` (J0116004A, U07010Z21); il fallback (2_parti_saldate); B1250136 (6530 edge, 3.5 min, 1677→1679 inner a
       ogni moto). Da misurare: gli stessi confini in `island()` (max_gap).
+      Costo accettato da Federico (31 ottobre): D186 raddoppia un `heal()` sui
+      disegni a catene di tratti corti (j0097092 1.10 → 2.20 s, regr_01
+      0.82 → 1.85 s); l'ottimizzazione è della 1.x, prima in Python, poi Rust.
+      Metodo, da Federico: non più disegno per disegno. Inventario nel codice
+      dei punti dove heal decide per coincidenza esatta, la passata solo come
+      verifica.
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
       rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF di
       G6), `test_text_budget` anch_02 spiegato, inner che si incrociano
