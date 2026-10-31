@@ -7151,3 +7151,19 @@ model cannot hold. Removed: `topo.experimental.split_non_finite`,
 can no longer carry one). Readings and goldens unchanged. Tests:
 `test_degenerate_curves.py` (every primitive refuses NaN/inf; a DXF with a NaN
 LINE and an inf CIRCLE loads, warns and heals valid).
+
+### D191 — G6e closes on a finite list of decisions in the code, not on drawings
+G6e (heal depends on the frame of reference) grew family by family: each new
+drawing could bring a new one, so the item had no end. Every family found so
+far (D182–D186) was the same defect: a decision taken at zero, on a grid,
+with an absolute threshold near float noise, or on a tie, where a rigid motion
+changes the last bit and so the answer. The places in `topo/core/` where a
+number decides are finite. On 31 October they were listed (200 threshold
+comparisons, 37 nearest/largest choices; about 35 suspects in about 15
+files). G6e is closed when each suspect has either a micro-case built with
+topo's API, red before and green after, or one line on why it does not
+decide the reading. The snapdraw sweep is then run once, as a check; whatever
+it still finds is a missing entry in the list, not a new family. The
+promise stays D143's whole: same input, same reading; a rigid motion, same
+reading, except a measure that falls on the tolerance itself within float
+noise, which heal reports (D183, D185).

@@ -138,6 +138,13 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       una fessura larga quanto la tolleranza dipende da edge che non la
       toccano.
 - [ ] **G6e** `heal()` dipende dal riferimento (aperta il 31 ottobre, in una
+      **DOMANI SI RIPARTE DA QUI (D191).** G6e si chiude su un elenco
+      finito, non sui disegni: `_debug/2026-10-31_topo_G6e-inventario/inventario.md`,
+      ~35 punti di `core/` che decidono a zero, su una griglia, con una
+      soglia assoluta o su un pari merito. Ogni voce: micro-caso rosso → verde,
+      oppure una riga sul perché è innocua. Ordine: gruppo A (soglie
+      assolute, ~8 punti), poi B, C, D. Alla fine la passata sui 121 disegni
+      una volta sola, come verifica. Il testo sotto è la storia.
       chat pulita): la passata su snapdraw (`scripts/21_sweep_invariants.py`,
       voce in Pulizia) trova 32 disegni su 121 dove un moto rigido cambia la
       lettura — quasi sempre fori che non si chiudono, una volta 3 → 7
