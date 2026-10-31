@@ -165,7 +165,7 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       classificazione). Famiglie: **A** `merge_collinear_overlaps` /
       `merge_cocircular_overlaps` raggruppano per chiave arrotondata
       (`_line_key`: angolo 1e-7, offset 1e-3; cucitura a ±90°) — griglia
-      (drw_0015, drw_0016); **B** gap solver, incontro a 1e10 mm di due
+      (drw_0015, drw_0016; D184, fatta); **B** gap solver, incontro a 1e10 mm di due
       parallele (D182, fatta: da sola non stabilizza nessun disegno);
       **C** `find_non_contour_edges` esclude insiemi diversi anche coi moti
       esatti (drw_0017: 125/123/105/127); **D** gap uguale alla tolleranza

@@ -6903,3 +6903,30 @@ Suite and goldens unchanged, 3:21. Held by
 `test_heal_steps.py::TestGapAtTolerance` (the regr_03 slot under every
 motion, red on the old code). `island()` is not touched: its gap comparisons
 are a separate question, not yet measured.
+
+### D184 — G6e: "same line, same circle" is judged on the true segments, never by a rounded key ✅
+
+**Problem.** `merge_collinear_overlaps` and `merge_cocircular_overlaps`
+grouped pieces by a rounded key: (angle to 1e-7, offset to 1e-3) for lines,
+(center, radius) to 1e-3 for arcs. A grid cell has a border: on drw_0016 two
+doubled verticals 2.5e-5 apart sit at x = 578.1875, exactly half-way between
+two cells, so they fell in two buckets in the file's frame and in one once
+rotated. And the canonical angle (-90°, 90°] has a seam on the verticals: on
+drw_0015 1e-11 of noise on x put one of three doubled verticals on the other
+side. The same disease D180 removed from the noding.
+
+**Rule.** Two pieces share a carrier when, judged on the segments,
+directions are parallel within `_SAME_DIRECTION` (1e-7, the sine of the
+angle, either way) and every end of each lies within `_SAME_OFFSET` (1e-3 mm)
+of the other's line; arcs when centers and radii are within `_SAME_OFFSET`.
+The thresholds are the old ones; what goes is the grid and the seam. Only
+nearby pairs are judged (`noding._near_pairs`), groups are their connected
+components (`topology.graph.connected_groups`, the union-find
+`spatial_islands` already had, now shared by both).
+
+**Measured.** Suite and goldens unchanged, 3:22. On the sweep, drw_0016's
+reading in its own frame loses two "holes" 146 mm long and 0 high (area 0.11)
+— slivers between doubled lines that now merge. No more sweep drawing
+becomes stable on its own: the remaining reds pass through other families.
+Held by `test_normalizer.py::TestSameCarrierUnderMotion` (the drw_0016 pair,
+the drw_0015 verticals, the drw_0016 pair as arcs; all red on the old code).

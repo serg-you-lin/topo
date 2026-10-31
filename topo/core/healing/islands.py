@@ -27,6 +27,7 @@ from typing import Iterable, List, Tuple
 from shapely import STRtree
 
 from ..topology.edge import Edge
+from ..topology.graph import connected_groups
 from ..topology.noding import edge_geometry
 
 BBox = Tuple[float, float, float, float]   # xmin, ymin, xmax, ymax
@@ -62,27 +63,11 @@ def spatial_islands(edges: Iterable[Edge], gap_tolerance: float) -> List[Island]
         return []
 
     geoms = [edge_geometry(e) for e in edges]
-    parent = list(range(len(edges)))
-
-    def find(i: int) -> int:
-        while parent[i] != i:
-            parent[i] = parent[parent[i]]
-            i = parent[i]
-        return i
-
-    tree = STRtree(geoms)
-    left, right = tree.query(geoms, predicate="dwithin", distance=gap_tolerance)
-    for i, j in zip(left.tolist(), right.tolist()):
-        ri, rj = find(i), find(j)
-        if ri != rj:
-            parent[ri] = rj
-
-    groups: dict = {}
-    for i in range(len(edges)):
-        groups.setdefault(find(i), []).append(i)
+    left, right = STRtree(geoms).query(geoms, predicate="dwithin", distance=gap_tolerance)
+    groups = connected_groups(len(edges), zip(left.tolist(), right.tolist()))
 
     islands = []
-    for members in groups.values():
+    for members in groups:
         bounds = [geoms[i].bounds for i in members]
         islands.append(Island(
             edges=[edges[i] for i in members],
