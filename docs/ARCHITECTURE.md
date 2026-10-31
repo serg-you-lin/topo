@@ -200,55 +200,51 @@ ricetta: ogni passo è una funzione (D62), esposta in `topo.experimental`
 (D176); `heal()` le compone in quest'ordine e scrive i warning che le
 raccontano. Un consumatore (snapdraw) compone gli stessi passi come gli serve.
 
-I passi 0–3 sono **le basi di ogni lettura** (`core/base/prepare.py`, D187):
+Le basi sono **le stesse per ogni lettura** (`core/base/`, D187, D189):
 `island()` e qualunque ricetta passano dalle stesse funzioni, con le stesse
-regole; una lettura sceglie solo come cerca il contorno. Le differenze che
-restano fra le letture sono parametri con un nome di `normalize`
-(`keep_junctions`, `refit`, `pairwise`, `full_arcs`).
+regole; una lettura sceglie solo come cerca il contorno. Il solo punto in cui
+le due letture leggono diversamente lo stesso fatto è un parametro con un nome:
+`split_at_crossings(cut_crossings=...)`, perché un incrocio fra due curve che
+proseguono è un disegno rotto o un segno per `heal()` (D132) e un contatto per
+`island()` (D101).
 
-0. **decide i nodi** (`prepare` → `decide_nodes`): dai punti reali dei
-   segmenti, gli estremi entro `GRAPH_EPSILON` l'uno dall'altro sono un nodo
-   solo — una volta, per vicinanza, mai per cella di griglia (D180, D187)
-1. **normalizza** (`merge_collinear_overlaps`, `merge_cocircular_overlaps`,
-   `weld_degenerate_linesegs`): rette e archi tracciati a spezzoni fusi,
-   `LineSeg` sotto 0.05 mm saldati in un nodo (D50, D52, D56)
-2. **estrae** (`split_labeled`) gli `Edge` con ruolo deciso e non strutturale
-   (qualunque ruolo che un consumatore assegna, con `role_rules` o prima di
-   `heal`): non entrano nel grafo, non sono contorno. Il predicato è
-   `model/role.is_structural_role` (D30); è il punto d'aggancio per un
-   consumatore che marca la geometria prima di `heal` (snapdraw) —
-   `topo.non_contour_candidates(doc)` (D55) espone lo stesso criterio del
-   passo 4 sotto, per decidere QUALI edge marcare qui
-3. **chiude i gap**: prima un arco quasi completo coi capi liberi diventa
-   cerchio (`close_near_full_arcs`: gap entro `tolerance` e angolo mancante
-   entro 2°), poi gli estremi liberi entro `tolerance` (`close_free_gaps`),
-   accoppiati due a due per vicinanza, portati alla loro intersezione reale.
-   La tolleranza misura un gap, non un lato: un elemento più corto di lei
-   resta (D112)
-4. **detection non-contorno** (`find_non_contour_edges`): le catene di
-   `Edge` attraverso nodi di grado 2 (`Graph.chains`, D131) che finiscono su
-   due nodi di branching distinti (grado > 2) e che il bordo della faccia
-   esterna della loro componente non percorre una volta sola (una corda, un
-   ponte) non sono contorno (D111, riapre D49) — escono dal grafo, intere,
-   per non rompere la ricerca dei loop. `heal` non
+0. **prepara** (`prepare`): coordinate non finite e ruoli non strutturali da
+   parte (`split_non_finite`, `split_labeled`, D30: il punto d'aggancio per un
+   consumatore che marca la geometria prima di `heal`, e
+   `topo.non_contour_candidates(doc)` espone il criterio del passo 3), poi i
+   nodi decisi una volta: dai punti reali dei segmenti, gli estremi entro
+   `GRAPH_EPSILON` sono un nodo solo, per vicinanza, mai per cella di griglia
+   (D180, D187)
+1. **normalizza** (`normalize`): curve scritte a punti rifittate in primitive
+   (D60), rette e archi tracciati a spezzoni fusi (D50, D52, D184), `LineSeg`
+   sotto 0.05 mm saldati (D56, D186), archi quasi completi chiusi in cerchio
+   (gap entro `tolerance` e al più 2° mancanti, D112), poi i gap: ogni estremo
+   libero si chiude sul punto più vicino della rete entro `tolerance` — un altro
+   estremo (incontro o segmento, ogni estremo al più un gap, D112) o il punto
+   dove la sua curva, proseguita, incontra un altro edge; mai con un ponte di
+   traverso; a pari merito nessuno (D185, D189). Ogni confronto con una
+   tolleranza la comprende a meno del rumore (`reach`, D183)
+2. **rete piana** (`split_at_crossings`): ogni contatto deciso una volta sulle
+   curve vere (D180); per `heal()` tagliano i contatti dove un capo tocca
+   qualcosa, non gli incroci
+3. **non-contorno** (`non_contour_pieces`): le catene attraverso nodi di grado
+   2 (`Graph.chains`, D131) fra due nodi di branching distinti, che il bordo
+   della faccia esterna della loro componente non percorre una volta sola (una
+   corda, un ponte), non sono contorno (D111) — escono, intere. `heal` non
    decide cosa siano: lo decide un consumatore, a modo suo
-5. **ricerca loop** (`find_loops` → `LoopSearch`, che dice quale gradino ha
-   chiuso), con una scala di strategie sempre meno esatte:
-   - grafo esatto (uguaglianza delle tuple arrotondate)
-   - se restano estremi liberi (D57): clustering degli endpoint entro
-     `tolerance` per trovare gli angoli "quasi chiusi", poi chiusura vera
-     all'intersezione (`repair_merged_corners`)
-   - se non chiude ancora: loop sul grafo clusterizzato tollerante (con
-     warning: la discrepanza sopravvive nell'output)
-   - se nessun gradino chiude, `heal()` passa all'ultima spiaggia:
-     `polygonize_to_curves` sui segmenti discretizzati, che dà già i contorni
-     (geometria nativa persa)
-6. **loop → curva** (`structural_loops`, `loops_to_curves`): un loop con un
-   edge di ruolo non strutturale non è contorno; un loop senza area (o un
-   micro-cerchio) torna come curve aperte, che finiscono in `loose` (D151)
-7. **costruzione gerarchia** (`build_hierarchy`): quale loop contiene quale →
-   albero di contenimento `outer` / `inner`. `heal` si ferma qui: **non** dà un
-   significato ai contorni interni (D15) — ogni loop contenuto è un `Contour`
+4. **facce** (`face_loops`): il cammino della faccia esterna preso su ogni lato
+   di ogni edge dà tutte le facce; quelle limitate, divise in giri semplici
+   (due asole che si toccano in un punto sono due giri), sono i contorni.
+   Nessuna scelta dipende dall'ordine degli edge o dal riferimento (D189). Un
+   lato tagliato da un contatto torna il segmento del file se il giro ne
+   percorre tutti i pezzi (`NodedEdges.whole`, D143)
+5. **giro → curva** (`structural_loops`, `loops_to_curves`): un giro con un
+   edge di ruolo non strutturale non è contorno; un giro senza area (o un
+   micro-cerchio) non prende niente, e i suoi edge vanno in `loose` interi
+   (D151); `loose` ha una regola sola, `loose_curves` (D162)
+6. **gerarchia** (`build_hierarchy`): quale giro contiene quale → albero di
+   contenimento `outer` / `inner`. `heal` si ferma qui: **non** dà un
+   significato ai contorni interni (D15) — ogni giro contenuto è un `Contour`
    in `cluster.inners`.
 
 Se non si forma **nessun** contorno esterno chiuso, il risultato è dichiarato
@@ -352,13 +348,11 @@ esterno che restituisce codice / materiale / spessore, e a metterli in
 chiudere. **Non** arrotonda i nodi: ogni endpoint va su una griglia unica
 (`NODE_DECIMALS` = 3 decimali, MAP.md D113), la stessa per `heal()` e `island()`
 e per qualunque tolleranza, così due capi diventano lo stesso nodo solo se
-coincidono davvero. Serve in tre modi:
+coincidono davvero. Serve in due modi:
 
-1. **gap fra nodi del grafo tollerante** (`find_loops`, ultimo gradino): capi
-   entro `tolerance` fusi per distanza, mai i due capi dello stesso edge (D112)
-2. **chiusura gap**: due endpoint liberi entro `tolerance` vengono congiunti
-   prolungando i segmenti
-3. **nodo per contatto** (`split_at_crossings`, D101): un estremo che giace
+1. **chiusura gap**: un estremo libero si chiude entro `tolerance` su un
+   altro estremo o dove la sua curva, proseguita, incontra la rete (D189)
+2. **nodo per contatto** (`split_at_crossings`, D101): un estremo che giace
    entro `tolerance` sulla curva di un altro edge è un nodo — non solo
    estremo-su-estremo, anche estremo-su-curva (un vero contatto a T), format-
    agnostico, indipendente da come il file è stato disegnato. E due tagli

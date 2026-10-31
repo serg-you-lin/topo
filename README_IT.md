@@ -114,7 +114,7 @@ fra le viste. Quali buchi del disegno chiudere (`max_gap`) dipende dal disegno,
 quindi lo dice sempre chi chiama: topo non ha default. Stesso `Result` in uscita — vedi `docs/API.md` (`island`).
 
 Tutte e due sono ricette su passi pubblici. I passi di `heal()` (`split_labeled`,
-`close_free_gaps`, `find_loops`, `build_hierarchy`, ...) sono esportati uno per
+`close_free_gaps`, `face_loops`, `build_hierarchy`, ...) sono esportati uno per
 uno, così un consumatore compone il suo ordine — vedi `docs/API.md` (i passi di
 `heal()`).
 

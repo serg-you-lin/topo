@@ -111,7 +111,7 @@ views. Which drawing gaps to close (`max_gap`) depends on the drawing, so the
 caller always says it: topo has no default. Same `Result` out — see `docs/API.md` (`island`).
 
 Both are recipes over public steps. `heal()`'s steps (`split_labeled`,
-`close_free_gaps`, `find_loops`, `build_hierarchy`, ...) are exported one by one,
+`close_free_gaps`, `face_loops`, `build_hierarchy`, ...) are exported one by one,
 so a consumer can compose its own order — see `docs/API.md` (the steps of `heal()`).
 
 ## Drawing with topo
