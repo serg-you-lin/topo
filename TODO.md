@@ -28,7 +28,7 @@ rende rossa una di quelle invarianti su un fixture del repo. Il resto è 1.x.
 Le invarianti invece restano nella suite per sempre. Le richieste dei
 consumer, finché il cancello è aperto, vanno tutte in "Dopo la 1.0" (D174;
 D172 è entrata per errore). Passata fatta il 23
-ottobre (D159): i rossi sono G6d, G7 qui sotto (G6b chiuso, D163; G6c, D180), ognuno nel
+ottobre (D159): i rossi sono G6d, G6e, G7 qui sotto (G6b chiuso, D163; G6c, D180), ognuno nel
 registro dei difetti noti del suo test (skip con la voce del cancello; un
 caso che torna verde fa fallire il test finché non esce dalla lista).
 
@@ -137,6 +137,27 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       sono le corde (`TestChordsKeepTheOuter`, `KNOWN_CHORDS`): l'esito su
       una fessura larga quanto la tolleranza dipende da edge che non la
       toccano.
+- [ ] **G6e** `heal()` dipende dal riferimento (aperta il 31 ottobre, in una
+      chat pulita): la passata su snapdraw (`scripts/21_sweep_invariants.py`,
+      voce in Pulizia) trova 32 disegni su 121 dove un moto rigido cambia la
+      lettura — quasi sempre fori che non si chiudono, una volta 3 → 7
+      outer; anche moti esatti sulla griglia (quarto di giro 4, lontano 4).
+      Un caso spiegato (25 edge, un assieme saldato: triangoli di saldatura
+      con gli estremi a T sui lati, un lato sovrapposto): il grafo non chiude,
+      il fallback `polygonize_edges` (`topo/core/healing/steps.py:332`) fa
+      `unary_union` → `snap(merged, merged, tol)` → `polygonize`; se un
+      estremo a T cade sul lato o 1e-12 fuori lo decide l'ultimo bit dei
+      double, che il moto cambia, e `snap` aggancia vertici a vertici senza
+      rifare il noding: il T resta un ramo morto e `polygonize` perde la
+      faccia (6 poligoni al posto, 9 lontano; `unary_union` dopo lo `snap`
+      dà 9 a ogni moto). È lo stesso male che D180 ha tolto da `island()`:
+      un contatto deciso dalla coincidenza esatta, non sulle curve vere con
+      la tolleranza. Gli altri 31 non sono ancora guardati (quanti passano
+      dal fallback? quanti dai fori del grafo?). Per ripartire: rapporto,
+      `classify_heal.txt` e gli attrezzi (`why.py`, `snap_probe.py`,
+      `diagnose_heal.py`) in `_debug/2026-10-31_topo_snapdraw-sweep/`; poi
+      micro-casi ritagliati come in D181 (rossi oggi), la causa per
+      famiglia, il noding di D180 dove manca.
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
       rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF di
       G6), `test_text_budget` anch_02 spiegato, inner che si incrociano
