@@ -9,12 +9,10 @@ intersezione reale — non solo tollerati nel grafo.
 import math
 import unittest
 
-from topo.model.document import Document
 from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, CircleSeg
-from topo.core.heal import heal
-from topo.core.healing.steps import repair_merged_corners
+from topo.core.healing.steps import find_loops, repair_merged_corners
 from topo.core.topology.graph import build_node_graph
 from topo.core.topology.loop_finder import LoopFinder
 
@@ -89,9 +87,12 @@ class TestRepairMergedCorners(unittest.TestCase):
 class TestRepairWithOtherLoopClosed(unittest.TestCase):
 
     def test_loop_chiuso_altrove_non_blinda_la_riparazione(self):
-        # D57: angolo rotto con distanza reale 0.11 > tolerance 0.1 — _preprocess
-        # lo salta, lo chiude solo la riparazione via clustering (nodi 10.0 e
-        # 10.1). Un cerchio chiuso da solo altrove non deve impedirla.
+        # D57: angolo rotto con distanza reale 0.11 > tolerance 0.1 — i gap lo
+        # saltano, lo chiude solo la riparazione via clustering (nodi a mano
+        # 10.0 e 10.1). Un cerchio chiuso da solo altrove non deve impedirla.
+        # È una regola della scala di find_loops: la si prova lì, coi nodi
+        # così come sono. heal() ricava i nodi dai punti reali (D187), dove
+        # 0.11 resta un gap vero sopra la tolleranza.
         edges = [
             _edge(LineSeg(start=(0.0, 0.0), end=(10.03, 0.0))),
             _edge(LineSeg(start=(10.14, 0.0), end=(10.14, 10.0))),
@@ -100,10 +101,9 @@ class TestRepairWithOtherLoopClosed(unittest.TestCase):
             Edge(role=ContourRole.UNKNOWN, start=(52.0, 5.0), end=(52.0, 5.0),
                  segment=CircleSeg(center=(50.0, 5.0), radius=2.0)),
         ]
-        doc = Document(edges=edges, texts=[],
-                            source_meta={"tolerance": 0.1}, source_path="")
-        result = heal(doc)
-        self.assertEqual(len(result.clusters), 2)
+        search = find_loops(edges, set(), 0.1)
+        self.assertEqual(search.method, "corner_repair")
+        self.assertEqual(len(search.loops), 2)
 
 
 if __name__ == "__main__":

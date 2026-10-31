@@ -25,12 +25,9 @@ from .topology.loop_finder import edges_to_open_curves
 from .topology.noding import interior_crossings
 from .topology.rim import off_faces
 from .healing.hierarchy import assign_cluster_refs
-from .healing.normalizer import (
-    merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
-)
+from .healing.base import normalize, prepare
 from .healing.steps import (
-    LoopSearch, split_non_finite, split_labeled, close_near_full_arcs, NEAR_FULL_ARC_MISSING,
-    close_free_gaps, ambiguous_free_ends, dangling_splines, find_non_contour_edges,
+    LoopSearch, NEAR_FULL_ARC_MISSING, dangling_splines, find_non_contour_edges,
     find_joining_edges, free_ends,
     find_loops, structural_loops, loops_to_curves, polygonize_edges,
     polygons_to_curves, labeled_curves, build_hierarchy,
@@ -77,38 +74,35 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
         result.is_valid = False
         return result
 
-    edges, broken = split_non_finite(list(doc.edges))
-    if broken:
-        result.errors.append(f"{len(broken)} edge con coordinate non finite (NaN/inf): "
+    # le basi comuni a ogni lettura (D187)
+    prepared = prepare(doc.edges, structural)
+    if prepared.broken:
+        result.errors.append(f"{len(prepared.broken)} edge con coordinate non finite (NaN/inf): "
                              f"nessuna posizione, esclusi dalla lettura.")
         result.is_valid = False
-    if not edges:
+    if not prepared.edges and not prepared.labeled:
         result.errors.append("Nessuna geometria con coordinate finite.")
         result.is_valid = False
         return result
-    for merge, what in ((lambda e: merge_collinear_overlaps(e, keep_junctions=True),
-                         "segmenti collineari sovrapposti fusi"),
-                        (merge_cocircular_overlaps, "archi co-circolari sovrapposti fusi"),
-                        (weld_degenerate_linesegs, "LineSeg degeneri (sub-tolleranza) saldati")):
-        merged = merge(edges)
-        if len(edges) > len(merged):
-            result.warnings.append(f"{len(edges) - len(merged)} {what} prima della ricerca loop.")
-        edges = merged
-
-    edges, labeled = split_labeled(edges, structural)
+    labeled = prepared.labeled
     if labeled and is_structural is None:
         result.warnings.append(_LABELED_WITHOUT_PREDICATE.format(n=len(labeled)))
 
-    edges, full_arcs = close_near_full_arcs(edges, reach)
-    if full_arcs:
-        result.warnings.append(f"{full_arcs} archi quasi completi (gap entro tolleranza, mancano al "
+    clean = normalize(prepared.edges, reach, keep_junctions=True, refit=False,
+                      pairwise=True, full_arcs=True)
+    for count, what in ((clean.merged_lines, "segmenti collineari sovrapposti fusi"),
+                        (clean.merged_arcs, "archi co-circolari sovrapposti fusi"),
+                        (clean.welded + prepared.welded, "LineSeg degeneri (sub-tolleranza) saldati")):
+        if count:
+            result.warnings.append(f"{count} {what} prima della ricerca loop.")
+    if clean.full_arcs:
+        result.warnings.append(f"{clean.full_arcs} archi quasi completi (gap entro tolleranza, mancano al "
                                f"più {math.degrees(NEAR_FULL_ARC_MISSING):.0f}°) chiusi in cerchio.")
-    ambiguous = ambiguous_free_ends(edges, reach)
-    if ambiguous:
-        first = ", ".join(f"({p[0]:.2f}, {p[1]:.2f})" for p in ambiguous[:4])
-        result.warnings.append(f"{len(ambiguous)} estremi liberi con due compagni alla stessa distanza "
+    if clean.ambiguous:
+        first = ", ".join(f"({p[0]:.2f}, {p[1]:.2f})" for p in clean.ambiguous[:4])
+        result.warnings.append(f"{len(clean.ambiguous)} estremi liberi con due compagni alla stessa distanza "
                                f"(figura simmetrica): nessun gap chiuso lì, decide il disegno ({first}).")
-    edges = close_free_gaps(edges, reach)
+    edges = clean.edges
     if dangling_splines(edges):
         result.warnings.append(
             "SPLINE con endpoint non connesso trovata — "

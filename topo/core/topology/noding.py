@@ -48,7 +48,8 @@ from ..primitives.segments import (
     segment_endpoints, segment_is_closed,
 )
 
-from ..geometry.measure import NODE_DECIMALS   # tagli ed estremi sulla stessa griglia di tutto topo (D113)
+from ..geometry.measure import NODE_DECIMALS, within_diameter   # tagli ed estremi sulla stessa griglia di tutto topo (D113)
+from .graph import cluster_points, connected_groups
 
 GRAPH_EPSILON = 0.01   # mm — due nodi così vicini sono uno solo per il grafo (heal, ripiego D100)
 
@@ -82,6 +83,41 @@ def renode(edges: List[Edge], decimals: int = NODE_DECIMALS) -> List[Edge]:
     sulla stessa griglia. Gli edge chiusi restano come sono."""
     return [e if segment_is_closed(e.segment) else _with_nodes(e, e.segment, decimals)
             for e in edges]
+
+
+def decide_nodes(edges: List[Edge], epsilon: float = GRAPH_EPSILON) -> Tuple[List[Edge], int]:
+    """
+    I nodi di ogni lettura, decisi una volta: dai punti reali dei segmenti
+    (`renode`), poi gli estremi entro `epsilon` l'uno dall'altro sono un nodo
+    solo, il più piccolo del gruppo (un estremo reale). Un gruppo più largo
+    di `epsilon` è una curva scritta a punti fitti: i suoi nodi restano
+    distinti, nessun ordine sceglie quali fondere (D186). Da qui in poi
+    l'uguaglianza fra nodi non dipende più da una cella di griglia (D187).
+
+    Un edge aperto i cui due capi diventano lo stesso nodo è più corto di
+    `epsilon`: è saldato (D56), cioè tolto, e i vicini si ritrovano sul nodo
+    comune. Ritorna (edge, quanti saldati così).
+    """
+    edges = renode(edges)
+    ends = sorted({p for e in edges if not segment_is_closed(e.segment) for p in (e.start, e.end)})
+    index = {p: k for k, p in enumerate(ends)}
+    near = cluster_points(ends, epsilon)
+    groups = connected_groups(len(ends), [(index[p], index[q]) for p, q in near.items() if p != q])
+    target = {}
+    for members in groups:
+        points = [ends[k] for k in members]
+        if len(points) > 1 and within_diameter(points, epsilon):
+            target.update((p, points[0]) for p in points)
+    if not target:
+        return edges, 0
+    out, welded = [], 0
+    for edge in edges:
+        start, end = target.get(edge.start, edge.start), target.get(edge.end, edge.end)
+        if start == end and edge.start != edge.end and not segment_is_closed(edge.segment):
+            welded += 1
+            continue
+        out.append(edge if (start, end) == (edge.start, edge.end) else replace(edge, start=start, end=end))
+    return out, welded
 
 
 def split_at_crossings(edges: List[Edge], tolerance: float,

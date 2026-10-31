@@ -37,20 +37,14 @@ from .topology.edge import Edge
 from .topology.graph import build_node_graph
 from .geometry.integrals import ring_area
 from .geometry.shape import merge_runs
-from .topology.noding import GRAPH_EPSILON, NODE_DECIMALS, edge_geometry, renode, split_at_crossings
+from .topology.noding import GRAPH_EPSILON, decide_nodes, edge_geometry, split_at_crossings
 from .topology.non_contour_edges import NonContourEdgeDetector
 from .topology.outer_face import OuterFace, outer_face
 from .healing.hierarchy import assign_cluster_refs, sort_clusters
 from .healing.normalizer import chain_runs
 from .healing.steps import loops_to_curves
 from .healing.islands import spatial_islands
-from .healing.gap_solver import (
-    free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, MoveEndpoint,
-)
-from .healing.normalizer import (
-    merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
-    refit_tessellations,
-)
+from .healing.base import normalize, prepare
 
 
 @dataclass
@@ -97,12 +91,16 @@ def island(doc: Document, *, max_gap: float,
         )
     tol = doc.node_tolerance(override=tolerance)
     structural = is_structural or is_structural_role
-    labeled = [e for e in doc.edges if e.role != ContourRole.UNKNOWN and not structural(e.role)]
-    labeled_ids = {id(e) for e in labeled}
-    edges = [e for e in doc.edges if id(e) not in labeled_ids]
-    readings = read_islands(edges, tol, max_gap=max_gap)
+    # le basi comuni a ogni lettura (D187)
+    prepared = prepare(doc.edges, structural)
+    labeled = prepared.labeled
+    readings = read_islands(prepared.edges, tol, max_gap=max_gap)
 
     result = Result(source_file=doc.source_path, texts=list(doc.texts))
+    if prepared.broken:
+        result.errors.append(f"{len(prepared.broken)} edge con coordinate non finite (NaN/inf): "
+                             f"nessuna posizione, esclusi dalla lettura.")
+        result.is_valid = False
     result.loose += _open(labeled)
     clusters = {}
     for i, r in enumerate(readings):
@@ -164,7 +162,11 @@ def read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandRe
     percorre la faccia esterna, poi classifica il resto, che va tutto in
     `loose` (D161): fuori dal contorno, non-contorno (D49), non classificati.
     """
-    normalized = _normalize(edges, tolerance, max_gap)
+    # i nodi di nuovo: `read_island` si può chiamare da sola (experimental)
+    noded, _ = decide_nodes(edges)
+    normalized = [e for e in normalize(noded, max(tolerance, max_gap), keep_junctions=False, refit=True,
+                                       pairwise=False, full_arcs=False).edges
+                  if e.start != e.end or segment_is_closed(e.segment)]
     noded = split_at_crossings(normalized, tolerance)
     pieces = noded.pieces
     face = outer_face(pieces, epsilon=GRAPH_EPSILON)
@@ -191,51 +193,6 @@ def read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandRe
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
-
-def _normalize(edges: List[Edge], tolerance: float, max_gap: float) -> List[Edge]:
-    """Stessi passi di heal, ma sulla griglia fine della rete piana: prima i
-    nodi dagli estremi reali (renode), poi tassellature, merge, weld e gap —
-    così la saldatura resta valida anche dopo lo spezzamento."""
-    edges = refit_tessellations(renode(edges), node_decimals=NODE_DECIMALS)
-    edges = weld_degenerate_linesegs(merge_cocircular_overlaps(merge_collinear_overlaps(edges)))
-    gap = max(tolerance, max_gap)
-    graph = build_node_graph(edges)
-    fixes = compute_gap_fixes(free_endpoints_from_edges(edges, graph), gap, pairwise=False)
-    fixes = _drop_redundant_meets(fixes, graph)
-    if fixes:
-        edges = apply_gap_fixes(edges, fixes)
-    return [e for e in edges if e.start != e.end or segment_is_closed(e.segment)]
-
-
-def _drop_redundant_meets(fixes: list, graph) -> list:
-    """Scarta un fix "incontro" (due `MoveEndpoint` sullo stesso punto, la
-    retta/arco di ognuno prolungato fino all'intersezione con l'altro)
-    quando i due estremi di partenza sono già nella stessa componente
-    connessa del grafo: non è un gap da chiudere, un giro li collega già
-    altrove senza bisogno di questi due — saldarli comunque apre un secondo
-    percorso parallelo spurio (sliver) accanto al contorno che si chiude già
-    da solo (stessa famiglia di D100/D101, un passo prima: nel gap-fix,
-    invece che nel noding). Un fix fra componenti diverse resta: lì è un
-    gap vero, l'unico modo di collegarli."""
-    by_point: dict = {}
-    for fix in fixes:
-        if isinstance(fix, MoveEndpoint):
-            by_point.setdefault(fix.new_pt, []).append(fix)
-    component_of: dict = {}
-    for i, component in enumerate(graph.connected_components()):
-        for node in component:
-            component_of[node] = i
-    drop_ids = set()
-    for pair in by_point.values():
-        if len(pair) != 2:
-            continue
-        fa, fb = pair
-        node_a = graph.canonical(fa.ref.start if fa.role == "start" else fa.ref.end)
-        node_b = graph.canonical(fb.ref.start if fb.role == "start" else fb.ref.end)
-        if component_of.get(node_a) == component_of.get(node_b):
-            drop_ids.update(id(f) for f in pair)
-    return [f for f in fixes if id(f) not in drop_ids]
-
 
 def _cluster(reading: IslandReading, source_file: str, tolerance: float) -> Cluster:
     face = reading.outer

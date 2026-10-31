@@ -306,3 +306,17 @@ def circular_geometry(polygon, segments=None):
         return None, None
 
     return min(width, height), ((minx + maxx) / 2, (miny + maxy) / 2)
+
+
+def within_diameter(points, limit: float) -> bool:
+    """True se ogni coppia di `points` dista al più `limit`: il diametro
+    dell'insieme, che non dipende dal riferimento (la diagonale della bbox sì).
+    La diagonale sta fra il diametro e il diametro per radice di due."""
+    xs, ys = [p[0] for p in points], [p[1] for p in points]
+    diagonal = math.hypot(max(xs) - min(xs), max(ys) - min(ys))
+    if diagonal <= limit:
+        return True
+    if diagonal > 2 * limit:
+        return False
+    return all(math.dist(a, b) <= limit for i, a in enumerate(points) for b in points[i + 1:])
+
