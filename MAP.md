@@ -7129,3 +7129,25 @@ not well defined). New tests:
 broken corner in both readings), `TestTiedGapPartners` (an end-end tie); the
 loop tests of `test_loops.py` run on `face_loops`; `test_corner_repair.py` is
 gone with the repair.
+
+### D190 — a non-finite number is refused by the primitive, like a curve of zero size ✅
+Every reading began with `split_non_finite` (D111): it discretized every
+curve of the drawing to look for a NaN/inf, about 13% of a reading on a
+spline-heavy sheet, and it was a reading cleaning up a defect of its input.
+A coordinate without a value has no position, so it is no curve: the same
+case as D154's radius 0. One rule, where the segment is born: `_real` in
+`primitives/segments.py` refuses a non-finite coordinate, radius, angle,
+parameter, ratio, knot or weight (`ValueError`), so no `LineSeg`/`ArcSeg`/
+`CircleSeg`/`EllipseSeg`/`BSplineSeg` without a position can exist, from any
+source (DXF, PDF, primitives, a caller's own) and for every reading. The DXF
+adapter already turns a refused entity into a `doc.warnings` line (D154,
+D137); its text now names both causes. A caller who builds a segment with a
+NaN gets the `ValueError` in their own code.
+Behaviour change, Federico's choice (31 October): a drawing with a NaN entity
+used to read as invalid (`errors`); now the entity is dropped at load with a
+warning and the reading is valid on the rest, like every other entity the
+model cannot hold. Removed: `topo.experimental.split_non_finite`,
+`Prepared.broken`, the non-finite check of `validate_result` (dead: a result
+can no longer carry one). Readings and goldens unchanged. Tests:
+`test_degenerate_curves.py` (every primitive refuses NaN/inf; a DXF with a NaN
+LINE and an inf CIRCLE loads, warns and heals valid).

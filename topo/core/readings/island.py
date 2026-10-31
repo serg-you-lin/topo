@@ -95,10 +95,6 @@ def island(doc: Document, *, max_gap: float,
     readings = read_islands(prepared.edges, tol, max_gap=max_gap)
 
     result = Result(source_file=doc.source_path, texts=list(doc.texts))
-    if prepared.broken:
-        result.errors.append(f"{len(prepared.broken)} edge con coordinate non finite (NaN/inf): "
-                             f"nessuna posizione, esclusi dalla lettura.")
-        result.is_valid = False
     result.loose += loose_curves(labeled)
     clusters = {}
     for i, r in enumerate(readings):

@@ -19,10 +19,19 @@ from typing import List, Optional, Tuple
 Point = Tuple[float, float]
 
 
+def _real(x) -> float:
+    """Un numero come float Python finito: una coordinata NaN o infinita non ha
+    posizione, la primitiva la rifiuta come una curva di misura nulla (D154, D190)."""
+    x = float(x)
+    if not math.isfinite(x):
+        raise ValueError(f"Valore non finito: {x}")
+    return x
+
+
 def _plain(p) -> Point:
-    """Un punto come tupla di float Python: chi passa numpy o ezdxf non lo
-    ritrova nei campi pubblici (D169)."""
-    return tuple(float(c) for c in p)
+    """Un punto come tupla di float Python finiti: chi passa numpy o ezdxf non
+    lo ritrova nei campi pubblici (D169)."""
+    return tuple(_real(c) for c in p)
 
 
 # ---------------------------------------------------------------------------
@@ -221,8 +230,8 @@ class ArcSeg:
     ccw: bool = True
 
     def __post_init__(self):
-        self.center, self.radius = _plain(self.center), float(self.radius)
-        self.start_angle, self.end_angle = float(self.start_angle), float(self.end_angle)
+        self.center, self.radius = _plain(self.center), _real(self.radius)
+        self.start_angle, self.end_angle = _real(self.start_angle), _real(self.end_angle)
         # raggio 0 è un punto, non una curva: come CircleSeg (D154)
         if not self.radius > 0:
             raise ValueError(f"Raggio deve essere positivo: {self.radius}")
@@ -455,9 +464,9 @@ class BSplineSeg:
     def __post_init__(self):
         self.degree = int(self.degree)
         self.control_points = [_plain(p) for p in self.control_points]
-        self.knots = [float(k) for k in self.knots]
+        self.knots = [_real(k) for k in self.knots]
         if self.weights is not None:
-            self.weights = [float(w) for w in self.weights]
+            self.weights = [_real(w) for w in self.weights]
         # punti di discretize() per tolleranza: heal() chiede la stessa spline
         # più volte. Non è un campo (fuori da eq/repr/fields); vale perché una
         # spline non si modifica sul posto — reversed/rotated ne fanno una nuova.
@@ -677,7 +686,7 @@ class CircleSeg:
     radius: float
     
     def __post_init__(self):
-        self.center, self.radius = _plain(self.center), float(self.radius)
+        self.center, self.radius = _plain(self.center), _real(self.radius)
         if not self.radius > 0:
             raise ValueError(f"Raggio deve essere positivo: {self.radius}")
 
@@ -757,8 +766,8 @@ class EllipseSeg:
 
     def __post_init__(self):
         self.center, self.major_axis = _plain(self.center), _plain(self.major_axis)
-        self.ratio = float(self.ratio)
-        self.start_param, self.end_param = float(self.start_param), float(self.end_param)
+        self.ratio = _real(self.ratio)
+        self.start_param, self.end_param = _real(self.start_param), _real(self.end_param)
         # asse nullo o ratio 0 è un punto o un segmento, non un'ellisse (D154)
         if not (math.hypot(*self.major_axis) > 0 and self.ratio > 0):
             raise ValueError(f"Ellisse degenere: asse {self.major_axis}, ratio {self.ratio}")

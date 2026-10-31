@@ -269,8 +269,9 @@ class DxfAdapter:
         degenerate = Counter()
 
         def _parse(entity, dtype):
-            # una curva di misura nulla (raggio 0, asse nullo) è un punto: la
-            # primitiva la rifiuta, qui diventa un avviso invece di un crash
+            # una curva di misura nulla (raggio 0, asse nullo) o con una coordinata
+            # non finita non è una curva: la primitiva la rifiuta, qui diventa un
+            # avviso invece di un crash (D154, D190)
             try:
                 return DxfEntityDispatcher(entity).parse()
             except ValueError:
@@ -325,5 +326,6 @@ class DxfAdapter:
             edges.append(Edge.of(prim, role, style=style))
 
         for dtype, n in sorted(degenerate.items()):
-            self.warnings.append(f"{n} {dtype} degeneri (raggio o asse nullo) ignorati: un punto, non una curva")
+            self.warnings.append(f"{n} {dtype} senza una curva ignorati (raggio o asse nullo, o una "
+                                 f"coordinata non finita): un punto o nessuna posizione")
         return edges

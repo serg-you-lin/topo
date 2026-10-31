@@ -21,7 +21,6 @@ from pathlib import Path
 from typing import Optional
 
 from shapely.geometry import LineString, MultiPoint, Point
-from shapely.ops import unary_union
 
 import topo
 import topo_dxf
@@ -30,7 +29,9 @@ from topo.core.primitives.segments import DEFAULT_TOLERANCE
 from topo.model.document import Document
 
 from tests.drawings import case_name, drawing_key, drawings_for
-from tests.invariants import MOTIONS, along_contours, uncovered, known_defect, contours, geometry as _geometry, moved, orders, shape_differences
+from tests.invariants import (
+    MOTIONS, along_contours, uncovered, known_defect, contours, moved, orders, shape_differences,
+)
 from topo import to_shapely
 
 DATA = Path(__file__).resolve().parent.parent.parent / "data"
@@ -361,18 +362,6 @@ def _make_order_test(dxf: Path):
 
 
 _register(TestEdgeOrder, _make_order_test, known=frozenset(KNOWN_ORDER_DEPENDENT))
-
-
-class TestNeverRaises(unittest.TestCase):
-    """Un ingresso degenere dà un risultato (non valido, o col pezzo nel
-    trash), mai un'eccezione."""
-
-    def test_coordinate_nan(self):
-        square = topo.geometry.rectangle(100, 50)
-        doc = topo.load_segments(square + [LineSeg(start=(float("nan"), 0.0), end=(10.0, 10.0))])
-        result = topo.heal(doc)
-        self.assertEqual(result.cluster_count, 1, "il rettangolo resta un pezzo")
-        self.assertFalse(result.is_valid, "un edge senza posizione rende il risultato non valido")
 
 
 if __name__ == "__main__":

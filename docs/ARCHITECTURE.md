@@ -208,8 +208,7 @@ le due letture leggono diversamente lo stesso fatto è un parametro con un nome:
 proseguono è un disegno rotto o un segno per `heal()` (D132) e un contatto per
 `island()` (D101).
 
-0. **prepara** (`prepare`): coordinate non finite e ruoli non strutturali da
-   parte (`split_non_finite`, `split_labeled`, D30: il punto d'aggancio per un
+0. **prepara** (`prepare`): ruoli non strutturali da parte (`split_labeled`, D30: il punto d'aggancio per un
    consumatore che marca la geometria prima di `heal`, e
    `topo.non_contour_candidates(doc)` espone il criterio del passo 3), poi i
    nodi decisi una volta: dai punti reali dei segmenti, gli estremi entro

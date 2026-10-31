@@ -6,8 +6,8 @@ ricetta un chiamante si componga partono da qui, con le stesse regole. Una
 lettura sceglie solo come cerca il contorno; tutto quello che viene prima è
 geometria del disegno e si decide una volta, in un posto.
 
-    prepare    — coordinate non finite e ruoli non strutturali messi da parte,
-                 nodi decisi una volta (`decide_nodes`)
+    prepare    — ruoli non strutturali messi da parte, nodi decisi
+                 una volta (`decide_nodes`)
     normalize  — doppioni collineari e cocircolari, tratti degeneri, archi
                  quasi completi, gap: le stesse funzioni per tutti; le
                  differenze fra letture sono parametri con un nome, ognuno
@@ -24,26 +24,25 @@ from typing import Callable, List, Optional
 from ..topology.edge import Edge
 from ..topology.noding import decide_nodes
 from .normalizer import (merge_cocircular_overlaps, merge_collinear_overlaps, refit_tessellations, weld_degenerate_linesegs)
-from .cleanup import (ambiguous_free_ends, close_free_gaps, close_near_full_arcs, split_labeled, split_non_finite)
+from .cleanup import (ambiguous_free_ends, close_free_gaps, close_near_full_arcs, split_labeled)
 
 
 @dataclass
 class Prepared:
     """Gli edge pronti per una lettura, e quello che `prepare` ha messo da parte."""
-    edges:   List[Edge] = field(default_factory=list)   # finiti, strutturali, nodi decisi
+    edges:   List[Edge] = field(default_factory=list)   # strutturali, nodi decisi
     labeled: List[Edge] = field(default_factory=list)   # ruolo deciso e non strutturale (D30)
-    broken:  List[Edge] = field(default_factory=list)   # una coordinata non finita
     welded:  int = 0                                    # più corti di GRAPH_EPSILON, saldati (D56)
 
 
 def prepare(edges: List[Edge],
             is_structural: Optional[Callable[[str], bool]] = None) -> Prepared:
-    """Coordinate non finite e ruoli non strutturali da parte, poi i nodi
-    decisi una volta per tutte le letture (D187)."""
-    finite, broken = split_non_finite(list(edges))
-    kept, labeled = split_labeled(finite, is_structural)
+    """Ruoli non strutturali da parte, poi i nodi decisi una volta per tutte
+    le letture (D187). Una coordinata non finita non arriva fin qui: la
+    primitiva la rifiuta (D190)."""
+    kept, labeled = split_labeled(list(edges), is_structural)
     noded, welded = decide_nodes(kept)
-    return Prepared(edges=noded, labeled=labeled, broken=broken, welded=welded)
+    return Prepared(edges=noded, labeled=labeled, welded=welded)
 
 
 @dataclass

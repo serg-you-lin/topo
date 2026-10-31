@@ -5,7 +5,8 @@ D154: una curva di misura nulla (ARC o CIRCLE di raggio 0, una corda nulla
 con bulge in una polilinea) è un punto, non una curva. La primitiva la
 rifiuta; il caricamento va avanti e la segnala in `doc.warnings`, invece di
 fermarsi su tutto il disegno (CIRCLE) o crashare a valle in `discretize`
-(ARC). ezdxf qui serve solo a scrivere l'entità degenere che il file porta:
+(ARC). Lo stesso per una coordinata NaN o infinita (D190): nessuna
+posizione, nessuna curva. ezdxf qui serve solo a scrivere l'entità degenere che il file porta:
 le API di topo non la costruiscono, ed è proprio il punto.
 """
 
@@ -16,7 +17,7 @@ import ezdxf
 
 import topo
 import topo_dxf
-from topo.primitives import ArcSeg, EllipseSeg
+from topo.primitives import ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, LineSeg
 
 
 class TestDegeneratePrimitives(unittest.TestCase):
@@ -37,6 +38,35 @@ class TestDegeneratePrimitives(unittest.TestCase):
             EllipseSeg((0.0, 0.0), (0.0, 0.0), 0.5, 0.0, 2 * math.pi)
         with self.assertRaises(ValueError):
             EllipseSeg((0.0, 0.0), (10.0, 0.0), 0.0, 0.0, 2 * math.pi)
+
+    def test_004_coordinata_non_finita_rifiutata(self):
+        nan, inf = math.nan, math.inf
+        for build in (lambda: LineSeg((nan, 0.0), (1.0, 1.0)),
+                      lambda: ArcSeg((0.0, inf), 1.0, 0.0, 1.0),
+                      lambda: ArcSeg((0.0, 0.0), 1.0, nan, 1.0),
+                      lambda: CircleSeg((0.0, 0.0), inf),
+                      lambda: EllipseSeg((0.0, 0.0), (10.0, 0.0), 0.5, 0.0, inf),
+                      lambda: BSplineSeg(2, [(0.0, 0.0), (1.0, nan), (2.0, 0.0)], [0, 0, 0, 1, 1, 1]),
+                      lambda: BSplineSeg(2, [(0.0, 0.0), (1.0, 1.0), (2.0, 0.0)], [0, 0, 0, 1, 1, 1],
+                                         [1.0, inf, 1.0])):
+            with self.assertRaises(ValueError):
+                build()
+
+
+class TestNonFiniteEntitiesInADrawing(unittest.TestCase):
+
+    def test_001_il_disegno_si_carica_e_avvisa(self):
+        msp = ezdxf.new().modelspace()
+        msp.add_lwpolyline([(0, 0), (10, 0), (10, 10), (0, 10)], close=True)
+        msp.add_line((math.nan, 0), (5, 5))
+        msp.add_circle((math.inf, 1), 2)
+        doc = topo_dxf.document_from_msp(msp)
+        text = " ".join(doc.warnings)
+        self.assertIn("LINE", text)
+        self.assertIn("CIRCLE", text)
+        result = topo.heal(doc)
+        self.assertTrue(result.is_valid)
+        self.assertEqual(len(result.clusters), 1)
 
 
 class TestDegenerateEntitiesInADrawing(unittest.TestCase):
