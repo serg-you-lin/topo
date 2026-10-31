@@ -320,3 +320,10 @@ def within_diameter(points, limit: float) -> bool:
         return False
     return all(math.dist(a, b) <= limit for i, a in enumerate(points) for b in points[i + 1:])
 
+
+def reach(limit: float) -> float:
+    """Fin dove arriva una soglia di topo: `limit` compreso, a meno del rumore
+    dei double (D183). Ogni confronto con una tolleranza di una lettura passa
+    da qui."""
+    return limit + FLOAT_NOISE
+

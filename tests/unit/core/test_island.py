@@ -103,7 +103,8 @@ class TestIsland(unittest.TestCase):
         self.assertEqual(len(outer.segments), 4)
 
     def test_cornice_marcata_resta_fuori(self):
-        # D30: snapdraw marca la cornice → island() non la legge, resta in trash col suo ruolo
+        # D30: snapdraw marca la cornice → island() non la legge, resta in loose
+        # col suo ruolo; chiusa da sé, esce come una curva chiusa (D162, D189)
         frame = _poly((0, 0), (100, 0), (100, 100), (0, 100))
         for e in frame:
             e.role = "frame"
@@ -111,7 +112,8 @@ class TestIsland(unittest.TestCase):
         result = topo.island(_doc(frame + view), max_gap=MAX_GAP)
         self.assertEqual(len(result.clusters), 1)
         self.assertAlmostEqual(to_shapely(result.clusters[0].outer).area, 400.0)
-        self.assertEqual(sum(1 for t in result.loose if t.role == "frame"), 4)
+        framed = [t for t in result.loose if t.role == "frame"]
+        self.assertEqual([(type(t).__name__, len(t.segments)) for t in framed], [("ClosedCurve", 4)])
 
     def test_cerchi_concentrici_vicini_in_loose_a_ogni_max_gap(self):
         # D161: due cerchi a 0.4 l'uno dall'altro dentro la vista escono

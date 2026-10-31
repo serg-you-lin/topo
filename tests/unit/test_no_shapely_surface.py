@@ -138,7 +138,6 @@ def test_passi_e_fatti_non_portano_shapely():
     doc = _plate()
     edges = topo.experimental.split_at_crossings(doc.edges, 0.01).pieces
     assert _shapely_in(topo.experimental.outer_face(edges), "outer_face") == []
-    assert _shapely_in(topo.experimental.polygonize_to_curves(doc.edges, 0.1), "polygonize_to_curves") == []
     frame = [LineSeg(a, b) for a, b in (((0, 0), (200, 0)), ((200, 0), (200, 100)),
                                          ((200, 100), (0, 100)), ((0, 100), (0, 0)))]
     rects = topo.geometry.covered_rectangles(frame, min_side=50)

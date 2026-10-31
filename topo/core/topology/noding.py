@@ -68,9 +68,35 @@ class NodedEdges:
     pieces:    List[Edge]            = field(default_factory=list)
     parent:    Dict[int, Edge]       = field(default_factory=dict)   # id(pezzo) -> Edge originale
     crossings: List[tuple]           = field(default_factory=list)
+    planar:    bool                  = True    # tagliata anche agli incroci (`cut_crossings`)
 
     def parent_of(self, piece: Edge) -> Edge:
         return self.parent[id(piece)]
+
+    def whole(self, loop: list) -> list:
+        """`loop` [(pezzo, al contrario)] con l'Edge originale al posto dei suoi
+        pezzi, dove il giro li percorre tutti di fila: un lato tagliato da un
+        contatto torna il segmento del file, coefficienti compresi (D143)."""
+        if not loop:
+            return loop
+        counts: Dict[int, int] = {}
+        for piece in self.pieces:
+            key = id(self.parent_of(piece))
+            counts[key] = counts.get(key, 0) + 1
+        parents = [self.parent_of(e) for e, _ in loop]
+        k = next((i for i in range(len(loop)) if parents[i] is not parents[i - 1]), 0)
+        loop, parents = loop[k:] + loop[:k], parents[k:] + parents[:k]
+        out, i = [], 0
+        while i < len(loop):
+            j = i
+            while j + 1 < len(loop) and parents[j + 1] is parents[i] and loop[j + 1][1] == loop[i][1]:
+                j += 1
+            if j - i + 1 == counts[id(parents[i])] and (j > i or loop[i][0] is not parents[i]):
+                out.append((parents[i], loop[i][1]))
+            else:
+                out.extend(loop[i:j + 1])
+            i = j + 1
+        return out
 
 
 # ---------------------------------------------------------------------------
@@ -121,13 +147,20 @@ def decide_nodes(edges: List[Edge], epsilon: float = GRAPH_EPSILON) -> Tuple[Lis
 
 
 def split_at_crossings(edges: List[Edge], tolerance: float,
-                       decimals: int = NODE_DECIMALS) -> NodedEdges:
+                       decimals: int = NODE_DECIMALS, cut_crossings: bool = True) -> NodedEdges:
     """
     Spezza ogni edge nei suoi contatti con gli altri (incroci, T, estremi
     vicini, tangenze mancate entro GRAPH_EPSILON; gli incontri di una coppia
     entro `tolerance` sono uno), decisi una volta per coppia sulle curve
     vere; i pezzi che si toccano hanno la stessa tupla di nodo.
     Un edge chiuso (cerchio) con meno di due contatti resta intero.
+
+    `cut_crossings`: un incrocio (due curve che si attraversano e proseguono)
+    taglia anche lui. Il contatto lo decide comunque questa funzione; cosa vuol
+    dire lo dice la lettura: per island() sì (D101), per heal() no — un
+    incrocio fra lati di contorno è un disegno rotto (D132), un'asse che
+    attraversa un foro non è un lato del foro (D189). Gli incroci sono in
+    `crossings` in tutti e due i casi.
     """
     curves = [_Curve(e.segment) for e in edges]
     net = _Contacts(edges, curves, tolerance)
@@ -136,9 +169,10 @@ def split_at_crossings(edges: List[Edge], tolerance: float,
     net.merge_along_edges()
     nodes = net.nodes(decimals)
 
-    noded = NodedEdges()
+    noded = NodedEdges(planar=cut_crossings)
+    skip = frozenset() if cut_crossings else frozenset(net.crossing_roots())
     for i, edge in enumerate(edges):
-        for piece in net.pieces(i, nodes):
+        for piece in net.pieces(i, nodes, skip):
             noded.pieces.append(piece)
             noded.parent[id(piece)] = edge
     noded.crossings = sorted(net.crossings(nodes))
@@ -494,22 +528,27 @@ class _Contacts:
                              round(sum(p[1] for p in pts) / len(pts), decimals))
         return out
 
-    def crossings(self, nodes: Dict[int, tuple]) -> List[tuple]:
-        """I nodi senza estremi con almeno un incrocio fra due edge diversi."""
+    def crossing_roots(self) -> set:
+        """I nodi senza estremi con almeno un incrocio fra due edge diversi:
+        due curve che si attraversano e proseguono tutte e due."""
         groups: Dict[int, list] = defaultdict(list)
         for k, stop in enumerate(self.stops):
             groups[self._find(k)].append(stop)
-        return [nodes[root] for root, stops in groups.items()
+        return {root for root, stops in groups.items()
                 if all(kind != "end" for _, _, _, kind in stops)
                 and any(kind == "x" for _, _, _, kind in stops)
-                and len({i for i, _, _, _ in stops}) > 1]
+                and len({i for i, _, _, _ in stops}) > 1}
 
-    def pieces(self, i: int, nodes: Dict[int, tuple]) -> List[Edge]:
-        """L'edge `i` tagliato ai suoi gruppi di fermate, coi nodi condivisi."""
+    def crossings(self, nodes: Dict[int, tuple]) -> List[tuple]:
+        return [nodes[root] for root in self.crossing_roots()]
+
+    def pieces(self, i: int, nodes: Dict[int, tuple], skip: frozenset = frozenset()) -> List[Edge]:
+        """L'edge `i` tagliato ai suoi gruppi di fermate, coi nodi condivisi;
+        non ai nodi di `skip`."""
         edge, curve = self.edges[i], self.curves[i]
         groups: Dict[int, list] = {}
         for k in self.on_edge.get(i, []):
-            if k not in self.absorbed:
+            if k not in self.absorbed and self._find(k) not in skip:
                 groups.setdefault(self.anchor[k], []).append(k)
         cuts = []
         for ks in groups.values():

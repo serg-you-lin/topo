@@ -24,7 +24,7 @@ project_root = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from topo.core.topology.graph import Graph, build_node_graph
-from topo.core.topology.loop_finder import LoopFinder
+from topo.core.topology.outer_face import face_loops
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, ArcSeg
 from topo.model.role import ContourRole
@@ -221,12 +221,11 @@ def _loop_to_polygon(loop) -> Polygon:
 # Test: LoopFinder.find() – rettangolo base
 # ---------------------------------------------------------------------------
 
-class TestLoopFinderRect(unittest.TestCase):
+class TestFaceLoopsRect(unittest.TestCase):
     def setUp(self):
         edges = _make_rect_edges(ccw=True)
         graph = build_node_graph(edges)
-        finder = LoopFinder()
-        self.loops = finder.find(graph)
+        self.loops = face_loops(edges)
 
     def test_finds_one_loop(self):
         self.assertEqual(len(self.loops), 1)
@@ -257,7 +256,7 @@ class TestLoopOrientationCCW(unittest.TestCase):
     def setUp(self):
         edges = _make_rect_edges(ccw=True)
         graph = build_node_graph(edges)
-        loops = LoopFinder().find(graph)
+        loops = face_loops(edges)
         self.poly = _loop_to_polygon(loops[0])
 
     def test_polygon_valid(self):
@@ -276,7 +275,7 @@ class TestLoopOrientationCW(unittest.TestCase):
     def setUp(self):
         edges = _make_rect_edges(ccw=False)
         graph = build_node_graph(edges)
-        loops = LoopFinder().find(graph)
+        loops = face_loops(edges)
         self.poly = _loop_to_polygon(loops[0])
 
     def test_polygon_valid(self):
@@ -299,7 +298,7 @@ class TestLoopWithArcs(unittest.TestCase):
     def setUp(self):
         edges = _make_arc_rect_edges()
         graph = build_node_graph(edges)
-        self.loops = LoopFinder().find(graph)
+        self.loops = face_loops(edges)
         self.polygons = [_loop_to_polygon(l) for l in self.loops]
         self.valid_polys = [p for p in self.polygons
                             if p is not None and p.is_valid]
@@ -327,12 +326,9 @@ class TestSplitArcStubs(unittest.TestCase):
     Archi concavi spezzati in due metà + LINE stub verso l'interno attaccate
     al punto di spezzatura (nodo di grado 3).
 
-    Il `LoopFinder` sul grafo esatto NON pota le stub: da solo questa
-    geometria non chiude nessun loop (limite noto del solo loop finder). La
-    pipeline completa (`heal()`) lo recupera — clustering degli endpoint +
-    riparazione angoli all'intersezione reale — e le stub finiscono in
-    `loose` senza essere perse. Il test verifica l'esito del
-    PRODOTTO, non del loop finder isolato.
+    Le stub entrano e escono dallo stesso nodo: il cammino delle facce le
+    percorre andata e ritorno e non ne fa un giro (D189); finiscono in
+    `loose` senza essere perse. Il test verifica l'esito del PRODOTTO.
     """
 
     def setUp(self):

@@ -20,7 +20,7 @@ from typing import List
 from shapely import STRtree
 from shapely.geometry import Point as ShapelyPoint, Polygon
 from shapely.geometry.polygon import orient
-from shapely.ops import substring, unary_union
+from shapely.ops import substring
 
 from .edge import Edge
 from .noding import edge_geometry
@@ -59,26 +59,6 @@ def face_segments(edges: List[Edge], polygon: Polygon, band: float):
         segments += chain
         styles += [edge.style] * len(chain)
     return segments, styles, used
-
-
-def off_faces(edges: List[Edge], polygons: list, band: float):
-    """
-    (presi, resto) di `edges` rispetto alle facce `polygons` lette senza
-    grafo (il ripiego polygonize di heal): `presi` gli id degli edge su cui
-    corre il bordo di una faccia, anche solo in parte; `resto` i loro tratti
-    fuori da ogni bordo, come Edge nuovi (`off_rim`). Così ogni pezzo
-    d'ingresso esce una volta, nel contorno o in `loose` (G6b).
-    """
-    used, rings = {}, []
-    for polygon in polygons:
-        for ring in [polygon.exterior, *polygon.interiors]:
-            rings.append(ring)
-            _, _, taken = face_segments(edges, Polygon(ring), band)
-            for j, ends in taken.items():
-                used.setdefault(j, []).extend(ends)
-    border = unary_union(rings)
-    rest = [piece for j in sorted(used) for piece in off_rim(edges[j], used[j], border, band)]
-    return {id(edges[j]) for j in used}, rest
 
 
 def off_rim(edge: Edge, taken: list, ring, band: float) -> List[Edge]:

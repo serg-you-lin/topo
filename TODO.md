@@ -132,7 +132,7 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       `_debug/2026-10-30_topo_G6c/stress_8_angles.py` (~3 min, fuori suite:
       ogni angolo in più nella suite costa ~25 s). Il branch locale
       `g6c-noding-wip` si può cancellare.
-- [ ] **G6d** `heal()` su `SEGNI_TRACCIATI` (tol 0.5): tre cave larghe
+- [x] **G6d** (chiuso da D189, da confermare a occhio) `heal()` su `SEGNI_TRACCIATI` (tol 0.5): tre cave larghe
       0.4–0.5 mm restano nell'outer letto da solo e si riempiono quando ci
       sono le corde (`TestChordsKeepTheOuter`, `KNOWN_CHORDS`): l'esito su
       una fessura larga quanto la tolleranza dipende da edge che non la
@@ -187,6 +187,14 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       (`keep_junctions` D110, `refit` D60, `pairwise` D112, `full_arcs`)
       restano scelte della lettura.
       Metodo, da Federico: non più disegno per disegno.
+      D189 (31 ottobre, branch `g6e-una-base`): una funzione per compito, heal e
+      island sulla stessa rete, facce, gap, loose. Aspetta l'occhio di Federico
+      su F6 (DXF in `_debug/2026-10-31_topo_G6e/da_guardare/`). Restano: loose di
+      island a pezzi dove heal dà l'edge intero (stessa regola da mettere in
+      comune); J0116004A (solo ordine); drw_0017 (incroci non tagliati: rete non
+      piana per heal); suite 3:44, sopra il tetto; contenimento (tre marche),
+      union-find (`cluster_points`, `_Contacts`), `_Curve.locate` contro
+      `nearest_point`, soglie assolute in `intersections.py`.
       D188: `healing/` diviso in `base/` e `readings/`; da avvisare in
       snapdraw (`lab/heal_repair_experiment.py`, `lab/island_rays.py`) e cogo
       (`fixtures/corner_bend_problem.py`), che importano `topo.core.healing`. Inventario nel codice

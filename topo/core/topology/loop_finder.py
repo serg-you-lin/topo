@@ -1,160 +1,36 @@
 """
-loop_finder.py
---------------
-Trova i loop chiusi in un grafo topologico.
-
-Loop = list[tuple[Edge, bool]]
-
-I loop degeneri (CIRCLE, SPLINE chiusa) arrivano già pronti in
-graph.degenerate_loops — non passano per il walking nel grafo.
+topo/core/topology/loop_finder.py
+---------------------------------
+Da un giro [(edge, al contrario)] ai suoi segmenti, stili, punti e poligono,
+e gli Edge che nessun giro prende in curve aperte. I giri li trovano le facce
+della rete piana (`outer_face.face_loops`, D189).
 """
 
-import math
 from typing import Optional, Tuple
 
 from shapely.geometry import Polygon
 
-from ..geometry.integrals import ring_moments
 from ..primitives.polygon_builder import build_polygon
 from ..primitives.segments import DEFAULT_TOLERANCE
-from .graph import (
-    Graph,
-    _edge_coords,
-    _arrival_direction,
-    _angular_deviation,
-)
-from .edge import Edge
+from .graph import _edge_coords
 
 
-class LoopFinder:
-
-    def find(self, graph: Graph, exclude_ids: set[int] | None = None) -> list[list[tuple[Edge, bool]]]:
-        """
-        Restituisce tutti i loop chiusi.
-
-        Scopo del metodo: individuare la struttura topologica del modello,
-        non classificare geometria o containment. La gerarchia spaziale
-        (outer/inner/nesting) appartiene a HierarchyBuilder, non a LoopFinder.
-
-        Percorsi:
-          graph.degenerate_loops  → aggiunti direttamente come loop da 1 edge
-          graph.nodes             → walking topologico standard
-        """
-        if exclude_ids:
-            filtered = Graph(
-                nodes={
-                    node: [(e, n) for e, n in neighbors if id(e) not in exclude_ids]
-                    for node, neighbors in graph.nodes.items()
-                },
-                degenerate_loops=[
-                    e for e in graph.degenerate_loops
-                    if id(e) not in exclude_ids
-                ],
-                node_map=graph.node_map,
-            )
+def loop_points(loop: list) -> list:
+    """I punti di un giro [(edge, al contrario)], concatenati senza ripetere i
+    nodi di giunzione."""
+    pts = []
+    for edge, rev in loop:
+        coords = _edge_coords(edge, rev)
+        if not coords:
+            continue
+        if not pts:
+            pts.extend(coords)
+        elif coords[0] == pts[-1]:
+            pts.extend(coords[1:])
         else:
-            filtered = graph
+            pts.extend(coords)
+    return pts
 
-        pruned    = filtered.pruned()
-        branching = set(pruned.branching_nodes())
-
-        visited_edges = set()
-        loops = []
-
-        # ── 1. Loop degeneri: CIRCLE, SPLINE chiusa ──────────────────────
-        for edge in pruned.degenerate_loops:
-            if id(edge) not in visited_edges:
-                visited_edges.add(id(edge))
-                loops.append([(edge, False)])
-
-        # ── 2. Walking topologico standard ───────────────────────────────
-        # L'identità di un nodo passa sempre da pruned.canonical(): con il
-        # grafo clusterizzato l'endpoint arrotondato dell'edge non coincide
-        # con la chiave del nodo (che è il rappresentante del cluster).
-        for start_node in pruned.nodes:
-            for (edge, next_node) in pruned.nodes[start_node]:
-                if id(edge) in visited_edges:
-                    continue
-
-                is_reversed = pruned.canonical(edge.start) != start_node
-
-                chain = [(edge, is_reversed)]
-                visited_edges.add(id(edge))
-                current_node = next_node
-
-                while current_node != start_node:
-                    candidates = [
-                        (e, n) for (e, n) in pruned.nodes[current_node]
-                        if id(e) not in visited_edges
-                    ]
-                    if not candidates:
-                        break
-
-                    from_node = current_node
-
-                    if current_node in branching and len(candidates) > 1:
-                        prev_edge, prev_rev = chain[-1]
-                        arrival = _arrival_direction(prev_edge, prev_rev)
-
-                        def _score(candidate, _from=from_node):
-                            e, n = candidate
-                            rev = pruned.canonical(e.start) != _from
-                            return _angular_deviation(arrival, e, rev)
-
-                        next_edge, current_node = min(candidates, key=_score)
-                    else:
-                        next_edge, current_node = candidates[0]
-
-                    visited_edges.add(id(next_edge))
-
-                    ne_reversed = pruned.canonical(next_edge.start) != from_node
-                    chain.append((next_edge, ne_reversed))
-
-                if current_node != start_node:
-                    continue
-
-                pts = self._loop_to_points(chain)
-                if len(pts) >= 3:
-                    # verso antiorario dall'area con segno sulle primitive (D166)
-                    if ring_moments(segments_from_loop(chain)).area < 0:
-                        chain = [(e, not rev) for e, rev in reversed(chain)]
-                    loops.append(chain)
-
-        return self._deduplicate_loops(loops)
-
-    # ------------------------------------------------------------------
-    # Helper interni
-    # ------------------------------------------------------------------
-
-    @staticmethod
-    def _loop_to_points(loop: list) -> list:
-        pts = []
-        for edge, rev in loop:
-            coords = _edge_coords(edge, rev)
-            if not coords:
-                continue
-            if not pts:
-                pts.extend(coords)
-            else:
-                if coords[0] == pts[-1]:
-                    pts.extend(coords[1:])
-                else:
-                    pts.extend(coords)
-        return pts
-
-    @staticmethod
-    def _deduplicate_loops(loops):
-        seen = {}
-        for loop in loops:
-            key = frozenset(id(edge) for edge, _ in loop)
-            if key not in seen:
-                seen[key] = loop
-        return list(seen.values())
-
-
-# ---------------------------------------------------------------------------
-# Loop → segmenti nativi orientati
-# ---------------------------------------------------------------------------
 
 def segments_from_loop(loop) -> list:
     """
@@ -215,37 +91,3 @@ def loop_geometry(loop) -> Optional[Tuple[list, list, Polygon]]:
 # Edge → OpenCurve — tracce non consumate da loop strutturali
 # ---------------------------------------------------------------------------
 
-def edges_to_open_curves(edges: list, exclude_ids: set) -> list:
-    """
-    Converte gli Edge non assorbiti da un loop strutturale in OpenCurve.
-
-    Opera esclusivamente su Edge (role semantico, segmento nativo) —
-    zero dipendenze da ezdxf o altro formato.
-
-    L'OpenCurve porta solo `role` + `segments` (primitive native). `pts`,
-    `length`, `shape_type` sono valori derivati: chi li consuma (detect,
-    write._write_loose, inspect) li ricava dai segmenti con gli helper
-    `track_*` di `core.geometry.measure`.
-
-    Args:
-        edges:       lista di Edge prodotta da adapter.to_edges()
-        exclude_ids: id(Edge) già assorbiti in loop strutturali
-    """
-    from ...model.curve import OpenCurve
-    from ...core.primitives.segments import LineSeg
-    from ...core.geometry.measure import track_points
-
-    curves = []
-    for edge in edges:
-        if id(edge) in exclude_ids:
-            continue
-        if edge.start == edge.end:
-            continue
-
-        seg = edge.segment or LineSeg(start=edge.start, end=edge.end)
-        if len(track_points([seg])) < 2:
-            continue
-
-        curves.append(OpenCurve(role=edge.role, segments=[seg], styles=[edge.style]))
-
-    return curves

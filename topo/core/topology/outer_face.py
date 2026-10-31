@@ -30,10 +30,10 @@ from shapely.geometry import Polygon
 from shapely.ops import polygonize, unary_union
 
 from .edge import Edge
-from ..geometry.integrals import ring_area
-from .noding import edge_geometry
+from ..geometry.integrals import ring_area, ring_moments
+from .noding import GRAPH_EPSILON, edge_geometry
 from .graph import Graph, build_node_graph
-from .loop_finder import LoopFinder, loop_geometry
+from .loop_finder import loop_geometry, segments_from_loop
 from .rim import face_segments, off_rim
 from ..primitives.segments import DEFAULT_TOLERANCE
 
@@ -115,6 +115,93 @@ def outer_face_passes(graph: Graph, component, n_edges: int) -> dict:
 
 def _outer_face_walk(graph: Graph, component, n_edges: int) -> list:
     """[(edge, dal nodo, al nodo)] lungo il bordo della faccia esterna."""
+    step = _stepper(graph)
+    first = _first_step(graph, component)
+    walk = [first]
+    for _ in range(4 * n_edges + 10):
+        nxt = step(*walk[-1])
+        if nxt == first:
+            break
+        walk.append(nxt)
+    return walk
+
+
+def face_walks(graph: Graph) -> List[tuple]:
+    """
+    Ogni faccia della rete piana `graph`, come (giro, esterna): il giro è
+    [(edge, dal nodo, al nodo)], ogni lato di ogni edge percorso una volta,
+    con la stessa svolta del bordo esterno (`_stepper`); `esterna` dice se è
+    la faccia esterna di un componente (quella che parte dal suo punto più a
+    sinistra, `_first_step`). Nessuna scelta dipende dall'ordine degli edge (D189).
+    """
+    step = _stepper(graph)
+    outer = {(id(e), frm) for e, frm, _ in (_first_step(graph, c) for c in graph.connected_components())}
+    used, walks = set(), []
+    for node in graph.nodes:
+        for edge, other in graph[node]:
+            start = (edge, node, other)
+            if (id(edge), node) in used:
+                continue
+            walk, cur = [], start
+            while (id(cur[0]), cur[1]) not in used:
+                used.add((id(cur[0]), cur[1]))
+                walk.append(cur)
+                cur = step(*cur)
+            if cur[0] is start[0] and cur[1] == start[1]:
+                walks.append((walk, any((id(e), frm) in outer for e, frm, _ in walk)))
+    return walks
+
+
+def face_loops(edges: List[Edge], epsilon: float = GRAPH_EPSILON) -> List[list]:
+    """I giri delle facce limitate della rete piana `edges` (split_at_crossings;
+    nodi entro `epsilon` uno solo), divisi in giri semplici, ognuno una volta,
+    come [(edge, percorso al contrario)] in senso antiorario; più i pezzi
+    chiusi da soli (un cerchio). Quello che heal() chiama contorni (D189)."""
+    graph = build_node_graph(edges, epsilon=epsilon)
+    loops, seen = [], set()
+    for walk, is_outer in face_walks(graph):
+        if is_outer:
+            continue
+        for ring in simple_rings(walk):
+            key = frozenset(id(e) for e, _, _ in ring)
+            if key in seen:
+                continue
+            seen.add(key)
+            loop = [(e, graph.canonical(e.start) != frm) for e, frm, _ in ring]
+            # verso antiorario dall'area con segno sulle primitive (D166)
+            if ring_moments(segments_from_loop(loop)).area < 0:
+                loop = [(e, not rev) for e, rev in reversed(loop)]
+            loops.append(loop)
+    return loops + [[(e, False)] for e in graph.degenerate_loops]
+
+
+def simple_rings(walk: list) -> List[list]:
+    """I giri semplici di una faccia: dove il giro ripassa da un nodo si
+    stacca un giro (due asole che si toccano in un punto sono due giri). Un
+    andata e ritorno sullo stesso edge non è un giro. Ogni giro come
+    [(edge, dal nodo, al nodo)]."""
+    rings, stack, at = [], [], {}
+    for item in walk:
+        node = item[1]
+        if node in at:
+            k = at[node]
+            ring = stack[k:]
+            del stack[k:]
+            for _, n, _ in ring:
+                at.pop(n, None)
+            rings.append(ring)
+        at[node] = len(stack)
+        stack.append(item)
+    if stack:
+        rings.append(stack)
+    return [r for r in rings if len({id(e) for e, _, _ in r}) > 1 or len(r) == 1 and r[0][1] == r[0][2]]
+
+
+def _stepper(graph: Graph):
+    """Il passo del percorso: arrivati in un nodo per un edge, si prende l'edge
+    che gira meno in senso antiorario rispetto a quello da cui si arriva;
+    tornare indietro solo se non c'è altro. Una funzione sola per la faccia
+    esterna e per tutte le facce."""
     angles: dict = {}
 
     def angle(edge, node):
@@ -123,24 +210,18 @@ def _outer_face_walk(graph: Graph, component, n_edges: int) -> list:
             angles[key] = _leaving_angle(edge, node, graph)
         return angles[key]
 
-    first = _first_step(graph, component)
-    walk, node = [first], first[2]
-    back_edge, back_angle = first[0], angle(first[0], node)
-    for _ in range(4 * n_edges + 10):
+    def step(edge, frm, node):
+        back_angle = angle(edge, node)
         best, best_turn = None, None
-        for edge, other in graph[node]:
-            turn = (angle(edge, node) - back_angle) % (2 * math.pi)
-            if edge is back_edge or turn < 1e-9:
+        for nxt, other in graph[node]:
+            turn = (angle(nxt, node) - back_angle) % (2 * math.pi)
+            if nxt is edge or turn < 1e-9:
                 turn = 2 * math.pi       # tornare indietro: solo se non c'è altro
             if best_turn is None or turn < best_turn:
-                best, best_turn = (edge, other), turn
-        edge, other = best
-        if node == first[1] and edge is first[0] and other == first[2]:
-            break
-        walk.append((edge, node, other))
-        back_edge, back_angle = edge, angle(edge, other)
-        node = other
-    return walk
+                best, best_turn = (nxt, node, other), turn
+        return best
+
+    return step
 
 
 def _first_step(graph: Graph, component):
@@ -248,9 +329,8 @@ def _on_nodes(edges: List[Edge], graph: Graph) -> list:
 
 def _largest_loop(edges: List[Edge], epsilon: float):
     """(loop, segments, styles, polygon) del giro di area massima."""
-    graph = build_node_graph(edges, epsilon=epsilon)
     best = None
-    for loop in LoopFinder().find(graph):
+    for loop in face_loops(edges, epsilon):
         geometry = loop_geometry(loop)
         if geometry is not None and (best is None or ring_area(geometry[0]) > _area(best)):
             best = (loop, *geometry)

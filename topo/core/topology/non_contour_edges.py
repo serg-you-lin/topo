@@ -88,3 +88,11 @@ class NonContourEdgeDetector:
             if border <= sum(edge_geometry(e).length for e in run) / 2:
                 excluded |= {id(e) for e in run}
         return excluded
+
+
+def non_contour_pieces(noded: NodedEdges, tolerance: float) -> set:
+    """id dei pezzi della rete piana `noded` che non chiudono un contorno (D111,
+    D131), giudicati sulla rete piana: lo stesso per ogni lettura (D189)."""
+    graph = build_node_graph(noded.pieces, epsilon=GRAPH_EPSILON)
+    return NonContourEdgeDetector(tolerance).detect(graph, noded.pieces, planar=noded.planar)
+

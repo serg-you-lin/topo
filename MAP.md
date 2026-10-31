@@ -7052,3 +7052,75 @@ three files outside the repo that import `topo.core.healing` directly:
 snapdraw `lab/heal_repair_experiment.py`, `lab/island_rays.py`, cogo
 `fixtures/corner_bend_problem.py` — lab and fixture code, adapted on their
 side (D140), preferably to `topo.experimental`.
+
+### D189 — One ingredient per job: heal() and island() on the same network, the same faces, the same gaps ⏳ (F6 to be judged)
+
+Asked by Federico, 31 October 2026: "the same flour and the same eggs for two
+recipes". D187 had put the two readings' front steps behind one function but
+kept switches (`pairwise`, `refit`, `full_arcs`) and left the rest in two
+copies. An inventory of every function each reading reaches
+(`_debug/2026-10-31_topo_G6e/ingredients.txt`) found 12 of 18 jobs done by
+different code. This decision removes those copies; it reopens on one point
+each D57 (the loop ladder), D60 (heal did not refit), D110/D112 (heal did not
+node contacts; island closed every pair) and D100's polygonize fallback.
+
+**One function per job, for every reading:**
+- clean-up: `normalize` with no switches — tessellations refitted (deviation
+  measured ≤ 0.0185 mm), collinear/cocircular merges, weld, near-full arcs,
+  gaps (`geometry.measure.reach` gives every tolerance comparison D183's
+  margin);
+- gaps (`compute_gap_fixes`): each free end closes on the nearest point of
+  the network within the tolerance — another free end (meeting or segment,
+  D112), or where the end's own curve, *continued*, meets another edge (a line
+  or arc extends to it; a spline takes its tangent). Never a perpendicular
+  bridge: the drawing does not suggest it (a thread symbol 0.38 mm from its
+  hole stays a symbol). An end with two equally near partners closes nothing
+  (D185). This replaces D57's corner repair and the tolerant graph, and the
+  `pairwise=False` + `drop_redundant_meets` of island, which did not close a
+  rectangle's broken corner;
+- the planar network: `split_at_crossings` for both. Where a contact cuts is
+  the reading's meaning, a named parameter: `cut_crossings` — island yes
+  (D101), heal no (D132: a crossing of contour sides is a broken drawing; an
+  axis across a hole is not a side of the hole). `NodedEdges.planar` tells the
+  non-contour detector whether to cut for its walk;
+- non-contour: `non_contour_pieces`, on that network, for both;
+- contours: `outer_face.face_walks` — the walk of the outer face (one
+  `_stepper`) taken on every side of every edge; `face_loops` are the bounded
+  faces split into simple rings (two slots touching at a corner are two
+  holes), CCW (D166). `LoopFinder`, `find_loops`, `LoopSearch`,
+  `repair_merged_corners`, the polygonize fallback, `off_faces`,
+  `gap_endpoints_at_nodes` are gone; `outer_face` uses `face_loops` too;
+- a side cut by a contact returns the file's segment when the ring runs all
+  its pieces (`NodedEdges.whole`, D143); a ring that is no contour takes
+  nothing, its edges go to `loose` whole;
+- `loose`: `base/curves.loose_curves`, D162's rule for both (a piece that
+  closes by itself is a ClosedCurve), labeled edges included; it replaces
+  heal's `edges_to_open_curves` (which silently dropped a closed edge that was
+  no contour, non-negotiable 7) and `labeled_curves`, and island's
+  `_open`/`_pieces`.
+
+- circle fits (`fit_circle_kasa`, `circle_through`, used by the refit) work in
+  the frame of their own points: on x²+y² at coordinates ~1e6 the cancellation
+  took the digits, refitted arcs came out with other centres and stopped
+  merging — the reading depended on where the drawing sits.
+
+What still distinguishes the readings is only their own step: heal takes
+every bounded face and nests them; island groups by `max_gap` and keeps each
+group's outer face.
+
+**Measured.** Suite: 2955 passed, one red, 3:44 (over the time budget: heal
+now nodes every drawing; to be measured and fixed). Goldens of heal: only F6
+changes — two flaps joined by two short sides read as one outline with two
+chords (before: two parts and an "edge joining two shapes" warning); a T gap
+of 0.45 on one short side now closes. Waiting for Federico's eye before the
+golden is touched (non-negotiable 9). Goldens of island: unchanged; `loose`
+changes count on 12 drawings (more arc pieces where ends now close on arcs).
+G6d closes (SEGNI_TRACCIATI no longer depends on the chords). Sweep reds of
+the morning (31, the 6530-edge one not run): 29 stable under every single motion;
+left J0116004A (changes only with edge order) and drw_0017 (153 crossings: with
+crossings uncut heal's network is not planar there, and the face walk on it is
+not well defined). New tests:
+`TestFaceLoops`, `TestGapOntoCurve` (drw_0015's symbol under every motion, a
+broken corner in both readings), `TestTiedGapPartners` (an end-end tie); the
+loop tests of `test_loops.py` run on `face_loops`; `test_corner_repair.py` is
+gone with the repair.

@@ -24,11 +24,17 @@ Funzioni pubbliche:
 from __future__ import annotations
 import math
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
+
+from shapely import STRtree
+from shapely.geometry import Point
 
 from ..geometry.measure import FLOAT_NOISE, round_point
 from ..geometry.intersections import (_distance, _line_intersection, _circle_line_intersections, _circle_circle_intersections, _closest_to)
-from ..primitives.segments import LineSeg, ArcSeg, BSplineSeg, segment_endpoints
+from ..geometry.intersections import intersections
+from ..geometry.regions import nearest_point
+from ..primitives.segments import DEFAULT_TOLERANCE, LineSeg, ArcSeg, BSplineSeg, segment_endpoints
+from ..topology.noding import GRAPH_EPSILON, edge_geometry
 from ..topology.edge import Edge
 from ...model.role import ContourRole
 
@@ -183,63 +189,142 @@ def _get_solver(kind_a: str, kind_b: str):
 # Funzione pubblica
 # ---------------------------------------------------------------------------
 
-def compute_gap_fixes(
-    endpoints: List[GapEndpoint],
-    tolerance: float,
-    pairwise: bool = True,
-) -> List[GapFix]:
+def compute_gap_fixes(endpoints: List[GapEndpoint], tolerance: float,
+                      edges: Sequence[Edge] = ()) -> List[GapFix]:
     """
-    Calcola i GapFix fra gli endpoint liberi entro tolerance. I due capi
-    dello stesso edge non sono mai un gap (un arco quasi chiuso è
-    `close_near_full_arcs`).
-
-    Parametri:
-        endpoints : lista di GapEndpoint prodotta dall'adapter
-        tolerance : distanza massima tra due endpoint per considerarli un gap
-        pairwise  : True (heal, MAP.md D112) — accoppiati due a due per
-                    vicinanza, ogni endpoint chiude al più un gap, col compagno
-                    più vicino ancora libero; False (island) — ogni coppia
-                    entro tolerance, perché lì un pezzo è "ciò che si tocca"
-
-    Restituisce:
-        Lista di GapFix (MoveEndpoint o AddSegment) da applicare.
-        L'ordine non è garantito — ogni fix è indipendente.
+    Calcola i GapFix degli estremi liberi entro `tolerance`, una regola sola
+    per ogni lettura (D112, D189). Ogni estremo si chiude sul punto più vicino
+    della rete: un altro estremo libero (i due si incontrano o si uniscono con
+    un segmento, e nessuno dei due chiude altro), oppure il punto dove la sua
+    curva, proseguita, incontra un altro edge di `edges` — a metà di una curva
+    o su un suo nodo (mai con un ponte di traverso). I due capi dello stesso
+    edge non sono mai un gap (`close_near_full_arcs`). Un estremo coi due
+    punti più vicini a pari merito non sceglie: in una figura simmetrica
+    nessuna regola dà lo stesso compagno in ogni riferimento (D185).
     """
-    if len(endpoints) < 2:
-        return []
-
-    pairs = _gap_pairs(endpoints, tolerance)
-    if pairwise:
-        # un estremo con due compagni più vicini a pari merito non sceglie: in
-        # una figura simmetrica nessuna regola dà lo stesso compagno in ogni
-        # riferimento. Resta aperto, e heal() lo dice (D185)
-        ambiguous = _ambiguous(endpoints, pairs)
-        pairs = sorted((p for p in pairs if p[2] not in ambiguous and p[3] not in ambiguous),
-                       key=lambda p: (p[0], p[1]))
-
+    candidates = _candidates(endpoints, tolerance, edges)
+    ambiguous = _ambiguous_from(candidates, endpoints)
     fixes: List[GapFix] = []
     taken: set = set()
-    for _, _, i, j in pairs:
-        ep_a, ep_b = endpoints[i], endpoints[j]
-        key_a, key_b = (id(ep_a.ref), ep_a.role), (id(ep_b.ref), ep_b.role)
-        if pairwise:
-            if key_a in taken or key_b in taken:
-                continue
-            taken.update((key_a, key_b))
-        elif (key_a, key_b) in taken:
+    for d, _, i, target in sorted(candidates, key=lambda c: (c[0], c[1])):
+        if i in ambiguous or i in taken:
             continue
+        ep = endpoints[i]
+        if target[0] == "end":
+            j = target[1]
+            if j in ambiguous or j in taken:
+                continue
+            taken.update((i, j))
+            other = endpoints[j]
+            fixes.extend(_within_reach(_get_solver(ep.kind, other.kind)(ep, other), ep, other, tolerance))
         else:
-            taken.add((key_a, key_b))
-        fixes.extend(_within_reach(_get_solver(ep_a.kind, ep_b.kind)(ep_a, ep_b),
-                                   ep_a, ep_b, tolerance))
+            taken.add(i)
+            fixes.extend(_onto_curve(ep, target[1], target[2], target[3], tolerance))
     return fixes
 
 
-def ambiguous_gap_ends(endpoints: List[GapEndpoint], tolerance: float) -> List[Point2D]:
-    """Gli estremi che `compute_gap_fixes(pairwise=True)` lascia aperti perché
-    i loro due compagni più vicini entro `tolerance` sono a pari merito
-    (distanze uguali entro FLOAT_NOISE, D185)."""
-    return [endpoints[k].pt for k in sorted(_ambiguous(endpoints, _gap_pairs(endpoints, tolerance)))]
+def _candidates(endpoints: List[GapEndpoint], tolerance: float, edges: Sequence[Edge]) -> list:
+    """(distanza, chiave d'ordine, i, bersaglio) per ogni estremo `i`: ("end", j) un
+    altro estremo libero; ("curve", edge, incontro, nodo) dove la curva di `i`,
+    proseguita, incontra un altro edge (`_continuation`). Un incontro su un
+    estremo libero è già la coppia di estremi; uno entro GRAPH_EPSILON lo
+    collega il noding (D180), non è un gap."""
+    out = [(d, key, i, ("end", j)) for d, key, i, j in _gap_pairs(endpoints, tolerance)]
+    out += [(d, key, j, ("end", i)) for d, key, i, j in _gap_pairs(endpoints, tolerance)]
+    if not edges:
+        return out
+    free = {getattr(ep.ref, ep.role) for ep in endpoints if isinstance(ep.ref, Edge)}
+    geoms = [edge_geometry(e) for e in edges]
+    tree = STRtree(geoms)
+    for i, ep in enumerate(endpoints):
+        ahead = _continuation(ep, tolerance)
+        if ahead is None:
+            continue
+        for k in tree.query(Point(ep.pt), predicate="dwithin", distance=tolerance + 2 * DEFAULT_TOLERANCE):
+            edge = edges[int(k)]
+            if edge is ep.ref:
+                continue
+            hits = [q for q in intersections(ahead, edge.segment) if _distance(q, ep.pt) > GRAPH_EPSILON]
+            if not hits:
+                continue
+            meet = min(hits, key=lambda q: _distance(q, ep.pt))
+            d = _distance(ep.pt, meet)
+            if d > tolerance:
+                continue
+            node = next((n for n, q in zip((edge.start, edge.end), segment_endpoints(edge.segment))
+                         if _distance(meet, q) <= GRAPH_EPSILON), None)
+            if node is not None and node in free:
+                continue
+            out.append((d, (tuple(ep.pt), tuple(meet)), i, ("curve", edge, meet, node)))
+    return out
+
+
+def _continuation(ep: GapEndpoint, reach: float):
+    """La curva dell'estremo `ep` proseguita oltre il suo capo per `reach`: una
+    retta col suo verso, un arco sul suo cerchio, una spline o un'ellisse con la
+    tangente al capo. Un capo si chiude su una curva solo dove questa la
+    incontra: mai con un ponte di traverso, che il disegno non suggerisce (D189).
+    None se non ha una direzione (tratto nullo)."""
+    seg = ep.ref.segment if isinstance(ep.ref, Edge) else None
+    if isinstance(seg, ArcSeg) and seg.radius > 0:
+        step = min(reach / seg.radius, math.pi / 2)
+        sign = 1.0 if seg.ccw else -1.0
+        if ep.role == "end":
+            return ArcSeg(center=seg.center, radius=seg.radius, start_angle=seg.end_angle,
+                          end_angle=seg.end_angle + sign * step, ccw=seg.ccw)
+        return ArcSeg(center=seg.center, radius=seg.radius, start_angle=seg.start_angle,
+                      end_angle=seg.start_angle - sign * step, ccw=not seg.ccw)
+    if isinstance(seg, LineSeg):
+        far = seg.start if ep.role == "end" else seg.end
+    elif seg is not None:
+        pts = seg.discretize(tolerance=DEFAULT_TOLERANCE)
+        if len(pts) < 2:
+            return None
+        far = pts[-2] if ep.role == "end" else pts[1]
+    else:
+        return None
+    length = _distance(far, ep.pt)
+    if length <= 0:
+        return None
+    ux, uy = (ep.pt[0] - far[0]) / length, (ep.pt[1] - far[1]) / length
+    return LineSeg(start=tuple(ep.pt), end=(ep.pt[0] + ux * reach, ep.pt[1] + uy * reach))
+
+
+def _ambiguous_from(candidates: list, endpoints: List[GapEndpoint]) -> set:
+    """Gli estremi i cui due punti più vicini (distinti oltre GRAPH_EPSILON) distano
+    uguale entro FLOAT_NOISE (D185)."""
+    by_end: dict = {}
+    for d, _, i, target in candidates:
+        by_end.setdefault(i, []).append((d, target))
+    out = set()
+    for i, items in by_end.items():
+        items.sort(key=lambda t: t[0])
+        places = []
+        for d, target in items:
+            point = target[2] if target[0] == "curve" else endpoints[target[1]].pt
+            if all(_distance(point, q) > GRAPH_EPSILON for _, q in places):
+                places.append((d, point))
+            if len(places) == 2:
+                break
+        if len(places) == 2 and places[1][0] - places[0][0] <= FLOAT_NOISE:
+            out.add(i)
+    return out
+
+
+def _onto_curve(ep: GapEndpoint, edge: Edge, meet: Point2D, node, reach: float) -> List[GapFix]:
+    """L'estremo `ep` portato dove la sua curva, proseguita, incontra `edge`:
+    una retta o un arco si allungano fino a lì; una spline o un'ellisse, che
+    non si allungano, prendono il tratto di tangente."""
+    if ep.kind in ("line", "arc"):
+        return [MoveEndpoint(ref=ep.ref, role=ep.role, new_pt=meet)]
+    return [AddSegment(pt_a=ep.pt, pt_b=meet, node_a=_node(ep), node_b=node)]
+
+
+def ambiguous_gap_ends(endpoints: List[GapEndpoint], tolerance: float,
+                       edges: Sequence[Edge] = ()) -> List[Point2D]:
+    """Gli estremi che `compute_gap_fixes` lascia aperti perché i loro due punti
+    più vicini entro `tolerance` sono a pari merito (D185)."""
+    return [endpoints[k].pt for k in sorted(_ambiguous_from(_candidates(endpoints, tolerance, edges), endpoints))]
 
 
 def _gap_pairs(endpoints: List[GapEndpoint], tolerance: float) -> list:
@@ -253,17 +338,8 @@ def _gap_pairs(endpoints: List[GapEndpoint], tolerance: float) -> list:
             d = _distance(ep_a.pt, ep_b.pt)
             if d <= tolerance:
                 # a parità di distanza decidono le coordinate, mai l'ordine del file
-                pairs.append((d, sorted((tuple(ep_a.pt), tuple(ep_b.pt))), i, j))
+                pairs.append((d, tuple(sorted((tuple(ep_a.pt), tuple(ep_b.pt)))), i, j))
     return pairs
-
-
-def _ambiguous(endpoints: List[GapEndpoint], pairs: list) -> set:
-    """Indici degli estremi i cui due compagni più vicini distano uguale entro FLOAT_NOISE."""
-    near: dict = {}
-    for d, _, i, j in pairs:
-        near.setdefault(i, []).append(d)
-        near.setdefault(j, []).append(d)
-    return {k for k, ds in near.items() if len(ds) > 1 and abs(sorted(ds)[1] - sorted(ds)[0]) <= FLOAT_NOISE}
 
 
 def _within_reach(fixes: List[GapFix], ep_a: GapEndpoint, ep_b: GapEndpoint,
@@ -306,36 +382,6 @@ def _meet_or_bridge(ix: Optional[Point2D], ep_a: GapEndpoint, ep_b: GapEndpoint)
     ]
 
 
-def drop_redundant_meets(fixes: list, graph) -> list:
-    """Scarta un fix "incontro" (due `MoveEndpoint` sullo stesso punto, la
-    retta/arco di ognuno prolungato fino all'intersezione con l'altro)
-    quando i due estremi di partenza sono già nella stessa componente
-    connessa del grafo: non è un gap da chiudere, un giro li collega già
-    altrove senza bisogno di questi due — saldarli comunque apre un secondo
-    percorso parallelo spurio (sliver) accanto al contorno che si chiude già
-    da solo (stessa famiglia di D100/D101, un passo prima: nel gap-fix,
-    invece che nel noding). Un fix fra componenti diverse resta: lì è un
-    gap vero, l'unico modo di collegarli."""
-    by_point: dict = {}
-    for fix in fixes:
-        if isinstance(fix, MoveEndpoint):
-            by_point.setdefault(fix.new_pt, []).append(fix)
-    component_of: dict = {}
-    for i, component in enumerate(graph.connected_components()):
-        for node in component:
-            component_of[node] = i
-    drop_ids = set()
-    for pair in by_point.values():
-        if len(pair) != 2:
-            continue
-        fa, fb = pair
-        node_a = graph.canonical(fa.ref.start if fa.role == "start" else fa.ref.end)
-        node_b = graph.canonical(fb.ref.start if fb.role == "start" else fb.ref.end)
-        if component_of.get(node_a) == component_of.get(node_b):
-            drop_ids.update(id(f) for f in pair)
-    return [f for f in fixes if id(f) not in drop_ids]
-
-
 def free_endpoints_from_edges(edges: List[Edge], graph) -> List[GapEndpoint]:
     """
     Estrae gli endpoint liberi (grado < 2 nel grafo) dagli Edge.
@@ -346,23 +392,6 @@ def free_endpoints_from_edges(edges: List[Edge], graph) -> List[GapEndpoint]:
     non hanno endpoint liberi per definizione.
     """
     return _gap_endpoints(edges, lambda node: graph.degree(node) < 2)
-
-
-def gap_endpoints_at_nodes(edges: List[Edge], nodes: set) -> List[GapEndpoint]:
-    """
-    GapEndpoint per gli endpoint che cadono su uno dei `nodes` — tuple di
-    coordinate già arrotondate — **a prescindere dal grado nel grafo**.
-
-    Complementare a free_endpoints_from_edges: quello prende solo gli endpoint
-    liberi (grado < 2), questo prende un insieme di nodi deciso da un'altra
-    logica. Serve a riparare gli angoli individuati dal clustering degli
-    endpoint (build_node_graph con epsilon > 0): lì i due lati si toccano
-    quasi — grado >= 2 — quindi il filtro sul grado non li vede, ma la
-    geometria va comunque portata all'intersezione reale.
-
-    Considera solo LINE / ARC / SPLINE.
-    """
-    return _gap_endpoints(edges, lambda node: node in nodes)
 
 
 def _gap_endpoints(edges: List[Edge], keep: Callable[[Point2D], bool]) -> List[GapEndpoint]:

@@ -11,53 +11,35 @@ Puro: solo Edge, primitive e modello, nessun formato.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from typing import Callable, FrozenSet, List, Optional, Set, Tuple
+from typing import Callable, List, Optional, Set, Tuple
 
 from shapely import STRtree
-from shapely.geometry import LineString, Point, Polygon
-from shapely.ops import polygonize, snap, unary_union
+from shapely.geometry import Point
 
-from ..geometry.measure import segment_length, track_points
-from ..primitives import LineSeg
-from ..primitives.polygon_builder import build_polygon, with_polygon
-from ..primitives.segments import DEFAULT_TOLERANCE
 from ..topology.edge import Edge
 from ..topology.graph import build_node_graph
-from ..topology.loop_finder import LoopFinder, loop_geometry
-from ..topology.non_contour_edges import NonContourEdgeDetector
+from ..topology.non_contour_edges import non_contour_pieces
+from ..topology.noding import split_at_crossings
 from ...model.cluster import Cluster
-from ...model.curve import ClosedCurve, OpenCurve
 from ...model.role import ContourRole, is_structural_role
-from ..base.gap_solver import compute_gap_fixes, apply_gap_fixes, gap_endpoints_at_nodes
-from ..base.hierarchy import HierarchyBuilder, loop_to_closed_curve
+from ..base.hierarchy import HierarchyBuilder
 
-
-@dataclass
-class LoopSearch:
-    """Come find_loops() ha chiuso (o non chiuso) i giri, gradino per gradino."""
-    edges:              List[Edge]                                  # dopo l'eventuale riparazione angoli
-    loops:              List[list]  = field(default_factory=list)   # loop [(Edge, reversed)]
-    method:             str         = "none"                        # exact | corner_repair | tolerant | none
-    repaired:           int         = 0                             # angoli chiusi all'intersezione reale
-    skipped_corners:    list        = field(default_factory=list)   # cluster con 3+ estremi, non riparati
-    unrepaired_corners: list        = field(default_factory=list)   # fusi solo nel grafo tollerante
-    open_nodes:         list        = field(default_factory=list)   # estremi liberi, se nessun loop
-
-
-# ---------------------------------------------------------------------------
-# API pubblica
-# ---------------------------------------------------------------------------
 
 def find_non_contour_edges(edges: List[Edge], tolerance: float) -> Set[int]:
     """
     id(edge) degli Edge che non chiudono un contorno (catene fra due nodi di
     branching, e non sul bordo della faccia esterna della componente, D111,
-    D131). heal() li tiene fuori
-    dal grafo della ricerca loop. `tolerance`: due tagli più vicini sono un
-    contatto solo, nella rete piana su cui si percorre la faccia esterna.
+    D131): quelli i cui pezzi della rete piana sono tutti non-contorno, lo
+    stesso giudizio che fanno le letture (`non_contour_pieces`, D189).
+    `tolerance`: due tagli più vicini sono un contatto solo.
     """
-    return NonContourEdgeDetector(tolerance).detect(build_node_graph(edges), edges)
+    noded = split_at_crossings(edges, tolerance, cut_crossings=False)
+    excluded = non_contour_pieces(noded, tolerance)
+    verdict: dict = {}
+    for piece in noded.pieces:
+        key = id(noded.parent_of(piece))
+        verdict[key] = verdict.get(key, True) and id(piece) in excluded
+    return {key for key, out in verdict.items() if out}
 
 
 def find_joining_edges(edges: List[Edge], candidate_ids: Set[int]) -> List[Edge]:
@@ -108,76 +90,6 @@ def free_ends(edges: List[Edge], epsilon: float = 0.0) -> List[Tuple[Tuple, floa
     return sorted(ends, key=lambda item: item[1])
 
 
-def repair_merged_corners(edges: List[Edge], tolerance: float,
-                          exclude_ids: FrozenSet[int] = frozenset()
-                          ) -> Tuple[List[Edge], int, list]:
-    """
-    Chiude gli angoli che il grafo esatto vede aperti e il clustering degli
-    estremi (epsilon = `tolerance`) fonde: i due estremi vanno alla loro
-    intersezione reale. Solo i cluster di esattamente due estremi; con tre o
-    più (diramazioni) l'intersezione a due non è definita e il cluster resta.
-
-    Ritorna (edge, n_angoli_riparati, [coordinate_cluster_saltati]).
-    """
-    graph = _graph(edges, exclude_ids, epsilon=tolerance)
-    fixes, repaired, skipped = [], 0, []
-    for canon, members in graph.merged_clusters():
-        endpoints = gap_endpoints_at_nodes(edges, set(members))
-        found = compute_gap_fixes(endpoints, tolerance=float("inf")) if len(endpoints) == 2 else []
-        if found:
-            fixes.extend(found)
-            repaired += 1
-        else:
-            skipped.append(canon)
-    if not fixes:
-        return list(edges), 0, skipped
-    return apply_gap_fixes(edges, fixes), repaired, skipped
-
-
-def find_loops(edges: List[Edge], non_contour_ids: Set[int], tolerance: float) -> LoopSearch:
-    """
-    La scala di heal() per chiudere i giri, esclusi `non_contour_ids`:
-    grafo esatto → riparazione angoli se restano estremi liberi (D57) →
-    grafo tollerante (epsilon = `tolerance`). Se nessun gradino chiude,
-    `loops` è vuota e `open_nodes` dice dove.
-    """
-    search = LoopSearch(edges=list(edges))
-    if not edges:
-        return search
-    exclude = frozenset(non_contour_ids)
-    graph = _graph(edges, exclude)
-    search.loops = LoopFinder().find(graph, exclude_ids=exclude)
-    search.method = "exact"
-    if search.loops and not graph.open_nodes():
-        return search
-
-    search.edges, search.repaired, search.skipped_corners = repair_merged_corners(
-        edges, tolerance, exclude)
-    if search.repaired:
-        search.loops = LoopFinder().find(_graph(search.edges, exclude), exclude_ids=exclude)
-        search.method = "corner_repair"
-    if search.loops:
-        return search
-
-    graph_c = _graph(search.edges, exclude, epsilon=tolerance)
-    # un edge i cui due capi il clustering fonde si chiuderebbe su se stesso
-    # per sola tolleranza: resta fuori dal giro (D112)
-    folded = {id(e) for e in search.edges
-              if e.start != e.end and id(e) not in exclude
-              and graph_c.canonical(e.start) == graph_c.canonical(e.end)}
-    if folded:
-        exclude = exclude | folded
-        graph_c = _graph(search.edges, exclude, epsilon=tolerance)
-    search.loops = LoopFinder().find(graph_c, exclude_ids=exclude)
-    if search.loops:
-        search.method = "tolerant"
-        search.unrepaired_corners = [c for c, _ in graph_c.merged_clusters()]
-    else:
-        search.method = "none"
-        search.open_nodes = graph_c.open_nodes()
-    return search
-
-
 def structural_loops(loops: List[list],
                      is_structural: Optional[Callable[[str], bool]] = None) -> List[list]:
     """
@@ -187,110 +99,6 @@ def structural_loops(loops: List[list],
     structural = is_structural or is_structural_role
     return [loop for loop in loops
             if all(e.role == ContourRole.UNKNOWN or structural(e.role) for e, _ in loop)]
-
-
-def loops_to_curves(loops: List[list]) -> List[ClosedCurve | OpenCurve]:
-    """
-    Un ClosedCurve per loop, col ruolo del primo edge. Un loop che non fa un
-    contorno (poligono nullo, area sotto soglia, micro-cerchio) torna come un
-    OpenCurve per edge, così finisce in `loose` invece di sparire (D151).
-    """
-    curves = []
-    for loop in loops:
-        role = loop[0][0].role if loop else ContourRole.UNKNOWN
-        geometry = loop_geometry(loop)
-        curve = None
-        if geometry is not None:
-            segments, styles, polygon = geometry
-            curve = loop_to_closed_curve(loop, role=role, polygon=polygon, segments=segments,
-                                         styles=styles)
-        if curve is not None:
-            curves.append(curve)
-        else:
-            curves += _edges_as_open_curves(edge for edge, _ in loop)
-    return curves
-
-
-def _edges_as_open_curves(edges) -> List[OpenCurve]:
-    """Un OpenCurve per edge col suo segmento nativo, anche se chiuso da solo
-    (un cerchio scartato non è un contorno). Esclusi solo i tratti di
-    lunghezza nulla."""
-    curves = []
-    for edge in edges:
-        seg = edge.segment or LineSeg(start=edge.start, end=edge.end)
-        if segment_length(seg) > 0:
-            curves.append(OpenCurve(role=edge.role, segments=[seg], styles=[edge.style]))
-    return curves
-
-
-def polygonize_edges(edges: List[Edge], tolerance: float) -> List[Polygon]:
-    """
-    Ultima spiaggia quando nessun grafo chiude: le facce dell'intero disegno
-    discretizzato, con snap a `tolerance`.
-    """
-    lines = []
-    for edge in edges:
-        if edge.segment is None:
-            continue
-        pts = edge.segment.discretize(tolerance=DEFAULT_TOLERANCE)
-        if len(pts) >= 2:
-            lines.append(LineString(pts))
-    merged = unary_union(lines)
-    return list(polygonize(snap(merged, merged, tolerance)))
-
-
-def polygons_to_curves(polygons: List[Polygon]) -> List[ClosedCurve]:
-    """
-    Per poligono un ClosedCurve OUTER dal bordo esterno e uno INNER per
-    buco, a LineSeg: la geometria nativa è persa.
-    """
-    curves = []
-    for poly in polygons:
-        if not poly.is_valid:
-            poly = poly.buffer(0)
-        # il poligono di un contorno è il suo giro: i buchi sono curve a parte
-        outer = loop_to_closed_curve([], role=ContourRole.OUTER, polygon=Polygon(poly.exterior),
-                                     segments=_ring_segments(poly.exterior.coords))
-        if outer is not None:
-            curves.append(outer)
-        for interior in poly.interiors:
-            inner = loop_to_closed_curve([], role=ContourRole.INNER, polygon=Polygon(interior),
-                                         segments=_ring_segments(interior.coords))
-            if inner is not None:
-                curves.append(inner)
-    return curves
-
-
-def polygonize_to_curves(edges: List[Edge], tolerance: float) -> List[ClosedCurve]:
-    """
-    Last resort when no graph closes: the faces of the whole drawing,
-    discretized and snapped at `tolerance`, as closed curves — an OUTER per
-    face boundary, an INNER per hole, made of `LineSeg` (the native geometry
-    is lost). What `heal()` does when `find_loops` finds nothing.
-    """
-    return polygons_to_curves(polygonize_edges(edges, tolerance))
-
-
-def labeled_curves(edges: List[Edge]) -> list:
-    """
-    Gli Edge messi da parte da split_labeled() come curve col loro ruolo
-    intatto: ClosedCurve se l'edge è già chiuso da solo (cerchio, spline
-    chiusa), OpenCurve altrimenti. Tracce degeneri escluse.
-    """
-    curves = []
-    for edge in edges:
-        seg = edge.segment
-        if seg is None:
-            continue
-        if edge.start == edge.end:
-            polygon = build_polygon([seg], DEFAULT_TOLERANCE)
-            if polygon is not None:
-                curves.append(with_polygon(ClosedCurve(role=edge.role, segments=[seg],
-                                                       styles=[edge.style]), polygon))
-            continue
-        if len(track_points([seg])) >= 2:
-            curves.append(OpenCurve(role=edge.role, segments=[seg], styles=[edge.style]))
-    return curves
 
 
 def build_hierarchy(curves: list, label: str = "", source_file: str = "",
@@ -310,12 +118,3 @@ def build_hierarchy(curves: list, label: str = "", source_file: str = "",
 # Helper
 # ---------------------------------------------------------------------------
 
-def _graph(edges: List[Edge], exclude_ids: FrozenSet[int], epsilon: float = 0.0):
-    if exclude_ids:
-        edges = [e for e in edges if id(e) not in exclude_ids]
-    return build_node_graph(edges, epsilon=epsilon)
-
-
-def _ring_segments(coords) -> List[LineSeg]:
-    pts = [(x, y) for x, y in coords]
-    return [LineSeg(start=pts[i], end=pts[i + 1]) for i in range(len(pts) - 1)]
