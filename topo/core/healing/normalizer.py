@@ -44,7 +44,7 @@ from collections import Counter
 from dataclasses import dataclass, replace
 from typing import Any, Callable, Iterable, List, Tuple
 
-from ..geometry.measure import FLOAT_NOISE
+from ..geometry.measure import FLOAT_NOISE, within_diameter
 from ..primitives.segments import LineSeg, ArcSeg, CircleSeg, Point, segment_endpoints
 from ..primitives.fitting import simplify_points
 from ..topology.graph import build_node_graph, connected_groups
@@ -447,7 +447,7 @@ def weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]:
     target: dict = {}
     for members in groups:
         points = [nodes[k] for k in members]
-        if len(points) > 1 and _diameter(points) <= _DEGENERATE_LENGTH_EPS:
+        if len(points) > 1 and within_diameter(points, _DEGENERATE_LENGTH_EPS):
             # il rappresentante è il nodo minimo del gruppo, un estremo reale
             target.update((p, points[0]) for p in points)
     degenerate_ids = {id(e) for e in candidates if e.start in target}
@@ -463,17 +463,6 @@ def weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]:
             edge = replace(edge, start=new_start, end=new_end)
         result.append(edge)
     return result
-
-
-def _diameter(points: List[Point]) -> float:
-    """La distanza massima fra due punti dell'insieme: non dipende dal riferimento,
-    a differenza della diagonale della bbox."""
-    xs, ys = [p[0] for p in points], [p[1] for p in points]
-    diagonal = math.hypot(max(xs) - min(xs), max(ys) - min(ys))
-    # la diagonale sta fra il diametro e il diametro per radice di due
-    if diagonal <= _DEGENERATE_LENGTH_EPS or diagonal > 2 * _DEGENERATE_LENGTH_EPS:
-        return diagonal
-    return max(math.dist(a, b) for i, a in enumerate(points) for b in points[i + 1:])
 
 
 # ---------------------------------------------------------------------------

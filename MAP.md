@@ -6978,3 +6978,47 @@ long chains of strokes now stay whole: j0097092 7.8 → 14.0 s, regr_01
 4.8 → 11.2 s for the five readings of the sweep. Held by
 `test_normalizer.py::TestWeldUnderMotion` (a fillet of twelve 0.04 chords
 between two sides; on the old code 8 edges in the file's frame, 9 rotated).
+
+### D187 — One foundation for every reading ✅
+
+Stated by Federico, 31 October 2026: `heal()`, `island()` and any recipe a
+caller assembles stand on the same foundations. A geometric rule is decided
+once, in one place, and every reading uses it; a fix inside one reading is
+not a fix.
+
+**What was wrong.** D180 (nodes decided once, by distance within
+`GRAPH_EPSILON`) was built and tested for `island()` alone during G6c; its
+measurement said "`heal()` identical everywhere", i.e. that heal had not
+changed, not that it was free of the defect. `heal()` kept node identity by
+the rounded tuple, the root of most of G6e. The two recipes also carried
+their own copies of the front steps (island filtered the roles by hand and
+did not look at non-finite coordinates; its gap clean-up lived in
+`island.py`).
+
+**Rule.** `topo/core/healing/base.py`:
+- `prepare(edges, is_structural)`: non-finite coordinates and non-structural
+  roles set aside, then `noding.decide_nodes` — nodes from the true segment
+  points (`renode`), ends within `GRAPH_EPSILON` of each other one node (the
+  smallest of the group); a group wider than that is a curve written as
+  dense points and keeps its nodes (D186's rule, frame-free); an open edge
+  whose two ends become one node is welded (D56).
+- `normalize(edges, gap, *, keep_junctions, refit, pairwise, full_arcs)`:
+  the same clean-up functions in the same order for every reading
+  (collinear, cocircular, weld, near-full arcs, gaps through one
+  `close_free_gaps`). What still differs between the readings is a named
+  parameter, each with its decision: `keep_junctions` (D110), `refit` (D60),
+  `pairwise` (D112), `full_arcs`. Whether each must stay a reading's choice
+  is open, for Federico.
+
+`_drop_redundant_meets` moved from `island.py` to the gap solver;
+`within_diameter` is in `geometry.measure`, shared by D186's weld and
+`decide_nodes`.
+
+**Measured.** Suite and goldens unchanged, 3:24. One unit test changed
+place, not expectation: `test_corner_repair::TestRepairWithOtherLoopClosed`
+built nodes by hand on a 0.1 grid, so a 0.11 gap looked closed to the
+tolerant graph; D57's rule it holds (a loop closed elsewhere does not stop
+the ladder) is a rule of `find_loops` and is now tested there, green on the
+old and the new code. Held by `tests/unit/core/test_base.py` (ends on either
+side of a grid cell become one node; dense points wider than epsilon stay;
+heal and island read the same outer under every motion).

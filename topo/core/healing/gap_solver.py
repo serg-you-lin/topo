@@ -294,6 +294,36 @@ def _meet_or_bridge(ix: Optional[Point2D], ep_a: GapEndpoint, ep_b: GapEndpoint)
     ]
 
 
+def drop_redundant_meets(fixes: list, graph) -> list:
+    """Scarta un fix "incontro" (due `MoveEndpoint` sullo stesso punto, la
+    retta/arco di ognuno prolungato fino all'intersezione con l'altro)
+    quando i due estremi di partenza sono già nella stessa componente
+    connessa del grafo: non è un gap da chiudere, un giro li collega già
+    altrove senza bisogno di questi due — saldarli comunque apre un secondo
+    percorso parallelo spurio (sliver) accanto al contorno che si chiude già
+    da solo (stessa famiglia di D100/D101, un passo prima: nel gap-fix,
+    invece che nel noding). Un fix fra componenti diverse resta: lì è un
+    gap vero, l'unico modo di collegarli."""
+    by_point: dict = {}
+    for fix in fixes:
+        if isinstance(fix, MoveEndpoint):
+            by_point.setdefault(fix.new_pt, []).append(fix)
+    component_of: dict = {}
+    for i, component in enumerate(graph.connected_components()):
+        for node in component:
+            component_of[node] = i
+    drop_ids = set()
+    for pair in by_point.values():
+        if len(pair) != 2:
+            continue
+        fa, fb = pair
+        node_a = graph.canonical(fa.ref.start if fa.role == "start" else fa.ref.end)
+        node_b = graph.canonical(fb.ref.start if fb.role == "start" else fb.ref.end)
+        if component_of.get(node_a) == component_of.get(node_b):
+            drop_ids.update(id(f) for f in pair)
+    return [f for f in fixes if id(f) not in drop_ids]
+
+
 def free_endpoints_from_edges(edges: List[Edge], graph) -> List[GapEndpoint]:
     """
     Estrae gli endpoint liberi (grado < 2 nel grafo) dagli Edge.

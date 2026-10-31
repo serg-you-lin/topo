@@ -182,6 +182,10 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       Costo accettato da Federico (31 ottobre): D186 raddoppia un `heal()` sui
       disegni a catene di tratti corti (j0097092 1.10 → 2.20 s, regr_01
       0.82 → 1.85 s); l'ottimizzazione è della 1.x, prima in Python, poi Rust.
+      D187 (31 ottobre): una base sola per ogni lettura (`healing/base.py`);
+      da decidere con Federico se i quattro parametri che restano diversi
+      (`keep_junctions` D110, `refit` D60, `pairwise` D112, `full_arcs`)
+      restano scelte della lettura.
       Metodo, da Federico: non più disegno per disegno. Inventario nel codice
       dei punti dove heal decide per coincidenza esatta, la passata solo come
       verifica.

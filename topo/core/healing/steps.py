@@ -33,7 +33,7 @@ from ...model.curve import ClosedCurve, OpenCurve
 from ...model.role import ContourRole, is_structural_role
 from .gap_solver import (
     free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, gap_endpoints_at_nodes,
-    ambiguous_gap_ends,
+    ambiguous_gap_ends, drop_redundant_meets,
 )
 from .hierarchy import HierarchyBuilder, loop_to_closed_curve
 
@@ -132,16 +132,20 @@ def _is_near_full_arc(edge: Edge, graph, tolerance: float, max_missing_angle: fl
     return graph.degree(edge.start) == 1 and graph.degree(edge.end) == 1
 
 
-def close_free_gaps(edges: List[Edge], tolerance: float) -> List[Edge]:
+def close_free_gaps(edges: List[Edge], tolerance: float, pairwise: bool = True) -> List[Edge]:
     """
     Chiude i gap fra estremi liberi entro `tolerance` col gap solver
     (estensione all'intersezione reale o linea di congiunzione).
+    `pairwise=True`: ogni estremo chiude al più un gap (D112); `False`: ogni
+    coppia, senza i secondi percorsi dove un giro li collega già.
     """
     graph = build_node_graph(edges)
     endpoints = free_endpoints_from_edges(edges, graph)
     if not endpoints:
         return list(edges)
-    fixes = compute_gap_fixes(endpoints, tolerance)
+    fixes = compute_gap_fixes(endpoints, tolerance, pairwise=pairwise)
+    if not pairwise:
+        fixes = drop_redundant_meets(fixes, graph)
     if not fixes:
         return list(edges)
     return apply_gap_fixes(edges, fixes)
