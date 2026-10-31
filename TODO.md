@@ -142,8 +142,13 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       finito, non sui disegni: `_debug/2026-10-31_topo_G6e-inventario/inventario.md`,
       ~35 punti di `core/` che decidono a zero, su una griglia, con una
       soglia assoluta o su un pari merito. Ogni voce: micro-caso rosso → verde,
-      oppure una riga sul perché è innocua. Ordine: gruppo A (soglie
-      assolute, ~8 punti), poi B, C, D. Alla fine la passata sui 121 disegni
+      oppure una riga sul perché è innocua. Primo passo: chiudere
+      l'inventario — le 706 righe di `core/` con un confronto o una scelta
+      (`==`, `<`, `>`, `min`, `max`, `sorted`, `round`) passate una volta;
+      ciò che decide entra, poi l'elenco è fermo e si accorcia soltanto
+      (eccezione: righe nuove scritte in `core/`, controllate nel loro
+      commit). Misura: a fine giornata l'elenco è più corto che al mattino.
+      Poi gruppo A (soglie assolute, ~8 punti), poi B, C, D. Alla fine la passata sui 121 disegni
       una volta sola, come verifica. Il testo sotto è la storia.
       chat pulita): la passata su snapdraw (`scripts/21_sweep_invariants.py`,
       voce in Pulizia) trova 32 disegni su 121 dove un moto rigido cambia la
