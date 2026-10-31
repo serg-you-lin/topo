@@ -195,6 +195,17 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       piana per heal); suite 3:44, sopra il tetto; contenimento (tre marche),
       union-find (`cluster_points`, `_Contacts`), `_Curve.locate` contro
       `nearest_point`, soglie assolute in `intersections.py`.
+      Tempo della suite, misurato senza profiler (31 ottobre): heal() su tutti
+      i suoi golden 0.4 s; island() sui 32 golden 29 s, di cui `outer_face`
+      10 s (6.1 nell'unione delle facce di D100: `unary_union` + `polygonize`,
+      un secondo noding e un secondo cammino delle facce accanto ai nostri) e
+      `split_at_crossings` 7.6 s (`_Contacts.meet` 4.2). Le polilinee delle
+      spline sono il 22%, non il 40-50% che cProfile mostrava: de Boor a
+      blocchi in numpy provato (stessi bit su 21618 spline) e tolto, scende
+      solo da 6.5 a 5.1 s e il punto singolo diventa 20 volte più lento.
+      L'unione di D100 vince sul cammino 0 volte su 779 nei golden, 37 su
+      2997 nello sweep (11 disegni): da guardare prima di sostituirla con
+      l'unione delle facce di `face_loops`.
       D188: `healing/` diviso in `base/` e `readings/`; da avvisare in
       snapdraw (`lab/heal_repair_experiment.py`, `lab/island_rays.py`) e cogo
       (`fixtures/corner_bend_problem.py`), che importano `topo.core.healing`. Inventario nel codice
