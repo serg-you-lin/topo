@@ -325,6 +325,62 @@ class TestGapOntoCurve(unittest.TestCase):
             self.assertEqual([round(to_shapely(c.outer).area, 3) for c in result.clusters], [5000.0])
 
 
+class TestArcLineMeetUnderMotion(unittest.TestCase):
+    """G6e, gruppo D, `intersections._closest_to`: un arco che finisce nel suo
+    culmine e una retta che taglia il cerchio 0.05 sotto. I due incontri stanno
+    alla stessa distanza dal capo dell'arco: prima vinceva l'ultimo bit (±0.312
+    secondo il moto). Ora decide la distanza dal capo della retta, e se anche
+    quella è pari il gap si chiude col ponte fra i due capi. Prova la scelta al
+    posto (due candidati pari sul capo dell'arco, contati) e a sei moti. Sui
+    disegni tracciati lo scarto minimo fra i due candidati è 2.08 mm: lì non
+    cambia niente."""
+
+    MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
+               (0.7, 3.1, -2.2), (math.pi / 2, 0.0, 0.0), (2.1, -1e5, 3e4)]
+
+    def _closed(self, motion, offset):
+        from unittest import mock
+        from tests.invariants import rigid
+        from topo.core.base import gap_solver
+        from topo.core.geometry.measure import FLOAT_NOISE
+        from topo.core.primitives.segments import segment_endpoints
+        x, y = -71565.8225, -3048.0985
+        move_seg, move_pt = rigid(*motion)
+        pieces = [ArcSeg(center=(x, y), radius=1.0, start_angle=0.0, end_angle=math.pi / 2, ccw=True),
+                  LineSeg(start=(x - 5, y + 0.95), end=(x + offset, y + 0.95))]
+        doc = topo.load_segments([move_seg(p) for p in pieces], tolerance=0.5)
+        tied = []
+        real = gap_solver._closest_to
+
+        def counted(candidates, ref, *rest):
+            d = [math.dist(q, ref) for q in candidates]
+            tied.append(len(d) == 2 and abs(d[0] - d[1]) <= FLOAT_NOISE)
+            return real(candidates, ref, *rest)
+
+        with mock.patch.object(gap_solver, "_closest_to", counted):
+            healed = topo.experimental.close_free_gaps(list(doc.edges), 0.5)
+        self.assertEqual(tied, [True], motion)
+        a, tx, ty = motion
+        c, s = math.cos(-a), math.sin(-a)
+        back = lambda p: (c * (p[0] - tx) - s * (p[1] - ty) - x, s * (p[0] - tx) + c * (p[1] - ty) - y)
+        return [(type(e.segment).__name__, *(round(v, 6) + 0.0 for p in segment_endpoints(e.segment)
+                                              for v in back(p))) for e in healed]
+
+    def test_capo_della_retta_a_meta_ponte_a_ogni_moto(self):
+        for motion in self.MOTIONS:
+            closed = self._closed(motion, 0.0)
+            self.assertEqual(len(closed), 3, motion)
+            bridges = [{e[1:3], e[3:5]} for e in closed if e[0] == "LineSeg"]
+            self.assertIn({(0.0, 0.95), (0.0, 1.0)}, bridges, motion)
+
+    def test_capo_della_retta_di_lato_l_incontro_dal_suo_lato(self):
+        for motion in self.MOTIONS:
+            closed = self._closed(motion, -0.1)
+            self.assertEqual(len(closed), 2, motion)
+            line = next(e for e in closed if e[0] == "LineSeg")
+            self.assertEqual(line[3:], (-0.31225, 0.95), motion)
+
+
 class TestCloseNearFullArcs(unittest.TestCase):
     """D112: un arco diventa cerchio solo se il gap Ã¨ entro tolleranza (Ã¨ un
     gap) E l'angolo mancante Ã¨ entro la soglia (Ã¨ un cerchio)."""
