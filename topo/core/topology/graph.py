@@ -44,7 +44,7 @@ healing: i nodi topologici reali (angoli, diramazioni) distano molto di più.
 import math
 from collections import defaultdict
 from dataclasses import dataclass, field, replace
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 from ..geometry.measure import round_point
 from ..primitives.segments import ArcSeg, CircleSeg, segment_endpoints
@@ -322,7 +322,7 @@ def _close_self_loop(edge: Edge, epsilon: float):
     return replace(edge, start=anchor, end=anchor, segment=closed_segment)
 
 
-def build_node_graph(edges: list, epsilon: float = 0.0) -> Graph:
+def build_node_graph(edges: list, epsilon: float = 0.0, *, sliver: Optional[float] = None) -> Graph:
     """
     Costruisce il Graph da list[Edge].
 
@@ -333,6 +333,8 @@ def build_node_graph(edges: list, epsilon: float = 0.0) -> Graph:
     `epsilon > 0` fonde gli endpoint entro `epsilon` in un unico nodo canonico
     (vedi cluster_points e la nota in testa al modulo). Con `epsilon = 0.0` i
     nodi restano le tuple arrotondate esatte, come da comportamento storico.
+    `sliver`: la soglia di `_close_self_loop` (di default `epsilon`); su una
+    rete già piana i nodi sono le tuple (epsilon 0) e la soglia resta (D194).
     """
     raw        = defaultdict(list)
     degenerate = []
@@ -361,7 +363,7 @@ def build_node_graph(edges: list, epsilon: float = 0.0) -> Graph:
         if s == e:
             # Endpoint collassati dal clustering: sliver, salvo che l'edge
             # abbia sviluppo reale non trascurabile (v. MAP.md D52).
-            closed = _close_self_loop(edge, epsilon)
+            closed = _close_self_loop(edge, epsilon if sliver is None else sliver)
             if closed is not None:
                 degenerate.append(closed)
             continue

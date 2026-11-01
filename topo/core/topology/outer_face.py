@@ -66,9 +66,11 @@ class OuterFace:
 def outer_face(edges: List[Edge], epsilon: float = 0.0) -> Optional[OuterFace]:
     """
     Contorno esterno della rete `edges` (già piana: split_at_crossings). I
-    nodi entro `epsilon` sono uno solo. None se non c'è nessun giro chiuso.
+    nodi sono le tuple dei pezzi, decisi dal noding sulle curve vere (D194);
+    `epsilon` è la soglia degli sliver e la fascia del bordo dell'unione
+    (D100). None se non c'è nessun giro chiuso.
     """
-    graph = build_node_graph(edges, epsilon=epsilon)
+    graph = build_node_graph(edges, sliver=epsilon)
     best, spurs = None, []
     for component in graph.connected_components():
         count = outer_face_passes(graph, component, len(edges))
@@ -154,10 +156,10 @@ def face_walks(graph: Graph) -> List[tuple]:
 
 def face_loops(edges: List[Edge], epsilon: float = GRAPH_EPSILON) -> List[list]:
     """I giri delle facce limitate della rete piana `edges` (split_at_crossings;
-    nodi entro `epsilon` uno solo), divisi in giri semplici, ognuno una volta,
+    i nodi sono le tuple dei pezzi, D194; `epsilon` la soglia degli sliver), divisi in giri semplici, ognuno una volta,
     come [(edge, percorso al contrario)] in senso antiorario; più i pezzi
     chiusi da soli (un cerchio). Quello che heal() chiama contorni (D189)."""
-    graph = build_node_graph(edges, epsilon=epsilon)
+    graph = build_node_graph(edges, sliver=epsilon)
     loops, seen = [], set()
     for walk, is_outer in face_walks(graph):
         if is_outer:
@@ -305,7 +307,7 @@ def _network(edges: List[Edge], epsilon: float):
     """La rete di `edges` come linee shapely, con gli estremi sui nodi del
     grafo. I contatti li ha già decisi il noding, una volta sola sulle curve
     (D180): qui nessun collegamento per distanza fra discretizzazioni."""
-    graph = build_node_graph(edges, epsilon=epsilon)
+    graph = build_node_graph(edges, sliver=epsilon)
     return shapely.unary_union(_on_nodes(edges, graph), grid_size=UNION_GRID)
 
 

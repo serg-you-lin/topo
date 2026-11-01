@@ -140,13 +140,13 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
 - [ ] **G6e** `heal()` dipende dal riferimento (aperta il 31 ottobre, in una
       **SI RIPARTE DA QUI: gruppo B (D191, D193).** Inventario:
       `_debug/2026-10-31_topo_G6e-inventario/inventario.md` (le ultime
-      sezioni sono lo stato vero). Conto al 1 novembre sera: **28** (A 0,
-      B 7, C 8, D 13). B che resta: `topology/noding.py:527-528` (media dei
-      punti di un contatto arrotondata), `topology/rim.py:80`
+      sezioni sono lo stato vero). Conto al 2 novembre: **26** (A 0,
+      B 5, C 8, D 13). B che resta: `topology/rim.py:80`
       (`round(project, 9)`), `topology/outer_face.py:41` (`UNION_GRID`),
       `base/hierarchy.py:82, 86` (ordine per `round(area, 6)`),
-      `geometry/axis.py:179` (fuori dalle letture). Fatte oggi: A intero
-      (D192), B `normalizer.py:513-514` e `renode`/`_is_loop`, D Douglas-
+      `geometry/axis.py:179` (fuori dalle letture). Fatte: A intero
+      (D192), B `normalizer.py:513-514`, `renode`/`_is_loop`, `noding.py:527-528`
+      (D194: il grafo non rifonde i nodi della rete piana), D Douglas-
       Peucker e `turn_corners` (pari merito). Metodo: micro-caso col moto
       preciso da `tests.invariants.rigid`, valore al posto controllato prima
       (una prova vuota non prova niente), rosso sul codice vecchio, verde,

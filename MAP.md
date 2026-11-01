@@ -7231,3 +7231,41 @@ reference; it changes no public name or signature. D174/D175 forbid moving
 the public surface after 1.0, not fixing a wrong reading, so a residue fixed
 in 1.x breaks no consumer. Keeping "every drawing" as the bar would keep 1.0
 out of reach for ever, which is the churn D174 exists to stop.
+
+### D194 — G6e group B: on a planar network a node is its tuple, the graph does not re-judge it ✅
+`noding.py:539-540` (inventory line 527-528): a node with no input endpoint
+is the mean of its contact points, rounded to the node grid (D113). Alone
+that is harmless: every piece at that node shares the one tuple. It decided
+the reading because the graph built on the pieces of `split_at_crossings`
+(`outer_face`, `face_loops`, `non_contour_pieces`) clustered the tuples
+again at `GRAPH_EPSILON` with `cluster_points`, on the rounded coordinates.
+The grid moves a distance by up to ~1.4e-3, so the 0.01 threshold became a
+band that a rigid motion crosses. D180 already said the node is decided once
+on the true curves "so the graph has nothing left to re-judge"; the graph did.
+
+Micro-case (`test_noding.py::TestCrossingNodesUnderMotion`): three long
+lines, the third cutting the first two near their crossing, a small
+triangle with two crossing vertices 0.01074 apart. At rest `island()` reads
+an outer of 3 sides and 5 loose; turned by 0.8127 rad the two rounded
+tuples are 0.00985 apart, the graph fused them: 2 sides, the third loose.
+Red on the old code at that motion, green at rest on both.
+
+**Rule.** On a planar network the node is the piece's tuple: those three
+build the graph with `epsilon` 0 for identity. `epsilon` keeps its other
+two jobs: the sliver threshold of `_close_self_loop`, now a keyword
+`sliver` of `build_node_graph` (default `epsilon`, so every other caller is
+unchanged), and the band of D100's union in `outer_face`.
+
+**Options weighed (Federico chose this one after seeing them drawn).** The
+mean not rounded: one line, but tuples off the one grid (against D113), and
+endpoint nodes keep the same amplification. Measured on 3001 small random
+networks turned 31 ways, graph node count: 428 unstable today, 399 with the
+exact mean, 2 with the graph not re-judging (simulated by patching; those 2
+already differ in the number of pieces, another cause, inventory). Part of
+`noding.py:524` (`min(ends)`, group D) reached the reading through the same
+re-judging; that line stays open, its choice still moves the tuple.
+
+**Gate.** G6e is in the 1.0 gate on D193's bar. No public name or signature
+changes (`build_node_graph` is internal; `outer_face`/`face_loops` are
+experimental and keep their parameters). Suite 2975 passed, goldens
+unchanged, 3:44 (the level since D189, still over budget, open there).
