@@ -63,7 +63,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_bridge` | func | `topo/core/base/gap_solver.py:169` | Il segmento fra due estremi, attaccato ai loro nodi. |
 | `_bridged` | func | `topo/core/geometry/lines.py:154` | Lo spazio `a`→`b` sta tutto dentro uno dei giri (bordo compreso). |
 | `bridged_runs` | func | `topo/core/geometry/lines.py:115` | Runs of two or more strokes on one line where the gap between a stroke |
-| `_bspline_basis_row` | func | `topo/core/geometry/points.py:117` | Le n+1 funzioni di base N_i,p(u) (Cox-de Boor, Piegl & Tiller A2.2). |
+| `_bspline_basis_row` | func | `topo/core/geometry/points.py:118` | Le n+1 funzioni di base N_i,p(u) (Cox-de Boor, Piegl & Tiller A2.2). |
 | `_bspline_find_span` | func | `topo/core/primitives/segments.py:376` | Indice `i` tale che `knots[i] <= t < knots[i+1]` (ricerca binaria, "The |
 | `BSplineSeg` | class | `topo/core/primitives/segments.py:452` | B-spline (NURBS se `weights` è impostato): grado, punti di controllo, |
 | `build_hierarchy` | func | `topo/core/readings/heal_steps.py:104` | Albero di contenimento sui ClosedCurve: ogni radice è un Cluster |
@@ -160,8 +160,8 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_distance` | func | `topo/core/geometry/intersections.py:40` |  |
 | `Document` | class | `topo/model/document.py:37` | Documento di dominio prodotto da load_dxf() / load_svg() / load_pdf(). |
 | `document_from_msp` | func | `topo_dxf/loader.py:344` | Costruisce un Document da un modelspace ezdxf già aperto. |
-| `douglas_peucker` | func | `topo/core/geometry/points.py:178` | Indici dei vertici che Douglas-Peucker tiene sulla polilinea aperta |
-| `drop_duplicate_points` | func | `topo/core/geometry/points.py:33` | Rimuove punti consecutivi coincidenti entro `tolerance`. |
+| `douglas_peucker` | func | `topo/core/geometry/points.py:179` | Indici dei vertici che Douglas-Peucker tiene sulla polilinea aperta |
+| `drop_duplicate_points` | func | `topo/core/geometry/points.py:34` | Rimuove punti consecutivi coincidenti entro `tolerance`. |
 | `dxf_pattern` | func | `topo_dxf/exporter.py:49` | Il tratto di topo (segni con segno) nel pattern della tabella DXF, che |
 | `DxfAdapter` | class | `topo_dxf/adapter.py:236` | Adapter DXF che traduce entità DXF in Edge del dominio Topo. |
 | `DxfEntityDispatcher` | class | `topo_dxf/parser.py:20` | Centralizza il routing per tipo di entità DXF. |
@@ -185,7 +185,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_ends` | func | `topo/core/geometry/regions.py:115` |  |
 | `ensure_linetype` | func | `topo_dxf/exporter.py:23` | Garantisce che il linetype `name` esista in `doc` e ne ritorna il nome; |
 | `_entity_style` | func | `topo_dxf/adapter.py:74` | Cattura l'aspetto EFFETTIVO (linetype/colore) di un'entità DXF in un |
-| `even_spacing` | func | `topo/core/geometry/points.py:146` | I punti con altri aggiunti dove due vicini distano più del passo mediano. |
+| `even_spacing` | func | `topo/core/geometry/points.py:147` | I punti con altri aggiunti dove due vicini distano più del passo mediano. |
 | `_exact_parts` | func | `topo/core/geometry/intersections.py:107` | Retta, arco, cerchio restano se stessi; spline ed ellisse diventano |
 | `_explode_inserts` | func | `topo_dxf/sanitize.py:106` | Esplode tutti gli INSERT (blocchi) nel modelspace in entità primitive. |
 | `_extent` | func | `topo/core/readings/outer_scan.py:132` | (min, max) del pezzo lungo la coordinata `a` (0 = x, 1 = y). |
@@ -211,7 +211,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_first_coord` | func | `topo/core/topology/graph.py:386` |  |
 | `_first_point` | func | `topo/io/text.py:151` | Un punto che sta sul segmento, per dire in quale pezzo cade. |
 | `_first_step` | func | `topo/core/topology/outer_face.py:227` | L'edge che contiene il punto più a sinistra del componente, percorso |
-| `fit_circle_kasa` | func | `topo/core/geometry/points.py:47` | Fit algebrico (Kasa) ai minimi quadrati di un cerchio su `points`: minimizza |
+| `fit_circle_kasa` | func | `topo/core/geometry/points.py:48` | Fit algebrico (Kasa) ai minimi quadrati di un cerchio su `points`: minimizza |
 | `_fit_curve` | func | `topo/core/primitives/fitting.py:132` | Un pezzo curvo: arco per gli estremi se basta (e `arcs`), altrimenti spline entro `tolerance` per gli estremi. |
 | `_flatten_virtual` | func | `topo_dxf/text_extractor.py:471` | Espande `virtual_entities()` ricorsivamente sugli INSERT (frecce a blocco). |
 | `flatten_z` | func | `topo_dxf/sanitize.py:29` | Porta a 0 tutte le coordinate Z != 0 per LINE, ARC, CIRCLE, |
@@ -250,7 +250,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `inspect_file` | func | `topo_dxf/inspect.py:114` | Apre un file e stampa i tre livelli in fila: |
 | `inspect_result` | func | `topo/inspect.py:142` | Stampa un Result dopo heal(): il prodotto vero di topo. |
 | `interior_crossings` | func | `topo/core/topology/noding.py:194` | I punti dove due edge si attraversano senza che nessuno dei due finisca |
-| `interpolate_bspline` | func | `topo/core/geometry/points.py:83` | B-spline di grado `degree` che passa per tutti i `points` (interpolazione |
+| `interpolate_bspline` | func | `topo/core/geometry/points.py:84` | B-spline di grado `degree` che passa per tutti i `points` (interpolazione |
 | `intersections` | func | `topo/core/geometry/intersections.py:148` | I punti dove due primitive si incontrano: incroci e tocchi, capi compresi. |
 | `_intersections` | func | `topo/core/readings/outer_scan.py:147` | Punti del pezzo con coordinata `a` == level. |
 | `interval_coverage` | func | `topo/core/geometry/axis.py:45` | Frazione di [lo, hi] coperta dall'unione degli intervalli. |
@@ -344,7 +344,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `num_segments_for_bulge` | func | `topo/core/geometry/measure.py:35` | Numero di segmenti per discretizzare un arco dato il suo bulge. |
 | `_off_line` | func | `topo/core/base/normalizer.py:92` |  |
 | `off_rim` | func | `topo/core/topology/rim.py:64` | I tratti di `edge` che il bordo non ha preso: `taken` sono i capi (a, b) |
-| `offset_from_line` | func | `topo/core/geometry/points.py:170` | Distanza con segno di `p` dalla retta a->b (positiva a sinistra). |
+| `offset_from_line` | func | `topo/core/geometry/points.py:171` | Distanza con segno di `p` dalla retta a->b (positiva a sinistra). |
 | `_on_arc` | func | `topo/core/geometry/intersections.py:127` |  |
 | `_on_arc` | func | `topo/core/readings/outer_scan.py:124` |  |
 | `_on_arc` | func | `topo/core/topology/noding.py:692` | `pt` (sul cerchio) cade dentro l'arco, lontano dagli estremi. |
@@ -851,13 +851,13 @@ _topo/core/geometry/measure.py_
 
 _topo/core/geometry/points.py_
 
-- `drop_duplicate_points(points: List[Point], tolerance: float=DEFAULT_DUPLICATE_TOLERANCE) -> List[Point]` — L33 — Rimuove punti consecutivi coincidenti entro `tolerance`.
-- `fit_circle_kasa(points: List[Point]) -> Optional[Tuple[Point, float, float]]` — L47 — Fit algebrico (Kasa) ai minimi quadrati di un cerchio su `points`: minimizza
-- `interpolate_bspline(points: List[Point], degree: int=3) -> Tuple[List[Point], List[float]]` — L83 — B-spline di grado `degree` che passa per tutti i `points` (interpolazione
-- `_bspline_basis_row(u: float, p: int, knots: List[float], n: int) -> List[float]` — L117 — Le n+1 funzioni di base N_i,p(u) (Cox-de Boor, Piegl & Tiller A2.2).
-- `even_spacing(points: List[Point], closed: bool) -> List[Point]` — L146 — I punti con altri aggiunti dove due vicini distano più del passo mediano.
-- `offset_from_line(p: Point, a: Point, b: Point) -> float` — L170 — Distanza con segno di `p` dalla retta a->b (positiva a sinistra).
-- `douglas_peucker(points: List[Point], tolerance: float) -> List[int]` — L178 — Indici dei vertici che Douglas-Peucker tiene sulla polilinea aperta
+- `drop_duplicate_points(points: List[Point], tolerance: float=DEFAULT_DUPLICATE_TOLERANCE) -> List[Point]` — L34 — Rimuove punti consecutivi coincidenti entro `tolerance`.
+- `fit_circle_kasa(points: List[Point]) -> Optional[Tuple[Point, float, float]]` — L48 — Fit algebrico (Kasa) ai minimi quadrati di un cerchio su `points`: minimizza
+- `interpolate_bspline(points: List[Point], degree: int=3) -> Tuple[List[Point], List[float]]` — L84 — B-spline di grado `degree` che passa per tutti i `points` (interpolazione
+- `_bspline_basis_row(u: float, p: int, knots: List[float], n: int) -> List[float]` — L118 — Le n+1 funzioni di base N_i,p(u) (Cox-de Boor, Piegl & Tiller A2.2).
+- `even_spacing(points: List[Point], closed: bool) -> List[Point]` — L147 — I punti con altri aggiunti dove due vicini distano più del passo mediano.
+- `offset_from_line(p: Point, a: Point, b: Point) -> float` — L171 — Distanza con segno di `p` dalla retta a->b (positiva a sinistra).
+- `douglas_peucker(points: List[Point], tolerance: float) -> List[int]` — L179 — Indici dei vertici che Douglas-Peucker tiene sulla polilinea aperta
 - `_turn(back: Point, at: Point, forward: Point) -> float` — L200 — Di quanto gira (gradi, 0..180) chi va da `back` ad `at` e poi a `forward`.
 - `_point_at(points: List[Point], cum: List[float], s: float) -> Point` — L211 — Punto della polilinea `points` all'ascissa curvilinea `s` (troncata agli estremi).
 - `turn_corners(points: List[Point], closed: bool, turn_deg: float, scale: float, tolerance: float) -> List[int]` — L229 — Indici degli spigoli di una sequenza campionata: vertici Douglas-Peucker
@@ -1708,7 +1708,7 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/core/geometry/intersections.py` | `topo.core.geometry.measure` · `topo.core.primitives.segments` |
 | `topo/core/geometry/lines.py` | `topo.core.geometry.rings` |
 | `topo/core/geometry/measure.py` | `topo.core.primitives.segments` |
-| `topo/core/geometry/points.py` | `topo.core.primitives.segments` |
+| `topo/core/geometry/points.py` | `topo.core.geometry.measure` · `topo.core.primitives.segments` |
 | `topo/core/geometry/regions.py` | `topo.core.geometry.integrals` · `topo.core.geometry.intersections` · `topo.core.geometry.shape` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.core.primitives.trim` |
 | `topo/core/geometry/rings.py` | `topo.core.geometry.intersections` · `topo.core.geometry.measure` · `topo.core.primitives.segments` |
 | `topo/core/geometry/shape.py` | `topo.core.geometry.measure` · `topo.core.primitives.segments` |

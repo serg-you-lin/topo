@@ -13,6 +13,7 @@ from typing import Optional, Tuple, List
 import numpy as np
 
 from ..primitives.segments import LineSeg, ArcSeg
+from .measure import FLOAT_NOISE
 
 Point = Tuple[float, float]
 
@@ -185,15 +186,14 @@ def douglas_peucker(points: List[Point], tolerance: float) -> List[int]:
     stack = [(0, len(points) - 1)]
     while stack:
         i, j = stack.pop()
-        best, best_k = 0.0, -1
-        for k in range(i + 1, j):
-            d = abs(offset_from_line(points[k], points[i], points[j]))
-            if d > best:
-                best, best_k = d, k
+        dist = {k: abs(offset_from_line(points[k], points[i], points[j])) for k in range(i + 1, j)}
+        best = max(dist.values(), default=0.0)
         if best > tolerance:
-            keep.add(best_k)
-            stack.append((i, best_k))
-            stack.append((best_k, j))
+            # i più lontani a pari merito (entro il rumore) si tengono tutti:
+            # sceglierne uno lo farebbe il verso o l'ultimo bit (G6e)
+            cuts = [i] + [k for k, d in dist.items() if d >= best - FLOAT_NOISE] + [j]
+            keep.update(cuts)
+            stack.extend(zip(cuts, cuts[1:]))
     return sorted(keep)
 
 
