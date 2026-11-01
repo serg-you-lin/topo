@@ -796,471 +796,77 @@ Names in the older entries are the names of their day (`forge`, `ForgeCluster`,
   person decides data (table) or option (after `*`), and a name that reads
   like an option (`tolerance`, `distance`, `min_*`, `include_*`) fails even if
   declared. Rule 8 (card + docstring, with G9) and the removal test remain.
-### D179 — G6c: D100's union of faces decides contacts by distance, not by a grid cell ✅
-
-What was left of G6c after D161: on `anch_08` (and `anch_08_noframe`) one outer
-changed when the drawing was turned by 0.7 rad — 48 mm² apart, two small faces
-at the two ends of an isometric part. Order of the entities, translation far
-from the origin, a quarter turn and the mirror did not change it.
-
-**Cause.** The walk on the graph (`_outer_face_walk`) was identical in both
-frames: it decides contacts by distance (`cluster_points` at `GRAPH_EPSILON`,
-a rigid motion keeps distances). On this part it stops short (16 311 of
-48 465 mm²) because of a T on the interior of a spline, which `split_at_crossings`
-does not cut (splines and ellipses stay whole, only used as knives), so D100's
-fallback — the union of the closed faces — gives the outer. That fallback
-built the network with `unary_union(..., grid_size=epsilon)`: GEOS snap-rounds
-every vertex onto a 0.01 mm grid fixed to the axes and the origin. Two points
-0.003 apart touch only if they fall into the same cell; turn the drawing and
-the cell boundary moves. Here a line ends 0.003 from the side of a tessellated
-ellipse: in one frame the face closed, in the other it did not. The grid also
-did work nothing else did, by luck of position: T's on spline interiors (regr_04,
-0.0005 and 0.0001 mm) and a line that misses an inscribed circle by 0.0037
-without crossing it (anch_06). Removing the grid without replacing that work
-lost them (regr_04 6 islands instead of 4, anch_06's tip face).
-
-**Fix** (`outer_face._network`): the fallback's network is built with the
-contacts decided by distance, the criterion of D101 and of the graph: endpoints
-moved onto the graph's nodes (`_on_nodes`), two lines that do not touch but pass
-within `epsilon` linked at their nearest points (a T on a spline, a line
-grazing a circle), a free endpoint within `epsilon` of a line linked to it;
-the union then runs on `UNION_GRID = 1e-6`, below the node grid (D113), where
-only arithmetic decides. A rigid motion keeps every one of these distances.
-
-**Measured on the 31 island drawings, old against new:** only `anch_08` changes
-in shape (+47.9 mm², the two faces, now in every frame: the arc and the line
-that close them are the outermost geometry). `anch_06`, `regr_01`, `regr_04`
-move by slivers 0.003–0.004 mm thick on average (the old grid's rounding; the
-new outer lies on the input, up to 0.038 mm where it follows a spline's hook the
-grid flattened). Goldens unchanged (they store bbox and inner count). `island()`
-~8% slower (~45 ms per drawing). `heal()` does not use this code.
-
-**Held by:** `TestScrambled` with an empty `KNOWN` (anch_08 out of the list);
-`tests/unit/core/test_outer_face.py::TestContattiPerDistanza` — a square whose
-base is a spline, sides ending 0.004 above it, read at fractions of the old
-cell and turned (red on the old code at dy 0.002, 0.004 and 2.0 rad), and a V
-with an inscribed circle missed by 0.004 (red without the line-to-line links).
-
-**Left open, 1.x:** when no edge lies entirely on the rim of the union,
-`_faces_union_loop` returns `None` and the walk's smaller loop wins (the V with
-its circle reads as the circle alone). Not red on any fixture (D158).
-
-### D180 — G6c: a contact is decided once, on the true curves, and gives one shared node ✅
-
-D179 fixed one frame-dependence of D100's fallback, but turning the drawings by
-eight angles instead of one still gave 20 unstable readings (anch_03/regr_02 at
-six angles, regr_04 at two). The common cause: a contact was decided several
-times, by different criteria, sometimes on discretizations — the noding cut a
-T within `tolerance` at the rounded projection, then the graph re-judged "same
-node" within `GRAPH_EPSILON`; two cuts within `tolerance` on one edge merged
-keeping the first while the other edge stayed at its own end; the STRtree
-prefilter measured on chords up to 0.01 inside an arc; D179's links and
-`unary_union` crossed discretizations; splines and ellipses were never cut, and
-a near miss of a tangency was no contact.
-
-**Rule** (`noding.split_at_crossings`, rewritten):
-- every pair of nearby edges is judged once, on the true curves (closed form
-  for lines, arcs, circles; splines and ellipses on their discretization at the
-  node grid, 1e-3, D113). A contact is a crossing, an endpoint within
-  `GRAPH_EPSILON` of the other curve (a T, or two ends), or two curves passing
-  within `GRAPH_EPSILON` without crossing (the missed tangency, at the midpoint);
-- several meetings of the *same pair* within `tolerance` along either edge are
-  one contact (D101's two roots of a near-tangent line and arc);
-- every contact unites a stop on each edge (union-find); two stops on one edge
-  within `GRAPH_EPSILON` are one node, and one within `GRAPH_EPSILON` of the
-  edge's end is that end. Never both ends of one edge: a short side does not
-  vanish. The node is the group's smallest input endpoint if it has one (as
-  `cluster_points`), else the mean of its contact points — one tuple for every
-  edge the contact touches, so the graph has nothing left to re-judge;
-- every type is cut, splines and ellipses included (`sub_segment`); a periodic
-  spline stays whole.
-
-**Why `GRAPH_EPSILON` and not `tolerance` for node identity.** Tried first:
-a T within `tolerance` sharing the node. With heal's 0.5 it percolates — on
-`output_polylines/BB_P1` a chain of T's and a crossing joined both ends of a
-0.65 mm side, and on `gap_parallelo_healed` a corner 0.1 from a parallel side
-became a node of that side; 17 `TestChordsKeepTheOuter` reds. D101 had already
-rejected `tolerance` as a network-wide node radius for the same reason. The
-old code never connected a T beyond `GRAPH_EPSILON` either (it cut at the
-projection, the graph then kept the two nodes apart), so the effective rule is
-unchanged; what changes is that it is decided once. `tolerance` keeps the one
-job D101 gave it, scoped to a single pair.
-
-**Also changed:** the outer-face walk reads an edge's leaving direction from the
-node, not from the curve's first point (a node can sit up to `GRAPH_EPSILON`
-off the curve, and two parallel pieces must leave it at different angles);
-D100's fallback network no longer adds D179's distance links (the noding made
-those contacts); `NonContourEdgeDetector.detect(..., planar=True)` does not
-re-node `island()`'s already planar pieces; `NodedEdges.crossings` gives D132's
-interior crossings from the union-find (`interior_crossings` reads it).
-
-**Measured.** Eight angles (`_debug/2026-10-30_topo_G6c/stress_8_angles.py`):
-20 → 0 unstable. All drawings, old against new: `heal()` identical everywhere;
-`island()` changes shape only on anch_03/regr_02/anch_03_noframe — the two V's
-with an inscribed circle now read as V plus circle (29.0 mm²) instead of the
-circle alone (23.8 mm²), the case D179 left open for 1.x — and elsewhere only
-the count of `loose` pieces (circles and splines cut at their contacts). Goldens
-unchanged. Time: `island()` +10% on the 31 drawings (20.9 → 23.0 s), `heal()`
-+6%; most of it is the spline discretization and `sub_segment` (De Boor in
-Python, already the first job after 1.0).
-
-**Held by:** `TestScrambled` reads every distinct geometry at two angles
-(ROTATION and 0.13; twins such as regr_02/anch_03 once, `tests/readings.py
-geometry_key`) — red on the old code for anch_03, anch_03_noframe, regr_02,
-regr_04; `test_noding.py::TestContattoDecisoUnaVolta` (T within 0.01 shares the
-node, a T on a spline cuts it, a missed tangency is a contact, two T's 0.03 apart
-stay two nodes each equal to its stem, a 0.008 side keeps two ends) — four red
-on the old code.
-
-### D181 — Extra angles held by micro-cases, not by whole drawings ✅
-
-**Problem.** D180 held its angle-dependence with `TestScrambled` reading every
-distinct geometry at a second angle (0.13). Each angle costs one `island()`
-reading per drawing, ~25 s of suite; the suite stood at 3:48, over its budget.
-
-**Decision (option A of three; B kept the second angle on top, C did nothing).**
-The 20 unstable cases of the eight-angle stress on the code before D180
-(`3ea516b^`) were cropped to the smallest set of edges still unstable there, and
-each crop was kept only if it is stable on D180. Two remain, written with
-`topo.load_segments` in `TestScrambledMicro` (`test_island_invariants.py`) and
-read at eight angles, scrambled, far and mirrored:
-- a 60° V with an inscribed circle cutting each side by 0.004 (18 of the 20
-  cases: anch_03, its noframe twin, regr_02);
-- two nearly collinear lines 0.04 apart, ends 0.042 apart: regr_04 reduced by
-  dropping edges in blocks while any angle stays unstable (a reduction keeps
-  *an* instability of the drawing, not necessarily the very same face).
-`EXTRA_ANGLES` is gone; whole drawings are read once, at ROTATION.
-
-**Why.** A contact decided badly shows at some angles only, and only where the
-contact is: the contact itself is the case, the rest of the drawing is cost.
-A new angle-dependent contact enters as a crop, never as one more angle on
-whole drawings.
-
-**Measured.** Suite 3:48 → 3:23. Both micro-cases red on `3ea516b^`, green on
-D180, 0.6 s together.
-
-### D182 — G6e: a gap is closed at a meeting within reach, never at one decided by the last bit ✅
-
-**Problem.** The snapdraw sweep (`scripts/21_sweep_invariants.py`) found 32 of
-121 drawings where a rigid motion changes `heal()`'s reading. Traced step by
-step, almost none pass through the polygonize fallback: the readings part
-already in the clean-up passes. One family is `close_free_gaps`: two parallel
-lines with their ends 0.004 apart (drw_0015, coordinates ~71500) are exactly
-parallel in the file, `_line_intersection` finds no meeting and the gap gets
-a segment; rotated, the parallelism is lost in the last bit (`abs(denom) <
-1e-10` is an absolute threshold, so far from the origin rotation noise beats
-it) and both ends were moved to the "meeting" at x = −1.8e10 mm.
-
-**Rule.** A meeting that moves an endpoint further than the tolerance does
-not close the gap: the gap gets the segment between the two ends instead
-(`gap_solver._within_reach`, inside `compute_gap_fixes`). It is D60's rule
-for `island()` ("a fix never moves an endpoint further than the gap"), now
-for both readings in one place; `local_gap_fixes`, which dropped such moves
-in `island()` alone, is gone. `repair_merged_corners` keeps an unbounded
-reach (it passes `tolerance=inf`, D57: a corner two ends of which already
-cluster).
-
-**Why the tolerance as the reach.** It is the distance under which `heal()`
-already treats two points as one; a move further than that invents geometry
-the drawing does not have, and whether it happens depends on the frame.
-
-**Measured.** Alone it makes no sweep drawing stable under a single motion
-(drw_0015 still loses a hole, through another family below); it removes
-endpoints moved by 1e10 mm. Suite and goldens unchanged, 3:23. Held by
-`test_heal_steps.py::TestCloseFreeGaps::test_003` (the drw_0015 pair at four
-angles, red on the old code at 0.7).
-
-### D183 — G6e: "within the tolerance" includes it, up to float noise ✅
-
-Decided by Federico, 31 October 2026 (option 1 of three: 2 was "strictly
-below", which changes today's readings; 3 left the boundary to the input).
-
-**Problem.** On 10 of the 31 sweep reds a gap is drawn exactly as wide as the
-tolerance (regr_03: a 0.5 slot, `tolerance=0.5`). `d <= tolerance` is then
-decided by the last bit: 0.4999999999 in the file's frame, 0.5000000001
-rotated, and the hole closes in one and not in the other.
-
-**Rule.** `heal()` compares every step with `reach = tolerance + FLOAT_NOISE`
-(`topo.core.geometry.measure`, 1e-6 mm; the warnings still print the
-tolerance asked for). `FLOAT_NOISE` is also `_CHAIN_GAP_EPS` in the
-normalizer, the same float guard.
-
-**Why 1e-6.** Above the noise a rigid motion adds (~1e-11 at coordinates
-~1e5) and far below the node grid (1e-3, D113): no drawn value sits on the
-new boundary, so the decision no longer depends on the frame. A gap equal to
-the tolerance closes, as it already did in the file's frame.
-
-**Measured.** Experiment with `tolerance=0.5+1e-6` on the sweep reds: 10 of
-31 become stable under every single motion (the 6530-edge drawing not run).
-Suite and goldens unchanged, 3:21. Held by
-`test_heal_steps.py::TestGapAtTolerance` (the regr_03 slot under every
-motion, red on the old code). `island()` is not touched: its gap comparisons
-are a separate question, not yet measured.
-
-### D184 — G6e: "same line, same circle" is judged on the true segments, never by a rounded key ✅
-
-**Problem.** `merge_collinear_overlaps` and `merge_cocircular_overlaps`
-grouped pieces by a rounded key: (angle to 1e-7, offset to 1e-3) for lines,
-(center, radius) to 1e-3 for arcs. A grid cell has a border: on drw_0016 two
-doubled verticals 2.5e-5 apart sit at x = 578.1875, exactly half-way between
-two cells, so they fell in two buckets in the file's frame and in one once
-rotated. And the canonical angle (-90°, 90°] has a seam on the verticals: on
-drw_0015 1e-11 of noise on x put one of three doubled verticals on the other
-side. The same disease D180 removed from the noding.
-
-**Rule.** Two pieces share a carrier when, judged on the segments,
-directions are parallel within `_SAME_DIRECTION` (1e-7, the sine of the
-angle, either way) and every end of each lies within `_SAME_OFFSET` (1e-3 mm)
-of the other's line; arcs when centers and radii are within `_SAME_OFFSET`.
-The thresholds are the old ones; what goes is the grid and the seam. Only
-nearby pairs are judged (`noding._near_pairs`), groups are their connected
-components (`topology.graph.connected_groups`, the union-find
-`spatial_islands` already had, now shared by both).
-
-**Measured.** Suite and goldens unchanged, 3:22. On the sweep, drw_0016's
-reading in its own frame loses two "holes" 146 mm long and 0 high (area 0.11)
-— slivers between doubled lines that now merge. No more sweep drawing
-becomes stable on its own: the remaining reds pass through other families.
-Held by `test_normalizer.py::TestSameCarrierUnderMotion` (the drw_0016 pair,
-the drw_0015 verticals, the drw_0016 pair as arcs; all red on the old code).
-
-### D185 — G6e: an end with two equally near partners closes no gap, and heal() says so ✅
-
-Decided by Federico, 31 October 2026 (of three: close with every tied
-partner, which breaks D112's one-gap-per-end; leave the frame to decide).
-
-**Problem.** On drw_0015 a small symmetric figure (two parallel strokes and
-one between them) gives each end of the middle stroke two partners at the
-same distance. `compute_gap_fixes` paired by distance, ties broken by
-coordinates, so a rotation chose the other one. In a symmetric figure no
-rule on coordinates gives the same partner in every frame.
-
-**Rule.** With `pairwise=True` (heal) an end whose two nearest partners
-within the tolerance are equally far (within `FLOAT_NOISE`) is left open; its
-partners still pair with others. `heal()` lists those ends in a warning
-(`steps.ambiguous_free_ends`, `gap_solver.ambiguous_gap_ends`). It is D111's
-stance: what topology cannot decide is left to the drawing, and said.
-
-**Measured.** drw_0015 becomes stable; j0099552 and regr_02 had ties too but
-stay red through another path (same counts, different shapes). Suite and
-goldens unchanged, 3:22. Held by `test_heal_steps.py::TestTiedGapPartners`
-(the drw_0015 figure under every motion, red on the old code at rotation).
-
-### D186 — Reopening D152 on one point: a group of short strokes is welded whole or not at all ✅
-
-**Problem.** D152 capped a welded group at 0.05 mm and welded candidates in a
-canonical order (length, then nodes) so the groups would not depend on edge
-order. The order still depends on the frame: on J0118158 a fillet written as
-chords 0.04 mm long, all equal, was welded every other chord, and which ones
-was decided by the last bit of the lengths and by the coordinates — a
-translation picked the others. Along a chain longer than the cap, *which*
-strokes to weld has no geometric answer. The cap was also measured as the
-bounding-box diagonal, which changes with a rotation.
-
-**Rule.** The short strokes (D56's candidates, D164's tips excluded) are
-grouped by shared nodes (`connected_groups`, D184). A group whose nodes are
-all within `_DEGENERATE_LENGTH_EPS` of each other (diameter, not bbox
-diagonal) is welded whole onto its smallest node; a wider group is a curve
-drawn with short strokes and none of it is welded. D152's purpose — a curve
-does not collapse into a point — holds without an order.
-
-**Measured.** J0118158, j0097092 and regr_01 become stable under every
-single motion (on the last two the merge and non-contour differences were
-this weld seen downstream). Suite and goldens unchanged, 3:23. Slower where
-long chains of strokes now stay whole: j0097092 7.8 → 14.0 s, regr_01
-4.8 → 11.2 s for the five readings of the sweep. Held by
-`test_normalizer.py::TestWeldUnderMotion` (a fillet of twelve 0.04 chords
-between two sides; on the old code 8 edges in the file's frame, 9 rotated).
-
-### D187 — One foundation for every reading ✅
-
-Stated by Federico, 31 October 2026: `heal()`, `island()` and any recipe a
-caller assembles stand on the same foundations. A geometric rule is decided
-once, in one place, and every reading uses it; a fix inside one reading is
-not a fix.
-
-**What was wrong.** D180 (nodes decided once, by distance within
-`GRAPH_EPSILON`) was built and tested for `island()` alone during G6c; its
-measurement said "`heal()` identical everywhere", i.e. that heal had not
-changed, not that it was free of the defect. `heal()` kept node identity by
-the rounded tuple, the root of most of G6e. The two recipes also carried
-their own copies of the front steps (island filtered the roles by hand and
-did not look at non-finite coordinates; its gap clean-up lived in
-`island.py`).
-
-**Rule.** `topo/core/healing/base.py`:
-- `prepare(edges, is_structural)`: non-finite coordinates and non-structural
-  roles set aside, then `noding.decide_nodes` — nodes from the true segment
-  points (`renode`), ends within `GRAPH_EPSILON` of each other one node (the
-  smallest of the group); a group wider than that is a curve written as
-  dense points and keeps its nodes (D186's rule, frame-free); an open edge
-  whose two ends become one node is welded (D56).
-- `normalize(edges, gap, *, keep_junctions, refit, pairwise, full_arcs)`:
-  the same clean-up functions in the same order for every reading
-  (collinear, cocircular, weld, near-full arcs, gaps through one
-  `close_free_gaps`). What still differs between the readings is a named
-  parameter, each with its decision: `keep_junctions` (D110), `refit` (D60),
-  `pairwise` (D112), `full_arcs`. Whether each must stay a reading's choice
-  is open, for Federico.
-
-`_drop_redundant_meets` moved from `island.py` to the gap solver;
-`within_diameter` is in `geometry.measure`, shared by D186's weld and
-`decide_nodes`.
-
-**Measured.** Suite and goldens unchanged, 3:24. One unit test changed
-place, not expectation: `test_corner_repair::TestRepairWithOtherLoopClosed`
-built nodes by hand on a 0.1 grid, so a 0.11 gap looked closed to the
-tolerant graph; D57's rule it holds (a loop closed elsewhere does not stop
-the ladder) is a rule of `find_loops` and is now tested there, green on the
-old and the new code. Held by `tests/unit/core/test_base.py` (ends on either
-side of a grid cell become one node; dense points wider than epsilon stay;
-heal and island read the same outer under every motion).
-
-**Hole found right after (same day).** The gap solver's bridging segment
-took its nodes from `round_point` of the true ends, not from the nodes
-`prepare` had decided: where an end's node was its group's representative,
-the bridge hung free and a rotation lost two loops (drw_0028, 21 → 19).
-`AddSegment` now carries the nodes of the two ends it joins (`node_a`,
-`node_b`, set by one `_bridge`), and `apply_gap_fixes` uses them. Suite and
-goldens unchanged.
-
-### D188 — `core/healing/` becomes `core/base/` and `core/readings/` ✅
-
-Asked by Federico, 31 October 2026. The name `healing/` said "the parts of
-`heal()`" while it held the foundation of every reading, and a place that
-reads as one reading's invites fixing one reading (D187's failure). Modules
-are now grouped by job:
-- `core/base/`: `prepare.py` (was `healing/base.py`), `cleanup.py` (the steps
-  of the old `steps.py` that every reading uses: `split_non_finite`,
-  `split_labeled`, `close_near_full_arcs`, `close_free_gaps`,
-  `ambiguous_free_ends`, `dangling_splines`), `normalizer.py`,
-  `gap_solver.py`, `hierarchy.py`;
-- `core/readings/`: `heal.py`, `island.py`, `heal_steps.py` (the rest of
-  `steps.py`: the loop ladder, the fallback, non-contour, hierarchy wrapper),
-  `islands.py`, `outer_scan.py`.
-
-The public surface does not change: `topo`, `topo.geometry` and
-`topo.experimental` export names, not module paths. Internal paths broke for
-three files outside the repo that import `topo.core.healing` directly:
-snapdraw `lab/heal_repair_experiment.py`, `lab/island_rays.py`, cogo
-`fixtures/corner_bend_problem.py` — lab and fixture code, adapted on their
-side (D140), preferably to `topo.experimental`.
-
-### D189 — One ingredient per job: heal() and island() on the same network, the same faces, the same gaps ✅
-
-Asked by Federico, 31 October 2026: "the same flour and the same eggs for two
-recipes". D187 had put the two readings' front steps behind one function but
-kept switches (`pairwise`, `refit`, `full_arcs`) and left the rest in two
-copies. An inventory of every function each reading reaches
-(`_debug/2026-10-31_topo_G6e/ingredients.txt`) found 12 of 18 jobs done by
-different code. This decision removes those copies; it reopens on one point
-each D57 (the loop ladder), D60 (heal did not refit), D110/D112 (heal did not
-node contacts; island closed every pair) and D100's polygonize fallback.
-
-**One function per job, for every reading:**
-- clean-up: `normalize` with no switches — tessellations refitted (deviation
-  measured ≤ 0.0185 mm), collinear/cocircular merges, weld, near-full arcs,
-  gaps (`geometry.measure.reach` gives every tolerance comparison D183's
-  margin);
-- gaps (`compute_gap_fixes`): each free end closes on the nearest point of
-  the network within the tolerance — another free end (meeting or segment,
-  D112), or where the end's own curve, *continued*, meets another edge (a line
-  or arc extends to it; a spline takes its tangent). Never a perpendicular
-  bridge: the drawing does not suggest it (a thread symbol 0.38 mm from its
-  hole stays a symbol). An end with two equally near partners closes nothing
-  (D185). This replaces D57's corner repair and the tolerant graph, and the
-  `pairwise=False` + `drop_redundant_meets` of island, which did not close a
-  rectangle's broken corner;
-- the planar network: `split_at_crossings` for both. Where a contact cuts is
-  the reading's meaning, a named parameter: `cut_crossings` — island yes
-  (D101), heal no (D132: a crossing of contour sides is a broken drawing; an
-  axis across a hole is not a side of the hole). `NodedEdges.planar` tells the
-  non-contour detector whether to cut for its walk;
-- non-contour: `non_contour_pieces`, on that network, for both;
-- contours: `outer_face.face_walks` — the walk of the outer face (one
-  `_stepper`) taken on every side of every edge; `face_loops` are the bounded
-  faces split into simple rings (two slots touching at a corner are two
-  holes), CCW (D166). `LoopFinder`, `find_loops`, `LoopSearch`,
-  `repair_merged_corners`, the polygonize fallback, `off_faces`,
-  `gap_endpoints_at_nodes` are gone; `outer_face` uses `face_loops` too;
-- a side cut by a contact returns the file's segment when the ring runs all
-  its pieces (`NodedEdges.whole`, D143); a ring that is no contour takes
-  nothing, its edges go to `loose` whole;
-- `loose`: `base/curves.loose_curves`, D162's rule for both (a piece that
-  closes by itself is a ClosedCurve), labeled edges included; it replaces
-  heal's `edges_to_open_curves` (which silently dropped a closed edge that was
-  no contour, non-negotiable 7) and `labeled_curves`, and island's
-  `_open`/`_pieces`.
-
-- circle fits (`fit_circle_kasa`, `circle_through`, used by the refit) work in
-  the frame of their own points: on x²+y² at coordinates ~1e6 the cancellation
-  took the digits, refitted arcs came out with other centres and stopped
-  merging — the reading depended on where the drawing sits.
-
-What still distinguishes the readings is only their own step: heal takes
-every bounded face and nests them; island groups by `max_gap` and keeps each
-group's outer face.
-
-**Measured.** Suite: 2955 passed, one red, 3:44 (over the time budget: heal
-now nodes every drawing; to be measured and fixed). Goldens of heal: only F6
-changes — two flaps joined by two short sides read as one outline with two
-chords (before: two parts and an "edge joining two shapes" warning); a T gap
-of 0.45 on one short side now closes. Federico judged the
-DXF (31 October): the new F6 is better, the golden is regenerated at one part.
-The reading is the same under every motion and 10 edge shuffles. What it
-still says: 3 non-contour edges excluded; the two long strip sides and the
-3.7 mm stub go to `loose`. The D111 "joining edge" warning no longer fires
-there: with the gap closed the bridge is a chord inside one outline, no
-longer the only link between two shapes. Goldens of island: unchanged; `loose`
-changes count on 12 drawings (more arc pieces where ends now close on arcs).
-G6d closes (SEGNI_TRACCIATI no longer depends on the chords). Sweep reds of
-the morning (31, the 6530-edge one not run): 29 stable under every single motion;
-left J0116004A (changes only with edge order) and drw_0017 (153 crossings: with
-crossings uncut heal's network is not planar there, and the face walk on it is
-not well defined). New tests:
-`TestFaceLoops`, `TestGapOntoCurve` (drw_0015's symbol under every motion, a
-broken corner in both readings), `TestTiedGapPartners` (an end-end tie); the
-loop tests of `test_loops.py` run on `face_loops`; `test_corner_repair.py` is
-gone with the repair.
-
-### D190 — a non-finite number is refused by the primitive, like a curve of zero size ✅
-Every reading began with `split_non_finite` (D111): it discretized every
-curve of the drawing to look for a NaN/inf, about 13% of a reading on a
-spline-heavy sheet, and it was a reading cleaning up a defect of its input.
-A coordinate without a value has no position, so it is no curve: the same
-case as D154's radius 0. One rule, where the segment is born: `_real` in
-`primitives/segments.py` refuses a non-finite coordinate, radius, angle,
-parameter, ratio, knot or weight (`ValueError`), so no `LineSeg`/`ArcSeg`/
-`CircleSeg`/`EllipseSeg`/`BSplineSeg` without a position can exist, from any
-source (DXF, PDF, primitives, a caller's own) and for every reading. The DXF
-adapter already turns a refused entity into a `doc.warnings` line (D154,
-D137); its text now names both causes. A caller who builds a segment with a
-NaN gets the `ValueError` in their own code.
-Behaviour change, Federico's choice (31 October): a drawing with a NaN entity
-used to read as invalid (`errors`); now the entity is dropped at load with a
-warning and the reading is valid on the rest, like every other entity the
-model cannot hold. Removed: `topo.experimental.split_non_finite`,
-`Prepared.broken`, the non-finite check of `validate_result` (dead: a result
-can no longer carry one). Readings and goldens unchanged. Tests:
-`test_degenerate_curves.py` (every primitive refuses NaN/inf; a DXF with a NaN
-LINE and an inf CIRCLE loads, warns and heals valid).
-
-### D191 — G6e closes on a finite list of decisions in the code, not on drawings
-G6e (heal depends on the frame of reference) grew family by family: each new
-drawing could bring a new one, so the item had no end. Every family found so
-far (D182–D186) was the same defect: a decision taken at zero, on a grid,
-with an absolute threshold near float noise, or on a tie, where a rigid motion
-changes the last bit and so the answer. The places in `topo/core/` where a
-number decides are finite. On 31 October they were listed (200 threshold
-comparisons, 37 nearest/largest choices; about 35 suspects in about 15
-files). G6e is closed when each suspect has either a micro-case built with
-topo's API, red before and green after, or one line on why it does not
-decide the reading. The snapdraw sweep is then run once, as a check; whatever
-it still finds is a missing entry in the list, not a new family. The
-promise stays D143's whole: same input, same reading; a rigid motion, same
-reading, except a measure that falls on the tolerance itself within float
-noise, which heal reports (D183, D185).
-
+- ~~D179~~ → D180: G6c — D100's union-of-faces network decided contacts by
+  a GEOS grid cell fixed to the axes (a turned drawing moved the cell border);
+  it was given contacts by distance, the union running on `UNION_GRID = 1e-6`.
+  Folded into the noding of D180.
+- **D180** — a contact is decided **once, on the true curves**, and gives one
+  shared node (`noding.split_at_crossings`). Every pair of nearby edges is
+  judged once (closed form for lines, arcs, circles; splines and ellipses on
+  the node grid); a contact is a crossing, an end within `GRAPH_EPSILON` of
+  the other curve, or two curves passing within it. Meetings of the *same
+  pair* within `tolerance` are one contact (D101). Stops united by union-find
+  give one node tuple for every edge the contact touches. Every type is cut,
+  splines included. Node identity uses `GRAPH_EPSILON`, never `tolerance`
+  (it percolates).
+- **D181** — an angle-dependent contact is held by a micro-case built with
+  `topo.load_segments` and read at eight angles, scrambled, far and mirrored
+  (`TestScrambledMicro`), never by one more angle on whole drawings (each angle
+  costs ~25 s of suite). A new case enters as a crop.
+- **D182** — a gap is closed only at a meeting within reach of the end: a
+  meeting that moves an endpoint further than the tolerance gives the gap a
+  segment instead (parallel lines in the file became non-parallel in the last
+  bit after a rotation and met 1e10 mm away). One rule for both readings; D189
+  rewrote the gap step on it.
+- **D183** — "within the tolerance" includes it, up to float noise: every step
+  compares with `reach = tolerance + FLOAT_NOISE` (`1e-6` mm, above the noise a
+  rigid motion adds and far below the node grid), so a gap drawn exactly as
+  wide as the tolerance closes in every frame.
+- **D184** — "same line, same circle" is judged on the true segments, never by
+  a rounded key: parallel within `1e-7` and every end within `1e-3` mm of the
+  other's line (arcs: centre and radius). A grid cell has a border and the
+  canonical angle has a seam on the verticals. Groups are connected components
+  of near pairs.
+- **D185** — an end with two equally near partners (within `FLOAT_NOISE`)
+  closes no gap, its partners still pair with others, and `heal()` lists those
+  ends in a warning: what topology cannot decide is left to the drawing, and
+  said (D111's stance). No coordinate rule gives the same partner in every
+  frame of a symmetric figure.
+- **D186** — reopening D152: short strokes are grouped by shared nodes; a
+  group whose nodes lie within the diameter `0.05` is welded whole onto its
+  smallest node, a wider group is a curve drawn with short strokes and none of
+  it is welded. "Which strokes to weld" along a long chain has no geometric
+  answer, so there is no order to depend on.
+- **D187** — one foundation for every reading (Federico): a geometric rule is
+  decided once, in one place, and `heal()`, `island()` and any recipe use it;
+  a fix inside one reading is not a fix. `base.prepare` sets aside
+  non-structural roles and decides the nodes (`decide_nodes`: ends within
+  `GRAPH_EPSILON` are one node, a wider group is a dense curve and keeps its
+  nodes); `normalize` runs the same clean-up in the same order.
+- **D188** — `core/healing/` became `core/base/` (`prepare`, `cleanup`,
+  `normalizer`, `gap_solver`, `hierarchy`) and `core/readings/` (`heal`,
+  `island`, `heal_steps`, `islands`, `outer_scan`): a place named after one
+  reading invites fixing one reading. Public names do not change.
+- **D189** — one ingredient per job, for both readings: one `normalize` with
+  no switches (tessellations refitted); one gap rule (each free end closes on
+  the nearest point of the network within the tolerance — another free end, or
+  where its own *continued* curve meets another edge — never a perpendicular
+  bridge); one planar network (`cut_crossings` is the reading's meaning:
+  island yes, heal no, D132); one non-contour test; contours from
+  `outer_face.face_walks`/`face_loops` (CCW, simple rings); one `loose_curves`
+  (D162). `LoopFinder`, `find_loops`, the polygonize fallback and the corner
+  repair are gone. Reopens D57, D60, D110, D112; heal takes every bounded face
+  and nests them, island groups by `max_gap` and keeps each outer face.
+- **D190** — a non-finite number is refused by the primitive at birth
+  (`ValueError`), like a curve of zero size (D154): no segment without a
+  position can exist from any source. The DXF adapter drops the entity with a
+  `doc.warnings` line, so a drawing with a NaN reads valid on the rest.
+- **D191** — G6e closes on a finite list of decisions in the code, not on
+  drawings: every place in `topo/core/` where a number decides (a threshold
+  near float noise, a nearest or largest choice, a tie, a grid) needs a
+  micro-case red before and green after, or one line on why it does not decide
+  the reading. Same input, same reading; a rigid motion, same reading, except
+  a measure on the tolerance itself within float noise, which heal reports.
 ### D192 — G6e group A: a meeting is decided in millimetres at float noise, on the measure whose error is linear ✅
 `intersections.py` decided with fixed thresholds in the wrong units: parallel
 lines at `|denom| < 1e-10` (mm²), "on the segment" at `t` within `1e-9` of
