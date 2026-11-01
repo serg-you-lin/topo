@@ -25,7 +25,7 @@ vertici), e per componente: un foglio con più viste non mescola le forme.
 Da dove viene l'edge nel formato sorgente non è mai un criterio.
 
 La faccia esterna si percorre sulla rete piana (`split_at_crossings`, la
-stessa di island(), D101): due lati che nel file si incrociano senza un
+stessa di outlines(), D101): due lati che nel file si incrociano senza un
 nodo — una tacca coi fianchi accavallati di un decimo — ingannerebbero il
 percorso, che passerebbe sull'incrocio. Una catena è sul bordo se lo sono
 pezzi suoi per più di metà della lunghezza. I tagli entro `tolerance` sono un contatto solo: una corda

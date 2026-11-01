@@ -1,11 +1,11 @@
 # tests/unit/core/test_island_invariants.py
 
 """
-Invarianti di `island()` che devono valere sempre, per qualunque disegno —
+Invarianti di `outlines()` che devono valere sempre, per qualunque disegno —
 non confrontano contro un valore congelato (un golden): o sono vere o il
 motore ha un difetto. Non vanno mai rigenerate né guardate a occhio (a
 differenza di `tests/real/test_golden_islands.py`). Fixture: gli stessi
-disegni reali: ogni disegno tracciato che si legge con `island()`
+disegni reali: ogni disegno tracciato che si legge con `outlines()`
 (tests/drawings.py, D158).
 """
 
@@ -19,8 +19,8 @@ import topo_dxf
 
 from tests.drawings import case_name, drawing_key, drawings_for
 from tests.invariants import along_contours, uncovered, known_defect, contours, scrambled, shape_differences, unscrambled
-from tests.readings import geometry_key, island_reading, island_scrambled
-from topo.core.readings.island import GRAPH_EPSILON
+from tests.readings import geometry_key, outline_reading, outline_scrambled
+from topo.core.topology.noding import GRAPH_EPSILON
 from topo.core.primitives.segments import DEFAULT_TOLERANCE, CircleSeg, LineSeg
 from topo import to_shapely
 
@@ -74,7 +74,7 @@ def _unmatched(before: list, after: list) -> list:
 
 
 class TestPolygonValidity(unittest.TestCase):
-    """Ogni poligono letto da `island()` — outer e inner — è una forma
+    """Ogni poligono letto da `outlines()` — outer e inner — è una forma
     semplice (non autointersecante): un poligono autointersecante dà
     un'area calcolata per cancellazione di segno, non la forma vera."""
 
@@ -85,7 +85,7 @@ class TestPolygonValidity(unittest.TestCase):
 
 def _make_validity_test(dxf: Path):
     def test(self):
-        _, result = island_reading(dxf, MAX_GAP)
+        _, result = outline_reading(dxf, MAX_GAP)
         for ci, cluster in enumerate(result.clusters):
             self._assert_valid(cluster.outer, f"{dxf.stem}.cluster[{ci}].outer")
             for ii, inner in enumerate(cluster.inners):
@@ -98,7 +98,7 @@ for _dxf in SOURCES:
 
 
 class TestRoundtripStable(unittest.TestCase):
-    """Esportare in DXF e rileggere con `island()` deve dare le stesse isole
+    """Esportare in DXF e rileggere con `outlines()` deve dare le stesse isole
     (stesso riquadro esterno entro BOUNDS_TOLERANCE, stesso numero di inner
     per isola) — se cambia, il motore ha scritto o letto qualcosa di diverso
     da quello che aveva trovato la prima volta. Trovato così il 12 ottobre su
@@ -107,12 +107,12 @@ class TestRoundtripStable(unittest.TestCase):
 
 
 def _roundtrip(self, dxf: Path):
-    doc, before = island_reading(dxf, MAX_GAP)
+    doc, before = outline_reading(dxf, MAX_GAP)
     exported = topo_dxf.to_dxf(before, source_doc=doc, allow_invalid=True)
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp) / f"{dxf.stem}.dxf"
         exported.saveas(str(tmp_path))
-        after = topo.island(topo_dxf.load_dxf(str(tmp_path)), max_gap=MAX_GAP)
+        after = topo.heal(topo_dxf.load_dxf(str(tmp_path)), max_gap=MAX_GAP).outlines()
     snap_before, snap_after = _snapshot(before), _snapshot(after)
     self.assertEqual(len(snap_before), len(snap_after),
                      f"{dxf.stem}: il numero di isole cambia dopo export+reload")
@@ -140,7 +140,7 @@ class TestNothingDropped(unittest.TestCase):
 
 def _make_dropped_test(dxf: Path):
     def test(self):
-        doc, result = island_reading(dxf, MAX_GAP)
+        doc, result = outline_reading(dxf, MAX_GAP)
         lost = uncovered(doc, result, MAX_GAP)
         self.assertLessEqual(lost.length, GRAPH_EPSILON,
                              f"{dxf.stem}: {lost.length:.3f} mm di geometria in ingresso "
@@ -159,7 +159,7 @@ class TestOutOnce(unittest.TestCase):
 
 def _make_out_once_test(dxf: Path):
     def test(self):
-        doc, result = island_reading(dxf, MAX_GAP)
+        doc, result = outline_reading(dxf, MAX_GAP)
         _check(self, "out once", dxf, lambda: self.assertEqual(
             along_contours(result, doc), [], f"{dxf.stem}: tratti di loose lungo un contorno"))
     return test
@@ -197,10 +197,10 @@ class TestScrambled(unittest.TestCase):
 
 
 def _scrambled_differences(dxf: Path) -> list:
-    doc, result = island_reading(dxf, MAX_GAP)
+    doc, result = outline_reading(dxf, MAX_GAP)
     key = geometry_key(doc)
     if key not in _SCRAMBLED:
-        _SCRAMBLED[key] = _differences(result, island_scrambled(dxf, MAX_GAP), unscrambled)
+        _SCRAMBLED[key] = _differences(result, outline_scrambled(dxf, MAX_GAP), unscrambled)
     return _SCRAMBLED[key]
 
 
@@ -249,9 +249,9 @@ class TestScrambledMicro(unittest.TestCase):
 def _make_micro_test(segments: list):
     def test(self):
         doc = topo.load_segments(segments)
-        result = topo.island(doc, max_gap=MAX_GAP)
+        result = topo.heal(doc, max_gap=MAX_GAP).outlines()
         for seed, angle in enumerate(ANGLES):
-            again = topo.island(scrambled(doc, angle, seed), max_gap=MAX_GAP)
+            again = topo.heal(scrambled(doc, angle, seed), max_gap=MAX_GAP).outlines()
             self.assertEqual(_differences(result, again, lambda p: unscrambled(p, angle)), [],
                              f"{angle} rad: scritto in un altro modo cambia le isole")
     return test

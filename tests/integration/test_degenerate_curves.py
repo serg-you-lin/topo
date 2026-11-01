@@ -64,7 +64,7 @@ class TestNonFiniteEntitiesInADrawing(unittest.TestCase):
         text = " ".join(doc.warnings)
         self.assertIn("LINE", text)
         self.assertIn("CIRCLE", text)
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
         self.assertTrue(result.is_valid)
         self.assertEqual(len(result.clusters), 1)
 
@@ -86,7 +86,7 @@ class TestDegenerateEntitiesInADrawing(unittest.TestCase):
         self.assertIn("CIRCLE", text)
 
     def test_002_resta_solo_la_geometria_vera(self):
-        result = topo.heal(self.doc)
+        result = topo.heal(self.doc).faces()
         self.assertTrue(result.is_valid)
         self.assertEqual(len(result.clusters), 1)
         self.assertEqual(len(result.loose), 1)    # il tratto (2,2)-(4,4)

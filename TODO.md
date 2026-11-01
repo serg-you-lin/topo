@@ -84,8 +84,9 @@ Sottopassi, uno per commit:
       (spigolo tagliato di ~0,2 mm); heal() a 0,5 lo scarta e il contorno
       resta aperto di 0,41 mm, con `is_valid` True. Nessuno dei due è lo
       spigolo del file. Con la tolleranza del file (0,05) heal() è giusto.
-- [ ] C. `faces()`/`outlines()` + rinomina `island`/`read_island(s)`/`IslandReading`
-      → `outlines`/`read_outline(s)`/`OutlineReading` (taglio netto, D202);
+- [x] C. `heal()` → `Network`; `faces()`/`outlines()`; `island()` tolto;
+      `read_outline(s)`/`OutlineReading` (taglio netto, D202). `source_file`
+      di default da `doc.source_path`, `label` su tutte e due le letture (D204).
 - [ ] D. docs (LLM, API, README x2), `release_check`; i consumer si adattano
       nelle loro sessioni.
 
@@ -133,6 +134,7 @@ volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
       qualunque push. Nei commit vecchi restano anche i blocchi-logo definiti
       e mai usati di `anch_01…06` (D97).
 - [ ] **Tempo della suite**: 3:23 dopo D181, sopra il tetto di 2.5–3 min.
+      Misura del 2 novembre: 4:07 a `fc9997e` (prima di D202 C), 4:08 dopo.
       Restano `test_fidelity` sulle spline e le letture di `island()`.
       **Si riparte da qui** (deciso il 1 novembre): riordino dei test.
       1. Ogni test che apre un DXF con `ezdxf` o lavora sul modelspace e prova

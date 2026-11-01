@@ -24,7 +24,7 @@ Contratto:
 Flusso tipico:
 
     doc    = topo_dxf.load_dxf("pezzo.dxf", role_rules=topo.name_rules({"Bend": "bending"}))
-    result = topo.heal(doc)
+    result = topo.heal(doc).faces()
     topo.inject(result, data_injector=leggi_cartiglio)
     topo.save_json(result, ...)   # i conteggi vengono da cluster.summary
 """

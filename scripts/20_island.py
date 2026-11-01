@@ -3,17 +3,17 @@
 ==================================================================
 
 API topo usate:
-    topo.island(doc, max_gap=)
+    topo.heal(doc, max_gap=).outlines()
                                 -> Result, un Cluster per isola
                                    (outer = contorno esterno, inners = giri
                                    chiusi dentro; isole annidate → interno
                                    di quella che le contiene)
-    topo.experimental.read_islands(edges, tolerance, max_gap)
-                                -> [IslandReading]: per ogni pezzo cosa è
+    topo.experimental.read_outlines(edges, tolerance, max_gap)
+                                -> [OutlineReading]: per ogni pezzo cosa è
                                    stato deciso, pezzo per pezzo
 
 Per ogni file un DXF con un layer per decisione, per vedere cosa ha fatto
-ogni passo (i ruoli qui sotto sono solo del DXF di controllo: island() non
+ogni passo (i ruoli qui sotto sono solo del DXF di controllo: outlines() non
 assegna ruoli, mette tutto il resto in trash come `unknown`):
     OuterContour     contorno esterno di ogni isola non annidata
     InnerContour     giri chiusi dentro (e contorni delle isole annidate)
@@ -54,8 +54,8 @@ def _inputs():
 
 
 def _diagnostic(result, readings):
-    """Il trash di island() è tutto `unknown`: per il DXF di controllo lo si
-    ridistribuisce sui layer della decisione presa, letta da IslandReading."""
+    """Il trash di outlines() è tutto `unknown`: per il DXF di controllo lo si
+    ridistribuisce sui layer della decisione presa, letta da OutlineReading."""
     trash = []
     for r in readings:
         for role, edges in (("sporgenza", r.spurs), ("fuori_contorno", r.outside),
@@ -74,8 +74,8 @@ def main():
         t0 = time.time()
         try:
             doc = topo_dxf.load_dxf(path, tolerance=TOLERANCE)
-            result = topo.island(doc, tolerance=TOLERANCE, max_gap=MAX_GAP)
-            readings = topo.experimental.read_islands(doc.edges, TOLERANCE, max_gap=MAX_GAP)
+            result = topo.heal(doc, tolerance=TOLERANCE, max_gap=MAX_GAP).outlines()
+            readings = topo.experimental.read_outlines(doc.edges, TOLERANCE, max_gap=MAX_GAP)
         except Exception as exc:
             print(f"{stem}: ERRORE {type(exc).__name__}: {exc}")
             traceback.print_exc(limit=3)

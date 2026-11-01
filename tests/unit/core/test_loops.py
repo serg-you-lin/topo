@@ -335,7 +335,7 @@ class TestSplitArcStubs(unittest.TestCase):
         import topo
         from topo.model.document import Document
         edges = _make_rect_with_split_arcs_and_stubs()
-        self.result = topo.heal(Document(edges=edges), tolerance=1.0)
+        self.result = topo.heal(Document(edges=edges), tolerance=1.0).faces()
 
     def test_un_solo_part(self):
         self.assertEqual(self.result.cluster_count, 1)

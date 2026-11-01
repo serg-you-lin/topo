@@ -398,6 +398,11 @@ An island the reading does not read (frame, nested, no contour) no longer goes o
 as drawn: doubles merged, gaps closed, like every other loose curve. The file as
 drawn stays in `doc`. Measured: 0.000 mm of input lost on 51 drawings.
 
+### D204 — `Network` carries what every reading copies: `source_file` (default `doc.source_path`), `label` (on the Clusters of both readings), `tolerance`, `max_gap`.
+The two numbers are public because `heal()` resolves them (from the document, `max_gap ≥ tolerance`)
+and a caller must know what was used. Built only by `heal()` (keyword-only fields); the
+predicate, the texts and the planar net (`NodedEdges`) stay private. Modules: `heal.py`, `faces.py`, `outline.py`.
+
 ## Open questions
 
 - **Reading for a language model (D84).** A raw DXF costs ~2.3× "bytes/4" in

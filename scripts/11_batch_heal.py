@@ -79,7 +79,7 @@ def main(argv):
                 tolerance=tol,
                 label=src.stem,
                 source_file=src.name,
-            )
+            ).faces()
             topo.save_json(result, str(out_json))
 
             if not result.is_valid:

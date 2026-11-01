@@ -59,7 +59,7 @@ class TestTopoWithoutFormats(unittest.TestCase):
                 topo.primitives.LineSeg((10, 10), (0, 10)),
                 topo.primitives.LineSeg((0, 10), (0, 0)),
             ])
-            result = topo.heal(doc)
+            result = topo.heal(doc).faces()
             parts = topo.split(result, min_area=0)
             print(len(parts), "ezdxf" in sys.modules)
         """)
@@ -76,7 +76,7 @@ class TestSplitIsModel(unittest.TestCase):
 
     def setUp(self):
         self.doc = _two_squares_doc()
-        self.result = topo.heal(self.doc)
+        self.result = topo.heal(self.doc).faces()
         self.assertEqual(self.result.cluster_count, 2)
 
     def test_one_result_per_part(self):

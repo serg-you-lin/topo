@@ -101,7 +101,7 @@ class TestCustomRoleSurvivesHeal(unittest.TestCase):
             {"type": "polygon", "role": "title_block",
              "points": [(10, 10), (40, 10), (40, 30), (10, 30)]},
         ])
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
 
         all_roles = {result.clusters[0].outer.role}
         all_roles.update(i.role for i in result.clusters[0].inners)
@@ -130,7 +130,7 @@ class TestConsumerRolesSurviveDetect(unittest.TestCase):
         ])
 
     def test_la_cornice_non_e_un_cluster_ne_mangia_i_pezzi(self):
-        result = topo.heal(self._framed_doc())
+        result = topo.heal(self._framed_doc()).faces()
         self.assertEqual(len(result.clusters), 2)
         for c in result.clusters:
             self.assertEqual(c.outer.role, ContourRole.OUTER)
@@ -141,7 +141,7 @@ class TestConsumerRolesSurviveDetect(unittest.TestCase):
         # ma su un layer "frame" col suo colore. topo non sa cosa sia — porta
         # fedele lo slug che il consumatore ha assegnato.
         doc = self._framed_doc()
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
         out = topo_dxf.to_dxf(result, doc)
 
         layers = {e.dxf.layer for e in out.modelspace()}

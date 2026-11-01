@@ -55,21 +55,21 @@ def _rect_with_hole():
 class TestStructuralSegments(unittest.TestCase):
 
     def test_001_longest_defaults_to_outer_only_ignores_diagonal(self):
-        result = topo.heal(_tall_rect_with_diagonal())
+        result = topo.heal(_tall_rect_with_diagonal()).faces()
         seg, length, angle_deg = longest_structural_segment(result)
         self.assertIsNotNone(seg)
         self.assertAlmostEqual(length, 400.0, places=6)
         self.assertAlmostEqual(angle_deg, 90.0, places=6)
 
     def test_002_include_inners_adds_the_hole(self):
-        result = topo.heal(_rect_with_hole())
+        result = topo.heal(_rect_with_hole()).faces()
         with_inners = structural_segments(result, include_inners=True)
         outer_only = structural_segments(result, include_inners=False)
         self.assertGreater(len(with_inners), len(outer_only))
 
     def test_003_no_clusters_returns_none(self):
         doc = topo.load_geometry([{"type": "line", "start": (0, 0), "end": (10, 0)}])
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
         seg, length, angle_deg = longest_structural_segment(result)
         self.assertIsNone(seg)
         self.assertEqual(length, 0.0)
@@ -79,7 +79,7 @@ class TestStructuralSegments(unittest.TestCase):
 class TestRotateCluster(unittest.TestCase):
 
     def test_001_rotates_outer_and_inner_keeps_parent_link(self):
-        result = topo.heal(_rect_with_hole())
+        result = topo.heal(_rect_with_hole()).faces()
         cluster = result.clusters[0]
         rotated = rotate_cluster(cluster, math.pi / 2, origin=(0, 0))
 
@@ -89,7 +89,7 @@ class TestRotateCluster(unittest.TestCase):
         self.assertIsNot(rotated.inners[0].parent, cluster.outer)
 
     def test_002_does_not_mutate_original(self):
-        result = topo.heal(_rect_with_hole())
+        result = topo.heal(_rect_with_hole()).faces()
         cluster = result.clusters[0]
         original_bounds = to_shapely(cluster.outer).bounds
         rotate_cluster(cluster, math.pi / 2, origin=(0, 0))
@@ -99,27 +99,27 @@ class TestRotateCluster(unittest.TestCase):
 class TestRotateResult(unittest.TestCase):
 
     def test_001_single_heal_matches_longest_outer_after_rotation(self):
-        result = topo.heal(_tall_rect_with_diagonal())
+        result = topo.heal(_tall_rect_with_diagonal()).faces()
         rotated = rotate_result(result, math.radians(-90), origin=(50, 200))
         _, length, angle_deg = longest_structural_segment(rotated)
         self.assertAlmostEqual(length, 400.0, places=6)
         self.assertAlmostEqual(angle_deg, 0.0, places=6)
 
     def test_002_loose_rotates_too(self):
-        result = topo.heal(_tall_rect_with_diagonal())
+        result = topo.heal(_tall_rect_with_diagonal()).faces()
         trash_before = result.loose[0].segments[0]
         rotated = rotate_result(result, math.radians(-90), origin=(50, 200))
         trash_after = rotated.loose[0].segments[0]
         self.assertNotEqual(trash_before.start, trash_after.start)
 
     def test_003_warns_instead_of_silently_dropping_texts(self):
-        result = topo.heal(_tall_rect_with_diagonal())
+        result = topo.heal(_tall_rect_with_diagonal()).faces()
         result.texts.append(Text(position=(0, 0), text="X"))
         rotated = rotate_result(result, 0.1)
         self.assertTrue(any("testi non ruotati" in w for w in rotated.warnings))
 
     def test_004_warns_when_detected_overlay_present(self):
-        result = topo.heal(_tall_rect_with_diagonal())
+        result = topo.heal(_tall_rect_with_diagonal()).faces()
         result.clusters[0].detected = {"bending_lines": []}
         rotated = rotate_result(result, 0.1)
         self.assertTrue(any("detected features non ruotate" in w for w in rotated.warnings))
@@ -138,7 +138,7 @@ class TestRotateDocument(unittest.TestCase):
 class TestRotateToLongest(unittest.TestCase):
 
     def test_001_aligns_longest_outer_to_horizontal_one_heal_only(self):
-        result = topo.heal(_tall_rect_with_diagonal())
+        result = topo.heal(_tall_rect_with_diagonal()).faces()
         rotated_result, applied_deg = rotate_to_longest(result)
         self.assertAlmostEqual(applied_deg, -90.0, places=6)
 
@@ -148,7 +148,7 @@ class TestRotateToLongest(unittest.TestCase):
 
     def test_002_no_outer_returns_result_unchanged(self):
         doc = topo.load_geometry([{"type": "line", "start": (0, 0), "end": (10, 0)}])
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
         rotated_result, applied_deg = rotate_to_longest(result)
         self.assertIs(rotated_result, result)
         self.assertEqual(applied_deg, 0.0)

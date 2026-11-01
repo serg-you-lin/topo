@@ -40,7 +40,7 @@ class TestInspectLevels(unittest.TestCase):
     def test_level3_result(self):
         _, msp = _square_msp()
         doc = topo_dxf.document_from_msp(msp, tolerance=0.5)
-        result = topo.heal(doc, tolerance=0.5)
+        result = topo.heal(doc, tolerance=0.5).faces()
         buf = io.StringIO()
         with redirect_stdout(buf):
             topo.inspect_result(result)

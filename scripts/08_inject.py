@@ -35,7 +35,7 @@ NAME_ROLES = {"Filettati": "threaded_hole", "Svasati": "countersink",
 # -------------------------------------------------------------------------
 
 doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
-result = topo.heal(doc, label="P-1024")
+result = topo.heal(doc, label="P-1024").faces()
 
 # Le annotazioni sono già nel modello, tipate e con posizione. `display_text` è
 # il testo pulito (MTEXT senza codici di formato, quote con il loro valore).

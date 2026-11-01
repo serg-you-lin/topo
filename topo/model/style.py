@@ -104,7 +104,7 @@ class RoleStyle:
 
 
 # ---------------------------------------------------------------------------
-# La palette di topo (D128): il colore dei ruoli che heal()/island()
+# La palette di topo (D128): il colore dei ruoli che faces()/outlines()
 # producono, uguale per ogni formato. Un ruolo di un consumatore che nessuna
 # mappa nomina è grigio: topo non sa cos'è, ma non è spazzatura (D31).
 # ---------------------------------------------------------------------------

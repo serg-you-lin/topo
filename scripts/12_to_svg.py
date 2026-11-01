@@ -38,7 +38,7 @@ os.makedirs(OUTDIR, exist_ok=True)
 base = os.path.splitext(os.path.basename(INPUT))[0]
 
 doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
-result = topo.heal(doc, label=base)
+result = topo.heal(doc, label=base).faces()
 
 # 1. view model — il JSON per un renderer esterno
 vm = topo.experimental.to_view_model(result, tolerance=0.05)

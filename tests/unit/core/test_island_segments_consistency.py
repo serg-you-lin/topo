@@ -1,7 +1,7 @@
 # tests/unit/core/test_island_segments_consistency.py
 
 """
-Per ogni contorno letto da `island()`, il poligono (`to_shapely`, la forma geometrica finita,
+Per ogni contorno letto da `outlines()`, il poligono (`to_shapely`, la forma geometrica finita,
 quella che SVG/view_model disegnano) e `.segments` (i pezzi grezzi che `to_dxf`
 scrive) devono descrivere la stessa forma: sono due rappresentazioni dello
 stesso contorno, non due letture indipendenti. Trovato il 12 ottobre: su
@@ -18,8 +18,8 @@ from pathlib import Path
 
 import topo
 
-from tests.readings import island_reading
-from topo.core.readings.island import GRAPH_EPSILON
+from tests.readings import outline_reading
+from topo.core.topology.noding import GRAPH_EPSILON
 from topo.core.primitives.polygon_builder import build_polygon
 from topo.core.primitives.segments import DEFAULT_TOLERANCE
 from topo import to_shapely
@@ -48,7 +48,7 @@ class TestIslandSegmentsConsistency(unittest.TestCase):
 
 def _make_test(dxf: Path):
     def test(self):
-        _, result = island_reading(dxf, MAX_GAP)
+        _, result = outline_reading(dxf, MAX_GAP)
         for ci, cluster in enumerate(result.clusters):
             self._assert_same_shape(cluster.outer, f"{dxf.stem}.cluster[{ci}].outer")
             for ii, inner in enumerate(cluster.inners):

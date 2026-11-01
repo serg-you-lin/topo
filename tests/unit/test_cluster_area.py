@@ -20,7 +20,7 @@ def _nested_circles(*radii):
               ((100, 100), (0, 100)), ((0, 100), (0, 0))]
     entities = [{"type": "line", "start": a, "end": b} for a, b in square]
     entities += [{"type": "circle", "center": (50, 50), "radius": r} for r in radii]
-    return topo.heal(topo.load_geometry(entities))
+    return topo.heal(topo.load_geometry(entities)).faces()
 
 
 class TestClusterAreaNested(unittest.TestCase):

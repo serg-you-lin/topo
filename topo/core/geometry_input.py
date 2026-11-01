@@ -181,7 +181,7 @@ def load_geometry(
              "start_angle": -a/2, "end_angle": a/2, "role": "outer"},
             {"type": "line", "start": p_int_2, "end": p_est_2, "role": "outer"},
         ])
-        result = topo.heal(doc, label="sviluppo_cono")
+        result = topo.heal(doc, label="sviluppo_cono").faces()
         topo_dxf.to_dxf(result)
 
     Args:
@@ -218,7 +218,7 @@ def load_segments(
 
         fg = topo.geometry
         doc = topo.load_segments(fg.rectangle(200, 100) + fg.circle(10))
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
     """
     role = normalize_role(role)
     flat = []

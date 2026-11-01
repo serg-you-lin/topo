@@ -16,7 +16,7 @@ project_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(project_root))
 
 import topo_dxf
-from topo.core.readings.island import read_islands
+from topo.core.readings.outline import read_outlines
 
 SOURCE_DIR = project_root / "tests" / "data" / "golden_anchoring"
 FILES = [f"anch_{i:02d}_noframe.dxf" for i in range(1, 9)]
@@ -29,7 +29,7 @@ class TestIslandSingleUse(unittest.TestCase):
         for name in FILES:
             with self.subTest(name=name):
                 doc = topo_dxf.load_dxf(str(SOURCE_DIR / name))
-                for i, r in enumerate(read_islands(doc.edges, doc.node_tolerance(override=None), MAX_GAP)):
+                for i, r in enumerate(read_outlines(doc.edges, doc.node_tolerance(override=None), MAX_GAP)):
                     if r.outer is None:
                         continue
                     both = {id(e) for e in r.outer.edges} & {id(e) for e in r.spurs}

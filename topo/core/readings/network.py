@@ -3,8 +3,8 @@ topo/core/readings/network.py
 -----------------------------
 La riparazione comune a ogni lettura (D202): un Document diventa una rete di
 edge riparati, una volta sola, con due numeri — `tolerance` per i nodi e
-`max_gap` per i gap. Le letture (heal, island) partono da qui e non
-riparano più per conto loro.
+`max_gap` per i gap. `heal()` la restituisce; le letture (`faces()`,
+`outlines()`) partono da qui e non riparano più per conto loro.
 
 Puro: solo Edge, primitive e modello, nessun formato.
 """
@@ -14,9 +14,10 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Callable, List, Optional
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 from ...model.document import Document
+from ...model.text import Text
 from ...model.role import is_structural_role
 from ..base.cleanup import NEAR_FULL_ARC_MISSING, dangling_splines
 from ..base.prepare import normalize, prepare
@@ -26,37 +27,75 @@ from ..topology.edge import Edge
 from ..topology.noding import GRAPH_EPSILON, NodedEdges, decide_nodes, split_at_crossings
 from .heal_steps import free_ends
 
+if TYPE_CHECKING:
+    from ...model.result import Result
 
-@dataclass
+
+@dataclass(kw_only=True)
 class Network:
-    """Il disegno riparato: gli edge, quello messo da parte, cosa è stato fatto."""
+    """The repaired drawing, built once by `heal()` and read by `faces()` or
+    `outlines()`.
+
+    edges:       the repaired edges (doubles merged, gaps closed, nodes decided).
+    set_aside:   edges whose role is not structural; every reading puts them
+                 in `loose` with their role.
+    crossings:   points where two edges cross without a shared node.
+    free_ends:   (point, distance to the nearest node) of every end no other
+                 edge reaches.
+    tolerance:   the node tolerance used (from the document when not given).
+    max_gap:     the widest gap closed (at least `tolerance`).
+    source_file, label: copied onto every Result and Cluster read from here.
+    warnings, errors, is_valid: what the repair did; with errors no reading
+                 finds anything.
+    """
     edges:       List[Edge] = field(default_factory=list)   # riparati, nodi decisi
     set_aside:   List[Edge] = field(default_factory=list)   # ruoli non strutturali (D30)
     warnings:    List[str] = field(default_factory=list)
     errors:      List[str] = field(default_factory=list)
     tolerance:   float = 0.0
     max_gap:     float = 0.0
-    structural:  Callable[[str], bool] = is_structural_role
     source_file: str = ""
     label:       str = ""
+    _structural: Callable[[str], bool] = field(default=is_structural_role, repr=False)
+    _texts:      List[Text] = field(default_factory=list, repr=False)   # del Document, per ogni Result
 
     @property
     def is_valid(self) -> bool:
+        """True when the repair raised no error."""
         return not self.errors
 
     @cached_property
-    def noded(self) -> NodedEdges:
-        """La rete piana senza tagliare gli incroci (D132): gli incroci restano
-        un dato, il taglio è della lettura che lo chiede."""
+    def _noded(self) -> NodedEdges:
+        # la rete piana senza tagliare gli incroci (D132): gli incroci restano
+        # un dato, il taglio è della lettura che lo chiede
         return split_at_crossings(self.edges, self.tolerance, cut_crossings=False)
 
     @property
     def crossings(self) -> list:
-        return self.noded.crossings
+        """Points where two edges cross without a shared node."""
+        return self._noded.crossings
 
     @property
     def free_ends(self) -> list:
-        return free_ends(self.noded.pieces, GRAPH_EPSILON)
+        """(point, distance to the nearest node) for every end no other edge reaches."""
+        return free_ends(self._noded.pieces, GRAPH_EPSILON)
+
+    def faces(self) -> Result:
+        """Read the network from the inside: one Cluster per closed outer
+        contour, with its inners by containment. The reading for a flat
+        drawing (a cutting file, a nesting of separate parts)."""
+        # import qui: le letture importano la riparazione (repair_edges)
+        from .faces import read_faces
+        return read_faces(self)
+
+    def outlines(self) -> Result:
+        """Read the network from the outside: the edges that touch within
+        `max_gap` are a group, the outer face of each group is its outline,
+        and every outline not inside another is a Cluster with only its
+        `outer`. Everything else goes to `loose` with the Cluster it touches
+        or lies in. The reading for a sheet of views."""
+        from .outline import read_network_outlines
+        return read_network_outlines(self)
 
 
 def build_network(doc: Document, *, tolerance: Optional[float] = None,
@@ -70,12 +109,12 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
     """
     tol = doc.node_tolerance(override=tolerance)
     gap = tol if max_gap is None else max(tol, max_gap)
-    net = Network(tolerance=tol, max_gap=gap, structural=is_structural or is_structural_role,
-                  source_file=source_file, label=label)
+    net = Network(tolerance=tol, max_gap=gap, source_file=source_file, label=label,
+                  _structural=is_structural or is_structural_role, _texts=list(doc.texts))
     if not doc.edges:
         net.errors.append("Modelspace vuoto: nessuna geometria trovata.")
         return net
-    prepared = prepare(doc.edges, net.structural)
+    prepared = prepare(doc.edges, net._structural)
     net.set_aside = prepared.labeled
     if not prepared.edges and not prepared.labeled:
         net.errors.append("Nessuna geometria trovata.")

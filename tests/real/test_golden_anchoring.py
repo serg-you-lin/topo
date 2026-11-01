@@ -28,7 +28,7 @@ sys.path.insert(0, str(project_root))
 
 import topo
 
-from tests.readings import island_reading
+from tests.readings import outline_reading
 
 # max_gap non ha default (D98); island_gap non esiste più (D99)
 MAX_GAP = 0.5
@@ -65,7 +65,7 @@ def _element(result, item):
 
 
 def snapshot(dxf_path: Path) -> dict:
-    result = island_reading(dxf_path, MAX_GAP)[1]
+    result = outline_reading(dxf_path, MAX_GAP)[1]
     topo.anchor_texts(result)
     entries = []
     for t in result.texts:

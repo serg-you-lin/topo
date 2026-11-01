@@ -121,14 +121,14 @@ def _plate():
 
 def test_heal_e_island_non_portano_shapely():
     doc = _plate()
-    for name, result in (("heal", topo.heal(doc)), ("island", topo.island(doc, max_gap=0.5))):
+    for name, result in (("heal", topo.heal(doc).faces()), ("island", topo.heal(doc, max_gap=0.5).outlines())):
         assert result.clusters
         assert _shapely_in(result, name) == []
 
 
 def test_un_disegno_vero_non_porta_shapely():
     doc = topo_dxf.load_dxf(str(DATA / "golden" / "example_4_polylines.dxf"))
-    result = topo.heal(doc)
+    result = topo.heal(doc).faces()
     assert result.clusters
     assert _shapely_in(result, "heal") == []
     assert _shapely_in(topo.split(result), "split") == []
@@ -142,5 +142,5 @@ def test_passi_e_fatti_non_portano_shapely():
                                          ((200, 100), (0, 100)), ((0, 100), (0, 0)))]
     rects = topo.geometry.covered_rectangles(frame, min_side=50)
     assert rects and _shapely_in(rects, "covered_rectangles") == []
-    cluster = topo.heal(doc).clusters[0]
+    cluster = topo.heal(doc).faces().clusters[0]
     assert _shapely_in(topo.geometry.contour_shape(cluster.outer), "contour_shape") == []

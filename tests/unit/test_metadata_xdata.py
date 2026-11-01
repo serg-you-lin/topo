@@ -22,7 +22,7 @@ def _square_result(side: float = 100.0):
     for a, b in zip(pts, pts[1:]):
         msp.add_line(a, b)
     source_doc = topo_dxf.document_from_msp(msp, tolerance=0.5)
-    result = topo.heal(source_doc, tolerance=0.5)
+    result = topo.heal(source_doc, tolerance=0.5).faces()
     assert result.is_valid and result.clusters
     return source_doc, result
 

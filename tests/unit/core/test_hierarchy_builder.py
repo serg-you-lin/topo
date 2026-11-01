@@ -267,7 +267,7 @@ class TestCopiesOrderUnderMotion(unittest.TestCase):
         from tests.invariants import rigid
         segment, point = rigid(*motion)
         segs = self._rectangle(0, 0, self.W, self.H) + self._rectangle(*offset, self.W, self.H)
-        result = topo.heal(topo.load_segments([segment(s) for s in segs]))
+        result = topo.heal(topo.load_segments([segment(s) for s in segs])).faces()
         self.assertEqual(len(result.clusters), 2)
         return result.clusters[0].bbox[:2], point((0.0, 0.0))
 
@@ -302,6 +302,6 @@ class TestTreeOrderUnderMotion(unittest.TestCase):
         for motion in self.MOTIONS:
             with self.subTest(motion=motion):
                 segment, _ = rigid(*motion)
-                result = topo.heal(topo.load_segments([segment(s) for s in segs]))
+                result = topo.heal(topo.load_segments([segment(s) for s in segs])).faces()
                 self.assertEqual(len(result.clusters), 1)
                 self.assertEqual([c.depth for c in result.clusters[0].inners], [1, 1])

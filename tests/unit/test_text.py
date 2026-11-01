@@ -29,7 +29,7 @@ def _plate():
          "knots": [0, 0, 0, 0, 1, 1, 1, 1]},
     ]
     doc = topo.load_geometry(entities, tolerance=0.01)
-    result = topo.heal(doc)
+    result = topo.heal(doc).faces()
     # l'ordine degli inners non è garantito: la freccia punta al cerchio, cercato per forma
     circle = next(c for c in result.clusters[0].inners
                   if topo.geometry.contour_shape(c).kind == "circle")

@@ -109,7 +109,7 @@ def merge_collinear_overlaps(edges: Iterable[Edge], keep_junctions: bool = False
     `keep_junctions=True` (lo usa `heal()`): due pezzi che si TOCCANO soltanto
     in un nodo dove arriva anche un edge su un'altra retta non si fondono — è
     uno spigolo o un innesto, e il grafo di `heal()`, che non noda da sé, lo
-    perderebbe per sempre (MAP.md D110). `island()` noda la rete da sé e
+    perderebbe per sempre (MAP.md D110). `outlines()` noda la rete da sé e
     lascia il default.
 
     Storia della soglia minima che c'era qui prima (rimossa): un'ipotesi di

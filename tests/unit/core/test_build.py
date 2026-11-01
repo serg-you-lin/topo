@@ -70,7 +70,7 @@ class TestLoadSegments(unittest.TestCase):
     def test_due_rettangoli_e_un_cerchio(self):
         fg = topo.geometry
         doc = topo.load_segments(fg.rectangle(200, 100) + fg.rectangle(100, 50) + fg.circle(5, center=(70, 0)))
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
         self.assertTrue(result.is_valid)
         (part,) = result.clusters
         self.assertEqual(fg.contour_shape(part.outer).kind, "rectangle")

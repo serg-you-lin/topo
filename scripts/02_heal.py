@@ -31,7 +31,7 @@ result = topo.heal(
     tolerance=TOLERANCE,           # se None: ripreso da doc.source_meta
     label="P-DEMO",                # finisce in cluster.label e nei metadati
     source_file="Linee_piegatura.dxf",
-)
+).faces()
 
 print(f"is_valid   : {result.is_valid}")
 print(f"parti      : {result.cluster_count}")

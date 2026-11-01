@@ -2,7 +2,7 @@
 
 """
 I segmenti di una faccia letti dal suo bordo (`face_segments`, D106). Le
-facce per giro di `island()` non ci sono più: island non costruisce inner
+facce per giro di `outlines()` non ci sono più: outlines() non costruisce inner
 (D161).
 """
 
@@ -75,7 +75,7 @@ class TestOffRimCutsUnderMotion(unittest.TestCase):
     5e-10 dal nodo del contorno (qui l'edge parte a -5.00000000045: il taglio
     cade a 4.5e-10 da un multiplo di 1e-9). Prova: al posto e ai moti esce la
     sola sporgenza, con il capo interno sul capo preso (entro il rumore del moto).
-    Non prova la riga dentro `island()`: sui disegni tracciati il ripiego
+    Non prova la riga dentro `outlines()`: sui disegni tracciati il ripiego
     `_faces_union_loop` non arriva mai a `off_rim`."""
 
     MOTIONS = [(0.0, 0.0, 0.0), (0.7, 0.0, 0.0), (0.13, 3.1, -7.9), (2.4, -0.37, 0.61)]
@@ -107,7 +107,7 @@ class TestSenseOfAPerpendicularSpur(unittest.TestCase):
     tocca il punto medio di un lato ha prodotto 0 a riposo e rumore (±4e-15)
     sotto moto: il suo verso cambia col moto. Prova: il verso cambia davvero
     (la riga è raggiunta col valore nullo) e l'uscita di `face_segments` no,
-    perché il lato lo tiene il suo edge. Non prova la riga dentro `island()`:
+    perché il lato lo tiene il suo edge. Non prova la riga dentro `outlines()`:
     sui disegni tracciati `face_segments` non è mai chiamata. Non prova il caso
     in cui la sporgenza vince il lato (sporgenza prima nell'elenco): quella è
     la parità di `_rim_runs`, riga D dell'inventario."""

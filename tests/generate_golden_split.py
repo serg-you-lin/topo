@@ -73,7 +73,7 @@ def generate(force: bool = False, only: str = None):
 
         try:
             doc = topo_dxf.load_dxf(parent_path, upgrade=True, explode_inserts=True)
-            result = topo.heal(doc, tolerance=tolerance)
+            result = topo.heal(doc, tolerance=tolerance).faces()
 
             if not result.is_valid or not result.clusters:
                 print(f"  SKIP (non valido): {parent_path.name}")

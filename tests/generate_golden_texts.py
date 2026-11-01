@@ -74,7 +74,7 @@ def generate(force: bool = False, only: str = None) -> None:
         try:
             doc = topo_dxf.load_dxf(dxf_path, explode_inserts=True, flatten_z=True,
                                  verbose=False)
-            result = topo.heal(doc)
+            result = topo.heal(doc).faces()
             anchor_texts(result)
             texts = result.texts if result.texts else doc.texts
             entries = sorted((text_dict(t) for t in texts), key=sort_key)
