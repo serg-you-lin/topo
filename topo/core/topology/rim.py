@@ -126,8 +126,10 @@ def _farthest(geom, d0: float, d1: float, ring) -> float:
 
 
 def _side_cover(pts: list, geoms: list, band: float) -> List[set]:
-    """Per ogni lato dell'anello, gli (edge, verso) che distano meno di `band`
-    dal suo punto medio (almeno il più vicino): il verso dice se il lato
+    """Per ogni lato dell'anello, gli (edge, verso) che gli corrono lungo: il
+    punto medio e i due capi del lato entro `band` (almeno il più vicino al
+    punto medio). Un edge che tocca solo il punto medio (una sporgenza) non
+    copre il lato (G6e). Il verso dice se il lato
     percorre l'edge come lui (+1) o al contrario (-1). Un tratto tiene un
     verso solo — dove l'anello torna indietro lungo lo stesso edge (la
     punta di una faccia fra due curve quasi tangenti) il tratto finisce."""
@@ -136,7 +138,9 @@ def _side_cover(pts: list, geoms: list, band: float) -> List[set]:
     for i in range(len(pts)):
         p, q = pts[i], pts[(i + 1) % len(pts)]
         mid = ShapelyPoint((p[0] + q[0]) / 2, (p[1] + q[1]) / 2)
-        near = [int(j) for j in tree.query(mid, predicate="dwithin", distance=band)]
+        ends = (ShapelyPoint(p), ShapelyPoint(q))
+        near = [int(j) for j in tree.query(mid, predicate="dwithin", distance=band)
+                if all(geoms[int(j)].distance(e) <= band for e in ends)]
         near = near or [int(tree.query_nearest(mid)[0])]
         cover.append({(j, _sense(geoms[j], mid, p, q, band)) for j in near})
     return cover

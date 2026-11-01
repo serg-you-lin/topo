@@ -139,5 +139,58 @@ class TestSenseOfAPerpendicularSpur(unittest.TestCase):
         self.assertEqual(outputs, {(10.0, 10.0, 10.0, 10.0)})
 
 
+class TestSpurDoesNotTakeTheSide(unittest.TestCase):
+    """G6e, gruppo D, `rim.py:171, 173` (`best`, `s` in `_rim_runs`): un lato era
+    coperto da ogni edge entro `band` dal suo punto medio. Una sporgenza che
+    parte dal punto medio del lato di sotto lo copriva come il lato, con la
+    stessa portata (1): prima nell'elenco, vinceva per indice e il lato usciva
+    lungo zero, (5, 0)→(5, 0). Ora copre un lato solo l'edge che gli corre
+    lungo (anche i due capi del lato entro `band`). Prova: la sporgenza è
+    davvero entro `band` dal punto medio (controllato), e i quattro lati escono
+    da 10 coi loro edge in tutti e due gli ordini e a cinque moti. Non prova le
+    letture: `face_segments` non è chiamata sui disegni tracciati."""
+
+    MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
+               (0.7, 3.1, -2.2), (math.pi / 2, 0.0, 0.0)]
+    SQUARE = [(0, 0), (10, 0), (10, 10), (0, 10)]
+
+    def test_il_lato_resta_al_suo_edge(self):
+        from tests.invariants import rigid
+        sides = [_line(self.SQUARE[i], self.SQUARE[(i + 1) % 4]) for i in range(4)]
+        spur = _line((5, 0), (5, -3))
+        for name, order in (("sporgenza ultima", sides + [spur]), ("sporgenza prima", [spur] + sides)):
+            for motion in self.MOTIONS:
+                move_seg, move_pt = rigid(*motion)
+                edges = [Edge(role="unknown", start=move_pt(e.start), end=move_pt(e.end),
+                              segment=move_seg(e.segment)) for e in order]
+                polygon = Polygon([move_pt(p) for p in self.SQUARE])
+                k = order.index(spur)
+                mid = move_pt((5, 0))
+                self.assertLessEqual(rim.edge_geometry(edges[k]).distance(Point(mid)), BAND)
+                segments, _, used = face_segments(edges, polygon, BAND)
+                with self.subTest(order=name, motion=motion):
+                    self.assertNotIn(k, used)
+                    self.assertEqual(sorted(round(math.dist(*segment_endpoints(s)), 9) for s in segments),
+                                     [10.0] * 4)
+
+    def test_il_lato_di_partenza_non_conta(self):
+        # `rim.py:173`: la copertura parte dal lato coperto da meno edge, a pari
+        # merito il primo dell'anello, e dove l'anello comincia lo decide chi lo
+        # costruisce. Due rette sovrapposte sul lato di sotto (la copertura ha
+        # una scelta): stessa uscita da ogni vertice di partenza. Non prova tre
+        # edge sovrapposti sullo stesso tratto.
+        edges = [_line((-1, 0), (6, 0)), _line((4, 0), (11, 0)), _line((10, -1), (10, 10)),
+                 _line((10, 10), (0, 10)), _line((0, 10), (0, -1))]
+        ring = [(0, 0), (4, 0), (5, 0), (6, 0), (10, 0), (10, 10), (0, 10)]
+        outputs = set()
+        for r in range(len(ring)):
+            segments, _, used = face_segments(edges, Polygon(ring[r:] + ring[:r]), BAND)
+            ends = tuple(sorted(tuple(sorted(tuple(round(c, 9) for c in p) for p in segment_endpoints(s)))
+                                for s in segments))
+            outputs.add((ends, tuple(sorted(used))))
+        self.assertEqual(len(outputs), 1)
+        self.assertEqual(next(iter(outputs))[1], (0, 1, 2, 3, 4))
+
+
 if __name__ == "__main__":
     unittest.main()
