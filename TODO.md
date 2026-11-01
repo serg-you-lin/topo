@@ -7,17 +7,18 @@ fuori da git.
 
 ---
 
-## Fuori dal cancello: MAP e TODO corte (Federico, 1 novembre)
+## Fuori dal cancello: MAP e TODO corte (Federico, 1 novembre) — fatto il 2 novembre
 
-- [ ] **MAP.md** (7 464 righe) diventa il registro delle regole in vigore: una
-      voce per regola viva, al massimo 5 righe; una regola superata è una riga
-      ("D59 → D99, D161"); il testo intero in `MAP_ARCHIVE.md` (locale, non in
-      git). Obiettivo ≤ 600 righe. A blocchi di ~500 righe, un commit per
-      blocco, dopo ognuno `python scripts/check_map_shrink.py --archive
-      MAP_ARCHIVE.md` senza errori. Non tocca il codice né la superficie
-      pubblica. Motivo e numeri:
-      `_debug/2026-11-01_topo_retrospettiva/retrospettiva.md`.
-- [x] **TODO.md** — fatto il 2 novembre (questo file).
+- [x] **MAP.md** 7 464 → 400 righe: una voce `### D##` per decisione (titolo =
+      la regola in una frase, al massimo 4 righe sotto); una regola superata è
+      una riga ("D59 → D99, D161"). Il testo intero è in `MAP_ARCHIVE.md`
+      (locale, in gitignore; lo stesso testo è in git a `67fda38:MAP.md`).
+      `python scripts/check_map_shrink.py --archive MAP_ARCHIVE.md` esce 0:
+      201 decisioni su 201, nessuna doppia, nessun rimando appeso.
+      Da qui in poi una decisione nuova è un titolo `### D##` + al massimo 4
+      righe; il perché lungo va nel commit.
+- [x] **TODO.md** 1 732 → 293 righe; il testo intero in `TODO_ARCHIVE.md`
+      (locale, in gitignore).
 
 ## DA DECIDERE prima della 1.0 — `heal()` ripara, `faces()`/`outlines()` leggono (2 novembre)
 
@@ -86,10 +87,12 @@ volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
       nomi pubblici in inglese, con un controllo nella suite.
 - [ ] **G10** Rewrite della history (`git filter-repo` + `--message-callback`,
       un solo force-push) contro le liste di D76–D78. `audit_names --strict`
-      dà 15 sospetti (codici tipo disegno nei commit non ancora pushati, più
-      `SLEP009` e `BLE001`, probabili falsi positivi): da descrivere a parole
-      e togliere dai commit prima di qualunque push. Nei commit vecchi restano
-      anche i blocchi-logo definiti e mai usati di `anch_01…06` (D97).
+      dà 5 sospetti (2 novembre, dopo l'accorciamento di MAP e TODO): un codice
+      tipo disegno in `tests/unit/core/test_normalizer.py:351`, nei commit non
+      ancora pushati; gli altri (`BLE001`, `SLEP009`) sono falsi positivi
+      probabili. Da descrivere a parole e togliere dai commit prima di
+      qualunque push. Nei commit vecchi restano anche i blocchi-logo definiti
+      e mai usati di `anch_01…06` (D97).
 - [ ] **Tempo della suite**: 3:23 dopo D181, sopra il tetto di 2.5–3 min.
       Restano `test_fidelity` sulle spline e le letture di `island()`.
       **Si riparte da qui** (deciso il 1 novembre): riordino dei test.
