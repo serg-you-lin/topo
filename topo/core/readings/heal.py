@@ -14,24 +14,18 @@ Puro: solo Edge, primitive e modello, nessun formato.
 
 from __future__ import annotations
 
-import math
 from typing import Callable, Optional
 
 from ...model.document import Document
 from ..geometry.measure import reach as threshold
 from ...model.curve import ClosedCurve
 from ...model.result import Result
-from ...model.role import is_structural_role
 from ..base.curves import loops_to_curves, loose_curves
-from ..topology.noding import GRAPH_EPSILON, split_at_crossings
 from ..topology.outer_face import face_loops
 from ..topology.non_contour_edges import non_contour_pieces
 from ..base.hierarchy import assign_cluster_refs
-from ..base.prepare import normalize, prepare
-from .heal_steps import (
-    find_joining_edges, free_ends, structural_loops, build_hierarchy,
-)
-from ..base.cleanup import NEAR_FULL_ARC_MISSING, dangling_splines
+from .heal_steps import find_joining_edges, structural_loops, build_hierarchy
+from .network import build_network
 
 
 # ---------------------------------------------------------------------------
@@ -61,53 +55,24 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
             "topo.heal() richiede un Document da topo_dxf.load_dxf(); "
             f"ricevuto {type(doc).__name__}"
         )
-    tol = doc.node_tolerance(override=tolerance)
-    # un gap largo quanto la tolleranza si chiude a ogni riferimento, non a
-    # seconda dell'ultimo bit (D183): i passi confrontano con `reach`
+    # la riparazione comune a ogni lettura (D202)
+    net = build_network(doc, tolerance=tolerance, is_structural=is_structural,
+                        source_file=source_file, label=label)
+    tol, structural = net.tolerance, net.structural
     reach = threshold(tol)
-    structural = is_structural or is_structural_role
 
     result = Result(source_file=source_file)
     result.texts = list(doc.texts)
-    if not doc.edges:
-        result.errors.append("Modelspace vuoto: nessuna geometria trovata.")
+    result.warnings += net.warnings
+    if not net.is_valid:
+        result.errors += net.errors
         result.is_valid = False
         return result
-
-    # le basi comuni a ogni lettura (D187)
-    prepared = prepare(doc.edges, structural)
-    if not prepared.edges and not prepared.labeled:
-        result.errors.append("Nessuna geometria trovata.")
-        result.is_valid = False
-        return result
-    labeled = prepared.labeled
-    if labeled and is_structural is None:
-        result.warnings.append(_LABELED_WITHOUT_PREDICATE.format(n=len(labeled)))
-
-    clean = normalize(prepared.edges, reach, keep_junctions=True)
-    for count, what in ((clean.merged_lines, "segmenti collineari sovrapposti fusi"),
-                        (clean.merged_arcs, "archi co-circolari sovrapposti fusi"),
-                        (clean.welded + prepared.welded, "LineSeg degeneri (sub-tolleranza) saldati")):
-        if count:
-            result.warnings.append(f"{count} {what} prima della ricerca loop.")
-    if clean.full_arcs:
-        result.warnings.append(f"{clean.full_arcs} archi quasi completi (gap entro tolleranza, mancano al "
-                               f"più {math.degrees(NEAR_FULL_ARC_MISSING):.0f}°) chiusi in cerchio.")
-    if clean.ambiguous:
-        first = ", ".join(f"({p[0]:.2f}, {p[1]:.2f})" for p in clean.ambiguous[:4])
-        result.warnings.append(f"{len(clean.ambiguous)} estremi liberi con due compagni alla stessa distanza "
-                               f"(figura simmetrica): nessun gap chiuso lì, decide il disegno ({first}).")
-    edges = clean.edges
-    if dangling_splines(edges):
-        result.warnings.append(
-            "SPLINE con endpoint non connesso trovata — "
-            "gap tra SPLINE e altre entità gestito con una linea di congiunzione. "
-            "Verificare manualmente la correttezza del file."
-        )
+    labeled, edges = net.set_aside, net.edges
 
     # la rete piana, i non-contorno su di lei, i giri delle facce limitate:
     # la stessa rete, lo stesso giudizio e lo stesso cammino di island() (D189)
-    noded = split_at_crossings(edges, tol, cut_crossings=False)
+    noded = net.noded
     non_contour = non_contour_pieces(noded, tol)
     excluded = {id(noded.parent_of(p)) for p in noded.pieces if id(p) in non_contour}
     if excluded:
@@ -126,7 +91,7 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
             used |= {id(e) for e, _ in loop}
     kept = closed
     if kept:
-        result.warnings += _loose_ends_warnings(noded.pieces, non_contour)
+        result.warnings += _loose_ends_warnings(net.free_ends, noded.pieces, non_contour)
         result.warnings += _crossing_warnings(noded.crossings)
     else:
         result.warnings.append("LINE/ARC non formano giri chiusi — "
@@ -173,22 +138,11 @@ def heal(doc: Document, *, tolerance: Optional[float] = None, label: str = "",
 # Helper
 # ---------------------------------------------------------------------------
 
-_LABELED_WITHOUT_PREDICATE = (
-    "{n} edge con un ruolo diverso da "
-    "outer/inner/unknown, trattati come non strutturali di "
-    "default (heal() chiamato senza is_structural=...): un "
-    "ruolo come 'hole' non viene riconosciuto come contorno "
-    "di pezzo e finisce in `loose`. Passa a heal() un "
-    "is_structural che lo riconosca."
-)
-
-
-def _loose_ends_warnings(pieces: list, non_contour_ids: set) -> list[str]:
+def _loose_ends_warnings(ends: list, pieces: list, non_contour_ids: set) -> list[str]:
     """Quello che resta aperto anche quando qualcosa si chiude (D111): gli
     estremi liberi della rete, e gli edge che uniscono due forme altrimenti
     staccate."""
     warnings = []
-    ends = free_ends(pieces, GRAPH_EPSILON)
     if ends:
         first = ", ".join(f"({p[0]:.1f}, {p[1]:.1f}) a {d:.2f} mm dal nodo più vicino" for p, d in ends[:4])
         warnings.append(f"{len(ends)} estremi liberi non chiudono niente e restano in loose "

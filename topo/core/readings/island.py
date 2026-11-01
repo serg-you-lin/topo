@@ -28,21 +28,20 @@ from ...model.cluster import Cluster
 from ...model.contour import Contour
 from ...model.document import Document
 from ...model.result import Result
-from ...model.role import ContourRole, is_structural_role
+from ...model.role import ContourRole
 from ..primitives.polygon_builder import curve_polygon, with_polygon
-from ..primitives.segments import segment_endpoints, segment_is_closed
+from ..primitives.segments import segment_endpoints
 from ..topology.edge import Edge
 from ..geometry.integrals import ring_area
 from ..geometry.rings import ring_contains
 from ..geometry.shape import merge_runs
-from ..topology.noding import GRAPH_EPSILON, decide_nodes, edge_geometry, split_at_crossings
+from ..topology.noding import GRAPH_EPSILON, edge_geometry, split_at_crossings
 from ..topology.outer_face import OuterFace, outer_face
 from ..base.hierarchy import assign_cluster_refs, sort_clusters
 from ..base.curves import loose_curves
 from ..topology.non_contour_edges import non_contour_pieces
 from .islands import spatial_islands
-from ..geometry.measure import reach
-from ..base.prepare import normalize, prepare
+from .network import build_network, repair_edges
 
 
 @dataclass
@@ -68,7 +67,7 @@ def island(doc: Document, *, max_gap: float,
     Legge `doc` per isole. Un Cluster per ogni contorno esterno che non
     sta dentro un altro, col solo `outer`: island() non costruisce inner
     (D161). Tutto il resto — chiuso o aperto, dentro o fuori dal contorno,
-    un'isola intera dentro un'altra — va in `loose`, intatto, con
+    un'isola intera dentro un'altra — va in `loose`, dalla rete riparata (D203), con
     `cluster_ref` = l'isola che tocca o che lo contiene; `None` se sta fuori
     da ogni isola (D99, D137). Cosa sia è del consumer. Con la cornice nel
     disegno l'unico contorno esterno è la cornice: toglierla è del chiamante.
@@ -87,15 +86,18 @@ def island(doc: Document, *, max_gap: float,
             "topo.island() richiede un Document da topo_dxf.load_dxf(); "
             f"ricevuto {type(doc).__name__}"
         )
-    tol = doc.node_tolerance(override=tolerance)
-    structural = is_structural or is_structural_role
-    # le basi comuni a ogni lettura (D187)
-    prepared = prepare(doc.edges, structural)
-    labeled = prepared.labeled
-    readings = read_islands(prepared.edges, tol, max_gap=max_gap)
-
+    # la riparazione comune a ogni lettura (D202): i loose vengono dalla rete
+    net = build_network(doc, tolerance=tolerance, max_gap=max_gap,
+                        is_structural=is_structural, source_file=doc.source_path)
+    tol = net.tolerance
     result = Result(source_file=doc.source_path, texts=list(doc.texts))
-    result.loose += loose_curves(labeled)
+    result.warnings += net.warnings
+    if not net.is_valid:
+        result.errors += net.errors
+        result.is_valid = False
+        return result
+    readings = _read_groups(net.edges, tol, net.max_gap)
+    result.loose += loose_curves(net.set_aside)
     clusters = {}
     for i, r in enumerate(readings):
         if r.outer is not None and r.nested_in is None:
@@ -128,13 +130,31 @@ def island(doc: Document, *, max_gap: float,
 
 def read_islands(edges: List[Edge], tolerance: float, max_gap: float) -> List[IslandReading]:
     """
-    I pezzi a contatto (`spatial_islands` a `max_gap`) + `read_island` per
-    ognuno, e l'annidamento: un pezzo che sta dentro il contorno di un altro
-    — col suo contorno, o senza contorno con tutti i suoi edge — porta in
-    `nested_in` l'indice del più esterno che lo contiene.
+    Gli edge riparati come island() (`network.repair_edges`), poi i pezzi a
+    contatto (`spatial_islands` a `max_gap`) letti uno per uno, e
+    l'annidamento: un pezzo che sta dentro il contorno di un altro — col suo
+    contorno, o senza contorno con tutti i suoi edge — porta in `nested_in`
+    l'indice del più esterno che lo contiene.
     """
-    readings = [read_island(isl.edges, tolerance, max_gap=max_gap)
-                for isl in spatial_islands(edges, max(tolerance, max_gap))]
+    return _read_groups(repair_edges(edges, tolerance, max_gap), tolerance, max(tolerance, max_gap))
+
+
+def read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandReading:
+    """
+    Un'isola: gli edge riparati come island() (`network.repair_edges`), la
+    rete piana, la sua faccia esterna, poi il resto, che va tutto in `loose`
+    (D161): fuori dal contorno, non-contorno (D49), non classificati.
+    """
+    return _read_group(repair_edges(edges, tolerance, max_gap), tolerance)
+
+
+# ---------------------------------------------------------------------------
+# Helper
+# ---------------------------------------------------------------------------
+
+def _read_groups(edges: List[Edge], tolerance: float, gap: float) -> List[IslandReading]:
+    """Edge già riparati: i gruppi a contatto entro `gap`, letti, e annidati."""
+    readings = [_read_group(isl.edges, tolerance) for isl in spatial_islands(edges, gap)]
     outers = [(j, r.outer.segments, ring_area(r.outer.segments))
               for j, r in enumerate(readings) if r.outer is not None]
     for i, r in enumerate(readings):
@@ -151,18 +171,10 @@ def read_islands(edges: List[Edge], tolerance: float, max_gap: float) -> List[Is
     return readings
 
 
-def read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandReading:
-    """
-    Un'isola: normalizza (nodi dagli estremi reali, tassellature rifittate,
-    merge/weld di heal, gap fino a `max_gap`), rende la rete piana, ne
-    percorre la faccia esterna, poi classifica il resto, che va tutto in
-    `loose` (D161): fuori dal contorno, non-contorno (D49), non classificati.
-    """
-    # i nodi di nuovo: `read_island` si può chiamare da sola (experimental)
-    noded, _ = decide_nodes(edges)
-    normalized = [e for e in normalize(noded, reach(max(tolerance, max_gap)), keep_junctions=False).edges
-                  if e.start != e.end or segment_is_closed(e.segment)]
-    noded = split_at_crossings(normalized, tolerance)
+def _read_group(edges: List[Edge], tolerance: float) -> IslandReading:
+    """Un gruppo di edge già riparati: la rete piana con gli incroci tagliati
+    (D101), la faccia esterna, il resto classificato."""
+    noded = split_at_crossings(edges, tolerance)
     pieces = noded.pieces
     face = outer_face(pieces, epsilon=GRAPH_EPSILON)
 
@@ -183,10 +195,6 @@ def read_island(edges: List[Edge], tolerance: float, max_gap: float) -> IslandRe
     reading.unclassified = [e for e in rest if id(e) not in non_contour_ids]
     return reading
 
-
-# ---------------------------------------------------------------------------
-# Helper
-# ---------------------------------------------------------------------------
 
 def _cluster(reading: IslandReading, source_file: str, tolerance: float) -> Cluster:
     face = reading.outer
