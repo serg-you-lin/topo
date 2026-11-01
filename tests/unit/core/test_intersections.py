@@ -13,31 +13,25 @@ import unittest
 
 import topo
 intersections = topo.geometry.intersections
-from topo.core.primitives.segments import LineSeg, ArcSeg, CircleSeg, _rotate_point
+from topo.core.primitives.segments import LineSeg, ArcSeg, CircleSeg
+from tests.invariants import rigid
 
-# moti rigidi (angolo, dx, dy): nullo, solo rotazione, lontano, lontano e ruotato
-MOTIONS = [(0.0, 0.0, 0.0), (0.7, 0.0, 0.0), (0.0, 3e6, -2.5e6), (0.031, 3e6, -2.5e6),
+# moti precisi (angolo, dx, dy) per `rigid`: nullo, solo rotazione, lontano,
+# lontano e ruotato; alcuni sono quelli trovati rossi dalla scansione
+RIGID = [(0.0, 0.0, 0.0), (0.7, 0.0, 0.0), (0.0, 3e6, -2.5e6), (0.031, 3e6, -2.5e6),
            (0.062, 3e6, -2.5e6), (0.093, 3e6, -2.5e6), (0.7, 3e6, -2.5e6),
            (2.294, 3e6, -2.5e6), (math.pi / 2, -7e5, 4e5), (0.13, 1e6, 1e6)]
-
-
-def _moved(seg, angle, dx, dy):
-    return seg.rotated(angle).translated(dx, dy)
-
-
-def _moved_point(p, angle, dx, dy):
-    q = _rotate_point(p, angle, (0.0, 0.0))
-    return (q[0] + dx, q[1] + dy)
 
 
 class TestIntersectionsUnderMotion(unittest.TestCase):
     """Gli incontri del pezzo mosso sono gli incontri mossi."""
 
     def _assert_same_meetings(self, a, b, expected):
-        for motion in MOTIONS:
+        for motion in RIGID:
             with self.subTest(motion=motion):
-                got = intersections(_moved(a, *motion), _moved(b, *motion))
-                want = [_moved_point(p, *motion) for p in expected]
+                segment, point = rigid(*motion)
+                got = intersections(segment(a), segment(b))
+                want = [point(p) for p in expected]
                 self.assertEqual(len(got), len(want), got)
                 for p in want:
                     self.assertLess(min(math.dist(p, q) for q in got), 1e-6)
