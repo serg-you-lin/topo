@@ -24,6 +24,7 @@ from shapely.ops import substring
 
 from .edge import Edge
 from .noding import edge_geometry
+from ..geometry.measure import FLOAT_NOISE
 from ..primitives.segments import LineSeg, segment_endpoints, segment_is_closed
 from ..primitives.trim import sub_segment
 
@@ -206,7 +207,13 @@ def _rim_runs(pts: list, geoms: list, cover: List[set]) -> list:
             at = ShapelyPoint(pts[v % n])
             return geoms[before[0]].distance(at) + geoms[after[0]].distance(at)
 
-        cuts.append(min(range(lo, hi + 1), key=lambda v: (gap(v), abs(v - starts[i]))))
+        # sovrapposti, `gap` è 0 su tutto il tratto comune e il moto lo fa
+        # rumore: pari entro FLOAT_NOISE, decide il vertice dove la copertura
+        # cambia (G6e)
+        gaps = {v: gap(v) for v in range(lo, hi + 1)}
+        least = min(gaps.values())
+        cuts.append(min((v for v, g in gaps.items() if g <= least + FLOAT_NOISE),
+                        key=lambda v: abs(v - starts[i])))
     return [(owners[i], cuts[i], cuts[i + 1] if i + 1 < count else cuts[0] + n)
             for i in range(count)]
 

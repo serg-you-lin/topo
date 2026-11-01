@@ -192,5 +192,37 @@ class TestSpurDoesNotTakeTheSide(unittest.TestCase):
         self.assertEqual(next(iter(outputs))[1], (0, 1, 2, 3, 4))
 
 
+class TestOverlapCutUnderMotion(unittest.TestCase):
+    """G6e, gruppo D, `rim.py:203` (il taglio fra due edge che coprono tutti e
+    due): il taglio va dove `gap` è minimo, a pari merito vicino a dove la
+    copertura cambia. Due rette sovrapposte su (4, 6): `gap` è 0 in tre vertici
+    a riposo e rumore sotto moto, e il taglio cadeva a 4, 5 o 6 secondo il moto.
+    Ora `gap` pari entro FLOAT_NOISE. Prova: il pari merito al posto (tre
+    vertici a gap < 1e-9, controllato) e il taglio a 6 a sette moti rigidi. Non
+    prova lo specchio: rovescia il verso dell'anello e il taglio va a 4 (in
+    coda). Non prova le letture: `face_segments` non è chiamata sui disegni
+    tracciati."""
+
+    MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0), (0.7, 3.1, -2.2),
+               (math.pi / 2, 0.0, 0.0), (2.4, -0.37, 0.61), (2.1, -1e5, 3e4)]
+    EDGES = [((-1, 0), (6, 0)), ((4, 0), (11, 0)), ((10, -1), (10, 10)), ((10, 10), (0, 10)), ((0, 10), (0, -1))]
+    RING = [(0, 0), (4, 0), (5, 0), (6, 0), (10, 0), (10, 10), (0, 10)]
+
+    def test_il_taglio_non_dipende_dal_moto(self):
+        from tests.invariants import rigid
+        for motion in self.MOTIONS:
+            move_seg, move_pt = rigid(*motion)
+            edges = [Edge(role="unknown", start=move_pt(a), end=move_pt(b),
+                          segment=move_seg(LineSeg(start=a, end=b))) for a, b in self.EDGES]
+            tied = [p for p in self.RING
+                    if sum(rim.edge_geometry(edges[j]).distance(Point(move_pt(p))) for j in (0, 1)) < 1e-9]
+            self.assertEqual(len(tied), 3, motion)
+            _, _, used = face_segments(edges, Polygon([move_pt(p) for p in self.RING]), BAND)
+            (a, b), = used[0]
+            cut = move_pt((6, 0))
+            with self.subTest(motion=motion):
+                self.assertLess(min(math.dist(a, cut), math.dist(b, cut)), 1e-9)
+
+
 if __name__ == "__main__":
     unittest.main()
