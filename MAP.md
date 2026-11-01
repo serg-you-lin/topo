@@ -7300,3 +7300,28 @@ the order of the inners between themselves (not a contract).
 
 **Gate.** G6e, in the 1.0 gate. No public name or signature changes; the
 documented order of `Result.clusters` is the same rule, now kept under motion.
+
+### D196 — G6e stays line by line: no shared "noise" module, no lint on comparisons ✅
+Federico, 2 November, asked whether the inventory should give way to one
+place every numeric decision goes through, with a suite check forbidding raw
+comparisons in `core/`. Measured before deciding, on the work already done.
+
+Of the ten real corrections so far, five were structural — decide once and
+share (refit joints, `_is_loop`, D194), or drop a rounding that served no
+purpose (`rim.py:80`, `axis.py:179`) — and a comparison helper would not
+have touched them. The other five each needed their own measure: drift along
+the longer segment, overshoot over the length or the radius, the radial gap,
+the area over the perimeter, the angle the noise subtends on `scale`. What
+they share is `abs(x) <= FLOAT_NOISE`; the work was choosing `x`, and a
+module cannot choose it.
+
+A pattern check (`1e-N` literals, `round(`, `== 0`, signs against 0) hits 101
+lines in 24 files of `core/`, about 25 of the 44 inventory lines: some 75
+false alarms to allow-list, while it misses the whole tie group (`min`,
+`max`, `sorted`) and `segments.py:679`, which hid behind a named constant
+and was the worst one found.
+
+So G6e goes on as D191/D193 say. Snap rounding and exact predicates were
+also weighed and do not answer G6e: a grid fixed to the axes moves under a
+rotation (the defect D180 removed), and an exact predicate answers exactly
+on the rotated doubles, where a tie at rest is no tie any more.
