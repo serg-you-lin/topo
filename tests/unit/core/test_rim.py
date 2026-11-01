@@ -67,5 +67,38 @@ class TestFaceSegments(unittest.TestCase):
         self.assertEqual(sorted(type(s).__name__ for s in segments), ["ArcSeg", "LineSeg"])
 
 
+class TestOffRimCutsUnderMotion(unittest.TestCase):
+    """G6e, gruppo B, `rim.py:80`: i tagli di `off_rim` erano le ascisse
+    arrotondate a 1e-9. Due capi presi a 1e-10 l'uno dall'altro cadevano in
+    una cella o in due secondo il moto, e il capo del resto si spostava fino a
+    5e-10 dal nodo del contorno (qui l'edge parte a -5.00000000045: il taglio
+    cade a 4.5e-10 da un multiplo di 1e-9). Prova: al posto e ai moti esce la
+    sola sporgenza, con il capo interno sul capo preso (entro il rumore del moto).
+    Non prova la riga dentro `island()`: sui disegni tracciati il ripiego
+    `_faces_union_loop` non arriva mai a `off_rim`."""
+
+    MOTIONS = [(0.0, 0.0, 0.0), (0.7, 0.0, 0.0), (0.13, 3.1, -7.9), (2.4, -0.37, 0.61)]
+
+    def test_due_capi_quasi_uguali_un_resto_solo(self):
+        from tests.invariants import rigid
+        for motion in self.MOTIONS:
+            with self.subTest(motion=motion):
+                move_seg, move_pt = rigid(*motion)
+                edge = _line((-5.00000000045, 0.0), (15.0, 0.0))
+                edge = Edge(role="unknown", start=move_pt(edge.start), end=move_pt(edge.end),
+                            segment=move_seg(edge.segment))
+                square = Polygon([move_pt(p) for p in [(0, 0), (10, 0), (10, 10), (0, 10)]])
+                corner = move_pt((0.0, 0.0))
+                twin = move_pt((1e-10, 0.0))
+                taken = [(corner, move_pt((10.0, 0.0))), (twin, corner)]
+                rest = off_rim(edge, taken, square.exterior, BAND)
+                left = [e for e in rest if e.start == edge.start]
+                self.assertEqual(len(rest), 2)
+                self.assertEqual(len(left), 1)
+                # il capo interno è sul nodo del contorno, non su una cella
+                inner = segment_endpoints(left[0].segment)[1]
+                self.assertLess(math.dist(inner, corner), 1e-12)
+
+
 if __name__ == "__main__":
     unittest.main()

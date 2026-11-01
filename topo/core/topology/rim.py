@@ -77,7 +77,9 @@ def off_rim(edge: Edge, taken: list, ring, band: float) -> List[Edge]:
         return []
     length = geom.length
     closed = segment_is_closed(edge.segment)
-    cuts = sorted({round(geom.project(ShapelyPoint(q)), 9) for a, b in taken for q in (a, b)})
+    # ascisse esatte: due tagli quasi uguali danno un tratto sull'anello, che
+    # `_farthest` scarta; una griglia spostava il capo secondo il moto (G6e)
+    cuts = sorted({geom.project(ShapelyPoint(q)) for a, b in taken for q in (a, b)})
     if closed:
         spans = list(zip(cuts, cuts[1:] + [cuts[0] + length])) if cuts else []
     else:
