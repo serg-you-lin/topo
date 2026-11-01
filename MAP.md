@@ -205,555 +205,79 @@ Names in the older entries are the names of their day (`forge`, `ForgeCluster`,
   `role_rules`. The rule stands: no format word (layer, entity) in core names.
 - ~~D54~~ → D90: a labelled line fully on the outer boundary is absorbed
   (`covers`, not `contains`) — assignment lives with detection in snapbend.
-### D55 — `non_contour_candidates()`: the non-contour test becomes a public primitive ✅
-Real snapdraw case: a plan view with a raised flange. `heal()` already excludes
-the flange's edges from the contour graph via `NonContourEdgeDetector`
-(branching + centroid outside its component's hull, D49) without asserting
-what they are — that "candidate, unlabeled" state was already the right
-shape. The only place that turns a candidate into a claim is `detect()`'s
-`_detect_bending`, which guesses `"bending"` at confidence 0.9 — wrong for a
-raised-feature edge, and snapdraw never calls `detect()` anyway, so it never
-even saw this candidate set to begin with; it only had the coarser signal
-"role stayed `unknown`, ended up in `trash_entities`", not "this specific
-edge is where a crossing line would sit."
-
-Federico: heal shouldn't need to know it's a bend line, only say "this is a
-candidate for being something else" — already true — "and that something
-else should be handled by the caller." Confirmed: expose the same class
-`heal()` already uses internally (not have snapdraw reimplement the
-branching+hull-interior test itself), so there is one source of truth for
-"is this a non-contour candidate", not two that can drift apart.
-
-`forge/tools/non_contour.py`: `non_contour_candidates(doc, tolerance=None) ->
-list[Edge]` — builds the same kind of graph `HealStep._find_non_contour_edges`
-does (`build_node_graph(edges, epsilon=0.0)`) and runs the same
-`NonContourEdgeDetector`, same tolerance fallback as `heal()`
-(`doc.source_meta["tolerance"]`). Returns the actual `Edge` objects (not ids)
-so the caller sets `.role` directly and it's already reflected in `doc.edges`
-— hands straight into the D30 pre-`heal()` role-injection contract, no new
-mechanism needed on top.
-
-Documented caveat, not fixed: runs on `doc.edges` as given, before `heal()`'s
-own `_merge_collinear_overlaps`/`_merge_cocircular_overlaps`/gap-closing
-preprocessing, so on a drawing with duplicate or sub-tolerance-gap segments
-the result can differ slightly from what `heal()` would exclude once it
-actually runs. Acceptable for the intended use (deciding `edge.role` *before*
-`heal()`) since `heal()` itself still has the final say on what stays in the
-graph — exposing the mid-pipeline preprocessed state too would be a bigger
-surface for no case that needs it yet.
-
-Suite: 750 passed (8 new). `main` → 0.6.24.
-
-### D56 — `weld_degenerate_linesegs`: a sub-0.05mm LineSeg is welded, not deleted ✅
-Real case (a dense strip view): 2980 of 3908 edges were
-LineSegs a few hundredths of a mm long — a curve finely tessellated into
-hundreds of near-coincident vertices instead of staying an arc. They carry
-no topological information, only noise: 1654 spurious micro-loops in the
-graph. Deleting them was tried and is wrong — a vertex linked to its
-neighbours only through sub-threshold segments gets detached, the chain
-breaks (tens of components became 150). Welding is right: union-find on the
-two rounded nodes, every other edge touching them is remapped to the common
-representative, the chain stays connected, only shorter. Only the node
-(`Edge.start/end`) moves; `segment` keeps the real point (same principle as
-`apply_gap_fixes`). Same exclusions as D50: LineSeg only, `role == UNKNOWN`
-only.
-
-Threshold fixed at 0.05mm, not the caller's `tolerance`: that is a
-gap-closing radius, and on a file with a wide tolerance it would weld real
-geometry. On that view the degenerate segments were 0.01–0.031mm long,
-well below any real manufacturing feature. Runs in `heal()` right after the
-two merges (D50/D52).
-
-Measured on the same view: 2466 → 320 edges, spurious loops 1654 → 39. It
-does **not** close the part on its own: the 94 free ends remain, so the
-file still has no outer. That is the multi-view problem (see the
-isometric-view note in Federico's notes below), not a weld problem. Suite: 5 new tests.
-
-### D57 — corner repair runs whenever free ends remain, not only when no loop exists ✅
-`_find_loops` tried the clustering-based corner repair only `if not loops`.
-One trivially closed loop anywhere in the drawing (a small hole, a symbol)
-was enough to shield every real contour with a broken corner from repair.
-Reproduced synthetically: a square whose corner's real gap (0.11) is just
-above `tolerance` (0.1), so `_preprocess` skips it, while the rounded nodes
-(10.0 vs 10.1) sit within epsilon, so only the clustering repair closes it.
-Alone it heals; with a circle closed elsewhere the square was lost (1
-cluster instead of 2). The condition is now `if not loops or
-graph.open_nodes()`. No existing fixture or golden changes. Suite: 756
-passed (1 new, fails on the old condition). `main` → 0.6.25.
-
-### D58 — reopening D22: the engine has two readings, `heal()` is one of them ✅
-D22 called `heal()` "the engine's core act, not optional — every other step
-works on its output". **We are reopening that part of D22.** A drawing of
-views (several views on a sheet, isometric / 3D-projected views) is not what
-`heal()` was built for: it finds the part from the inside, by connectivity,
-and on a projected view several near-coincident edges (different 3D edges
-projected close together) converge on the same nodes with no local signal to
-pick which one continues as the outline. Three connectivity-based attempts
-(min-distance BFS, local BFS, `polygonize` on the whole arrangement) all
-failed on the same file for the same reason.
-
-Federico: "forge sta cambiando aspetto, heal diventa meno il centro del mondo e
-più un tool — il primo, il più solido, ma un tool". The engine now has two
-readings of a `ForgeDocument` that compose the same core ingredients (graph,
-loop finder, gap solver, normalizer) differently and fill the **same model**:
-`heal()` (from the inside) and `island()` (from the outside, D59). The
-product is the model (`ForgeResult` / `ForgeCluster`), not either recipe —
-`detect()` / `to_dxf()` / `split()` don't know which reading produced it. The
-caller chooses by the drawing: flat cutting file → `heal()`; drawing of views
-→ `island()`. The rest of D22 (no `pipeline/`, `tools/` optional stages,
-renderers in `io/`) stands. `ForgeCluster` keeps its name (D21): an island may
-be a view, a part or the frame — forge doesn't know.
-
-### D59 — `island()`: islands by proximity, outer contour as the outer face of a planar network ✅
-`forge/core/island.py`, `forge.island(doc, tolerance, island_gap, max_gap,
-is_structural)` + the bricks, all exported for a consumer composing its own
-reading (snapdraw): `read_islands` / `read_island` (→ typed `IslandReading`),
-`spatial_islands`, `split_at_crossings`, `outer_face`, `refit_tessellations`.
-
-- **Islands** (`core/healing/islands.py`): union-find on edge pairs within
-  true segment distance (STRtree `dwithin`). Not bboxes: the bbox of a long
-  isometric diagonal covers an empty rectangle touching the next view. No
-  notion of closure, so no graph ambiguity. `island_gap` is the caller's
-  (layout convention), default 10 mm — default removed in D98.
-- **Planar network** (`core/topology/noding.py`): every LineSeg/ArcSeg/CircleSeg
-  split where another edge crosses or touches it (T within tolerance), nodes
-  recomputed from the real endpoints on one fine grid (`renode`, 3 decimals)
-  so cuts computed from both sides coincide. First/last piece keep the
-  original (welded) nodes. Splines/ellipses stay whole for now.
-- **Outer face** (`core/topology/outer_face.py`): start from the leftmost
-  *geometric* point (on the outer boundary by definition — it can lie
-  mid-arc, e.g. a magnifier circle over a view, where the leftmost *node* is
-  inside), walk down that edge, at every node take the smallest
-  counter-clockwise turn. Edges walked twice are spurs (axes, marks). Per
-  connected component, largest area wins. Directions are read up to 3 mm
-  along an edge (or half of it): a fillet tangent to a line differs from it
-  only further on, not at the first micron.
-- **Nesting**: an island whose outer lies inside another's is not a cluster
-  — it becomes interior of the outermost container. With the frame in the
-  drawing the frame is the only outer (correct: removing it by role is the
-  caller's job, D30 — `island()` honours `is_structural` exactly like `heal()`).
-- Interior: closed loops → `inners` (no hole-vs-face decision, D15), the rest
-  to `trash_entities` with its role; `IslandReading` keeps spurs / outside /
-  non-contour (D49) / unclassified queryable.
-
-How we got here (not re-decided): the first idea was ray casting — per ray,
-first and last intersection are always on the outer boundary
-(`core/healing/outer_scan.py`, kept, not exported). It classified correctly
-but stitching "seen" pieces with greedy bridges + spur pruning was a fake
-`heal()` (local topology rules again): every tweak for one file broke
-another. Once the network is planar the outer face is an exact definition and
-the scan adds nothing — dropped from the path. Sample: 23 real sheets + 15
-hand-cleaned copies without frame (`tests/examples/islands`, untracked):
-plan/side views correct almost everywhere; open cases: some sheet-metal
-isometrics (a lever, two bracket sheets, a bent-sheet side view), the side
-view of a flanged part (rising flange not seen), hatch lines closing a region
-on one of the brackets (a role question, snapdraw's layer semantics).
-
-### D60 — view normalization: tessellations refitted, drawing gaps up to `max_gap` ✅
-Real sheets write fillets as hundreds of 0.01–0.03 mm LineSegs, sometimes
-doubled, micron-offset from the true edge. Any order of merge/weld/renode
-worked on one file and broke another — the mechanism was never solved by
-rounding. Federico had fixed one by hand, replacing the tessellation with
-arcs: `normalizer.refit_tessellations` automates that — a chain of ≥10
-LineSegs shorter than 0.1 mm (measured on the sample: nothing real lives
-between 0.05 and 0.5 mm, and short segments always come in chains of 25+) is
-refitted with `simplify_points` (arc/circle within 0.02 mm, else spline),
-chain ends on the original nodes. `island()` also closes drawing gaps up to
-`max_gap` (0.5 mm — a view is not a cutting file) with heal's gap solver,
-through `gap_solver.local_gap_fixes`: a fix never moves an endpoint further
-than the gap itself (two almost-parallel lines meet very far away).
-`heal()` uses neither.
-
-### D61 — B-spline interpolation is forge's own math; fitting moved into core ✅
-`fit_primitives` used `ezdxf.math.BSpline.from_fit_points`, and
-`core/primitives/polygon_builder.py` imported `ezdxf.math.bulge_to_arc`.
-Federico: "e se l'input arrivasse da un pdf?" — it would have worked (math
-only), but geometry math depending on a format library is the same confusion
-forge exists to avoid. `core/geometry.interpolate_bspline` (Piegl & Tiller
-9.2.1: chord-length parameters, natural knots for odd degree, averaged for
-even — ezdxf's own choices) matches ezdxf to 2e-12 on 400 random sets;
-the bulge branch in `polygon_builder` was dead code (`_BulgeSeg` no longer
-exists) and is gone. No ezdxf import is left in `core`/`model`/`tools`, so
-`tools/simplify_points.py` became `core/primitives/fitting.py` (clean break
-for internal callers; `forge.simplify_points` unchanged, smoother untouched).
-Suite: 795 passed.
-
-### D62 — `HealStep` is gone: heal's steps are public functions, `heal()` is a recipe ✅
-Follows from D58: if `heal()` is one reading among two, its steps are
-ingredients like `island()`'s, not the private methods of a stateful class.
-`HealStep` accumulated state between methods (`loop_edge_ids`,
-`closed_shapes`, `labeled_edges`, `all_arcs` rewritten mid-way), so a consumer
-could only take the whole pipeline or nothing — D55 had already pulled one
-step out by hand (`non_contour_candidates`) because snapdraw needed it
-*before* `heal()`. This generalizes that move to every step.
-
-- **`core/healing/steps.py`** holds the steps, each edges in → edges or a
-  partial result out: `split_labeled`, `close_free_gaps`, `dangling_splines`,
-  `find_non_contour_edges`, `find_loops` → `LoopSearch`,
-  `repair_merged_corners`, `structural_loops`, `loops_to_features`,
-  `polygonize_edges`, `polygons_to_features`, `labeled_features`,
-  `build_hierarchy`. The three normalizer merges and `edges_to_open_features`
-  were already functions. All in `forge.__all__` (snapdraw composes them next).
-- **`core/heal.py`** holds only `heal()`, same shape as `core/island.py`:
-  neither recipe sits "above" the other; the model is the product (D58).
-  `heal()` composes the steps in the old order and writes the old warnings,
-  text and order unchanged.
-- **Typed only where a step answers more than one question.** `find_loops`
-  returns `LoopSearch` (`edges` after corner repair, `loops`, `method` =
-  `exact`/`corner_repair`/`tolerant`/`none`, `repaired`, `skipped_corners`,
-  `unrepaired_corners`, `open_nodes`): "which rung of the ladder closed the
-  contour?" used to be readable only from warning strings. Steps that are
-  edges → edges return a list.
-- **Where polygonize sits** (a doubt in the refactor notes): it was never a
-  step after the hierarchy. It is the last rung of the loop search, taken only
-  when `find_loops` ends with `method == "none"`; it produces `ClosedFeature`s
-  directly (OUTER from the exterior, INNER from the holes), which then go
-  through `build_hierarchy` like any others. In `heal()` this is now an
-  explicit `if search.loops / elif edges` instead of a method bolted onto the
-  class from outside.
-- **No shared `normalize()`**: `heal()` calls the three merges; `island()`
-  normalizes differently (`renode`, `refit_tessellations`, fine grid). One
-  name for both would suggest the two readings prepare edges the same way.
-- `HierarchyBuilder` lost `label_map` and `entities_in_loops`: both were
-  stored and never read.
-
-Zero regressions checked beyond the suite: a fingerprint of `heal()` (clusters
-as WKT + segments, trash, warnings and errors in order, `all_arcs`), with and
-without the manufacturing predicate, on all 358 drawings under
-`tests/examples` (islands and complete sheets included) plus 12 synthetic
-documents (6 cases × 2 tolerances) covering every rung of the ladder —
-identical before and after each of the four commits. Kept as-is, noted in ARCHITECTURE's "not clean yet": when
-every edge is labeled non-structural, `heal()` returns the "no closed geometry"
-error with an empty `trash_entities` (the labeled edges don't reach it).
-Suite: 812 passed (17 new in `test_heal_steps.py`, including a composition
-test: the steps chained by hand give `heal()`'s clusters). `main` → 0.7.0.
-
-### D63 — `role_rules` replace `label_map`/`linetype_map`/`color_map`; "dashed" is a fact of the pattern ✅
-snapdraw asked whether forge should expose the layer name on edges so it could
-discover the drawing's semantics by itself. No: the source's grouping name
-is a fact about how one file was authored, and nothing in forge past the
-adapter may carry it (D53). What snapdraw (or anyone calling `heal`/`split`)
-needs is a way to say *which* signals mean *which* role — and to say it
-themselves: forge provides the mechanism, the caller writes the content.
-
-- **`RoleRule`** (`model/role_rule.py`): `role` + conditions on neutral
-  signals — `name` (equal), `name_contains`, `dashed`, `color`. All the
-  given conditions must hold; a rule with none raises. `load_dxf` /
-  `document_from_msp` / `inspect_file` take `role_rules`, evaluated in order,
-  first match wins, none → `unknown`. The old three maps could not express
-  a combination ("dashed **and** named construction") — each decided alone,
-  in a fixed cascade (name first, then linetype, then colour). The cascade
-  is gone: the order is the caller's. `name_rules({name: role})` is the
-  shortcut for plain name rules.
-- **The name never leaves the adapter.** The DXF adapter passes the layer
-  as the `name` signal to `resolve_role`; the `Edge` gets only the role.
-  `source_meta` no longer stores the maps. `heal()`/`island()` copied
-  `label_map` into `ForgeResult.label_map`, and `edges_to_open_features`
-  took it as a parameter — all three were never read, and are removed
-  (clean break).
-- **"Dashed" = the pattern has a gap** (`EdgeStyle.is_dashed`: an element
-  < 0 in `linetype_pattern`). Not the linetype's name: the same dash can be
-  called anything, and a format without named linetypes still has dash
-  patterns. The line stays one continuous segment; the dash is how it's
-  drawn, so nothing is reconstructed. A dash already exploded into many
-  short segments is a different problem (reassembling collinear pieces with
-  regular gaps) and is out of scope until a real file needs it.
-- `color` stays the ACI index already in `EdgeStyle` (name, int or numeric
-  string); an unknown colour name now raises instead of being ignored.
-- Heuristic vocabularies ("construction", "hidden", ...) are **not** in
-  forge: they are content, and belong to whoever calls. Whether a caller's
-  firm convention and a caller's guess need to be told apart downstream
-  (a `certain` flag on the rule?) is left open — Federico is thinking
-  about it.
-
-Not touched, same family, still layer-named: `ignore_layers` and the
-hardcoded `_NON_STRUCTURAL_LAYERS` (`trash`/`annotation`, forge's own output
-layers read back) in the DXF adapter. Suite: 824 passed (14 new in
-`test_role_rule.py`, 2 `label_to_role` tests removed), golden unchanged. `main` → 0.7.1.
-
-### D64 — the shape of the dash: `EdgeStyle.dash_kind`, `RoleRule(dash=...)` ✅
-snapdraw needed to tell two families of dashed lines apart: chain lines (axes,
-construction) become `construction` and leave the islands; uniform dashes
-(hidden edges, bends drawn hidden) stay. "Every dashed line is
-construction" was tried and failed: the side views of bent sheets
-(two side views of the same bent part) lost half their outline, because the bend
-is drawn hidden. `dashed=True` (D63) cannot express it — both families have
-gaps.
-
-- **Extends D63, does not reopen it.** The signal was already in forge
-  (`linetype_pattern`); what was missing was the classification. Doing it in
-  the caller would mean re-reading raw patterns outside the model.
-- **`EdgeStyle.dash_kind`**: `continuous` (no gap), `uniform` (one mark
-  repeated — equal dashes, or dots only), `chain` (marks of different
-  lengths alternate — long dash + short dash or dot). Only the marks (≥ 0)
-  count, not the gaps. Two marks differ if they differ by more than 5% of
-  the pattern's total length: relative, so the scale doesn't matter, and a
-  rounding difference doesn't turn a dash into a chain. Checked on every
-  styled edge in `tests/examples`: all chain patterns → `chain`, all dash
-  patterns → `uniform`.
-- **`RoleRule.dash`** matches on it; `dashed` stays as "has a gap" (both
-  families). The mapping chain → construction is snapdraw's content, not
-  forge's (D63). A bend drawn as a chain stays `bending` if a rule for it
-  comes first — ordering already covers it, nothing new needed.
-
-Suite: 833 passed (9 new in `test_role_rule.py`), golden unchanged. `main` → 0.7.2.
-
-### D65 — `island()` merges after the cut: contours recomposed where the planar network split them ✅
-In `island()` every hole crossed by its axes came out as 2–4 ArcSegs:
-`split_at_crossings` cuts the circle where the axes cross it (the outer face
-needs those nodes, D59), and the loops are built from the pieces.
-`circular_geometry` only recognizes a single primitive, so `detect` saw no
-holes (on one sample sheet: 3 holes drawn, 0 detected).
-
-- **Two merges, two jobs.** The merge in `_normalize` (before the cut) stays:
-  it removes the same line/arc traced twice in overlapping pieces, which
-  would enter the planar network as doubled edges. The new one
-  (`_merge_runs`, after the cut, on each contour already found) recomposes
-  what the cut split. Federico's call: merge after, on what needs merging —
-  not restoring the parent Edge (`NodedEdges.parent`), which would only undo
-  forge's own cuts, not a hole drawn as two arcs at the source.
-- **Rule**: consecutive segments of a closed contour on the same circle (or
-  line), same direction, same style → one segment; a contour made only of
-  arcs of one circle → `CircleSeg`. Same style so a hidden stretch isn't
-  swallowed by a continuous one.
-- **The polygon is untouched**: it is still built from the pieces, so which
-  contours are found does not change — only how they are described. Checked
-  on the 36 sheets of `tests/examples/islands`: outer areas identical on all,
-  holes +3 on each of two sheets (same part), +2, +1 and +1 on three
-  others (on `anch_04`: the 2 holes of the bottom view; the 8 small inners of the main
-  view are slots, correctly not holes); contour segments −10…−70%; time
-  unchanged.
-- Ray casting to choose what to cut was considered and not taken: rays see
-  only a subset of the outer boundary (concave edges are never first/last),
-  same reason as D59.
-
-Suite: 835 passed (2 new in `test_island.py`, both failing on the old
-`island.py`), golden unchanged.
-
-### D66 — `Leader.target`: the element the arrow tip lands on ✅
-A callout means something only once it is attached to the right feature
-("M8" → that hole). The field was in the model since D43, never computed.
-Federico: associate leaders with the right feature, generically — reading
-the text is not forge's job.
-
-- **`anchor_annotations`** now also sets `Leader.target`;
-  `leader_target(result, leader, distance)` is the rule,
-  `resolve_target(result, target)` the inverse. Both exported.
-- **`target` is a path in the result**, not a label: `"clusters[0].outer"`,
-  `"clusters[0].inners[3]"`, `"clusters[1].holes[2]"`. Contours have no
-  labels, and any collection in `cluster.detected` is a candidate (D44), so
-  the same rule works after `heal` + `detect` and after `island`. It
-  survives serialization like `cluster_ref`; it is stale if the collections
-  change afterwards (anchor after choosing the features).
-- **Rule** (tip = `vertices[0]`): nearest boundary within `distance` (0.5 mm
-  — an arrow tip sits on the line it points to; tie → smaller element, a hole
-  on the part's edge); else the smallest closed element other than the outer
-  that covers the tip (an arrow ending inside a hole); else `None`.
-- On `tests/examples/islands`: 18 leaders, none with text; 4 get a target
-  (tips exactly on a contour), 14 stay `None` — mostly section-plane arrows
-  stopping 5–6 mm outside the view, correctly not attached.
-- Not done: `Dimension.references` (which circle a diameter dimension
-  measures). On the same sample, hole callouts live in diameter dimensions
-  (`M<>`, `%%c<>`), not in leaders — next candidate. Comparing a callout with
-  the measured geometry (scale: one sample sheet is drawn at 1.25:1) is snapdraw's.
-
-Suite: 841 passed (6 new in `test_anchor_annotations.py`), golden unchanged.
-
-### D67 — `detect` renamed `detect_flat` ✅
-`detect` assumes a flat part seen from its face (cutting file, sheet
-development): an inner circle is a hole, a line crossing the part is a bend.
-On `island()` views that is false by construction — it found "bends" in
-isometrics and "holes" in logo letters — and the old name said nothing about
-it. Federico: the name is misleading, rename it.
-
-- **Only the function is renamed**; the module stays `tools/detect.py`
-  (`describe_features` and the other helpers are imported from it) and
-  `heal_and_detect` keeps its name: `heal` already reads a flat part from the
-  inside, so the pair is not misleading. `NonContourEdgeDetector.detect` is
-  unrelated and unchanged.
-- **Clean break, no alias**: `forge.detect` no longer exists, so a caller
-  running it on views finds out instead of getting silent nonsense. Breaking
-  change → `0.8.0`.
-- Feature reading on island views is not built; where it goes is open.
-
-Suite: 841 passed, golden unchanged. `main` → 0.8.0.
-
-
-### D68 — `contour_shape`: the shape of a closed contour, not a feature ✅
-Reading features on island views is open, and much of it is not forge's
-(process → snapbend, drawing conventions → snapdraw). But one part is pure
-geometry, the same on `heal` and `island`, and every module needs it: "this
-contour is a circle Ø6.625", "this is a stadium". Federico: that part smells of
-forge. The line is the word: forge says **circle**, never **hole** — a circle
-in a view may be a through hole, a blind hole, a pin, a shaft seen end-on;
-same for **stadium** (the geometric name of two semicircles joined by two lines), never **slot** — that takes the other views and the notation (snapdraw), and drill vs laser
-takes the process (snapbend).
-
-- **`forge.contour_shape(contour)` → `ContourShape`**: `kind` (`circle`,
-  `stadium`, `rectangle`, `polygon`, `other`), `center`, `length`, `width`,
-  `angle` (long axis, [0, 180)), `sides`. `core/shape.py`, exported.
-- **Rules**, on the segments after recomposing runs on the same line/circle
-  (reuses `island._merge_runs`, style ignored — shape doesn't care how a
-  line is drawn): circle = arcs of one circle, total sweep 360°; stadium = arc,
-  line, arc, line with equal radii, 180° sweeps, lines as long as the axis
-  and parallel to it; rectangle = 4 lines, consecutive at 90°, opposite
-  sides equal; polygon = only lines; else other. Tolerances relative to the
-  contour's size (1%) and 1° on angles.
-- `circular_geometry` is untouched: it is what `detect_flat` uses and the
-  golden are built on it; it goes with the detection when that moves out.
-- On `tests/examples/islands` (36 files, inner contours): 224 circles, 33
-  stadiums, 43 rectangles, 52 polygons, 652 other — the "other" are mostly the
-  faces between a view's lines. `anch_04`: the 6 slots of the main view
-  come out as stadiums. DXF with one layer per shape in
-  `output/esperimento_agente/shape/`.
-- Seen along the way, not changed: `to_dxf` writes an inner contour with a
-  consumer role on `InnerContour` (`ROLE_TO_LAYER.get(..., LAYER_INNER)`),
-  while holes go through `role_to_dxf_layer`.
-
-Suite: 851 passed (10 new in `test_shape.py`), golden unchanged.
-
-
-### D69 — `Dimension.references`: what a dimension measures; `display_text` whole ✅
-Next step after D66: on drawings of views the hole callouts live in diameter
-dimensions (`M<>`, `Ø<>`), not in leaders, and snapdraw needs to know which
-circle a callout belongs to. Federico: do forge's part first, then snapdraw.
-
-- **`Dimension.measured_points`** (model, neutral): the points on the
-  geometry the dimension measures — linear → the two ends, diameter → two
-  opposite points on the circle, radius → the point on the arc (not the
-  centre: a centre lies on no contour, or on a face edge by accident). The
-  DXF adapter fills it from the definition points; another adapter would
-  from its own.
-- **`dimension_references(result, dim)`**, called by `anchor_annotations`:
-  for each point, the element whose boundary passes within 0.5 (same rule as
-  `Leader.target`, shared `_on_boundary`), no duplicates. Paths in the same
-  format as `target`.
-- **`display_text` fixed**: it returned the first rendered fragment only
-  (`"n"` = Ø in a symbol font, `"M"`). Now: the author's text with `<>`
-  replaced by the value as drawn (drawing precision, decimal comma), else the
-  fragments joined, else the measurement. The adapter strips MTEXT
-  formatting from the override (`\A1;<>` → measurement only) and decodes
-  `%%c`/`%%d`/`%%p` → Ø/°/±. Annotation golden: one file, `text_override`
-  `"\A1;<>"` → `null` on 5 dimensions; `display_text` unchanged there.
-- On `tests/examples/islands` (36 files): diameter 76 → 54 with a reference,
-  32 of them a `circle` (`contour_shape`), 30 with the same Ø as measured;
-  radius 66 → 63; linear 644 → 421. The rest: points on lines that close no
-  contour (a thread drawn as an open ¾ arc, diameters measured on a side
-  view). An `M5` whose thread arc is open lands on the core circle (Ø4.13)
-  within 0.5 — near, not exact; snapdraw decides.
-- `measured_value` is in drawing units: a sheet drawn at 1.25:1 measures 6.625 where
-  `∅5,3` is written. The scale check is snapdraw's.
-
-- **Anchoring golden** (`tests/real/test_golden_anchoring.py`): 8 sheets of
-  `islands`, renamed by Federico `anch_01`…`anch_08` in
-  `tests/examples/golden_anchoring/` (golden in `json/`), in git like the
-  other golden. For every dimension and leader: the element it is anchored
-  to, described by collection + `contour_shape` (not by index: reordering
-  `inners` is not a regression, anchoring to another circle is). Regenerate
-  with `--generate`, only after checking by hand.
-- **These copies were saved again, and lost dimension text.** Anchors are
-  identical to the originals on all 8, but the author's text is not:
-  tolerances dropped (`93±0.1` → `93`), and the linear scale factor is gone
-  (on `anch_07`: `∅5,3` → `6.63`, `12` → `15`; on `anch_02`: `Ø11` →
-  `Ø22`). Fine for anchoring; not usable for snapdraw's scale check — that
-  needs the originals. Found on the way: an override may carry `\U+00B0`
-  escapes (`n\U+00b016 fori`); the adapter now decodes them (`n°16 fori`).
-
-Suite: 871 passed (12 new in `test_anchor_annotations.py`, 8 anchoring
-golden), geometry golden unchanged.
-
-### D70 — `to_dxf` writes every attached collection, not only detect_flat's ✅
-snapdraw reads features on the views of a drawing (holes, slots, openings,
-counterbores) and attaches them to `cluster.detected` with the D44 overlay,
-the same way `detect_flat()` does. `to_dxf` wrote only the three names of
-`detect_flat()` (`holes`, `bending_lines`, `engrave_lines`): the overlay was
-open for reading and closed for writing — a privilege D44 says nobody has.
-
-- **Rule**: any other collection in `cluster.detected` is written item by
-  item. An item with a `role` goes on the layer of its role
-  (`role_to_dxf_layer`, palette from `register_role_style`); its geometry is
-  `item.contours` (each with `segments`/`styles`) when it is made of several
-  closed contours — a hole with its seat — else `item.segments`. No role or
-  no geometry → skipped, silently: an overlay can hold things that are not
-  meant to be drawn.
-- **The three detect_flat collections are untouched**, written as before
-  (hole type → layer, bending lines, engraving). No duplicate: a consumer
-  that attaches features is expected to move their contours out of `inners`,
-  as `detect_flat()` does with holes.
-- Nothing else in forge reads unknown collections: `summary` counts them,
-  `anchor_annotations` resolves paths into them (`clusters[0].view_features[3]`),
-  `to_view_model`/JSON read their own names only.
-
-Suite: 875 passed (4 new in `test_attached_export.py`), golden unchanged.
-
-### D71 — `island()`: a nested island brings all its closed loops inside ✅
-Found by snapdraw on `anch_02`: two threaded holes
-and a counterbore in trash, inside the plate view. `spatial_islands` groups by
-proximity: a few holes close to each other (< `island_gap`) but far from any
-line of the view (> `island_gap`) are an island of their own, made only of
-disjoint circles. `outer_face` picks one of them as the island's outer, the
-nesting puts that one inside the view — and the other circles of the group,
-outside the chosen outer, went to trash as `outside`. Federico: what lies
-inside an island that was found cannot be an island of its own.
-
-- **Rule**: a nested island (`nested_in` set) gives its host every closed
-  loop it has: the chosen outer, the loops inside it (as before), and the
-  closed loops among its `outside` edges (`IslandReading.outside_loops`,
-  new). The rest of `outside` still goes to trash. A top-level island is
-  unchanged: its `outside` loops still go to trash (a separate symbol next to
-  a view is not part of it — changing that would change cluster counts).
-- `read_islands` stays additive: `outside` keeps all outside edges,
-  `outside_loops` says which of them close.
-- **Checked on 86 view sheets** (`islands`, snapdraw's `complete_drawings` and
-  fixtures, `golden_anchoring`), island fingerprint before/after: same
-  clusters, same outers, every old inner still there; 34 sheets gain inners
-  and lose trash, nothing else moves (`anch_02` +46 inners). Loaded
-  without removing the frame, the frame is the host of everything: title
-  block cells become its inners — they are loops inside it.
-- **Anchoring golden**: one change on `anch_02`, checked by hand and
-  regenerated: `M6 n°16 fori` had no anchor, now it anchors to the loop made
-  by its thread crest arc (Ø6) and an axis segment across it (the axes are
-  geometry there, no role rules). The loop was always a planar face; it was
-  just dropped with the rest of the group.
-
-Suite: 876 passed (1 new in `test_island.py`, failing before the fix).
-
----
-
-### D72 — `CLAUDE.md` as the entry point, `docs/INDEX.md` generated ✅
-The project was well mapped (`ARCHITECTURE.md` for the structure, `LLM.md` as a
-dense AI reference, `API.md` for the public surface, this file for the why) but
-none of it was reachable: `CLAUDE.md`, the only file an AI session loads by
-itself, was empty. So every session started blind, grepped for a fragment, and
-occasionally rewrote something that already existed. Two holes, two fixes.
-
-- **`CLAUDE.md` is the router, not a copy.** Short on purpose — it is loaded in
-  full every session, so it holds only what must never be missed: what forge is,
-  a table saying *which file to read for which question*, the non-negotiables
-  (reason in forge's primitives; the dependency rule; no process knowledge in
-  forge; `detect_flat` is for flat parts; check `is_valid`; nothing silently
-  dropped; justify from forge's own geometry; never regenerate a golden to pass;
-  no client data in git), and the code conventions. Everything else stays where
-  it already is and is reached by the table.
-- **`docs/INDEX.md` is generated** by `scripts/gen_index.py`, never written by
-  hand: `API.md` documents the ~39 public names, but the package has 349
-  module-level functions and 53 classes, and duplication happens in the
-  undocumented part. The index lists every module-level name with `file:line`
-  and its first docstring line, read from the source with `ast` (no import, no
-  side effects), so it cannot drift. A hand-written inventory lies at the next
-  commit, and a lying map is worse than none because the reader believes it.
-- The script also runs two checks, which is the point of generating rather than
-  writing: **names defined at module level in more than one module**, and
-  **violations of the dependency rule** (`core`/`model` importing
-  `adapters`/`tools`/`io`). `--check` exits 1 if the index is stale.
-- First run paid for itself: `_geometry` is byte-identical in
-  `core/healing/islands.py`, `core/island.py` and `core/topology/noding.py`
-  (three copies of "discretize an `Edge` into a shapely geometry"), and
-  `_ensure_linetype` exists twice with different signatures in
-  `adapters/dxf/exporter.py` and `io/dxf.py`. The dependency rule is clean.
-
----
-
+- **D55** — the non-contour test is a public primitive
+  (`tools.non_contour.non_contour_candidates(doc)`): the same detector `heal()`
+  uses, returning the `Edge` objects so a caller sets `.role` before `heal()`.
+  topo only says "candidate"; what it is belongs to the caller. It runs on the
+  raw edges, so on a dirty drawing it can differ slightly from `heal()`.
+- **D56** — `weld_degenerate_linesegs`: a `LineSeg` shorter than a fixed
+  0.05 mm (not the caller's tolerance, a gap-closing radius) is welded by
+  union-find on its two nodes, never deleted (deleting detaches chains). Only
+  the node moves, `segment` keeps the real point; `UNKNOWN` role only.
+  D152 and D186 bounded and ordered the welding.
+- **D57** — corner repair runs whenever free ends remain
+  (`not loops or graph.open_nodes()`), not only when no loop exists: one
+  closed hole elsewhere must not shield a broken contour from repair.
+- **D58** — the engine has two readings of a `Document`, `heal()` (from the
+  inside, by connectivity) and `island()` (from the outside); they compose the
+  same ingredients and fill the same model, which is the product. The caller
+  chooses by the drawing (flat cutting file vs views). Reopens D22's "heal is
+  the core act". A cluster may be a view, a part or the frame (D21).
+- ~~D59~~ → D99, D161: `island()` by proximity of islands, planar network
+  (`split_at_crossings`, one fine grid) and the outer face as the walk of the
+  smallest counter-clockwise turn from the leftmost geometric point.
+  The network and the walk survive; the grouping and the interior do not.
+- **D60** — view normalization: a chain of ≥ 10 `LineSeg` shorter than
+  0.1 mm is a tessellation and is refitted (`refit_tessellations`: arc or
+  circle within 0.02 mm, else spline); `island()` closes drawing gaps up to
+  `max_gap` through `local_gap_fixes` (a fix never moves an endpoint further
+  than the gap itself). `heal()` uses neither. D98 made `max_gap` required.
+- **D61** — the B-spline interpolation is topo's own math
+  (`interpolate_bspline`, Piegl & Tiller 9.2.1, equal to ezdxf's to 2e-12):
+  no format library is imported in `core`, `model` or `tools`.
+- **D62** — `HealStep` is gone: the steps of `heal()` are public functions
+  edges-in/edges-out (typed only where a step answers more than one question,
+  `LoopSearch`), `heal()` is a recipe in `core/heal.py` beside `island()`, and
+  there is no shared `normalize()` — each reading prepares its edges its own
+  way. D187/D189 later put both on one base.
+- **D63** — `role_rules` (`RoleRule`: `name`, `name_contains`, `dashed`,
+  `color`, all must hold, first match wins, evaluated in the caller's order)
+  replace `label_map`/`linetype_map`/`color_map`. The source's grouping name
+  never leaves the adapter; "dashed" is a fact of the pattern (a gap), not
+  of the linetype's name; heuristic vocabularies ("construction") are the
+  caller's content.
+- **D64** — `EdgeStyle.dash_kind` is `continuous`, `uniform` (one mark
+  repeated) or `chain` (marks differing by > 5% of the pattern length);
+  `RoleRule(dash=)` matches on it. Chain → construction is snapdraw's
+  mapping, not topo's.
+- **D65** — `island()` merges after the cut: consecutive segments of a
+  contour on the same circle or line, same direction, same style become one;
+  a contour made only of arcs of one circle becomes a `CircleSeg`. It does
+  not restore the parent edge (that would only undo topo's own cuts).
+- **D66** — a leader's target is the element its tip lands on: the nearest
+  boundary within 0.5 mm (tie → the smaller element), else the smallest closed
+  element covering the tip, else none. Text reading is not topo's. The path
+  form (`"clusters[0].inners[3]"`) became the objects themselves in D177.
+- ~~D67~~ → D88: `detect` renamed `detect_flat` (a flat part seen from its
+  face); it left topo with the rest of detection.
+- **D68** — `contour_shape(contour)` says **circle**, **stadium**,
+  **rectangle**, **polygon**, **other**, never hole or slot (a circle in a
+  view may be a pin; "slot" needs the other views, "drill" needs the
+  process). Tolerance 1% of size and 1°; segments are recomposed first.
+  The list of kinds is closed by D136.
+- **D69** — `Dimension.measured_points` (neutral: the points on the measured
+  geometry; a radius gives the point on the arc, not the centre) and
+  `dimension_references` anchor a dimension to the elements within 0.5 mm.
+  `display_text` is the author's text with `<>` replaced by the value as
+  drawn; MTEXT formatting is stripped, `%%c` → Ø. Scale checks are snapdraw's.
+- ~~D70~~ → D90, D128: `to_dxf` writes every collection of the overlay, an
+  item on the layer of its role — now output by role.
+- ~~D71~~ → D161: a nested island brings all its closed loops to its host.
+- **D72** — `CLAUDE.md` is the router (table of "which file for which
+  question" + non-negotiables); `docs/INDEX.md` is generated by
+  `scripts/gen_index.py` from `ast`, and the script checks names defined in
+  more than one module and the dependency rule. A hand-written inventory
+  lies at the next commit.
 ### D73 — client names stay out of tracked files, and a tool says so ✅
 The drawings themselves were already handled: client files live in untracked
 folders, and the anchoring goldens went into git only after Federico renamed
