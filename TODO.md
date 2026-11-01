@@ -150,11 +150,12 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
 - [ ] **G6e** `heal()` dipende dal riferimento (aperta il 31 ottobre, in una
       **SI RIPARTE DA QUI: gruppo D (D191, D193).** Inventario:
       `_debug/2026-10-31_topo_G6e-inventario/inventario.md` (le ultime
-      sezioni sono lo stato vero). Conto al 2 novembre: **7** (A 0,
-      B 0, C 0, D 6, più una voce
+      sezioni sono lo stato vero). Conto al 2 novembre: **5** (A 0,
+      B 0, C 0, D 4, più una voce
       nuova in coda: `outer_face._network` rifà il noding sulle discretizzazioni,
-      micro-caso rosso, 0 casi sui 31). Prossima: D, `rim.py:214, 215`.
-      Fatte: `rim.py:203` (corretta: gap pari entro FLOAT_NOISE,
+      micro-caso rosso, 0 casi sui 31). Prossima: D, `island.py:148`.
+      Fatte: `rim.py:214, 215` (corretta: un capo nel mezzo di un segmento
+      corto non si aggancia, `TestTrimmedAtTheMiddleUnderMotion`), `rim.py:203` (corretta: gap pari entro FLOAT_NOISE,
       `TestOverlapCutUnderMotion`), `rim.py:171` (corretta: copre un lato solo l'edge che gli corre
       lungo, `TestSpurDoesNotTakeTheSide`), `:173` (innocua, stesso test), `trim.py:150` (corretta: sulla giunzione di una spline chiusa
       decide `via`, prima il tratto usciva rovesciato; `TestClosedSplineSeamUnderMotion`), `regions.py:356` (innocua, solo `contour_union`;

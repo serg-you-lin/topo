@@ -221,13 +221,22 @@ def _rim_runs(pts: list, geoms: list, cover: List[set]) -> list:
 def _trimmed(seg, a, b, via, band: float):
     """`seg` da `a` a `b`: un capo entro `band` da un estremo di `seg` è
     quell'estremo (il nodo vero, non la sua proiezione); se tutti e due lo
-    sono, il segmento intero."""
+    sono, il segmento intero. Un capo alla stessa distanza dai due estremi
+    (entro FLOAT_NOISE: il mezzo di un segmento corto) non è il nodo di
+    nessuno dei due e resta dov'è (G6e)."""
     s0, s1 = segment_endpoints(seg)
+
+    def node(p):
+        d0, d1 = math.dist(p, s0), math.dist(p, s1)
+        if abs(d0 - d1) <= FLOAT_NOISE:
+            return None
+        end, d = (s0, d0) if d0 < d1 else (s1, d1)
+        return end if d <= band else None
+
     if math.dist(s0, s1) > band:
-        sa = min((s0, s1), key=lambda e: math.dist(a, e))
-        sb = min((s0, s1), key=lambda e: math.dist(b, e))
-        if math.dist(a, sa) <= band and math.dist(b, sb) <= band and sa != sb:
+        sa, sb = node(a), node(b)
+        if sa is not None and sb is not None and sa != sb:
             return seg if sa == s0 else seg.reversed()
-        a = sa if math.dist(a, sa) <= band else a
-        b = sb if math.dist(b, sb) <= band else b
+        a = a if sa is None else sa
+        b = b if sb is None else sb
     return sub_segment(seg, a, b, via)

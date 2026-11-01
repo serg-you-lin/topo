@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`85` modules · `512` module-level functions · `63` classes · `16315` lines of code.
+`85` modules · `512` module-level functions · `63` classes · `16324` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -1209,7 +1209,7 @@ _core/topology/outer_face.py_
 - `_largest_loop(edges: List[Edge], epsilon: float)` — L332 — (loop, segments, styles, polygon) del giro di area massima.
 - `_area(found) -> float` — L342 — Area esatta del giro di un candidato (loop, segments, ...), sulle primitive (D166).
 
-#### `topo/core/topology/rim.py` — 233 lines
+#### `topo/core/topology/rim.py` — 242 lines
 
 _topo/core/topology/rim.py_
 
