@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`85` modules · `512` module-level functions · `63` classes · `16334` lines of code.
+`85` modules · `512` module-level functions · `63` classes · `16337` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -83,7 +83,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `circle` | func | `topo/core/geometry/build.py:52` | Il cerchio di raggio `radius` in `center`. |
 | `_circle` | func | `topo/core/geometry/shape.py:144` |  |
 | `_circle_circle_intersections` | func | `topo/core/geometry/intersections.py:71` | Intersezioni tra due circonferenze. Restituisce 0, 1 o 2 punti. |
-| `_circle_circle_near` | func | `topo/core/topology/noding.py:666` | I due punti più vicini fra due archi, sulla retta dei centri. |
+| `_circle_circle_near` | func | `topo/core/topology/noding.py:669` | I due punti più vicini fra due archi, sulla retta dei centri. |
 | `_circle_line_intersections` | func | `topo/core/geometry/intersections.py:44` | Intersezioni tra la circonferenza (cx, cy, r) e la retta infinita (p1, p2). |
 | `_circle_sides` | func | `topo/core/primitives/segments.py:188` | Lati della griglia del cerchio di raggio `radius`: sagitta <= tolerance, |
 | `circle_through` | func | `topo/core/geometry/points.py:290` | Il cerchio per tre punti: `(center, radius)`, None se sono allineati. |
@@ -234,7 +234,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `__getattr__` | func | `topo/model/__init__.py:55` |  |
 | `golden_max` | func | `topo/core/geometry/measure.py:263` | (x, f(x)) del massimo di `f` unimodale su [a, b], per sezione aurea. |
 | `Graph` | class | `topo/core/topology/graph.py:59` | Grafo topologico interrogabile. |
-| `_grazing` | func | `topo/core/topology/noding.py:624` | (punto di `a`, punto di `b`) più vicini fra due curve che non si |
+| `_grazing` | func | `topo/core/topology/noding.py:627` | (punto di `a`, punto di `b`) più vicini fra due curve che non si |
 | `_grid_angles` | func | `topo/core/primitives/segments.py:203` | Angoli da `lo` a `hi` (lo < hi): i due estremi esatti e, fra loro, i punti |
 | `group_collinear_lines` | func | `topo/core/geometry/lines.py:61` | Tratti raggruppati per retta: [[L1, L2], [L3], ...]. Ogni gruppo prende la |
 | `_h` | func | `topo/inspect.py:37` |  |
@@ -244,7 +244,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_hits` | func | `topo/core/geometry/strips.py:135` |  |
 | `inject` | func | `topo/tools/inject.py:40` | Arricchisce i Cluster con i dati estratti da un `data_injector` esterno. |
 | `_insert_to_degree` | func | `topo/core/primitives/trim.py:185` | Inserisce `t` nel vettore dei nodi finché compare `p` volte (agli |
-| `_inside` | func | `topo/core/topology/noding.py:642` |  |
+| `_inside` | func | `topo/core/topology/noding.py:645` |  |
 | `inspect_document` | func | `topo/inspect.py:57` | Stampa un Document prodotto da un adapter (`topo_dxf.load_dxf`, …) o da |
 | `inspect_dxf` | func | `topo_dxf/inspect.py:37` | Apre un DXF/DWG con ezdxf e stampa cosa contiene, senza toccare topo. |
 | `inspect_file` | func | `topo_dxf/inspect.py:114` | Apre un file e stampa i tre livelli in fila: |
@@ -278,7 +278,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `length_inside` | func | `topo/core/geometry/measure.py:113` | Quanta parte di `segment` (qualunque primitiva nativa) sta dentro il |
 | `_lerp` | func | `topo/core/geometry/rings.py:169` |  |
 | `_Line` | class | `topo/core/readings/outer_scan.py:94` |  |
-| `_line_circle_near` | func | `topo/core/topology/noding.py:649` | (piede sulla retta, punto dell'arco) della perpendicolare dal centro. |
+| `_line_circle_near` | func | `topo/core/topology/noding.py:652` | (piede sulla retta, punto dell'arco) della perpendicolare dal centro. |
 | `_line_distance` | func | `topo/core/geometry/rings.py:256` |  |
 | `_line_fit` | func | `topo/core/primitives/fitting.py:148` | Retta ai minimi quadrati sui punti: (punto, direzione unitaria). |
 | `_line_intersection` | func | `topo/core/geometry/intersections.py:23` | Intersezione tra retta (p1,p2) e retta (p3,p4). None se parallele. |
@@ -309,7 +309,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `measured_references` | func | `topo/tools/anchor.py:100` | Gli elementi su cui cadono i ``measured_points`` di ``text`` (gli oggetti |
 | `_meet` | func | `topo/core/geometry/intersections.py:147` |  |
 | `_meet_or_bridge` | func | `topo/core/base/gap_solver.py:374` | Se le due geometrie si incontrano in `ix`, porta lì entrambi gli estremi; |
-| `_meetings` | func | `topo/core/topology/noding.py:614` | Dove `a` e `b` si incrociano o si toccano: in forma chiusa fra rette, |
+| `_meetings` | func | `topo/core/topology/noding.py:617` | Dove `a` e `b` si incrociano o si toccano: in forma chiusa fra rette, |
 | `merge_cocircular_overlaps` | func | `topo/core/base/normalizer.py:352` | `merge_collinear_overlaps` per gli ArcSeg: fonde gruppi co-circolari |
 | `merge_collinear_overlaps` | func | `topo/core/base/normalizer.py:96` | Fonde gruppi di LineSeg collineari (stessa retta infinita, `_same_line`) |
 | `merge_intervals` | func | `topo/core/geometry/axis.py:34` | Unisce gli intervalli che si sovrappongono o distano al più `tolerance`, in ordine. |
@@ -348,7 +348,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `offset_from_line` | func | `topo/core/geometry/points.py:171` | Distanza con segno di `p` dalla retta a->b (positiva a sinistra). |
 | `_on_arc` | func | `topo/core/geometry/intersections.py:139` |  |
 | `_on_arc` | func | `topo/core/readings/outer_scan.py:124` |  |
-| `_on_arc` | func | `topo/core/topology/noding.py:692` | `pt` (sul cerchio) cade dentro l'arco, lontano dagli estremi. |
+| `_on_arc` | func | `topo/core/topology/noding.py:695` | `pt` (sul cerchio) cade dentro l'arco, lontano dagli estremi. |
 | `_on_border` | func | `topo/core/geometry/axis.py:184` |  |
 | `_on_boundary` | func | `topo/tools/anchor.py:118` | L'elemento col bordo più vicino a ``point``, se entro ``distance``. |
 | `_on_line` | func | `topo/core/geometry/intersections.py:128` |  |
@@ -403,7 +403,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `prepare` | func | `topo/core/base/prepare.py:38` | Ruoli non strutturali da parte, poi i nodi decisi una volta per tutte |
 | `Prepared` | class | `topo/core/base/prepare.py:31` | Gli edge pronti per una lettura, e quello che `prepare` ha messo da parte. |
 | `_probe_point` | func | `topo/tools/split.py:162` | Punto rappresentativo di una curva, per darla alla parte più vicina. |
-| `_radial` | func | `topo/core/topology/noding.py:684` | Il punto del cerchio più vicino a `pt`; None se `pt` è il centro. |
+| `_radial` | func | `topo/core/topology/noding.py:687` | Il punto del cerchio più vicino a `pt`; None se `pt` è il centro. |
 | `_radius` | func | `topo/core/geometry/shape.py:135` | Raggio di un pezzo di cerchio; un'ellisse ad assi uguali è un cerchio, esattamente. |
 | `_raw_linetype_pattern` | func | `topo_dxf/adapter.py:40` | Pattern grezzo (lunghezza totale + tratti con segno, `+` = tratto, |
 | `Reach` | class | `topo/core/geometry/measure.py:165` | `segment_reach` di un segmento fissato, per molte direzioni. |
@@ -581,7 +581,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `weld_degenerate_linesegs` | func | `topo/core/base/normalizer.py:415` | Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale |
 | `_width_factor` | func | `topo_dxf/text_extractor.py:163` | Stretch orizzontale effettivo del testo (1.0 = nessuno). |
 | `_winding` | func | `topo/core/geometry/rings.py:125` | Numero di avvolgimento del giro attorno a `point`; None se `point` sta |
-| `_with_nodes` | func | `topo/core/topology/noding.py:704` |  |
+| `_with_nodes` | func | `topo/core/topology/noding.py:707` |  |
 | `with_polygon` | func | `topo/core/primitives/polygon_builder.py:92` | `curve` col poligono che la lettura le ha costruito (fuso con la rete |
 | `_within` | func | `topo/core/primitives/fitting.py:51` | Tutti i punti entro `tolerance` dalla corda primo-ultimo. |
 | `within_diameter` | func | `topo/core/geometry/measure.py:324` | True se ogni coppia di `points` dista al più `limit`: il diametro |
@@ -608,7 +608,7 @@ Same name defined at module level in different modules. Not automatically a bug 
 | `_color_rgb` | `topo/model/role_rule.py:124` · `topo_dxf/adapter.py:63` |
 | `_ends` | `topo/core/geometry/lines.py:28` · `topo/core/geometry/regions.py:115` |
 | `_length` | `topo/core/geometry/regions.py:107` · `topo/core/geometry/shape.py:269` · `topo/core/primitives/fitting.py:168` |
-| `_on_arc` | `topo/core/geometry/intersections.py:139` · `topo/core/readings/outer_scan.py:124` · `topo/core/topology/noding.py:692` |
+| `_on_arc` | `topo/core/geometry/intersections.py:139` · `topo/core/readings/outer_scan.py:124` · `topo/core/topology/noding.py:695` |
 | `_on_line` | `topo/core/geometry/intersections.py:128` · `topo/core/primitives/trim.py:48` |
 | `_place` | `topo/core/base/hierarchy.py:68` · `topo/core/geometry/build.py:21` |
 | `_reach` | `topo/core/geometry/shape.py:263` · `topo/core/geometry/strips.py:139` |
@@ -1154,7 +1154,7 @@ _topo/core/topology/loop_finder.py_
 - `edge_styles_from_loop(loop) -> list` — L61 — Stili grezzi (linetype/colore) di un loop, allineati 1:1 con
 - `loop_geometry(loop) -> Optional[Tuple[list, list, Polygon]]` — L80 — (segmenti, stili, poligono) di un loop; None se i segmenti non chiudono
 
-#### `topo/core/topology/noding.py` — 709 lines
+#### `topo/core/topology/noding.py` — 712 lines
 
 _core/topology/noding.py_
 
@@ -1171,14 +1171,14 @@ _core/topology/noding.py_
 - `_near_pairs(edges: List[Edge], tolerance: float) -> List[Tuple[int, int]]` — L313 — Le coppie (i < j) da giudicare. Il filtro misura sulle discretizzazioni
 - **class** `_Contacts` — L325 — Le fermate dei contatti su ogni edge e i nodi che formano (union-find).
   - methods: `__init__`, `_is_open`, `_stop`, `_find`, `_union`, `_joinable`, `meet`, `_same_contact`, `_drop`, `_place`, `merge_along_edges`, `nodes`, `crossing_roots`, `crossings`, `pieces`
-- `_meetings(a: _Curve, b: _Curve) -> list` — L614 — Dove `a` e `b` si incrociano o si toccano: in forma chiusa fra rette,
-- `_grazing(a: _Curve, b: _Curve) -> Optional[tuple]` — L624 — (punto di `a`, punto di `b`) più vicini fra due curve che non si
-- `_inside(curve: _Curve, pt) -> bool` — L642
-- `_line_circle_near(line: LineSeg, arc) -> Optional[tuple]` — L649 — (piede sulla retta, punto dell'arco) della perpendicolare dal centro.
-- `_circle_circle_near(a: _Curve, b: _Curve) -> Optional[tuple]` — L666 — I due punti più vicini fra due archi, sulla retta dei centri.
-- `_radial(center, radius, pt)` — L684 — Il punto del cerchio più vicino a `pt`; None se `pt` è il centro.
-- `_on_arc(seg, pt) -> bool` — L692 — `pt` (sul cerchio) cade dentro l'arco, lontano dagli estremi.
-- `_with_nodes(edge, seg, decimals, same=None)` — L704
+- `_meetings(a: _Curve, b: _Curve) -> list` — L617 — Dove `a` e `b` si incrociano o si toccano: in forma chiusa fra rette,
+- `_grazing(a: _Curve, b: _Curve) -> Optional[tuple]` — L627 — (punto di `a`, punto di `b`) più vicini fra due curve che non si
+- `_inside(curve: _Curve, pt) -> bool` — L645
+- `_line_circle_near(line: LineSeg, arc) -> Optional[tuple]` — L652 — (piede sulla retta, punto dell'arco) della perpendicolare dal centro.
+- `_circle_circle_near(a: _Curve, b: _Curve) -> Optional[tuple]` — L669 — I due punti più vicini fra due archi, sulla retta dei centri.
+- `_radial(center, radius, pt)` — L687 — Il punto del cerchio più vicino a `pt`; None se `pt` è il centro.
+- `_on_arc(seg, pt) -> bool` — L695 — `pt` (sul cerchio) cade dentro l'arco, lontano dagli estremi.
+- `_with_nodes(edge, seg, decimals, same=None)` — L707
 
 #### `topo/core/topology/non_contour_edges.py` — 98 lines
 

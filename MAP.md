@@ -7357,3 +7357,28 @@ translations on the order).
 **Gate.** G6e, in the 1.0 gate. No name or signature changes; the result
 differs only where the old one depended on the frame. A consumer that relied
 on "first group made" with two candidate groups was reading the frame.
+
+### D198 — G6e group D: a node with several input endpoints is their mean, not the smallest ✅
+`noding.py:524` in the inventory (`min(ends[root])` in `_Contacts.nodes`, at
+:536 before this change). A node of `split_at_crossings` is a union-find
+group of stops; when the group holds endpoints of the input, the node was
+the smallest of them in `(x, y)`. With one distinct endpoint that is the
+endpoint itself. With several — an end 0.009 from a curve and within `node`
+of that curve's own end, or a chain of such — the smallest in `(x, y)` is
+a fact of the frame: a half turn picked the other end, 0.0127 away.
+Reached by `island()` on 5 of the test drawings (anch_03 and its copies,
+regr_01, regr_02; groups up to 0.11 wide), never by `heal()`.
+
+**Rule.** One distinct endpoint: the node is that endpoint, unchanged.
+Several: their mean (`math.fsum`, independent of order), rounded to the node
+grid like a contact node (D113, D194). Between two ends of two curves no
+geometry says which one is the vertex; the mean is the one choice that a
+motion and a reordering of the input (D160) both leave alone. Options
+weighed: the end nearest the mean is a tie with two ends; the end of the
+first edge given depends on input order.
+
+**Held by** `tests/unit/core/test_noding.py::TestEndNodeUnderMotion` (red on
+the old code at a half and a quarter turn, the node 0.0127 from the moved
+one; green within one grid cell). Suite 3012 passed, goldens unchanged, 3:47.
+
+**Gate.** G6e, in the 1.0 gate. No public name or signature changes.

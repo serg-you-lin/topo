@@ -148,13 +148,16 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       una fessura larga quanto la tolleranza dipende da edge che non la
       toccano.
 - [ ] **G6e** `heal()` dipende dal riferimento (aperta il 31 ottobre, in una
-      **SI RIPARTE DA QUI: gruppo D (D191, D193).** Inventario:
+      **SI RIPARTE DA QUI: la voce in coda (D191, D193).** Inventario:
       `_debug/2026-10-31_topo_G6e-inventario/inventario.md` (le ultime
-      sezioni sono lo stato vero). Conto al 2 novembre: **3** (A 0,
-      B 0, C 0, D 2, più una voce
+      sezioni sono lo stato vero). Conto al 2 novembre: **1** (A 0,
+      B 0, C 0, D 0, più la voce
       nuova in coda: `outer_face._network` rifà il noding sulle discretizzazioni,
-      micro-caso rosso, 0 casi sui 31). Prossima: D, `noding.py:524`.
-      Fatte: `shape.py:316, 326` (D197: il gruppo più vicino, non il primo nato), `island.py:148` (innocua: due ospiti dello stesso pezzo sono annidati,
+      micro-caso rosso, 0 casi sui 31). Prossima: `outer_face._network`.
+      Trovato, non contato: `decide_nodes` (`noding.py:148`, `points[0]`) fa del
+      gruppo di capi entro `epsilon` il più piccolo in (x, y), la stessa scelta
+      di D198; non misurato se arriva a una lettura.
+      Fatte: `noding.py:524` (D198: più capi distinti → la loro media; `TestEndNodeUnderMotion`), `shape.py:316, 326` (D197: il gruppo più vicino, non il primo nato), `island.py:148` (innocua: due ospiti dello stesso pezzo sono annidati,
       aree lontane; `TestNestedInUnderMotion`; la `contains` a :146 va al ripasso), `rim.py:214, 215` (corretta: un capo nel mezzo di un segmento
       corto non si aggancia, `TestTrimmedAtTheMiddleUnderMotion`), `rim.py:203` (corretta: gap pari entro FLOAT_NOISE,
       `TestOverlapCutUnderMotion`), `rim.py:171` (corretta: copre un lato solo l'edge che gli corre
@@ -1640,21 +1643,6 @@ Decomposizione
 split() — già ce l'hai
 skeleton() — asse mediano (utile per bend detection avanzato)
 region_decompose() — divide parti complesse in regioni semantiche
-
-
-### Cos'è in poche parole:
-
-Questa libreria è tipo un “riparatore di disegni tecnici”: legge un file DXF, controlla se le linee e le forme sono rotte o confuse, le sistema, trova le parti e gli spazi vuoti, e poi salva un disegno più pulito e ordinato.
-
-In pratica
-Ora: utile per CAD/CAM e automazione industriale.
-Domani: può diventare un sistema di “interpretazione visiva di disegni” se aggiungi:
-classificazione robusta,
-feature detection,
-model di topologia,
-regole di business,
-eventualmente ML/vision.
-
 
 ---
 
