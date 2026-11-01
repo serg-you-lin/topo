@@ -150,12 +150,13 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
 - [ ] **G6e** `heal()` dipende dal riferimento (aperta il 31 ottobre, in una
       **SI RIPARTE DA QUI: gruppo D (D191, D193).** Inventario:
       `_debug/2026-10-31_topo_G6e-inventario/inventario.md` (le ultime
-      sezioni sono lo stato vero). Conto al 2 novembre: **14** (A 0,
-      B 0, C 0, D 13, più una voce
+      sezioni sono lo stato vero). Conto al 2 novembre: **13** (A 0,
+      B 0, C 0, D 12, più una voce
       nuova in coda: `outer_face._network` rifà il noding sulle discretizzazioni,
-      micro-caso rosso, 0 casi sui 31). Prossima: D, `gap_solver.py:250`. Con `rim.py:171, 173` va il difetto
+      micro-caso rosso, 0 casi sui 31). Prossima: D, `intersections.py:99`. Con `rim.py:171, 173` va il difetto
       trovato (una sporgenza prima nell'elenco vince un lato, vedi inventario).
-      Fatte: `normalizer.py:196` (corretta: il fuso va nel verso del primo
+      Fatte: `gap_solver.py:250` (innocua, un incontro solo sui disegni;
+      `test_due_incontri_sulla_continuazione_vince_il_primo`), `normalizer.py:196` (corretta: il fuso va nel verso del primo
       pezzo, non in un verso canonico), `fitting.py:94` (corretta: giro nullo entro FLOAT_NOISE,
       `TestFlatTopUnderMotion`), `rings.py:244, 239` (innocue, test sotto moto in
       `test_rings.py`), `regions.py:269` (innocua, `TestCuspUnderMotion`; in coda: un taglio
