@@ -245,3 +245,63 @@ class TestSegmentsCopiati(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestCopiesOrderUnderMotion(unittest.TestCase):
+    """G6e, gruppo B, `hierarchy.py:82`: due copie congruenti si ordinano per
+    l'angolo del bbox (D166). L'area arrotondata a 1e-6 le diceva pari solo se
+    cadevano nella stessa cella: con l'area a metà cella (10.0000005) l'ultimo
+    bit, che il moto cambia, decideva l'ordine. Prova: a ogni traslazione la
+    copia a sinistra (o in basso) viene prima. Le rotazioni non sono provate:
+    lì cambia davvero quale copia è a sinistra."""
+
+    W, H = 10.0, 1.00000005
+    MOTIONS = [(0.0, dx, dy) for dx in (0.0, 0.3, 1.7, 13.1, 250.0, 2.5e6) for dy in (0.0, 0.7, -9.3, -1.5e6)]
+
+    @staticmethod
+    def _rectangle(x0, y0, w, h):
+        p = [(x0, y0), (x0 + w, y0), (x0 + w, y0 + h), (x0, y0 + h)]
+        return [LineSeg(start=p[i], end=p[(i + 1) % 4]) for i in range(4)]
+
+    def _first_corner(self, offset, motion):
+        from tests.invariants import rigid
+        segment, point = rigid(*motion)
+        segs = self._rectangle(0, 0, self.W, self.H) + self._rectangle(*offset, self.W, self.H)
+        result = topo.heal(topo.load_segments([segment(s) for s in segs]))
+        self.assertEqual(len(result.clusters), 2)
+        return result.clusters[0].bbox[:2], point((0.0, 0.0))
+
+    def test_copie_affiancate_la_sinistra_prima(self):
+        for motion in self.MOTIONS:
+            with self.subTest(motion=motion):
+                corner, origin = self._first_corner((20, 0), motion)
+                self.assertAlmostEqual(corner[0], origin[0], delta=1e-3)
+
+    def test_copie_impilate_la_bassa_prima(self):
+        for motion in self.MOTIONS:
+            with self.subTest(motion=motion):
+                corner, origin = self._first_corner((0, 5), motion)
+                self.assertAlmostEqual(corner[1], origin[1], delta=1e-3)
+
+
+class TestTreeOrderUnderMotion(unittest.TestCase):
+    """G6e, gruppo B, `hierarchy.py:86`: `_build_tree` piazza i contorni dal
+    più grande per `round(area, 6)`. L'ordine decide la forma dell'albero solo
+    fra due contorni di cui uno contiene l'altro, e lì le aree differiscono
+    ben oltre 1e-6 (sui disegni: 344 coppie entro 1e-5, nessuna annidata).
+    Prova: una piastra con due fori congruenti con l'area a metà cella dà a
+    ogni traslazione un cluster con due inner di profondità 1. Non prova
+    l'ordine dei due inner fra loro, che non è un contratto."""
+
+    MOTIONS = [(0.0, dx, dy) for dx in (0.0, 0.3, 13.1, 250.0, 2.5e6) for dy in (0.0, -9.3, -1.5e6)]
+
+    def test_due_fori_congruenti_restano_figli_della_piastra(self):
+        from tests.invariants import rigid
+        rect = TestCopiesOrderUnderMotion._rectangle
+        segs = rect(0, 0, 40, 10) + rect(2, 2, 10, 1.00000005) + rect(22, 2, 10, 1.00000005)
+        for motion in self.MOTIONS:
+            with self.subTest(motion=motion):
+                segment, _ = rigid(*motion)
+                result = topo.heal(topo.load_segments([segment(s) for s in segs]))
+                self.assertEqual(len(result.clusters), 1)
+                self.assertEqual([c.depth for c in result.clusters[0].inners], [1, 1])

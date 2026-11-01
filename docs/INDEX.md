@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`85` modules · `510` module-level functions · `63` classes · `16252` lines of code.
+`85` modules · `511` module-level functions · `63` classes · `16272` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -52,7 +52,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_arrival_direction` | func | `topo/core/topology/graph.py:379` |  |
 | `_assign` | func | `topo/tools/anchor.py:165` |  |
 | `_assign` | func | `topo/tools/split.py:100` | id(cluster) → gli elementi che gli appartengono. Con `covering` vince la |
-| `assign_cluster_refs` | func | `topo/core/base/hierarchy.py:221` | Scrive su ogni curva di `curves` (`result.loose`) `cluster_ref`: l'indice |
+| `assign_cluster_refs` | func | `topo/core/base/hierarchy.py:241` | Scrive su ogni curva di `curves` (`result.loose`) `cluster_ref`: l'indice |
 | `_assign_loose` | func | `topo/tools/split.py:123` | id(cluster) → le curve sciolte che gli vanno, nell'ordine di |
 | `_at` | func | `topo/core/geometry/regions.py:90` |  |
 | `axis_aligned_share` | func | `topo/core/geometry/axis.py:240` | Frazione della lunghezza dei `LineSeg` di `segments` orizzontale o |
@@ -70,7 +70,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `build_metadata` | func | `topo/io/exporter.py:26` | Costruisce il dict dei metadati per un Cluster |
 | `build_node_graph` | func | `topo/core/topology/graph.py:309` | Costruisce il Graph da list[Edge]. |
 | `build_polygon` | func | `topo/core/primitives/polygon_builder.py:20` | Costruisce un Polygon shapely da una lista di primitive geometriche. |
-| `_build_tree` | func | `topo/core/base/hierarchy.py:85` |  |
+| `_build_tree` | func | `topo/core/base/hierarchy.py:105` |  |
 | `_candidates` | func | `topo/core/base/gap_solver.py:226` | (distanza, chiave d'ordine, i, bersaglio) per ogni estremo `i`: ("end", j) un |
 | `_chain` | func | `topo/core/base/normalizer.py:240` | Ordina per `lo` e incatena gli span che si toccano o si sovrappongono: |
 | `_chain` | func | `topo/core/geometry/regions.py:324` | Pezzi orientati incatenati testa-coda in anelli chiusi. Con |
@@ -104,7 +104,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `cluster_passes_min_area` | func | `topo/tools/split.py:95` | True se la parte supera la soglia di area minima (min_area <= 0 = nessun filtro). |
 | `cluster_points` | func | `topo/core/topology/graph.py:206` | Raggruppa punti 2D entro `epsilon` e restituisce {punto -> rappresentante}. |
 | `cluster_values` | func | `topo/core/geometry/axis.py:53` | I valori ordinati, tenendo per ogni gruppo il più piccolo: un valore entro |
-| `_collect_inners` | func | `topo/core/base/hierarchy.py:118` | Appiattisce l'albero di contenimento in `cluster.inners` (ogni discendente |
+| `_collect_inners` | func | `topo/core/base/hierarchy.py:138` | Appiattisce l'albero di contenimento in `cluster.inners` (ogni discendente |
 | `CollinearRun` | class | `topo/core/geometry/lines.py:103` | Tratti sulla stessa retta, in fila lungo di essa. |
 | `_color` | func | `topo/io/view_model.py:31` | Hex CSS di un ruolo: la palette di topo con sopra la mappa del |
 | `color_for_role` | func | `topo_dxf/layers.py:79` | Il colore della palette di topo per `role` (D128) come indice ACI: |
@@ -240,7 +240,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_h` | func | `topo/inspect.py:37` |  |
 | `_header` | func | `topo_dxf/inspect.py:28` |  |
 | `heal` | func | `topo/core/readings/heal.py:41` | Legge `doc` dall'interno: un Cluster per contorno esterno chiuso, |
-| `HierarchyBuilder` | class | `topo/core/base/hierarchy.py:155` |  |
+| `HierarchyBuilder` | class | `topo/core/base/hierarchy.py:175` |  |
 | `_hits` | func | `topo/core/geometry/strips.py:135` |  |
 | `inject` | func | `topo/tools/inject.py:40` | Arricchisce i Cluster con i dati estratti da un `data_injector` esterno. |
 | `_insert_to_degree` | func | `topo/core/primitives/trim.py:165` | Inserisce `t` nel vettore dei nodi finché compare `p` volte (agli |
@@ -297,12 +297,12 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `longest_structural_segment` | func | `topo/tools/rotate.py:89` | `(segment, length, angle_deg)` del segmento più lungo fra |
 | `loop_geometry` | func | `topo/core/topology/loop_finder.py:80` | (segmenti, stili, poligono) di un loop; None se i segmenti non chiudono |
 | `loop_points` | func | `topo/core/topology/loop_finder.py:18` | I punti di un giro [(edge, al contrario)], concatenati senza ripetere i |
-| `loop_to_closed_curve` | func | `topo/core/base/hierarchy.py:24` |  |
+| `loop_to_closed_curve` | func | `topo/core/base/hierarchy.py:25` |  |
 | `loops_to_curves` | func | `topo/core/base/curves.py:27` | Un ClosedCurve per loop, col ruolo del primo edge. Un loop che non fa un |
 | `loose_curves` | func | `topo/core/base/curves.py:49` | Le curve di `loose` (D162): un pezzo che chiude da sé — un segmento |
 | `_loose_ends_warnings` | func | `topo/core/readings/heal.py:186` | Quello che resta aperto anche quando qualcosa si chiude (D111): gli |
 | `_loose_entry` | func | `topo/io/view_model.py:104` |  |
-| `_make_inner` | func | `topo/core/base/hierarchy.py:98` |  |
+| `_make_inner` | func | `topo/core/base/hierarchy.py:118` |  |
 | `_make_polygon` | func | `topo/core/primitives/polygon_builder.py:49` |  |
 | `map_sanitized_item_to_edge` | func | `topo_pdf/graph_adapter.py:12` |  |
 | `_measured_points` | func | `topo_dxf/text_extractor.py:302` | I punti sulla geometria fra cui la quota misura, dai def-point: |
@@ -382,7 +382,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_piece` | func | `topo/core/geometry/regions.py:123` | Il tratto di `seg` fra i parametri `s0` < `s1`, stessa primitiva. |
 | `_piece_side` | func | `topo/core/geometry/regions.py:214` | Da che parte di `polygon` sta un pezzo (fra due tagli non cambia): |
 | `_pieces` | func | `topo/core/readings/outer_scan.py:110` |  |
-| `_place` | func | `topo/core/base/hierarchy.py:67` |  |
+| `_place` | func | `topo/core/base/hierarchy.py:68` |  |
 | `_place` | func | `topo/core/geometry/build.py:21` | Ruota di `angle` gradi attorno all'origine e trasla in `center`. |
 | `_plain` | func | `topo/core/primitives/segments.py:31` | Un punto come tupla di float Python finiti: chi passa numpy o ezdxf non |
 | `_point` | func | `topo_dxf/inspect.py:32` | Formatta un punto (x, y) con nd decimali. |
@@ -462,6 +462,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `rotate_to_longest` | func | `topo/tools/rotate.py:231` | Ruota `result` (già sano, da un `heal()` già fatto dal chiamante) in modo |
 | `round_point` | func | `topo/core/geometry/measure.py:27` |  |
 | `_round_points` | func | `topo/io/view_model.py:38` | Lista di punti (2D o 3D) → lista di [x, y] arrotondati. |
+| `_runs` | func | `topo/core/base/hierarchy.py:94` | `items` (già ordinati) spezzati dove due vicini non stanno `together`. |
 | `_sagitta_step` | func | `topo/core/primitives/segments.py:176` | Angolo massimo di una corda che dista al più `tolerance` dall'arco di |
 | `_same_circle` | func | `topo/core/base/normalizer.py:347` | Stesso cerchio: centri e raggi entro `_SAME_OFFSET` — v. `_same_line`. |
 | `_same_curve` | func | `topo/core/geometry/regions.py:430` | `a` e `b` sono la stessa spline o ellisse (anche girata): incrociate |
@@ -506,7 +507,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_solve_arc_line` | func | `topo/core/base/gap_solver.py:119` |  |
 | `_solve_line_line` | func | `topo/core/base/gap_solver.py:107` |  |
 | `_solve_spline_any` | func | `topo/core/base/gap_solver.py:145` |  |
-| `sort_clusters` | func | `topo/core/base/hierarchy.py:76` | I cluster dal più grande: area esatta dell'outer (a 1e-6 mm², sotto c'è |
+| `sort_clusters` | func | `topo/core/base/hierarchy.py:77` | I cluster dal più grande: area esatta dell'outer, poi a pari area l'angolo |
 | `_Span` | class | `topo/core/base/normalizer.py:224` | Un edge come intervallo [lo, hi] sul suo supporto (posizione lungo la |
 | `_span` | func | `topo/core/geometry/regions.py:56` |  |
 | `spanning_lines` | func | `topo/core/geometry/axis.py:201` | (ys, xs): le coordinate delle linee strettamente interne a `bounds` (bordo |
@@ -608,7 +609,7 @@ Same name defined at module level in different modules. Not automatically a bug 
 | `_length` | `topo/core/geometry/regions.py:107` · `topo/core/geometry/shape.py:269` · `topo/core/primitives/fitting.py:164` |
 | `_on_arc` | `topo/core/geometry/intersections.py:127` · `topo/core/readings/outer_scan.py:124` · `topo/core/topology/noding.py:692` |
 | `_on_line` | `topo/core/geometry/intersections.py:116` · `topo/core/primitives/trim.py:47` |
-| `_place` | `topo/core/base/hierarchy.py:67` · `topo/core/geometry/build.py:21` |
+| `_place` | `topo/core/base/hierarchy.py:68` · `topo/core/geometry/build.py:21` |
 | `_reach` | `topo/core/geometry/shape.py:263` · `topo/core/geometry/strips.py:139` |
 | `_ring` | `topo/core/geometry/lines.py:98` · `topo/io/shapes.py:49` |
 | `_size` | `topo/core/geometry/strips.py:146` · `topo/tools/anchor.py:160` |
@@ -693,17 +694,18 @@ _topo/core/base/gap_solver.py_
 - `_moved_segment(segment, role: str, new_pt: Point2D)` — L417 — Nuovo segmento con l'endpoint `role` spostato su `new_pt`. None se non gestito.
 - `apply_gap_fixes(edges: List[Edge], fixes: List[GapFix]) -> List[Edge]` — L435 — Applica i GapFix restituendo una NUOVA lista di Edge — `edges` non viene mutata.
 
-#### `topo/core/base/hierarchy.py` — 235 lines
+#### `topo/core/base/hierarchy.py` — 255 lines
 
-- `loop_to_closed_curve(loop, role: ContourRole=ContourRole.UNKNOWN, polygon=None, segments: list=None, styles: list=None) -> Optional[ClosedCurve]` — L24
-- `_place(proxy: ClosedCurve, nodes: list) -> bool` — L67
-- `sort_clusters(clusters: list) -> list` — L76 — I cluster dal più grande: area esatta dell'outer (a 1e-6 mm², sotto c'è
-- `_build_tree(proxies: list) -> list` — L85
-- `_make_inner(proxy: ClosedCurve, parent_role: ContourRole=ContourRole.UNKNOWN, depth: int=1, parent: Optional[Contour]=None) -> Contour` — L98
-- `_collect_inners(children: list, inners: list, classified_proxies: set, parent_role: ContourRole=ContourRole.UNKNOWN, depth: int=1, parent: Optional[Contour]=None)` — L118 — Appiattisce l'albero di contenimento in `cluster.inners` (ogni discendente
-- **class** `HierarchyBuilder` — L155
+- `loop_to_closed_curve(loop, role: ContourRole=ContourRole.UNKNOWN, polygon=None, segments: list=None, styles: list=None) -> Optional[ClosedCurve]` — L25
+- `_place(proxy: ClosedCurve, nodes: list) -> bool` — L68
+- `sort_clusters(clusters: list) -> list` — L77 — I cluster dal più grande: area esatta dell'outer, poi a pari area l'angolo
+- `_runs(items: list, together) -> list` — L94 — `items` (già ordinati) spezzati dove due vicini non stanno `together`.
+- `_build_tree(proxies: list) -> list` — L105
+- `_make_inner(proxy: ClosedCurve, parent_role: ContourRole=ContourRole.UNKNOWN, depth: int=1, parent: Optional[Contour]=None) -> Contour` — L118
+- `_collect_inners(children: list, inners: list, classified_proxies: set, parent_role: ContourRole=ContourRole.UNKNOWN, depth: int=1, parent: Optional[Contour]=None)` — L138 — Appiattisce l'albero di contenimento in `cluster.inners` (ogni discendente
+- **class** `HierarchyBuilder` — L175
   - methods: `__init__`, `build`, `_build_parts`, `_collect_loose`
-- `assign_cluster_refs(curves: list, clusters: list, tolerance: float) -> None` — L221 — Scrive su ogni curva di `curves` (`result.loose`) `cluster_ref`: l'indice
+- `assign_cluster_refs(curves: list, clusters: list, tolerance: float) -> None` — L241 — Scrive su ogni curva di `curves` (`result.loose`) `cluster_ref`: l'indice
 
 #### `topo/core/base/normalizer.py` — 555 lines
 
@@ -1698,7 +1700,7 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/core/base/cleanup.py` | `topo.core.base.gap_solver` · `topo.core.geometry.measure` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.model.role` |
 | `topo/core/base/curves.py` | `topo.core.base.hierarchy` · `topo.core.base.normalizer` · `topo.core.geometry.measure` · `topo.core.primitives` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.loop_finder` · `topo.model.curve` · `topo.model.role` |
 | `topo/core/base/gap_solver.py` | `topo.core.geometry.intersections` · `topo.core.geometry.measure` · `topo.core.geometry.regions` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.noding` · `topo.model.role` |
-| `topo/core/base/hierarchy.py` | `topo.core.geometry.integrals` · `topo.core.geometry.measure` · `topo.core.geometry.regions` · `topo.core.primitives.polygon_builder` · `topo.core.topology.loop_finder` · `topo.model.cluster` · `topo.model.contour` · `topo.model.curve` · `topo.model.role` |
+| `topo/core/base/hierarchy.py` | `topo.core.geometry.integrals` · `topo.core.geometry.measure` · `topo.core.geometry.regions` · `topo.core.geometry.rings` · `topo.core.primitives.polygon_builder` · `topo.core.topology.loop_finder` · `topo.model.cluster` · `topo.model.contour` · `topo.model.curve` · `topo.model.role` |
 | `topo/core/base/normalizer.py` | `topo.core.geometry.measure` · `topo.core.primitives.fitting` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.core.topology.noding` · `topo.model.role` |
 | `topo/core/base/prepare.py` | `topo.core.base.cleanup` · `topo.core.base.normalizer` · `topo.core.topology.edge` · `topo.core.topology.noding` |
 | `topo/core/geometry/__init__.py` | `topo.core.geometry.axis` · `topo.core.geometry.build` · `topo.core.geometry.intersections` · `topo.core.geometry.lines` · `topo.core.geometry.measure` · `topo.core.geometry.regions` · `topo.core.geometry.shape` |
