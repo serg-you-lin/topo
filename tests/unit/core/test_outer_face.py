@@ -147,3 +147,48 @@ class TestOverlapFromANodeUnderMotion(unittest.TestCase):
                     moved = reading(read, motion)
                     self.assertEqual(moved[:4], at_rest[:4])
                     self.assertAlmostEqual(moved[4], at_rest[4], delta=1e-2)   # la griglia dei nodi, lontano
+
+
+class TestUnionGridUnderMotion(unittest.TestCase):
+    """G6e, gruppo B, `outer_face.py:41` (`UNION_GRID`): la griglia della rete
+    del ripiego (D100, D179). Sui 31 disegni di `island()` lavora solo sui
+    doppioni a 1e-12 (qui i due cerchi di un disegno ancorato): con la griglia
+    coincidono, senza si incrociano dove dice l'ultimo bit. Prova: la griglia
+    cambia davvero la rete (valore controllato al posto), e la lettura è la
+    stessa a ogni moto e senza griglia. Non prova la finestra di 1e-6 fra due
+    curve distinte: lì decide prima `_network` coi capi sulle tuple (voce a sé
+    dell'inventario G6e)."""
+
+    CIRCLES = [CircleSeg(center=(67.6769804197, 260.3946312001), radius=0.5325),
+               CircleSeg(center=(67.67698041971678, 260.3946312001228), radius=0.5325000000015537)]
+    MOTIONS = [(0.0, 0.0, 0.0), (0.7, 0.0, 0.0), (0.13, 3.1, -7.9), (2.4, -0.37, 0.61),
+               (math.pi / 2, 0.0, 0.0), (0.0, 2.5e6, -1.5e6)]
+
+    def test_la_griglia_lavora_sui_doppioni(self):
+        import shapely
+        from topo.core.topology.graph import build_node_graph
+        from topo.core.topology.outer_face import UNION_GRID, _on_nodes
+        edges = [Edge(role="unknown", start=round_point(segment_endpoints(s)[0]),
+                      end=round_point(segment_endpoints(s)[1]), segment=s)
+                 for s in self.CIRCLES]
+        lines = _on_nodes(edges, build_node_graph(edges, sliver=0.01))
+        on_grid = len(shapely.unary_union(lines, grid_size=UNION_GRID).geoms)
+        exact = len(shapely.unary_union(lines).geoms)
+        self.assertEqual(on_grid, 64)   # i due poligoni coincidono vertice per vertice
+        self.assertLess(exact, 10)      # senza griglia: pochi incroci all'ultimo bit
+
+    def test_la_lettura_non_dipende_dalla_griglia_ne_dal_moto(self):
+        from unittest import mock
+        import topo
+        from topo.core.topology import outer_face as module
+        from tests.invariants import rigid
+        areas = set()
+        for motion in self.MOTIONS:
+            segment, _ = rigid(*motion)
+            for grid in (module.UNION_GRID, None):
+                with self.subTest(motion=motion, grid=grid), mock.patch.object(module, "UNION_GRID", grid):
+                    result = topo.island(topo.load_segments([segment(s) for s in self.CIRCLES]), max_gap=0.0)
+                    self.assertEqual(len(result.clusters), 1)
+                    self.assertEqual(len(result.loose), 1)
+                    areas.add(round(to_shapely(result.clusters[0].outer).area, 9))
+        self.assertEqual(len(areas), 1)   # lo stesso cerchio in ogni moto, con e senza griglia
