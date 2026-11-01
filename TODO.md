@@ -10,6 +10,16 @@ ancora aperto.
 
 ---
 
+## Prima della 1.0, fuori dal cancello: MAP e TODO corte (Federico, 1 novembre)
+
+- [ ] MAP.md (7 300 righe) diventa il registro delle regole in vigore: una voce
+      per regola viva, al massimo 5 righe; una regola superata è una riga
+      ("D59 → D99, D161"); il testo intero in archivio. Obiettivo ≤ 600 righe.
+      Stesso trattamento per questo file: lo stato, non la storia. In una
+      sessione dedicata, a contesto pulito. Non tocca il codice né la
+      superficie pubblica, non entra nel cancello (D193: l'elenco è chiuso).
+      Motivo e numeri: `_debug/2026-11-01_topo_retrospettiva/retrospettiva.md`.
+
 ## IL CANCELLO DELLA 1.0 — si riparte da qui (D148, 22 ottobre)
 
 **Feature freeze.** Questa lista è chiusa: può solo accorciarsi. Quando è
