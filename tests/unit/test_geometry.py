@@ -261,6 +261,32 @@ class TestPointSequenceMath(unittest.TestCase):
         pts = [(x / 10, 0.0) for x in range(11)] + [(1.0, y / 10) for y in range(1, 11)]
         self.assertEqual(douglas_peucker(pts, 0.01), [0, 10, 20])
 
+    def test_008b_douglas_peucker_does_not_depend_on_the_frame(self):
+        # G6e: una S antisimmetrica ha due punti alla stessa distanza dalla
+        # corda; `d > best` teneva il primo, e la rotazione decideva quale
+        # (4 risultati diversi in 200 angoli). Al pari merito si taglia in tutti
+        from tests.invariants import rigid
+        pts = [(x * 0.05, 0.3 * math.sin(x * 0.05 * math.pi)) for x in range(81)]
+        at_rest = douglas_peucker(pts, 0.02)
+        self.assertGreater(len(at_rest), 2)
+        for angle in (0.031, 0.062, 0.093, 0.7, 2.294, math.pi / 2):
+            with self.subTest(angle=angle):
+                _, point = rigid(angle, 0.0, 0.0)
+                self.assertEqual(douglas_peucker([point(p) for p in pts], 0.02), at_rest)
+
+    def test_008c_simplify_points_does_not_depend_on_the_frame(self):
+        # la stessa S fino alle primitive: la sequenza retta/arco/spline non
+        # cambia con la rotazione né lontano dall'origine
+        from tests.invariants import rigid
+        from topo.core.primitives.fitting import simplify_points
+        pts = [(x * 0.05, 0.3 * math.sin(x * 0.05 * math.pi)) for x in range(81)]
+        kinds = lambda ps: [type(q).__name__ for q in simplify_points(ps, tolerance=0.02, scale=0.1, closed=False)]
+        at_rest = kinds(pts)
+        for motion in ((0.7, 0.0, 0.0), (2.294, 0.0, 0.0), (0.031, 3e6, -2.5e6), (0.7, 3e6, -2.5e6)):
+            with self.subTest(motion=motion):
+                _, point = rigid(*motion)
+                self.assertEqual(kinds([point(q) for q in pts]), at_rest)
+
     def test_009_a_right_angle_rounded_by_sampling_is_still_a_corner(self):
         # quadrato 10x10 con gli spigoli smussati su 2 campioni: nessun angolo
         # interno fra vicini sta sotto 90°, la svolta su scala 2 sì
