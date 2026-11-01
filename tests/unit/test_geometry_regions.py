@@ -102,6 +102,42 @@ class TestPointOnContour(unittest.TestCase):
         self.assertIsNone(g.point_on_contour(SQUARE, (4, 1)))
 
 
+class TestCuspUnderMotion(unittest.TestCase):
+    """G6e, gruppo C, `regions.py:269`: concavo è il segno di `cross * area`.
+    A una punta (il contorno torna indietro, 180°) `cross` è 0. Prova: sotto
+    moto la risposta non cambia, perché i due lati di una punta di larghezza
+    zero sono l'uno il rovescio esatto dell'altro anche mossi (cross resta 0
+    esatto), e su una punta larga 1e-9 il segno di cross è geometria, non
+    rumore. Non prova che la risposta a larghezza zero sia giusta: un taglio
+    verso dentro esce convesso (in coda nell'inventario G6e). Non prova la
+    riga dentro le letture: `point_on_contour` non è chiamata da `heal` né da
+    `island`."""
+
+    MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
+               (0.7, 3.1, -2.2), (2.4, -0.37, 0.61), (math.pi / 2, 0.0, 0.0)]
+    RINGS = {
+        "punta fuori": ([(0, 0), (10, 0), (10, 5), (15, 5), (10, 5), (10, 10), (0, 10)], (15, 5)),
+        "taglio dentro": ([(0, 0), (10, 0), (10, 5), (5, 5), (10, 5), (10, 10), (0, 10)], (5, 5)),
+        "punta stretta": ([(0, 0), (10, 0), (10, 5), (15, 5 + 1e-9), (10, 5 + 2e-9),
+                           (10, 10), (0, 10)], (15, 5 + 1e-9)),
+    }
+
+    def test_la_risposta_non_dipende_dal_moto(self):
+        from tests.invariants import rigid
+        for name, (ring, tip) in self.RINGS.items():
+            answers = set()
+            for motion in self.MOTIONS:
+                move_seg, move_pt = rigid(*motion)
+                segs = [move_seg(LineSeg(start=ring[i], end=ring[(i + 1) % len(ring)]))
+                        for i in range(len(ring))]
+                p = g.point_on_contour(segs, move_pt(tip), tolerance=1e-12)
+                answers.add((p.kind, round(p.turn_deg, 6), p.concave))
+            with self.subTest(ring=name):
+                self.assertEqual(len(answers), 1, answers)
+        # la punta stretta verso fuori è convessa: il segno di cross è vero
+        self.assertEqual(answers, {("vertex", 180.0, False)})
+
+
 class TestNearestPoint(unittest.TestCase):
     """Il punto del contorno più vicino a un punto qualunque (es. un click)."""
 
