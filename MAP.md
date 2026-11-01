@@ -7447,3 +7447,18 @@ and on the 121; `island()` ~3% (D200 pairs) and ~10% (nesting) slower on the
 121; suite 3:49 → 4:15. Held by `test_islands.py::TestGapOnTrueCurvesUnderMotion`
 and `test_island.py::TestHostOfATinyPieceUnderMotion` (red before, green
 after). Gate: G6e, in the 1.0 gate; no public name changes.
+
+### D201 — G6e closed for 1.0 on D193's bar; three residues of the sweep go to 1.x ✅
+D193's three points: the inventory is closed (last line D199); the re-pass
+at the call sites corrected `islands.py:66` and `island.py:146` (D200); the
+snapdraw sweep (`scripts/21_sweep_invariants.py`, the 121 drawings of
+31 October) ran once on `b10aa2b`. `island()` keeps every invariant on all
+121. `heal()` changes its reading under a motion on 2 drawings, down from
+32 (sweep indices 8 and 62: one small face 1 mm wide becomes an outer instead
+of an inner; 60 → 56 inners). One drawing (index 79) went past the 300 s
+limit; on 31 October it took 133 s. Found during the re-pass and not
+corrected: in `heal()` a hole tangent from inside to the outer can read as
+two clusters depending on the motion (`hierarchy.py:70`, `contains` between
+discretized polygons; built case in
+`_debug/2026-10-31_topo_G6e-inventario/attrezzi/case_hier70.py`). By D193
+these are known issues, fixed in a 1.x patch; G6e leaves the gate.

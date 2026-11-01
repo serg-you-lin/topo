@@ -147,8 +147,10 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       sono le corde (`TestChordsKeepTheOuter`, `KNOWN_CHORDS`): l'esito su
       una fessura larga quanto la tolleranza dipende da edge che non la
       toccano.
-- [ ] **G6e** `heal()` dipende dal riferimento (aperta il 31 ottobre, in una
-      **SI RIPARTE DA QUI: il ripasso di D193 punto 2, poi la passata sui 121.**
+- [x] **G6e** chiusa il 2 novembre (MAP D201): inventario chiuso (D199),
+      ripasso (D200), passata sui 121 una volta: 3 residui, elencati in D201
+      per 1.x. Il testo sotto è la storia.
+      `heal()` dipende dal riferimento (aperta il 31 ottobre, in una
       Inventario chiuso: **0** (MAP D199: `outer_face._network` resta, difetto
       noto per 1.x, `TestChordContactUnderMotion`). Inventario:
       `_debug/2026-10-31_topo_G6e-inventario/inventario.md` (le ultime
