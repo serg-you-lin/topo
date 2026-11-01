@@ -9,7 +9,7 @@ from ...model.contour import Contour
 from ...model.role import ContourRole, is_structural_role
 from ..primitives.polygon_builder import curve_polygon, with_polygon
 from ..geometry.integrals import ring_area
-from ..geometry.measure import FLOAT_NOISE, circular_geometry, track_points
+from ..geometry.measure import FLOAT_NOISE, circular_geometry, noise_runs, track_points
 from ..geometry.rings import ring_perimeter
 from ..geometry.regions import enclosing
 
@@ -83,23 +83,12 @@ def sort_clusters(clusters: list) -> list:
     """
     ordered = []
     by_area = sorted(clusters, key=lambda c: -c.outer.area)
-    for same_area in _runs(by_area, lambda a, b: a.outer.area - b.outer.area
+    for same_area in noise_runs(by_area, lambda a, b: a.outer.area - b.outer.area
                            <= FLOAT_NOISE * ring_perimeter(a.outer.segments)):
         by_x = sorted(same_area, key=lambda c: c.bbox[0])
-        for same_x in _runs(by_x, lambda a, b: b.bbox[0] - a.bbox[0] <= FLOAT_NOISE):
+        for same_x in noise_runs(by_x, lambda a, b: b.bbox[0] - a.bbox[0] <= FLOAT_NOISE):
             ordered += sorted(same_x, key=lambda c: c.bbox[1])
     return ordered
-
-
-def _runs(items: list, together) -> list:
-    """`items` (già ordinati) spezzati dove due vicini non stanno `together`."""
-    runs = []
-    for item in items:
-        if runs and together(runs[-1][-1], item):
-            runs[-1].append(item)
-        else:
-            runs.append([item])
-    return runs
 
 
 def _build_tree(proxies: list) -> list:

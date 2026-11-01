@@ -7325,3 +7325,35 @@ So G6e goes on as D191/D193 say. Snap rounding and exact predicates were
 also weighed and do not answer G6e: a grid fixed to the axes moves under a
 rotation (the defect D180 removed), and an exact predicate answers exactly
 on the rotated doubles, where a tie at rest is no tie any more.
+
+### D197 — G6e group D: a circle joins the nearest concentric group, not the first one made ✅
+`shape.py:316, 326` (`concentric_groups`, public since D91; no reading of
+topo calls it, snapdraw and snapbend do). The inventory said "used by
+`island`": it is not.
+
+What it decided: circles sorted by diameter, then by centre `(x, y)`; each
+one joined the *first* group made whose reference centre lay within
+`tolerance`. Diameter order is a fact of the geometry; at equal diameter the
+order came from `(x, y)`, which a rotation changes. Two equal holes 0.15
+apart and a larger circle 0.06 from one and 0.09 from the other: the large
+one went with the hole of smaller x, so a half turn moved it to the other
+(4 motions of 9). Two equal circles within `tolerance` gave the group the
+reference of the smaller x; the groups' final order on `(x, y)` broke on an
+ulp for holes stacked at one x.
+
+**Rule.** Among the groups within `tolerance` a circle joins the nearest
+(centre distance, invariant); equidistant within `FLOAT_NOISE`, the group
+made first. Diameters equal within `FLOAT_NOISE` keep the order of `items`,
+which a motion does not change, so the reference of a group is the first
+circle given. Groups are ordered by `x`, then `y`, equal within
+`FLOAT_NOISE` as D195. The run-splitting helper of D195 moved from
+`base/hierarchy.py` to `geometry/measure.py` (`noise_runs`), one copy for
+both.
+
+**Held by** `tests/unit/core/test_concentric.py::TestConcentricGroupsUnderMotion`
+(red on the old code: 4 of 9 motions on each partition case, 2 of 4
+translations on the order).
+
+**Gate.** G6e, in the 1.0 gate. No name or signature changes; the result
+differs only where the old one depended on the frame. A consumer that relied
+on "first group made" with two candidate groups was reading the frame.

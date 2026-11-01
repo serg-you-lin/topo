@@ -547,7 +547,10 @@ topo.geometry.concentric_groups(items, *, tolerance=0.1) -> list[ConcentricGroup
 I contorni circolari di `items` (come per `contour_shape`) raggruppati per
 centro: ogni cerchio sta in un solo gruppo, anche da solo; i non circolari non
 compaiono. `tolerance` è la distanza massima fra i centri, in unità del
-disegno. Fatto geometrico: due cerchi concentrici non sono una svasatura,
+disegno; fra più gruppi entro `tolerance` un cerchio entra nel più vicino.
+A pari diametro il riferimento del gruppo è il primo dato; gruppi ordinati
+per centro (x, y), pari entro il rumore: la partizione non dipende dal
+riferimento (D197). Fatto geometrico: due cerchi concentrici non sono una svasatura,
 come accoppiarli lo decide il consumatore (D91).
 
 `ConcentricGroup`: `center` (del cerchio più piccolo), `items` e `shapes`
