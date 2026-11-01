@@ -107,7 +107,6 @@ def _closest_to(candidates: List[Point], ref: Point) -> Optional[Point]:
 # Due primitive qualunque
 # ---------------------------------------------------------------------------
 
-_ON = 1e-9            # quanto un punto può sforare un capo e restare sul tratto
 _SAME_POINT = 1e-7    # due radici più vicine di così sono lo stesso punto
 CURVE_TOLERANCE = 1e-4  # discretizzazione di spline ed ellissi per incrociarle
 
@@ -127,14 +126,17 @@ def _on_line(seg: LineSeg, pt: Point) -> bool:
     if l2 == 0:
         return False
     t = ((pt[0] - seg.start[0]) * dx + (pt[1] - seg.start[1]) * dy) / l2
-    return -_ON <= t <= 1 + _ON
+    # sul tratto se sfora un capo al più del rumore dei double, in mm (G6e)
+    slack = FLOAT_NOISE / math.sqrt(l2)
+    return -slack <= t <= 1 + slack
 
 
 def _on_arc(seg, pt: Point) -> bool:
     if isinstance(seg, CircleSeg):
         return True
     s = angle_from_start(seg.center, seg.start_angle, seg.ccw, pt)
-    return s <= seg._sweep() + _ON or s >= 2 * math.pi - _ON
+    slack = FLOAT_NOISE / seg.radius   # lo stesso sforamento in mm, come angolo
+    return s <= seg._sweep() + slack or s >= 2 * math.pi - slack
 
 
 def _meet(a, b) -> List[Point]:
