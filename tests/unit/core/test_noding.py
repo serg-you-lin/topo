@@ -139,3 +139,27 @@ class TestRenode(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestNodesUnderMotion(unittest.TestCase):
+    """G6e, gruppo B: `renode` arrotondava ogni capo da sé. Due archi di una
+    polilinea con bulge (passo 0.004 mm) hanno il vertice comune in due copie
+    a 1 ulp; con un bordo di cella fra loro diventano due nodi, e
+    `decide_nodes` non li riunisce in un gruppo più largo di `epsilon` (D186):
+    la catena si spezzava."""
+
+    def test_un_vertice_su_un_bordo_di_cella_resta_un_nodo(self):
+        from collections import Counter
+        import topo
+        from tests.invariants import rigid
+        from topo.core.topology.noding import decide_nodes
+        pts = [(k * 0.004, 0.002 * math.sin(k * 0.7)) for k in range(60)]
+        arcs = [ArcSeg.from_chord(a, b, 0.02 if i % 2 else -0.02) for i, (a, b) in enumerate(zip(pts, pts[1:]))]
+        # al posto; i vertici a metà fra due celle di 1e-3; e ruotato
+        for motion in [(0.0, 0.0, 0.0), (0.0, 3000000.0005, -2500000.000476336),
+                       (0.1, 3000000.0001767986, -2500000.0004505813)]:
+            with self.subTest(motion=motion):
+                segment, _ = rigid(*motion)
+                out, _ = decide_nodes(topo.load_segments([segment(a) for a in arcs]).edges)
+                ends = Counter(n for e in out for n in (e.start, e.end))
+                self.assertEqual(sorted(ends.values()).count(1), 2)

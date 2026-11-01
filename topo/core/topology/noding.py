@@ -48,7 +48,7 @@ from ..primitives.segments import (
     segment_endpoints, segment_is_closed,
 )
 
-from ..geometry.measure import NODE_DECIMALS, within_diameter   # tagli ed estremi sulla stessa griglia di tutto topo (D113)
+from ..geometry.measure import FLOAT_NOISE, NODE_DECIMALS, within_diameter   # tagli ed estremi sulla stessa griglia di tutto topo (D113)
 from .graph import cluster_points, connected_groups
 
 GRAPH_EPSILON = 0.01   # mm — due nodi così vicini sono uno solo per il grafo (heal, ripiego D100)
@@ -56,6 +56,13 @@ GRAPH_EPSILON = 0.01   # mm — due nodi così vicini sono uno solo per il grafo
 _EPS = 1e-9
 _MIN_PIECE = 1e-4   # mm — sotto, lo spezzone non viene creato
 _EXACT = (LineSeg, ArcSeg, CircleSeg)
+
+
+def _is_loop(seg) -> bool:
+    """La curva torna su se stessa: un cerchio, o una spline/ellisse coi capi
+    entro DEFAULT_TOLERANCE. Una retta o un arco mai: un tratto corto è un
+    tratto, con due capi da nodare (D56), non un anello (G6e)."""
+    return isinstance(seg, CircleSeg) or (not isinstance(seg, _EXACT) and segment_is_closed(seg))
 # mm — spline ed ellissi si misurano su questa discretizzazione: la griglia
 # dei nodi, sotto la quale due punti non si distinguono comunque (D113)
 _FINE = 10.0 ** -NODE_DECIMALS
@@ -106,8 +113,13 @@ class NodedEdges:
 def renode(edges: List[Edge], decimals: int = NODE_DECIMALS) -> List[Edge]:
     """Nodi di ogni Edge ricalcolati dal punto reale del segmento a
     `decimals`: un contatto a T si riconosce solo se estremi e tagli stanno
-    sulla stessa griglia. Gli edge chiusi restano come sono."""
-    return [e if segment_is_closed(e.segment) else _with_nodes(e, e.segment, decimals)
+    sulla stessa griglia. Gli edge chiusi restano come sono.
+    Due capi reali entro FLOAT_NOISE sono lo stesso punto (D183) e si
+    arrotondano una volta: due copie a 1 ulp di un vertice non cadono in due
+    celle (G6e)."""
+    ends = [p for e in edges if not _is_loop(e.segment) for p in segment_endpoints(e.segment)]
+    same = cluster_points(ends, FLOAT_NOISE)
+    return [e if _is_loop(e.segment) else _with_nodes(e, e.segment, decimals, same)
             for e in edges]
 
 
@@ -125,7 +137,7 @@ def decide_nodes(edges: List[Edge], epsilon: float = GRAPH_EPSILON) -> Tuple[Lis
     comune. Ritorna (edge, quanti saldati così).
     """
     edges = renode(edges)
-    ends = sorted({p for e in edges if not segment_is_closed(e.segment) for p in (e.start, e.end)})
+    ends = sorted({p for e in edges if not _is_loop(e.segment) for p in (e.start, e.end)})
     index = {p: k for k, p in enumerate(ends)}
     near = cluster_points(ends, epsilon)
     groups = connected_groups(len(ends), [(index[p], index[q]) for p, q in near.items() if p != q])
@@ -139,7 +151,7 @@ def decide_nodes(edges: List[Edge], epsilon: float = GRAPH_EPSILON) -> Tuple[Lis
     out, welded = [], 0
     for edge in edges:
         start, end = target.get(edge.start, edge.start), target.get(edge.end, edge.end)
-        if start == end and edge.start != edge.end and not segment_is_closed(edge.segment):
+        if start == end and edge.start != edge.end and not _is_loop(edge.segment):
             welded += 1
             continue
         out.append(edge if (start, end) == (edge.start, edge.end) else replace(edge, start=start, end=end))
@@ -210,7 +222,7 @@ class _Curve:
         self.seg = seg
         self._fine = None
         self._length = None
-        self.closed = isinstance(seg, CircleSeg) or (not isinstance(seg, _EXACT) and segment_is_closed(seg))
+        self.closed = _is_loop(seg)
 
     @property
     def length(self) -> float:
@@ -689,7 +701,9 @@ def _on_arc(seg, pt) -> bool:
 # Nodi
 # ---------------------------------------------------------------------------
 
-def _with_nodes(edge, seg, decimals):
+def _with_nodes(edge, seg, decimals, same=None):
     s, e = segment_endpoints(seg)
+    if same is not None:
+        s, e = same.get(s, s), same.get(e, e)
     r = lambda pt: (round(pt[0], decimals), round(pt[1], decimals))
     return replace(edge, start=r(s), end=r(e), segment=seg)
