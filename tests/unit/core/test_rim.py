@@ -9,11 +9,12 @@ facce per giro di `island()` non ci sono più: island non costruisce inner
 import math
 import unittest
 
-from shapely.geometry import Polygon, box
+from shapely.geometry import Point, Polygon, box
 
 from topo.core.primitives.polygon_builder import build_polygon
 from topo.core.primitives.segments import ArcSeg, LineSeg, segment_endpoints
 from topo.core.topology.edge import Edge
+from topo.core.topology import rim
 from topo.core.topology.rim import face_segments, off_rim
 
 BAND = 0.02
@@ -98,6 +99,44 @@ class TestOffRimCutsUnderMotion(unittest.TestCase):
                 # il capo interno è sul nodo del contorno, non su una cella
                 inner = segment_endpoints(left[0].segment)[1]
                 self.assertLess(math.dist(inner, corner), 1e-12)
+
+
+class TestSenseOfAPerpendicularSpur(unittest.TestCase):
+    """G6e, gruppo C, `rim.py:152`: il verso di un edge rispetto a un lato è il
+    segno di un prodotto scalare, `>= 0`. Una sporgenza perpendicolare che
+    tocca il punto medio di un lato ha prodotto 0 a riposo e rumore (±4e-15)
+    sotto moto: il suo verso cambia col moto. Prova: il verso cambia davvero
+    (la riga è raggiunta col valore nullo) e l'uscita di `face_segments` no,
+    perché il lato lo tiene il suo edge. Non prova la riga dentro `island()`:
+    sui disegni tracciati `face_segments` non è mai chiamata. Non prova il caso
+    in cui la sporgenza vince il lato (sporgenza prima nell'elenco): quella è
+    la parità di `_rim_runs`, riga D dell'inventario."""
+
+    MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
+               (0.7, 3.1, -2.2), (math.pi / 2, 0.0, 0.0)]
+    SQUARE = [(0, 0), (10, 0), (10, 10), (0, 10)]
+
+    def test_il_verso_cambia_l_uscita_no(self):
+        from tests.invariants import rigid
+        senses, outputs = set(), set()
+        for motion in self.MOTIONS:
+            with self.subTest(motion=motion):
+                move_seg, move_pt = rigid(*motion)
+                edges = [_line(self.SQUARE[i], self.SQUARE[(i + 1) % 4]) for i in range(4)]
+                edges.append(_line((5, 0), (5, -3)))
+                edges = [Edge(role="unknown", start=move_pt(e.start), end=move_pt(e.end),
+                              segment=move_seg(e.segment)) for e in edges]
+                polygon = Polygon([move_pt(p) for p in self.SQUARE])
+                # il verso della sporgenza sul lato di sotto, come lo calcola la riga
+                p, q = move_pt((0, 0)), move_pt((10, 0))
+                mid = Point((p[0] + q[0]) / 2, (p[1] + q[1]) / 2)
+                senses.add(rim._sense(rim.edge_geometry(edges[4]), mid, p, q, BAND))
+                segments, _, used = face_segments(edges, polygon, BAND)
+                self.assertEqual(sorted(used), [0, 1, 2, 3])
+                outputs.add(tuple(sorted(round(math.dist(*segment_endpoints(s)), 9)
+                                         for s in segments)))
+        self.assertEqual(senses, {1, -1})
+        self.assertEqual(outputs, {(10.0, 10.0, 10.0, 10.0)})
 
 
 if __name__ == "__main__":
