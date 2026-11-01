@@ -28,6 +28,19 @@ def round_point(pt, decimals: int = NODE_DECIMALS) -> Tuple:
     return (round(float(pt[0]), decimals), round(float(pt[1]), decimals))
 
 
+def noise_runs(items: list, together) -> list:
+    """`items` (già ordinati) spezzati dove due vicini non stanno `together`:
+    "pari entro il rumore" si incatena lungo i valori ordinati, così non
+    dipende dall'ordine d'ingresso (D195)."""
+    runs = []
+    for item in items:
+        if runs and together(runs[-1][-1], item):
+            runs[-1].append(item)
+        else:
+            runs.append([item])
+    return runs
+
+
 # ---------------------------------------------------------------------------
 # Archi e bulge
 # ---------------------------------------------------------------------------

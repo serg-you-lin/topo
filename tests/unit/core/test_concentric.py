@@ -49,6 +49,51 @@ class TestConcentricGroups(unittest.TestCase):
         self.assertIs(topo.geometry.arcs_around, arcs_around)
 
 
+def _moved(p, angle, shift):
+    c, s = math.cos(angle), math.sin(angle)
+    return (c * p[0] - s * p[1] + shift[0], s * p[0] + c * p[1] + shift[1])
+
+
+MOTIONS = [(0.0, (0, 0)), (math.pi, (0, 0)), (2.0, (1e5, 3e4)), (0.5, (-7, 3)),
+           (math.pi / 2, (0, 0)), (4.1, (-3e5, 2e5)), (1.0, (0.3, 0)), (3.0, (5e4, -5e4)), (5.5, (1, 1))]
+
+
+class TestConcentricGroupsUnderMotion(unittest.TestCase):
+    """G6e: la partizione non dipende dal riferimento."""
+
+    def test_il_cerchio_grande_va_col_centro_piu_vicino(self):
+        # A e B uguali a 0.15 (due gruppi); C più grande a 0.06 da A e 0.09 da B:
+        # entra in A. Prima entrava nel gruppo nato prima, cioè nel centro con
+        # la x minore, e una rotazione di 180° lo mandava in B.
+        spec = [((0, 0), 2), ((0.15, 0), 2), ((0.06, 0), 4)]
+        for angle, shift in MOTIONS:
+            with self.subTest(angle=angle, shift=shift):
+                items = [_circle(_moved(c, angle, shift), r) for c, r in spec]
+                parts = {tuple(items.index(list(i)) for i in g.items) for g in concentric_groups(items)}
+                self.assertEqual(parts, {(0, 2), (1,)})
+
+    def test_a_pari_diametro_il_riferimento_e_il_primo_dato(self):
+        # A e B uguali a 0.05 (un gruppo): il centro del gruppo è quello di A,
+        # il primo dato, in ogni riferimento; D a 0.09 da A e 0.14 da B ci entra.
+        spec = [((0, 0), 2), ((0.05, 0), 2), ((-0.09, 0), 4)]
+        for angle, shift in MOTIONS:
+            with self.subTest(angle=angle, shift=shift):
+                items = [_circle(_moved(c, angle, shift), r) for c, r in spec]
+                (group,) = concentric_groups(items)
+                self.assertEqual(group.items, (items[0], items[1], items[2]))
+                self.assertEqual(group.center, items[0][0].center)
+
+    def test_gruppi_impilati_restano_in_ordine_di_y(self):
+        # Due fori uno sopra l'altro, stessa x a riposo: una traslazione sposta
+        # le x di un ulp, l'ordine resta quello delle y.
+        for shift in [(0, 0), (0.1, 0), (1e5 + 0.3, 7), (-3e5 + 0.7, 0)]:
+            with self.subTest(shift=shift):
+                low = _circle((0.1 + shift[0], 0 + shift[1]), 2)
+                high = _circle((0.3 - 0.2 + shift[0], 10 + shift[1]), 2)
+                groups = concentric_groups([high, low])
+                self.assertEqual([g.items for g in groups], [(low,), (high,)])
+
+
 class TestArcsAround(unittest.TestCase):
 
     def _arc(self, c, r, sweep_deg):

@@ -21,7 +21,7 @@ from typing import Optional, Tuple
 
 from shapely.geometry import Polygon
 
-from .measure import Reach, chord_angle_deg, golden_max
+from .measure import FLOAT_NOISE, Reach, chord_angle_deg, golden_max, noise_runs
 from ..primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, segment_endpoints, segment_is_closed
 
 Point = Tuple[float, float]
@@ -307,23 +307,31 @@ class ConcentricGroup:
 def concentric_groups(items, *, tolerance: float = CONCENTRIC_TOLERANCE) -> list[ConcentricGroup]:
     """
     Partizione dei contorni circolari di `items` per centro: ogni cerchio sta
-    in un solo gruppo, anche da solo. Un cerchio entra nel gruppo il cui
-    centro dista al più `tolerance` dal suo; i non circolari non compaiono.
-    Gruppi ordinati per centro (x, y).
+    in un solo gruppo, anche da solo. Un cerchio entra, fra i gruppi il cui
+    centro dista al più `tolerance` dal suo, nel più vicino; i non circolari
+    non compaiono. Gruppi ordinati per centro (x, y), pari entro il rumore.
     """
-    circles = [(item, shape) for item in items
-               if (shape := contour_shape(item)) is not None and shape.kind == CIRCLE]
-    circles.sort(key=lambda c: (c[1].length, c[1].center))
+    circles = sorted(((k, item, shape) for k, item in enumerate(items)
+                      if (shape := contour_shape(item)) is not None and shape.kind == CIRCLE),
+                     key=lambda c: c[2].length)
+    # a pari diametro entro il rumore decide l'ordine dato, che un moto non cambia (G6e)
+    circles = [c for run in noise_runs(circles, lambda a, b: b[2].length - a[2].length <= FLOAT_NOISE)
+               for c in sorted(run, key=lambda c: c[0])]
     groups: list[list] = []
-    for item, shape in circles:
-        group = next((g for g in groups if math.dist(g[0][1].center, shape.center) <= tolerance), None)
-        if group is None:
+    for _, item, shape in circles:
+        near = [(math.dist(g[0][1].center, shape.center), g) for g in groups]
+        near = [(d, g) for d, g in near if d <= tolerance]
+        if not near:
             groups.append([(item, shape)])
-        else:
-            group.append((item, shape))
+            continue
+        closest = min(d for d, _ in near)
+        # equidistante entro il rumore: il gruppo nato prima
+        next(g for d, g in near if d - closest <= FLOAT_NOISE).append((item, shape))
     out = [ConcentricGroup(tuple(g[0][1].center), tuple(i for i, _ in g), tuple(s for _, s in g))
            for g in groups]
-    return sorted(out, key=lambda g: g.center)
+    by_x = sorted(out, key=lambda g: g.center[0])
+    return [g for run in noise_runs(by_x, lambda a, b: b.center[0] - a.center[0] <= FLOAT_NOISE)
+            for g in sorted(run, key=lambda g: g.center[1])]
 
 
 @dataclass(frozen=True)
