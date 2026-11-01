@@ -3,7 +3,7 @@ tests/drawings.py
 -----------------
 I disegni del repo su cui girano le promesse della 1.0 (D143, D158): ogni DXF
 tracciato da git, con la sua lettura (D152) — quelli di `golden_islands/` e
-`golden_anchoring/` sono fogli di viste e si leggono con `island()`, gli altri
+`golden_anchoring/` sono fogli di viste e si leggono con `outlines()`, gli altri
 con `heal()`. Le copie identiche contano una volta. Un disegno nuovo che entra
 nel repo ha tutte le invarianti senza scrivere niente.
 """

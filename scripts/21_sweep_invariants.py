@@ -4,7 +4,7 @@
 
 Le promesse che la suite controlla sui disegni del repo (tests/invariants.py,
 D143, D158), provate su disegni che il repo non ha: ogni DXF della cartella,
-letto con `heal()` e con `island()` (due letture, mai in fila), che il
+letto con `heal()` e con `outlines()` (due letture, mai in fila), che il
 repo non contenga già (stesso contenuto). Per ogni lettura:
 
     raises      la lettura non solleva
@@ -96,7 +96,7 @@ def check_one(path: Path) -> dict:
     """Le due letture di un disegno, con le loro invarianti."""
     import topo
     import topo_dxf
-    from topo.core.readings.island import GRAPH_EPSILON
+    from topo.core.topology.noding import GRAPH_EPSILON
     from topo.core.primitives.segments import DEFAULT_TOLERANCE
     report = {}
     try:
@@ -106,9 +106,9 @@ def check_one(path: Path) -> dict:
     except Exception as exc:  # noqa: BLE001  — un file che non si apre non è un difetto di lettura
         return {"load": f"{type(exc).__name__}: {exc}"}
     report["edges"] = len(heal_doc.edges)
-    report["heal"] = _check_reading("heal", heal_doc, lambda d: topo.heal(d, tolerance=HEAL_TOLERANCE),
+    report["heal"] = _check_reading("heal", heal_doc, lambda d: topo.heal(d, tolerance=HEAL_TOLERANCE).faces(),
                                     HEAL_TOLERANCE, 2 * DEFAULT_TOLERANCE)
-    report["island"] = _check_reading("island", island_doc, lambda d: topo.island(d, max_gap=MAX_GAP),
+    report["island"] = _check_reading("island", island_doc, lambda d: topo.heal(d, max_gap=MAX_GAP).outlines(),
                                       MAX_GAP, 2 * (DEFAULT_TOLERANCE + GRAPH_EPSILON))
     return report
 

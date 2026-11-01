@@ -41,7 +41,7 @@ def _make_test(dxf_path):
         msp = ezdxf.readfile(str(dxf_path)).modelspace()
 
         topo_doc = topo_dxf.document_from_msp(msp)
-        result = topo.heal(topo_doc)
+        result = topo.heal(topo_doc).faces()
         doc_out = topo_dxf.to_dxf(result, topo_doc)
         topo.inject(result)
 

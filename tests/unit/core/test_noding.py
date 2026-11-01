@@ -259,7 +259,7 @@ class TestCrossingNodesUnderMotion(unittest.TestCase):
         for motion in [(0.0, 0.0, 0.0), (0.8126685826151423, -0.5047703326061714, -0.21810059373354584)]:
             with self.subTest(motion=motion):
                 segment, _ = rigid(*motion)
-                result = topo.island(topo.load_segments([segment(s) for s in self.SEGMENTS]), max_gap=0.0)
+                result = topo.heal(topo.load_segments([segment(s) for s in self.SEGMENTS]), max_gap=0.0).outlines()
                 self.assertEqual(len(result.clusters), 1)
                 self.assertEqual(len(result.clusters[0].outer.segments), 3)
                 self.assertEqual(len(result.loose), 5)

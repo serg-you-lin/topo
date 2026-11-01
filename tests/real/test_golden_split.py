@@ -141,7 +141,7 @@ def _get_parent_split_cache(parent_path: Path, tolerance: float) -> dict:
     atexit.register(shutil.rmtree, output_folder, ignore_errors=True)
 
     doc = topo_dxf.load_dxf(parent_path, explode_inserts=True, tolerance=tolerance)
-    result = topo.heal(doc, tolerance=tolerance)
+    result = topo.heal(doc, tolerance=tolerance).faces()
 
     if result.is_valid and result.clusters:
         parts = topo.split(

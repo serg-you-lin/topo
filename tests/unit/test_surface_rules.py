@@ -37,7 +37,6 @@ DATA = {
     'topo.validate_document': ('doc',),
     'topo.validate_result': ('result',),
     'topo.heal': ('doc',),
-    'topo.island': ('doc',),
     'topo.split': ('result',),
     'topo.inject': ('result',),
     'topo.anchor_texts': ('result',),

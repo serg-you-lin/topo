@@ -38,7 +38,7 @@ class _Mark:
 
 def _result(path):
     doc = topo_dxf.load_dxf(str(path), tolerance=0.5)
-    result = topo.heal(doc)
+    result = topo.heal(doc).faces()
     for cluster in result.clusters:
         marks = []
         for inner in cluster.inners:

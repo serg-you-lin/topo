@@ -5,12 +5,13 @@ Tutto ciò che topo espone senza promessa di stabilità (MAP.md D175 C, D176):
 si usa, ma può cambiare in una minor. Un nome che diventa stabile si promuove
 in una minor; qui resta come alias con avviso per due minor.
 
-- i passi di `heal()` e della lettura per isole, uno per funzione (D117):
-  `topo.heal()` e `topo.island()` sono le composizioni di default; chi
+- i passi di `heal()` e delle sue letture, uno per funzione (D117):
+  `topo.heal()`, `Network.faces()` e `Network.outlines()` sono le
+  composizioni di default; chi
   compone la sua ricetta (D58, D62) prende i mattoni da qui, per esempio
   senza `build_hierarchy` finché non ha deciso da sé cosa significa un
   contorno dentro un altro;
-- `read_islands` / `read_island` / `IslandReading`: `island()` prima di
+- `read_outlines` / `read_outline` / `OutlineReading`: `outlines()` prima di
   diventare un `Result` (D58);
 - `simplify_points` (D33, D141), `rotate_*` (D46), `to_nester_input` (D18),
   `to_view_model` / `to_svg` / `save_svg` (D133), `to_text` / `save_text` (D84);
@@ -32,7 +33,7 @@ from .core.base.normalizer import (merge_collinear_overlaps, merge_cocircular_ov
 from .core.base.cleanup import (split_labeled, close_free_gaps, dangling_splines, close_near_full_arcs, NEAR_FULL_ARC_MISSING)
 from .core.readings.heal_steps import (find_non_contour_edges, find_joining_edges, free_ends, structural_loops, build_hierarchy)
 from .core.base.curves import loops_to_curves, loose_curves
-from .core.readings.island import read_islands, read_island, IslandReading
+from .core.readings.outline import read_outlines, read_outline, OutlineReading
 from .core.primitives.fitting import simplify_points
 from .tools.rotate import rotate_result, rotate_cluster, rotate_document, rotate_to_longest
 from .io.exporter import to_nester_input
@@ -56,7 +57,7 @@ __all__ = [
     "close_near_full_arcs", "NEAR_FULL_ARC_MISSING",
     "structural_loops", "loops_to_curves",
     "loose_curves", "build_hierarchy",
-    "read_islands", "read_island", "IslandReading",
+    "read_outlines", "read_outline", "OutlineReading",
     "simplify_points",
     "rotate_result", "rotate_cluster", "rotate_document", "rotate_to_longest",
     "to_nester_input",

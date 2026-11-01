@@ -28,7 +28,7 @@ doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE)
 
 import os
 
-result = topo.heal(doc, label=LABEL, source_file=INPUT)
+result = topo.heal(doc, label=LABEL, source_file=INPUT).faces()
 os.makedirs(OUTDIR, exist_ok=True)
 parts = topo.split(result, namer=lambda i, cluster: f"{LABEL}_P{i + 1}", min_area=50.0)
 for part in parts:

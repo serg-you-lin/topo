@@ -38,7 +38,7 @@ EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "data"
 def _pipeline(name, *, name_roles=None):
     """heal → to_dxf. Ritorna (result, msp_out)."""
     doc = topo_dxf.load_dxf(EXAMPLES_DIR / name, role_rules=topo.name_rules(name_roles or {}))
-    result = topo.heal(doc)
+    result = topo.heal(doc).faces()
     doc_out = topo_dxf.to_dxf(result, doc)
     return result, doc_out.modelspace()
 
@@ -155,7 +155,7 @@ class TestWritebackTrash(unittest.TestCase):
 
     def test_003_include_trash_false_omits_trash(self):
         doc = topo_dxf.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf")
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
         msp = topo_dxf.to_dxf(result, doc, include_loose=False).modelspace()
         trash = [e for e in msp
                  if e.dxf.hasattr("layer") and e.dxf.layer == TRASH_LAYER]
@@ -179,7 +179,7 @@ class TestWritebackTrash(unittest.TestCase):
         # default to_dxf() lo scrive lo stesso (tutto in trash, D83); con
         # allow_invalid=False si rifiuta, come vuole chi consegna a una macchina.
         doc = topo_dxf.load_dxf(EXAMPLES_DIR / "arc_open.dxf")
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
         self.assertFalse(result.is_valid)
         self.assertEqual(result.cluster_count, 0)
         self.assertTrue(result.errors)
@@ -301,7 +301,7 @@ class TestWritebackTexts(unittest.TestCase):
         # chiamante vuole distinto gli dà un ruolo, e va sul layer del ruolo.
         doc = topo_dxf.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf",
                             role_rules=topo.name_rules({"TESTO": "note"}))
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
         msp = topo_dxf.to_dxf(result, doc).modelspace()
         texts = list(msp.query("TEXT"))
         self.assertEqual(len(texts), 1)
@@ -309,7 +309,7 @@ class TestWritebackTexts(unittest.TestCase):
 
     def test_006_text_layer_custom_routes_there(self):
         doc = topo_dxf.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf")
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
         msp = topo_dxf.to_dxf(result, doc, text_layer=TRASH_LAYER).modelspace()
         texts = list(msp.query("TEXT"))
         self.assertEqual(texts[0].dxf.layer, TRASH_LAYER)
@@ -325,7 +325,7 @@ class TestWritebackTexts(unittest.TestCase):
         kinds = Counter(a.source_kind for a in doc.texts)
         self.assertEqual(kinds["DIMENSION"], 16)
         self.assertEqual(kinds["LEADER"], 4)
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
         msp = topo_dxf.to_dxf(result, doc).modelspace()
         ann_geom = [e for e in msp.query("LWPOLYLINE")
                     if e.dxf.layer == LAYER_ANNOTATION]
@@ -360,7 +360,7 @@ class TestWritebackInsertExplodedByDefault(unittest.TestCase):
         # Senza esplodere, load_dxf scartava tutto. Ora è il default.
         doc = topo_dxf.load_dxf(EXAMPLES_DIR / "scritta.dxf")
         self.assertGreater(len(doc.edges), 50)
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
         self.assertEqual(result.cluster_count, 1)
         self.assertGreater(len(result.clusters[0].inners), 6)
 

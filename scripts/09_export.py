@@ -33,7 +33,7 @@ os.makedirs(OUTDIR, exist_ok=True)
 base = os.path.splitext(os.path.basename(INPUT))[0]
 
 doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
-result = topo.heal(doc, label=base, source_file=base)
+result = topo.heal(doc, label=base, source_file=base).faces()
 
 # JSON su stdout
 print(topo.to_json(result, indent=2)[:600], "...\n")

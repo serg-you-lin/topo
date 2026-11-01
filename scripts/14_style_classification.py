@@ -56,7 +56,7 @@ def show(tag, result):
 
 for i, (tag, rules) in enumerate(STEPS, start=1):
     doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=rules)
-    result = topo.heal(doc, tolerance=TOLERANCE)
+    result = topo.heal(doc, tolerance=TOLERANCE).faces()
     show(tag, result)
     out = os.path.join(OUTDIR, f"14_style_classification_{i}.dxf")
     topo_dxf.to_dxf(result, doc, include_loose=True).saveas(out)

@@ -44,7 +44,7 @@ SCHEMA = {
 }
 
 doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
-result = topo.heal(doc, label=base)
+result = topo.heal(doc, label=base).faces()
 topo.inject(result, data_injector=lambda cluster, txt: {"material": "AISI304", "thickness": 3.0})
 
 out = topo_dxf.to_dxf(result, doc)

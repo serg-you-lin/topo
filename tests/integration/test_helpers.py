@@ -75,7 +75,7 @@ def run_pipeline(
         tolerance=tolerance,
         label=Path(dxf_name).stem,
         source_file=dxf_name,
-    )
+    ).faces()
 
     if do_inject:
         topo.inject(result)
@@ -112,7 +112,7 @@ def run_pipeline(
             tolerance=tolerance,
             label=f"{Path(dxf_name).stem}_reloaded",
             source_file=tmp.name,
-        )
+        ).faces()
 
         output["reloaded_doc"]    = reloaded_doc
         output["reloaded_msp"]    = None

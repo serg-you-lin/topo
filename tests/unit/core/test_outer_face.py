@@ -130,8 +130,8 @@ class TestOverlapFromANodeUnderMotion(unittest.TestCase):
         segs = [LineSeg(start=(0.0, 0.0), end=(10.0, 0.0)), LineSeg(start=(0.0, 0.0), end=(20.0, 0.0)),
                 LineSeg(start=(20.0, 0.0), end=(10.0, 10.0)), LineSeg(start=(10.0, 10.0), end=(0.0, 0.0)),
                 LineSeg(start=(10.0, 0.0), end=(10.0, 10.0))]
-        readings = {"heal": lambda d: topo.heal(d, tolerance=0.05),
-                    "island": lambda d: topo.island(d, tolerance=0.05, max_gap=0.5)}
+        readings = {"heal": lambda d: topo.heal(d, tolerance=0.05).faces(),
+                    "island": lambda d: topo.heal(d, tolerance=0.05, max_gap=0.5).outlines()}
 
         def reading(read, motion):
             segment, _ = rigid(*motion)
@@ -190,7 +190,7 @@ class TestFirstStepUnderMotion(unittest.TestCase):
 
 class TestUnionGridUnderMotion(unittest.TestCase):
     """G6e, gruppo B, `outer_face.py:41` (`UNION_GRID`): la griglia della rete
-    del ripiego (D100, D179). Sui 31 disegni di `island()` lavora solo sui
+    del ripiego (D100, D179). Sui 31 disegni di `outlines()` lavora solo sui
     doppioni a 1e-12 (qui i due cerchi di un disegno ancorato): con la griglia
     coincidono, senza si incrociano dove dice l'ultimo bit. Prova: la griglia
     cambia davvero la rete (valore controllato al posto), e la lettura è la
@@ -226,7 +226,7 @@ class TestUnionGridUnderMotion(unittest.TestCase):
             segment, _ = rigid(*motion)
             for grid in (module.UNION_GRID, None):
                 with self.subTest(motion=motion, grid=grid), mock.patch.object(module, "UNION_GRID", grid):
-                    result = topo.island(topo.load_segments([segment(s) for s in self.CIRCLES]), max_gap=0.0)
+                    result = topo.heal(topo.load_segments([segment(s) for s in self.CIRCLES]), max_gap=0.0).outlines()
                     self.assertEqual(len(result.clusters), 1)
                     self.assertEqual(len(result.loose), 1)
                     areas.add(round(to_shapely(result.clusters[0].outer).area, 9))
@@ -266,7 +266,7 @@ class TestChordContactUnderMotion(unittest.TestCase):
         readings = []
         for motion in self.MOTIONS:
             segment, _ = rigid(*motion)
-            result = topo.island(topo.load_segments([segment(s) for s in self._segments()]), max_gap=0.0)
+            result = topo.heal(topo.load_segments([segment(s) for s in self._segments()]), max_gap=0.0).outlines()
             readings.append((len(result.clusters), len(result.loose),
                              round(to_shapely(result.clusters[0].outer).area, 1)))
         # valore al posto: senza moto l'unione salda F1 e F2 (il difetto c'è davvero)

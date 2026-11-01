@@ -20,7 +20,7 @@ def _nested():
     # piastra 100×60, foro Ø40 con dentro un'isola Ø20 forata Ø8, e un foro Ø6 a parte
     doc = topo.load_segments(g.rectangle(100, 60) + g.circle(20) + g.circle(10) + g.circle(4)
                              + g.circle(3, center=(40, 0)))
-    return topo.heal(doc).clusters[0]
+    return topo.heal(doc).faces().clusters[0]
 
 
 def test_contorno_e_il_poligono_della_lettura():
@@ -47,13 +47,13 @@ def test_cluster_pari_dispari_come_l_area():
 
 def test_senza_isole_un_solo_poligono():
     doc = topo.load_segments(g.rectangle(100, 60) + g.circle(5))
-    material = topo.to_shapely(topo.heal(doc).clusters[0])
+    material = topo.to_shapely(topo.heal(doc).faces().clusters[0])
     assert isinstance(material, Polygon) and len(material.interiors) == 1
 
 
 def test_curva_aperta_e_una_linestring():
     doc = topo.load_geometry([{"type": "line", "start": (0, 0), "end": (10, 0)}])
-    curve = topo.heal(doc).loose[0]
+    curve = topo.heal(doc).faces().loose[0]
     line = topo.to_shapely(curve)
     assert isinstance(line, LineString) and line.length == pytest.approx(10.0)
 

@@ -117,7 +117,7 @@ def generate(force: bool = False, only: str = None):
                     tolerance=tolerance, verbose=False, role_rules=topo.name_rules(name_roles),
                 )
 
-            geom = topo.heal(_load(), tolerance=tolerance)
+            geom = topo.heal(_load(), tolerance=tolerance).faces()
 
             if not geom.is_valid:
                 print(f"  SKIP (non valido): {dxf_path.name} — {geom.errors}")

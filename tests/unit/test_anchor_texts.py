@@ -99,13 +99,13 @@ class TestPointerTarget(unittest.TestCase):
     """`Text.target`: l'elemento su cui cade la punta di `pointer` (D66)."""
 
     def _island(self, *leaders):
-        result = topo.island(_plate_with_holes(), max_gap=MAX_GAP)
+        result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
         result.texts = list(leaders)
         anchor_texts(result)
         return result
 
     def _hole_at(self, result, center):
-        # D161: island() non fa inner, il foro è un pezzo chiuso in loose (D162)
+        # D161: outlines() non fa inner, il foro è un pezzo chiuso in loose (D162)
         return next(k for k, c in enumerate(result.loose)
                     if to_shapely(c) is not None and to_shapely(c).centroid.distance(Point(center)) < 0.1)
 
@@ -135,7 +135,7 @@ class TestPointerTarget(unittest.TestCase):
     def test_elemento_dell_overlay(self):
         # un consumatore sposta un contorno in una sua collezione: il target segue
         from topo.model import DetectedFeatures
-        result = topo.heal(_plate_with_holes())
+        result = topo.heal(_plate_with_holes()).faces()
         cluster = result.clusters[0]
         small = min(cluster.inners, key=lambda c: to_shapely(c).area)
         cluster.inners = [c for c in cluster.inners if c is not small]
@@ -152,7 +152,7 @@ class TestTargetIsTheObject(unittest.TestCase):
     risultato — restano giusti quando le collezioni cambiano dopo."""
 
     def _island(self):
-        result = topo.island(_plate_with_holes(), max_gap=MAX_GAP)
+        result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
         result.texts = [_leader((24, 25), (40, 60)),
                         Text(position=(40, 40), measured_points=[(60, 25), (80, 25)])]
         anchor_texts(result)
@@ -197,7 +197,7 @@ class TestMeasuredReferences(unittest.TestCase):
     """`Text.references`: gli elementi su cui cadono i `measured_points` (D69)."""
 
     def _result(self, *dims):
-        result = topo.island(_plate_with_holes(), max_gap=MAX_GAP)
+        result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
         result.texts = list(dims)
         anchor_texts(result)
         return result
@@ -228,7 +228,7 @@ class TestMeasuredReferences(unittest.TestCase):
         self.assertEqual(dim.references, [])
 
     def test_senza_punti(self):
-        result = topo.island(_plate_with_holes(), max_gap=MAX_GAP)
+        result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
         self.assertEqual(measured_references(result, Text(position=(0, 0))), [])
 
 

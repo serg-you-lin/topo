@@ -19,7 +19,8 @@ Workflow consigliato (file singolo):
     # regole in ordine, vince la prima che matcha (D63);
     # topo.name_rules({"Costruzione": "construction"}) per le sole regole sul nome
 
-    result = topo.heal(doc, label="pezzo", source_file="pezzo.dxf")
+    network = topo.heal(doc, label="pezzo")   # la riparazione, una volta (D202)
+    result = network.faces()                  # o network.outlines() per un foglio di viste
     # fori, pieghe, incisioni: lettura di processo, in snapbend (MAP.md D88)
 
     topo.inject(result)
@@ -37,6 +38,7 @@ Document dalla geometria.
 
 from .core.geometry_input import load_geometry, load_segments
 from .core.readings.heal import heal
+from .core.readings.network import Network
 from .tools.inject       import inject
 from .tools.anchor       import anchor_texts, measured_references, pointer_target
 # Un Result per parte, senza formato: ogni exporter ne scrive una (D124, D129)
@@ -73,16 +75,12 @@ from .model.style     import RoleStyle
 # heal() con un'interpretazione propria (non "bending" come fa detect_flat()) lo
 # chiama su doc.edges. Vedi MAP.md D55.
 from .tools.non_contour import non_contour_candidates
-# Seconda lettura di un documento, accanto a heal(): per isole, contorno
-# esterno come faccia esterna della rete piana (disegni di viste, 3D
-# proiettato). Vedi MAP.md D58.
-from .core.readings.island import island
 # La geometria: fatti con nomi geometrici (forma di un contorno, cerchi
 # concentrici, corde, rettangoli coperti, ...), tutti in `topo.geometry`.
 # MAP.md D68, D91, D93-D95.
 from .core import geometry
-# Tutto ciò che è esposto senza promessa di stabilità: i passi di heal() e di
-# island(), il viewer, la lettura testuale, rotate_*, simplify_points
+# Tutto ciò che è esposto senza promessa di stabilità: i passi di faces() e di
+# outlines(), il viewer, la lettura testuale, rotate_*, simplify_points
 # (MAP.md D175 C, D176). Si scrive per intero: `topo.experimental.<nome>`.
 from . import experimental
 # Le primitive geometriche e i tipi del modello, pubblici: `topo.primitives`,
@@ -108,7 +106,7 @@ __all__ = [
     "validate_result",
     # Workflow
     "heal",
-    "island",
+    "Network",
     "split",
     "DEFAULT_MIN_CLUSTER_AREA",
     "inject",
@@ -126,8 +124,6 @@ __all__ = [
     "to_shapely",
     # Metadati (gli stessi come XDATA DXF: topo_dxf.write_metadata_to_dxf)
     "build_metadata",
-    # Lettura per isole: i mattoni di island()
-    # I passi di heal()
     # Utilità
     # Ispezione / debug (Document → Result; il file grezzo: topo_dxf.inspect_dxf)
     "inspect_document",

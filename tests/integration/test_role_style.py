@@ -44,7 +44,7 @@ def _rect_with_hole_and_frame():
 
     doc_in = topo_dxf.document_from_msp(
         msp, role_rules=topo.name_rules({'FRAME': 'frame', 'STAMP': 'stamp_d90'}))
-    result = topo.heal(doc_in, tolerance=0.05)
+    result = topo.heal(doc_in, tolerance=0.05).faces()
     return result, doc_in
 
 

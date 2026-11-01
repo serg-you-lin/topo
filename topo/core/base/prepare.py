@@ -1,7 +1,7 @@
 """
 topo/core/base/prepare.py
 -------------------------
-Le basi comuni di ogni lettura (D187): `heal()`, `island()` e qualunque
+Le basi comuni di ogni lettura (D187): `faces()`, `outlines()` e qualunque
 ricetta un chiamante si componga partono da qui, con le stesse regole. Una
 lettura sceglie solo come cerca il contorno; tutto quello che viene prima è
 geometria del disegno e si decide una volta, in un posto.
@@ -69,7 +69,7 @@ def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normali
 
     keep_junctions: due pezzi collineari che si toccano solo in un innesto
                     non si fondono (D110). Resta finché heal() non noda i
-                    contatti come island().
+                    contatti come outlines().
     """
     out = Normalized()
     edges = refit_tessellations(edges)

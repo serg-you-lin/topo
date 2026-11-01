@@ -190,7 +190,7 @@ class TestGridSnapUnderMotion(unittest.TestCase):
 
         def reading(motion):
             segment, _ = rigid(*motion)
-            res = topo.heal(topo.load_segments([segment(a) for a in arcs]), tolerance=0.05)
+            res = topo.heal(topo.load_segments([segment(a) for a in arcs]), tolerance=0.05).faces()
             return res.is_valid, len(res.clusters), len(res.loose), res.clusters[0].outer.area
 
         at_rest = reading((0.0, 0.0, 0.0))

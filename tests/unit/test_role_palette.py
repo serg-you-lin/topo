@@ -49,7 +49,7 @@ class TestUnaPalettePerOgniFormato(unittest.TestCase):
     def _result(self):
         segs = topo.geometry.rectangle(100, 50)
         hole = topo.geometry.circle(5, center=(20, 0))
-        return topo.heal(topo.load_segments([segs, hole]))
+        return topo.heal(topo.load_segments([segs, hole])).faces()
 
     def test_dxf_traduce_la_palette(self):
         for role, style in DEFAULT_ROLE_STYLES.items():

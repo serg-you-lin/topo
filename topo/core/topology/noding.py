@@ -169,7 +169,7 @@ def split_at_crossings(edges: List[Edge], tolerance: float,
 
     `cut_crossings`: un incrocio (due curve che si attraversano e proseguono)
     taglia anche lui. Il contatto lo decide comunque questa funzione; cosa vuol
-    dire lo dice la lettura: per island() sì (D101), per heal() no — un
+    dire lo dice la lettura: per outlines() sì (D101), per faces() no — un
     incrocio fra lati di contorno è un disegno rotto (D132), un'asse che
     attraversa un foro non è un lato del foro (D189). Gli incroci sono in
     `crossings` in tutti e due i casi.

@@ -23,7 +23,7 @@ FIXTURE = Path(__file__).resolve().parent.parent / "data" / "cerchi_concentrici_
 
 def _cluster(*shapes):
     doc = topo.load_segments([s for shape in shapes for s in shape])
-    return topo.heal(doc).clusters[0]
+    return topo.heal(doc).faces().clusters[0]
 
 
 def _window_with_two_discs():
@@ -42,7 +42,7 @@ def _heal_opened(cluster, links):
     segments = [s for c in (cluster.outer, *cluster.inners) if id(c) not in touched for s in c.segments]
     segments += [s for _, chains in opened.boundaries for chain in chains for s in chain] + opened.sides
     doc = topo.load_segments(segments)
-    return topo.heal(doc)
+    return topo.heal(doc).faces()
 
 
 class TestFacingBoundaries(unittest.TestCase):
@@ -165,7 +165,7 @@ class TestOpenBoundaries(unittest.TestCase):
             self.assertGreater(chains[0][0]._sweep(), math.pi)          # il tratto lungo, non quello sotto
 
     def test_002_reclosed_on_the_fixture(self):
-        cluster = topo.heal(topo_dxf.load_dxf(str(FIXTURE))).clusters[0]
+        cluster = topo.heal(topo_dxf.load_dxf(str(FIXTURE))).faces().clusters[0]
         facing = facing_boundaries(cluster)[0]
         disc = facing.inside[0]
         c, r = to_shapely(disc).centroid, math.sqrt(to_shapely(disc).area / math.pi)

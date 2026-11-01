@@ -31,7 +31,7 @@ OUTDIR = "pipeline_output"
 # -------------------------------------------------------------------------
 
 doc = topo_dxf.load_dxf(INPUT)
-cluster = topo.heal(doc).clusters[0]
+cluster = topo.heal(doc).faces().clusters[0]
 
 links = []
 for facing in topo.experimental.facing_boundaries(cluster):
@@ -55,5 +55,5 @@ segments += opened.sides
 out = topo.load_segments(segments)
 os.makedirs(OUTDIR, exist_ok=True)
 path = os.path.join(OUTDIR, "cerchi_concentrici_con_strisce.dxf")
-topo_dxf.to_dxf(topo.heal(out), out).saveas(path)
+topo_dxf.to_dxf(topo.heal(out).faces(), out).saveas(path)
 print(f"scritto {path}")

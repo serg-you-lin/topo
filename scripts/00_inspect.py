@@ -49,5 +49,5 @@ topo_dxf.inspect_file(
 #   doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
 #   topo.inspect_document(doc, graph=True, limit=60)
 #
-#   result = topo.heal(doc)
+#   result = topo.heal(doc).faces()
 #   topo.inspect_result(result, coords=False)

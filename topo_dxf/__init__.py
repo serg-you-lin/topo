@@ -8,7 +8,7 @@ pubblici di topo (MAP.md D123, D124, D129). topo non sa che esiste.
     import topo, topo_dxf
 
     doc    = topo_dxf.load_dxf("pezzo.dxf")          # DXF/DWG → Document
-    result = topo.heal(doc)
+    result = topo.heal(doc).faces()
     topo_dxf.to_dxf(result, doc).saveas("out.dxf")   # Result → Drawing
 
     for part in topo.split(result):                  # un Result per parte

@@ -5,7 +5,7 @@ La promessa "fedele" della 1.0 (D143), su ogni disegno tracciato: il
 risultato scritto in DXF e riletto si sovrappone al sorgente.
 
 1. Hausdorff nei due versi ≤ il limite della lettura: la tolleranza dei nodi
-   per `heal()`, `max_gap` per `island()` (l'unica cosa che sposta geometria
+   per `heal()`, `max_gap` per `outlines()` (l'unica cosa che sposta geometria
    in una vista sono le chiusure dei gap).
 2. Coefficienti identici (centro e raggio, ellisse, punti di controllo) per
    ogni curva che la lettura non ha toccato: entrambi i capi coincidono con
@@ -15,7 +15,7 @@ risultato scritto in DXF e riletto si sovrappone al sorgente.
    ricalcolati; un doppione viene fuso. Lì vale solo il punto 1.
 
 Ogni disegno con la sua lettura (D152): quelli di `golden_islands/` e
-`golden_anchoring/` sono fogli di viste e si leggono con `island()`, gli
+`golden_anchoring/` sono fogli di viste e si leggono con `outlines()`, gli
 altri con `heal()`. Le copie identiche si misurano una volta.
 """
 
@@ -35,7 +35,7 @@ import topo
 import topo_dxf
 from topo.core.primitives.segments import segment_endpoints
 from tests.drawings import case_name, tracked_drawings
-from tests.readings import island_reading
+from tests.readings import outline_reading
 
 MAX_GAP = 0.5            # quello di snapdraw, come test_golden_islands
 SAMPLE_TOL = 0.01        # passo della discretizzazione su cui si misura
@@ -147,11 +147,11 @@ def _cut_in_pieces(coeffs, source_edges, written) -> bool:
 def _round_trip(rel: str, reading: str):
     path = project_root / rel
     if reading == "island":
-        doc, result = island_reading(path, MAX_GAP)
+        doc, result = outline_reading(path, MAX_GAP)
         bound = MAX_GAP
     else:
         doc = topo_dxf.load_dxf(str(path))
-        result = topo.heal(doc)
+        result = topo.heal(doc).faces()
         bound = doc.node_tolerance()
     drawing = topo_dxf.to_dxf(result, doc, include_texts=False)
     # skip_layers=(): il layer di `loose` si rilegge, è parte del risultato

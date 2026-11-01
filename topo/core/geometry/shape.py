@@ -5,7 +5,7 @@ Fatti di forma di un contorno chiuso: cerchio, ellisse, stadio, rettangolo,
 poligono. Elenco chiuso (MAP.md D136): una forma ha un nome solo se centro,
 lunghezza, larghezza e angolo la determinano; il resto è `polygon` o `other`.
 Le regole leggono le primitive come sono: un cerchio fatto di spline resta
-`other`. Geometria pura, vale uguale su `heal()` e su `island()`. "circle" non vuol
+`other`. Geometria pura, vale uguale su `faces()` e su `outlines()`. "circle" non vuol
 dire foro: cosa sia quel cerchio lo dice chi legge il disegno o il processo
 (MAP.md D68).
 In coda i fatti fra più contorni: cerchi concentrici, archi attorno a un
@@ -360,7 +360,7 @@ def arcs_around(center: Point, radius: float, arcs,
 
 
 # ---------------------------------------------------------------------------
-# Ricomposizione di un giro (usata qui e da island(), D95)
+# Ricomposizione di un giro (usata qui e da outlines(), D95)
 # ---------------------------------------------------------------------------
 
 def merge_runs(segments: list, styles: list):

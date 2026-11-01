@@ -136,6 +136,6 @@ def inspect_file(
     if not run_heal:
         return
 
-    result = topo.heal(doc, tolerance=tolerance)
+    result = topo.heal(doc, tolerance=tolerance).faces()
 
     topo.inspect_result(result, coords=coords)

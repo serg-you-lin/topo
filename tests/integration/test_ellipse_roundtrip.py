@@ -27,7 +27,7 @@ class TestFullEllipseOuter(unittest.TestCase):
         msp = doc.modelspace()
         msp.add_ellipse(center=(5, 5), major_axis=(10, 0), ratio=0.5)
         self.fdoc = topo_dxf.document_from_msp(msp)
-        self.result = topo.heal(self.fdoc)
+        self.result = topo.heal(self.fdoc).faces()
 
     def test_001_one_valid_cluster(self):
         self.assertTrue(self.result.is_valid)
@@ -59,7 +59,7 @@ class TestFullEllipseOuter(unittest.TestCase):
     def test_005_roundtrip_area_stable(self):
         """Ricaricando l'output con topo stesso si ritrova la stessa area."""
         doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
-        reloaded = topo.heal(topo_dxf.document_from_msp(doc_out.modelspace()))
+        reloaded = topo.heal(topo_dxf.document_from_msp(doc_out.modelspace())).faces()
         self.assertEqual(reloaded.cluster_count, 1)
         self.assertAlmostEqual(
             reloaded.clusters[0].outer.area,
@@ -80,7 +80,7 @@ class TestEllipticalArcMixedWithLines(unittest.TestCase):
         msp.add_line((0, 10), (0, 0))
         msp.add_line((0, 0), (20, 0))
         self.fdoc = topo_dxf.document_from_msp(msp)
-        self.result = topo.heal(self.fdoc)
+        self.result = topo.heal(self.fdoc).faces()
 
     def test_001_closes_into_one_valid_cluster(self):
         self.assertTrue(self.result.is_valid, self.result.errors)
@@ -101,7 +101,7 @@ class TestEllipticalArcMixedWithLines(unittest.TestCase):
 
     def test_004_roundtrip_area_stable(self):
         doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
-        reloaded = topo.heal(topo_dxf.document_from_msp(doc_out.modelspace()))
+        reloaded = topo.heal(topo_dxf.document_from_msp(doc_out.modelspace())).faces()
         self.assertEqual(reloaded.cluster_count, 1)
         self.assertAlmostEqual(
             reloaded.clusters[0].outer.area,

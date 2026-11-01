@@ -44,7 +44,7 @@ class TestTextRole(unittest.TestCase):
         self.assertEqual([a.role for a in doc.texts], ["unknown"])
 
     def _text_layers(self, doc, **kwargs) -> set:
-        out = topo_dxf.to_dxf(topo.heal(doc), **kwargs)
+        out = topo_dxf.to_dxf(topo.heal(doc).faces(), **kwargs)
         return {e.dxf.layer for e in out.modelspace().query("TEXT MTEXT")}
 
     def test_dxf_sul_layer_del_ruolo(self):

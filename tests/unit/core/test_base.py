@@ -1,6 +1,6 @@
 # tests/unit/core/test_base.py
 # Le basi comuni a ogni lettura (D187): i nodi si decidono una volta, per
-# vicinanza, prima di heal() e di island(); le due letture partono dagli stessi.
+# vicinanza, prima di heal() e di outlines(); le due letture partono dagli stessi.
 
 import unittest
 
@@ -46,8 +46,8 @@ class TestSameBaseForEveryReading(unittest.TestCase):
         band = 2 * DEFAULT_TOLERANCE
         for name, move, back, _ in [("al posto", lambda s: s, lambda p: p, None)] + MOTIONS:
             moved_doc = moved(doc, move)
-            healed = [back(p) for p in contours(topo.heal(moved_doc, tolerance=0.05))[0]]
-            read = [back(p) for p in contours(topo.island(moved_doc, max_gap=0.5))[0]]
+            healed = [back(p) for p in contours(topo.heal(moved_doc, tolerance=0.05).faces())[0]]
+            read = [back(p) for p in contours(topo.heal(moved_doc, max_gap=0.5).outlines())[0]]
             self.assertEqual((len(healed), len(read)), (1, 1), name)
             self.assertEqual(shape_differences(healed, read, band) + shape_differences(read, healed, band),
                              [], name)

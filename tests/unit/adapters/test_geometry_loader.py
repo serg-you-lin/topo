@@ -77,7 +77,7 @@ class TestLoadGeometryRectangleWithHole(unittest.TestCase):
         self.assertTrue(self.doc.edges)
 
     def test_heal_finds_one_part_with_one_inner(self):
-        result = topo.heal(self.doc, label="rect_test")
+        result = topo.heal(self.doc, label="rect_test").faces()
         self.assertTrue(result.is_valid, result.errors)
         self.assertEqual(result.cluster_count, 1)
         cluster = result.clusters[0]
@@ -85,7 +85,7 @@ class TestLoadGeometryRectangleWithHole(unittest.TestCase):
         self.assertEqual(len(cluster.inners), 1)
 
     def test_to_dxf_writes_a_valid_document(self):
-        result = topo.heal(self.doc, label="rect_test")
+        result = topo.heal(self.doc, label="rect_test").faces()
         doc_out = topo_dxf.to_dxf(result)
         self.assertGreater(len(doc_out.modelspace()), 0)
 
@@ -116,7 +116,7 @@ class TestLoadGeometryConeSector(unittest.TestCase):
         ])
 
     def test_forms_a_single_closed_part_with_correct_area(self):
-        result = topo.heal(self.doc, label="cono_sector_test")
+        result = topo.heal(self.doc, label="cono_sector_test").faces()
         self.assertTrue(result.is_valid, result.errors)
         self.assertEqual(result.cluster_count, 1)
         self.assertAlmostEqual(
@@ -124,7 +124,7 @@ class TestLoadGeometryConeSector(unittest.TestCase):
         )
 
     def test_to_dxf_keeps_arcs_native_not_discretized(self):
-        result = topo.heal(self.doc, label="cono_sector_test")
+        result = topo.heal(self.doc, label="cono_sector_test").faces()
         doc_out = topo_dxf.to_dxf(result)
         msp = doc_out.modelspace()
         # write_segments emette LWPOLYLINE con bulge per un contorno misto
@@ -169,7 +169,7 @@ class TestLoadGeometrySplineFromSimplifyPoints(unittest.TestCase):
         self.polygon_area = 0.5 * n * r * r * math.sin(2 * math.pi / n)
 
     def test_heal_finds_one_closed_part(self):
-        result = topo.heal(self.doc, label="spline_loop_test")
+        result = topo.heal(self.doc, label="spline_loop_test").faces()
         self.assertTrue(result.is_valid, result.errors)
         self.assertEqual(result.cluster_count, 1)
         self.assertAlmostEqual(
@@ -177,7 +177,7 @@ class TestLoadGeometrySplineFromSimplifyPoints(unittest.TestCase):
         )
 
     def test_to_dxf_keeps_spline_native_not_discretized(self):
-        result = topo.heal(self.doc, label="spline_loop_test")
+        result = topo.heal(self.doc, label="spline_loop_test").faces()
         doc_out = topo_dxf.to_dxf(result)
         msp = doc_out.modelspace()
         self.assertEqual(len(list(msp.query("SPLINE"))), 1)

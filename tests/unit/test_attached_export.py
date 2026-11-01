@@ -43,7 +43,7 @@ def _plate():
         {"type": "circle", "center": (20, 25), "radius": 6},
         {"type": "circle", "center": (70, 25), "radius": 4},
     ])
-    return doc, topo.heal(doc)
+    return doc, topo.heal(doc).faces()
 
 
 def _layers(out):

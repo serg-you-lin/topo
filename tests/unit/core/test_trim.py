@@ -108,7 +108,7 @@ class TestClosedSplineSeamUnderMotion(unittest.TestCase):
     hi, alla stessa distanza; vinceva sempre hi (il `<=` sui capi) e il tratto
     usciva rovesciato, il complemento. Ora decide `via`, come sul cerchio.
     Prova: il pari merito c'è al posto (le due distanze, controllate), il tratto
-    è quello giusto in tutti e due i versi e a sette moti; dentro `island()` una
+    è quello giusto in tutti e due i versi e a sette moti; dentro `outlines()` una
     retta che taglia la spline chiusa dà lo stesso outer della spline aperta di
     1e-9 (prima metà forma). Non prova una spline che si incrocia da sé (due
     parametri anche lì, `via` non sempre li separa: in coda)."""
@@ -154,7 +154,7 @@ class TestClosedSplineSeamUnderMotion(unittest.TestCase):
                 move_seg, _ = rigid(*motion)
                 pieces = [self._spline(gap), LineSeg(start=(X - 10, Y + 10), end=(X + 30, Y + 10))]
                 doc = topo.load_segments([move_seg(s) for s in pieces], tolerance=0.5)
-                result = topo.island(doc, max_gap=0.5)
+                result = topo.heal(doc, max_gap=0.5).outlines()
                 with self.subTest(gap=gap, motion=motion):
                     self.assertEqual([round(topo.to_shapely(c.outer).area, 3) for c in result.clusters],
                                      [465.261])

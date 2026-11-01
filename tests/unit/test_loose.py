@@ -51,7 +51,7 @@ class TestClusterRef(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.result = topo.heal(_drawing())
+        cls.result = topo.heal(_drawing()).faces()
 
     def test_due_parti_la_piastra_e_la_piu_grande(self):
         self.assertEqual(len(self.result.clusters), 2)
@@ -79,7 +79,7 @@ class TestClusterRef(unittest.TestCase):
 class TestPromote(unittest.TestCase):
 
     def setUp(self):
-        self.result = topo.heal(_drawing())
+        self.result = topo.heal(_drawing()).faces()
 
     def test_sposta_da_loose_a_detected(self):
         line = _at(self.result, 0, -50)
@@ -108,7 +108,7 @@ class TestPromote(unittest.TestCase):
         self.assertEqual(len(plate.detected.get("lines")), 1)
 
     def test_cluster_di_un_altro_result_solleva(self):
-        other = topo.heal(_drawing()).clusters[0]
+        other = topo.heal(_drawing()).faces().clusters[0]
         line = _at(self.result, 0, -50)
         with self.assertRaises(ValueError):
             self.result.promote(line, other, "lines")
@@ -119,7 +119,7 @@ class TestPromoteGroup(unittest.TestCase):
     """Più curve, un solo item (D172): un foro e la sua sede."""
 
     def setUp(self):
-        self.result = topo.heal(_drawing())
+        self.result = topo.heal(_drawing()).faces()
         self.line = _at(self.result, 0, -50)
         self.guide = _at(self.result, 150, 0)
         self.plate = self.result.clusters[0]
@@ -161,7 +161,7 @@ class TestPromoteGroup(unittest.TestCase):
 class TestSplit(unittest.TestCase):
 
     def setUp(self):
-        self.result = topo.heal(_drawing())
+        self.result = topo.heal(_drawing()).faces()
         self.plate, self.small = topo.split(self.result, min_area=0)
 
     def test_ogni_curva_va_al_suo_cluster(self):
@@ -178,7 +178,7 @@ class TestSplit(unittest.TestCase):
         self.assertEqual(_at(self.result, 390, 0).cluster_ref, 1)
 
     def test_una_curva_promossa_viaggia_col_suo_cluster(self):
-        result = topo.heal(_drawing())
+        result = topo.heal(_drawing()).faces()
         guide = _at(result, 150, 0)
         result.promote(guide, result.clusters[1], "guides")
         plate, small = topo.split(result, min_area=0)
@@ -189,7 +189,7 @@ class TestSplit(unittest.TestCase):
 class TestRotate(unittest.TestCase):
 
     def test_curva_chiusa_sciolta_ruota_col_resto(self):
-        result = topo.heal(_drawing())
+        result = topo.heal(_drawing()).faces()
         rotated = topo.experimental.rotate_result(result, math.pi / 2)
         mark = next(c for c in rotated.loose if c.role == "mark")
         c = to_shapely(mark).centroid

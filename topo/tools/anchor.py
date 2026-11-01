@@ -128,7 +128,7 @@ def _elements(result: Result) -> Iterator[Tuple[str, Any, Any, bool, bool]]:
     """(chiave, oggetto, geometria shapely, è chiuso, è un contorno esterno)
     per contorni e feature di ogni cluster, poi per i pezzi chiusi di
     ``loose`` senza un ruolo non strutturale (D162): un foro letto da
-    island(), non una cornice. La chiave è il posto dell'oggetto nel
+    outlines(), non una cornice. La chiave è il posto dell'oggetto nel
     risultato e serve solo a rompere le parità in modo deterministico."""
     for ci, cluster in enumerate(result.clusters):
         outer = curve_polygon(cluster.outer) if cluster.outer is not None else None

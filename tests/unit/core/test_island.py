@@ -36,7 +36,7 @@ class TestIsland(unittest.TestCase):
 
     def test_due_viste_separate_due_cluster(self):
         edges = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + _poly((50, 0), (60, 0), (60, 5), (50, 5))
-        result = topo.island(_doc(edges), max_gap=MAX_GAP)
+        result = topo.heal(_doc(edges), max_gap=MAX_GAP).outlines()
         self.assertEqual(len(result.clusters), 2)
         self.assertEqual([round(to_shapely(c.outer).area) for c in result.clusters], [100, 50])
 
@@ -45,7 +45,7 @@ class TestIsland(unittest.TestCase):
         # cornice, la vista va in loose con l'isola che la contiene; i suoi
         # lati chiudono da sé, quindi è un pezzo chiuso solo (D162)
         edges = _poly((0, 0), (100, 0), (100, 100), (0, 100)) + _poly((40, 40), (60, 40), (60, 60), (40, 60))
-        result = topo.island(_doc(edges), max_gap=MAX_GAP)
+        result = topo.heal(_doc(edges), max_gap=MAX_GAP).outlines()
         self.assertEqual(len(result.clusters), 1)
         self.assertAlmostEqual(to_shapely(result.clusters[0].outer).area, 10000.0)
         self.assertEqual(result.clusters[0].inners, [])
@@ -55,7 +55,7 @@ class TestIsland(unittest.TestCase):
     def test_due_contorni_vicinissimi_restano_due_isole(self):
         # D99: nessuna distanza fra le viste — due contorni a 1 mm sono due isole
         edges = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + _poly((11, 0), (21, 0), (21, 5), (11, 5))
-        result = topo.island(_doc(edges), max_gap=MAX_GAP)
+        result = topo.heal(_doc(edges), max_gap=MAX_GAP).outlines()
         self.assertEqual(len(result.clusters), 2)
 
     def test_linea_aperta_dentro_una_vista_e_sua(self):
@@ -64,7 +64,7 @@ class TestIsland(unittest.TestCase):
         view = _poly((0, 0), (100, 0), (100, 50), (0, 50))
         small = _poly((200, 0), (210, 0), (210, 10), (200, 10))
         axis, loose = _line((10, 25), (90, 25)), _line((300, 0), (320, 0))
-        result = topo.island(_doc(view + small + [axis, loose]), max_gap=MAX_GAP)
+        result = topo.heal(_doc(view + small + [axis, loose]), max_gap=MAX_GAP).outlines()
         refs = {round(t.segments[0].start[0]): t.cluster_ref for t in result.loose}
         self.assertEqual(refs, {10: 0, 300: None})
 
@@ -73,7 +73,7 @@ class TestIsland(unittest.TestCase):
         # interi, con l'isola che li contiene
         edges = _poly((0, 0), (200, 0), (200, 100), (0, 100)) + [
             _circle((90, 50), 3), _circle((100, 50), 5.5), _circle((110, 50), 3)]
-        result = topo.island(_doc(edges), max_gap=MAX_GAP)
+        result = topo.heal(_doc(edges), max_gap=MAX_GAP).outlines()
         self.assertEqual(len(result.clusters), 1)
         self.assertEqual(result.clusters[0].inners, [])
         self.assertEqual(sorted(s.radius for t in result.loose for s in t.segments), [3, 3, 5.5])
@@ -81,7 +81,7 @@ class TestIsland(unittest.TestCase):
 
     def test_cerchio_dentro_una_vista_in_loose(self):
         edges = _poly((0, 0), (20, 0), (20, 20), (0, 20)) + [_circle((10, 10), 3)]
-        result = topo.island(_doc(edges), max_gap=MAX_GAP)
+        result = topo.heal(_doc(edges), max_gap=MAX_GAP).outlines()
         self.assertEqual(result.clusters[0].outer.role, ContourRole.OUTER)
         self.assertEqual(result.clusters[0].inners, [])
         self.assertEqual([(type(s).__name__, s.radius, t.cluster_ref) for t in result.loose for s in t.segments],
@@ -92,24 +92,24 @@ class TestIsland(unittest.TestCase):
         # cerchio esce intatto, non nei 4 archi della rete (D161)
         edges = _poly((0, 0), (20, 0), (20, 20), (0, 20)) + [_circle((10, 10), 3)]
         edges += [_line((5, 10), (15, 10)), _line((10, 5), (10, 15))]
-        result = topo.island(_doc(edges), max_gap=MAX_GAP)
+        result = topo.heal(_doc(edges), max_gap=MAX_GAP).outlines()
         self.assertEqual(sorted(type(s).__name__ for t in result.loose for s in t.segments),
                          ["CircleSeg", "LineSeg", "LineSeg"])
 
     def test_lato_tagliato_da_un_asse_torna_un_segmento(self):
         # un asse che esce dal contorno lo spezza: il contorno esterno resta di 4 lati
         edges = _poly((0, 0), (20, 0), (20, 20), (0, 20)) + [_line((10, -5), (10, 25))]
-        outer = topo.island(_doc(edges), max_gap=MAX_GAP).clusters[0].outer
+        outer = topo.heal(_doc(edges), max_gap=MAX_GAP).outlines().clusters[0].outer
         self.assertEqual(len(outer.segments), 4)
 
     def test_cornice_marcata_resta_fuori(self):
-        # D30: snapdraw marca la cornice → island() non la legge, resta in loose
+        # D30: snapdraw marca la cornice → outlines() non la legge, resta in loose
         # col suo ruolo; chiusa da sé, esce come una curva chiusa (D162, D189)
         frame = _poly((0, 0), (100, 0), (100, 100), (0, 100))
         for e in frame:
             e.role = "frame"
         view = _poly((40, 40), (60, 40), (60, 60), (40, 60))
-        result = topo.island(_doc(frame + view), max_gap=MAX_GAP)
+        result = topo.heal(_doc(frame + view), max_gap=MAX_GAP).outlines()
         self.assertEqual(len(result.clusters), 1)
         self.assertAlmostEqual(to_shapely(result.clusters[0].outer).area, 400.0)
         framed = [t for t in result.loose if t.role == "frame"]
@@ -122,18 +122,18 @@ class TestIsland(unittest.TestCase):
             _circle((50, 50), 5), _circle((50, 50), 4.6)]
         for gap in (MAX_GAP, 0.2):
             with self.subTest(max_gap=gap):
-                result = topo.island(_doc(edges), max_gap=gap)
+                result = topo.heal(_doc(edges), max_gap=gap).outlines()
                 self.assertEqual(result.clusters[0].inners, [])
                 self.assertEqual(sorted(s.radius for t in result.loose for s in t.segments), [4.6, 5])
                 self.assertEqual({t.cluster_ref for t in result.loose}, {0})
 
     def test_niente_di_chiuso_invalido(self):
-        result = topo.island(_doc([_line((0, 0), (5, 0))]), max_gap=MAX_GAP)
+        result = topo.heal(_doc([_line((0, 0), (5, 0))]), max_gap=MAX_GAP).outlines()
         self.assertFalse(result.is_valid)
 
     def test_richiede_un_documento(self):
         with self.assertRaises(TypeError):
-            topo.island([_line((0, 0), (1, 0))], max_gap=MAX_GAP)
+            topo.heal([_line((0, 0), (1, 0))], max_gap=MAX_GAP).outlines()
 
 
 class TestRefitTessellations(unittest.TestCase):
@@ -165,7 +165,7 @@ if __name__ == "__main__":
 
 
 class TestNestedInUnderMotion(unittest.TestCase):
-    """G6e, gruppo D, `island.py:148`: `read_islands` sceglie l'ospite col
+    """G6e, gruppo D, `island.py:148`: `read_outlines` sceglie l'ospite col
     `max` sull'area dell'outer. Un pari merito non c'è: due ospiti che
     contengono lo stesso pezzo sono isole distinte, quindi i loro bordi non si
     toccano e uno contiene l'altro; le aree differiscono almeno di distanza ×
@@ -186,7 +186,7 @@ class TestNestedInUnderMotion(unittest.TestCase):
             with self.subTest(motion=motion):
                 segment, _ = rigid(*motion)
                 doc = topo.load_segments([segment(s) for s in segs])
-                readings = experimental.read_islands(doc.edges, 0.05, MAX_GAP)
+                readings = experimental.read_outlines(doc.edges, 0.05, MAX_GAP)
                 self.assertEqual(len(readings), 4)
                 tops = [i for i, r in enumerate(readings) if r.nested_in is None]
                 self.assertEqual(len(tops), 1)
@@ -224,15 +224,15 @@ class TestHostOfATinyPieceUnderMotion(unittest.TestCase):
         for motion in self.MOTIONS:
             move, _ = rigid(*motion)
             with self.subTest(motion=motion):
-                result = topo.island(topo.load_segments([move(s) for s in self._segments()]), max_gap=0.0)
+                result = topo.heal(topo.load_segments([move(s) for s in self._segments()]), max_gap=0.0).outlines()
                 self.assertEqual(len(result.clusters), 2)
 
     def test_al_posto_il_buffer_copre_il_cerchietto(self):
         # la prova non è vuota: a mezzo passo il poligono allargato di 0.05 lo contiene
         from shapely import Polygon
         from tests.invariants import rigid
-        from topo.core.readings.island import read_island
+        from topo.core.readings.outline import read_outline
         move, _ = rigid(math.pi / 64, 0.0, 0.0)
         segments = [move(s) for s in self._segments()]
-        host = read_island(topo.load_segments(segments[:4]).edges, 0.05, max_gap=0.0)
+        host = read_outline(topo.load_segments(segments[:4]).edges, 0.05, max_gap=0.0)
         self.assertTrue(to_shapely(host.outer).buffer(0.05).contains(Polygon(segments[4].discretize())))

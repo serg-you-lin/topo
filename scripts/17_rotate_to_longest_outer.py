@@ -38,7 +38,7 @@ OUTDIR = "pipeline_output"
 # -------------------------------------------------------------------------
 
 doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE)
-result = topo.heal(doc, tolerance=TOLERANCE)  # unico heal() di tutto lo script
+result = topo.heal(doc, tolerance=TOLERANCE).faces()  # unico heal() di tutto lo script
 
 _, length, angle_deg = longest_structural_segment(result)  # include_inners=False
 print(f"outer più lungo PRIMA : {length:.1f}mm a {angle_deg:.1f}°")

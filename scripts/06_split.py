@@ -29,7 +29,7 @@ MIN_AREA  = 50.0
 os.makedirs(OUTDIR, exist_ok=True)
 
 doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE)
-result = topo.heal(doc, label="batch")
+result = topo.heal(doc, label="batch").faces()
 if not result.is_valid:
     raise SystemExit(f"non valido: {result.errors}")
 
