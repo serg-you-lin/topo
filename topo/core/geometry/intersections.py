@@ -89,11 +89,23 @@ def _circle_circle_intersections(cx1: float, cy1: float, r1: float,
     return [(mx + px, my - py), (mx - px, my + py)]
 
 
-def _closest_to(candidates: List[Point], ref: Point) -> Optional[Point]:
-    """Restituisce il punto più vicino a ref tra i candidati."""
-    if not candidates:
-        return None
-    return min(candidates, key=lambda p: _distance(p, ref))
+def _closest_to(candidates: List[Point], ref: Point, other: Point) -> Optional[Point]:
+    """Il candidato più vicino a `ref`; a pari merito entro FLOAT_NOISE quello più
+    vicino a `other`; ancora pari, None: due punti simmetrici rispetto a tutti e
+    due i capi, e sceglierne uno lo deciderebbe l'ultimo bit (G6e)."""
+    def tied(p, q, at):
+        return abs(_distance(p, at) - _distance(q, at)) <= FLOAT_NOISE
+
+    best = None
+    for p in sorted(candidates, key=lambda p: _distance(p, ref)):
+        if best is None:
+            best = p
+        elif tied(p, best, ref):
+            if tied(p, best, other):
+                return None
+            if _distance(p, other) < _distance(best, other):
+                best = p
+    return best
 
 
 # ---------------------------------------------------------------------------

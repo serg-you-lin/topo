@@ -126,7 +126,7 @@ def _solve_arc_line(
     s_l    = ep_line.meta['start']
     e_l    = ep_line.meta['end']
     candidates = _circle_line_intersections(cx, cy, radius, s_l, e_l)
-    ix = _closest_to(candidates, ep_arc.pt)
+    ix = _closest_to(candidates, ep_arc.pt, ep_line.pt)
     return _meet_or_bridge(ix, ep_arc, ep_line)
 
 
@@ -138,7 +138,7 @@ def _solve_arc_arc(
         ep_a.meta['cx'], ep_a.meta['cy'], ep_a.meta['radius'],
         ep_b.meta['cx'], ep_b.meta['cy'], ep_b.meta['radius'],
     )
-    ix = _closest_to(candidates, ep_a.pt)
+    ix = _closest_to(candidates, ep_a.pt, ep_b.pt)
     return _meet_or_bridge(ix, ep_a, ep_b)
 
 
