@@ -40,7 +40,7 @@ Una funzione che modifica il suo argomento ritorna `None`.
 
 1. [Geometria in ingresso](#1-geometria-in-ingresso) — `load_segments`, `load_geometry`, `RoleRule`, `name_rules`, scrivere un adapter
 2. [Validazione](#2-validazione) — `validate_document`, `validate_result`
-3. [Elaborazione](#3-elaborazione) — `heal` / `island` e i suoi mattoni (core), `split`, `anchor_texts` / `inject` (tools)
+3. [Elaborazione](#3-elaborazione) — `heal` → `Network` (`faces()` / `outlines()`) e i loro mattoni (core), `split`, `anchor_texts` / `inject` (tools)
 4. [Export](#4-export) — `save_json`, `to_json`, `save_xml`, `to_shapely`; sperimentali `to_view_model`, `to_svg`, `save_svg`
 5. [Metadati](#5-metadati) — `build_metadata`
 6. [Ispezione / debug](#6-ispezione--debug) — `inspect_document`, `inspect_result`
@@ -118,7 +118,7 @@ topo in mano; `load_geometry` resta per chi non importa topo (D96).
 ```python
 fg = topo.geometry
 doc = topo.load_segments(fg.rectangle(200, 100) + fg.rectangle(100, 50))
-result = topo.heal(doc)     # un pezzo: outer 200×100, un inner 100×50
+result = topo.heal(doc).faces()     # un pezzo: outer 200×100, un inner 100×50
 ```
 
 ---
@@ -154,7 +154,7 @@ doc = topo.load_geometry([
      "start_angle": -30, "end_angle": 30, "role": "outer"},
     {"type": "line", "start": (34.6, 20.0), "end": (43.3, 25.0), "role": "outer"},
 ])
-result = topo.heal(doc, label="sviluppo_cono")
+result = topo.heal(doc, label="sviluppo_cono").faces()
 topo_dxf.to_dxf(result)
 ```
 
@@ -245,20 +245,21 @@ for w in check.warnings:
 topo.validate_result(result: Result) -> None
 ```
 
-Valida l'**output** dopo `heal()`. **Muta** il `result` passato e ritorna
+Valida l'**output** dopo `Network.faces()`. **Muta** il `result` passato e ritorna
 `None` (D176): aggiunge `warnings` / `errors` e può mettere `is_valid = False`. Controlla, per ogni cluster:
 poligono outer valido e non vuoto, area > 0, ogni inner contenuto nell'outer.
 
-Viene **già chiamata automaticamente da `heal()`** — la usi a mano solo se
+Viene **già chiamata automaticamente da `Network.faces()`** — la usi a mano solo se
 costruisci un `Result` per altre vie.
 
 ---
 
 ## 3. Elaborazione
 
-`heal` e `island` sono le due letture del motore (`topo/core/`), una
-dall'interno e una dall'esterno — il chiamante sceglie quella adatta al
-disegno; `split`, `anchor_texts` / `inject` sono stadi opzionali su un
+`heal` ripara il disegno una volta e restituisce una `Network`; `faces()` e
+`outlines()` ne sono le due letture (`topo/core/`), una dall'interno e una
+dall'esterno — il chiamante sceglie quella adatta al disegno (D202);
+`split`, `anchor_texts` / `inject` sono stadi opzionali su un
 `Result` (`topo/tools/`, il caller sceglie quali e in che ordine). Scrivere
 in un formato è di un adapter: `topo_dxf.to_dxf` (§9); `to_svg`/`to_view_model`
 sono in §4, sperimentali. Fori, pieghe, incisioni sono
@@ -267,38 +268,61 @@ una lettura di processo, in snapbend (`snapbend.flat`, MAP.md D88).
 ### `heal`
 
 ```python
-topo.heal(doc: Document, *, tolerance=None, label="", source_file="",
-           is_structural=None) -> Result
+topo.heal(doc: Document, *, tolerance=None, max_gap=None, is_structural=None,
+           source_file="", label="") -> Network
 ```
 
-Il passo difficile: ricostruzione della topologia. Lavora su `doc.edges`, zero
-`ezdxf`. Chiude i gap, esclude dal grafo gli edge che non chiudono un contorno
-(candidati a "qualcos'altro" — `non_contour_candidates()` espone lo stesso
-criterio a un consumatore, vedi sezione 8), trova i loop chiusi, costruisce
-l'albero di contenimento outer / inner.
-
-`heal()` **non classifica i fori** (D15): consegna solo `Cluster(outer,
-inners=[Contour...])`. Chiamare foro un cerchio è una lettura di processo (snapbend, MAP.md D88).
+La riparazione, una sola per ogni lettura (D202): ruoli non strutturali da
+parte, nodi decisi, doppioni fusi, tassellature rifittate, gap chiusi fino a
+`max_gap`. Lavora su `doc.edges`, zero `ezdxf`. Non legge ancora niente: i
+contorni li trovano `faces()` e `outlines()`.
 
 | parametro | significato |
 |---|---|
-| `tolerance` | se `None`, ripresa da `doc.source_meta["tolerance"]` (quella passata a `topo_dxf.load_dxf`). |
-| `label` | etichetta del pezzo, finisce in `cluster.label` e nei metadati. |
-| `source_file` | nome file sorgente, finisce nei metadati. |
-| `is_structural` | `Callable[[str], bool] \| None` — "questo ruolo è topologia di contorno di pezzo?", usato per decidere quali `Edge` già etichettati (da `role_rules`) restano nel grafo prima della ricerca loop. `heal()` da solo conosce solo `outer`/`inner`; senza questo parametro un ruolo di consumatore (`"hole"`, ...) è trattato come non strutturale ed **esce** dal grafo (heal lo segnala con un warning). Il consumatore passa il suo (snapbend: `snapbend.flat.is_structural`). |
+| `tolerance` | due punti più vicini di così sono un nodo. Se `None`, ripresa da `doc.source_meta["tolerance"]` (quella passata a `topo_dxf.load_dxf`). |
+| `max_gap` | il gap più largo che si chiude fra estremi liberi, e la distanza a cui `outlines()` mette due edge nello stesso gruppo. Se `None`, `tolerance`; mai meno di `tolerance`. |
+| `is_structural` | `Callable[[str], bool] \| None` — "questo ruolo è topologia di contorno di pezzo?", usato per decidere quali `Edge` già etichettati (da `role_rules`) restano nella rete. Da solo conosce solo `outer`/`inner`/`unknown`; senza questo parametro un ruolo di consumatore (`"hole"`, ...) è trattato come non strutturale ed **esce** dalla rete (heal lo segnala con un warning). Il consumatore passa il suo (snapbend: `snapbend.flat.is_structural`). |
+| `source_file` | nome file sorgente, finisce in ogni `Result`. Vuoto: `doc.source_path` (D204). |
+| `label` | etichetta, finisce in `cluster.label` di tutte e due le letture (D204). |
 
 `role_rules` **non è un parametro di `heal`** — va passato a `topo_dxf.load_dxf()`, che
 assegna i ruoli agli `Edge`.
 
-**Ritorna** un `Result`. Se non si forma nessun contorno esterno chiuso,
-`result.is_valid` è `False` e `result.errors` è popolato (`loose`
-resta piena per la diagnostica).
+**Ritorna** una `Network`. Un disegno vuoto non solleva: `net.errors` è
+popolato e `net.is_valid` è `False`.
 
 **Solleva** `TypeError` se non gli passi un `Document`.
 
 ```python
-result = topo.heal(doc, tolerance=0.5, label="P-1024")
+net = topo.heal(doc, tolerance=0.5, label="P-1024")
+result = net.faces()
 ```
+
+### `Network`
+
+La rete riparata (D204), costruita solo da `heal()` (campi solo per nome).
+Le letture non la modificano.
+
+| campo | tipo | significato |
+|---|---|---|
+| `edges` | `list[Edge]` | gli edge riparati, nodi decisi |
+| `set_aside` | `list[Edge]` | gli edge con un ruolo non strutturale (D30): ogni lettura li mette in `loose` col loro ruolo |
+| `crossings` | `list` | i punti dove due edge si incrociano senza un nodo (D132) |
+| `free_ends` | `list[(punto, mm)]` | gli estremi che nessun altro edge tocca, con la distanza dal nodo più vicino |
+| `tolerance` | `float` | la tolleranza dei nodi usata |
+| `max_gap` | `float` | il gap più largo chiuso (almeno `tolerance`) |
+| `source_file`, `label` | `str` | copiati su ogni `Result` e `Cluster` letto da qui |
+| `warnings`, `errors` | `list[str]` | cosa ha fatto la riparazione; con `errors` nessuna lettura trova niente |
+| `is_valid` | `bool` | `True` se la riparazione non ha dato errori |
+
+| metodo | ritorna | cosa fa |
+|---|---|---|
+| `faces()` | `Result` | legge dall'interno: gli edge che non chiudono un contorno restano fuori (`non_contour_candidates()` espone lo stesso criterio a un consumatore, sezione 8), giri chiusi, albero di contenimento outer / inner. **Non classifica i fori** (D15): `Cluster(outer, inners=[Contour...])`; chiamare foro un cerchio è una lettura di processo (snapbend, D88). Nessun contorno esterno chiuso → `is_valid=False`, `errors` popolato (`loose` resta piena per la diagnostica). |
+| `outlines()` | `Result` | legge dall'esterno, vedi sotto. |
+
+`faces()` e `outlines()` sono due letture della stessa rete, non due passi:
+non darne l'uscita all'altra. Tutte e due danno un `Result`; `split()` e ogni
+renderer lavorano su uno qualunque.
 
 #### I passi di `heal()` — sperimentali
 
@@ -337,7 +361,7 @@ topo.experimental.build_hierarchy(features, label="", source_file="", is_structu
     -> tuple[list[Cluster], list]
 ```
 
-Le basi sono le stesse per ogni lettura (D187, D189): `heal()`, `island()` e
+Le basi sono le stesse per ogni lettura (D187, D189): `faces()`, `outlines()` e
 una ricetta composta da un chiamante passano dalle stesse funzioni.
 
 | passo | prende → ritorna | cosa fa |
@@ -351,7 +375,7 @@ una ricetta composta da un chiamante passano dalle stesse funzioni.
 | `close_near_full_arcs` | `list[Edge]` → `(edge, n_chiusi)` | un `ArcSeg` coi capi liberi diventa `CircleSeg` solo se il gap fra i capi è entro `tolerance` **e** l'angolo mancante è entro `max_missing_angle` (`NEAR_FULL_ARC_MISSING` = 2°). `tolerance=math.inf` lascia solo l'angolo (D112). |
 | `close_free_gaps` | `list[Edge]` → `list[Edge]` | ogni estremo libero si chiude sul punto più vicino della rete entro `tolerance`: un altro estremo libero (incontro o segmento, ogni estremo al più un gap, D112) o il punto dove la sua curva, proseguita, incontra un altro edge — mai con un ponte di traverso. Un estremo coi due punti più vicini a pari merito non sceglie (D185, D189). |
 | `dangling_splines` | `list[Edge]` → `list[Edge]` | le `BSplineSeg` aperte con un estremo non collegato — solo diagnostica. |
-| `split_at_crossings` | `list[Edge]` → `NodedEdges` | la rete piana: ogni contatto deciso una volta sulle curve vere (D180). `cut_crossings`: un incrocio taglia anche lui — sì per island (D101), no per heal (D132, D189); gli incroci sono in `crossings` comunque. `NodedEdges.whole(loop)` ridà l'edge originale dove un giro ne percorre tutti i pezzi. |
+| `split_at_crossings` | `list[Edge]` → `NodedEdges` | la rete piana: ogni contatto deciso una volta sulle curve vere (D180). `cut_crossings`: un incrocio taglia anche lui — sì per `outlines()` (D101), no per la rete di `heal()` (D132, D189: il taglio lo fa la lettura); gli incroci sono in `crossings` comunque. `NodedEdges.whole(loop)` ridà l'edge originale dove un giro ne percorre tutti i pezzi. |
 | `non_contour_pieces` | `NodedEdges` → `set[id(pezzo)]` | i pezzi che non chiudono un contorno (corde e ponti, D111, D131), sulla rete: lo stesso giudizio per ogni lettura. |
 | `find_non_contour_edges` | `list[Edge]` → `set[id(Edge)]` | lo stesso, sugli edge interi (tutti i loro pezzi non-contorno). `non_contour_candidates(doc)` è la stessa cosa su un documento. |
 | `find_joining_edges` | `list[Edge]`, `set[id]` → `list[Edge]` | fra i candidati, gli edge che uniscono due forme altrimenti staccate: heal() li segnala in un warning (D111). |
@@ -377,75 +401,68 @@ curves = x.loops_to_curves(x.structural_loops(loops, is_structural))
 
 ---
 
-### `island`
+### `Network.outlines`
 
 ```python
-topo.island(doc: Document, *, max_gap: float,
-             tolerance=None, is_structural=None) -> Result
+topo.heal(doc, max_gap=g).outlines() -> Result
 ```
 
-La seconda lettura di un documento, accanto a `heal()`: **per isole**.
-`heal()` ricostruisce la topologia dall'interno (chi tocca chi, quali giri si
-chiudono, chi sta dentro chi) e trova il pezzo per contenimento. `island()`
-legge il disegno dall'esterno:
+La seconda lettura di una rete riparata, accanto a `faces()`: **per contorni**.
+`faces()` ricostruisce la topologia dall'interno (quali giri si chiudono, chi
+sta dentro chi) e trova il pezzo per contenimento. `outlines()` legge il disegno
+dall'esterno. La riparazione è già fatta da `heal()` (gap fino a `max_gap`,
+tassellature rifittate, doppioni fusi); `outlines()`:
 
-1. separa i **pezzi**: gli edge che si toccano, entro `max_gap` (`spatial_islands`);
-2. per ogni pezzo normalizza (tassellature rifittate come archi/spline,
-   merge/weld di `heal`, gap fino a `max_gap`) e rende la rete **piana**
-   (`split_at_crossings`);
-3. il **contorno esterno** è il bordo della faccia esterna della rete
-   (`outer_face`) — gli edge percorsi andata e ritorno (assi, segni che
-   sporgono) non sono contorno;
-4. ogni contorno esterno che non sta dentro un altro è un'**isola** (un
-   cluster); un pezzo che sta dentro un'isola, col suo contorno o senza, è
-   suo per contenimento (D99);
-5. dentro: i giri chiusi diventano `inners`, il resto va in `loose`
-   col ruolo che aveva (`unknown` se nessuno l'ha deciso) e con `cluster_ref`,
-   l'indice dell'isola che lo contiene o che tocca (`None` fuori da tutte).
+1. separa i **gruppi**: gli edge che si toccano, entro `max_gap` (`spatial_islands`);
+2. per ogni gruppo rende la rete **piana** (`split_at_crossings`, gli incroci
+   tagliano);
+3. il **contorno** è il bordo della faccia esterna della rete (`outer_face`) —
+   gli edge percorsi andata e ritorno (assi, segni che sporgono) non sono
+   contorno;
+4. ogni contorno che non sta dentro un altro è un `Cluster` col solo `outer`;
+   un gruppo che sta dentro un altro, col suo contorno o senza, non è un
+   cluster (D99, D161);
+5. tutto il resto — chiuso o aperto, dentro o fuori dal contorno — va in
+   `loose`, dalla rete riparata (D203), col ruolo che aveva (`unknown` se
+   nessuno l'ha deciso) e con `cluster_ref`, l'indice del cluster che lo
+   contiene o che tocca (`None` fuori da tutti).
 
-**Quando usarla invece di `heal()`**: disegni di viste — più viste su un
+**Quando usarla invece di `faces()`**: disegni di viste — più viste su un
 foglio, viste isometriche/3D proiettate, sagome con linee quasi coincidenti
-dove il grafo di `heal()` è ambiguo. Per un disegno di sagome piane (uno o più
-pezzi separati, geometria esatta da cucire) resta `heal()`.
+dove il grafo di `faces()` è ambiguo. Per un disegno di sagome piane (uno o più
+pezzi separati, geometria esatta da cucire) resta `faces()`.
 
-Un pezzo il cui contorno sta **dentro** quello di un altro non è un cluster:
-diventa interno (`inners`) dell'isola più esterna che lo contiene. Due
-contorni esterni sono due isole per quanto siano vicini: non c'è una distanza
-fra le viste (D99). Con la
-cornice nel disegno, quindi, l'unico cluster è la cornice: toglierla (o dare un
-ruolo a cornice, cartiglio, cerchi di ingrandimento) è compito del chiamante.
-Cosa sia un cluster — vista, pezzo — lo decide chi lo usa (D21).
+**Nessun `inner`** (D161): i giri chiusi dentro un contorno vanno in `loose`
+come `ClosedCurve`, senza dire foro o faccia. Due contorni esterni sono due
+cluster per quanto siano vicini: non c'è una distanza fra le viste (D99). Con
+la cornice nel disegno, quindi, l'unico cluster è la cornice: toglierla (o dare
+un ruolo a cornice, cartiglio, cerchi di ingrandimento) è compito del
+chiamante. Cosa sia un cluster — vista, pezzo — lo decide chi lo usa (D21).
 
-| parametro | significato |
-|---|---|
-| `max_gap` | **obbligatorio**, per nome. Due edge più vicini di così (mm) si toccano; gap chiusi fra estremi liberi, mai spostando un estremo più di così. Nessun default (D98). |
-| `tolerance` | se `None`, ripresa da `doc.source_meta["tolerance"]` — come `heal()`. |
-| `is_structural` | come in `heal()` (D30): un `Edge` con un ruolo già deciso e non strutturale (`frame`, `title_block`, ...) resta **fuori** dalla lettura e va in `loose` col suo ruolo. È così che un consumatore toglie cornice e cartiglio prima di leggere le viste. Senza, solo `outer`/`inner` sono strutturali. |
+I numeri sono quelli di `heal()` (`net.tolerance`, `net.max_gap`); `max_gap`
+è anche la distanza a cui due edge sono dello stesso gruppo.
 
-**Ritorna** un `Result` con un `Cluster` per isola,
-ordinati per area del contorno esterno. Nessun giro chiuso in nessuna isola →
+**Ritorna** un `Result` con un `Cluster` per contorno, ordinati per area del
+contorno esterno. Rete non valida (`net.errors`) o nessun contorno chiuso →
 `is_valid=False`, `errors` popolato.
-
-**Solleva** `TypeError` se non gli passi un `Document`, o se manca
-`max_gap`.
 
 ```python
 doc = topo_dxf.load_dxf("tavola.dxf")
-result = topo.island(doc, max_gap=0.5)
+result = topo.heal(doc, max_gap=0.5).outlines()
 for cluster in result.clusters:          # una vista / un pezzo per cluster
-    print(cluster.outer.area, len(cluster.inners))
+    print(cluster.outer.area)
 ```
 
-#### I mattoni di `island()` — sperimentali
+#### I mattoni di `outlines()` — sperimentali
 
 In `topo.experimental`, come i passi di `heal()`. Esposti per chi compone la sua ricetta (snapdraw: togliere cornice e cartiglio
 per ruolo, poi leggere le viste) — stessi pezzi, nessun criterio duplicato.
 
 ```python
-topo.experimental.read_islands(edges, tolerance, max_gap) -> list[IslandReading]
-topo.experimental.read_island(edges, tolerance, max_gap) -> IslandReading
+topo.experimental.read_outlines(edges, tolerance, max_gap) -> list[OutlineReading]
+topo.experimental.read_outline(edges, tolerance, max_gap) -> OutlineReading
 topo.experimental.spatial_islands(edges, gap_tolerance) -> list[Island]
-topo.experimental.split_at_crossings(edges, tolerance, decimals=3) -> NodedEdges
+topo.experimental.split_at_crossings(edges, tolerance, decimals=3, cut_crossings=True) -> NodedEdges
 topo.experimental.outer_face(edges, epsilon=0.0) -> OuterFace | None
 topo.experimental.refit_tessellations(edges, max_segment=0.1, min_run=10,
                           tolerance=0.02, node_decimals=3) -> list[Edge]
@@ -453,8 +470,8 @@ topo.experimental.refit_tessellations(edges, max_segment=0.1, min_run=10,
 
 | funzione | prende → ritorna | cosa fa |
 |---|---|---|
-| `read_islands` | `list[Edge]` → `list[IslandReading]` | pezzi a contatto + `read_island` per ognuno + annidamento (`nested_in`, anche per un pezzo senza contorno tutto dentro un'isola). È `island()` prima di diventare `Result`. |
-| `read_island` | `list[Edge]` → `IslandReading` | un'isola: normalizza, rete piana, faccia esterna, classificazione dell'interno. |
+| `read_outlines` | `list[Edge]` → `list[OutlineReading]` | la stessa riparazione di `heal()` su edge sciolti, poi i gruppi a contatto + `read_outline` per ognuno + annidamento (`nested_in`, anche per un gruppo senza contorno tutto dentro un altro). È `outlines()` prima di diventare `Result`. |
+| `read_outline` | `list[Edge]` → `OutlineReading` | un gruppo: la stessa riparazione di `heal()`, rete piana, faccia esterna, il resto classificato. |
 | `spatial_islands` | `list[Edge]` → `list[Island]` | union-find sulle coppie di edge a distanza vera `<= gap_tolerance` (STRtree). Nessuna nozione di chiusura. |
 | `split_at_crossings` | `list[Edge]` → `NodedEdges` | rete piana (D180): ogni contatto si decide una volta per coppia di edge, sulle curve vere — un incrocio, un estremo entro `GRAPH_EPSILON` (0.01 mm) dall'altra curva (T o due estremi), due curve che passano entro `GRAPH_EPSILON` senza incrociarsi — e dà una sola tupla di nodo per tutti gli edge che tocca (union-find; mai i due estremi dello stesso edge). Più incontri della stessa coppia entro `tolerance` lungo uno dei due edge sono un contatto solo (D101: le due radici di una quasi-tangenza). Si taglia ogni tipo, spline ed ellissi comprese (una spline periodica resta intera). `NodedEdges.parent_of(pezzo)` dà l'`Edge` originale, `.crossings` gli incroci interni (D132). |
 | `outer_face` | `list[Edge]` (rete piana) → `OuterFace \| None` | bordo della faccia esterna, per componente, quella di area massima; `spurs` = edge percorsi andata e ritorno. |
@@ -462,19 +479,20 @@ topo.experimental.refit_tessellations(edges, max_segment=0.1, min_run=10,
 
 Nessuna **muta** l'input: ritornano liste/oggetti nuovi.
 
-`topo.experimental.IslandReading` — cosa è stato deciso su un'isola, pezzo per pezzo:
+`topo.experimental.OutlineReading` — cosa è stato deciso su un gruppo, pezzo per pezzo:
 
 | campo | tipo | significato |
 |---|---|---|
-| `edges` | `list[Edge]` | gli edge dell'isola, come arrivano |
+| `edges` | `list[Edge]` | gli edge del gruppo, come arrivano |
 | `outer` | `OuterFace \| None` | contorno esterno (`segments`, `styles`, `edges`, `spurs`; il poligono con `topo.to_shapely(outer)`) |
 | `spurs` | `list[Edge]` | percorsi andata e ritorno dal contorno |
-| `outside` | `list[Edge]` | pezzi dell'isola rimasti fuori dal contorno (rete staccata) |
-| `non_contour` | `list[Edge]` | candidati non-contorno, stesso criterio di `heal()` (D49) |
+| `outside` | `list[Edge]` | pezzi del gruppo rimasti fuori dal contorno (rete staccata) |
+| `non_contour` | `list[Edge]` | candidati non-contorno, stesso criterio di `faces()` (D49) |
 | `unclassified` | `list[Edge]` | il resto |
-| `nested_in` | `int \| None` | indice dell'isola più esterna che la contiene |
+| `nested_in` | `int \| None` | indice del gruppo più esterno che lo contiene |
 
 ---
+
 
 ## La geometria — `topo.geometry`
 
@@ -516,7 +534,7 @@ o la lista dei segmenti): `circle`, `ellipse`, `stadium` (stadio: due
 semicerchi uguali e due rette parallele — nome geometrico, non "asola"),
 `rectangle`, `polygon` (solo rette), `other`. Fatto
 geometrico, non feature: `circle` non vuol dire foro, lo decide chi legge il
-disegno o il processo. Vale uguale su `heal` e su `island`. I segmenti
+disegno o il processo. Vale uguale su `faces()` e su `outlines()`. I segmenti
 consecutivi sulla stessa retta o circonferenza sono ricomposti prima.
 `tolerance` è una frazione della dimensione del contorno.
 
@@ -957,7 +975,7 @@ Sotto c'è sempre la palette di topo; un campo
 qui: è `topo_dxf.to_dxf(layers=...)`.
 
 **La palette di topo** (`topo.model.DEFAULT_ROLE_STYLES`, D128) dà il colore
-ai ruoli che heal e island producono, uguale per ogni formato: `outer` verde
+ai ruoli che `faces()` e `outlines()` producono, uguale per ogni formato: `outer` verde
 (0, 255, 0), `inner` giallo (255, 255, 0), `unknown` rosso (255, 0, 0); ogni
 altro ruolo è grigio (`CONSUMER_ROLE_STYLE`, (128, 128, 128)) finché il
 chiamante non gli dà un colore. `topo.model.role_style(ruolo, role_styles=...)`
@@ -1322,7 +1340,7 @@ garanzie. Gli adapter sono pacchetti a parte (§9, §10):
   segmento con ruolo e stile), `EdgeStyle`, i testi, le feature
   rilevate e i ruoli: `ContourRole`, `role_str`, `normalize_role`,
   `is_structural_role`. I quattro più usati stanno anche in `topo.<Nome>`.
-- **`topo.experimental`** — quello che si usa senza promessa di stabilità (D175 C, D176): i passi di `heal()` e i mattoni di `island()` (§3), il viewer (§4), `to_text`, `rotate_*`, `simplify_points`, `to_nester_input`.
+- **`topo.experimental`** — quello che si usa senza promessa di stabilità (D175 C, D176): i passi di `heal()` e i mattoni di `outlines()` (§3), il viewer (§4), `to_text`, `rotate_*`, `simplify_points`, `to_nester_input`.
 
 ```python
 import topo
@@ -1348,7 +1366,7 @@ core: dopo di lui, `ezdxf` non si tocca più.
 `node_tolerance(override=None) -> float`: la distanza sotto cui due estremi
 sono lo stesso nodo — `override` se dato, altrimenti `source_meta["tolerance"]`,
 altrimenti `DEFAULT_NODE_TOLERANCE` (0.05, `model/document.py`). È la lettura
-che usano `heal`, `island` e `validate_document` quando `tolerance` non è passata (D86).
+che usano `heal` e `validate_document` quando `tolerance` non è passata (D86).
 
 ### `Text`
 
@@ -1385,7 +1403,7 @@ ruolo, come un edge; senza ruolo, su `text_layer`.
 
 ### `Result`
 
-Prodotto da `heal()`, arricchito da un consumatore / `inject()`.
+Prodotto da `Network.faces()` o `Network.outlines()`, arricchito da un consumatore / `inject()`.
 
 | campo | tipo | contenuto |
 |---|---|---|
@@ -1393,7 +1411,7 @@ Prodotto da `heal()`, arricchito da un consumatore / `inject()`.
 | `is_valid` | `bool` | **controllalo prima di `split` o di scrivere (`topo_dxf.to_dxf`)** |
 | `warnings` / `errors` | `list[str]` | diagnostica |
 | `loose` | `list[OpenCurve \| ClosedCurve]` | ogni curva che non è contorno di nessun cluster: catene che non chiudono niente, tracce aperte, curve chiuse con un ruolo non strutturale (D137). `curve.cluster_ref` = indice del cluster il cui contorno esterno la contiene tutta, bordo e buchi compresi (una linea da lato a lato, una croce dentro un foro); `None` altrimenti. Con `island()` anche l'isola che la curva tocca (D99). Un consumatore la sposta in `cluster.detected` con `result.promote` |
-| `texts` | `list[Text]` | copiati da `heal()` dal `Document` |
+| `texts` | `list[Text]` | copiati dalla `Network` (dal `Document`) |
 | `cluster_count` | property | `len(clusters)` |
 
 Metodo `to_dict()` → dizionario JSON-ready (usato internamente dagli export).
@@ -1536,7 +1554,7 @@ for edge in topo.non_contour_candidates(doc):
     if <la tua logica decide che è un bordo di feature in rilievo>:
         edge.role = topo.normalize_role("flange_up")
 
-result = topo.heal(doc)   # "flange_up" è già fuori dal grafo, mai indovinato "bending"
+result = topo.heal(doc).faces()   # "flange_up" è già fuori dal grafo, mai indovinato "bending"
 ```
 
 ---
@@ -1555,7 +1573,7 @@ if not check.is_valid:
     raise SystemExit(check.errors)
 
 # 3. topologia
-result = topo.heal(doc, label="P-1024")
+result = topo.heal(doc, label="P-1024").faces()
 # 4. (opzionale) una lettura di processo, fuori da topo — es. snapbend:
 #   from snapbend.flat import detect_flat
 #   detect_flat(result, "all")

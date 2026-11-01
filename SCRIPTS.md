@@ -41,9 +41,9 @@ OUTDIR = r"pipeline_output"                   # scritto in <repo>/pipeline_outpu
 | 14 | `14_style_classification.py` | `RoleRule`, `name_rules`, `load_dxf(role_rules=...)` | assegnare il ruolo da nome, tratteggio, colore o una combinazione (D63) |
 | 16 | `16_strips_on_fixture.py` | `tools.strips` (sperimentale) | quattro strisce fra un disco e la regione vuota che lo contiene; la politica sta nello script (D134, D142) |
 | 17 | `17_rotate_to_longest_outer.py` | `rotate_to_longest` (fuori da `__all__`, D46), `tools.rotate.longest_structural_segment` | ruota un `Result` già sano così il lato più lungo dell'outer è orizzontale |
-| 18 | `18_outer_scan.py` | `core.readings.outer_scan.outer_candidate_edges` (non esportato) | candidati a bordo esterno per ray casting — idea da cui è nata la lettura per isole, oggi non usata da `island()` |
-| 20 | `20_island.py` | `island`, `experimental.read_islands` | lettura per isole su tutti i disegni di `tests/examples/islands`, un layer DXF per decisione |
-| 21 | `21_sweep_invariants.py` | `heal`, `island`, `tests/invariants.py` | le invarianti della suite su una cartella di disegni che il repo non ha (stesso contenuto saltato), ogni disegno in un processo a parte con tempo massimo; rapporto fuori dal repo |
+| 18 | `18_outer_scan.py` | `core.readings.outer_scan.outer_candidate_edges` (non esportato) | candidati a bordo esterno per ray casting — idea da cui è nata la lettura per isole, oggi non usata da `outlines()` |
+| 20 | `20_island.py` | `heal(...).outlines()`, `experimental.read_outlines` | lettura per contorni (`outlines()`) su tutti i disegni di `tests/examples/islands`, un layer DXF per decisione |
+| 21 | `21_sweep_invariants.py` | `heal` (`faces()`, `outlines()`), `tests/invariants.py` | le invarianti della suite su una cartella di disegni che il repo non ha (stesso contenuto saltato), ogni disegno in un processo a parte con tempo massimo; rapporto fuori dal repo |
 
 `11_batch_heal.py` accetta una cartella come argomento (`python
 scripts/11_batch_heal.py path/`) e `--tol`; senza argomenti processa

@@ -43,7 +43,7 @@ Una distribuzione (`g-topo`), tre pacchetti importabili:
 
 | pacchetto  | cosa                                   | extra   | porta   |
 |------------|----------------------------------------|---------|---------|
-| `topo`     | il motore: modello, heal, island, split, SVG/JSON/testo | —       | `shapely`, `numpy` |
+| `topo`     | il motore: modello, heal (faces / outlines), split, SVG/JSON/testo | —       | `shapely`, `numpy` |
 | `topo_dxf` | lettore e scrittore DXF/DWG, XDATA, `inspect_dxf` | `[dxf]` | `ezdxf` |
 | `topo_pdf` | lettore PDF (sperimentale)             | `[pdf]` | `PyMuPDF` |
 
@@ -59,7 +59,8 @@ un confine che fa rispettare il controllo dell'indice (`scripts/gen_index.py
 import topo, topo_dxf
 
 doc    = topo_dxf.load_dxf("pezzo.dxf", tolerance=0.5)   # -> Document
-result = topo.heal(doc)                                  # topologia: contorni chiusi, outer/inner
+net    = topo.heal(doc)                                  # il disegno riparato una volta -> Network
+result = net.faces()                                     # topologia: contorni chiusi, outer/inner
 #   fori, pieghe, incisioni sono una lettura di processo sopra: snapbend.flat.detect_flat
 
 if not result.is_valid:                                  # nessun contorno esterno chiuso
@@ -80,7 +81,7 @@ print(f"{result.cluster_count} cluster, {len(cerchi)} cerchi interni")
 import topo, topo_dxf
 
 doc    = topo_dxf.load_dxf("batch.dxf")
-result = topo.heal(doc, label="batch")
+result = topo.heal(doc, label="batch").faces()
 
 for part in topo.split(result):                 # un Result per pezzo, senza formato
     name = part.clusters[0].label               # batch_P1, batch_P2, ... (o namer=...)
@@ -100,20 +101,21 @@ che le contiene, o il più vicino). Ogni adapter scrive poi un pezzo nel suo for
 import topo, topo_dxf
 
 doc    = topo_dxf.load_dxf("tavola.dxf")   # cornice / cartiglio marcati per ruolo, o tolti
-result = topo.island(doc, max_gap=0.5)
-for cluster in result.clusters:              # una vista (o un pezzo) per isola
-    print(cluster.outer.area, len(cluster.inners))
+result = topo.heal(doc, max_gap=0.5).outlines()
+for cluster in result.clusters:              # una vista (o un pezzo) per contorno
+    print(cluster.outer.area)
 ```
 
-`heal()` legge un disegno di sagome piane separate dall'interno (quali giri si chiudono, chi sta
-dentro chi). `island()` legge un disegno di viste dall'esterno: gli edge che si
-toccano fanno un pezzo, il contorno esterno di ogni pezzo è la faccia esterna
-della sua rete piana, e ogni contorno esterno che non sta dentro un altro è
-un'isola; quello che sta dentro è suo per contenimento. Non c'è una distanza
-fra le viste. Quali buchi del disegno chiudere (`max_gap`) dipende dal disegno,
-quindi lo dice sempre chi chiama: topo non ha default. Stesso `Result` in uscita — vedi `docs/API.md` (`island`).
+`heal()` ripara il disegno una volta (nodi, doppioni, gap fino a `max_gap`) e restituisce una
+`Network`; due letture danno un `Result`. `faces()` legge un disegno di sagome piane separate
+dall'interno (quali giri si chiudono, chi sta dentro chi). `outlines()` legge un disegno di viste
+dall'esterno: gli edge che si toccano fanno un gruppo, il contorno esterno di ogni gruppo è la
+faccia esterna della sua rete piana, e ogni contorno esterno che non sta dentro un altro è un
+cluster col solo `outer` (quello che sta dentro va in `loose`). Non c'è una distanza fra le
+viste. `max_gap` (default `tolerance`) è il gap più largo che si chiude — vedi `docs/API.md`
+(`Network.outlines`).
 
-Tutte e due sono ricette su passi pubblici. I passi di `heal()` (`split_labeled`,
+Le letture sono ricette su passi pubblici. I passi di `heal()` (`split_labeled`,
 `close_free_gaps`, `face_loops`, `build_hierarchy`, ...) sono esportati uno per
 uno, così un consumatore compone il suo ordine — vedi `docs/API.md` (i passi di
 `heal()`).
@@ -125,7 +127,7 @@ import topo, topo_dxf
 
 fg = topo.geometry
 doc = topo.load_segments(fg.rectangle(200, 100) + fg.rectangle(100, 50))
-result = topo.heal(doc)                # un pezzo: outer 200×100, un inner 100×50
+result = topo.heal(doc).faces()        # un pezzo: outer 200×100, un inner 100×50
 topo.experimental.save_svg(result, "due_rettangoli.svg")   # senza adapter
 topo_dxf.to_dxf(result, doc).saveas("due_rettangoli.dxf")
 ```
@@ -185,7 +187,10 @@ topo_dxf.load_dxf(path)   ──►  Document   (edge + testi + source_meta)
 topo.load_segments(segs)  ──►  Document   l'adapter è l'unico codice che legge un formato
                           │
                           ▼
-     heal(doc)  ──►  Result      topologia: gap chiusi, giri trovati,
+     heal(doc)  ──►  Network     il disegno riparato una volta: nodi, doppioni, gap
+                          │
+                          ▼   .faces() / .outlines()
+                       Result      topologia: giri trovati,
                           │            albero di contenimento outer / inner
                           ▼
   (la lettura di un consumatore)       es. snapbend: tipo di foro, linee di piega, incisioni,
