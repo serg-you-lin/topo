@@ -7167,3 +7167,38 @@ it still finds is a missing entry in the list, not a new family. The
 promise stays D143's whole: same input, same reading; a rigid motion, same
 reading, except a measure that falls on the tolerance itself within float
 noise, which heal reports (D183, D185).
+
+### D192 — G6e group A: a meeting is decided in millimetres at float noise, on the measure whose error is linear ✅
+`intersections.py` decided with fixed thresholds in the wrong units: parallel
+lines at `|denom| < 1e-10` (mm²), "on the segment" at `t` within `1e-9` of
+an end (a pure number), tangency on the discriminant (`< 1e-10`, mm⁴) and on
+the half-chord `h < 1e-10`. Far from the origin a rigid motion moves a
+coordinate by ~1e-10 mm, and each of these flipped: a segment inside another
+on the same line got an invented meeting, a T on a short line and an arc
+ending on a line lost theirs, and a tangent line or two tangent circles gave
+0 or 2 points in 199 motions out of 200.
+
+**Rule.** Every decision there is a distance in millimetres compared with
+`FLOAT_NOISE` (1e-6 mm, D183): two lines are parallel when along the longer
+segment their directions part by at most that; a point is on a segment or an
+arc when it overshoots an end by at most that (as a parameter `/length`, as
+an angle `/radius`); a line is tangent to a circle when the centre-to-line
+distance is the radius within that, two circles when the centre distance is
+the sum or the difference of the radii within that.
+
+**Why on the radial gap, not on the half-chord.** The half-chord grows as the
+square root of the radial gap: a noise of 1e-10 mm on r = 5 gives
+h ≈ 3e-5 mm, so no threshold on `h` is stable. The radial gap carries the
+coordinates' error linearly, so a threshold above that noise is.
+
+**The rest of group A** (closed with one line each in the inventory, no
+change): `outer_scan.py` has no reading calling it; `outer_face.py:218`
+needs two distinct edges overlapping from a node, removed before the faces;
+`segments.py:46` is already in mm and only drops a vertex closer than 1e-9
+to an end; `noding.py:404` is a shortcut of `merge_along_edges`, which joins
+a stop within `node` of an end anyway; `noding.py:658` is never asked for
+concentric arcs within `node`, because their ends give a T first;
+`points.py:282` a circle from noise is the chord itself, and the tolerance
+check after it rejects it exactly where `None` would.
+Held by `tests/unit/core/test_intersections.py` (red before, ten motions
+up to 3e6 mm).

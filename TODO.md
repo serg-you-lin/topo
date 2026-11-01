@@ -148,7 +148,8 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       ciò che decide entra, poi l'elenco è fermo e si accorcia soltanto
       (eccezione: righe nuove scritte in `core/`, controllate nel loro
       commit). Misura: a fine giornata l'elenco è più corto che al mattino.
-      Poi gruppo A (soglie assolute, ~8 punti), poi B, C, D. Alla fine la passata sui 121 disegni
+      1 novembre: inventario chiuso a 44 righe (688 contate per token);
+      gruppo A fatto (D192: 7 corrette, 6 innocue), restano 31: B, C, D. Alla fine la passata sui 121 disegni
       una volta sola, come verifica. Il testo sotto è la storia.
       chat pulita): la passata su snapdraw (`scripts/21_sweep_invariants.py`,
       voce in Pulizia) trova 32 disegni su 121 dove un moto rigido cambia la
@@ -206,7 +207,7 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       comune); J0116004A (solo ordine); drw_0017 (incroci non tagliati: rete non
       piana per heal); suite 3:44, sopra il tetto; contenimento (tre marche),
       union-find (`cluster_points`, `_Contacts`), `_Curve.locate` contro
-      `nearest_point`, soglie assolute in `intersections.py`.
+      `nearest_point`; soglie assolute in `intersections.py` fatte (D192).
       Tempo della suite, misurato senza profiler (31 ottobre): heal() su tutti
       i suoi golden 0.4 s; island() sui 32 golden 29 s, di cui `outer_face`
       10 s (6.1 nell'unione delle facce di D100: `unary_union` + `polygonize`,
