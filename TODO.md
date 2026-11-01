@@ -26,8 +26,34 @@ Deciso da Federico il 2 novembre: si fa comunque, bene, in pochi giorni.
 Le misure sotto non sono più un cancello: la 1 è la verifica del lavoro
 (golden cambiati classificati + DXF in `_debug`), la 3 il tetto dei tempi.
 Sottopassi, uno per commit:
-- [ ] A. inventario: le tre differenze di riparazione e dove finisce ognuna
-      (nella lettura o via), + superficie pubblica di `Network`;
+- [x] A. inventario (2 novembre). Le differenze sono quattro, non tre
+      (`heal.py:87,110` contro `island.py:136-165`):
+      1. portata dei gap: `reach(tol)` contro `reach(max(tol, max_gap))`.
+         Sono due fatti diversi (quando due punti sono un nodo; fin dove si
+         chiude un gap). **Da decidere con Federico all'inizio di B:** un
+         numero solo (`tolerance`, come scritto sopra) o due (`tolerance` +
+         `max_gap`, default = `tolerance`). Proposta: due — con uno solo, chi
+         passa un gap largo cambia anche i nodi di `faces()`.
+      2. `keep_junctions`: True (D110) contro False (D50). Nella rete i pezzi
+         restano separati (non si perde niente); `outlines()` ricompone già
+         lungo il contorno (`merge_runs`, `island.py:200`). Da misurare in B.
+      3. scope: tutto il disegno contro un gruppo `spatial_islands` alla
+         volta. I gap si chiudono entro `max_gap` e i gruppi sono a `max_gap`,
+         quindi le coppie dovrebbero essere le stesse: il raggruppamento
+         diventa un passo di `outlines()`. Da misurare: risultati e tempi.
+      4. `cut_crossings`: False in heal (D132, D189), True in island (D101).
+         È già "lo dice la lettura" (docstring `noding.py:170`): la rete
+         tiene gli incroci come dato (`crossings`), il taglio lo fa
+         `outlines()`. Serve un taglio applicabile a una rete già fatta.
+      Minori: il filtro dei degeneri (`island.py:163`) va nella riparazione
+      comune; il secondo `decide_nodes` in `read_island` sparisce; gli errori
+      di disegno vuoto (solo in heal) valgono per tutti; `label` e
+      `source_file` (heal li prende, island usa `doc.source_path`) vanno
+      sulla rete.
+      Superficie di `Network`: `edges` (riparati), `crossings`, `free_ends`,
+      `set_aside` (ruoli non strutturali), `warnings`, `errors`, `is_valid`,
+      `source_file`, `label`; `faces()`, `outlines()`. `NodedEdges` resta
+      interno.
 - [ ] B. una riparazione sola dietro `heal()` → `Network`; golden classificati;
 - [ ] C. `faces()`/`outlines()` + rinomina `island`/`read_island(s)`/`IslandReading`;
 - [ ] D. docs (LLM, API, README x2), `release_check`; i consumer si adattano
