@@ -11,6 +11,7 @@ from typing import Optional, Tuple, List
 from ..primitives.segments import (
     ArcSeg, CircleSeg, LineSeg, angle_from_start,
 )
+from .measure import FLOAT_NOISE
 
 Point = Tuple[float, float]
 
@@ -27,7 +28,10 @@ def _line_intersection(p1: Point, p2: Point,
     x3, y3 = p3
     x4, y4 = p4
     denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
-    if abs(denom) < 1e-10:
+    # parallele: lungo il tratto più lungo le due direzioni si scostano meno
+    # del rumore dei double (G6e: una soglia fissa in mm² la decide il moto)
+    shorter = min(math.hypot(x1 - x2, y1 - y2), math.hypot(x3 - x4, y3 - y4))
+    if abs(denom) <= FLOAT_NOISE * shorter:
         return None
     t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom
     return (x1 + t * (x2 - x1), y1 + t * (y2 - y1))
