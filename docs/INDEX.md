@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`85` modules · `512` module-level functions · `63` classes · `16304` lines of code.
+`85` modules · `512` module-level functions · `63` classes · `16308` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -432,7 +432,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `Result` | class | `topo/model/result.py:13` | Risultato completo di una sessione topo su un file DXF. |
 | `_result_bbox_center` | func | `topo/tools/rotate.py:219` | Centro del bbox unito degli outer di tutti i cluster — vedi `rotate_to_longest`. |
 | `_reversed` | func | `topo/core/geometry/regions.py:195` |  |
-| `_rim_runs` | func | `topo/core/topology/rim.py:155` | [((edge, verso), primo vertice, ultimo vertice)] lungo l'anello: copertura greedy |
+| `_rim_runs` | func | `topo/core/topology/rim.py:159` | [((edge, verso), primo vertice, ultimo vertice)] lungo l'anello: copertura greedy |
 | `_ring` | func | `topo/core/geometry/lines.py:98` |  |
 | `_ring` | func | `topo/io/shapes.py:49` |  |
 | `ring_area` | func | `topo/core/geometry/integrals.py:90` | Area esatta (senza segno) racchiusa da un giro chiuso di primitive. |
@@ -487,13 +487,13 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `segment_reach` | func | `topo/core/geometry/measure.py:141` | (min, max) della proiezione dei punti di `segment` sul versore |
 | `segments_from_loop` | func | `topo/core/topology/loop_finder.py:35` | Segmenti nativi di un loop, orientati nel verso di percorrenza. |
 | `segments_to_pts_with_bulge` | func | `topo_dxf/exporter.py:109` |  |
-| `_sense` | func | `topo/core/topology/rim.py:145` | +1 se il lato p→q va nel verso di `geom` vicino a `mid`, -1 se contro. |
+| `_sense` | func | `topo/core/topology/rim.py:149` | +1 se il lato p→q va nel verso di `geom` vicino a `mid`, -1 se contro. |
 | `_shape` | func | `topo/io/svg.py:29` |  |
 | `ShapeKind` | class | `topo/core/geometry/shape.py:30` | Le sei forme di `contour_shape`, elenco chiuso e stabile (MAP.md D136). |
 | `_shown_text` | func | `topo_dxf/text_extractor.py:236` | La stringa che la quota mostra: l'override con ``<>`` sostituito dalla |
 | `_shown_value` | func | `topo_dxf/text_extractor.py:249` | La misura come la mostra il disegno (precisione, virgola), o calcolata. |
 | `_side` | func | `topo/core/geometry/regions.py:206` | +1 dentro, -1 fuori, 0 sul bordo. |
-| `_side_cover` | func | `topo/core/topology/rim.py:128` | Per ogni lato dell'anello, gli (edge, verso) che distano meno di `band` |
+| `_side_cover` | func | `topo/core/topology/rim.py:128` | Per ogni lato dell'anello, gli (edge, verso) che gli corrono lungo: il |
 | `sides_on_border` | func | `topo/core/geometry/axis.py:229` | I lati di `bounds` ("left", "bottom", "right", "top") che stanno sul |
 | `_signed_area` | func | `topo/core/geometry/regions.py:190` | Area con segno sulle primitive (Green, D165): positiva in senso antiorario. |
 | `_signed_turn` | func | `topo/core/primitives/fitting.py:57` | Svolta con segno (gradi) in `b` andando da `a` a `c`: positiva a sinistra. |
@@ -564,7 +564,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_trig_integral` | func | `topo/core/geometry/integrals.py:160` |  |
 | `_trig_moments` | func | `topo/core/geometry/integrals.py:127` | Contributo del tratto t0 → t1 di c + M cos t + N sin t (arco: M, N = |
 | `_trig_mul` | func | `topo/core/geometry/integrals.py:145` |  |
-| `_trimmed` | func | `topo/core/topology/rim.py:210` | `seg` da `a` a `b`: un capo entro `band` da un estremo di `seg` è |
+| `_trimmed` | func | `topo/core/topology/rim.py:214` | `seg` da `a` a `b`: un capo entro `band` da un estremo di `seg` è |
 | `_turn` | func | `topo/core/geometry/points.py:200` | Di quanto gira (gradi, 0..180) chi va da `back` ad `at` e poi a `forward`. |
 | `turn_corners` | func | `topo/core/geometry/points.py:229` | Indici degli spigoli di una sequenza campionata: vertici Douglas-Peucker |
 | `_twin` | func | `topo/core/geometry/regions.py:414` | L'indice del pezzo di `pieces` che ricopre `piece` (stessi capi, stesso |
@@ -1209,7 +1209,7 @@ _core/topology/outer_face.py_
 - `_largest_loop(edges: List[Edge], epsilon: float)` — L332 — (loop, segments, styles, polygon) del giro di area massima.
 - `_area(found) -> float` — L342 — Area esatta del giro di un candidato (loop, segments, ...), sulle primitive (D166).
 
-#### `topo/core/topology/rim.py` — 222 lines
+#### `topo/core/topology/rim.py` — 226 lines
 
 _topo/core/topology/rim.py_
 
@@ -1217,10 +1217,10 @@ _topo/core/topology/rim.py_
 - `off_rim(edge: Edge, taken: list, ring, band: float) -> List[Edge]` — L64 — I tratti di `edge` che il bordo non ha preso: `taken` sono i capi (a, b)
 - `_stretch(geom, d0: float, d1: float) -> list` — L113 — I vertici di `geom` da `d0` a `d1` (ascisse curvilinee; `d1` oltre la
 - `_farthest(geom, d0: float, d1: float, ring) -> float` — L122 — La distanza massima da `ring` del tratto di `geom` da `d0` a `d1`, sui
-- `_side_cover(pts: list, geoms: list, band: float) -> List[set]` — L128 — Per ogni lato dell'anello, gli (edge, verso) che distano meno di `band`
-- `_sense(geom, mid, p, q, step: float) -> int` — L145 — +1 se il lato p→q va nel verso di `geom` vicino a `mid`, -1 se contro.
-- `_rim_runs(pts: list, geoms: list, cover: List[set]) -> list` — L155 — [((edge, verso), primo vertice, ultimo vertice)] lungo l'anello: copertura greedy
-- `_trimmed(seg, a, b, via, band: float)` — L210 — `seg` da `a` a `b`: un capo entro `band` da un estremo di `seg` è
+- `_side_cover(pts: list, geoms: list, band: float) -> List[set]` — L128 — Per ogni lato dell'anello, gli (edge, verso) che gli corrono lungo: il
+- `_sense(geom, mid, p, q, step: float) -> int` — L149 — +1 se il lato p→q va nel verso di `geom` vicino a `mid`, -1 se contro.
+- `_rim_runs(pts: list, geoms: list, cover: List[set]) -> list` — L159 — [((edge, verso), primo vertice, ultimo vertice)] lungo l'anello: copertura greedy
+- `_trimmed(seg, a, b, via, band: float)` — L214 — `seg` da `a` a `b`: un capo entro `band` da un estremo di `seg` è
 
 ### `topo/` (root)
 

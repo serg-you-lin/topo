@@ -150,12 +150,12 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
 - [ ] **G6e** `heal()` dipende dal riferimento (aperta il 31 ottobre, in una
       **SI RIPARTE DA QUI: gruppo D (D191, D193).** Inventario:
       `_debug/2026-10-31_topo_G6e-inventario/inventario.md` (le ultime
-      sezioni sono lo stato vero). Conto al 2 novembre: **10** (A 0,
-      B 0, C 0, D 9, più una voce
+      sezioni sono lo stato vero). Conto al 2 novembre: **8** (A 0,
+      B 0, C 0, D 7, più una voce
       nuova in coda: `outer_face._network` rifà il noding sulle discretizzazioni,
-      micro-caso rosso, 0 casi sui 31). Prossima: D, `rim.py:171, 173`. Con `rim.py:171, 173` va il difetto
-      trovato (una sporgenza prima nell'elenco vince un lato, vedi inventario).
-      Fatte: `trim.py:150` (corretta: sulla giunzione di una spline chiusa
+      micro-caso rosso, 0 casi sui 31). Prossima: D, `rim.py:203`.
+      Fatte: `rim.py:171` (corretta: copre un lato solo l'edge che gli corre
+      lungo, `TestSpurDoesNotTakeTheSide`), `:173` (innocua, stesso test), `trim.py:150` (corretta: sulla giunzione di una spline chiusa
       decide `via`, prima il tratto usciva rovesciato; `TestClosedSplineSeamUnderMotion`), `regions.py:356` (innocua, solo `contour_union`;
       `TestTouchingRingsUnderMotion`), `intersections.py:99` (corretta: pari merito sul capo dell'arco →
       decide l'altro capo, poi il ponte; `TestArcLineMeetUnderMotion`), `gap_solver.py:250` (innocua, un incontro solo sui disegni;
