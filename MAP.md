@@ -735,488 +735,67 @@ Names in the older entries are the names of their day (`forge`, `ForgeCluster`,
   numpy in a signature. The primitive is the truth, discretization a view: a
   question about one curve is answered exactly on the primitive; between many
   curves, on polygons from the one grid.
-### D168 — G13 closed: what replaces each shapely name, for the consumers; 0.23.0
-
-Closed 25 October 2026, steps 1–6 of D166 ("Implemented" paragraphs there).
-topo's public surface — `__all__` of `topo`, `topo.geometry`, `topo.steps`,
-`topo.model`, `topo_dxf` — takes and returns no shapely type except
-`topo.to_shapely`, the explicit conversion. `test_no_shapely_surface`
-keeps it so: annotations of every public name, and every public field and
-property of what the readings, the steps and the geometry facts return.
-
-**What the contract says about shapely.** It is a dependency of topo
-(installed with it), not a promise of topo: a consumer that calls shapely
-itself declares it in its own dependencies, because a Rust core (D167)
-could drop it. A question about one contour is a fact of the contour; only
-overlay, buffer, WKT go through `to_shapely`.
-
-**Old → new**, for snapbend, snapdraw, snapfence, smoother (they adapt,
-D140; topo writes nothing in their repos):
-
-| before | now |
-|---|---|
-| `c.polygon.area` | `c.area` (exact, D165) |
-| `c.polygon.bounds` | `c.bbox` (exact: arcs at their true extremes) |
-| `c.polygon.centroid` | `c.centroid` (a tuple; `ValueError` if no area) |
-| `c.polygon.contains(Point(p))` | `c.contains(p)` (boundary within 1e-6 counts as inside) |
-| `c.polygon.exterior.coords` | `c.points(tolerance)` (first point not repeated) |
-| `c.polygon.exterior.length` | `sum(topo.geometry.segment_length(s) for s in c.segments)` |
-| `c.polygon.buffer(…)`, `.wkt`, `.symmetric_difference(…)`, `a.polygon.contains(b.polygon)` | `topo.to_shapely(c)` and the same shapely call |
-| `Contour(polygon=p, segments=s, …)`, `Hole(polygon=…)` | `Contour(segments=s, …)` — no `polygon` argument |
-| `cluster.polygon_with_holes` | `topo.to_shapely(cluster)` (even-odd: an island in a hole is material) |
-| overlay void: `is_void` + `polygon` | `is_void` + `segments` of a closed ring |
-| overlay contour drawn closed because it has `polygon` | closed if `ClosedCurve`, `is_void`, or its segments close a ring (`topo.model.feature_closed`) |
-| `topo.geometry.splits_polygon(cluster.outer.polygon, a, b, reach)` | `topo.geometry.splits_contour(cluster.outer, a, b, reach)` |
-| `topo.geometry.bridged_runs(pieces, [i.polygon …])` | `bridged_runs(pieces, [i …])` — contours as bridges |
-| a stroke as `LineString` (`group_collinear_lines`, `bridged_runs`, `are_collinear`) | `(start, end)`, or anything with `start`/`end` |
-| `CoveredRectangle.polygon` | `.bbox`, `.segments` (`to_shapely(rect)` if a polygon is needed) |
-| `OuterFace.polygon` | `topo.to_shapely(face)` |
-| `topo.steps.polygonize_edges` + `polygons_to_curves` | `topo.steps.polygonize_to_curves(edges, tolerance)` |
-
-Values that moved besides names: `Result.clusters` order is deterministic
-(exact area, then bbox corner — step 2); JSON perimeters are exact (step
-3); `bbox` is exact everywhere it is read.
-
-`main` → **0.23.0** (D155: public names removed, second digit).
-
-### D169 — dependencies are replaceable details behind the API; one is replaced, or topo ported, only on a measure ✅
-
-Federico, 25 October 2026, after weighing "numpy as a heavy dependency" and
-"a Rust core with a Python API". D167 says how a port is judged; this says
-when a dependency goes and why not now.
-
-**Why not now.** Dropping numpy saves 0 MB: shapely requires it, and so does
-ezdxf behind `topo_dxf`, so every DXF user installs it anyway. topo's own
-numpy is two files (Gauss-Legendre nodes in `integrals`, small least-squares
-systems in `points`). What shapely still does is noding thousands of edges,
-building faces (`polygonize`, union) and the spatial index — the numerically
-hard part, where GEOS has years of fixes a hand-written module would have to
-rediscover on real drawings. Small pure-Python geometry libraries do points
-and vectors, not noding or faces.
-
-**What makes them replaceable is the API, so that is what is kept.** No
-shapely or numpy type in topo's public surface: no signature names one, and
-no value reachable from what the readings, steps and facts return is one —
-primitives store plain Python floats whatever they are built from (an ezdxf
-polyline gave `np.float64` coordinates; `_plain` in `segments.py` converts
-at construction). `test_no_shapely_surface` guards both libraries.
-
-**When.** After 1.0, piece by piece, each piece accepted as D167 accepts a
-port (same goldens, invariants, fidelity on every fixture): topo's direct
-numpy; the spatial index (a bbox index of topo's); then `polygonize` against
-topo's loop finder. Noding stays with GEOS until a real case needs otherwise.
-A Rust core is started on one of two measured reasons: reading time on real
-drawings, or a host without Python (a CAM kernel's SDK). The first step for
-either is an inventory: each shapely/numpy operation used → what replaces it.
-
-### D170 — segments mirror about any line and scale uniformly; no general affine map ✅
-
-Federico, 26 October 2026, triaging pippo's request (`../pippo/TODO.md`,
-`## Richieste a topo`): a view not drawn 1:1 needs its profile scaled, and a
-flat-pattern prototype moves each flange with a rigid motion that includes a
-mirror. Both are plane geometry with no process in them, so they are topo's.
-
-**What enters.** On all five primitives, next to `rotated`/`translated`:
-- `mirrored(origin=(0, 0), angle=0.0)` — the line through `origin` at
-  `angle` radians. The defaults are the x axis, so every existing call is
-  unchanged, value for value: no alias, no break. An arc's angles go to
-  `2·angle − a` and its direction reverses; an ellipse's parameters change
-  sign and its direction reverses on any axis (a reflection reverses the
-  +90° turn that derives the minor axis from the major one); a spline
-  mirrors its control points (a B-spline, rational too, is affine-invariant).
-- `scaled(factor, origin=(0, 0))` — uniform, `factor > 0` and finite,
-  else `ValueError`. Radius, ellipse axis vector and spline control points
-  scale; angles, parameters, `ratio`, knots and weights do not. A negative
-  factor is a rotation by π plus a scale, and is asked for that way.
-
-Each returns a new segment **of the same type**, exact: the image of the
-curve, not of its discretization. Off the x axis a mirrored arc's vertices
-lie on the new arc's own grid (D145), not on the mirror of the old vertices.
-
-**What does not.** A non-uniform scale or a general affine matrix: it maps a
-circle to an ellipse and an arc to an elliptical arc, so an `ArcSeg` would
-have to change type or be approximated, and the result would no longer be
-"the same segment, moved". A one-call similarity type was also left out:
-chaining (`s.mirrored(o, a).rotated(t).translated(dx, dy)`) is already one
-expression and composes exactly; a matrix type would add a check that the
-matrix is a similarity and nothing else.
-
-**Why methods, not `topo.transform.scale(seg)`.** Each primitive knows how
-it maps (an arc's radius, an ellipse's vector, a spline's control points);
-a free function would have to dispatch on the segment type, which is what
-the methods already are. `rotated`/`translated`/`mirrored` already lived
-there. Moving a whole `Cluster`/`Result` (as `rotate_result` does) was not
-asked for: it waits for a caller.
-
-The other pippo request — union of contours sharing a border — is not
-triaged yet (Federico: another time).
-
-`main` → **0.23.1** (D155: names added, none removed or renamed — `mirrored()`
-gains defaulted parameters, `scaled()` is new — so the third digit).
-
-### D171 — `geometry.contour_union`: two rings united, shared border included ✅
-Federico, 26 October: implement pippo's second request (union of contours
-that share a border), triaged in D170 as "another time".
-
-**What it does.** `contour_union(contour, other)` returns the rings of the
-boundary of the union, largest first. Outers keep `contour`'s direction; a
-hole closed between the two runs the opposite way. Two rings that are apart,
-or touch in one point, stay two rings. It is the counterpart of
-`contour_minus` (D118) and is built from the same parts: cut both rings, keep
-each piece by the side of the other ring its points fall on, chain the kept
-pieces.
-
-**The shared border.** A piece of one ring that lies on the other ring is
-matched to the other ring's piece with the same ends and the same middle
-point. Both rings are first brought to the same direction. So a matched pair
-running opposite ways means the interiors are on opposite sides: the two
-pieces sit side by side, and both go. A pair running the same way means the
-interiors overlap there, and the piece stays once. A piece on the border with
-no such twin raises `ValueError`. That piece runs along the other ring without
-coinciding with it, and the union has no exact border there.
-
-**Why it is exact on every primitive.** Two overlapping lines or arcs cross
-in no point. The cuts are therefore the crossings plus the ends of the other
-ring's segments: an overlap always starts and ends at an end of one of the two
-segments. A ring's own ends are not cuts, because a circle's end (its angle 0)
-is a convention, not a node. Identical splines and ellipses are not crossed
-against each other. Their discretizations would give a crossing at every
-vertex.
-
-**The output is a new contour.** Where the boundary goes on along one line
-or one circle, as with two squares side by side or two half-disks, there is
-no corner, and the pieces become one (`merge_runs`, D95). This is what pippo's
-`cancel_on_line` did by hand, for straight borders only.
-
-**Fixes found on the way.**
-- `_chain` gains `inside_left`. At a node where two pieces leave (a touch in
-  one point), it takes the one that encloses the narrowest wedge of the
-  region, so two touching rings stay two rings and not a figure eight. A piece
-  that leaves tangent and backwards counts as the full turn.
-- A piece's side is read at its middle point and, if that point is on the
-  border (a touch exactly there), at a third and two thirds of its length.
-  The middle alone made a circle tangent at its angle π look like a shared
-  border. `cut_by` and `contour_minus` use the same test.
-- `shape.merge_runs` joined two arcs across angle 0 into an arc of zero
-  sweep, because it took the second arc's end angle as it stood. It now adds
-  the two sweeps. This was latent in `island()`.
-
-`main` → **0.23.2** (D155: a public name added, third digit).
-
-### D172 — `promote` takes several curves as one item ✅
-Federico, 30 October: triage snapdraw's request (its TODO, `## Richieste a
-topo`). A feature with a seat (a hole and its counterbore) is two closed
-curves in `loose` and one thing for snapdraw, so `tag_features` removed the
-curves from `loose` by hand instead of calling `promote` (snapdraw D39).
-
-**Why it enters topo.** It is not a reading: what the curves are stays the
-caller's. It is D137's promise — a curve is never in two places and never
-lost — applied to a group. Done by hand in a consumer, that promise is no
-longer kept by topo.
-
-**What it does.** `promote(result, curves, cluster, name, item=None)`:
-`curves` is one curve or a sequence. All checks run before anything changes,
-so a failure leaves `result` as it was: a curve not in `loose`, a curve given
-twice, an empty sequence, a foreign cluster raise `ValueError`.
-
-**`item` is required for more than one curve.** With one curve the curve
-itself is a fair item: it carries geometry and role. A list of curves says
-nothing about what they are together, and the only reason to group them is
-that the caller made one object of them. So that object is asked for, not
-invented.
-
-Positional calls are unchanged (the parameter was renamed `curve` →
-`curves`; no caller passed it by keyword). `main` → **0.23.3** (D155).
-
-### D173 — reopening D137's placement: `promote` becomes a method of `Result` ✅
-Federico, 30 October, asking whether `promote` is a tool. It is not.
-`tools/` holds stages that compute something on a Document/Result (`split`,
-`anchor_texts`, `strips`). `promote` computes nothing: it moves an object
-between two containers of `Result` (`loose` → `cluster.detected`) and keeps
-D137's promise that a curve is never in two places and never lost. That
-promise belongs to `Result`, so `Result` keeps it, the way `DetectedFeatures`
-keeps its own `add`. It imports only `model` types, so the dependency rule
-(D44) is untouched.
-
-**Why now.** After 1.0 removing `topo.promote` is a break (2.0); adding
-`result.promote` beside it in a 1.x would leave two ways to do one thing.
-The ARCHITECTURE tree did not list `tools/promote.py` at all, which is how
-the question came up.
-
-| old | new |
-|---|---|
-| `topo.promote(result, curves, cluster, name, item=None)` | `result.promote(curves, cluster, name, item=None)` |
-
-Consumers to update in their own sessions: snapbend (`flat/detect.py`, two
-calls), snapdraw (`tag_features`, still to adopt D172). `main` → **0.24.0**
-(D155: a public name removed, second digit).
-
-### D174 — reopening D148: the gate gets G14, one alignment of the API with mature-library practice ✅
-Federico, 30 October. topo has bumped 0.x.0 for a long time, because each
-step in a consumer showed that some name should be shaped differently, and
-the name was changed. After 1.0 that must not continue as a major bump every
-week, and "then it is a 2.0" is not an answer to a design wish: it only moves
-today's churn to the first digit.
-
-**The yardstick.** The consumers today (snapdraw, snapbend, smoother, pippo,
-snapfence) are all Federico's, so how they call topo is biased evidence. The
-surface is judged once against how a mature library designs and evolves its
-API. The closest case is scikit-learn: years at 0.x, then a 1.0 that declared
-the surface stable rather than breaking it, with a written deprecation policy
-from then on.
-
-**Why in the gate.** Before 1.0 a break costs nothing. After 1.0 every fix
-becomes a deprecation to carry. Federico: "ho bisogno di essere più
-tranquillo possibile alla release".
-
-**Bounded.** Three steps (TODO.md G14): the rule, read by Federico before it
-is written; one pass over the public names against that rule only, giving a
-table he decides on, with all breaks in one release; tests for whatever the
-machine can check. No new names, no rewrites.
-
-Also: while the gate is open, consumer requests go to "after 1.0", which is
-what D158 already says. D172 should have gone there, and entered by mistake.
-
-### D175 — G14 step 1: what is public, the compatibility promise, the form rules ✅
-Federico, 30 October: "la cosa migliore per uno come me. non voglio
-rilasciare la 2.0 tra 6 mesi". The model is scikit-learn's, and step 2 of
-G14 measures every public name against this entry only.
-
-**A. What is public.** The names in `__all__` of `topo`, `topo.geometry`,
-`topo_dxf` and of the public submodules, with their public attributes and
-methods, each with a card in `docs/API.md`. A submodule, or a name in it, is
-public if a user meets it in a result or needs it to build input. The
-building blocks of an algorithm are not. Everything else is internal and
-changes freely. Applied: `primitives` public; `model` public for the types a
-user meets, the rest judged name by name; `steps` (the pieces of `heal`) goes
-to experimental, because making it stable would freeze how the algorithm is
-built inside, while the recipes thread is still open.
-
-**B. The promise (scikit-learn's model, not strict semver).**
-- Patch 1.0.x: fixes only.
-- Minor 1.x.0: additions and deprecations. A name that changes shape arrives
-  under its new form; the old one stays and emits `FutureWarning` for two
-  minors, then goes, in a minor.
-- Major: none planned. Removing a deprecated name is not a reason for one.
-- A break is: a name removed or renamed, a default changed, a return type
-  changed, a documented behavior changed. Making a result honor the
-  documented invariants (D143) is a fix.
-- Every deprecated name carries the version it goes in, and a test fails
-  when topo reaches that version and the name is still there. For one
-  person, removal must not depend on anyone's memory.
-
-**C. Experimental.** `topo.experimental` (or a name declared outside the
-stable part, as D133 does): the promise does not apply. What is not sure at
-1.0 goes there instead of being half-fixed. Promoting a name to stable is an
-addition, so it is done in a minor; the old experimental name stays as a
-warned alias for two minors.
-
-**D. Form rules** (the list for step 2, and only this list):
-1. Data positional, options by name only (keyword-only). The data is what a
-   function works on; an option is how it works. An option added later
-   breaks no call. Today `island` does this and `heal` does not.
-   (scikit-learn made it mandatory at 1.0, SLEP009.)
-2. One way to do one thing: no duplicates.
-3. Mutation is declared: a function returns a new object, or mutates its
-   argument and says so. (pandas removed `inplace` for lack of this.)
-4. A method when it keeps an invariant of its object (`Result.promote`,
-   D173); a function when it computes. (shapely 2.0.)
-5. Consistent names: verbs for functions, nouns for types and properties,
-   one name for one concept everywhere.
-6. Typed, stable returns: no loose dicts, no silent `None` instead of an
-   error.
-7. Standard errors: `ValueError`/`TypeError` with a message that says what is
-   wrong.
-8. Every public name has its card in `docs/API.md` and an English docstring
-   (G9).
-
-Step 2 of G14 will show that the real surface is about 150 names with the
-submodules, not 97.
-
-### D176 — G14 step 2: the public surface measured against D175, all breaks in one release ✅
-Federico, 30 October, after the pass over every public name (table in his
-debug folder): points 1–10 approved, point 11 left for later. Measured
-against D175's rules only, not against how the consumers call topo.
-
-**What changed, and the rule behind each.**
-1. *Options by name only* (rule 1). Every public function, method and
-   container: data positional, options after `*`. Containers use
-   `dataclasses.KW_ONLY` after their data fields (`Cluster(outer, *, ...)`,
-   `Contour(role, segments, *, ...)`, `Text(position, text, *, ...)`,
-   `RoleRule(role, *, ...)`, `RoleStyle(*, ...)`, `EdgeStyle(*, ...)`, `Edge(role,
-   start, end, segment, *, style)`). Primitives unchanged, their arguments are
-   all data; their methods follow the rule (`discretize(*, tolerance)`,
-   `rotated(angle, *, origin)`, `mirrored(*, origin, angle)`, `scaled(factor, *,
-   origin)`). A tolerance is an option even when required, as `island`'s
-   `max_gap` already was. One exception, declared: `DetectedFeatures.get(name,
-   default)` keeps `dict.get`'s protocol.
-2. *A mutating function returns `None`* (rule 3): `anchor_texts`, `inject`,
-   `validate_result`. They mutated and returned the same object, which reads
-   like a copy.
-3. *`split` no longer renames the caller's clusters* (rule 3): each part's
-   cluster is a copy with its label. It still appends the drop notices to
-   `result.warnings`, declared: when every part is dropped there is no part
-   to carry them, and a silent drop is forbidden (non-negotiable 7).
-4. *`set_schema` removed* (rule 3, global state): the schema is `schema=` on
-   `build_metadata`, `save_json`, `to_json`, `save_xml`,
-   `topo_dxf.write_metadata_to_dxf`.
-5. *One way to skip layers* (rule 2): `ignore_layers` (substring) removed;
-   `skip_layers` takes exact names or a function `name -> bool`, which covers
-   substring, regex and any algorithm on the name. Federico asked for the
-   substring case not to be lost.
-6. *Names* (rule 5): `validate` → `validate_document` (pairs with
-   `validate_result`, `inspect_document`/`inspect_result`);
-   `load_dxf(flatten_z_flag=)` → `flatten_z=`.
-7. *`geometry.track_shape_type` removed* (rule 6): it returned `"line"`/`"curve"`
-   for `len(pts) == 2`.
-8. *`topo_dxf.split_to_files` removed* (rule 2): `heal` → `split` → `to_dxf` in
-   one call with eleven options copied from those functions. The loop is four
-   lines of the caller's (script 07).
-9. *`topo.experimental`* (D175 C): `topo/steps.py` became
-   `topo/experimental.py`, with `read_island`, `read_islands`,
-   `IslandReading`, and every name that was "experimental, importable as
-   `topo.<name>`, not in `__all__`" (`simplify_points`, `rotate_*`,
-   `to_nester_input`, `to_view_model`, `to_svg`, `save_svg`, `to_text`,
-   `save_text`) and the strips of D142 (`facing_boundaries`, `gap`, `link`,
-   `unconnected_regions`, `open_boundaries` and their types), which consumers
-   imported from the internal `topo.tools.strips`. Experimental is one place
-   now, not a comment in `__init__.py`.
-10. *Internal names*: none after all. `feature_closed`, `feature_role`,
-    `resolve_role`, `DEFAULT_NODE_TOLERANCE`, `CONSUMER_ROLE_STYLE` are used by
-    `topo_dxf`, i.e. by anyone writing a format adapter: public by D175 A. They
-    get their cards in G9.
-
-**Found on the way.** `topo_dxf.write_metadata_to_dxf` caught every
-exception and printed a warning without writing anything (rule 7): it now
-raises `ValueError` when there is no `OuterContour` entity.
-
-**Left for later (point 11).** `Text.target`/`references` point to elements by
-a string path (`"clusters[0].inners[3]"`) that breaks when the result
-changes; `resolve_target` turns it back. Fixing it means pointing at the
-object, a rewrite outside G14's bound. To decide with Federico: experimental
-now and fixed in a 1.x, or fixed before 1.0.
-
-**For the consumers** (each adapts in its own session):
-
-| old | new |
-|---|---|
-| `f(data, opt_value)` | `f(data, opt=opt_value)` — every option by name |
-| `r = topo.anchor_texts(result)` / `topo.inject(...)` / `topo.validate_result(...)` | call, then use `result` |
-| `topo.split(...)` renaming `result.clusters[i].label` | read the label from `part.clusters[0].label` |
-| `topo.set_schema(s)` | `schema=s` on each call |
-| `load_dxf(ignore_layers=["x"])` | `skip_layers=lambda n: "x" in n.lower()` |
-| `load_dxf(flatten_z_flag=)` | `flatten_z=` |
-| `topo.validate(doc)` | `topo.validate_document(doc)` |
-| `topo.geometry.track_shape_type(pts)` | `len(pts) == 2` |
-| `topo_dxf.split_to_files(doc, folder, ...)` | `heal` → `split` → `to_dxf(...).saveas()` |
-| `topo.steps.<x>`, `topo.read_island(s)`, `topo.IslandReading` | `topo.experimental.<x>` |
-| `topo.to_svg`/`save_svg`/`to_view_model`/`to_text`/`save_text`/`simplify_points`/`rotate_*`/`to_nester_input` | `topo.experimental.<same>` |
-| `from topo.tools.strips import ...` | `topo.experimental.<name>` |
-| `seg.mirrored(o, a)`, `seg.rotated(t, o)`, `seg.discretize(tol)` | `seg.mirrored(origin=o, angle=a)`, `seg.rotated(t, origin=o)`, `seg.discretize(tolerance=tol)` |
-
-`main` → **0.25.0** (D155: public names removed and renamed, second digit).
-
-### D177 — G14 point 11: `Text.target`/`references` are the objects, not paths ✅
-Federico, 30 October, reopening D174's bound ("no rewrites") for point 11
-only. Options weighed: experimental now and fixed in a 1.x; a stable string
-kept honest by `promote`/`split`; a stable id on every element; removal. He
-chose the fix before 1.0.
-
-**Why.** A path such as `"clusters[0].inners[3]"` or `"loose[4]"` is a
-position in one list at one moment. `Result.promote` takes curves out of
-`loose`, so `"loose[k]"` written earlier silently named another curve.
-`split` left the paths as they were, so in a part they named nothing or the
-wrong curve. And the collections of `cluster.detected` are a consumer's:
-any reorder there after `anchor_texts` moved the paths, and topo cannot
-remap what it does not manage. D66's argument ("it survives serialization")
-did not hold either: no writer emits `target`/`references`, only the text
-report reads them. A reference to the object is right whatever happens to
-the lists around it.
-
-**Still geometry (D138).** What is anchored is a fact between a point and an
-element: the nearest boundary within `distance`, else the smallest closed
-element covering the point. Whether the text is a dimension or a callout is
-still the consumer's reading; only the 0.5 default knows about drawings, and
-it is an option.
-
-**What changed.**
-- `Text.target: object | None`, `Text.references: list` — the element
-  itself (a contour, an item of `detected`, a closed curve of `loose`). Both
-  `repr=False, compare=False`: a contour in a text's repr is noise, and two
-  texts are equal for what they are, not for what was anchored to them.
-- `pointer_target`/`measured_references` return objects. Their `distance`
-  is keyword-only (rule 1, missed in D176). Ties are broken by the element's
-  place in the result as before, so the golden of `golden_anchoring/` is
-  unchanged.
-- `resolve_target` removed: nothing to resolve.
-- `split` relinks each text to its part: contours and features are the same
-  objects, loose curves are copies and the references follow the copies; an
-  element of another part is not in that `Result`, so `target` becomes
-  `None` and the reference leaves `references`. The caller's texts do not
-  change.
-- `deepcopy` of a `Result` keeps the links (the memo maps them to the copies).
-- The text report labels the object (`C1`, `C1.3`, `C1.holes[2]`, `loose[4]`).
-
-**For the consumers:**
-
-| old | new |
-|---|---|
-| `topo.resolve_target(result, t.target)` | `t.target` |
-| `t.target == "clusters[0].outer"` | `t.target is result.clusters[0].outer` |
-| the collection from the path (`path.split(".")`) | look the object up: `item in cluster.inners` by identity, `cluster.detected.items()` |
-| `pointer_target(r, t, 0.3)` | `pointer_target(r, t, distance=0.3)` |
-
-`main` → **0.26.0** (D155: a public name removed, second digit).
-
-### D178 — G14 step 3, rule 1: what D176's pass missed, and the test that holds it ✅
-Federico, 30 October, after D177 found `distance` still positional on
-`pointer_target`/`measured_references`: "come mai è stata violata la regola?
-può esserci qualche altra violazione?"
-
-**Why D176 missed names.** Its scan (the table in the debug folder) had
-three holes. (1) A name whose "decision" column already held another point
-was skipped for rule 1: `pointer_target`/`measured_references` were "11", and
-point 11 was postponed whole. (2) It read functions and constructors, not
-methods: the primitives' methods were fixed by hand, the model's were not.
-(3) It listed only parameters with a default, while D176 itself says a
-required tolerance is an option.
-
-**Found and fixed** (stable surface, keyword-only now):
-`Contour.from_segments(segments, role, *, depth, parent, tolerance)`,
-`Edge.of(segment, role, *, style)` (as `Edge(...)` already was),
-`geometry.covered_rectangles(items, *, min_side, ...)` (a threshold).
-Kept positional as data, on purpose: `to_dxf(result, source_doc)` (the
-document it writes onto), `role_to_dxf_layer(role, element)` (what goes to
-the caller's function), `resolve_role(rules, name, style)` (the edge's style,
-like its name), `dash_line(start, end, head, tail)` (the dashes are what it
-makes), `sub_segment(seg, a, b, via)` (a point). `topo.experimental` keeps
-positional options (`to_svg` has 11): outside the promise, fixed when a name
-is promoted.
-
-**The test** (`tests/unit/test_surface_rules.py`): every public callable of
-`topo`, `topo.geometry`, `topo.primitives`, `topo.model`, `topo_dxf`, methods
-included, declares its positional parameters in one table, all data. A new
-name or parameter fails until someone decides data (add it to the table) or
-option (after `*`): a person still judges, but can no longer forget. A name
-that reads like an option (`tolerance`, `distance`, `eps`, `min_*`,
-`include_*`, …) fails even if declared, except the declared
-`DetectedFeatures.get(name, default)`. Checked: undoing the `Edge.of` fix
-turns it red on that parameter.
-
-Step 3 stays open for the other machine-checkable rules: rule 8 (card in
-`docs/API.md`, English docstring — with G9) and B's removal test, which has
-nothing to hold until the first deprecation.
-
-**For the consumers:**
-
-| old | new |
-|---|---|
-| `Contour.from_segments(ring, role, d, p, tol)` | `Contour.from_segments(ring, role, depth=d, parent=p, tolerance=tol)` |
-| `Edge.of(seg, role, style)` | `Edge.of(seg, role, style=style)` |
-| `covered_rectangles(items, 50)` | `covered_rectangles(items, min_side=50)` |
-
-`main` stays **0.26.0**: not pushed yet, same release as D177.
-
+- **D168** — G13 closed (0.23.0): `topo`, `topo.geometry`, `topo.steps`,
+  `topo.model`, `topo_dxf` take and return no shapely type except
+  `topo.to_shapely`. shapely is a dependency of topo, not a promise of it: a
+  consumer that calls it declares it. The old → new table for the consumers
+  (`c.polygon.area` → `c.area`, `.bounds` → `c.bbox`, `splits_polygon` →
+  `splits_contour`, …) is in `MAP_ARCHIVE.md` / `67fda38:MAP.md`.
+- **D169** — dependencies are replaceable details behind the API, replaced
+  only on a measure. numpy is not a saving (shapely and ezdxf need it);
+  shapely does the numerically hard part (noding, faces, index). What keeps
+  them replaceable: no type of theirs in the surface (primitives store plain
+  floats, `_plain`). After 1.0, piece by piece, each judged as D167 judges a
+  port; a Rust core only for reading time or a host without Python.
+- **D170** — on all five primitives: `mirrored(*, origin, angle)` about any
+  line (the default is the x axis) and `scaled(factor, *, origin)` uniform with
+  `factor > 0`; each returns the same type, exact. No non-uniform or general
+  affine map (an arc would become an elliptical arc) and no matrix type:
+  `s.mirrored().rotated().translated()` composes exactly.
+- **D171** — `geometry.contour_union(contour, other)`: the rings of the union's
+  boundary, largest first, shared border included. A pair of border pieces
+  running opposite ways is interior and goes; the same way stays once; a piece
+  on the border with no twin raises `ValueError`. Cuts are the crossings plus
+  the other ring's segment ends; runs on one line or circle merge.
+- **D172** — `promote` takes one curve or several: all checks run before
+  anything moves (a curve not in `loose`, given twice, an empty list, a
+  foreign cluster raise `ValueError`), and `item` is required for more than
+  one curve — what they are together is the caller's, not invented.
+- **D173** — `promote` is a method of `Result`, not a tool: it computes
+  nothing, it keeps D137's promise (a curve is never in two places and never
+  lost). `result.promote(curves, cluster, name, item=None)`.
+- **D174** — reopening D148: the gate gets G14, one alignment of the API with
+  how a mature library designs and evolves its API (scikit-learn: years at
+  0.x, then a stable 1.0 with a written deprecation policy). The yardstick is
+  not how Federico's own consumers call topo. "Then it is a 2.0" is not an
+  answer to a design wish. Bounded: the rule, one pass over the names, tests.
+- **D175** — the promise. **Public**: `__all__` of `topo`, `topo.geometry`,
+  `topo_dxf` and the public submodules, each with a card in `docs/API.md`;
+  the building blocks of an algorithm are not. **Versions**: patch fixes;
+  minor adds and deprecates (old form stays with `FutureWarning` for two
+  minors, then goes, with a test that fails if it is still there); no major
+  planned. **Experimental** (`topo.experimental`): no promise. **Form**:
+  data positional / options keyword-only; one way to do a thing; mutation
+  declared; a method keeps an invariant, a function computes; typed stable
+  returns; `ValueError`/`TypeError`; card and English docstring.
+- **D176** — G14 step 2 (0.25.0), all breaks in one release: options keyword-only
+  everywhere (containers use `KW_ONLY`); a mutating function returns `None`
+  (`anchor_texts`, `inject`, `validate_result`); `split` copies each part's
+  cluster; `set_schema` gone (`schema=` per call); `skip_layers` takes names
+  or a function and `ignore_layers` went; `validate` → `validate_document`;
+  `track_shape_type` and `split_to_files` removed; `topo/steps.py` and every
+  non-stable name moved to `topo.experimental`.
+- **D177** — `Text.target` and `Text.references` are the objects themselves
+  (`repr=False, compare=False`), not string paths: a path is a position in
+  one list at one moment, and `promote`, `split` or a reorder moved it.
+  `resolve_target` is gone; `split` relinks each text to its part (an element
+  of another part becomes `None`); `distance` is keyword-only.
+- **D178** — G14 rule 1 held by a test: `tests/unit/test_surface_rules.py`
+  declares the positional parameters of every public callable, methods
+  included, in one table, all data; a new name or parameter fails until a
+  person decides data (table) or option (after `*`), and a name that reads
+  like an option (`tolerance`, `distance`, `min_*`, `include_*`) fails even if
+  declared. Rule 8 (card + docstring, with G9) and the removal test remain.
 ### D179 — G6c: D100's union of faces decides contacts by distance, not by a grid cell ✅
 
 What was left of G6c after D161: on `anch_08` (and `anch_08_noframe`) one outer
