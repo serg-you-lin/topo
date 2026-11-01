@@ -61,3 +61,23 @@ class TestIntersectionsUnderMotion(unittest.TestCase):
                                           end_angle=math.pi / 2),
                                    LineSeg(start=(0.0, 0.05), end=(-0.05, 0.08)), [(0.0, 0.05)])
 
+    def test_004_line_tangent_to_a_circle_is_one_point(self):
+        # la tangenza decisa sul discriminante (mm⁴, soglia 1e-10): lontano il
+        # rumore lo fa negativo (nessun punto) o positivo (due punti a ~1e-4 mm)
+        self._assert_same_meetings(CircleSeg(center=(0.0, 0.0), radius=5.0),
+                                   LineSeg(start=(-8.0, 5.0), end=(8.0, 5.0)), [(0.0, 5.0)])
+
+    def test_005_circles_tangent_outside_are_one_point(self):
+        self._assert_same_meetings(CircleSeg(center=(0.0, 0.0), radius=5.0),
+                                   CircleSeg(center=(8.0, 0.0), radius=3.0), [(5.0, 0.0)])
+
+    def test_006_circles_tangent_inside_are_one_point(self):
+        self._assert_same_meetings(CircleSeg(center=(0.0, 0.0), radius=5.0),
+                                   CircleSeg(center=(2.0, 0.0), radius=3.0), [(5.0, 0.0)])
+
+    def test_007_crossings_stay_two(self):
+        # a scanso di equivoci: un incrocio vero resta di due punti
+        self._assert_same_meetings(CircleSeg(center=(0.0, 0.0), radius=5.0),
+                                   LineSeg(start=(-8.0, 3.0), end=(8.0, 3.0)), [(-4.0, 3.0), (4.0, 3.0)])
+        self._assert_same_meetings(CircleSeg(center=(0.0, 0.0), radius=5.0),
+                                   CircleSeg(center=(6.0, 0.0), radius=5.0), [(3.0, 4.0), (3.0, -4.0)])

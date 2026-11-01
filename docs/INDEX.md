@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`85` modules · `509` module-level functions · `63` classes · `16238` lines of code.
+`85` modules · `509` module-level functions · `63` classes · `16231` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -82,7 +82,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_chord_params` | func | `topo/core/geometry/points.py:294` |  |
 | `circle` | func | `topo/core/geometry/build.py:52` | Il cerchio di raggio `radius` in `center`. |
 | `_circle` | func | `topo/core/geometry/shape.py:144` |  |
-| `_circle_circle_intersections` | func | `topo/core/geometry/intersections.py:75` | Intersezioni tra due circonferenze. Restituisce 0, 1 o 2 punti. |
+| `_circle_circle_intersections` | func | `topo/core/geometry/intersections.py:71` | Intersezioni tra due circonferenze. Restituisce 0, 1 o 2 punti. |
 | `_circle_circle_near` | func | `topo/core/topology/noding.py:654` | I due punti più vicini fra due archi, sulla retta dei centri. |
 | `_circle_line_intersections` | func | `topo/core/geometry/intersections.py:44` | Intersezioni tra la circonferenza (cx, cy, r) e la retta infinita (p1, p2). |
 | `_circle_sides` | func | `topo/core/primitives/segments.py:188` | Lati della griglia del cerchio di raggio `radius`: sagitta <= tolerance, |
@@ -97,7 +97,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_close_self_loop` | func | `topo/core/topology/graph.py:309` | ArcSeg il cui sviluppo (raggio*sweep) supera epsilon -> CircleSeg (loop degenere vero). Altrimenti `None` (sl… |
 | `ClosedCurve` | class | `topo/model/curve.py:49` | Curva chiusa: una lista di segmenti che chiude un giro. I suoi fatti |
 | `_closes` | func | `topo/core/geometry/shape.py:110` | I segmenti, in fila, fanno un anello: ognuno parte dove finisce il |
-| `_closest_to` | func | `topo/core/geometry/intersections.py:99` | Restituisce il punto più vicino a ref tra i candidati. |
+| `_closest_to` | func | `topo/core/geometry/intersections.py:92` | Restituisce il punto più vicino a ref tra i candidati. |
 | `_cluster` | func | `topo/core/readings/island.py:189` |  |
 | `_cluster` | func | `topo/io/shapes.py:58` | Pari-dispari sulla gerarchia: ogni contorno a depth pari è un guscio, |
 | `Cluster` | class | `topo/model/cluster.py:15` |  |
@@ -186,7 +186,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `ensure_linetype` | func | `topo_dxf/exporter.py:23` | Garantisce che il linetype `name` esista in `doc` e ne ritorna il nome; |
 | `_entity_style` | func | `topo_dxf/adapter.py:74` | Cattura l'aspetto EFFETTIVO (linetype/colore) di un'entità DXF in un |
 | `even_spacing` | func | `topo/core/geometry/points.py:146` | I punti con altri aggiunti dove due vicini distano più del passo mediano. |
-| `_exact_parts` | func | `topo/core/geometry/intersections.py:114` | Retta, arco, cerchio restano se stessi; spline ed ellisse diventano |
+| `_exact_parts` | func | `topo/core/geometry/intersections.py:107` | Retta, arco, cerchio restano se stessi; spline ed ellisse diventano |
 | `_explode_inserts` | func | `topo_dxf/sanitize.py:106` | Esplode tutti gli INSERT (blocchi) nel modelspace in entità primitive. |
 | `_extent` | func | `topo/core/readings/outer_scan.py:132` | (min, max) del pezzo lungo la coordinata `a` (0 = x, 1 = y). |
 | `_extract_content` | func | `topo_dxf/text_extractor.py:153` | Testo pulito dell'entità, stringa vuota se non ne ha. |
@@ -251,7 +251,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `inspect_result` | func | `topo/inspect.py:142` | Stampa un Result dopo heal(): il prodotto vero di topo. |
 | `interior_crossings` | func | `topo/core/topology/noding.py:182` | I punti dove due edge si attraversano senza che nessuno dei due finisca |
 | `interpolate_bspline` | func | `topo/core/geometry/points.py:83` | B-spline di grado `degree` che passa per tutti i `points` (interpolazione |
-| `intersections` | func | `topo/core/geometry/intersections.py:155` | I punti dove due primitive si incontrano: incroci e tocchi, capi compresi. |
+| `intersections` | func | `topo/core/geometry/intersections.py:148` | I punti dove due primitive si incontrano: incroci e tocchi, capi compresi. |
 | `_intersections` | func | `topo/core/readings/outer_scan.py:147` | Punti del pezzo con coordinata `a` == level. |
 | `interval_coverage` | func | `topo/core/geometry/axis.py:45` | Frazione di [lo, hi] coperta dall'unione degli intervalli. |
 | `_is_near_full_arc` | func | `topo/core/base/cleanup.py:68` |  |
@@ -306,7 +306,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `map_sanitized_item_to_edge` | func | `topo_pdf/graph_adapter.py:12` |  |
 | `_measured_points` | func | `topo_dxf/text_extractor.py:302` | I punti sulla geometria fra cui la quota misura, dai def-point: |
 | `measured_references` | func | `topo/tools/anchor.py:100` | Gli elementi su cui cadono i ``measured_points`` di ``text`` (gli oggetti |
-| `_meet` | func | `topo/core/geometry/intersections.py:142` |  |
+| `_meet` | func | `topo/core/geometry/intersections.py:135` |  |
 | `_meet_or_bridge` | func | `topo/core/base/gap_solver.py:374` | Se le due geometrie si incontrano in `ix`, porta lì entrambi gli estremi; |
 | `_meetings` | func | `topo/core/topology/noding.py:602` | Dove `a` e `b` si incrociano o si toccano: in forma chiusa fra rette, |
 | `merge_cocircular_overlaps` | func | `topo/core/base/normalizer.py:352` | `merge_collinear_overlaps` per gli ArcSeg: fonde gruppi co-circolari |
@@ -344,12 +344,12 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_off_line` | func | `topo/core/base/normalizer.py:92` |  |
 | `off_rim` | func | `topo/core/topology/rim.py:64` | I tratti di `edge` che il bordo non ha preso: `taken` sono i capi (a, b) |
 | `offset_from_line` | func | `topo/core/geometry/points.py:170` | Distanza con segno di `p` dalla retta a->b (positiva a sinistra). |
-| `_on_arc` | func | `topo/core/geometry/intersections.py:134` |  |
+| `_on_arc` | func | `topo/core/geometry/intersections.py:127` |  |
 | `_on_arc` | func | `topo/core/readings/outer_scan.py:124` |  |
 | `_on_arc` | func | `topo/core/topology/noding.py:680` | `pt` (sul cerchio) cade dentro l'arco, lontano dagli estremi. |
 | `_on_border` | func | `topo/core/geometry/axis.py:188` |  |
 | `_on_boundary` | func | `topo/tools/anchor.py:118` | L'elemento col bordo più vicino a ``point``, se entro ``distance``. |
-| `_on_line` | func | `topo/core/geometry/intersections.py:123` |  |
+| `_on_line` | func | `topo/core/geometry/intersections.py:116` |  |
 | `_on_line` | func | `topo/core/primitives/trim.py:47` | Proiezione di `pt` sulla retta, dentro i suoi due estremi. |
 | `_on_nodes` | func | `topo/core/topology/outer_face.py:312` | Le geometrie di `edges` con gli estremi sui nodi del grafo: due estremi |
 | `_on_sweep` | func | `topo/core/geometry/measure.py:223` | True se l'angolo `t` cade nell'intervallo percorso da `start` per `sweep`. |
@@ -605,8 +605,8 @@ Same name defined at module level in different modules. Not automatically a bug 
 | `_color_rgb` | `topo/model/role_rule.py:124` · `topo_dxf/adapter.py:63` |
 | `_ends` | `topo/core/geometry/lines.py:28` · `topo/core/geometry/regions.py:115` |
 | `_length` | `topo/core/geometry/regions.py:107` · `topo/core/geometry/shape.py:269` · `topo/core/primitives/fitting.py:164` |
-| `_on_arc` | `topo/core/geometry/intersections.py:134` · `topo/core/readings/outer_scan.py:124` · `topo/core/topology/noding.py:680` |
-| `_on_line` | `topo/core/geometry/intersections.py:123` · `topo/core/primitives/trim.py:47` |
+| `_on_arc` | `topo/core/geometry/intersections.py:127` · `topo/core/readings/outer_scan.py:124` · `topo/core/topology/noding.py:680` |
+| `_on_line` | `topo/core/geometry/intersections.py:116` · `topo/core/primitives/trim.py:47` |
 | `_place` | `topo/core/base/hierarchy.py:67` · `topo/core/geometry/build.py:21` |
 | `_reach` | `topo/core/geometry/shape.py:263` · `topo/core/geometry/strips.py:139` |
 | `_ring` | `topo/core/geometry/lines.py:98` · `topo/io/shapes.py:49` |
@@ -794,20 +794,20 @@ _topo/core/geometry/integrals.py_
 - `_gauss(f: Callable[[float], Vec], a: float, b: float, n: int) -> Vec` — L258
 - `_adaptive_gauss(f: Callable[[float], Vec], a: float, b: float, n: int, depth: int=0) -> Vec` — L268
 
-#### `topo/core/geometry/intersections.py` — 169 lines
+#### `topo/core/geometry/intersections.py` — 162 lines
 
 _topo/core/geometry/intersections.py_
 
 - `_line_intersection(p1: Point, p2: Point, p3: Point, p4: Point) -> Optional[Point]` — L23 — Intersezione tra retta (p1,p2) e retta (p3,p4). None se parallele.
 - `_distance(p1: Point, p2: Point) -> float` — L40
 - `_circle_line_intersections(cx: float, cy: float, r: float, p1: Point, p2: Point) -> List[Point]` — L44 — Intersezioni tra la circonferenza (cx, cy, r) e la retta infinita (p1, p2).
-- `_circle_circle_intersections(cx1: float, cy1: float, r1: float, cx2: float, cy2: float, r2: float) -> List[Point]` — L75 — Intersezioni tra due circonferenze. Restituisce 0, 1 o 2 punti.
-- `_closest_to(candidates: List[Point], ref: Point) -> Optional[Point]` — L99 — Restituisce il punto più vicino a ref tra i candidati.
-- `_exact_parts(seg) -> list` — L114 — Retta, arco, cerchio restano se stessi; spline ed ellisse diventano
-- `_on_line(seg: LineSeg, pt: Point) -> bool` — L123
-- `_on_arc(seg, pt: Point) -> bool` — L134
-- `_meet(a, b) -> List[Point]` — L142
-- `intersections(a, b) -> List[Point]` — L155 — I punti dove due primitive si incontrano: incroci e tocchi, capi compresi.
+- `_circle_circle_intersections(cx1: float, cy1: float, r1: float, cx2: float, cy2: float, r2: float) -> List[Point]` — L71 — Intersezioni tra due circonferenze. Restituisce 0, 1 o 2 punti.
+- `_closest_to(candidates: List[Point], ref: Point) -> Optional[Point]` — L92 — Restituisce il punto più vicino a ref tra i candidati.
+- `_exact_parts(seg) -> list` — L107 — Retta, arco, cerchio restano se stessi; spline ed ellisse diventano
+- `_on_line(seg: LineSeg, pt: Point) -> bool` — L116
+- `_on_arc(seg, pt: Point) -> bool` — L127
+- `_meet(a, b) -> List[Point]` — L135
+- `intersections(a, b) -> List[Point]` — L148 — I punti dove due primitive si incontrano: incroci e tocchi, capi compresi.
 
 #### `topo/core/geometry/lines.py` — 191 lines
 

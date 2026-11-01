@@ -47,52 +47,45 @@ def _circle_line_intersections(cx: float, cy: float, r: float,
     Intersezioni tra la circonferenza (cx, cy, r) e la retta infinita (p1, p2).
     Restituisce lista di 0, 1 o 2 punti.
     """
-    dx = p2[0] - p1[0]
-    dy = p2[1] - p1[1]
-    fx = p1[0] - cx
-    fy = p1[1] - cy
-
-    a = dx * dx + dy * dy
-    if a < 1e-12:
+    dx, dy = p2[0] - p1[0], p2[1] - p1[1]
+    length = math.hypot(dx, dy)
+    if length <= FLOAT_NOISE:
         return []
-    b = 2 * (fx * dx + fy * dy)
-    c = fx * fx + fy * fy - r * r
-
-    discriminant = b * b - 4 * a * c
-    if discriminant < 0:
+    ux, uy = dx / length, dy / length
+    # il piede della perpendicolare dal centro, nel riferimento del centro
+    fx, fy = p1[0] - cx, p1[1] - cy
+    along = -(fx * ux + fy * uy)
+    footx, footy = fx + along * ux, fy + along * uy
+    # tangenza decisa sulla distanza dalla circonferenza (mm), non sul
+    # discriminante: la semicorda amplifica il rumore con la radice (G6e)
+    h = math.hypot(footx, footy)
+    if h > r + FLOAT_NOISE:
         return []
-
-    results = []
-    for sign in (-1, 1):
-        t = (-b + sign * math.sqrt(max(discriminant, 0))) / (2 * a)
-        results.append((p1[0] + t * dx, p1[1] + t * dy))
-
-    if discriminant < 1e-10:
-        return [results[0]]
-    return results
+    if h >= r - FLOAT_NOISE:
+        return [(cx + footx, cy + footy)]
+    half = math.sqrt(r * r - h * h)
+    return [(cx + footx - half * ux, cy + footy - half * uy),
+            (cx + footx + half * ux, cy + footy + half * uy)]
 
 
 def _circle_circle_intersections(cx1: float, cy1: float, r1: float,
                                   cx2: float, cy2: float, r2: float) -> List[Point]:
     """Intersezioni tra due circonferenze. Restituisce 0, 1 o 2 punti."""
     d = _distance((cx1, cy1), (cx2, cy2))
-    if d < 1e-10 or d > r1 + r2 + 1e-10 or d < abs(r1 - r2) - 1e-10:
+    # concentriche (nessun punto isolato), lontane o una dentro l'altra
+    if d <= FLOAT_NOISE or d > r1 + r2 + FLOAT_NOISE or d < abs(r1 - r2) - FLOAT_NOISE:
         return []
+    ux, uy = (cx2 - cx1) / d, (cy2 - cy1) / d
+    # tangenza sulla distanza dei centri (mm), come per la retta (G6e)
+    outside = d >= r1 + r2 - FLOAT_NOISE
+    if outside or d <= abs(r1 - r2) + FLOAT_NOISE:
+        side = r1 if outside or r1 >= r2 else -r1
+        return [(cx1 + side * ux, cy1 + side * uy)]
 
-    a    = (r1 * r1 - r2 * r2 + d * d) / (2 * d)
-    h_sq = r1 * r1 - a * a
-    if h_sq < 0:
-        return []
-    h = math.sqrt(max(h_sq, 0))
-
-    mx = cx1 + a * (cx2 - cx1) / d
-    my = cy1 + a * (cy2 - cy1) / d
-
-    if h < 1e-10:
-        return [(mx, my)]
-
-    px = h * (cy2 - cy1) / d
-    py = h * (cx2 - cx1) / d
+    a = (r1 * r1 - r2 * r2 + d * d) / (2 * d)
+    h = math.sqrt(max(r1 * r1 - a * a, 0.0))
+    mx, my = cx1 + a * ux, cy1 + a * uy
+    px, py = h * uy, h * ux
     return [(mx + px, my - py), (mx - px, my + py)]
 
 
