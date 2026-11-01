@@ -149,6 +149,45 @@ class TestOverlapFromANodeUnderMotion(unittest.TestCase):
                     self.assertAlmostEqual(moved[4], at_rest[4], delta=1e-2)   # la griglia dei nodi, lontano
 
 
+class TestFirstStepUnderMotion(unittest.TestCase):
+    """G6e, gruppo C, `_first_step`: su un lato sinistro verticale i punti più
+    a sinistra sono pari merito e il primo lo sceglie l'ultimo bit; sui
+    disegni tracciati succede 938 volte su 2964 (`probe_first_step.py`).
+    `going_down` invece non arriva al rumore (|dy| minimo 0.004 mm, 461
+    rami interni). Prova: il giro parte da nodi diversi secondo il moto
+    (controllato) e i passaggi per pezzo sono gli stessi — chi li consuma
+    (`outer_face`, `non_contour_edges`) conta, non guarda da dove si parte.
+    Non prova un pari merito fra punti di due componenti diversi."""
+
+    # rotazioni di 1e-12: il lato sinistro pende di qua o di là, entro il rumore
+    MOTIONS = [(1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0), (1e-12, 0.3, -0.2), (-1e-12, 0.3, -0.2)]
+
+    def test_partenze_diverse_stessi_passaggi(self):
+        from tests.invariants import rigid
+        from topo.core.topology.graph import build_node_graph
+        from topo.core.topology.outer_face import _first_step, outer_face_passes
+        # quadrato con una corda da (0, 5) e una sporgenza oltre il lato destro
+        base = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + [_line((0, 5), (13, 5))]
+        starts, readings = set(), []
+        for motion in self.MOTIONS:
+            move_seg, move_pt = rigid(*motion)
+            edges = [Edge(role="unknown", start=move_pt(e.start), end=move_pt(e.end),
+                          segment=move_seg(e.segment)) for e in base]
+            pieces = split_at_crossings(edges, tolerance=0.05).pieces
+            graph = build_node_graph(pieces, sliver=0.01)
+            (component,) = graph.connected_components()
+            starts.add(tuple(round(c - d, 6) for c, d in zip(_first_step(graph, component)[1], motion[1:])))
+            passes = outer_face_passes(graph, component, len(pieces))
+            readings.append(sorted(
+                (tuple(round((a + b) / 2 - d, 6) for a, b, d in zip(p.start, p.end, motion[1:])),
+                 passes.get(id(p), 0)) for p in pieces))
+        self.assertGreater(len(starts), 1)            # il pari merito c'è davvero
+        for r in readings[1:]:
+            self.assertEqual(r, readings[0])
+        self.assertIn(2, [n for _, n in readings[0]])  # la sporgenza, due volte
+        self.assertIn(0, [n for _, n in readings[0]])  # la corda, mai
+
+
 class TestUnionGridUnderMotion(unittest.TestCase):
     """G6e, gruppo B, `outer_face.py:41` (`UNION_GRID`): la griglia della rete
     del ripiego (D100, D179). Sui 31 disegni di `island()` lavora solo sui
