@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`85` modules · `511` module-level functions · `63` classes · `16272` lines of code.
+`85` modules · `511` module-level functions · `63` classes · `16268` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -55,7 +55,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `assign_cluster_refs` | func | `topo/core/base/hierarchy.py:241` | Scrive su ogni curva di `curves` (`result.loose`) `cluster_ref`: l'indice |
 | `_assign_loose` | func | `topo/tools/split.py:123` | id(cluster) → le curve sciolte che gli vanno, nell'ordine di |
 | `_at` | func | `topo/core/geometry/regions.py:90` |  |
-| `axis_aligned_share` | func | `topo/core/geometry/axis.py:240` | Frazione della lunghezza dei `LineSeg` di `segments` orizzontale o |
+| `axis_aligned_share` | func | `topo/core/geometry/axis.py:236` | Frazione della lunghezza dei `LineSeg` di `segments` orizzontale o |
 | `axis_lines` | func | `topo/core/geometry/axis.py:85` | (orizzontali, verticali): i tratti che si scostano dall'asse al più di `eps`; gli altri non compaiono. |
 | `AxisLine` | class | `topo/core/geometry/axis.py:71` | Un tratto orizzontale o verticale. |
 | `_bbox_center` | func | `topo_dxf/text_extractor.py:497` |  |
@@ -261,7 +261,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `Island` | class | `topo/core/readings/islands.py:37` | Gruppo di Edge vicini, con la bbox che li contiene tutti. |
 | `IslandReading` | class | `topo/core/readings/island.py:49` | Cosa island() ha deciso su un'isola, pezzo per pezzo. |
 | `_item_geometry` | func | `topo/tools/anchor.py:152` |  |
-| `items_inside` | func | `topo/core/geometry/axis.py:223` | I tratti con entrambi i capi dentro `bounds` allargato di `margin`, nell'ordine dato. |
+| `items_inside` | func | `topo/core/geometry/axis.py:219` | I tratti con entrambi i capi dentro `bounds` allargato di `margin`, nell'ordine dato. |
 | `_join_seam` | func | `topo/core/primitives/fitting.py:220` | Un contorno senza spigoli si apre in un punto qualunque: se il primo e |
 | `_joined` | func | `topo/core/geometry/shape.py:409` |  |
 | `_key_for` | func | `topo_dxf/sanitize.py:154` | Restituisce una chiave hashable che identifica univocamente |
@@ -348,7 +348,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_on_arc` | func | `topo/core/geometry/intersections.py:127` |  |
 | `_on_arc` | func | `topo/core/readings/outer_scan.py:124` |  |
 | `_on_arc` | func | `topo/core/topology/noding.py:692` | `pt` (sul cerchio) cade dentro l'arco, lontano dagli estremi. |
-| `_on_border` | func | `topo/core/geometry/axis.py:188` |  |
+| `_on_border` | func | `topo/core/geometry/axis.py:184` |  |
 | `_on_boundary` | func | `topo/tools/anchor.py:118` | L'elemento col bordo più vicino a ``point``, se entro ``distance``. |
 | `_on_line` | func | `topo/core/geometry/intersections.py:116` |  |
 | `_on_line` | func | `topo/core/primitives/trim.py:47` | Proiezione di `pt` sulla retta, dentro i suoi due estremi. |
@@ -493,7 +493,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_shown_value` | func | `topo_dxf/text_extractor.py:249` | La misura come la mostra il disegno (precisione, virgola), o calcolata. |
 | `_side` | func | `topo/core/geometry/regions.py:206` | +1 dentro, -1 fuori, 0 sul bordo. |
 | `_side_cover` | func | `topo/core/topology/rim.py:128` | Per ogni lato dell'anello, gli (edge, verso) che distano meno di `band` |
-| `sides_on_border` | func | `topo/core/geometry/axis.py:233` | I lati di `bounds` ("left", "bottom", "right", "top") che stanno sul |
+| `sides_on_border` | func | `topo/core/geometry/axis.py:229` | I lati di `bounds` ("left", "bottom", "right", "top") che stanno sul |
 | `_signed_area` | func | `topo/core/geometry/regions.py:190` | Area con segno sulle primitive (Green, D165): positiva in senso antiorario. |
 | `_signed_turn` | func | `topo/core/primitives/fitting.py:56` | Svolta con segno (gradi) in `b` andando da `a` a `c`: positiva a sinistra. |
 | `simple_rings` | func | `topo/core/topology/outer_face.py:180` | I giri semplici di una faccia: dove il giro ripassa da un nodo si |
@@ -510,7 +510,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `sort_clusters` | func | `topo/core/base/hierarchy.py:77` | I cluster dal più grande: area esatta dell'outer, poi a pari area l'angolo |
 | `_Span` | class | `topo/core/base/normalizer.py:224` | Un edge come intervallo [lo, hi] sul suo supporto (posizione lungo la |
 | `_span` | func | `topo/core/geometry/regions.py:56` |  |
-| `spanning_lines` | func | `topo/core/geometry/axis.py:201` | (ys, xs): le coordinate delle linee strettamente interne a `bounds` (bordo |
+| `spanning_lines` | func | `topo/core/geometry/axis.py:197` | (ys, xs): le coordinate delle linee strettamente interne a `bounds` (bordo |
 | `spatial_islands` | func | `topo/core/readings/islands.py:55` | Union-find sulle coppie di Edge a distanza <= gap_tolerance (STRtree, |
 | `_spline_moments` | func | `topo/core/geometry/integrals.py:194` | Su ogni intervallo di nodi non vuoto del dominio. Polinomiale: x, y di |
 | `_spline_param` | func | `topo/core/primitives/trim.py:145` | Parametro del punto della spline più vicino a `pt`: campioni, poi |
@@ -744,7 +744,7 @@ _topo/core/geometry/__init__.py_
 
 No module-level function or class.
 
-#### `topo/core/geometry/axis.py` — 255 lines
+#### `topo/core/geometry/axis.py` — 251 lines
 
 _topo/core/geometry/axis.py_
 
@@ -757,11 +757,11 @@ _topo/core/geometry/axis.py_
 - **class** `CoveredRectangle` — L107 — An axis-aligned rectangle whose four sides are covered by strokes.
   - methods: `segments`, `area`, `long_side`, `short_side`, `ratio`
 - `covered_rectangles(items: Sequence, *, min_side: float, eps: float=AXIS_EPS, cluster_tolerance: float=CLUSTER_TOLERANCE, coverage: float=SIDE_COVERAGE) -> List[CoveredRectangle]` — L146 — I rettangoli allineati agli assi con ogni lato coperto almeno per
-- `_on_border(x_lo, y_lo, x_hi, y_hi, items, tol) -> list` — L188
-- `spanning_lines(bounds: Bounds, items: Iterable, *, coverage: float=SIDE_COVERAGE, eps: float=AXIS_EPS, cluster_tolerance: float=CLUSTER_TOLERANCE) -> Tuple[List[float], List[float]]` — L201 — (ys, xs): le coordinate delle linee strettamente interne a `bounds` (bordo
-- `items_inside(bounds: Bounds, items: Iterable, *, margin: float=0.0) -> list` — L223 — I tratti con entrambi i capi dentro `bounds` allargato di `margin`, nell'ordine dato.
-- `sides_on_border(bounds: Bounds, border: Bounds, *, tolerance: float) -> List[str]` — L233 — I lati di `bounds` ("left", "bottom", "right", "top") che stanno sul
-- `axis_aligned_share(segments: Iterable, *, angle_tolerance: float) -> Optional[float]` — L240 — Frazione della lunghezza dei `LineSeg` di `segments` orizzontale o
+- `_on_border(x_lo, y_lo, x_hi, y_hi, items, tol) -> list` — L184
+- `spanning_lines(bounds: Bounds, items: Iterable, *, coverage: float=SIDE_COVERAGE, eps: float=AXIS_EPS, cluster_tolerance: float=CLUSTER_TOLERANCE) -> Tuple[List[float], List[float]]` — L197 — (ys, xs): le coordinate delle linee strettamente interne a `bounds` (bordo
+- `items_inside(bounds: Bounds, items: Iterable, *, margin: float=0.0) -> list` — L219 — I tratti con entrambi i capi dentro `bounds` allargato di `margin`, nell'ordine dato.
+- `sides_on_border(bounds: Bounds, border: Bounds, *, tolerance: float) -> List[str]` — L229 — I lati di `bounds` ("left", "bottom", "right", "top") che stanno sul
+- `axis_aligned_share(segments: Iterable, *, angle_tolerance: float) -> Optional[float]` — L236 — Frazione della lunghezza dei `LineSeg` di `segments` orizzontale o
 
 #### `topo/core/geometry/build.py` — 87 lines
 
