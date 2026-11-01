@@ -14,6 +14,7 @@ from __future__ import annotations
 import math
 from typing import List, Optional, Tuple
 
+from ..geometry.measure import FLOAT_NOISE
 from .segments import (
     ArcSeg, CircleSeg, EllipseSeg, LineSeg, Point, BSplineSeg, _bspline_find_span,
 )
@@ -36,7 +37,7 @@ def sub_segment(seg, a: Point, b: Point, via: Point):
     if isinstance(seg, (ArcSeg, CircleSeg, EllipseSeg)):
         return _sub_angular(seg, a, b, via)
     if isinstance(seg, BSplineSeg):
-        return _sub_spline(seg, a, b)
+        return _sub_spline(seg, a, b, via)
     return None
 
 
@@ -112,12 +113,24 @@ def _angular(seg, lo: float, hi: float, ccw: bool):
 # B-spline
 # ---------------------------------------------------------------------------
 
-def _sub_spline(seg: BSplineSeg, a: Point, b: Point) -> Optional[BSplineSeg]:
+def _sub_spline(seg: BSplineSeg, a: Point, b: Point, via: Point) -> Optional[BSplineSeg]:
     if seg.periodic or not seg.knots or len(seg.control_points) < 2:
         return None
     p = seg.degree
     lo, hi = seg.knots[p], seg.knots[-(p + 1)]
     ta, tb = _spline_param(seg, a, lo, hi), _spline_param(seg, b, lo, hi)
+    # un capo sulla giunzione di una spline chiusa ha due parametri, lo e hi,
+    # a pari merito: vale quello che mette `via` dentro il tratto, come sul
+    # cerchio (G6e)
+    seam_a, seam_b = _on_seam(seg, a, lo, hi), _on_seam(seg, b, lo, hi)
+    if seam_a and seam_b:
+        ta, tb = lo, hi
+    elif seam_a or seam_b:
+        tv = _spline_param(seg, via, lo, hi)
+        if seam_a:
+            ta = lo if tv < tb else hi
+        else:
+            tb = lo if tv < ta else hi
     if ta == tb:
         return None
     reverse = ta > tb
@@ -140,6 +153,13 @@ def _sub_spline(seg: BSplineSeg, a: Point, b: Point) -> Optional[BSplineSeg]:
         weights=[w for _, _, w in sub_cpw] if seg.weights else None,
     )
     return out.reversed() if reverse else out
+
+
+def _on_seam(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> bool:
+    """`pt` sta sui due capi della spline insieme: alla stessa distanza da tutti
+    e due entro FLOAT_NOISE, e lì sopra."""
+    d_lo, d_hi = math.dist(seg._evaluate(lo), pt), math.dist(seg._evaluate(hi), pt)
+    return abs(d_lo - d_hi) <= FLOAT_NOISE and max(d_lo, d_hi) <= FLOAT_NOISE
 
 
 def _spline_param(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> float:

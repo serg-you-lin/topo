@@ -102,5 +102,63 @@ class TestSubSegment(unittest.TestCase):
         self.assertIsNone(sub_segment(spline, spline._evaluate(3.5), spline._evaluate(5.5), None))
 
 
+class TestClosedSplineSeamUnderMotion(unittest.TestCase):
+    """G6e, gruppo D, `trim.py:150` (`_spline_param`, il campione più vicino):
+    su una spline chiusa il capo che sta sulla giunzione ha due parametri, lo e
+    hi, alla stessa distanza; vinceva sempre hi (il `<=` sui capi) e il tratto
+    usciva rovesciato, il complemento. Ora decide `via`, come sul cerchio.
+    Prova: il pari merito c'è al posto (le due distanze, controllate), il tratto
+    è quello giusto in tutti e due i versi e a sette moti; dentro `island()` una
+    retta che taglia la spline chiusa dà lo stesso outer della spline aperta di
+    1e-9 (prima metà forma). Non prova una spline che si incrocia da sé (due
+    parametri anche lì, `via` non sempre li separa: in coda)."""
+
+    MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0), (0.7, 3.1, -2.2),
+               (math.pi / 2, 0.0, 0.0), (2.1, -1e5, 3e4), (2.4, -0.37, 0.61)]
+    X, Y = -71565.8225, -3048.0985
+    LOOP = [(0, 0), (10, -3), (20, 0), (23, 10), (20, 20), (10, 23), (0, 20), (-3, 10)]
+
+    def _spline(self, gap=0.0):
+        cps = [(self.X + a, self.Y + b) for a, b in self.LOOP + [(0, gap)]]
+        n, p = len(cps), 3
+        knots = [0.0] * (p + 1) + [i / (n - p) for i in range(1, n - p)] + [1.0] * (p + 1)
+        return BSplineSeg(degree=p, control_points=cps, knots=knots)
+
+    @staticmethod
+    def _length(seg):
+        pts = seg.discretize(tolerance=0.001)
+        return sum(math.dist(a, b) for a, b in zip(pts, pts[1:]))
+
+    def test_il_tratto_dalla_giunzione_e_quello_di_via(self):
+        from tests.invariants import rigid
+        for motion in self.MOTIONS:
+            move_seg, _ = rigid(*motion)
+            spline = move_seg(self._spline())
+            seam, b = spline._evaluate(0.0), spline._evaluate(0.3)
+            self.assertEqual(math.dist(seam, spline._evaluate(1.0)), 0.0)
+            short = sub_segment(spline, seam, b, spline._evaluate(0.15))
+            long = sub_segment(spline, b, seam, spline._evaluate(0.6))
+            whole = self._length(spline)
+            with self.subTest(motion=motion):
+                self.assertAlmostEqual(self._length(short), 27.034, places=2)
+                self.assertAlmostEqual(self._length(short) + self._length(long), whole, places=3)
+                self.assertTrue(_close(segment_endpoints(short)[0], seam))
+                self.assertTrue(_close(segment_endpoints(long)[1], seam))
+
+    def test_island_la_spline_chiusa_tagliata_resta_intera(self):
+        import topo
+        from tests.invariants import rigid
+        X, Y = self.X, self.Y
+        for gap in (0.0, 1e-9):
+            for motion in self.MOTIONS:
+                move_seg, _ = rigid(*motion)
+                pieces = [self._spline(gap), LineSeg(start=(X - 10, Y + 10), end=(X + 30, Y + 10))]
+                doc = topo.load_segments([move_seg(s) for s in pieces], tolerance=0.5)
+                result = topo.island(doc, max_gap=0.5)
+                with self.subTest(gap=gap, motion=motion):
+                    self.assertEqual([round(topo.to_shapely(c.outer).area, 3) for c in result.clusters],
+                                     [465.261])
+
+
 if __name__ == "__main__":
     unittest.main()
