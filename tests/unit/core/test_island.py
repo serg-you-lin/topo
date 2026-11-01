@@ -162,3 +162,34 @@ class TestRefitTessellations(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestNestedInUnderMotion(unittest.TestCase):
+    """G6e, gruppo D, `island.py:148`: `read_islands` sceglie l'ospite col
+    `max` sull'area dell'outer. Un pari merito non c'è: due ospiti che
+    contengono lo stesso pezzo sono isole distinte, quindi i loro bordi non si
+    toccano e uno contiene l'altro; le aree differiscono almeno di distanza ×
+    perimetro, ben oltre il rumore. Prova: tre cornici annidate e un tratto
+    dentro la più piccola; a ogni moto il tratto e le due cornici interne
+    puntano alla cornice più grande."""
+
+    MOTIONS = [(a, dx, dy) for a in (0.0, 0.8127, math.pi / 2)
+               for dx, dy in ((0.0, 0.0), (13.1, -9.3), (2.5e6, -1.5e6))]
+
+    def test_il_piu_esterno_ospita_tutti(self):
+        from tests.invariants import rigid
+        from topo import experimental
+        rectangle = topo.geometry.rectangle
+        segs = (rectangle(100, 100) + rectangle(60, 60) + rectangle(20, 20)
+                + [LineSeg(start=(-3.0, 0.0), end=(3.0, 0.0))])
+        for motion in self.MOTIONS:
+            with self.subTest(motion=motion):
+                segment, _ = rigid(*motion)
+                doc = topo.load_segments([segment(s) for s in segs])
+                readings = experimental.read_islands(doc.edges, 0.05, MAX_GAP)
+                self.assertEqual(len(readings), 4)
+                tops = [i for i, r in enumerate(readings) if r.nested_in is None]
+                self.assertEqual(len(tops), 1)
+                outer = to_shapely(readings[tops[0]].outer)
+                self.assertAlmostEqual(outer.area, 100.0 ** 2, places=3)
+                self.assertTrue(all(r.nested_in == tops[0] for i, r in enumerate(readings) if i != tops[0]))
