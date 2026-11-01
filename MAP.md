@@ -673,576 +673,68 @@ Names in the older entries are the names of their day (`forge`, `ForgeCluster`,
   polygon) at the minimum-area angle searched on the curve itself; correctness
   over speed until the Rust engine. The countersink's area was right: the Ø10
   inside the Ø30 is material by the parity rule (D89).
-### D157 — gate G6: the four doubts on D103 checked one by one; a dropped loop has no boundary of its own at the contact distance, and its edges are in `loose` ✅
-
-Checked on every `golden_islands` drawing by intercepting
-`_drop_boundary_duplicates` (`island()`, max_gap 0.5, tol 0.01): 56 loops
-dropped, on anch_02 (50), anch_03 (4), anch_06 (1), anch_07 (1); regr_02 and
-regr_05 drop the same loops as anch_03 and anch_07 (same geometry). For each
-loop: the host it was matched to, the directed distance of its boundary from
-the host's and back, the share of its area inside the host, and how much of
-its boundary is in the output.
-
-**What the rule says, in geometry.** A loop is dropped when every point of its
-boundary lies within `band` = tolerance + max_gap of the boundary of a larger
-loop already accepted. In `island()` two curves closer than max_gap touch (D98,
-D99), so such a loop touches an accepted contour all along: it has no boundary
-of its own at the reading's contact distance and adds no contour. The
-docstring said it was "the wall of a hole in an isometric view": that is an
-interpretation of one drawing, now removed (non-negotiable 8). The threshold is
-the caller's parameter, and the drops follow it exactly: on anch_02, 50 at
-max_gap 0.5, 1 at 0.34 and 0.25 (only the true duplicate is left); on anch_03,
-4 at 0.5 and 0.34, 0 at 0.25.
-
-**The four doubts:**
-1. **anch_02/anch_03, "grandchild inners at depth 2?"** — 48 of anch_02's 50
-   and all 4 of anch_03's are a closed loop fully inside another (share
-   inside 1.000), with the boundaries within band in *both* directions: 18 at
-   0.504/0.505 (11.3 mm² inside 16.3), 30 at 0.351 (4.96 inside 7.24), 4 at
-   0.31 (3.01 inside 4.62). The ring between the two is narrower than band
-   everywhere, so at max_gap 0.5 there is one contour, not two. `heal()` keeps
-   both (anch_02: 16.287 and 11.326 as two inners; anch_03: 4.623 an outer
-   with 3.011 inside) because its contact distance is tol, 0.01, and 0.3–0.5
-   is far beyond it. Two readings, two resolutions; not a contradiction.
-2. **anch_06, "a real drawing symbol overlapping the outer?"** — no: a single
-   circle of Ø≈1.07 drawn twice, Hausdorff distance 0 between the two. The
-   second copy is the dropped loop. anch_02's 50th is the same kind: a ring of
-   42 lines retracing a 5.56 mm² outline within 0.004.
-3. **anch_07/regr_05, "0.07 mm² should go to the trash, not a discard
-   bucket"** — there is no discard bucket: a dropped loop's edges stay in the
-   rest of the island and go to `non_contour`/`unclassified`, hence to
-   `loose` with the island's `cluster_ref`. The loop is a sliver along the
-   outer, mean width 0.068 (wider than tol, so D106's thin-face rule does not
-   take it; narrower than max_gap).
-4. **Not in the TODO list, found here:** one anch_02 loop (3.09 mm²) is only
-   33% inside its host, a Ø5 circle: it is the perimeter around the circle's
-   edge, a line and the 3/4 arc of r 3 drawn around it — a cycle that is not a
-   face. The rule drops it for the same reason as the others (every point of
-   its boundary within 0.503 of the circle); the faces it encloses (a lens
-   0.5 wide inside the circle, the 0.5 ring between r 2.5 and r 3) are all
-   narrower than band.
-
-**Dropped loops are in `loose`:** for all 56, the share of the boundary
-covered by `result.loose` (within 0.011) is 1.000. `TestNothingDropped` would
-not see a lost one (it measures at max_gap, and a dropped loop is by
-definition within band of a contour), so two unit tests in `test_island.py`
-hold it on two concentric circles 0.4 apart: at max_gap 0.5 one inner and the
-other circle whole in `loose` with `cluster_ref` 0; at max_gap 0.2 two inners.
-
-**Not D103, left for G7:** the inners that cross on anch_03/regr_02
-(`KNOWN_CROSSING_INNERS`, D107) are cycles that are not faces *among accepted
-loops*, none of them dropped by this rule. They were filed "inside the D103
-doubts"; they are a separate defect, and G7 (zero `expectedFailure`) now names
-them. The island goldens can be regenerated (G7) once Federico has looked at
-the dropped loops: DXFs in `_debug/2026-10-23_topo_G6_D103/` (layer
-`GIRO_SCARTATO`, red).
-
-No change to `island()` output. `main` → **0.22.2**.
-
-### D158 — the 1.0 gate closes on invariants: D143's promises become tests on every fixture, both readings; what they do not see goes to 1.x
-
-Federico, 23 October, after G6b appeared: the gate keeps growing because
-defects are found by looking, one drawing at a time, and looking never ends.
-D143 states the promise as a finite set of invariants; three were already
-tests, one ("every input piece comes out once") was not, and that is where G6b
-was hiding. So:
-
-**Permanent (stays after 1.0):** every invariant of D143 is a test in the
-suite, run on every fixture in the repo, in both readings where it applies —
-faithful both ways (`test_fidelity`), complete (`TestNothingDropped`), every
-piece out once (new, G6b), deterministic (edge order, `TestEdgeOrder`), and
-invariant under rigid motion (rotation exists for `heal()`; translation far
-from the origin, mirror, and all of them for `island()` are missing). A
-reading's facts are properties of the shape, not of where it sits or in what
-order it was read, so moving, turning, mirroring or reordering a drawing must
-not change them beyond the tolerance. These are the guard every 1.x change
-must keep green, and a new fixture gets them for free.
-
-**Temporary (deleted when topo is 1.0-ready):** the list of red invariants
-on today's fixtures *is* the rest of the gate. After that sweep, an item
-enters the gate only if it turns one of these invariants red on a fixture in
-the repo; a defect found by eye that no invariant sees is a 1.x fix.
-
-### D159 — the D158 sweep: every invariant on every tracked drawing, known defects registered per case
-
-**Where they run.** `tests/drawings.py` lists every DXF tracked by git with
-its reading (D152, the list `test_fidelity` already used); the invariant
-tests of both readings now take their fixtures from it, not from
-`golden/` and `golden_islands/` alone: 185 drawings read with `heal()`, 31
-with `island()`. A drawing added to the repo gets every invariant.
-
-**What was added.** `translated(dx, dy)` and `mirrored()` (y → −y) on every
-primitive, next to `rotated`: a mirrored arc or elliptic arc changes the
-sign of its angles and its direction, because the point at angle *a* goes to
-−*a*; the circle grid anchored at angle 0 (D145) is symmetric, so a mirrored
-arc has the mirrored vertices. Tested on a grid of cases (negative
-coordinates, near zero, 3·10⁶ from the origin). The invariants, shared in
-`tests/invariants.py`: rigid motion (rotation 0.7 rad, quarter turn,
-translation to (2.5e6, −1.5e6), mirror) comparing outers *and* inners, edge
-order, and **every piece out once**: no stretch of `loose` lies within 0.01
-(two discretizations of one curve, chords on the same side) of a contour for
-more than 1 mm — a crossing does that only under ~1°, a tangency only past
-R ≈ 12 mm. For `heal()` it also runs at tol 0.01 and 0.05, because a
-tolerance changes which gaps close and which corners are repaired.
-
-**Known defects, per case.** A red case is registered with its gate item
-(`KNOWN` in the island tests, `KNOWN_TWICE` / `KNOWN_CHORDS` in heal's):
-it runs, must fail, and shows as a skip naming the item; when it passes the
-test fails until the case is removed. An `expectedFailure` on a whole test
-would hide a new red in the same drawing and say nothing when it heals.
-
-**Result.** `heal()` passes motion, mirror, far translation and order on all
-185 drawings; red only `rect_overlap` at tol < 0.1 (out once, G6b) and
-`SEGNI_TRACCIATI` (chords change the outer, G6d). `island()` is red on order
-(22 of 31) and rigid motion (20 of 31) — G6c —, out once (13, G6b), inners
-crossing and roundtrip (G7). Order dependence is a defect, not one of the
-"ambiguous cases" D143 leaves open: an ambiguous case may be decided either
-way, but by the geometry, and the same geometry listed in another order is
-the same case.
-
-### D160 — the full suite runs in under 3 minutes, serial, every test capped
-
-A suite nobody can run often blocks delivery: past ~3 minutes it is not
-run, or it is run while waiting, and both cost more than the tests save.
-After the D158 sweep the serial suite took 10 minutes, and a run that hung
-gave no name. The budget holds on a machine with few cores, so it is
-measured serial, and no test is removed:
-
-- **Every test has a cap.** `pytest-timeout` (`--timeout=60` in
-  `pyproject.toml`): a test that hangs fails with its name and the stack
-  where it stood, instead of freezing the run at 99%. No parallel workers:
-  each xdist worker rebuilt the cached readings for itself, multiplying the
-  work, and wall time on many cores hid the cost a small machine pays.
-- **Each reading is computed once.** The base reading of `island()` and one
-  `scrambled` variant per drawing (D158) are cached in `tests/readings.py`
-  and handed out as fresh copies.
-- **The checks are local and build each band once.** "Out once" and
-  "nothing dropped" compare a curve with the band around the outputs near
-  it (an STRtree query), which is the same set inside that width; the band
-  around each output is buffered once and reused, because the band of a
-  union is the union of the bands (rebuilding it per input edge cost more
-  than 60 s on one sheet with 7,500 short edges, now under 3 s). The twin
-  search between holes skips pairs with disjoint bounds whose areas already
-  exceed the band, where the symmetric difference is the sum of the areas.
-
-When a full run finds a failure, only the failures are rerun (`--lf`) until
-green, then the full suite once before the commit.
-
-A change that pushes the suite over 3 minutes is fixed in the same change,
-by caching, cheaper checks or fewer cases — slimming tests or goldens is
-preferred to a slow suite.
-
-### D161 — reopening D59, D71, D103, D106, D157: `island()` reads outer contours and nothing else; everything inside an outer goes to `loose`
-
-Decided by Federico, 23 October 2026, on G6c. `island()` returns, for each
-island, its outer contour; every other piece — closed or open, inside or
-outside the outer, a whole nested island — goes to `result.loose` with
-`cluster_ref` set to the island it touches or lies in (D137). `island()`
-never builds an inner.
-
-Why. `island()` reads drawings (views, isometrics, sheets with notation),
-where a closed loop inside an outer has no meaning the geometry can decide:
-the cell of a strip crossed by slots, a logo letter, a hidden line that
-closes on a view. Which closed loops to call inners was chosen by walking
-cycles (`LoopFinder`: from the nodes in insertion order, each edge once,
-the straightest way at a branch), so the answer depended on the order of
-the entities in the file and on the frame (G6c: 22 of 31 drawings changed
-with the order, 20 with a rigid motion). A planar-face reading would make
-it deterministic, but deterministic is not meaningful: no face criterion
-tells a hole from a cell without knowing what the drawing represents. That
-is the consumer's call (the same split as D88/D90: topo reads structure,
-the consumer reads meaning), and the consumer gets every piece, untouched,
-in `loose`.
-
-What goes: the inner loops and their machinery in `topo/core/island.py`
-(`LoopFinder` on the rest, `_drop_boundary_duplicates` D103, the faces per
-loop D106, the closed loops outside the chosen contour D71), the
-`IslandReading` fields `inner_loops`, `outside_loops`, `off_faces` (clean
-break, D140 surface is pre-1.0). A nested island no longer becomes an
-inner of its host: its edges go to `loose` with the host's `cluster_ref`.
-What stays: the outer face (D59, D100), spurs, outside, non-contour (D49)
-and the nesting index, which now only decides `cluster_ref`. `heal()` is
-untouched: in a flat part a closed loop inside the outer is a hole by
-construction (D88 is snapbend's reading of it).
-
-Consequences on the gate: G6c's inner families and G7's crossing inners
-and inner roundtrip have no object any more; what remains of G6c is
-whether the outers change with order or frame. The island goldens change
-and are regenerated only after Federico has looked at them (non-negotiable
-9). D147 (suspended) is moot for its inner half.
-
-### D162 — a piece that closes by itself comes out of `island()` as one closed curve in `loose`; `anchor_texts` targets it
-
-Decided by Federico, 23 October 2026, on the D161 follow-up. Among the pieces
-`island()` puts in `loose`, the ones that close by themselves — one closed
-segment (a circle, a full ellipse, a closed spline) or a chain where every
-node has degree 2 — come out as one `ClosedCurve` (polygon, segments in ring
-order), still in `loose` with their `cluster_ref`. Everything else stays one
-`OpenCurve` per edge. `contour_shape` reads them like any contour; on a piece
-that does not close it returns `None` (it used to crash). `anchor_texts`
-targets them as `"loose[k]"` (`resolve_target` resolves it); loose closed
-curves with a non-structural role (a frame marked by the caller) are not
-targets.
-
-Why. topo exposes its shapes, nothing more: the consumer finds its own
-patterns (a bent sheet seen from the side, a counterbore's section) among
-the loose curves and skips what already has a shape. A ring with only
-degree-2 nodes has one cycle and no choice, so D161 holds: nothing depends
-on entity order or on the frame. A chain with a branch stays open edges;
-which cycle to see there is the consumer's. `heal()` is untouched.
-
-Not done, on purpose: no new type, no new function, no path for a group of
-open curves, no open loose curves as anchor targets (a leader tip on a
-centre line would compete with the hole it crosses).
-
-### D163 — a piece the border takes only in part leaves exactly its remainder in `loose` (G6b)
-
-Gate item G6b, 25 October 2026. Every input piece comes out once: in a
-contour or in `loose` (D137). Two readings broke it where the contour is
-read from faces instead of a graph loop, because they marked as "taken"
-only the edges lying *entirely* on the border:
-
-- `island()`, outer from the union of faces (D100): an edge the border
-  runs along only in part (a crossing shapely nodes and the planar network
-  does not) gave its part to the contour (D106) and went whole to `loose`
-  too. Measured on regr_01, anch_06, regr_04, anch_06_noframe: 21 stretches,
-  up to 5 mm, within 1e-4 mm of the contour.
-- `heal()`, the last-resort `polygonize` (no graph loop closes): no edge
-  was taken at all, so every line came out twice (`rect_overlap` at tol
-  0.01 and 0.05: outer right, all four lines whole in `loose`).
-
-Rule. `rim.face_segments` now also returns which stretch of which edge
-each border run used. An edge with a run is taken; `rim.off_rim` cuts it
-at the ends of its runs and keeps, as new edges, the pieces that move away
-from the border by more than `band` — the farthest point, not the
-midpoint: a stub of length 2·band starts on the border and its midpoint is
-only band away. An original end keeps its node. `heal()` applies the same
-to every ring of every polygonize face (`rim.off_faces`) with
-`band = tolerance`, so nothing farther than the tolerance disappears
-(D143); `island()` keeps the rim band of D100 (2·GRAPH_EPSILON). Contours
-do not change: only `loose`, which loses exactly the doubled length.
-
-Two test rules made precise, because they confused two input pieces with
-one piece output twice:
-- `along_contours` (the "out once" invariant) ignores a stretch where the
-  input itself has two pieces (a circle traced again by a polyline in
-  anch_06): each comes out once.
-- the fidelity test (G3) accepts an untouched spline that comes out *cut*,
-  not refitted: pieces within 2e-6 of it covering it up to the rim band.
-  regr_04 passed before only thanks to the doubled whole copy in `loose`.
-
-Not done: the polygonize contours of `heal()` stay chains of `LineSeg`;
-reading them along the edges like D106 would bring arcs back, but it is a
-new behaviour, not a G6b fix.
-
-### D164 — a short LineSeg with a free end is a tip, not a double node: it is not welded
-
-Found by Federico on 25 October 2026 looking at the G6b review files:
-`golden_islands/regr_01` read with `island()` had lost its top view since
-the D152 draft (6fffe48, 22 October) — the plate outline did not close and
-its five Ø19 holes came out as outers. The D152 review (23 October) did not
-catch it.
-
-Cause. The view is drawn as ~3500 LineSegs under 0.05 mm. Where an arc meets
-a branch of two tessellated chains, a 0.03 mm LineSeg bridged them: one end
-on the branch node, the other free, 0.004 mm from the arc's end.
-`weld_degenerate_linesegs` (D56) deleted it and moved its free end onto the
-branch node; the arc's end was then 0.026 mm from a node of degree 2, and gap
-closing, which pairs free ends only, had nothing to pair it with. Before
-D152 the unbounded union-find hid this by collapsing whole chains.
-
-Rule. A candidate is welded only if both its nodes are touched by another
-edge. Welding merges two nodes; a tip has only one, and welding it only
-deletes geometry and moves a free end (against D143). The tip stays as a
-real edge, and its free end meets the next free end through the normal gap
-closing. Of the 31 island drawings only regr_01 changes (top view back as
-one island, 630–1810 × 967–1032, holes inside it in `loose` per D161); the
-suite and every heal golden are unchanged.
-
-### D165 — the area of a contour is exact, integrated on its segments; it enters the gate
-
-Decided by Federico, 25 October 2026. `area` is today `polygon.area`: the
-area of the polygon discretized within `tol` (D145). Its chords lie inside
-every convex arc, so the error has one sign (outers and holes both
-underestimated, never compensating), is bounded by about `tol × perimeter`,
-and the number changes with the tolerance the drawing is read at — a fact
-about the reading, not about the part (a Ø20 hole at tol 0.01: 313.76
-instead of 314.16).
-
-Rule. By Green's theorem the area of a closed region is an integral over its
-boundary, and topo knows the boundary exactly: the `segments`. Each
-primitive contributes a closed form — a line its shoelace term, an arc the
-same term on its chord plus the signed circular segment ½r²(Δθ − sin Δθ), an
-ellipse its own closed form, a polynomial spline an exact polynomial
-integral (a rational one by quadrature to machine precision). Holes subtract
-as in D89. Exact *for the model* — the healed contour, gaps closed within
-`tol` — which is the promise of D143.
-
-Why before 1.0, against the D148 freeze: no name changes, but the value of a
-public name does, by about 0.1 %. Changing what a number means after 1.0 is
-worse than adding a name; the work is one function per primitive in
-`topo/core/geometry/`.
-
-**Implemented (G12, 25 October 2026).** `topo/core/geometry/integrals.py`:
-`segment_moments` (area and first moments of one oriented primitive),
-`ring_moments`, `ring_area`, `ring_centroid`. Line, arc, circle and ellipse
-share one closed form (c + M cos t + N sin t, polynomials of degree ≤ 3 in
-cos, sin); a polynomial spline is exact by Gauss with 2p points per knot
-span; a rational one by Gauss halved until two levels agree to 1e-14.
-`ClosedCurve.area` and the overlay voids of `Cluster.area` use it.
-
-Two facts found on the fixtures (4144 heal curves, 1112 island curves):
-- A healed contour may jump between one segment's end and the next one's
-  start (a gap closed within `tol`, source coefficients kept, D143). The
-  jump counts as its chord, as the polygon does implicitly; without it the
-  area would change with where the part sits.
-- The error of `polygon.area` has **one sign only on convex arcs**, not in
-  general as written above: on an outer with concave fillets the chord lies
-  outside the material and the polygon *over*estimates (44 of 223 golden
-  values went down). The bound, |Δ| ≤ tol × perimeter, holds everywhere:
-  largest golden change 1.17 mm² on a 178.7 mm perimeter.
-
-Goldens: only the `area`/`area_mm2` fields were rewritten (223 values in 66
-files), copied from a full regeneration; every other field kept as it was,
-because the full regeneration also moved perimeters and WKT that were stale
-from earlier decisions and are not this change. Orientation and the order
-of contours (`polygon.area` in hierarchy, island, outer face) still use the
-polygon: they leave with G13.
-
-`main` → **0.22.3** (D155 micro bump: G6b closed by D163/D164, G12 by D165;
-no public name changes, the value of `area` does).
-
-### D166 — no shapely type in topo's public surface; `to_shapely` is an explicit conversion outside the model
-
-Decided by Federico, 25 October 2026. `Contour.polygon` (and every public
-field or return value typed with shapely) puts an external library's type in
-topo's contract: if the core moves to Rust (ROADMAP) or shapely breaks
-compatibility, topo's surface breaks for a reason that is not topo's.
-shapely is a *representation* of the geometry, like DXF — and formats live
-outside the model (D129).
-
-Rule. A contour exposes topo's own types only: `segments` (the truth),
-`bbox`, exact `area` and `centroid` (Green's integrals, D165), `contains(p)`
-on the segments, and the ring's points discretized within a tolerance as
-plain tuples. A caller who needs overlay, buffer or WKT converts explicitly
-with `to_shapely(contour)`, which builds the polygon from those points and
-keeps working whatever the core is written in. Inside topo shapely stays
-what it is good at — spatial index, unions, polygonize — as an
-implementation detail.
-
-Measured on the consumers: about 120 `.polygon` lines in snapbend, snapdraw,
-snapfence and smoother; most are `bounds`, `exterior`, `centroid`,
-`contains`, `area`, with a direct replacement; nine are real shapely
-operations (`buffer`, `symmetric_difference`, `wkt`) and go through
-`to_shapely`. They adapt (D140). It breaks a public name, so it enters the
-gate under Surface, done first together with G12.
-
-**Implemented, step 1 (G13, 25 October 2026): the facts of a ring, on the
-primitives.** `topo/core/geometry/rings.py`: `ring_bbox`, `ring_perimeter`,
-`ring_points`, `ring_contains`, and `ring_jumps` (the chords of the gaps
-closed within `tol`, now shared with `ring_moments`). `ClosedCurve` (so
-`Contour`) gains `centroid`, `contains(point, tolerance=1e-6)` and
-`points(tolerance=0.01)`; `bbox` is computed on the segments.
-- `bbox` is exact: `segment_reach` on the two axes, so an arc or an ellipse
-  reaches its true extreme instead of the nearest chord vertex. On the 4362
-  heal contours of the fixtures the change is at most 0.0038 mm (within
-  `tol`); no golden moved.
-- `contains` is the **closed** region (decided by Federico): a point on the
-  boundary within `tolerance` is inside. A measured point lying on an edge
-  is on the part; the open-region reading would make the answer depend on
-  the last float of a coordinate. Default tolerance 1e-6, the node grid
-  (D113).
-- How: winding number of the primitives seen from the point. A line sweeps
-  its chord angle; an arc, circle or ellipse sweeps its chord angle plus a
-  full turn in its own direction exactly when the point lies in the conic
-  segment between arc and chord — tested in the conic's (cos, sin)
-  coordinates, where it is the unit disc on the side of the arc's midpoint.
-  A point on that chord is in the closed segment (the chord angle there is
-  ±π and its sign is rounding noise). A spline sweeps the angle of a
-  polyline within δ, refined only near the point: a polyline farther than
-  2δ from the point cannot differ from the curve by a turn around it.
-- Checked against the fine polygon (tol 1e-4) on every fixture contour:
-  143 363 points away from the boundary, 0 disagreements.
-
-**Implemented, step 2 (G13, 25 October 2026): direction and order from the
-integral.** Every place where the polygon's area decided the direction or
-the order of contours now reads the exact area on the segments: the
-direction of a loop (`LoopFinder`, was `LinearRing.is_ccw`), the minimum
-area of a contour (`loop_to_closed_curve`), the order of the containment
-tree, the largest loop of an outer face and the face chosen against the
-union (`outer_face`), the nesting of islands (`read_islands`), the
-`min_area` filter of `split`, and the signed area of `regions`/`strips`
-(concavity, inward normal). Left on polygons, by D167, because they compare
-polygons with polygons or have no primitive: the union of faces and its
-0.99 ratio, `orient` of the union's ring in `rim`, the largest piece of an
-invalid ring in `polygon_builder`, every `contains`/`buffer` between curves,
-and the validator's checks of the polygon itself (they move with step 3).
-
-The order of clusters had a hidden defect: between congruent copies (equal
-area) it was the rounding noise of the polygon area, so it changed with
-where a part sits and with the discretization. **Rule** (`sort_clusters`,
-one function for `heal` and `island`): exact outer area rounded to 1e-6 mm²,
-largest first; at equal area the bbox corner `(xmin, ymin)` — between two
-congruent copies the position is the only fact that tells them apart.
-Goldens: two drawings with identical parts (`sviluppo_multiparte`, six
-copies; `example_4_polylines`, four) had their equal parts recorded in the
-noise order. Proved a permutation before touching them (each new part
-matches one golden within 1 mm², same area and inner count); the golden
-files were reordered, not regenerated. A test fixture of `test_loops` built
-a degree-1 spline with no knots, which the polygon tolerated and the
-integral refuses: the fixture now has its clamped knots.
-
-**Implemented, step 3 (G13, 25 October 2026): `topo.to_shapely`, and the
-inside reads no `.polygon`.**
-- `topo.to_shapely(item, tolerance=None)` (`topo/io/shapes.py`, a
-  conversion like a format, D129): closed curve → `Polygon`, `OpenCurve` →
-  `LineString`, `Cluster` → its material. `tolerance=None` is the polygon
-  the reading used, so a consumer sees the same vertices topo's own
-  containment tests see; a number rebuilds it from the segments.
-- A cluster converts by the **even-odd rule** of `area` (D89): every
-  contour at even depth is a shell, its odd-depth children are its holes,
-  overlay voids are subtracted — `MultiPolygon` when an island sits in a
-  hole. Why: it is the same parity `area` already uses, so the shapely area
-  and `cluster.area` agree within the discretization, and no contour is
-  lost: a depth-2 island is a piece of its own. The old
-  `polygon_with_holes` put every inner as a hole, so an island inside a
-  hole made a polygon shapely itself calls invalid. Whether an island is
-  tied to the rest (tabs, bridges) is a consumer's choice, not geometry.
-  Federico was unsure; the argument above was given and he confirmed it
-  the same day ("ok, pari-dispari va bene").
-- Inside topo every read of a curve's polygon goes through one function,
-  `curve_polygon` (`core/primitives/polygon_builder.py`): the polygon the
-  reading gave, else built once from the segments and kept on the object,
-  `None` for an open curve. tools (anchor, inject, split, rotate), io
-  (text, view_model, exporter, inspect), the validator and the hierarchy
-  use it; step 4 only has to change where the polygon lives. Suite time
-  unchanged (182 s): nothing is built twice.
-- `to_json`/`build_metadata`: `outer_perimeter`/`inner_perimeter` are exact
-  (`ring_perimeter`), no longer the polygon's (a Ø20 hole: 62.832 instead
-  of the chords' shorter length). No golden reads them.
-- Still on polygons, by plan: `CoveredRectangle`, `OuterFace.polygon` (step
-  5), the `polygon=` handed to the constructors and the D90 overlay
-  contract (step 4).
-
-**Implemented, step 4 (G13, 25 October 2026): the model carries no shapely
-type.** Agreed with Federico point by point.
-- `ClosedCurve.polygon` and the `polygon=` argument are gone. The polygon a
-  reading built (fused with the planar network in `island`, `buffer(0)` of
-  a dirty ring in `heal`) is a private cache, `_polygon` (not in `__init__`,
-  `repr` or `==`), set by `with_polygon` and read by `curve_polygon`, both
-  in `core/primitives/polygon_builder.py`. `dataclasses.replace` drops it,
-  so a rotated contour gets its own (`tools/rotate`). Why private and not
-  removed: the polygon is how topo answers questions between many curves
-  (D167); rebuilding it from the segments would change island's vertices
-  and cost time for nothing.
-- A consumer builds a curve from `segments` only (snapbend's `Hole` stops
-  passing `polygon`) and asks `topo.to_shapely(curve)` when it needs one —
-  that returns the cached polygon, built by nobody else. shapely is a
-  dependency of topo, so importing it costs a caller nothing new; a consumer
-  that imports it itself declares it, because topo's contract no longer
-  promises it (a Rust core could drop it).
-- `Cluster.polygon_with_holes` is gone: `topo.to_shapely(cluster)` replaces
-  it (even-odd, step 3). `ClosedCurve.area`/`bbox` no longer fall back to a
-  polygon: no segments, no geometry (0).
-- The D90 overlay contract: a void is `is_void = True` plus the `segments` of a
-  closed ring (no `polygon`). A renderer draws a contour closed if it is a
-  `ClosedCurve`, its item `is_void`, or its segments close a ring head to
-  tail within 0.01 (`topo.model.feature_closed`, used by `to_dxf` and
-  `to_view_model`; `ring_closes` in `core/geometry/rings.py`). Why the
-  third case: an overlay mark that is a closed ring but not a void (a
-  circle a consumer marked) was closed before because it carried a polygon;
-  its segments say the same thing. A consumer that wants a closed ring as
-  separate primitives no longer can — a geometric fact wins over a
-  convention (non-negotiable 8).
-- `Cluster.to_dict` writes the same lists of `(x, y)` as before (the
-  reading's polygon vertices, ring closed), read through `curve_polygon`:
-  values unchanged, no golden touched.
-- `heal` builds no `ClosedCurve` without segments any more
-  (`loop_to_closed_curve` returns `None`); the hierarchy tracks classified
-  proxies by identity, not by their polygon's.
-- Tests and scripts read `topo.to_shapely(x)` where they read `x.polygon`;
-  fixtures build contours from `topo.geometry.polygon(...)`. Suite 2723
-  passed, 183 s.
-
-**Implemented, step 5 (G13, 25 October 2026): `topo.geometry` and
-`topo.steps` take and return no shapely type.** Names agreed with Federico.
-- `splits_polygon(polygon, …)` → `splits_contour(contour, start, end,
-  reach=0.0)`: a contour, a ring of `segments` or the segment list. Renamed
-  because the argument changed: a caller passing a polygon gets a
-  `NameError`, not a silent wrong answer. On the primitives (D167):
-  `rings.ring_split_by_chord` cuts the chord where it meets the boundary
-  (`intersections`, jumps included) and a stretch between two meets whose
-  midpoint is strictly inside cuts the region. Why that is enough: a ring
-  is simply connected, so a cross-cut from boundary to boundary always
-  splits it; a touch, or a stretch along the boundary, has no inside
-  midpoint. A meet counts as on the boundary by construction (on splines
-  and ellipses `intersections` is only within 1e-4; re-testing it at 1e-6
-  is what failed first).
-- `bridged_runs(segments, bridges)`: `bridges` are contours (or rings of
-  segments), a gap is bridged if `rings.ring_covers_chord` (ends and every
-  piece's midpoint in the closed region — the old `buffer(1e-6).covers`).
-  A stroke, here and in `are_collinear`/`group_collinear_lines`, is a
-  `(start, end)` pair or anything with `start`/`end`; a `LineString` is no
-  longer read.
-- Both checked against shapely on the eight rings of `test_rings` (both
-  directions, 150 random chords each, tangent chords left out): same
-  answer everywhere. Then over every fixture in `tests/examples` (heal,
-  12 random chords per contour, tangent chords left out): 4550 contours,
-  54 600 chords, 0 differences; 454 contours skipped because their fine
-  polygon is not valid for shapely (rings that touch themselves).
-- `CoveredRectangle` carries `bbox` (floats) and `items`; `segments` gives
-  the four sides; `area`/`long_side`/`short_side`/`ratio` read the bbox.
-- `OuterFace.polygon` is private (`_polygon`, read by `curve_polygon`), as
-  on contours.
-- `topo.steps.polygonize_edges` + `polygons_to_curves` → one step,
-  `polygonize_to_curves(edges, tolerance) -> list[ClosedCurve]`. The two
-  stay inside `core/healing/steps.py` because `heal`'s fallback also needs
-  the faces for `off_faces`; only the merged step is public.
-- Found on the way: the fallback gave the OUTER curve the face polygon
-  *with its holes* while its segments are the outer ring only, so
-  `to_shapely(outer)` was 84 mm² for a 100 mm² ring. Its polygon is now its
-  ring (`Polygon(poly.exterior)`); the holes are their own INNER curves. No
-  golden moved.
-- Guardian `tests/unit/test_no_shapely_surface.py`: no annotation of any
-  name in `__all__` of `topo`, `topo.geometry`, `topo.steps`, `topo.model`,
-  `topo_dxf` names a shapely type (except `to_shapely`), and walking every
-  public field and property of what `heal`, `island`, `split`,
-  `outer_face`, `polygonize_to_curves`, `covered_rectangles` and
-  `contour_shape` return finds no shapely object. Suite 2890 passed, 184 s.
-
-### D167 — topo's code is written ready for a Rust port; the tests judge the port, not a reading of the Rust
-
-Decided by Federico, 25 October 2026. He will not learn to read Rust well,
-so "start when Federico can judge what he reads" (ROADMAP, 19 October) would
-block the port forever. Two rules replace it.
-
-**The judge is the suite.** A Rust function replaces its Python twin only
-when, on the same drawings, it passes the same goldens, invariants and
-two-way fidelity tests (D152). Federico judges the output DXF by eye, as
-today; nobody has to read the Rust to accept it. The Python twin stays until
-then.
-
-**New geometry code is written port-ready** — the shape `rim` was already
-written in (D118):
-- pure functions over plain data (primitives, tuples of floats);
-- typed results, no mixed return types; exceptions, not `None`/`False`;
-- explicit dispatch per primitive type (an `enum` + `match` there);
-- no shapely or numpy in a signature (D166); inside, only for operations
-  with a direct Rust counterpart.
-
-**The primitive is the truth; discretization is a view.** This is how the
-two choices that look opposed — exact math per primitive (D165) and one
-discretization grid per curve (D145, D153) — fit together. A question about
-one curve (length, area, centroid, bbox, distance, a point on it) is answered
-on the primitive, exactly. A question between many curves (who touches whom,
-which faces close) is answered today on polygons; the grid exists so that
-the same curve always gives the same vertices and the polygons do not
-invent gaps or overlaps. Neither replaces the other. Where an exact
-intersection exists (line, arc, circle among themselves) it may replace the
-polygon later; between splines the numbers stay numeric anyway. The node
-grid (D113, 1 µm) is what makes the topology integer-ready (ROADMAP, the
-interface "same node? / where do they cross?").
-
+- ~~D157~~ → D161: gate G6 — the four doubts on D103 checked one by one on
+  every island golden: a dropped loop had no boundary of its own at the
+  reading's contact distance (`tolerance + max_gap`), the duplicates were real,
+  and every dropped loop was in `loose`. The machinery left with the inners.
+- **D158** — the 1.0 gate closes on invariants. Permanent: every promise of
+  D143 is a test on every fixture, in both readings where it applies —
+  faithful both ways, complete, every piece out once, deterministic (edge
+  order), invariant under rigid motion and mirror. Temporary: the list of red
+  invariants *was* the rest of the gate; after the sweep an item enters only
+  if it turns an invariant red on a fixture in the repo.
+- **D159** — the sweep: `tests/drawings.py` lists every tracked DXF with its
+  reading (D152) and all invariant tests draw from it, so a new drawing gets
+  every invariant; `translated`/`mirrored` exist on every primitive. A red
+  case is registered per case (`KNOWN`, with its gate item): it runs, must
+  fail, shows as a skip, and fails the test when it heals. Order dependence is
+  a defect, not one of the "ambiguous cases".
+- **D160** — the full suite runs serial in under ~3 minutes with every test
+  capped (`pytest-timeout`, 60 s); no parallel workers, no test removed.
+  Each reading is computed once and cached (`tests/readings.py`); checks are
+  local and build each band once. A change that pushes the suite over is
+  fixed in the same change. After a red run only `--lf` until green, then one
+  full run before the commit.
+- **D161** — `island()` reads **outer contours and nothing else**. Every other
+  piece — closed or open, inside or outside, a whole nested island — goes to
+  `loose` with `cluster_ref` of the island it touches or lies in; `island()`
+  never builds an inner. A closed loop inside an outer has no meaning the
+  geometry can decide (a cell, a logo letter, a hidden line): that is the
+  consumer's, and it gets every piece untouched. `heal()` is untouched (a
+  loop inside the outer of a flat part is a hole by construction).
+- **D162** — a piece in `loose` that closes by itself (one closed segment, or
+  a chain where every node has degree 2) comes out as one `ClosedCurve`; the
+  rest stays one `OpenCurve` per edge. `contour_shape` reads them (and returns
+  `None` on one that does not close); `anchor_texts` targets them. Which cycle
+  to see at a branch is the consumer's.
+- **D163** — a piece the border takes only in part leaves exactly its
+  remainder in `loose`: `rim.face_segments` reports which stretch of which edge
+  each run used, `rim.off_rim` cuts the edge there and keeps the pieces that
+  leave the border by more than `band` (by their farthest point). `heal()`'s
+  last-resort polygonize does the same (`off_faces`, `band = tolerance`).
+- **D164** — a short `LineSeg` with a free end is a tip, not a double node: it is
+  welded only if both its nodes are touched by another edge. Welding a tip only
+  deletes geometry and moves a free end (against D143).
+- **D165** — the area of a contour is exact, integrated on its segments
+  (Green: shoelace for lines, chord plus circular segment for arcs, closed
+  forms for ellipses, Gauss for splines; `integrals.py`: `ring_area`,
+  `ring_centroid`). A gap closed within `tol` counts as its chord. The polygon
+  area was off by up to `tol × perimeter` and changed with the tolerance.
+- **D166** — no shapely type in topo's public surface. A contour exposes
+  `segments`, exact `bbox`, `area`, `centroid`, `contains(p)` (the *closed*
+  region, winding number on the primitives) and `points(tolerance)`; a caller
+  who needs overlay or buffer calls `topo.to_shapely(item)`. A cluster
+  converts even-odd (the parity of `area`, D89). The polygon a reading built
+  survives only as a private cache (`_polygon`). `splits_contour`,
+  `bridged_runs` and the facts of a ring run on the primitives. Guarded by
+  `test_no_shapely_surface`.
+- **D167** — topo's geometry is written ready for a Rust port, and the judge
+  is the suite: a Rust function replaces its Python twin only when the same
+  goldens, invariants and fidelity tests pass. New code is pure functions over
+  plain data, typed results, explicit dispatch per primitive, no shapely or
+  numpy in a signature. The primitive is the truth, discretization a view: a
+  question about one curve is answered exactly on the primitive; between many
+  curves, on polygons from the one grid.
 ### D168 — G13 closed: what replaces each shapely name, for the consumers; 0.23.0
 
 Closed 25 October 2026, steps 1–6 of D166 ("Implemented" paragraphs there).
