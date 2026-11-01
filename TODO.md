@@ -55,7 +55,22 @@ Sottopassi, uno per commit:
       `set_aside` (ruoli non strutturali), `warnings`, `errors`, `is_valid`,
       `source_file`, `label`; `faces()`, `outlines()`. `NodedEdges` resta
       interno.
-- [ ] B. una riparazione sola dietro `heal()` → `Network`; golden classificati;
+- [ ] B. una riparazione sola dietro `heal()` → `Network`; golden classificati.
+      Misura fatta il 2 novembre (`_debug/2026-11-02_topo_D202-network`,
+      `measure.py`, solo lettura): `faces()` = `heal()` su 218/218 disegni;
+      `outlines()` su una riparazione sola (tutto il disegno, keep_junctions
+      True), con un numero solo o con due: geometria dei contorni identica
+      su 51/51, i loose fuori da ogni isola (quelli del golden) uguali sui 15
+      golden; tempi uguali o un poco sotto (52 s contro 55). Cambia una cosa
+      sola: le isole che island() non legge (riquadro, isole annidate,
+      gruppi senza contorno) oggi vanno in loose **come nel file**
+      (docstring: "intatto"), dalla rete arrivano **riparate** (doppioni
+      fusi, curve rifittate, gap chiusi): fino a 900 mm di linee doppie in
+      meno su un disegno. Le isole lette già oggi danno loose riparati, e
+      anche heal(). Proposta: loose sempre dalla rete (uniforme, un
+      fondamento), la provenienza resta sulla rete. Da guardare a occhio i
+      tre casi del LEGGIMI. La passata dello sweep di snapdraw non è stata
+      fatta: l'hook blocca un comando che nomina la cartella di snapdraw.
 - [ ] C. `faces()`/`outlines()` + rinomina `island`/`read_island(s)`/`IslandReading`;
 - [ ] D. docs (LLM, API, README x2), `release_check`; i consumer si adattano
       nelle loro sessioni.
