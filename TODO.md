@@ -73,9 +73,13 @@ Sottopassi, uno per commit:
       **due** (D202), con uno solo un contorno resta aperto di 0,41 mm.
       Lo sweep di snapdraw non è stato rifatto: l'hook blocca un comando che
       nomina la cartella di snapdraw.
-- [ ] filo parcheggiato: `validate_result` non vede un salto di 0,41 mm fra
-      due segmenti consecutivi di un contorno (`is_valid` True). Va guardato
-      a parte, anche oggi senza D202.
+- [ ] filo parcheggiato, **c'è già oggi**: `heal(doc, tolerance=0.5)` su
+      `regr_02` (e i suoi gemelli) toglie un lato obliquo da 0,41 mm (i suoi
+      capi stanno entro la tolleranza, diventano un nodo) e lascia il
+      contorno aperto di 0,41 mm, con `is_valid` True. Con la tolleranza del
+      file (0,05) no. Due difetti: un lato più corto della tolleranza sparisce
+      senza che i vicini si ricongiungano, e `validate_result` non vede il
+      salto.
 - [ ] C. `faces()`/`outlines()` + rinomina `island`/`read_island(s)`/`IslandReading`;
 - [ ] D. docs (LLM, API, README x2), `release_check`; i consumer si adattano
       nelle loro sessioni.
