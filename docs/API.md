@@ -1868,4 +1868,4 @@ topo_pdf.load_pdf(path, snap_tolerance=0.15) -> list[Edge]     # pip install g-t
 di ogni pagina, le porta in mm con l'asse Y cartesiano e le ripulisce con uno
 snap dei nodi vicini. Ritorna una lista di `Edge`, **non un `Document`**:
 non si passa ancora a `topo.heal()`, e l'API può cambiare o sparire. Il lavoro
-sul PDF si riprende qui (TODO.md, strada verso la 1.0, punto 0.7).
+sul PDF si riprende qui (TODO.md, "Aperti minori").
