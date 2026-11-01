@@ -149,7 +149,7 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       (eccezione: righe nuove scritte in `core/`, controllate nel loro
       commit). Misura: a fine giornata l'elenco è più corto che al mattino.
       1 novembre: inventario chiuso a 44 righe (688 contate per token);
-      gruppo A fatto (D192: 7 corrette, 6 innocue), poi B: 3 righe chiuse, restano 28.
+      gruppo A fatto (D192: 7 corrette, 6 innocue), poi B: 3 righe chiuse; `outer_face.py:218` riaperta (prova vuota): restano 29.
       **D193: G6e esce dal cancello della 1.0 su una soglia contata** —
       inventario chiuso, ripasso ai punti di chiamata delle righe "innocue
       perché a tolleranza", una passata sui 121; il resto è problema noto

@@ -7191,9 +7191,10 @@ square root of the radial gap: a noise of 1e-10 mm on r = 5 gives
 h ≈ 3e-5 mm, so no threshold on `h` is stable. The radial gap carries the
 coordinates' error linearly, so a threshold above that noise is.
 
-**The rest of group A** (closed with one line each in the inventory, no
-change): `outer_scan.py` has no reading calling it; `outer_face.py:218`
-needs two distinct edges overlapping from a node, removed before the faces;
+**The rest of group A** (one line each in the inventory, no change;
+argued, not covered by a test, except where a probe is named): `outer_scan.py` has no reading calling it; `outer_face.py:218`
+is NOT closed: the probe written for it on 1 November found no faces at all
+(not even at rest), so it proved nothing — it stays in the inventory;
 `segments.py:46` is already in mm and only drops a vertex closer than 1e-9
 to an end; `noding.py:404` is a shortcut of `merge_along_edges`, which joins
 a stop within `node` of an end anyway; `noding.py:658` is never asked for
