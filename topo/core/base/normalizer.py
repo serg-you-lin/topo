@@ -507,15 +507,17 @@ def refit_tessellations(
         first, last = path[0], path[-1]
         start_node = first[0].end if first[1] else first[0].start
         end_node = last[0].start if last[1] else last[0].end
+        # una giunzione è un nodo solo: arrotondata una volta, dalla fine del
+        # pezzo che arriva; l'inizio del successivo (a 1 ulp) non si arrotonda
+        # da sé, o un bordo di cella fra le due copie stacca la catena (G6e)
+        grid = lambda p: (round(p[0], node_decimals), round(p[1], node_decimals))
+        nodes = [grid(segment_endpoints(prims[0])[0])] + [grid(segment_endpoints(p)[1]) for p in prims]
+        if closed:
+            nodes[-1] = nodes[0]
+        else:
+            nodes[0], nodes[-1] = start_node, end_node
         for k, prim in enumerate(prims):
-            s, e = segment_endpoints(prim)
-            edge = replace(first[0], segment=prim,
-                           start=(round(s[0], node_decimals), round(s[1], node_decimals)),
-                           end=(round(e[0], node_decimals), round(e[1], node_decimals)))
-            if not closed:
-                edge = replace(edge, start=start_node if k == 0 else edge.start,
-                               end=end_node if k == len(prims) - 1 else edge.end)
-            new_edges.append(edge)
+            new_edges.append(replace(first[0], segment=prim, start=nodes[k], end=nodes[k + 1]))
         replaced |= {id(edge) for edge, _ in path}
     if not replaced:
         return edges
