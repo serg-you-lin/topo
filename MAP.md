@@ -51,424 +51,188 @@ Everything else — the PDF adapter in `topo_pdf` included — is 1.x (D174).
 
 ## DECISIONS IN FORCE
 
-Names in the older entries are the names of their day (`forge`, `ForgeCluster`,
-`Feature`, `detect`); the rename is D108/D119, the move of detection D88–D90.
+Older entries use the names of their day (`forge`, `Feature`, `detect`): the
+rename is D108/D119, the move of detection D88–D90.
 
 - ~~D1~~ → D108, D119: the library was `forge`, then `topo` / `g-topo`.
-- ~~D2~~ → D88, D90: `heal_and_detect` is gone; detection left topo, the
-  path is load → heal → render.
-- **D3** — an enrichment step returns the same, mutated result so calls chain
-  (`result = step(result)`); `detect` itself left topo (D90).
-- **D4** — no bridge layer between the adapter and the model: `heal` builds
-  the model directly from native segments; "has a polygon / doesn't" is kept
-  (`Feature` → `Curve`, D114; no `.polygon`, D166).
-- ~~D5~~ → D88, D90: `source`/`confidence` on detected features, four
-  separate types — detection lives in snapbend.
-- **D6** — `segments_from_loop` lives in `core/topology/loop_finder.py`
-  (domain logic, not parsing); every primitive has `.reversed()`.
-- **D7** — one entity→primitive dispatcher for production and tests. It
-  surfaced a real bug (`ArcSeg.from_chord` on major arcs, signed `r·cos`).
-- **D8** — feature counts are a derived `summary`, not copied by `inject()`;
-  `inject()` is only the hook for external enrichment (material, thickness).
-- **D9** — the inspector (`topo.inspect`, `topo_dxf.inspect`) prints three
-  levels: raw entities, what the adapter understood, what the model holds.
-- **D10** — `load_pdf` is frozen: returns `list[Edge]`, not a `Document`,
-  out of `__all__`; to resume in `topo_pdf` (TODO "Aperti minori").
-- **D11** — the version has one source, `pyproject.toml`
-  (`importlib.metadata`); nothing else is bumped by hand.
-- **D12** — SVG is output only (`to_view_model` = the JSON contract for a
-  renderer, `to_svg` on top of it, one palette per role). The viewer is
-  outside the stable 1.0 (D133); its redesign would reopen D12's flattening.
-- ~~D13~~ → D90: `detect_engrave` deferred — moot, detection left topo.
-- **D14** — the numbered scripts are an API-learning gym: one per public
-  function, default inputs in `tests/examples/`, runnable with zero setup.
-- ~~D15~~ → D88–D90: `detect()` parametric, hole classification there. The
-  principle stays: a process parameter is the caller's, never topology
-  (CLAUDE.md non-negotiable 4).
-- **D16** — a dashboard/UI is its own repo that installs topo; the library
-  carries no web or GUI dependency.
-- **D17** — invariant: the pipeline never translates geometry. Endpoints move
-  only to close gaps; writers emit segments verbatim; a split part lands at
-  the same absolute XY as the source (`test_golden_split`). Z flattens to 0.
-- **D18** — topo does not nest. `to_nester_input` is out of `__all__`
-  (`topo.experimental`), kept, undocumented.
-- **D19** — `Edge` lives in `core/topology/edge.py`; `core` never depends on
-  `adapters` (the dependency rule, D44).
-- **D20** — one typed annotation model, no `data` dict, no shapely in
-  fields; the adapter only reads/writes the format; interpretation is its own
-  step (`anchor_texts`, D43). Types folded into `Text` by D138.
-- **D21** — `heal()` yields clusters, spatially separate groups; whether one
-  is a part, a view or a title block is the consumer's reading. The `Forge`
-  prefix went with D119.
-- **D22** — `core` holds the engine's one act, `tools` optional composable
-  steps on a result, `io` the renderers; no `pipeline/`. D58 reopened it:
-  the engine has two readings.
-- **D23** — scripts live in `scripts/`; the first line is `import _paths`
-  (a `chdir` to the repo root), so a relative path means the same everywhere.
-- **D24** — frame and title-block detection are not topo's (they run before
-  `heal` on raw geometry): the frame detector was deleted; `frame` is only a
-  role a consumer may assign.
-- **D25** — recognition heuristics sit next to their consumer in `tools/`,
-  never in `core/`, which is only the deterministic geometric engine.
-- **D26** — `model/` holds one concept per file; a type the result holds
-  stays in `model/` (so `model` never imports `tools`). `classified_entities`
-  left with D150.
-- **D27** — `role` is an open vocabulary (`role: str`). The enum is never
-  authoritative or a reverse lookup of caller data (`dict.get` only);
-  `normalize_role` is the single point at load (`[a-z0-9_-]`, ≤ 64 chars);
-  sinks defend again (unknown role → trash layer, SVG escapes it).
-- **D28** — the non-contour edge finder keeps a neutral name
-  (`NonContourEdgeDetector`): topologically it excludes chords from the graph
-  before loop search, which is `heal`'s job.
-- **D29** — frame/title-block recognition is `snapdraw`, a consumer that tags
-  edges `frame`/`title_block` before `heal`; it enters topo through `role`.
-- **D30** — one predicate for "this role is part-contour topology"
-  (`STRUCTURAL_ROLES`, `is_structural_role`); `heal` pulls every edge with a
-  decided non-structural role out of the topology (no gap solving, no corner
-  repair) into `loose` with its role intact; unknown roles are left alone.
-- **D31** — consumer roles are not topo's: `ContourRole.FRAME` was removed;
-  output by role was settled in D128.
-- **D32** — `load_geometry` is public: a consumer brings generated geometry
-  into a `Document` without a file (first user: snapbend's developments).
-- **D33** — point→primitive reconstruction (`simplify_points`) is topo's job:
-  it takes an ordered point sequence, finds corners by angle and refits each
-  stretch. Its thresholds are the caller's parameters, never constants.
-  Rewritten in D141.
-- **D34** — every contour carries `depth` (0 outer, 1 child, …) and `parent`,
-  filled in the one recursion that builds the containment tree; the tree is
-  recomputed on every `heal()`, so the caller decides when a root is a root.
-- **D35** — all loaders expose the same entity vocabulary: whatever `Edge`
-  supports (line, arc, circle, spline, ellipse), not the subset a use case
-  needs. `load_geometry` mirrors each primitive's fields 1:1.
-- ~~D36~~ → D141: `fit_primitives` with arc fitting (`arc_fit_tolerance`,
-  Kasa circle fit); the rule is now one chain in `simplify_points`.
-- ~~D37~~ → D128: `RoleStyle` — colour/linetype/weight per role, on the layer
-  (true colour: ACI has no pure black); now neutral in the model.
-- **D38** — point-sequence math (`detect_corners`, `fit_circle_kasa`,
-  `arc_angles`, …) lives in `core/geometry`, next to the segment math; the
-  orchestrator imports it back.
+- ~~D2~~ → D88, D90: `heal_and_detect` is gone; detection left topo.
+- ~~D3~~ → D176: an enrichment step returned the mutated result (now `None`).
+- **D4** — no bridge layer between adapter and model: `heal` builds the model
+  from native segments (`Curve`: D114; no `.polygon`: D166).
+- ~~D5~~ → D90: `source`/`confidence` and the detected-feature types are snapbend's.
+- **D6** — `.reversed()` on every primitive; a loop → segments is domain logic.
+- **D7** — one entity→primitive dispatcher for production and tests.
+- **D8** — `inject()` is only the hook for external enrichment; counts are derived.
+- **D9** — the inspector prints three levels: raw entities, what the adapter
+  understood, what the model holds.
+- **D10** — `load_pdf` is frozen (`list[Edge]`, out of `__all__`); resume in `topo_pdf`.
+- **D11** — the version has one source, `pyproject.toml`.
+- **D12** — SVG and view model are output only; the viewer is outside the 1.0 (D133).
+- ~~D13~~ → D90: `detect_engrave` deferred — moot.
+- **D14** — numbered scripts: one per public function, runnable with zero setup.
+- ~~D15~~ → D88, D90: parametric `detect()`; a process parameter is the
+  caller's, never topology (CLAUDE.md non-negotiable 4).
+- **D16** — a dashboard/UI is its own repo; the library carries no web/GUI dependency.
+- **D17** — the pipeline never translates geometry: endpoints move only to
+  close gaps, writers emit segments verbatim, a split part keeps its XY.
+- **D18** — topo does not nest; `to_nester_input` is experimental.
+- **D19** — `core` never depends on `adapters` (the dependency rule, D44).
+- **D20** — one typed text model, no `data` dict; the adapter only reads and
+  writes the format; interpretation is its own step (D43). Now `Text` (D138).
+- **D21** — `heal()` yields clusters; part, view or title block is the consumer's reading.
+- **D22** — `core` the engine, `tools` optional steps on a result, `io`
+  renderers. D58 reopened "heal is the core act".
+- **D23** — scripts live in `scripts/`; first line `import _paths` (chdir to root).
+- **D24** — frame/title-block detection is not topo's; `frame` is only a role.
+- **D25** — recognition heuristics sit with their consumer, never in `core/`.
+- **D26** — `model/` holds one concept per file and never imports `tools`.
+- **D27** — `role` is an open vocabulary (`str`); `normalize_role` is the one
+  point at load (`[a-z0-9_-]`, ≤ 64); the enum is never a lookup of caller data.
+- **D28** — the non-contour finder keeps a neutral name (`NonContourEdgeDetector`).
+- **D29** — frame/title-block recognition is snapdraw's, entering through `role`.
+- **D30** — `is_structural_role` is the one predicate; `heal` sets edges with a
+  decided non-structural role aside in `loose`, role intact; unknown roles untouched.
+- **D31** — consumer roles are not topo's (`ContourRole.FRAME` removed); D128.
+- **D32** — `load_geometry` is public: generated geometry enters without a file.
+- ~~D33~~ → D141: `simplify_points`, point→primitive reconstruction.
+- **D34** — every contour has `depth` and `parent`, set in the one recursion
+  that builds the containment tree.
+- **D35** — every loader exposes the full segment vocabulary, not one use case's subset.
+- ~~D36~~ → D141: arc fitting in `fit_primitives`.
+- ~~D37~~ → D128: `RoleStyle` per role.
+- **D38** — point-sequence math lives in `core/geometry`, beside the segment math.
 - ~~D39~~ → D40: `cut_tabs`, a gap within one contour (draft).
-- ~~D40~~ → D134, D142: `bridge_tabs` / `bridge_nested_tabs` — a tab from a
-  child to its direct parent, never a skipped level; now `tools.strips`.
+- ~~D40~~ → D134, D142: tabs from a child to its direct parent.
 - **D41** — a SPLINE is written from control points + knots only, never with
-  `fit_points` as well (some CAM readers, SigmaNest, fail on both); `closed`
-  only when the whole closed contour is one stretch.
-- **D42** — `BSplineSeg.discretize` evaluates the real curve (de Boor,
-  rational with weights), adaptive to `tolerance`; pure `math`, so `core`
-  works without `ezdxf`. The control polygon is never the curve.
-- **D43** — anchoring a text is geometry (containment, optional snap), with
-  no judgment of meaning, so it is `anchor_*`, not "interpret", and stays in
-  topo (`anchor_texts`).
-- **D44** — `cluster.detected` is an open-by-name overlay, `None` until a
-  tool writes it (`attach(name, items)`); an item is a `Protocol` (`source`,
-  `confidence`), not a hierarchy; `model` does not import `tools`;
-  `cluster.summary` is a generic count per collection.
-- **D45** — `EllipseSeg` is the fifth primitive: a native conic, written as
-  ELLIPSE and never as a spline or a discretized fallback; `major_axis` is a
-  vector, one class for a full ellipse and an arc, adaptive discretization
-  shared with splines. Found a golden that had silently dropped an ellipse.
-- **D46** — `.rotated(angle, origin)` on every primitive. A rigid rotation
-  never changes topology, so `rotate_result` transforms an already-healed
-  result with no second `heal()`; what to align is structural (`outer` vs
-  `inners`), never by `role`. Overlays and annotations are not rotated
-  (detect after rotating). `topo.tools.rotate` is experimental.
-
-- **D47** — `core` and `model` hold no process vocabulary (no hole, bend,
-  engrave). `heal(is_structural=...)` takes the predicate "is this role part
-  of a contour" and threads it to the three places that ask (label split,
-  loop check, trash collection); without one a labelled non-outer/inner edge
-  is non-structural and a generic warning says so. `ContourRole` is only
-  `UNKNOWN`/`OUTER`/`INNER`. The style-registry half was reopened by D128.
-- **D48** — text stretch is domain data: `Text.width_factor` (1.0 = none), the
-  axis a PDF `Tz` or CSS `font-stretch` also has. The DXF adapter reads a
-  `TEXT`'s own width, else its style's; an `MTEXT` group 41 is a wrap width,
-  never a stretch. The writer applies it per format; no style is matched by name.
-- **D49** — the non-contour test works per connected component, not on the
-  whole sheet (a small view next to a big one lost 3 of its 4 sides to the
-  big one's hull). D111 removed the hull; the per-component scope stays.
-- **D50** — `merge_collinear_overlaps`: fragments that touch or overlap on the
-  same exact line are one edge. The line key is a fixed tight precision, not
-  the heal tolerance; it runs first, so the graph never sees the spurious
-  nodes; the merged edge keeps the rounded node coordinates; only
-  `role == UNKNOWN` merges; input order is kept (a cleanup pre-pass is a
-  no-op on what it does not touch). A source-format fact (`closed_path`) is
-  never a criterion. D110 reopened it for `heal()` at junction nodes.
-- **D51** — `closed_path` is gone from `Edge`: it recorded how one CAD author
-  grouped entities, which no model rule can derive and no other adapter can
-  fill. The core stands without it (suite unchanged); the dead boundary-dedup
-  step in `detect` went too.
-- **D52** — `merge_cocircular_overlaps`: D50 for arcs (angles unwrapped, a
-  full turn is a `CircleSeg`, never a 360° `ArcSeg`). The graph no longer drops
-  an edge whose endpoints cluster together if its real extent (`r·sweep`)
-  exceeds epsilon. Round-trip tests have their own tolerances (measured).
-- ~~D53~~ → D63: `layer_to_role` → `label_to_role`; `label_map` is now
-  `role_rules`. The rule stands: no format word (layer, entity) in core names.
-- ~~D54~~ → D90: a labelled line fully on the outer boundary is absorbed
-  (`covers`, not `contains`) — assignment lives with detection in snapbend.
-- **D55** — the non-contour test is a public primitive
-  (`tools.non_contour.non_contour_candidates(doc)`): the same detector `heal()`
-  uses, returning the `Edge` objects so a caller sets `.role` before `heal()`.
-  topo only says "candidate"; what it is belongs to the caller. It runs on the
-  raw edges, so on a dirty drawing it can differ slightly from `heal()`.
-- **D56** — `weld_degenerate_linesegs`: a `LineSeg` shorter than a fixed
-  0.05 mm (not the caller's tolerance, a gap-closing radius) is welded by
-  union-find on its two nodes, never deleted (deleting detaches chains). Only
-  the node moves, `segment` keeps the real point; `UNKNOWN` role only.
-  D152 and D186 bounded and ordered the welding.
-- **D57** — corner repair runs whenever free ends remain
-  (`not loops or graph.open_nodes()`), not only when no loop exists: one
-  closed hole elsewhere must not shield a broken contour from repair.
-- **D58** — the engine has two readings of a `Document`, `heal()` (from the
-  inside, by connectivity) and `island()` (from the outside); they compose the
-  same ingredients and fill the same model, which is the product. The caller
-  chooses by the drawing (flat cutting file vs views). Reopens D22's "heal is
-  the core act". A cluster may be a view, a part or the frame (D21).
-- ~~D59~~ → D99, D161: `island()` by proximity of islands, planar network
-  (`split_at_crossings`, one fine grid) and the outer face as the walk of the
-  smallest counter-clockwise turn from the leftmost geometric point.
-  The network and the walk survive; the grouping and the interior do not.
-- **D60** — view normalization: a chain of ≥ 10 `LineSeg` shorter than
-  0.1 mm is a tessellation and is refitted (`refit_tessellations`: arc or
-  circle within 0.02 mm, else spline); `island()` closes drawing gaps up to
-  `max_gap` through `local_gap_fixes` (a fix never moves an endpoint further
-  than the gap itself). `heal()` uses neither. D98 made `max_gap` required.
-- **D61** — the B-spline interpolation is topo's own math
-  (`interpolate_bspline`, Piegl & Tiller 9.2.1, equal to ezdxf's to 2e-12):
-  no format library is imported in `core`, `model` or `tools`.
-- **D62** — `HealStep` is gone: the steps of `heal()` are public functions
-  edges-in/edges-out (typed only where a step answers more than one question,
-  `LoopSearch`), `heal()` is a recipe in `core/heal.py` beside `island()`, and
-  there is no shared `normalize()` — each reading prepares its edges its own
-  way. D187/D189 later put both on one base.
-- **D63** — `role_rules` (`RoleRule`: `name`, `name_contains`, `dashed`,
-  `color`, all must hold, first match wins, evaluated in the caller's order)
-  replace `label_map`/`linetype_map`/`color_map`. The source's grouping name
-  never leaves the adapter; "dashed" is a fact of the pattern (a gap), not
-  of the linetype's name; heuristic vocabularies ("construction") are the
-  caller's content.
-- **D64** — `EdgeStyle.dash_kind` is `continuous`, `uniform` (one mark
-  repeated) or `chain` (marks differing by > 5% of the pattern length);
-  `RoleRule(dash=)` matches on it. Chain → construction is snapdraw's
-  mapping, not topo's.
-- **D65** — `island()` merges after the cut: consecutive segments of a
-  contour on the same circle or line, same direction, same style become one;
-  a contour made only of arcs of one circle becomes a `CircleSeg`. It does
-  not restore the parent edge (that would only undo topo's own cuts).
-- **D66** — a leader's target is the element its tip lands on: the nearest
-  boundary within 0.5 mm (tie → the smaller element), else the smallest closed
-  element covering the tip, else none. Text reading is not topo's. The path
-  form (`"clusters[0].inners[3]"`) became the objects themselves in D177.
-- ~~D67~~ → D88: `detect` renamed `detect_flat` (a flat part seen from its
-  face); it left topo with the rest of detection.
-- **D68** — `contour_shape(contour)` says **circle**, **stadium**,
-  **rectangle**, **polygon**, **other**, never hole or slot (a circle in a
-  view may be a pin; "slot" needs the other views, "drill" needs the
-  process). Tolerance 1% of size and 1°; segments are recomposed first.
-  The list of kinds is closed by D136.
-- **D69** — `Dimension.measured_points` (neutral: the points on the measured
-  geometry; a radius gives the point on the arc, not the centre) and
-  `dimension_references` anchor a dimension to the elements within 0.5 mm.
-  `display_text` is the author's text with `<>` replaced by the value as
-  drawn; MTEXT formatting is stripped, `%%c` → Ø. Scale checks are snapdraw's.
-- ~~D70~~ → D90, D128: `to_dxf` writes every collection of the overlay, an
-  item on the layer of its role — now output by role.
-- ~~D71~~ → D161: a nested island brings all its closed loops to its host.
-- **D72** — `CLAUDE.md` is the router (table of "which file for which
-  question" + non-negotiables); `docs/INDEX.md` is generated by
-  `scripts/gen_index.py` from `ast`, and the script checks names defined in
-  more than one module and the dependency rule. A hand-written inventory
-  lies at the next commit.
-- **D73** — a client drawing name, part code or order number never appears
-  in a tracked file (MAP, script CONFIG, comment, commit message) and no
-  sentence maps an anonymized fixture back to its origin: describe the case
-  ("a dense strip view"). `scripts/audit_names.py --strict` enforces it
-  (`--from-disk` also looks for untracked drawing names); false positives go
-  in `ALLOWED`.
-- **D74** — the consumer is spelled `snapdraw` everywhere, lowercase. No
-  `snapforge` alias: an import name changes for real or not at all.
-- **D75** — a tracked fixture has an invented name saying what it exercises;
-  unused client files leave git but stay on disk. An anonymizing rename must
-  check the target name is free (a collision once fed the wrong drawing to a
-  test). A name is anonymized by script; the text inside a drawing is read by
-  a person.
-- **D76** — the audit reads drawing content too (UNC paths, printer names,
-  part codes as layers and title-block texts): `git ls-files -z`, tokens split
-  on non-alphanumerics, a bare-digit name is a code. A part code in a fixture
-  becomes an invented sigil. `audit_fixtures.py` lists the drawings the
-  suite needs and git lacks (a golden without its parent only `skipTest`s).
-- ~~D77~~ → D80: `anonymize` — clean a DXF as a file (tag pairs, strings
-  replaced never deleted, by value), with `heal()` as the oracle that refuses
-  to write if a number moved.
-- **D78** — fixtures are read one string at a time, aggregated to one row per
-  distinct string. A name (an initialism on dimension styles) has no shape
-  and slips past `audit_names`; cleaning follows the string across every copy
-  of a drawing. Putting a client-sourced drawing into git is Federico's call.
-- **D79** — `tests/data/` is the tracked root: a drawing is publishable
-  *because it lives there*, not because someone remembers a flag.
-  `tests/examples/` stays local (client originals, scratch). Goldens carry a
-  bare file name, so moving a drawing is invisible to them.
-- **D80** — `anonymize` is not in topo: it is `dxf-anonymize`, a private
-  project that depends on topo, installed with `pipx`. No public or shared
-  repo may declare it, not even as an extra: a dependency line naming it is
-  a suspicion by itself.
-- **D81** — the history was rewritten once (2 October): data files gone from
-  HEAD leave the history, strings are replaced everywhere (commit messages
-  included) from a list kept outside the repo; proof is HEAD's tree hash
-  unchanged. Forward only: `audit_names --strict` on every change,
-  `--history` before a release. Redone in D97.
-- **D82** — `inject(snap_distance=...)` and `anchor_texts` share one rule: a
-  text covered by an outer belongs to it; else to the single nearest outer
-  within `snap_distance`; else to none. Default 0 is strict containment.
-- **D83** — `to_dxf` and `to_svg` take `allow_invalid=True`: topo renders
-  whatever the model holds (nothing is dropped). A caller delivering to a
-  machine passes `False` and gets `ValueError`. `split` always raises on an
-  invalid result: it has no parts to make.
-- **D84** — `to_text(result)` is a Markdown reading for a language model,
-  experimental (outside `__all__`). Ids are topo's (`Cn` cluster, `Cn.k`
-  inner), never "view"; shapes by `contour_shape`; splines by ends, bbox and
-  length (`spline_data=True` adds the data); the size is budgeted by
-  `tests/real/test_text_budget.py`, regenerated only after reading the text.
-- **D85** — one `ensure_linetype(doc, name, pattern)`: already in the
-  document → the caller's pattern → the standard table → `None`. `None` means
-  BYLAYER for a source edge, but `ValueError` for a caller's style naming a
-  linetype nobody defines.
-- **D86** — `gen_index.py --similar` compares bodies (locals renamed) and
-  prints candidates, not verdicts; each is read before touching. Found and
-  merged: `point_on_circle`, `_sagitta_step`, `angle_from_start`,
-  `loop_geometry`, `DEFAULT_NODE_TOLERANCE`.
-- **D87** — the collinear and cocircular merges are one engine
-  (`_merge_on_carrier`): an edge is an interval on its line or its circle;
-  group by carrier, chain what touches or overlaps, put the result where its
-  first member was. Proved equal to the old pair on 611 DXF (0 differences).
-- **D88** — the boundary: topo reads **structure** (what closes, what lies
-  inside what, what connects); consumers read **meaning** (hole, bend, view,
-  dimension). So `heal()` and `island()` both stay (neither is a cutting
-  mode), `split()` stays, and process thresholds, hole/bend/engrave and
-  their layers leave. Without a consumer's reading a hole is an inner contour.
+  `fit_points` too (SigmaNest fails on both); `closed` only for a whole contour.
+- **D42** — `BSplineSeg.discretize` evaluates the real curve (de Boor), never
+  the control polygon; pure `math`, so `core` needs no `ezdxf`.
+- **D43** — anchoring a text is geometry, not interpretation: `anchor_texts`.
+- **D44** — `cluster.detected` is an open-by-name overlay, `None` until written;
+  items are a `Protocol`; `model` does not import `tools`.
+- **D45** — `EllipseSeg` is the fifth primitive: a native conic, never a spline.
+- **D46** — `.rotated()` on every primitive. A rigid rotation never changes
+  topology, so `rotate_result` needs no second `heal()`; align by `outer` or
+  `inners`, never by `role`; overlays are not rotated.
+- **D47** — `core` and `model` hold no process vocabulary; `heal(is_structural=)`
+  injects "is this role part of a contour"; `ContourRole` is `UNKNOWN`/`OUTER`/`INNER`.
+  The registry half went with D128.
+- **D48** — `Text.width_factor` (1.0 = none), the axis a PDF `Tz` also has; an
+  MTEXT group 41 is a wrap width, never a stretch.
+- **D49** — the non-contour test works per connected component (the hull went in D111).
+- **D50** — `merge_collinear_overlaps`: fragments that touch or overlap on one
+  exact line are one edge. Fixed tight key, not the heal tolerance; runs first;
+  `UNKNOWN` role only; input order kept; a source-format fact (`closed_path`) is
+  never a criterion. D110 for junctions.
+- **D51** — `closed_path` left `Edge`: how a CAD author grouped entities is no model fact.
+- **D52** — `merge_cocircular_overlaps`: D50 for arcs; a full turn is a
+  `CircleSeg`, never a 360° `ArcSeg`.
+- ~~D53~~ → D63: `layer_to_role` → `label_to_role`; no format word in core names.
+- ~~D54~~ → D90: a labelled line on the outer boundary is absorbed (detection).
+- **D55** — `non_contour_candidates(doc)`: the detector `heal()` uses, returning
+  `Edge`s so a caller sets `.role`; topo says "candidate", the caller says what.
+- **D56** — `weld_degenerate_linesegs`: a `LineSeg` under a fixed 0.05 mm is
+  welded by union-find, never deleted; `UNKNOWN` only; bounded by D152, D186.
+- ~~D57~~ → D189: corner repair whenever free ends remain.
+- **D58** — two readings, `heal()` (from inside) and `island()` (from outside),
+  same ingredients, same model; the caller chooses by the drawing.
+- ~~D59~~ → D99, D161: `island()` by proximity; its planar network and outer-face walk live on.
+- **D60** — `refit_tessellations`: ≥ 10 `LineSeg` under 0.1 mm are a tessellation,
+  refitted as arc/circle (0.02 mm) or spline; since D189 in both readings.
+- **D61** — B-spline interpolation is topo's own math; no format library in `core`.
+- **D62** — `HealStep` is gone: steps are public edges-in/edges-out functions,
+  `heal()` a recipe beside `island()`; D187–D189 put both on one base.
+- **D63** — `role_rules` (`RoleRule`: `name`, `name_contains`, `dashed`, `color`;
+  first match wins) replace the three maps. The source's group name never leaves
+  the adapter; "dashed" is a fact of the pattern; vocabularies are the caller's.
+- **D64** — `EdgeStyle.dash_kind`: `continuous`, `uniform`, `chain` (marks
+  differing by > 5%); `RoleRule(dash=)`. Chain → construction is snapdraw's.
+- **D65** — `island()` recomposes after the cut: consecutive segments on one
+  circle or line become one; a contour of arcs of one circle is a `CircleSeg`.
+- **D66** — a pointer's target: the nearest boundary within 0.5 mm (tie → the
+  smaller), else the smallest closed element covering the tip; objects: D177.
+- ~~D67~~ → D88: `detect` → `detect_flat`.
+- **D68** — `contour_shape` says circle / stadium / rectangle / polygon / other,
+  never hole or slot (that needs other views or the process); closed list: D136.
+- **D69** — `measured_points` + `measured_references` anchor a measure to
+  elements within 0.5 mm; `<>` is resolved on reading; scale checks are snapdraw's.
+- ~~D70~~ → D90, D128: `to_dxf` writes every overlay collection.
+- ~~D71~~ → D161: a nested island brings its closed loops to its host.
+- **D72** — `CLAUDE.md` is the router; `docs/INDEX.md` is generated by
+  `gen_index.py` (also checks duplicate names and the dependency rule).
+- **D73** — no client drawing name, part code or order number in a tracked
+  file, and no sentence mapping a fixture to its origin; `audit_names.py --strict`.
+- **D74** — the consumer is spelled `snapdraw`; no `snapforge` alias.
+- **D75** — tracked fixtures get invented names saying what they exercise; a
+  rename checks the target name is free.
+- **D76** — the audit reads drawing content too; part codes in fixtures become
+  invented sigils; `audit_fixtures.py` lists what the suite needs and git lacks.
+- ~~D77~~ → D80: `anonymize`.
+- **D78** — fixtures are read one string at a time; a name has no shape, so
+  cleaning follows the string across every copy. Putting a client-sourced drawing
+  in git is Federico's call.
+- **D79** — `tests/data/` is the tracked root; `tests/examples/` stays local.
+- **D80** — `anonymize` is `dxf-anonymize`, private (pipx); no public repo may declare it.
+- **D81** — history rewritten once (2 Oct) from a list kept outside the repo;
+  forward only: `audit_names --strict`, `--history` before a release. Redone in D97.
+- **D82** — `inject(snap_distance)` and `anchor_texts` share one rule: a covered
+  text belongs to its outer; else the nearest within `snap_distance`; else none.
+- **D83** — `allow_invalid=True` on `to_dxf`/`to_svg`; a machine caller passes
+  `False`; `split` always raises on an invalid result.
+- **D84** — `to_text` (experimental): Markdown for a language model; ids `Cn`,
+  `Cn.k`; size budgeted by `test_text_budget.py`, regenerated only after reading it.
+- **D85** — `ensure_linetype`: document → caller's pattern → standard table →
+  `None` (BYLAYER for a source edge, `ValueError` for a caller's style).
+- **D86** — `gen_index --similar` finds one job under different names:
+  candidates to read, not verdicts.
+- **D87** — the collinear and cocircular merges are one engine (`_merge_on_carrier`).
+- **D88** — the boundary: topo reads structure, consumers read meaning. Both
+  readings and `split` stay; process thresholds and hole/bend/engrave leave.
   The sheet-metal consumer is `snapbend`.
-- **D89** — golden are two halves: `json/` is geometry, checked by `heal()`
-  alone; `process/` belongs to the consumer. `cluster.area` follows the
-  parity of depth: odd depths subtract, even depths add back (outer − voids
-  + islands − voids in islands); an island was once removed twice.
-- **D90** — detection lives in `snapbend.flat`. topo keeps the open overlay
-  (`DetectedFeatures`) but knows no name in it: renderers read `role` +
-  geometry, never a collection name; `feature_role` picks the role to draw
-  (the contour's own if it is a consumer role, else the item's); an item
-  with `is_void` and a region subtracts from the area, whoever names it.
-- **D91** — two geometric facts in `topo.geometry`, under D68's "circle,
-  never hole": `concentric_groups` (a partition of circles by centre, smallest
-  first) and `arcs_around` (arcs concentric and larger, with sweep and radius
-  ratio). Thresholds ("~270°", "ratio ≤ 1.6", the drill limit) are the
-  consumers'; there is no shared `Hole` model.
-- **D92** — `gen_index.py` is the same file in every project, the rule is in
-  `pyproject.toml` (`[tool.gen_index.layers]`; a forbidden name may be an
-  external package), `--check` fails on a stale index or a broken rule, and
-  `tests/unit/test_index.py` runs it on every `pytest`.
-- **D93** — line facts live in `core/geometry/lines.py`: `point_line_distance`,
-  `are_collinear`, `group_collinear_lines`, `bridged_runs`, and a chord cut
-  (`splits_polygon`, now `splits_contour`, D168). Reaches, tolerances and
-  "this is a bend" stay the consumer's.
-- **D94** — axis-aligned facts live in `core/geometry/axis.py`:
-  `merge_intervals`, `interval_coverage`, `cluster_values`, `axis_lines`,
-  `covered_rectangles` (four sides covered by straight items, no polygonize),
-  `spanning_lines`, `items_inside`, `axis_aligned_share`. A consumer keeps its
-  numbers (a frame side ≥ 30%, the ISO ratio).
-- **D95** — all geometry is one package, `core/geometry/`, public as
-  `topo.geometry` (`__init__.py` is the map; building blocks import from their
-  submodule). Facts are frozen dataclasses computed on demand, never
-  precomputed or cached on the model; no "Geometry" wrapper of a drawing.
-- **D96** — drawing with topo: builders `polygon`, `rectangle`,
-  `regular_polygon`, `circle`, `stadium` (the very measures `contour_shape`
-  reports, so build and read round-trip) and `load_segments`. The dict schema
-  of `load_geometry` says `polygon`, never `polyline`.
-- **D97** — a history rewrite or force push happens only after Federico says
-  yes to that specific step (Claude Code asks too: `permissions.ask`). The
-  second rewrite (4 October) was done with the `dxf-anonymize repo` tool
-  and a local map of names and code families.
-- **D98** — `island()` takes no domain default: `max_gap` is required and by
-  name (`island_gap`, D59's second number, went in D99). Judged right by eye
-  it varied from 17 to 78 mm; the "scale of a drawing" is not published.
-- **D99** — islands are outer contours, not distances. Pieces are the edges
-  that touch (`spatial_islands` at `max_gap`); every outer contour not inside
-  another is an island and what lies inside it is its own by containment;
-  open edges stay in `loose` but carry `cluster_ref`. Reopened by D161.
+- **D89** — golden: `json/` is geometry (topo), `process/` the consumer's;
+  `cluster.area` follows depth parity (odd subtract, even add back).
+- **D90** — detection lives in `snapbend.flat`; topo keeps the open overlay and
+  renderers read `role` + geometry, never a collection name; `is_void` subtracts.
+- **D91** — `concentric_groups` and `arcs_around` are geometric facts; thresholds
+  and a shared `Hole` model are the consumers'.
+- **D92** — `gen_index.py` is one file in every project, its rule in
+  `pyproject.toml`, enforced by `tests/unit/test_index.py`.
+- **D93** — line facts in `core/geometry/lines.py` (`are_collinear`,
+  `bridged_runs`, `splits_contour`); reaches and "is a bend" stay the consumer's.
+- **D94** — axis-aligned facts in `core/geometry/axis.py`; consumers keep their numbers.
+- **D95** — one package, `core/geometry/`, public as `topo.geometry`; facts are
+  frozen dataclasses computed on demand, never cached on the model.
+- **D96** — builders `polygon`, `rectangle`, `regular_polygon`, `circle`,
+  `stadium` take the measures `contour_shape` reports; `load_segments`; the dict
+  schema says `polygon`.
+- **D97** — no history rewrite or force push without Federico's yes to that step.
+- **D98** — `island()` takes no domain default: `max_gap` is required, by name.
+- **D99** — pieces are the edges that touch at `max_gap`; every outer contour
+  not inside another is an island. D161 reopened what it reads inside.
 - **D100** — the outer face is the boundary of the union of the closed faces
-  (per whole piece, not per graph component): where a line is tangent to an
-  arc, the walk could go down one side and back along the other. D199 keeps
-  the union; its re-noding on discretizations is a known 1.x defect. The
-  13 island golden are topo's (`tests/data/golden_islands/`).
-- **D101** — one node criterion: two cuts of one edge closer than `tolerance`
-  are the same node (`_split_params` deduplicated with `_MIN_PIECE`, 1e-4 mm,
-  so a near-tangent line gave two roots hundredths of a mm apart and a sliver
-  between them). Raising `GRAPH_EPSILON` instead was tried and rejected: it is
-  global, percolates, and drops real holes.
-- **D102** — a gap-fix across two endpoints already in the same connected
-  component is a sliver, not a gap (`_drop_redundant_meets`): a real gap
-  always spans two components; closing this one only opens a parallel path
-  beside a contour that already closes.
-- ~~D103~~ → D157, D161: `_drop_boundary_duplicates` — a loop whose whole
-  boundary lies within `tolerance + max_gap` of a larger accepted loop is a
-  duplicate, not an inner; its edges go to `loose`. D157 verified the four
-  doubts, D161 changed what `island()` reads.
-
-## Open questions
-
-- **Reading for a language model (D84).** Measured (o200k): a raw DXF costs
-  ~2.3× "bytes/4" in tokens; `to_view_model`/`to_svg` can exceed the source on
-  spline-heavy sheets; an image alone misses exactness (thickness, small
-  features, which dimension measures what); image + a topo reading 6/6, raw
-  DXF 6/6 at ~3.5× the tokens. The case is cost and scale; the headline is
-  correct answers. A serious run must use anonymized drawings. Detection on
-  islands is a consumer's.
-- **Name of the role `outer`** in the island reading: unresolved. It stays
-  `ContourRole.OUTER` in both readings (renaming touches `heal`, golden and
-  layers).
-- `inspect_dxf` wants an entity-type filter (a `types` parameter): queued.
-- **D104** — permanent invariants on `island()` (never regenerated):
-  `.polygon` and `build_polygon(.segments)` describe the same shape (± 1% of
-  area), every `.polygon` is simple with positive area, and a DXF round-trip
-  gives the same islands back. The divergence they exposed was closed in D106.
-- ~~D105~~ → D106: reopening D104 — a 40% failure rate is not a gap to shelve;
-  a second graph on the rim edges was a lead that D106 refuted by measurement.
+  (per whole piece); D199 keeps the union.
+- **D101** — two cuts of one edge closer than `tolerance` are one node; raising
+  `GRAPH_EPSILON` instead was rejected (global, percolates, drops holes).
+- **D102** — a gap-fix across two ends of one connected component is a sliver, not a gap.
+- ~~D103~~ → D157, D161: drop of boundary-duplicate loops.
+- **D104** — permanent `island()` invariants: polygon and segments describe one
+  shape, polygons simple, DXF round-trip stable.
+- ~~D105~~ → D106: reopening D104; a second graph on the rim edges was refuted.
 - **D106** — a face's segments are read off its own boundary
-  (`rim.face_segments`): walk the ring, split it among edges with the fewest
-  switches over (edge, sense), each run is its edge trimmed exactly
-  (`sub_segment`; B-splines by knot insertion). A loop that touches itself is
-  one face per lobe (`buffer(0)` kept only the largest). A face whose mean
-  width 2·area/perimeter is below `tolerance` is not a face (its edges go to
-  `loose`). Guard comparisons are at the resolution of the representation.
-- **D107** — two more invariants: nothing dropped (every input piece within
-  `max_gap` of some output; the gap-fix may move an end that far, D98) and
-  inner contours of one island are disjoint or nested. Pieces of a loop that
-  no face uses go to `loose` (`off_faces`); a run keeps one direction along
-  its edge, so it ends at a tip instead of folding back.
-- **D108** — the package is `topo`, distributed on PyPI as `g-topo` (`topo` is
-  an abandoned 2019 project); no `forge` alias. Applied in D119.
-- **D109** — editing a contour by a region (a disk out of an outer, a trace
-  cut by a region) is topo's geometry, in topo's words, never "relief"; which
-  traces, crossings and radius is the consumer's. Built as D118.
-- **D110** — reopening D50 for `heal()`: `merge_collinear_overlaps(
-  keep_junctions=True)` keeps two collinear pieces apart when they only touch
-  at a node where an edge on another line also ends (a real node, which
-  `heal()`'s graph does not create itself). `island()` nodes the network
-  itself and keeps D50's behaviour. Lines only.
-- **D111** — reopening D49: an edge is contour when the boundary of its
-  component's outer face traverses it exactly once (a chord is never
-  traversed, a bridge or spur twice), walked on the planar network at the heal
-  tolerance; a convex hull is no criterion. `heal()` has permanent invariants
-  (valid polygons, nothing dropped, chords and their roles don't matter,
-  rigid motion, edge order, never raises); `split_non_finite` sets NaN edges
-  aside; `free_ends` and `find_joining_edges` feed the ambiguity warnings.
-- **D112** — the tolerance measures a gap, not a side. In `heal()` free ends
-  pair two by two, nearest first (`pairwise=True`); an end closes one gap;
-  `island()` keeps every pair. An arc closes on itself only if both the gap
-  is ≤ `tolerance` and the missing angle ≤ `NEAR_FULL_ARC_MISSING` (2°);
-  the tolerant graph never closes an edge on itself.
-- **D113** — one node grid for every reading, `NODE_DECIMALS = 3`: two ends
-  are one node only if they coincide on it. The tolerance only bounds the
-  gap that `close_free_gaps`, the tolerant loop step and `max_gap` may
-  close; it no longer shapes nodes (a sharp corner's arc was lost to a
-  0.1 grid).
+  (`rim.face_segments`); a self-touching loop is one face per lobe; a face
+  thinner than `tolerance` is not a face.
+- **D107** — invariants: nothing dropped (within `max_gap`), inners disjoint or
+  nested; pieces no face uses go to `loose` (`off_faces`).
+- **D108** — `topo` / `g-topo`, no `forge` alias.
+- **D109** — editing a contour by a region is topo's geometry, in topo's words; built as D118.
+- **D110** — in `heal()` two collinear pieces that only touch at a node where
+  another line ends stay apart (`keep_junctions`); `island()` keeps D50.
+- **D111** — an edge is contour when the outer face's boundary traverses it
+  exactly once, on the planar network; `heal()` invariants; ambiguity warnings.
+- **D112** — the tolerance measures a gap, not a side: free ends pair
+  nearest-first in `heal()`; an arc closes on itself only if the gap ≤ tolerance
+  and the missing angle ≤ 2°.
+- **D113** — one node grid, `NODE_DECIMALS = 3`; the tolerance only bounds the gaps that may close.
 - **D114** — `Feature` → `Curve` (`ClosedCurve`, `OpenCurve`): the base of
   the model is geometry, not a reading; a feature is what a consumer finds,
   and the overlay keeps its `DetectedFeature` names. No alias.
