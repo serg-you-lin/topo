@@ -326,6 +326,32 @@ class TestContourUnion(unittest.TestCase):
             g.contour_union(SQUARE, g.rectangle(10, 10, center=(15.00001, 5)))
 
 
+class TestTouchingRingsUnderMotion(unittest.TestCase):
+    """G6e, gruppo D, `regions.py:356` (`min(nexts, key=wedge)` in `_chain`): dove
+    due anelli dell'unione si toccano in un punto ripartono due pezzi, vince lo
+    spicchio più stretto. Prova: spigolo contro spigolo e cerchio tangente a un
+    lato (lo spicchio del cerchio, tangente all'indietro, è il giro intero)
+    danno due anelli a ogni moto; con `max` al posto di `min` esce un otto
+    (rosso). Non c'è un pari merito da provare: due pezzi tenuti non partono
+    nello stesso verso, perché con la regione dalla stessa parte quello che
+    curva di più sta dentro l'altro anello ed è già tolto. Non prova le letture:
+    `contour_union` non la chiamano né `heal` né `island`."""
+
+    MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
+               (0.7, 3.1, -2.2), (2.4, -0.37, 0.61), (math.pi / 2, 0.0, 0.0)]
+
+    def test_due_anelli_a_ogni_moto(self):
+        from tests.invariants import rigid
+        others = {"spigolo": g.rectangle(10, 10, center=(15, 15)), "cerchio": g.circle(5, center=(15, 5))}
+        for name, other in others.items():
+            for motion in self.MOTIONS:
+                move_seg, _ = rigid(*motion)
+                rings = g.contour_union([move_seg(s) for s in SQUARE], [move_seg(s) for s in other])
+                with self.subTest(other=name, motion=motion):
+                    self.assertEqual(sorted(round(_area(r), 4) for r in rings),
+                                     sorted([100.0, round(_area(other), 4)]))
+
+
 class TestContourFromSegments(unittest.TestCase):
 
     def test_ring_becomes_a_contour(self):
