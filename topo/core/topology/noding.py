@@ -523,8 +523,10 @@ class _Contacts:
                             self.anchor[k] = self.anchor[head]
 
     def nodes(self, decimals: int) -> Dict[int, tuple]:
-        """{radice: tupla del nodo}: l'estremo d'ingresso più piccolo del
-        gruppo, se ne ha, altrimenti la media dei punti di contatto."""
+        """{radice: tupla del nodo}: l'estremo d'ingresso del gruppo, se ne ha
+        uno solo; la media dei suoi estremi distinti, se ne ha più d'uno (fra
+        due capi nessuno vale più dell'altro, G6e); altrimenti la media dei
+        punti di contatto. Le medie stanno sulla griglia dei nodi."""
         ends: Dict[int, list] = defaultdict(list)
         points: Dict[int, list] = defaultdict(list)
         for k, (i, _, pt, kind) in enumerate(self.stops):
@@ -532,12 +534,13 @@ class _Contacts:
             (ends if kind == "end" else points)[root].append(pt)
         out = {}
         for root in set(ends) | set(points):
-            if ends[root]:
-                out[root] = min(ends[root])
+            distinct = set(ends[root])
+            if len(distinct) == 1:
+                out[root] = distinct.pop()
             else:
-                pts = points[root]
-                out[root] = (round(sum(p[0] for p in pts) / len(pts), decimals),
-                             round(sum(p[1] for p in pts) / len(pts), decimals))
+                pts = list(distinct) or points[root]
+                out[root] = (round(math.fsum(p[0] for p in pts) / len(pts), decimals),
+                             round(math.fsum(p[1] for p in pts) / len(pts), decimals))
         return out
 
     def crossing_roots(self) -> set:

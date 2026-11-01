@@ -211,6 +211,35 @@ class TestEndContactsUnderMotion(unittest.TestCase):
                          ArcSeg(center=c, radius=5.005, start_angle=0.0, end_angle=1.4)], (0.0, 0.0, 0.0)))
 
 
+class TestEndNodeUnderMotion(unittest.TestCase):
+    """G6e, gruppo D, `noding.py:536`: un nodo con più capi d'ingresso distinti
+    era il più piccolo in (x, y), che un moto cambia. Il capo di una retta a
+    (0.009, 0.009) dal capo (0, 0) di un'altra: a 0.009 dalla curva, entro
+    `node` dal suo capo lungo di essa, i due capi sono un nodo. Al posto era
+    (0, 0), a mezzo giro e a un quarto di giro (0.009, 0.009)."""
+
+    SEGMENTS = [LineSeg(start=(0.0, 0.0), end=(10.0, 0.0)),
+                LineSeg(start=(0.009, 0.009), end=(0.009, 5.0)),
+                LineSeg(start=(0.0, 0.0), end=(0.0, -5.0))]
+
+    def _node(self, motion):
+        """(il nodo vicino ai due capi, il moto del punto)."""
+        import topo
+        from tests.invariants import rigid
+        segment, point = rigid(*motion)
+        out = split_at_crossings(topo.load_segments([segment(s) for s in self.SEGMENTS]).edges, 0.5)
+        nodes = {n for e in out.pieces for n in (e.start, e.end)}
+        return min(nodes, key=lambda n: math.dist(n, point((0.0, 0.0)))), point
+
+    def test_il_nodo_dei_due_capi_non_dipende_dal_moto(self):
+        at_rest, _ = self._node((0.0, 0.0, 0.0))
+        for motion in [(math.pi, 0.0, 0.0), (math.pi / 2, 0.0, 0.0), (0.7, 3e3, -2e3)]:
+            with self.subTest(motion=motion):
+                node, point = self._node(motion)
+                # entro due celle della griglia dei nodi (1e-3), non 0.0127
+                self.assertLess(math.dist(node, point(at_rest)), 2e-3)
+
+
 class TestCrossingNodesUnderMotion(unittest.TestCase):
     """G6e, gruppo B, `noding.py:539-540`: un nodo senza capi è la media dei
     suoi punti di contatto arrotondata alla griglia. Tre rette, la terza taglia
