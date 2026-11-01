@@ -24,7 +24,8 @@ from shapely.geometry import LineString, Point
 from shapely.ops import unary_union
 
 from topo.core.geometry.measure import round_point
-from topo.core.primitives.segments import DEFAULT_TOLERANCE, segment_endpoints
+from topo.core.primitives.segments import (DEFAULT_TOLERANCE, segment_endpoints,
+                                           _rotate_point, _translate_point)
 from topo.model.document import Document
 from topo import to_shapely
 
@@ -55,6 +56,16 @@ def moved(doc: Document, move) -> Document:
         start, end = segment_endpoints(seg)
         edges.append(replace(edge, segment=seg, start=round_point(start), end=round_point(end)))
     return replace(doc, edges=edges)
+
+
+def rigid(angle: float, dx: float, dy: float):
+    """(moto del segmento, moto del punto) per un moto qualunque: ruota di
+    `angle` attorno all'origine, poi trasla. Il punto fa gli stessi conti del
+    segmento (`.rotated().translated()`), bit per bit: per i micro-casi G6e,
+    dove il rosso viene da un moto preciso, non da MOTIONS."""
+    def point(p):
+        return _translate_point(_rotate_point(p, angle, (0.0, 0.0)), dx, dy)
+    return (lambda s: s.rotated(angle).translated(dx, dy)), point
 
 
 # (nome, moto del segmento, moto inverso di un poligono shapely, esatto sulla griglia)
