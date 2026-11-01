@@ -7202,3 +7202,31 @@ concentric arcs within `node`, because their ends give a T first;
 check after it rejects it exactly where `None` would.
 Held by `tests/unit/core/test_intersections.py` (red before, ten motions
 up to 3e6 mm).
+
+### D193 — Reopening D191 on its exit: G6e leaves the 1.0 gate on a counted bar, not on "every drawing" ✅
+D191 closed G6e on a finite list of places in `core/`. On 1 November the list
+proved to be a list of candidates, not a proof: `segments.py:679`
+(`segment_is_closed`) looked harmless on its own line and decided the
+reading at its call site in the noding (commit "a short line or arc is a
+stroke to node, never a loop"). "A rigid motion
+never changes the reading, on any drawing" has no end by construction:
+each new drawing can find another place.
+
+**Rule.** G6e is in the 1.0 gate with this bar, and only this:
+1. the inventory is closed (the 44 lines, each corrected with a red→green
+   micro-case or one line on why it does not decide);
+2. one re-pass of the lines classified harmless "because at the tolerance"
+   that sit in a function called by `readings/`, `base/` or `topology/`:
+   judged at the call site, not on the line;
+3. the snapdraw sweep (121 drawings) run once. The gate passes when no
+   drawing changes its reading under a rigid motion, except a measure on
+   the tolerance itself within float noise, which heal reports (D183, D185).
+
+What the sweep still finds after that is a known issue, listed, and fixed
+in a 1.x patch.
+
+**Why that is not churn.** G6e corrects readings that depend on the frame of
+reference; it changes no public name or signature. D174/D175 forbid moving
+the public surface after 1.0, not fixing a wrong reading, so a residue fixed
+in 1.x breaks no consumer. Keeping "every drawing" as the bar would keep 1.0
+out of reach for ever, which is the churn D174 exists to stop.
