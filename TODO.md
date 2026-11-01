@@ -154,8 +154,7 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       B 0, C 0, D 13, più una voce
       nuova in coda: `outer_face._network` rifà il noding sulle discretizzazioni,
       micro-caso rosso, 0 casi sui 31). Prossima: D, `gap_solver.py:250`. Con `rim.py:171, 173` va il difetto
-      trovato (una sporgenza prima nell'elenco vince un lato, vedi inventario). La D `rim.py:171, 173` porta un difetto
-      trovato (sporgenza prima nell'elenco vince un lato, vedi inventario).
+      trovato (una sporgenza prima nell'elenco vince un lato, vedi inventario).
       Fatte: `normalizer.py:196` (corretta: il fuso va nel verso del primo
       pezzo, non in un verso canonico), `fitting.py:94` (corretta: giro nullo entro FLOAT_NOISE,
       `TestFlatTopUnderMotion`), `rings.py:244, 239` (innocue, test sotto moto in
