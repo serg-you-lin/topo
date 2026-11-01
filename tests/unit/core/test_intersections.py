@@ -49,3 +49,15 @@ class TestIntersectionsUnderMotion(unittest.TestCase):
         self._assert_same_meetings(LineSeg(start=(0.0, 0.0), end=(100.0, 0.0)),
                                    LineSeg(start=(30.0, 0.0), end=(70.0, 0.0)), [])
 
+    def test_002_end_on_the_middle_of_a_line_is_one_point(self):
+        # un tratto corto che parte dal mezzo di un altro (un T): il suo capo è
+        # l'incontro. Lontano il rumore di `t` su 0.04 mm supera 1e-9 e il T si perdeva
+        self._assert_same_meetings(LineSeg(start=(0.0, 0.0), end=(0.05, 0.0)),
+                                   LineSeg(start=(0.02, 0.0), end=(0.02, 0.04)), [(0.02, 0.0)])
+
+    def test_003_arc_end_on_a_line_end_is_one_point(self):
+        # un arco piccolo che finisce dove comincia una retta, che non gli è tangente
+        self._assert_same_meetings(ArcSeg(center=(0.0, 0.0), radius=0.05, start_angle=0.0,
+                                          end_angle=math.pi / 2),
+                                   LineSeg(start=(0.0, 0.05), end=(-0.05, 0.08)), [(0.0, 0.05)])
+
