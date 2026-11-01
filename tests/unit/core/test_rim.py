@@ -224,5 +224,30 @@ class TestOverlapCutUnderMotion(unittest.TestCase):
                 self.assertLess(min(math.dist(a, cut), math.dist(b, cut)), 1e-9)
 
 
+class TestTrimmedAtTheMiddleUnderMotion(unittest.TestCase):
+    """G6e, gruppo D, `rim.py:214, 215` (`_trimmed`, l'estremo più vicino a un
+    capo): su un segmento lungo 0.03 (fra `band` e 2·`band`) il punto medio è
+    entro `band` da tutti e due gli estremi, alla stessa distanza; vinceva
+    l'ultimo bit e il tratto usciva lungo 0 o 0.03. Ora un capo equidistante
+    entro FLOAT_NOISE resta dov'è. Prova: il pari merito al posto (le due
+    distanze, controllate) e il tratto lungo 0.015 a nove moti. Non prova le
+    letture: `face_segments` non è chiamata sui disegni tracciati."""
+
+    MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0), (0.7, 3.1, -2.2),
+               (math.pi / 2, 0.0, 0.0), (2.4, -0.37, 0.61), (2.1, -1e5, 3e4), (0.3, 0.0, 0.0), (1.1, 0.0, 0.0)]
+
+    def test_il_mezzo_non_si_aggancia(self):
+        from tests.invariants import rigid
+        for motion in self.MOTIONS:
+            move_seg, move_pt = rigid(*motion)
+            seg = move_seg(LineSeg(start=(0, 0), end=(0.03, 0)))
+            s0, s1 = segment_endpoints(seg)
+            mid = move_pt((0.015, 0))
+            self.assertLess(abs(math.dist(mid, s0) - math.dist(mid, s1)), 1e-9)
+            piece = rim._trimmed(seg, move_pt((0, 0)), mid, move_pt((0.0075, 0)), BAND)
+            with self.subTest(motion=motion):
+                self.assertAlmostEqual(math.dist(*segment_endpoints(piece)), 0.015, places=9)
+
+
 if __name__ == "__main__":
     unittest.main()
