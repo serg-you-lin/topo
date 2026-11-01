@@ -29,11 +29,12 @@ Sottopassi, uno per commit:
 - [x] A. inventario (2 novembre). Le differenze sono quattro, non tre
       (`heal.py:87,110` contro `island.py:136-165`):
       1. portata dei gap: `reach(tol)` contro `reach(max(tol, max_gap))`.
-         Sono due fatti diversi (quando due punti sono un nodo; fin dove si
-         chiude un gap). **Da decidere con Federico all'inizio di B:** un
-         numero solo (`tolerance`, come scritto sopra) o due (`tolerance` +
-         `max_gap`, default = `tolerance`). Proposta: due — con uno solo, chi
-         passa un gap largo cambia anche i nodi di `faces()`.
+         `faces()` non ne ha bisogno: nessun consumer chiede a heal() gap
+         larghi (passano solo `tolerance`). B prova un numero solo (D202:
+         `outlines` via `heal(doc, tolerance=max_gap)`); il rischio è che i
+         nodi si decidano a `max_gap`. Se i golden di island non peggiorano
+         a occhio resta uno; se peggiorano, i numeri sono due — lo dice la
+         misura, non una scelta a tavolino.
       2. `keep_junctions`: True (D110) contro False (D50). Nella rete i pezzi
          restano separati (non si perde niente); `outlines()` ricompone già
          lungo il contorno (`merge_runs`, `island.py:200`). Da misurare in B.
