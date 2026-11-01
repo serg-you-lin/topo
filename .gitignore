@@ -125,3 +125,7 @@ _archive/
 
 # tests/lab: prove locali, mai in git (script di servizio, PNG di debug)
 tests/lab/
+
+# Testo intero di MAP.md e TODO.md prima dell accorciamento (solo locale)
+MAP_ARCHIVE.md
+TODO_ARCHIVE.md
