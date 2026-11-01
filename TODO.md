@@ -255,6 +255,28 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       Fatto (D181): due micro-casi a 8 angoli in `TestScrambledMicro`,
       `EXTRA_ANGLES` tolto, suite 3:48 → 3:23 — ancora sopra il tetto:
       restano `test_fidelity` sulle spline e le letture di `island()`.
+      **Si riparte da qui, prima di tutto il resto** (deciso il 1 novembre):
+      riordino dei test, in quest'ordine.
+      1. Ogni test che apre un DXF con `ezdxf` o lavora sul modelspace
+         (`document_from_msp`) e prova una lettura, non il formato, passa a
+         geometria costruita con i numeri (`load_segments`, primitive,
+         `topo.geometry`). Primo visto: `tests/integration/test_gap.py`;
+         `load_msp` in `test_healer.py:36` è codice morto. Gli altri dei 17
+         file con `import ezdxf` sono da passare uno per uno.
+      2. Insieme all'1: i test che provano un adapter vanno in
+         `tests/adapters/dxf/` e `tests/adapters/pdf/`, con un `conftest.py`
+         che fa `pytest.importorskip` (skip con motivo nel riepilogo, non un
+         warning). Da decidere: `tests/real/` (disegni veri, passa per forza
+         da `topo_dxf`) sotto `adapters/dxf/` o lì con lo stesso skip.
+      3. Dopo l'1: via i generatori di fixture (`generate_examples`,
+         `generate_gap_examples`, `generate_rotation_fixture`,
+         `generate_two_flanges`) e i .dxf che nessun test legge più. Restano
+         i .dxf piccoli che servono a provare l'adapter in lettura (tipi di
+         entità, bulge, spline), come dati fermi. I `generate_golden*.py`
+         restano (regola 9: sono l'unica strada per un golden); al più
+         spostati in `tests/tools/`.
+      Fuori dal cancello (solo test, nessun nome pubblico); misurare il tempo
+      della suite prima e dopo.
 - [ ] **Passata sui disegni di snapdraw** (decisa il 30 ottobre, dopo A):
       113 DXF distinti di snapdraw non sono in topo (per contenuto). Uno
       script a mano, fuori dalla suite, li legge senza copiarli (sola
