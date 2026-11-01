@@ -74,12 +74,13 @@ Sottopassi, uno per commit:
       Lo sweep di snapdraw non è stato rifatto: l'hook blocca un comando che
       nomina la cartella di snapdraw.
 - [ ] filo parcheggiato, **c'è già oggi**: `heal(doc, tolerance=0.5)` su
-      `regr_02` (e i suoi gemelli) toglie un lato obliquo da 0,41 mm (i suoi
-      capi stanno entro la tolleranza, diventano un nodo) e lascia il
-      contorno aperto di 0,41 mm, con `is_valid` True. Con la tolleranza del
-      file (0,05) no. Due difetti: un lato più corto della tolleranza sparisce
-      senza che i vicini si ricongiungano, e `validate_result` non vede il
-      salto.
+      `regr_02` (e i suoi gemelli): uno spigolo a 90° con un'obliqua a 45°
+      sopra, interrotta di 0,41 mm proprio sullo spigolo. `close_free_gaps`
+      chiude il buco; il pezzo di chiusura taglia lo spigolo e nella rete
+      compare **due volte** (`split_at_crossings`). island() lo usa come lato
+      (spigolo tagliato di ~0,2 mm); heal() a 0,5 lo scarta e il contorno
+      resta aperto di 0,41 mm, con `is_valid` True. Nessuno dei due è lo
+      spigolo del file. Con la tolleranza del file (0,05) heal() è giusto.
 - [ ] C. `faces()`/`outlines()` + rinomina `island`/`read_island(s)`/`IslandReading`;
 - [ ] D. docs (LLM, API, README x2), `release_check`; i consumer si adattano
       nelle loro sessioni.
