@@ -117,5 +117,47 @@ class TestGuarantees(unittest.TestCase):
         self.assertEqual(out, [LineSeg(start=(0.0, 0.0), end=(3.0, 4.0))])
 
 
+class TestFlatTopUnderMotion(unittest.TestCase):
+    """G6e, gruppo C, `fitting.py:94`: un lato DP sta dentro una curva se i
+    giri ai suoi capi vanno tutti nello stesso verso. Una cima piatta
+    parallela alla corda tiene tutti i suoi punti (pari merito in
+    Douglas-Peucker): fra due lati della cima il giro è 0 esatto a riposo e
+    rumore di segno qualunque sotto moto, e un lato della cima diventava
+    faccetta di curva o no secondo il moto (7 primitive o 8). Ora un vertice
+    sulla retta dei vicini entro FLOAT_NOISE non gira."""
+
+    MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
+               (0.7, 3.1, -2.2), (2.4, -0.37, 0.61), (math.pi / 2, 0.0, 0.0)]
+
+    @staticmethod
+    def _bump():
+        # un dosso a faccette (svolte di 8°) con la cima piatta di 6 lati da 1
+        pts, x, y, heading = [(0.0, 0.0)], 0.0, 0.0, 40.0
+        for _ in range(5):
+            x += math.cos(math.radians(heading))
+            y += math.sin(math.radians(heading))
+            pts.append((x, y))
+            heading -= 8
+        pts += [(x + k, y) for k in range(1, 7)]
+        x += 6
+        heading = -8
+        for _ in range(5):
+            x += math.cos(math.radians(heading))
+            y += math.sin(math.radians(heading))
+            pts.append((x, y))
+            heading -= 8
+        return pts
+
+    def test_le_primitive_non_dipendono_dal_moto(self):
+        from tests.invariants import rigid
+        kinds = set()
+        for motion in self.MOTIONS:
+            move_pt = rigid(*motion)[1]
+            prims = simplify_points([move_pt(p) for p in self._bump()],
+                                    tolerance=0.01, scale=0.5, closed=False)
+            kinds.add(tuple(type(p).__name__ for p in prims))
+        self.assertEqual(kinds, {("ArcSeg",) + ("LineSeg",) * 6 + ("ArcSeg",)})
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

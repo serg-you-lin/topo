@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple, Union
 
 from .segments import ArcSeg, CircleSeg, LineSeg, BSplineSeg, Point
+from ..geometry.measure import FLOAT_NOISE
 from ..geometry.points import (
     DEFAULT_DUPLICATE_TOLERANCE, approximate_bspline, circle_through, douglas_peucker,
     drop_duplicate_points, even_spacing, fit_circle_kasa, offset_from_line, turn_corners,
@@ -54,7 +55,10 @@ def _within(points: List[Point], tolerance: float) -> bool:
 
 
 def _signed_turn(a: Point, b: Point, c: Point) -> float:
-    """Svolta con segno (gradi) in `b` andando da `a` a `c`: positiva a sinistra."""
+    """Svolta con segno (gradi) in `b` andando da `a` a `c`: positiva a sinistra.
+    0 se `b` sta sulla retta `a`-`c` entro il rumore: il segno lì è dell'ultimo bit."""
+    if abs(offset_from_line(b, a, c)) <= FLOAT_NOISE:
+        return 0.0
     v1, v2 = (b[0] - a[0], b[1] - a[1]), (c[0] - b[0], c[1] - b[1])
     return math.degrees(math.atan2(v1[0] * v2[1] - v1[1] * v2[0], v1[0] * v2[0] + v1[1] * v2[1]))
 
