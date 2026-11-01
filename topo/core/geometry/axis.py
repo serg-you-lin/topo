@@ -166,7 +166,6 @@ def covered_rectangles(items: Sequence, *, min_side: float, eps: float = AXIS_EP
     tol = 2 * eps
 
     out: List[CoveredRectangle] = []
-    seen: set = set()
     for i in range(len(ys)):
         for j in range(i + 1, len(ys)):
             y_lo, y_hi = ys[i], ys[j]
@@ -176,10 +175,7 @@ def covered_rectangles(items: Sequence, *, min_side: float, eps: float = AXIS_EP
                     if any(_covered_at(horiz, y, x_lo, x_hi, tol) < coverage for y in (y_lo, y_hi)) \
                             or any(_covered_at(vert, x, y_lo, y_hi, tol) < coverage for x in (x_lo, x_hi)):
                         continue
-                    key = (round(x_lo, 1), round(y_lo, 1), round(x_hi, 1), round(y_hi, 1))
-                    if key in seen:
-                        continue
-                    seen.add(key)
+                    # le coordinate distano più di cluster_tolerance: ogni coppia è un rettangolo diverso
                     out.append(CoveredRectangle(tuple(map(float, (x_lo, y_lo, x_hi, y_hi))),
                                                 tuple(_on_border(x_lo, y_lo, x_hi, y_hi, items, tol))))
     return out

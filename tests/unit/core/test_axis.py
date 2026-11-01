@@ -1,6 +1,7 @@
 # tests/unit/core/test_axis.py
 """`topo.core.geometry.axis`: intervalli, rettangoli coperti, linee che attraversano un rettangolo (D94)."""
 
+import math
 import unittest
 
 import topo
@@ -51,6 +52,43 @@ class TestCoveredRectangles(unittest.TestCase):
 
     def test_api_pubblica(self):
         self.assertIs(topo.geometry.covered_rectangles, covered_rectangles)
+
+
+class TestCoveredRectanglesUnderMotion(unittest.TestCase):
+    """G6e, gruppo B, `axis.py:179`: i rettangoli trovati si toglievano i
+    doppioni su una chiave arrotondata a 0.1. Le coordinate escono da
+    `cluster_values`, distanti più di `cluster_tolerance`: con la soglia sotto
+    0.1 due rettangoli veri (lato destro a 100 e a 100.03) finivano nella
+    stessa cella o in due secondo dove il moto metteva la cella. Prova: al
+    posto e a traslazioni e quarti di giro escono i tre rettangoli (i due
+    pieni e la striscia fra i due lati destri). Non prova niente dentro le
+    letture: nessuna lettura di topo chiama `covered_rectangles`."""
+
+    MOTIONS = [(0.0, 0.0, 0.0), (0.0, 0.04, 0.0), (0.0, 0.07, -3.3),
+               (math.pi / 2, 0.0, 0.0), (math.pi / 2, 12.345, 0.06)]
+
+    def test_due_lati_vicini_tre_rettangoli(self):
+        from tests.invariants import rigid
+        corners = [(0.0, 0.0, 100.0, 50.0), (0.0, 0.0, 100.03, 50.0), (100.0, 0.0, 100.03, 50.0)]
+        for motion in self.MOTIONS:
+            with self.subTest(motion=motion):
+                move_seg, move_pt = rigid(*motion)
+                items = [move_seg(s) for s in (LineSeg(start=(0, 0), end=(100.03, 0)),
+                                               LineSeg(start=(0, 50), end=(100.03, 50)),
+                                               LineSeg(start=(0, 0), end=(0, 50)),
+                                               LineSeg(start=(100, 0), end=(100, 50)),
+                                               LineSeg(start=(100.03, 0), end=(100.03, 50)))]
+                rects = covered_rectangles(items, min_side=10, eps=0.004, cluster_tolerance=0.01)
+                expected = []
+                for x0, y0, x1, y1 in corners:
+                    pts = [move_pt(p) for p in ((x0, y0), (x1, y1))]
+                    expected.append((min(p[0] for p in pts), min(p[1] for p in pts),
+                                     max(p[0] for p in pts), max(p[1] for p in pts)))
+                got = sorted(r.bbox for r in rects)
+                self.assertEqual(len(got), 3)
+                for g, e in zip(got, sorted(expected)):
+                    for a, b in zip(g, e):
+                        self.assertAlmostEqual(a, b, places=6)
 
 
 class TestSpanningLines(unittest.TestCase):
