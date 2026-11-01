@@ -20,6 +20,36 @@ ancora aperto.
       superficie pubblica, non entra nel cancello (D193: l'elenco è chiuso).
       Motivo e numeri: `_debug/2026-11-01_topo_retrospettiva/retrospettiva.md`.
 
+## DA DECIDERE prima della 1.0 — `heal()` ripara, `faces()`/`outlines()` leggono (2 novembre)
+
+Idea discussa con Federico, non ancora decisa (niente D## finché la misura
+non dice che vale la pena). Oggi `heal()` fa due cose (ripara con la base
+comune + legge le facce annidate) e `island()` ripara e legge il bordo
+esterno di ogni componente; "isola" in topo vuol dire anche la regione di
+profondità 2 (D89). Proposta: `topo.heal(doc, *, tolerance, is_structural,
+label, source_file) -> Network` (il disegno riparato: `edges`, `bridges`,
+`free_ends`, `set_aside`, `warnings`, `is_valid`), poi `Network.faces() ->
+Result` (l'heal di oggi) e `Network.outlines() -> Result` (l'island di oggi;
+`max_gap` diventa la `tolerance` di heal). Via `island`, `read_island(s)`,
+`IslandReading` → `read_outline(s)`, `OutlineReading`. Rompe tre nomi:
+riapre G14 su questo punto, solo prima della 1.0.
+
+Regge solo se la rete è una sola. Oggi la riparazione differisce in tre
+punti (`heal.py:87`, `island.py:137,163`): portata dei gap (`tolerance` vs
+`max(tolerance, max_gap)`), `keep_junctions` (True in heal, D110; False in
+island), scope (tutto il disegno vs per gruppo di `spatial_islands`).
+**Misura prima di aprire qualunque cosa** (solo lettura, costo annunciato):
+1. una sola riparazione (stessa portata, una scelta di `keep_junctions`,
+   tutto il disegno) e le due letture sopra: golden di heal e island
+   cambiati? quanti, e i cambiati in DXF in `_debug` per l'occhio;
+2. stesso confronto sul sweep di snapdraw (`scripts/21_sweep_invariants.py`);
+3. tempo della suite e dei disegni grossi prima/dopo;
+4. chiamate a `heal(`/`island(` nei consumer (prima conta: snapdraw 19,
+   snapbend 8, pippo 2, forge-pdf-adapter 43 di `island` — da ricontare);
+5. cosa di `Network` sarebbe pubblico senza esporre tipi interni.
+Vale la pena se 1–2 non peggiorano nessuna lettura a occhio e 3 resta nel
+tetto; se no, ripiego: `heal()` com'è + `island` → `outlines` (solo nome).
+
 ## IL CANCELLO DELLA 1.0 — si riparte da qui (D148, 22 ottobre)
 
 **Feature freeze.** Questa lista è chiusa: può solo accorciarsi. Quando è
@@ -346,6 +376,11 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       di test, per ridurre da solo un fallito al caso minimo.
 - [ ] **G10** Rewrite della history (`git filter-repo` + `--message-callback`,
       un solo force-push), contro le liste di D76–D78.
+      2 novembre: `audit_names --strict` dà 15 sospetti (codici tipo disegno
+      in MAP.md D186–D189, TODO.md righe ~224–242, `test_normalizer.py:351`;
+      più `SLEP009` e `BLE001`, probabili falsi positivi). Sono nei 73 commit
+      non ancora pushati: da descrivere a parole e da togliere dai commit
+      prima di qualunque push.
 - [x] **G11** `scripts/release_check.py` — scritto il 22 ottobre: suite
       senza xfail, `gen_index --check`, `audit_names --strict` (file e
       history), `audit_fixtures --strict`, docstring inglesi dei nomi pubblici.
