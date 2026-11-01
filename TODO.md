@@ -140,11 +140,12 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
 - [ ] **G6e** `heal()` dipende dal riferimento (aperta il 31 ottobre, in una
       **SI RIPARTE DA QUI: gruppo B (D191, D193).** Inventario:
       `_debug/2026-10-31_topo_G6e-inventario/inventario.md` (le ultime
-      sezioni sono lo stato vero). Conto al 2 novembre: **25** (A 0,
-      B 3, C 8, D 13, più una voce
+      sezioni sono lo stato vero). Conto al 2 novembre: **23** (A 0,
+      B 1, C 8, D 13, più una voce
       nuova in coda: `outer_face._network` rifà il noding sulle discretizzazioni,
-      micro-caso rosso, 0 casi sui 31). B che resta: `base/hierarchy.py:82, 86` (ordine per `round(area, 6)`),
-      `geometry/axis.py:179` (fuori dalle letture). Fatte: `outer_face.py:41` (innocua, `TestUnionGridUnderMotion`), A intero
+      micro-caso rosso, 0 casi sui 31). B che resta: `geometry/axis.py:179` (fuori dalle letture). Fatte: `hierarchy.py:82` (D195, copie pari entro il rumore), `:86`
+      (innocua, `TestTreeOrderUnderMotion`), `outer_face.py:41` (innocua,
+      `TestUnionGridUnderMotion`), A intero
       (D192), B `normalizer.py:513-514`, `renode`/`_is_loop`, `noding.py:527-528`
       (D194: il grafo non rifonde i nodi della rete piana), `rim.py:80`
       (round tolto, `TestOffRimCutsUnderMotion`), D Douglas-

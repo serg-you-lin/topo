@@ -7269,3 +7269,34 @@ re-judging; that line stays open, its choice still moves the tuple.
 changes (`build_node_graph` is internal; `outer_face`/`face_loops` are
 experimental and keep their parameters). Suite 2975 passed, goldens
 unchanged, 3:44 (the level since D189, still over budget, open there).
+
+### D195 — G6e group B: congruent copies are equal within the noise, not within a grid cell ✅
+
+Reopening D166, only its means. D166's rule stays: clusters from the largest
+exact outer area, and at equal area by the bbox corner `(xmin, ymin)`. What
+D166 used for "equal" was `round(area, 6)`: two copies were equal only if
+their areas fell into the same 1e-6 mm² cell. With the area half a cell from
+a boundary (two 10 × 1.00000005 rectangles, area 10.0000005) the last bits,
+which a translation changes, put the two copies in two cells, and the order
+came from the noise: the copy on the right first at 3 of 24 translations.
+Far from the origin the exact area of a copy moves by up to 2.5e-8 mm²
+(shoelace on large coordinates), so no fixed cell can hold it.
+
+**Rule** (`sort_clusters`): two areas are equal when they differ by at most
+`FLOAT_NOISE` times the perimeter — the area a boundary sweeps when every
+point moves by the noise (D183) — and two `xmin` when they differ by at most
+`FLOAT_NOISE` (copies stacked one above the other: red at one translation
+before). Equality chains along the sorted values, so it does not depend on
+the input order.
+
+`_build_tree`'s `round(area, 6)` (hierarchy.py, same family) is kept: the
+order there only decides which contour holds which, and nested contours
+differ in area far beyond 1e-6 (on the tracked drawings: 344 pairs within
+1e-5, none nested). Held by `TestTreeOrderUnderMotion`, which does not cover
+the order of the inners between themselves (not a contract).
+
+**Held by:** `tests/unit/core/test_hierarchy_builder.py::TestCopiesOrderUnderMotion`
+(red on the old code at 4 translations).
+
+**Gate.** G6e, in the 1.0 gate. No public name or signature changes; the
+documented order of `Result.clusters` is the same rule, now kept under motion.

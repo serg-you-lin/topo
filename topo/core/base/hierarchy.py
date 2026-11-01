@@ -9,7 +9,8 @@ from ...model.contour import Contour
 from ...model.role import ContourRole, is_structural_role
 from ..primitives.polygon_builder import curve_polygon, with_polygon
 from ..geometry.integrals import ring_area
-from ..geometry.measure import circular_geometry, track_points
+from ..geometry.measure import FLOAT_NOISE, circular_geometry, track_points
+from ..geometry.rings import ring_perimeter
 from ..geometry.regions import enclosing
 
 
@@ -75,11 +76,30 @@ def _place(proxy: ClosedCurve, nodes: list) -> bool:
 
 def sort_clusters(clusters: list) -> list:
     """
-    I cluster dal più grande: area esatta dell'outer (a 1e-6 mm², sotto c'è
-    solo rumore di arrotondamento), poi a pari area l'angolo (xmin, ymin)
-    del bbox — fra due copie congruenti l'unico fatto che le distingue.
+    I cluster dal più grande: area esatta dell'outer, poi a pari area l'angolo
+    (xmin, ymin) del bbox — fra due copie congruenti l'unico fatto che le
+    distingue. Pari vuol dire entro il rumore (FLOAT_NOISE sul perimetro per
+    l'area, FLOAT_NOISE per xmin), non nella stessa cella di una griglia (D195).
     """
-    return sorted(clusters, key=lambda c: (-round(c.outer.area, 6), c.bbox[0], c.bbox[1]))
+    ordered = []
+    by_area = sorted(clusters, key=lambda c: -c.outer.area)
+    for same_area in _runs(by_area, lambda a, b: a.outer.area - b.outer.area
+                           <= FLOAT_NOISE * ring_perimeter(a.outer.segments)):
+        by_x = sorted(same_area, key=lambda c: c.bbox[0])
+        for same_x in _runs(by_x, lambda a, b: b.bbox[0] - a.bbox[0] <= FLOAT_NOISE):
+            ordered += sorted(same_x, key=lambda c: c.bbox[1])
+    return ordered
+
+
+def _runs(items: list, together) -> list:
+    """`items` (già ordinati) spezzati dove due vicini non stanno `together`."""
+    runs = []
+    for item in items:
+        if runs and together(runs[-1][-1], item):
+            runs[-1].append(item)
+        else:
+            runs.append([item])
+    return runs
 
 
 def _build_tree(proxies: list) -> list:
