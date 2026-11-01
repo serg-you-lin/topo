@@ -87,15 +87,10 @@ Sottopassi, uno per commit:
 - [x] C. `heal()` → `Network`; `faces()`/`outlines()`; `island()` tolto;
       `read_outline(s)`/`OutlineReading` (taglio netto, D202). `source_file`
       di default da `doc.source_path`, `label` su tutte e due le letture (D204).
-- [ ] D. docs (LLM, API, README x2), `release_check`; i consumer si adattano
+- [x] D. docs (LLM, API §3, README x2, CLAUDE.md regola 5, SCRIPTS, ARCHITECTURE)
+      e `release_check` (3 novembre). `release_check.py` non nomina `island`:
+      nessuna modifica. Suite 244 s (sopra il budget). I consumer si adattano
       nelle loro sessioni.
-      Stato (2 novembre): C committato (`0cb2673`). `docs/LLM.md` già
-      riscritto ma **non committato** (nel working tree). Restano: `docs/API.md`
-      §3 (card `heal`, nuova card `Network`, `island` → `outlines()` senza
-      inner (D161), mattoni `read_outline(s)`/`OutlineReading`, e ogni
-      `island`/`heal(` nel resto del file), README + README_IT, CLAUDE.md
-      (regola 5: `faces()`/`outlines()`), SCRIPTS.md, ARCHITECTURE.md,
-      `release_check.py` (eseguirlo). Poi un commit a parte per D.
 
 ## IL CANCELLO DELLA 1.0 (D148, 22 ottobre)
 

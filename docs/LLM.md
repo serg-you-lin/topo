@@ -33,8 +33,9 @@ process or product.
 
 ```
 topo_dxf.load_dxf / load_geometry / load_segments  →  Document   (edges + texts, zero topology)
-heal(doc)                                       →  Result     (topology only: closed contours, outer/inner tree — NO hole/bend classification)
-island(doc, max_gap=)                           →  Result     (alternative to heal for drawings of VIEWS: one cluster per outer contour not inside another, outer = outer face of its planar network)
+heal(doc)                                       →  Network    (the repaired drawing, once: nodes, doubles, gaps up to max_gap)
+network.faces()                                 →  Result     (topology only: closed contours, outer/inner tree — NO hole/bend classification)
+network.outlines()                              →  Result     (for drawings of VIEWS: one cluster per outer contour not inside another, outer = outer face of its group)
 (a consumer's reading, e.g. snapbend.flat.detect_flat)  →  writes cluster.detected (the open overlay)
 split(result)                                   →  list[Result], one per part (no format)
 topo_dxf.to_dxf / to_json / save_json / to_svg / to_view_model  →  render from the model (never re-reads source)
@@ -81,7 +82,7 @@ import topo, topo_dxf
 
 doc = topo_dxf.load_dxf("part.dxf", tolerance=0.5)
 check = topo.validate_document(doc)             # input validation, optional
-result = topo.heal(doc, label="P-1024")
+result = topo.heal(doc, label="P-1024").faces()
 if not result.is_valid:                           # check before handing output to a machine
     raise SystemExit(result.errors)
 topo_dxf.to_dxf(result, doc).saveas("out.dxf")
@@ -99,11 +100,13 @@ topo.save_json(result, "out.json")
 | `load_geometry` | `(entities: list[dict], *, tolerance=0.05, source_path="") -> Document` | builds a `Document` from pure geometry, no file. Entity `type`: `line`(start,end) / `arc`(center,radius,start_angle,end_angle deg,ccw) / `circle`(center,radius) / `polygon`(points; always closed, D96) / `spline`(control_points,knots,degree,weights?) — `BSplineSeg` carries geometry only, `closed`/`periodic` are derived (D135) / `ellipse`(center,major_axis vector,ratio?,start_param?,end_param?,ccw?). Optional `role` per entity, same open vocabulary as `RoleRule.role`. |
 | `load_segments` | `(segments, *, tolerance=0.05, role="unknown", source_path="") -> Document` | a `Document` from topo segments (or lists of them, e.g. the `topo.geometry` builders); every edge gets `role`. The way to draw with topo in hand: `topo.load_segments(fg.rectangle(200, 100) + fg.circle(5))` (D96). |
 | `validate_document` | `(doc: Document) -> Result` | input validation, no mutation. `is_valid=False` = unworkable (no geometry / all-degenerate; a NaN/inf coordinate never reaches a Document, the primitive refuses it, D190). Warnings = workable but flagged. |
-| `validate_result` | `(result: Result) -> None` | output validation, **mutates** `result`. Called automatically by `heal()` — call manually only if you build a `Result` another way. |
-| `heal` | `(doc, *, tolerance=None, label="", source_file="", is_structural=None) -> Result` | topology reconstruction: gap-closing, non-contour edge exclusion (candidates for "something else" — `non_contour_candidates()` exposes the same criterion, see below), loop search, outer/inner containment tree. Does **not** classify holes (D15). `tolerance=None` → reuses `doc.source_meta["tolerance"]`. If no closed outer forms, `result.is_valid=False`. `is_structural(role)->bool` decides which already-labeled edges stay in the graph — `heal()` alone knows only outer/inner; without it a labeled `"hole"` is treated as non-structural (excluded, warned). A consumer passes its own (snapbend: `snapbend.flat.is_structural`). |
-| `island` | `(doc, *, max_gap, tolerance=None, is_structural=None) -> Result` — `max_gap` required, by name, no default (D98); no layout distance (D99) | the other way to read a document (see "Reading drawings of views" below). Same output contract as `heal()`: pieces are the edges that touch (within `max_gap`); one `Cluster` per outer contour that is not inside another (`outer` + `inners` = closed loops inside); a piece whose outer lies inside another's becomes interior of the outermost one. A piece that closes by itself (one closed segment, or a chain where every node has degree 2: a hole, a slot, a whole view inside the frame) goes to `loose` as one `ClosedCurve` — read it with `contour_shape` (D162); other edges go to `loose` as `OpenCurve` with `cluster_ref` = index of the island they touch or that contains them, `None` outside every island (D99, D137). Edges with a decided non-structural role (`frame`, `title_block`...) are left out and go to `loose` with their role — same D30 contract as `heal`. No closed outer anywhere → `is_valid=False`. Contour segments come back recomposed where the planar network split them: consecutive pieces on the same circle/line, same direction and style, are one segment — a hole crossed by its axes is one `CircleSeg` (D65; polygons unchanged). A nested island gives its host **all** its closed loops, also those outside the loop chosen as its outer — a group of detached holes in the middle of a view (D71). |
-| `experimental.read_islands` | `(edges, tolerance, max_gap) -> list[IslandReading]` | `island()` before it becomes a `Result`: per piece (edges that touch) what was decided, edge by edge; `nested_in` also for a piece with no outer whose edges all lie inside an island. `IslandReading`: `edges`, `outer: OuterFace\|None`, `inner_loops`, `spurs`, `outside`, `non_contour`, `unclassified`, `nested_in: int\|None`. |
-| `experimental.read_island` | `(edges, tolerance, max_gap) -> IslandReading` | one island: normalize (renode, `refit_tessellations`, heal's merge/weld, gaps up to `max_gap`), `split_at_crossings`, `outer_face`, classify the rest. |
+| `validate_result` | `(result: Result) -> None` | output validation, **mutates** `result`. Called automatically by `Network.faces()` — call manually only if you build a `Result` another way. |
+| `heal` | `(doc, *, tolerance=None, max_gap=None, is_structural=None, source_file="", label="") -> Network` | the one repair behind every reading (D202): non-structural roles set aside, nodes decided, doubles merged, tessellations refitted, gaps closed up to `max_gap` (default `tolerance`; never below it), degenerate pieces dropped. `tolerance=None` → `doc.source_meta["tolerance"]`. `source_file` empty → `doc.source_path`. `is_structural(role)->bool` decides which already-labeled edges stay in the network — alone topo knows only outer/inner/unknown; without it a labeled `"hole"` is set aside (goes to `loose`, warned). A consumer passes its own (snapbend: `snapbend.flat.is_structural`). Read the network with `.faces()` or `.outlines()`. |
+| `Network` | `.edges`, `.set_aside`, `.crossings`, `.free_ends`, `.tolerance`, `.max_gap`, `.source_file`, `.label`, `.warnings`, `.errors`, `.is_valid`; `.faces() -> Result`, `.outlines() -> Result` | the repaired drawing, built only by `heal()` (D204). Both readings copy `source_file` and `label` onto every `Result`/`Cluster`, and put in `loose` every curve of the network that is no contour, repaired (D203). An empty document gives `is_valid=False` and both readings return its errors. |
+| `Network.faces` | `() -> Result` | read from the inside: non-contour edges excluded (candidates for "something else" — `non_contour_candidates()` exposes the same criterion), loop search, outer/inner containment tree. Does **not** classify holes (D15). No closed outer → `is_valid=False`. Calls `validate_result`. |
+| `Network.outlines` | `() -> Result` | read from the outside (see "Reading drawings of views" below): edges that touch within `max_gap` are a group; crossings cut; one `Cluster` per outer face of a group not inside another — `outer` only, **no inners** (D161). Everything else goes to `loose` with `cluster_ref` = index of the cluster it touches or that contains it, `None` outside every cluster (D99, D137); a group nested in another goes to `loose` whole. Outer segments come back recomposed where the cut split them (a hole crossed by its axes is one `CircleSeg`, D65). No closed outer → `is_valid=False`. |
+| `experimental.read_outlines` | `(edges, tolerance, max_gap) -> list[OutlineReading]` | `outlines()` before it becomes a `Result`, on loose edges (same repair as `heal()`): per group (edges that touch) what was decided, edge by edge; `nested_in` also for a group with no outer whose edges all lie inside another. `OutlineReading`: `edges`, `outer: OuterFace\|None`, `spurs`, `outside`, `non_contour`, `unclassified`, `nested_in: int\|None`. |
+| `experimental.read_outline` | `(edges, tolerance, max_gap) -> OutlineReading` | one group: the same repair as `heal()`, `split_at_crossings`, `outer_face`, the rest classified. |
 | `experimental.spatial_islands` | `(edges, gap_tolerance) -> list[Island]` | union-find on edge pairs within true segment distance `gap_tolerance` (STRtree). No notion of closure. `Island`: `edges`, `bbox`, `.width`, `.height`. |
 | `experimental.split_at_crossings` | `(edges, tolerance, decimals=3) -> NodedEdges` | planar network (D180): every contact decided once per pair of edges, on the true curves — a crossing, an endpoint within `GRAPH_EPSILON` (0.01 mm) of the other curve (T or two ends), two curves passing within `GRAPH_EPSILON` without crossing — and one shared node tuple for every edge it touches (union-find; never both ends of one edge). Several meetings of the same pair within `tolerance` along either edge are one contact (D101: the two roots of a near-tangent line/arc). Every type is cut, splines/ellipses included (`sub_segment`; a periodic spline stays whole). `NodedEdges.pieces`, `.parent_of(piece) -> Edge`, `.crossings` (interior crossings, D132). |
 | `experimental.outer_face` | `(edges, epsilon=0.0) -> OuterFace\|None` | outer contour of a planar network: walk of its outer face starting from the leftmost geometric point, per connected component, largest area wins. `OuterFace`: `segments`, `styles`, `loop`, `.edges`, `spurs` (polygon: `topo.to_shapely(face)`) (walked there and back — axes, marks). |
@@ -116,7 +119,7 @@ topo.save_json(result, "out.json")
 | `measured_references` | `(result, text, *, distance=0.5) -> list` | elements the `measured_points` of `text` fall on, the objects themselves like `target`: for each point, the element whose boundary passes within `distance` (tie → smaller). No duplicates, in point order: two opposite points on a circle give the circle, two ends one or two elements. Pure geometry — reading `"M5"` as a thread is the reader's job. |
 | — | — | **Geometry facts live in `topo.geometry`** (package `topo/core/geometry/`, D95): call `topo.geometry.contour_shape(...)` etc. with the full path — never `topo.contour_shape`, never the name imported bare (D119). Helpers not exported in `topo.geometry` (in `measure`, `points`, `lines`, `axis`) still live in the submodules of `topo.core.geometry`: internal, no guarantee until the 1.0 public surface. |
 | `geometry.polygon` / `rectangle` / `regular_polygon` / `circle` / `ellipse` / `stadium` | `polygon(points)`, `rectangle(length, width, center=(0,0), angle=0)`, `regular_polygon(sides, radius, center, angle)`, `circle(radius, center)`, `ellipse(length, width, center, angle)` (one full `EllipseSeg`), `stadium(length, width, center, angle)` -> list of segments | build a closed loop as topo segments (stadium with true `ArcSeg`s), feed it to `load_segments`. Arguments are what `contour_shape` reports (angle in degrees), so build and read round-trip. Rhombus, trapezoid, any straight-sided shape = `polygon` (D96). |
-| `geometry.contour_shape` | `(item, tolerance=0.01, angle_tolerance=1.0) -> ContourShape \| None` | shape of a closed contour (`Contour`, a `ClosedCurve` in `loose`, anything with `.segments`, or a segment list; `None` if the segments do not close in a ring, D162): `kind` = `ShapeKind` (a `str` enum) `circle` / `ellipse` / `stadium` / `rectangle` / `polygon` / `other` — **closed and stable (D136)**: no new kind in 1.x and a contour never changes kind; rules read primitives as they are (equal-axis ellipse = circle, a spline circle stays `other`; rounded rectangle = `other`). Plus `center`, `length`, `width` (circle: both = diameter; ellipse: the two axes; stadium (two equal semicircles + two parallel lines — geometric name, not "slot"): overall length, 2r), `angle` (deg [0,180) of the long axis, `None` for circle), `sides`, `diameter`. A geometric fact, **not** a feature: `circle` does not mean hole. Same on `heal` and `island`. Collinear/co-circular runs are recomposed first (D68). |
+| `geometry.contour_shape` | `(item, tolerance=0.01, angle_tolerance=1.0) -> ContourShape \| None` | shape of a closed contour (`Contour`, a `ClosedCurve` in `loose`, anything with `.segments`, or a segment list; `None` if the segments do not close in a ring, D162): `kind` = `ShapeKind` (a `str` enum) `circle` / `ellipse` / `stadium` / `rectangle` / `polygon` / `other` — **closed and stable (D136)**: no new kind in 1.x and a contour never changes kind; rules read primitives as they are (equal-axis ellipse = circle, a spline circle stays `other`; rounded rectangle = `other`). Plus `center`, `length`, `width` (circle: both = diameter; ellipse: the two axes; stadium (two equal semicircles + two parallel lines — geometric name, not "slot"): overall length, 2r), `angle` (deg [0,180) of the long axis, `None` for circle), `sides`, `diameter`. A geometric fact, **not** a feature: `circle` does not mean hole. Same on `faces()` and `outlines()`. Collinear/co-circular runs are recomposed first (D68). |
 | `geometry.concentric_groups` | `(items, tolerance=0.1) -> list[ConcentricGroup]` | circular contours of `items` partitioned by center (absolute tolerance, drawing units); every circle in exactly one group, singletons too, and among the groups within `tolerance` it joins the nearest. Groups ordered by center (x, y), equal within float noise; at equal diameter the order given decides the group's reference, so the partition does not depend on the frame (D197). `ConcentricGroup`: `center` (smallest circle's), `items`, `shapes`, `diameters`, smallest radius first. Geometric fact: pairing circles into countersinks/seats is the consumer's (D91). |
 | `geometry.arcs_around` | `(center, radius, arcs, tolerance=0.1) -> list[ArcAround]` | `ArcSeg`s concentric to a circle and larger, nearest first. `ArcAround`: `arc`, `sweep` (degrees, in the arc's direction), `radius_ratio`. No angle threshold: "~270°, ratio ≤ 1.6 = thread crest" lives in snapbend/snapdraw (D91). |
 | `geometry.splits_contour` | `(contour, start, end, reach=0.0) -> bool` | the chord start-end, extended by `reach` at both ends, cuts the region of `contour` (a `Contour`, anything with a closed ring of `segments`, or the segment list) into 2+ parts: some stretch runs boundary to boundary through the inside; a touch or a stretch along the boundary does not. On the primitives (D166). Geometric fact; "it is a bend" is the consumer's reading (D93). |
@@ -179,7 +182,7 @@ Three public namespaces besides the top level (D120); everything under `topo.cor
 |---|---|
 | `topo.primitives` | the native segments `LineSeg`, `ArcSeg`, `CircleSeg`, `BSplineSeg`, `EllipseSeg` (pure math, no role; coordinates stored as plain Python floats whatever they are built from, D169) and `sub_segment(seg, a, b, via)` — the piece of `seg` from `a` to `b`. Every segment has `reversed()`, `translated(dx, dy)`, `rotated(angle, origin=(0,0))`, `mirrored(origin=(0,0), angle=0)` (about the line through `origin` at `angle` radians; default the x axis, y → −y) and `scaled(factor, origin=(0,0))` (`factor > 0`, uniform); each returns a new segment of the same type, exact (a mirrored arc reverses its direction, a scaled arc multiplies its radius). Chain them for a rigid motion: `s.mirrored(o, a).rotated(t).translated(dx, dy)`. No non-uniform scale or general affine map: it would turn an arc into an ellipse (D170) |
 | `topo.model` | the model types: `Document`, `Result`, `Cluster`, `Contour`, `Curve`, `ClosedCurve`, `OpenCurve`, `Edge` (a segment + role + style), `EdgeStyle`, `Text`, `DetectedFeature(s)`, and the roles: `ContourRole`, `role_str`, `normalize_role`, `is_structural_role`. The four most used are also `topo.Document/Result/Cluster/Contour`. |
-| `topo.experimental` | usable, no stability promise (D175 C, D176): the steps of `heal()` and the island bricks, the viewer, `to_text`, `rotate_*`, `simplify_points`, `to_nester_input`, the strips of D134/D142 |
+| `topo.experimental` | usable, no stability promise (D175 C, D176): the steps of `heal()` and of its readings, the viewer, `to_text`, `rotate_*`, `simplify_points`, `to_nester_input`, the strips of D134/D142 |
 
 ```python
 import topo
@@ -190,7 +193,7 @@ class Hole(topo.model.ClosedCurve): ...
 
 **`Document`** (from `load_dxf`/`document_from_msp`/`load_geometry`): `edges: list[Edge]`, `texts: list[Text]`, `source_meta: dict`, `source_path: str`, `warnings: list[str]`.
 
-**`Result`** (from `heal`, enriched by a consumer/`inject`): `clusters: list[Cluster]` (largest exact outer area first; equal areas — congruent copies — by bbox corner `(xmin, ymin)`, same in `heal` and `island`), `is_valid: bool` (**check before handing output to a machine**), `warnings`/`errors: list[str]`, `loose: list[OpenCurve | ClosedCurve]` (every curve that is no cluster's contour — chains that close nothing, open traces, closed curves with a non-structural role; each with `cluster_ref` = index of the cluster whose outer contour contains it entirely, boundary and holes included, else `None`, D137 — move one into `cluster.detected` with `result.promote`), `texts: list[Text]`, `cluster_count` (property). Every arc of the drawing is in a contour's or a loose curve's `segments` (an open arc, e.g. a thread crest, is in `loose`). `.to_dict()` for JSON.
+**`Result`** (from `heal`, enriched by a consumer/`inject`): `clusters: list[Cluster]` (largest exact outer area first; equal areas — congruent copies — by bbox corner `(xmin, ymin)`, same in `faces()` and `outlines()`), `is_valid: bool` (**check before handing output to a machine**), `warnings`/`errors: list[str]`, `loose: list[OpenCurve | ClosedCurve]` (every curve that is no cluster's contour — chains that close nothing, open traces, closed curves with a non-structural role; each with `cluster_ref` = index of the cluster whose outer contour contains it entirely, boundary and holes included, else `None`, D137 — move one into `cluster.detected` with `result.promote`), `texts: list[Text]`, `cluster_count` (property). Every arc of the drawing is in a contour's or a loose curve's `segments` (an open arc, e.g. a thread crest, is in `loose`). `.to_dict()` for JSON.
 
 `result.promote(curves, cluster, name, item=None) -> None` (D137, D172, D173 — a method of `Result`, not a top-level function): moves `curves` (one curve or a sequence) out of `result.loose` into **one** item of `cluster.detected[name]` (`item` = what you made of them; may be omitted only for a single curve, then it is the curve itself), creating `detected` if needed. Several curves read as one thing (a hole and its seat) are one item. Position doesn't bind: any loose curve to any cluster. Raises `ValueError`, touching nothing, if a curve is not in `result.loose` or given twice, `curves` is empty, `cluster` not in `result.clusters`, or several curves come without `item`: never in both places, never dropped. topo promotes nothing by itself.
 
@@ -253,7 +256,7 @@ import topo, topo_dxf
 import your_tool.roles as roles
 
 doc = topo_dxf.load_dxf("part.dxf", role_rules=topo.name_rules({"FlangeMarks": roles.FLANGE_UP}))
-result = topo.heal(doc, is_structural=roles.is_structural)   # only if FLANGE_UP is structural
+result = topo.heal(doc, is_structural=roles.is_structural).faces()   # only if FLANGE_UP is structural
 topo_dxf.to_dxf(result, doc, role_styles=roles.ROLE_STYLES, layers=roles.LAYERS)   # FlangeUp layer, orange
 ```
 
@@ -269,7 +272,7 @@ for edge in topo.non_contour_candidates(doc):
     if your_tool.looks_like_flange(edge):     # your own geometry/cross-view logic
         edge.role = roles.FLANGE_UP
 
-result = topo.heal(doc, is_structural=roles.is_structural)
+result = topo.heal(doc, is_structural=roles.is_structural).faces()
 ```
 
 Same candidates `heal()` would have excluded and left as `role="unknown"` in
@@ -285,26 +288,27 @@ color/layer name instead of the generic gray "consumer role" fallback. To attach
 per-feature data (not just a color), use the `cluster.detected` overlay
 instead — see `Cluster` above.
 
-## Reading drawings of views: `island()`
+## Reading drawings of views: `outlines()`
 
-`heal()` reads from the inside (who touches whom, which loops close, which is
+`faces()` reads from the inside (who touches whom, which loops close, which is
 inside which). On a drawing of views — several views on a sheet, isometric/3D
 projections, near-coincident silhouette lines — that graph is ambiguous.
-`island()` reads from the outside: pieces that touch → planar network →
-outer face → every outer not inside another is an island → interior by
-containment (D99). Choose by the drawing:
+`outlines()` reads from the outside: edges that touch → planar network with
+crossings cut → outer face → every outer not inside another is a cluster →
+the rest is `loose`, owned by containment (D99, D161). Both read the same
+repaired network (D202). Choose by the drawing:
 
 | drawing | call |
 |---|---|
-| flat outlines (a cutting file, a development), one or more separate parts, exact geometry to stitch | `heal()` |
-| technical drawing with views (plan, side, isometric) on a sheet | `island()` |
+| flat outlines (a cutting file, a development), one or more separate parts, exact geometry to stitch | `heal(doc).faces()` |
+| technical drawing with views (plan, side, isometric) on a sheet | `heal(doc, max_gap=...).outlines()` |
 
-What `island()` does **not** know: which island is a view, a part, the frame,
+What `outlines()` does **not** know: which outline is a view, a part, the frame,
 the title block, a magnifier circle over a view, a break line. Those are
 roles — the caller's job (D21, D30). There is no distance between views:
-two outer contours are two islands however close (D99); `max_gap` (required,
-no default, D98) only decides which edges touch. With the frame still in the drawing, the
-frame is the only outer and every view becomes its interior.
+two outer contours are two clusters however close (D99); `max_gap` only decides
+which edges touch and which gaps close. With the frame still in the drawing,
+the frame is the only outer and every view is in its `loose`.
 
 ### Consumer recipe (snapdraw / a drawing reader)
 
@@ -318,42 +322,43 @@ for edge in doc.edges:
     if my_tool.is_frame_or_title_block(edge) or my_tool.is_magnifier_circle(edge):
         edge.role = topo.normalize_role("frame")     # any non-structural slug
 
-# 2. read the rest by islands — marked edges are left out (loose, with their role)
-result = topo.island(doc, max_gap=0.5)
+# 2. repair once, read by outlines — marked edges are left out (loose, with their role)
+result = topo.heal(doc, max_gap=0.5).outlines()
 for cluster in result.clusters:                     # one view (or part) each
-    cluster.outer, cluster.inners
+    cluster.outer
+inside = [c for c in result.loose if c.cluster_ref == 0]   # what lies in the first one
 
 # 3. need the details per edge (what was a spur, what stayed outside)?
 edges = [e for e in doc.edges if e.role == "unknown"]
-for reading in topo.experimental.read_islands(edges, tolerance=0.05, max_gap=0.5):
+for reading in topo.experimental.read_outlines(edges, tolerance=0.05, max_gap=0.5):
     reading.outer, reading.spurs, reading.outside, reading.non_contour, reading.nested_in
 ```
 
-Composing your own reading from the bricks (same pieces `island()` uses, no
-duplicated criteria): `spatial_islands` → `refit_tessellations` →
-`split_at_crossings` → `outer_face`. `island()` never calls `heal()`.
+Composing your own reading from the bricks (same pieces `outlines()` uses, no
+duplicated criteria): `prepare` → `normalize` → `spatial_islands` →
+`split_at_crossings` → `outer_face`.
 
-The one parameter is the caller's, never guessed by topo — required, no
-default (D98): `max_gap` (edges closer than this touch; drawing gaps closed on
-a view). 0.5 mm in the examples above is what the default used to be, not a
-recommendation. The layout distance `island_gap` is gone (D99): islands are
-decided by outer contours and containment, not by spacing.
+`max_gap` is the caller's, never guessed by topo: edges closer than this touch,
+and drawing gaps up to it are closed. 0.5 mm in the examples above is an
+example, not a recommendation. The layout distance `island_gap` is gone (D99):
+clusters are decided by outer contours and containment, not by spacing.
 
 ## Hard rules (violate these = broken output)
 
-- `heal()` never classifies holes/bends — that is a consumer's reading (snapbend `detect_flat`, D88).
+- `faces()` never classifies holes/bends — that is a consumer's reading (snapbend `detect_flat`, D88).
 - **Check `result.is_valid`** before using output for anything but looking at it. `topo_dxf.to_dxf`/`to_svg` render an invalid result anyway (default `allow_invalid=True`); pass `allow_invalid=False` to get `ValueError` instead. `split` always raises on invalid (D83).
-- `tolerance` default `0.05`; a gap ≥ 4× tolerance is **not** auto-closed (deliberate — raise `tolerance` or fix the source).
-- `tolerance` is the widest gap topo may close, never a node snap: every endpoint sits on one grid, `NODE_DECIMALS = 3` (`topo.core.geometry.measure`), whatever the tolerance or the reading (D113). Two ends are one node only if they coincide on that grid.
+- `tolerance` default `0.05` (from the loader); a gap wider than `max_gap` (default `tolerance`) is **not** closed (deliberate — pass a larger `max_gap` or fix the source). Two numbers, not one: with one number at 0.5 a contour stayed open by 0.41 mm (D202).
+- `tolerance` decides nodes (two cuts of an edge closer than it are one node, D101), never a node snap: every endpoint sits on one grid, `NODE_DECIMALS = 3` (`topo.core.geometry.measure`), whatever the tolerance or the reading (D113). Two ends are one node only if they coincide on that grid.
 - `role_rules` is a `topo_dxf.load_dxf`/`document_from_msp` param, **not** a `heal` param.
+- `topo.island()` **no longer exists** (D202, clean break): `topo.island(doc, max_gap=g)` → `topo.heal(doc, max_gap=g).outlines()`; `topo.heal(doc)` now returns a `Network`, the old `Result` is `topo.heal(doc).faces()`. `experimental.read_island(s)`/`IslandReading` → `read_outline(s)`/`OutlineReading`.
 - `topo.load_dxf`, `topo.to_dxf`, `topo.inspect_dxf`/`inspect_file`, `topo.write/read_metadata_*`, `topo.load_pdf` **no longer exist** (D129, clean break): they are `topo_dxf.<name>` / `topo_pdf.load_pdf`. `topo.split` returns `list[Result]`, not drawings.
 - `label_map`/`linetype_map`/`color_map` **no longer exist** (D63, clean break). Migration: `label_map=m` → `role_rules=topo.name_rules(m)`; `linetype_map={"DASHED": r}` → `topo.RoleRule(r, dashed=True)` (dash is read from the pattern, not the linetype name); `color_map={"cyan": r}` → `topo.RoleRule(r, color="cyan")`. The old fixed priority (name, then linetype, then colour) is gone: put the rules in the order you want, first match wins. `Result.label_map` and `doc.source_meta["label_map"]` are gone too.
 - `topo_dxf.to_dxf` never re-reads the source file — it renders from the model only.
 - Splines are re-emitted as native `SPLINE`, open overlay geometry (e.g. a consumer's engraving) as native per-primitive entities — **never** discretized to `LWPOLYLINE` in DXF output. `to_svg`/`to_view_model` **do** discretize everything (visualization, not exact curves).
 - Nothing is silently dropped: unclassified geometry → `loose`/`Trash` layer, unmodeled DXF types (`HATCH`,`IMAGE`,`TABLE`,`3DFACE`,`XLINE`...) → warning in `doc.warnings`.
-- `island()` and `heal()` are two readings, not two steps: never chain them on the same document. Both return a `Result`; `split()` and every renderer work on either.
-- snapbend's `detect_flat()` assumes a **flat part seen from its face** (cutting file, sheet development). **Never run it on `island()` views**: it finds "bends" in isometrics and assembly views and "holes" in logo letters — meaningless by construction. Feature reading on views is snapdraw's: in topo use the geometry — `inners` + `contour_shape` (circle, stadium, rectangle...), `concentric_groups`, `arcs_around` — and say so; calling a circle a hole is the reader's call, not topo's. The name states the precondition (renamed from `detect`, D67).
-- `island()` puts closed loops inside an outer in `inners` without saying hole or face — same as `heal()` (D15).
+- `faces()` and `outlines()` are two readings of one network, not two steps: never feed one's output to the other. Both return a `Result`; `split()` and every renderer work on either.
+- snapbend's `detect_flat()` assumes a **flat part seen from its face** (cutting file, sheet development). **Never run it on `outlines()` views**: it finds "bends" in isometrics and assembly views and "holes" in logo letters — meaningless by construction. Feature reading on views is snapdraw's: in topo use the geometry — the closed curves in `loose` + `contour_shape` (circle, stadium, rectangle...), `concentric_groups`, `arcs_around` — and say so; calling a circle a hole is the reader's call, not topo's. The name states the precondition (renamed from `detect`, D67).
+- `outlines()` puts closed loops inside an outer in `loose` (as `ClosedCurve`, D161, D162) without saying hole or face; `faces()` puts them in `inners`, same silence (D15).
 
 ## Experimental — `topo.experimental`, no stability guarantee (D175 C, D176)
 
@@ -381,7 +386,7 @@ Also recent but stable/documented already: `EllipseSeg` (5th primitive, `"ellips
 topo_dxf/        DXF/DWG adapter (loader, writer, layers, xdata, inspect)
 topo_pdf/        PDF adapter (experimental, frozen)
 topo/core/       pure geometry engine (+ geometry_input: load_geometry / load_segments): primitives (+ fitting: simplify_points), topology (+ noding, outer_face),
-                  base/ (the foundation of every reading: prepare, normalize, gaps, hierarchy, D187), readings/ (heal(), island() and their own steps)
+                  base/ (the foundation of every reading: prepare, normalize, gaps, hierarchy, D187), readings/ (heal() → Network, faces(), outlines() and their own steps)
 topo/model/      the domain: Document, Result, Cluster, Text, role.py, detected.py (overlay)
 topo/tools/      optional Result stages: split, anchor, inject, rotate, strips, non_contour
 topo/io/         renderers with no format dependency: svg.py, view_model.py, text.py, exporter.py (json/xml)

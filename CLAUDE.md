@@ -61,9 +61,10 @@ snapbend's `tests/gen_index.py` — change it in one, copy to the other.
    (hole, bend, view, dimension) is a consumer's, written to `cluster.detected`
    and rendered by role (D90).
 5. **snapbend's `detect_flat()` assumes a flat part seen from its face** (cutting
-   file / development). Never run it on `island()` output: it invents bends in isometrics
-   and holes in logo letters. `heal()` and `island()` are two *readings*, never two
-   steps — never chain them on one document.
+   file / development). Never run it on `outlines()` output: it invents bends in isometrics
+   and holes in logo letters. `faces()` and `outlines()` are two *readings* of the
+   one `Network` that `heal()` returns, never two steps — never feed one's
+   output to the other.
 6. **Always check `result.is_valid`** before handing output to a machine.
    `to_dxf`/`to_svg` render an invalid result anyway (`allow_invalid=True`, so
    you can see it); a caller that delivers to a machine passes

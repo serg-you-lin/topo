@@ -89,11 +89,13 @@ topo/
 │   │                 noding.py (rete piana), outer_face.py (faccia esterna)
 │   ├── base/         LE BASI DI OGNI LETTURA (D187, D188): prepare.py (nodi decisi
 │   │                 una volta, normalizzazione), cleanup.py, normalizer.py,
-│   │                 gap_solver.py, hierarchy.py — heal, island e ogni ricetta
+│   │                 gap_solver.py, hierarchy.py — heal, le letture e ogni ricetta
 │   │                 di un chiamante partono da qui
-│   ├── readings/     LE LETTURE: heal.py, island.py e i loro passi propri
-│   │                 (heal_steps.py, islands.py, outer_scan.py) — ognuna sceglie
-│   │                 solo come cerca il contorno
+│   ├── readings/     LE LETTURE: network.py (la riparazione e `Network`),
+│   │                 heal.py (`heal()`), faces.py (`faces()`), outline.py
+│   │                 (`outlines()`) e i passi propri (heal_steps.py,
+│   │                 islands.py, outer_scan.py) — ogni lettura sceglie solo
+│   │                 come cerca il contorno
 │   ├── geometry/     LA GEOMETRIA, `topo.geometry` (D95): fatti con nomi geometrici
 │   │                 — shape (forma, cerchi concentrici, archi attorno), lines
 │   │                 (corde, file collineari), axis (rettangoli coperti) — e i
@@ -135,17 +137,18 @@ topo/
 ├── inspect.py    ispezione: inspect_document, inspect_result (il livello del
 │                 file è dell'adapter: topo_dxf.inspect_dxf)
 └── experimental.py  tutto ciò che si usa senza promessa di stabilità: passi di
-                  heal/island, viewer, to_text, rotate_*, simplify_points,
+                  heal/faces/outlines, viewer, to_text, rotate_*, simplify_points,
                   strisce (D175 C, D176)
 ```
 
 `pipeline/` non esiste più (MAP.md D22): metteva insieme tre cose diverse —
 `heal` (ora in `core/`), gli stadi opzionali (`tools/`) e i renderer
 (`to_dxf`, poi in `io/` e oggi in `topo_dxf`; `split`, oggi in `tools/`). D22 diceva anche
-che `heal` è "l'atto unico del motore": non è più vero (D58) — il motore ha due
-letture, `heal()` e `island()`, che compongono gli stessi ingredienti del core
-in modo diverso e riempiono lo stesso modello. Il prodotto è il modello, non
-una delle due ricette.
+che `heal` è "l'atto unico del motore": non è più vero (D58) — `heal()` ripara il
+disegno una volta (D202) e restituisce una `Network`; le due letture,
+`faces()` e `outlines()`, compongono gli stessi ingredienti del core in modo
+diverso e riempiono lo stesso modello. Il prodotto è il modello, non una delle
+due letture.
 
 **Regola di dipendenza** (controllata da `scripts/gen_index.py --check`,
 in `pyproject.toml`):
@@ -193,20 +196,25 @@ In ordine:
 Dopo questa funzione l'oggetto `ezdxf` sorgente **sparisce**. Tutto il resto
 lavora sul `Document`.
 
-### 2. `heal` → `Result` (topologia)
+### 2. `heal` → `Network`, `faces()` → `Result` (topologia)
 
-Il passo difficile. Lavora su `doc.edges`, zero `ezdxf`. `heal()` è una
-ricetta: ogni passo è una funzione (D62), esposta in `topo.experimental`
-(D176); `heal()` le compone in quest'ordine e scrive i warning che le
-raccontano. Un consumatore (snapdraw) compone gli stessi passi come gli serve.
+Il passo difficile. Lavora su `doc.edges`, zero `ezdxf`. Due tempi: `heal()`
+ripara e dà una `Network` (passi 0–1); `faces()` la legge (passi 2–6). Ogni
+passo è una funzione (D62), esposta in `topo.experimental` (D176); i warning
+della riparazione stanno sulla rete. Un consumatore (snapdraw) compone gli
+stessi passi come gli serve.
 
-Le basi sono **le stesse per ogni lettura** (`core/base/`, D187, D189):
-`island()` e qualunque ricetta passano dalle stesse funzioni, con le stesse
+La riparazione è **una sola per ogni lettura** (`readings/network.py`, D202):
+due numeri, `tolerance` per i nodi e `max_gap` per i gap (default `tolerance`),
+e `Network` li porta insieme a `source_file` e `label` (D204). Le basi sono
+**le stesse per ogni lettura** (`core/base/`, D187, D189): `faces()`,
+`outlines()` e qualunque ricetta passano dalle stesse funzioni, con le stesse
 regole; una lettura sceglie solo come cerca il contorno. Il solo punto in cui
 le due letture leggono diversamente lo stesso fatto è un parametro con un nome:
 `split_at_crossings(cut_crossings=...)`, perché un incrocio fra due curve che
-proseguono è un disegno rotto o un segno per `heal()` (D132) e un contatto per
-`island()` (D101).
+proseguono è un disegno rotto o un segno per `faces()` (D132) e un contatto per
+`outlines()` (D101): la rete tiene gli incroci come dato (`crossings`), il
+taglio lo fa la lettura che lo chiede.
 
 0. **prepara** (`prepare`): ruoli non strutturali da parte (`split_labeled`, D30: il punto d'aggancio per un
    consumatore che marca la geometria prima di `heal`, e
@@ -224,12 +232,12 @@ proseguono è un disegno rotto o un segno per `heal()` (D132) e un contatto per
    traverso; a pari merito nessuno (D185, D189). Ogni confronto con una
    tolleranza la comprende a meno del rumore (`reach`, D183)
 2. **rete piana** (`split_at_crossings`): ogni contatto deciso una volta sulle
-   curve vere (D180); per `heal()` tagliano i contatti dove un capo tocca
+   curve vere (D180); per `faces()` tagliano i contatti dove un capo tocca
    qualcosa, non gli incroci
 3. **non-contorno** (`non_contour_pieces`): le catene attraverso nodi di grado
    2 (`Graph.chains`, D131) fra due nodi di branching distinti, che il bordo
    della faccia esterna della loro componente non percorre una volta sola (una
-   corda, un ponte), non sono contorno (D111) — escono, intere. `heal` non
+   corda, un ponte), non sono contorno (D111) — escono, intere. `faces()` non
    decide cosa siano: lo decide un consumatore, a modo suo
 4. **facce** (`face_loops`): il cammino della faccia esterna preso su ogni lato
    di ogni edge dà tutte le facce; quelle limitate, divise in giri semplici
@@ -242,7 +250,7 @@ proseguono è un disegno rotto o un segno per `heal()` (D132) e un contatto per
    micro-cerchio) non prende niente, e i suoi edge vanno in `loose` interi
    (D151); `loose` ha una regola sola, `loose_curves` (D162)
 6. **gerarchia** (`build_hierarchy`): quale giro contiene quale → albero di
-   contenimento `outer` / `inner`. `heal` si ferma qui: **non** dà un
+   contenimento `outer` / `inner`. `faces()` si ferma qui: **non** dà un
    significato ai contorni interni (D15) — ogni giro contenuto è un `Contour`
    in `cluster.inners`.
 
@@ -252,40 +260,40 @@ Se non si forma **nessun** contorno esterno chiuso, il risultato è dichiarato
 topo; rifiutarlo è scelta del chiamante che consegna a una macchina
 (`allow_invalid=False`, D83).
 
-`validate_result` viene chiamata automaticamente alla fine.
+`validate_result` viene chiamata automaticamente alla fine di `faces()`.
 
-### 2b. `island` → `Result` (lettura per isole)
+### 2b. `outlines()` → `Result` (lettura per contorni)
 
-L'alternativa a `heal` per un disegno di **viste** (più viste su un foglio,
-isometriche, 3D proiettato). `heal` cerca il pezzo dall'interno, per
+L'alternativa a `faces()` per un disegno di **viste** (più viste su un foglio,
+isometriche, 3D proiettato). `faces()` cerca il pezzo dall'interno, per
 connettività: su una vista proiettata più spigoli quasi coincidenti convergono
 sugli stessi nodi e non c'è nessun segnale locale per scegliere quale prosegue
-come contorno. `island` parte da un fatto globale, cosa sta fuori:
+come contorno. `outlines()` parte da un fatto globale, cosa sta fuori. La
+rete è quella di `heal()`:
 
-1. **estrae** gli `Edge` con ruolo deciso e non strutturale, come `heal` (D30):
-   è così che un consumatore toglie cornice, cartiglio, cerchi di ingrandimento
-2. **pezzi**: gli edge che si toccano entro `max_gap` (`spatial_islands`):
+1. **da parte** gli `Edge` con ruolo deciso e non strutturale, già fatto da
+   `heal()` (D30): è così che un consumatore toglie cornice, cartiglio, cerchi
+   di ingrandimento; vanno in `loose` col loro ruolo (D203)
+2. **gruppi**: gli edge che si toccano entro `max_gap` (`spatial_islands`):
    nessuna nozione di chiusura, quindi nessuna ambiguità di grafo. Nessuna
    distanza fra le viste: quella dipendeva da come è impaginato il disegno,
    che topo non conosce (D99)
-3. per ogni pezzo **normalizza** sulla griglia fine della rete: nodi dagli
-   estremi reali, catene tassellate rifittate come archi/spline, merge/weld di
-   `heal`, gap fino a `max_gap` senza mai spostare un estremo più di così
-   (anche `max_gap` è del chiamante, D98)
-4. **rete piana** (`split_at_crossings`, D180): ogni contatto, deciso una
+3. i nodi, le catene tassellate rifittate e i gap fino a `max_gap` (senza mai
+   spostare un estremo più di così) sono già quelli della rete: `outlines()`
+   non ripara più per conto suo (D202)
+4. **rete piana** di ogni gruppo (`split_at_crossings`, D180): ogni contatto, deciso una
    volta per coppia sulle curve vere, diventa un nodo condiviso da tutti gli
    edge che tocca
 5. **faccia esterna** (`outer_face`): si parte dal punto più a sinistra della
    geometria, a ogni nodo si gira il meno possibile in senso antiorario; un
    edge percorso andata e ritorno è una sporgenza (asse, segno)
-6. **interno**: giri chiusi → `inners`, il resto in `loose`. Un'isola
-   il cui contorno sta dentro quello di un'altra non è un cluster: diventa
-   interno della più esterna che la contiene
+6. **interno**: nessun `inner` (D161), tutto il resto in `loose` col
+   `cluster_ref` del cluster che lo contiene o che tocca. Un gruppo il cui
+   contorno sta dentro quello di un altro non è un cluster: va in `loose`
 
-Stesso contratto di `heal`: un `Result`, un `Cluster` per isola, e
+Stesso contratto di `faces()`: un `Result`, un `Cluster` per contorno, e
 `split` e i renderer non sanno quale lettura l'ha prodotto. Cosa sia
-un'isola (vista, pezzo, cornice) lo decide chi chiama (D21). `island` non
-chiama mai `heal`.
+un contorno (vista, pezzo, cornice) lo decide chi chiama (D21).
 
 ### 3. la lettura di un consumatore (fuori da topo)
 
@@ -345,7 +353,7 @@ esterno che restituisce codice / materiale / spessore, e a metterli in
 
 `tolerance` (default 0.05, i golden usano 0.5) è il gap più largo che topo può
 chiudere. **Non** arrotonda i nodi: ogni endpoint va su una griglia unica
-(`NODE_DECIMALS` = 3 decimali, MAP.md D113), la stessa per `heal()` e `island()`
+(`NODE_DECIMALS` = 3 decimali, MAP.md D113), la stessa per ogni lettura
 e per qualunque tolleranza, così due capi diventano lo stesso nodo solo se
 coincidono davvero. Serve in due modi:
 
@@ -411,8 +419,8 @@ Onestà sullo stato — dettagli e motivazioni sono in `MAP.md` (sezione
   cartella sorella `forge-pdf-adapter` si riprende qui (TODO, punto 0.7).
 - **Il DWG** passa da ODA File Converter, un eseguibile esterno: `topo_dxf`
   lo chiama via l'addon `odafc` di `ezdxf`.
-- **`heal()` con solo edge etichettati** (tutti con ruolo non strutturale):
-  errore "Nessuna geometria chiusa trovata" e `loose` **vuota** — gli
+- **`faces()` con solo edge etichettati** (tutti con ruolo non strutturale):
+  errore "Nessuna geometria chiusa trovata dopo healing." e `loose` **vuota** — gli
   etichettati non ci arrivano, a differenza di ogni altro caso invalido.
   Comportamento di sempre, conservato tale e quale nella fase B (D62).
 
