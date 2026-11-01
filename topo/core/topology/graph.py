@@ -117,22 +117,6 @@ class Graph:
                         follow(node, edge, other)
         return chains
 
-    def merged_clusters(self) -> list:
-        """
-        Cluster in cui il clustering ha fuso più endpoint distinti.
-
-        Restituisce [(nodo_canonico, [membri...]), ...] solo per i cluster con
-        più di un membro. Sono esattamente gli angoli dove il grafo esatto
-        vedeva un buco: le coordinate da segnalare all'utente perché li
-        verifichi, e i candidati naturali per una chiusura esatta via
-        gap_solver (estensione all'intersezione reale) invece della semplice
-        tolleranza.
-        """
-        groups: Dict[Tuple, list] = defaultdict(list)
-        for pt, canon in self.node_map.items():
-            groups[canon].append(pt)
-        return [(c, m) for c, m in groups.items() if len(m) > 1]
-
     def connected_components(self) -> List[set]:
         """
         Componenti connesse del grafo (BFS sui nodi).
