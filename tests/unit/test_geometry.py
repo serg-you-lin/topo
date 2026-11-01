@@ -287,6 +287,19 @@ class TestPointSequenceMath(unittest.TestCase):
                 _, point = rigid(*motion)
                 self.assertEqual(kinds([point(q) for q in pts]), at_rest)
 
+    def test_008d_collinear_points_stay_a_line_under_motion(self):
+        # G6e, `points.py:282`: tre punti allineati danno un cerchio dal rumore
+        # (enorme, la corda stessa); retta e quasi-retta restano una retta
+        from tests.invariants import rigid
+        from topo.core.primitives.fitting import simplify_points
+        for name, pts in (("retta", [(x * 0.05, 0.0) for x in range(81)]),
+                          ("quasi retta", [(x * 0.05, 0.015 * math.sin(x * 0.05 * math.pi)) for x in range(81)])):
+            for motion in ((0.0, 0.0, 0.0), (0.7, 0.0, 0.0), (0.031, 3e6, -2.5e6), (2.294, 3e6, -2.5e6)):
+                with self.subTest(case=name, motion=motion):
+                    _, point = rigid(*motion)
+                    prims = simplify_points([point(q) for q in pts], tolerance=0.02, scale=0.1, closed=False)
+                    self.assertEqual([type(q).__name__ for q in prims], ["LineSeg"])
+
     def test_009_a_right_angle_rounded_by_sampling_is_still_a_corner(self):
         # quadrato 10x10 con gli spigoli smussati su 2 campioni: nessun angolo
         # interno fra vicini sta sotto 90°, la svolta su scala 2 sì
@@ -295,6 +308,38 @@ class TestPointSequenceMath(unittest.TestCase):
             pts += [(ax + (bx - ax) * t / 20, ay + (by - ay) * t / 20) for t in range(1, 20)]
         corners = turn_corners(pts, closed=True, turn_deg=35, scale=2.0, tolerance=0.1)
         self.assertEqual(len(corners), 4)
+
+    def test_009b_a_symmetric_cut_corner_does_not_depend_on_the_frame(self):
+        # G6e: quadrato 10x10 con ogni vertice tagliato da due campioni a 0.3,
+        # uno per lato. I due svoltano uguale; "fra due spigoli più vicini di
+        # `scale` quello che svolta di più" lo decideva l'ultimo bit
+        # (14 insiemi di spigoli in 200 rotazioni, lati dritti fatti spline)
+        from tests.invariants import rigid
+        from topo.core.primitives.fitting import simplify_points
+        square = [(0, 0), (10, 0), (10, 10), (0, 10)]
+        pts = []
+        for i in range(4):
+            a, b, c = square[i], square[(i + 1) % 4], square[(i + 2) % 4]
+            d_in = ((b[0] - a[0]) / 10, (b[1] - a[1]) / 10)
+            d_out = ((c[0] - b[0]) / 10, (c[1] - b[1]) / 10)
+            pts += [(a[0] + d_in[0] * t * 0.5, a[1] + d_in[1] * t * 0.5) for t in range(1, 20)]
+            pts += [(b[0] - d_in[0] * 0.3, b[1] - d_in[1] * 0.3), (b[0] + d_out[0] * 0.3, b[1] + d_out[1] * 0.3)]
+        corners = lambda ps: turn_corners(ps, closed=True, turn_deg=35, scale=2.0, tolerance=0.1)
+        kinds = lambda ps: [type(q).__name__ for q in simplify_points(ps, tolerance=0.1, scale=2.0, closed=True)]
+        at_rest = corners(pts), kinds(pts)
+        self.assertEqual(len(at_rest[0]), 4)
+        for angle in (0.031, 0.093, 0.155, 0.7, 2.294, 3.007):
+            with self.subTest(angle=angle):
+                _, point = rigid(angle, 0.0, 0.0)
+                moved = [point(q) for q in pts]
+                self.assertEqual((corners(moved), kinds(moved)), at_rest)
+        # l'anello chiuso comincia dove capita: gli spigoli (come punti) no
+        at_rest_points = {pts[k] for k in at_rest[0]}
+        for start in (1, 19, 20, 41, len(pts) - 1):
+            with self.subTest(start=start):
+                ring = pts[start:] + pts[:start]
+                self.assertEqual({ring[k] for k in corners(ring)}, at_rest_points)
+                self.assertEqual(sorted(kinds(ring)), sorted(at_rest[1]))
 
     def test_010_a_circle_has_no_corner(self):
         pts = [(10 * math.cos(2 * math.pi * i / 100), 10 * math.sin(2 * math.pi * i / 100)) for i in range(100)]
