@@ -867,297 +867,56 @@ Names in the older entries are the names of their day (`forge`, `ForgeCluster`,
   micro-case red before and green after, or one line on why it does not decide
   the reading. Same input, same reading; a rigid motion, same reading, except
   a measure on the tolerance itself within float noise, which heal reports.
-### D192 — G6e group A: a meeting is decided in millimetres at float noise, on the measure whose error is linear ✅
-`intersections.py` decided with fixed thresholds in the wrong units: parallel
-lines at `|denom| < 1e-10` (mm²), "on the segment" at `t` within `1e-9` of
-an end (a pure number), tangency on the discriminant (`< 1e-10`, mm⁴) and on
-the half-chord `h < 1e-10`. Far from the origin a rigid motion moves a
-coordinate by ~1e-10 mm, and each of these flipped: a segment inside another
-on the same line got an invented meeting, a T on a short line and an arc
-ending on a line lost theirs, and a tangent line or two tangent circles gave
-0 or 2 points in 199 motions out of 200.
-
-**Rule.** Every decision there is a distance in millimetres compared with
-`FLOAT_NOISE` (1e-6 mm, D183): two lines are parallel when along the longer
-segment their directions part by at most that; a point is on a segment or an
-arc when it overshoots an end by at most that (as a parameter `/length`, as
-an angle `/radius`); a line is tangent to a circle when the centre-to-line
-distance is the radius within that, two circles when the centre distance is
-the sum or the difference of the radii within that.
-
-**Why on the radial gap, not on the half-chord.** The half-chord grows as the
-square root of the radial gap: a noise of 1e-10 mm on r = 5 gives
-h ≈ 3e-5 mm, so no threshold on `h` is stable. The radial gap carries the
-coordinates' error linearly, so a threshold above that noise is.
-
-**The rest of group A** (one line each in the inventory, no change;
-argued, not covered by a test, except where a probe is named): `outer_scan.py` has no reading calling it; `outer_face.py:218`
-is NOT closed: the probe written for it on 1 November found no faces at all
-(not even at rest), so it proved nothing — it stays in the inventory;
-`segments.py:46` is already in mm and only drops a vertex closer than 1e-9
-to an end; `noding.py:404` is a shortcut of `merge_along_edges`, which joins
-a stop within `node` of an end anyway; `noding.py:658` is never asked for
-concentric arcs within `node`, because their ends give a T first;
-`points.py:282` a circle from noise is the chord itself, and the tolerance
-check after it rejects it exactly where `None` would.
-Held by `tests/unit/core/test_intersections.py` (red before, ten motions
-up to 3e6 mm).
-
-### D193 — Reopening D191 on its exit: G6e leaves the 1.0 gate on a counted bar, not on "every drawing" ✅
-D191 closed G6e on a finite list of places in `core/`. On 1 November the list
-proved to be a list of candidates, not a proof: `segments.py:679`
-(`segment_is_closed`) looked harmless on its own line and decided the
-reading at its call site in the noding (commit "a short line or arc is a
-stroke to node, never a loop"). "A rigid motion
-never changes the reading, on any drawing" has no end by construction:
-each new drawing can find another place.
-
-**Rule.** G6e is in the 1.0 gate with this bar, and only this:
-1. the inventory is closed (the 44 lines, each corrected with a red→green
-   micro-case or one line on why it does not decide);
-2. one re-pass of the lines classified harmless "because at the tolerance"
-   that sit in a function called by `readings/`, `base/` or `topology/`:
-   judged at the call site, not on the line;
-3. the snapdraw sweep (121 drawings) run once. The gate passes when no
-   drawing changes its reading under a rigid motion, except a measure on
-   the tolerance itself within float noise, which heal reports (D183, D185).
-
-What the sweep still finds after that is a known issue, listed, and fixed
-in a 1.x patch.
-
-**Why that is not churn.** G6e corrects readings that depend on the frame of
-reference; it changes no public name or signature. D174/D175 forbid moving
-the public surface after 1.0, not fixing a wrong reading, so a residue fixed
-in 1.x breaks no consumer. Keeping "every drawing" as the bar would keep 1.0
-out of reach for ever, which is the churn D174 exists to stop.
-
-### D194 — G6e group B: on a planar network a node is its tuple, the graph does not re-judge it ✅
-`noding.py:539-540` (inventory line 527-528): a node with no input endpoint
-is the mean of its contact points, rounded to the node grid (D113). Alone
-that is harmless: every piece at that node shares the one tuple. It decided
-the reading because the graph built on the pieces of `split_at_crossings`
-(`outer_face`, `face_loops`, `non_contour_pieces`) clustered the tuples
-again at `GRAPH_EPSILON` with `cluster_points`, on the rounded coordinates.
-The grid moves a distance by up to ~1.4e-3, so the 0.01 threshold became a
-band that a rigid motion crosses. D180 already said the node is decided once
-on the true curves "so the graph has nothing left to re-judge"; the graph did.
-
-Micro-case (`test_noding.py::TestCrossingNodesUnderMotion`): three long
-lines, the third cutting the first two near their crossing, a small
-triangle with two crossing vertices 0.01074 apart. At rest `island()` reads
-an outer of 3 sides and 5 loose; turned by 0.8127 rad the two rounded
-tuples are 0.00985 apart, the graph fused them: 2 sides, the third loose.
-Red on the old code at that motion, green at rest on both.
-
-**Rule.** On a planar network the node is the piece's tuple: those three
-build the graph with `epsilon` 0 for identity. `epsilon` keeps its other
-two jobs: the sliver threshold of `_close_self_loop`, now a keyword
-`sliver` of `build_node_graph` (default `epsilon`, so every other caller is
-unchanged), and the band of D100's union in `outer_face`.
-
-**Options weighed (Federico chose this one after seeing them drawn).** The
-mean not rounded: one line, but tuples off the one grid (against D113), and
-endpoint nodes keep the same amplification. Measured on 3001 small random
-networks turned 31 ways, graph node count: 428 unstable today, 399 with the
-exact mean, 2 with the graph not re-judging (simulated by patching; those 2
-already differ in the number of pieces, another cause, inventory). Part of
-`noding.py:524` (`min(ends)`, group D) reached the reading through the same
-re-judging; that line stays open, its choice still moves the tuple.
-
-**Gate.** G6e is in the 1.0 gate on D193's bar. No public name or signature
-changes (`build_node_graph` is internal; `outer_face`/`face_loops` are
-experimental and keep their parameters). Suite 2975 passed, goldens
-unchanged, 3:44 (the level since D189, still over budget, open there).
-
-### D195 — G6e group B: congruent copies are equal within the noise, not within a grid cell ✅
-
-Reopening D166, only its means. D166's rule stays: clusters from the largest
-exact outer area, and at equal area by the bbox corner `(xmin, ymin)`. What
-D166 used for "equal" was `round(area, 6)`: two copies were equal only if
-their areas fell into the same 1e-6 mm² cell. With the area half a cell from
-a boundary (two 10 × 1.00000005 rectangles, area 10.0000005) the last bits,
-which a translation changes, put the two copies in two cells, and the order
-came from the noise: the copy on the right first at 3 of 24 translations.
-Far from the origin the exact area of a copy moves by up to 2.5e-8 mm²
-(shoelace on large coordinates), so no fixed cell can hold it.
-
-**Rule** (`sort_clusters`): two areas are equal when they differ by at most
-`FLOAT_NOISE` times the perimeter — the area a boundary sweeps when every
-point moves by the noise (D183) — and two `xmin` when they differ by at most
-`FLOAT_NOISE` (copies stacked one above the other: red at one translation
-before). Equality chains along the sorted values, so it does not depend on
-the input order.
-
-`_build_tree`'s `round(area, 6)` (hierarchy.py, same family) is kept: the
-order there only decides which contour holds which, and nested contours
-differ in area far beyond 1e-6 (on the tracked drawings: 344 pairs within
-1e-5, none nested). Held by `TestTreeOrderUnderMotion`, which does not cover
-the order of the inners between themselves (not a contract).
-
-**Held by:** `tests/unit/core/test_hierarchy_builder.py::TestCopiesOrderUnderMotion`
-(red on the old code at 4 translations).
-
-**Gate.** G6e, in the 1.0 gate. No public name or signature changes; the
-documented order of `Result.clusters` is the same rule, now kept under motion.
-
-### D196 — G6e stays line by line: no shared "noise" module, no lint on comparisons ✅
-Federico, 2 November, asked whether the inventory should give way to one
-place every numeric decision goes through, with a suite check forbidding raw
-comparisons in `core/`. Measured before deciding, on the work already done.
-
-Of the ten real corrections so far, five were structural — decide once and
-share (refit joints, `_is_loop`, D194), or drop a rounding that served no
-purpose (`rim.py:80`, `axis.py:179`) — and a comparison helper would not
-have touched them. The other five each needed their own measure: drift along
-the longer segment, overshoot over the length or the radius, the radial gap,
-the area over the perimeter, the angle the noise subtends on `scale`. What
-they share is `abs(x) <= FLOAT_NOISE`; the work was choosing `x`, and a
-module cannot choose it.
-
-A pattern check (`1e-N` literals, `round(`, `== 0`, signs against 0) hits 101
-lines in 24 files of `core/`, about 25 of the 44 inventory lines: some 75
-false alarms to allow-list, while it misses the whole tie group (`min`,
-`max`, `sorted`) and `segments.py:679`, which hid behind a named constant
-and was the worst one found.
-
-So G6e goes on as D191/D193 say. Snap rounding and exact predicates were
-also weighed and do not answer G6e: a grid fixed to the axes moves under a
-rotation (the defect D180 removed), and an exact predicate answers exactly
-on the rotated doubles, where a tie at rest is no tie any more.
-
-### D197 — G6e group D: a circle joins the nearest concentric group, not the first one made ✅
-`shape.py:316, 326` (`concentric_groups`, public since D91; no reading of
-topo calls it, snapdraw and snapbend do). The inventory said "used by
-`island`": it is not.
-
-What it decided: circles sorted by diameter, then by centre `(x, y)`; each
-one joined the *first* group made whose reference centre lay within
-`tolerance`. Diameter order is a fact of the geometry; at equal diameter the
-order came from `(x, y)`, which a rotation changes. Two equal holes 0.15
-apart and a larger circle 0.06 from one and 0.09 from the other: the large
-one went with the hole of smaller x, so a half turn moved it to the other
-(4 motions of 9). Two equal circles within `tolerance` gave the group the
-reference of the smaller x; the groups' final order on `(x, y)` broke on an
-ulp for holes stacked at one x.
-
-**Rule.** Among the groups within `tolerance` a circle joins the nearest
-(centre distance, invariant); equidistant within `FLOAT_NOISE`, the group
-made first. Diameters equal within `FLOAT_NOISE` keep the order of `items`,
-which a motion does not change, so the reference of a group is the first
-circle given. Groups are ordered by `x`, then `y`, equal within
-`FLOAT_NOISE` as D195. The run-splitting helper of D195 moved from
-`base/hierarchy.py` to `geometry/measure.py` (`noise_runs`), one copy for
-both.
-
-**Held by** `tests/unit/core/test_concentric.py::TestConcentricGroupsUnderMotion`
-(red on the old code: 4 of 9 motions on each partition case, 2 of 4
-translations on the order).
-
-**Gate.** G6e, in the 1.0 gate. No name or signature changes; the result
-differs only where the old one depended on the frame. A consumer that relied
-on "first group made" with two candidate groups was reading the frame.
-
-### D198 — G6e group D: a node with several input endpoints is their mean, not the smallest ✅
-`noding.py:524` in the inventory (`min(ends[root])` in `_Contacts.nodes`, at
-:536 before this change). A node of `split_at_crossings` is a union-find
-group of stops; when the group holds endpoints of the input, the node was
-the smallest of them in `(x, y)`. With one distinct endpoint that is the
-endpoint itself. With several — an end 0.009 from a curve and within `node`
-of that curve's own end, or a chain of such — the smallest in `(x, y)` is
-a fact of the frame: a half turn picked the other end, 0.0127 away.
-Reached by `island()` on 5 of the test drawings (anch_03 and its copies,
-regr_01, regr_02; groups up to 0.11 wide), never by `heal()`.
-
-**Rule.** One distinct endpoint: the node is that endpoint, unchanged.
-Several: their mean (`math.fsum`, independent of order), rounded to the node
-grid like a contact node (D113, D194). Between two ends of two curves no
-geometry says which one is the vertex; the mean is the one choice that a
-motion and a reordering of the input (D160) both leave alone. Options
-weighed: the end nearest the mean is a tie with two ends; the end of the
-first edge given depends on input order.
-
-**Held by** `tests/unit/core/test_noding.py::TestEndNodeUnderMotion` (red on
-the old code at a half and a quarter turn, the node 0.0127 from the moved
-one; green within one grid cell). Suite 3012 passed, goldens unchanged, 3:47.
-
-**Gate.** G6e, in the 1.0 gate. No public name or signature changes.
-
-### D199 — G6e, last line: D100's union stays; its re-noding on discretizations is a known defect for 1.x ✅
-`outer_face._network`, the line added to the inventory with `UNION_GRID`
-(D195's session): the fallback of D100 builds its network with the ends on
-the rounded tuples (`_on_nodes`, up to 7e-4 off) and lets
-`unary_union` node the discretizations again (sagitta up to 0.01). A contact
-the noding on the true curves excluded (D180) can come back there. Built
-case: a bite of an arc with a sagitta just under 0.01, a triangle's corner
-0.0100003 from the true arc; at the origin the corner's tuple passes the
-chord and the union welds the two faces (46.2 mm² instead of 44.2); turned
-by 0.7 the angular grid (D145) moves the chord and it does not.
-
-**Measured.** Removing the fallback (only the walk on the planar graph; the
-faces of `face_walks` united as polygons give the same numbers):
-31 island drawings, 0 of 779 calls change, `island()` 21% faster; the 121
-drawings of the snapdraw sweep, 39 of 3074 calls change in 10 drawings, and
-one reading changes, wrongly: three copies of a small figure lose a 4.6 mm²
-lobe to `loose` (Federico looked: today's reading is right). The cause is
-not the union: at a node a spline leaves at about −146° and swings past a
-0.54 mm line leaving at −90°; `_leaving_angle` reads directions at
-`DIRECTION_SAMPLE` (3 mm, or half the edge) where the spline already points
-at −67.5°, so the order of the branches round the node is inverted, the
-walk goes round the lobe twice and calls it a spur. The union corrects the
-walk there — the same family as the tangent arcs D100 was born on.
-The defect itself is reached on the 121: the union adds 40 nodes between
-curves more than 0.01 apart, in 6 drawings; none changes a reading (in 5
-`outer_face` is identical with or without the union, in the sixth only
-nested pieces change, which go to `loose` anyway). On the 31: 0 such nodes.
-
-**Rule.** The union stays. The line is closed for the gate as known and not
-deciding a reading (D193 point 1, the D158 form): it decides only on the
-built case. Removing the union (and with it `rim.py`, `UNION_GRID`,
-`_on_nodes`) first needs the walk to order the branches at a node by how
-they actually leave it, then the same two measures again: 1.x, TODO.
-Options weighed: remove it now (one wrong reading on a real drawing in
-exchange for a red built case — moving a defect, not fixing one); fix
-`_leaving_angle` now (a new front inside the gate, touching the walk of
-both readings).
-
-**Held by** `tests/unit/core/test_outer_face.py::TestChordContactUnderMotion`,
-a `known_defect`: skips while the reading changes with the motion (value at
-the origin checked: 46.2, the faces welded), fails once it does not.
-Probes: `_debug/2026-10-31_topo_G6e-inventario/attrezzi/probe_network_road1*.py`,
-`probe_union_contacts_121.py`, `probe_network_45*.py`.
-
-**Gate.** G6e, in the 1.0 gate; it closes the inventory (D193 point 1). No
-public name or signature changes.
-
-### D200 — G6e, D193 point 2: two islands are apart on the true curves, and a point says who hosts whom ✅
-`islands.py:66` judged `dwithin(max_gap)` on the discretizations, whose
-error (up to DEFAULT_TOLERANCE per curve) turns with the drawing (D145): a
-square 0.496 from a circle, `max_gap` 0.5, was one island at the origin and
-two half a grid step away. Now the discretizations decide only outside a
-band of 2·DEFAULT_TOLERANCE round the threshold; inside it the distance is
-refined on the primitives (`strips.refine_gap`, the loop of `gap` taken out
-so both use it). `island.py:146` asked the host's polygon grown by
-`tolerance` to contain the whole piece; a chord bulging into a concave bite
-let it cover a 0.003 circle 0.051 from the true arc at some motions. Since
-two islands are now farther apart than the threshold on the true curves, a
-piece lies inside a host iff one point of it does: `ring_contains` on the
-primitives, one endpoint of the piece. Measured: 0 readings change on the 31
-and on the 121; `island()` ~3% (D200 pairs) and ~10% (nesting) slower on the
-121; suite 3:49 → 4:15. Held by `test_islands.py::TestGapOnTrueCurvesUnderMotion`
-and `test_island.py::TestHostOfATinyPieceUnderMotion` (red before, green
-after). Gate: G6e, in the 1.0 gate; no public name changes.
-
-### D201 — G6e closed for 1.0 on D193's bar; three residues of the sweep go to 1.x ✅
-D193's three points: the inventory is closed (last line D199); the re-pass
-at the call sites corrected `islands.py:66` and `island.py:146` (D200); the
-snapdraw sweep (`scripts/21_sweep_invariants.py`, the 121 drawings of
-31 October) ran once on `b10aa2b`. `island()` keeps every invariant on all
-121. `heal()` changes its reading under a motion on 2 drawings, down from
-32 (sweep indices 8 and 62: one small face 1 mm wide becomes an outer instead
-of an inner; 60 → 56 inners). One drawing (index 79) went past the 300 s
-limit; on 31 October it took 133 s. Found during the re-pass and not
-corrected: in `heal()` a hole tangent from inside to the outer can read as
-two clusters depending on the motion (`hierarchy.py:70`, `contains` between
-discretized polygons; built case in
-`_debug/2026-10-31_topo_G6e-inventario/attrezzi/case_hier70.py`). By D193
-these are known issues, fixed in a 1.x patch; G6e leaves the gate.
+- **D192** — G6e group A: a meeting (`intersections.py`) is decided in
+  millimetres against `FLOAT_NOISE`, on the measure whose error is linear:
+  parallel = directions part by at most the noise along the longer segment;
+  on a segment or arc = overshoot of an end ≤ the noise; tangent = the radial
+  gap (centre-to-line, centre distance vs radii) within the noise, never the
+  half-chord, which grows as the square root of the gap.
+- **D193** — reopening D191's exit: G6e is in the 1.0 gate on a counted bar,
+  not on "every drawing" (which has no end): (1) the inventory is closed, each
+  line corrected by a red→green micro-case or argued harmless; (2) one re-pass
+  of the "harmless because at the tolerance" lines at their call sites; (3) the
+  snapdraw sweep (121 drawings) run once. Whatever it still finds is a known
+  issue fixed in a 1.x patch: no name changes, so no churn.
+- **D194** — G6e group B: on a planar network a node is the piece's tuple and
+  the graph does not re-judge it (`epsilon` 0 for identity in `outer_face`,
+  `face_loops`, `non_contour_pieces`): re-clustering rounded tuples at
+  `GRAPH_EPSILON` made a band a rigid motion crosses. `epsilon` keeps only the
+  sliver threshold (`sliver`) and D100's union band.
+- **D195** — reopening D166's means only: congruent copies are equal within
+  the noise, not within a grid cell. `sort_clusters`: areas equal if they differ
+  by ≤ `FLOAT_NOISE` × perimeter, `xmin` by ≤ `FLOAT_NOISE`, chained along the
+  sorted values (independent of input order). `_build_tree` keeps its
+  `round(area, 6)`: nested contours differ far beyond it.
+- **D196** — G6e stays line by line: no shared "noise" module and no lint on
+  comparisons. Half of the corrections were structural (decide once, drop a
+  rounding), half each needed their own measure; a pattern check hits ~75 false
+  alarms and misses ties and named constants. Snap rounding and exact
+  predicates do not answer G6e (a fixed grid moves under rotation).
+- **D197** — G6e group D: `concentric_groups` joins a circle to the *nearest*
+  group within `tolerance` (equidistant within the noise: the first made);
+  equal diameters keep the order of `items`; groups are ordered by `x` then
+  `y` equal within the noise (`noise_runs`). "First group made" was the frame.
+- **D198** — G6e group D: a node of `split_at_crossings` holding several
+  distinct input endpoints is their mean (`math.fsum`, rounded to the node
+  grid), not the smallest in `(x, y)`; one distinct endpoint stays itself.
+  Between two ends of two curves no geometry names the vertex.
+- **D199** — G6e, last line: D100's union stays. Its re-noding on
+  discretizations (sagitta ≤ 0.01) can weld a contact D180 excluded on a built
+  case; removing it makes one real drawing read wrongly, because
+  `_leaving_angle` reads directions at `DIRECTION_SAMPLE` and inverts branch
+  order at a node. Known defect for 1.x (`TestChordContactUnderMotion` skips
+  while it holds); the union goes only after the walk orders branches by how
+  they actually leave the node.
+- **D200** — G6e, D193 point 2: two islands are apart on the true curves —
+  discretizations decide only outside a band of 2·`DEFAULT_TOLERANCE` round
+  `max_gap`, inside it the distance is refined on the primitives
+  (`strips.refine_gap`) — and a point of a piece, tested on the primitives
+  (`ring_contains`), says whether its host contains it.
+- **D201** — G6e closed for 1.0 on D193's bar: inventory closed, re-pass done,
+  the sweep run once on `b10aa2b`. `island()` keeps every invariant on all 121;
+  `heal()` changes under a motion on 2 drawings (from 32). Three residues go to
+  1.x as known issues: `hierarchy.py:70` (a hole tangent from inside to the
+  outer can read as two clusters), one drawing past the 300 s limit, one small
+  face 1 mm wide read as outer or inner by frame.
