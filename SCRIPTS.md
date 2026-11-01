@@ -64,6 +64,10 @@ Non fanno parte della palestra dell'API: non chiamano `topo`, guardano il repo.
   salvataggio, nomi di layer, testi del cartiglio), e i nomi di sole cifre.
   `--strict` esce 1 al primo sospetto, `--from-disk` cerca anche i nomi dei
   disegni che stanno solo su questa macchina (D73, D75, D76).
+- `scripts/check_map_shrink.py` — controlla l'accorciamento di MAP.md contro la
+  versione intera in git (`--ref`, default `67fda38`): ogni D## ha ancora una
+  voce, nessuna voce doppia, nessun rimando D## appeso in md/py; con
+  `--archive` verifica che l'archivio abbia ogni titolo. Esce 1 sugli errori.
 - `python -m topo.tools.anonymize` — non è in `scripts/` ma si usa da riga di
   comando come loro: `scan` elenca tutto quello che è scritto dentro un disegno
   (testi, nomi di layer/blocco/stile, percorsi, variabili d'intestazione, XDATA),
