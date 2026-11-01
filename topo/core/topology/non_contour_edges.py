@@ -66,7 +66,7 @@ class NonContourEdgeDetector:
 
         noded = (NodedEdges(pieces=list(edges), parent={id(e): e for e in edges}) if planar
                  else split_at_crossings(edges, self.tolerance))
-        plane = build_node_graph(noded.pieces, epsilon=GRAPH_EPSILON)
+        plane = build_node_graph(noded.pieces, sliver=GRAPH_EPSILON)
         wanted = {id(e) for e in candidates}
         outside = {}   # id(edge) -> lunghezza dei suoi pezzi che confinano con l'esterno
         # un percorso della faccia esterna per ogni componente che ha candidati
@@ -93,6 +93,6 @@ class NonContourEdgeDetector:
 def non_contour_pieces(noded: NodedEdges, tolerance: float) -> set:
     """id dei pezzi della rete piana `noded` che non chiudono un contorno (D111,
     D131), giudicati sulla rete piana: lo stesso per ogni lettura (D189)."""
-    graph = build_node_graph(noded.pieces, epsilon=GRAPH_EPSILON)
+    graph = build_node_graph(noded.pieces, sliver=GRAPH_EPSILON)
     return NonContourEdgeDetector(tolerance).detect(graph, noded.pieces, planar=noded.planar)
 

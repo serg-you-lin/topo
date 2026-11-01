@@ -209,3 +209,28 @@ class TestEndContactsUnderMotion(unittest.TestCase):
                      ArcSeg(center=c, radius=5.005, start_angle=0.0, end_angle=1.4)], self._reading(
                         [ArcSeg(center=(0.0, 0.0), radius=5.0, start_angle=0.2, end_angle=1.2),
                          ArcSeg(center=c, radius=5.005, start_angle=0.0, end_angle=1.4)], (0.0, 0.0, 0.0)))
+
+
+class TestCrossingNodesUnderMotion(unittest.TestCase):
+    """G6e, gruppo B, `noding.py:539-540`: un nodo senza capi è la media dei
+    suoi punti di contatto arrotondata alla griglia. Tre rette, la terza taglia
+    le prime due vicino al loro incrocio: un triangolino con due vertici-incrocio
+    a 0.01074, due nodi. Arrotondati, al moto qui sotto distano <= GRAPH_EPSILON
+    e il grafo (`cluster_points`) li fondeva: outer di 2 lati, il terzo in loose."""
+
+    SEGMENTS = [
+        LineSeg(start=(-0.4038192179613853, -0.9069697819400884), end=(0.3999047733007083, 0.9244307056293919)),
+        LineSeg(start=(0.949814645702292, -0.31496011887135034), end=(-0.9430275941383344, 0.33091003454582124)),
+        LineSeg(start=(0.013853742779737218, -0.004663352290131094), end=(-0.9611844021439172, 0.2173740678530485)),
+    ]
+
+    def test_due_incroci_oltre_graph_epsilon_restano_due_nodi(self):
+        import topo
+        from tests.invariants import rigid
+        for motion in [(0.0, 0.0, 0.0), (0.8126685826151423, -0.5047703326061714, -0.21810059373354584)]:
+            with self.subTest(motion=motion):
+                segment, _ = rigid(*motion)
+                result = topo.island(topo.load_segments([segment(s) for s in self.SEGMENTS]), max_gap=0.0)
+                self.assertEqual(len(result.clusters), 1)
+                self.assertEqual(len(result.clusters[0].outer.segments), 3)
+                self.assertEqual(len(result.loose), 5)
