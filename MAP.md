@@ -387,6 +387,10 @@ A point of a piece says who hosts it.
 ### D201 — G6e closed for 1.0 on D193's bar.
 Three residues go to 1.x: `hierarchy.py:70` (a tangent hole read as two
 clusters), one drawing past 300 s, one 1 mm face read by frame.
+### D202 — reopening G14 before 1.0: `heal()` repairs and returns a `Network`; `Network.faces()` and `Network.outlines()` read it.
+One repair for every reading (no per-reading gap reach, junction rule or scope:
+what differs today moves into the reading or goes). `island` → `outlines`:
+"island" already names the depth-2 region. Clean break, no aliases (pre-1.0).
 
 ## Open questions
 

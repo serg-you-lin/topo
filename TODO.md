@@ -20,10 +20,20 @@ fuori da git.
 - [x] **TODO.md** 1 732 → 293 righe; il testo intero in `TODO_ARCHIVE.md`
       (locale, in gitignore).
 
-## DA DECIDERE prima della 1.0 — `heal()` ripara, `faces()`/`outlines()` leggono (2 novembre)
+## DECISO prima della 1.0 (D202) — `heal()` ripara, `faces()`/`outlines()` leggono (2 novembre)
 
-Idea discussa con Federico, non ancora decisa (niente D## finché la misura
-non dice che vale la pena). Oggi `heal()` fa due cose (ripara con la base
+Deciso da Federico il 2 novembre: si fa comunque, bene, in pochi giorni.
+Le misure sotto non sono più un cancello: la 1 è la verifica del lavoro
+(golden cambiati classificati + DXF in `_debug`), la 3 il tetto dei tempi.
+Sottopassi, uno per commit:
+- [ ] A. inventario: le tre differenze di riparazione e dove finisce ognuna
+      (nella lettura o via), + superficie pubblica di `Network`;
+- [ ] B. una riparazione sola dietro `heal()` → `Network`; golden classificati;
+- [ ] C. `faces()`/`outlines()` + rinomina `island`/`read_island(s)`/`IslandReading`;
+- [ ] D. docs (LLM, API, README x2), `release_check`; i consumer si adattano
+      nelle loro sessioni.
+
+Testo di partenza: oggi `heal()` fa due cose (ripara con la base
 comune + legge le facce annidate) e `island()` ripara e legge il bordo
 esterno di ogni componente; "isola" in topo vuol dire anche la regione di
 profondità 2 (D89). Proposta: `topo.heal(doc, *, tolerance, is_structural,
