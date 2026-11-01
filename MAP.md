@@ -472,555 +472,73 @@ Names in the older entries are the names of their day (`forge`, `ForgeCluster`,
 - **D114** — `Feature` → `Curve` (`ClosedCurve`, `OpenCurve`): the base of
   the model is geometry, not a reading; a feature is what a consumer finds,
   and the overlay keeps its `DetectedFeature` names. No alias.
-### D115 — `forge.geometry.dash_line`: a segment cut into dashes with anchored ends and equal gaps ✅
-A consumer that marks a line instead of drawing it whole (snapbend's bend
-lines, first) needs the same construction every time: one dash glued to each
-end, `n` equal dashes in the middle, all gaps equal. It is arithmetic along a
-segment, no process in it, so it is forge's (D91): a consumer that wrote it
-privately would be the second copy of a geometric fact.
-
-`dash_line(start, end, head, tail, middle=0.0, n_middle=0)` returns
-`(start, end)` pairs in the segment's direction, like the other line facts in
-`lines.py`. The dashes are placed from the two ends inward because the ends are
-the points a reader of the line must see: where it starts and where it stops.
-When the dashes cover the whole length there is no gap left to leave, so the
-segment comes back whole rather than as overlapping dashes. Straight segments
-only: no consumer needs dashes along an arc, and `sub_segment` is there when
-one does.
-
-`main` → **0.15.1** (additive).
-
-### D116 — `INTERPRETER.md` and `SNAPDRAW.md` leave the repo ✅
-Federico deleted both: he does not want them in the repo on GitHub any more.
-They were design notes for projects around forge (the drawing interpreter,
-snapdraw), not forge's own documentation. The live references in code,
-`docs/API.md`, `ROADMAP.md`, `SMOOTHER.md`, `TODO.md` and one test now point to
-`MAP.md` or were dropped. Older decisions above still name the two files, as
-they were when written.
-
-### D117 — no brand in type names; the pipeline steps leave the top level ✅ (applied in D119)
-With the rename to `topo` (D108), `ForgeDocument`, `ForgeResult`,
-`ForgeCluster`, `ForgeContour` (and the internal `ForgeAdapter`, `ForgeText`)
-lose the prefix: `topo.Document`, `topo.Result`, `topo.Cluster`,
-`topo.Contour`. The package namespace already says whose they are; a brand
-inside a class name has to be renamed every time the brand changes, which is
-exactly what D108 would otherwise force. `TopoResult` was weighed and dropped
-for the same reason. Federico's worry was that bare names read too generic;
-always written `topo.Name`, they describe themselves.
-
-The top level keeps what a caller of the pipeline needs: loading, `heal`,
-`island`, export, validation, the model types, `geometry`. The individual
-steps of `heal()` and of the island reading (`close_free_gaps`, `find_loops`,
-`polygonize_edges`, `split_at_crossings`, `outer_face`, ...) move to
-`topo.steps`, for whoever composes their own recipe (D58, D62). Clean break,
-no alias, in the same release as the rename.
-
-### D118 — primitives for a caller's own algorithms: intersections, a point on a contour, cut by a region, contour minus a region ✅
-The test case was an external prototype, disk reliefs at the concave corners a
-bend touches: about 200 of its lines were private geometry (chaining a ring,
-crossing a circle by bisection on a discretization, contour minus disk,
-shortening a line). What a caller writes privately should be its choices,
-never geometry another caller would rewrite the same way.
-
-Five public facts, all on rings of native primitives:
-- `geometry.intersections(a, b)`: exact between lines, arcs, circles (the
-  closed forms already in `intersections.py`, until now private); splines and
-  ellipses within 1e-4, where no closed form exists. `noding.py` keeps its own
-  crossing step: its job is different (a contact within `tolerance` is a node).
-- `geometry.point_on_contour(segments, point)` → `ContourPoint`: vertex,
-  smooth joint or middle of a side, turn angle, concave. Exact tangents;
-  concavity from the ring's direction, not an inside test.
-- `geometry.cut_by(segment, region, keep)`, `geometry.contour_minus(contour,
-  region)`: the region is **any closed ring** — `circle`, `rectangle`,
-  `polygon`, a contour's segments — never a named shape. A disk asked by one
-  client and a square asked by the next are the same call, so the engine does
-  not grow one function per request. Cuts fall on exact intersection points
-  and pieces stay the same primitive (a cut arc is an arc); shapely only says
-  whether a piece's midpoint is inside. `contour_minus` returns every ring
-  that is left (a cut that detaches a piece gives two, a region inside gives a
-  hole with the opposite direction) and decides nothing: which ring to keep is
-  the caller's choice.
-- `ForgeContour.from_segments(segments, role)`: checks the ring closes and
-  computes the polygon, so no caller builds a contour by hand with `polygon`.
-
-The guarantee they rest on is now tested: the segments of every `outer` and
-`inner` that `heal()` writes are a head-to-tail ring (`TestContoursAreRings`,
-all 49 golden drawings).
-
-What stays with the caller, on purpose: which points to look at, which
-corners get a relief, the radius, grouping, when to refuse. That is where a
-customer's process knowledge lives; the geometry under it is the same for
-everybody and lives here (D91).
-
-Proof: the prototype rewritten on these five dropped from ~310 to ~170 lines,
-with no private geometry left, and its output is unchanged on its fixtures
-and on two real sheets (23 + 73 DXF files matched entity by entity, largest
-difference 2.6e-11 mm). One reading changed, for the better: a bend end on the
-tip of a very narrow slit was "not on the border" before, because the old
-code asked the outer's `polygon`, which misses that tip by 18.9 mm; asked on
-the segments it is a convex vertex. Same output (no relief either way). The
-polygon/segments disagreement is the open thread of D106.
-
-Written with a possible later port of the engine core to Rust in mind: pure
-functions over plain primitive data, typed results (`ContourPoint`, rings as
-lists of primitives), exceptions instead of mixed return types, explicit
-dispatch per primitive type (an `enum` + `match` there). shapely is used only
-for the inside/outside test, which has a direct counterpart.
-
-`main` → **0.16.0** (new public names in `forge.geometry` and on
-`ForgeContour`).
-
-### D119 — the rename is applied: `topo` / `g-topo`, no `Forge*` prefix, `topo.steps` ✅
-D108 and D117 in one breaking release, no alias. The package directory is
-`topo/`, the distribution `g-topo` (`topo.__version__` reads it under that
-name), the model types `topo.Result`, `topo.Cluster`, `topo.Contour`,
-`topo.Document`, the adapter base `Adapter`, the layer table `ALL_LAYERS`.
-The steps of `heal()` and of the island reading left the top level for
-`topo.steps` (29 names); the top level keeps the pipeline.
-
-The formats on disk follow the name too, as a clean break: the XML root is
-`<topo>`, the DXF XDATA application id is `TOPO` (a DXF written before with
-`FORGE` XDATA no longer reads back its metadata through
-`read_metadata_from_dxf`), the text reading opens with `# topo reading` and
-`format: topo-text`, `save_text` names files `<name>.topo.md`. No golden
-carried any of these, so none changed.
-
-Not rewritten: this decision log (history stays as written — `forge` in
-D1…D118 is this package), `dev_tools/` (legacy scripts on the even older
-`dxf_forge`), and the `experiment/pdf-adapter` worktree, which stays on its
-own old base.
-
-Consumers updated in the same pass: snapbend (`to_forge_result` →
-`to_topo_result`), snapdraw, smoother, dxf-anonymize (depends on `g-topo`).
-The local folder and the GitHub repository are renamed by Federico.
-
-How a call is written, for a person and for a language model alike: one
-`import topo`, then the full path — `topo.Result`,
-`topo.geometry.contour_shape(...)`, `topo.steps.find_loops(...)`. Never
-`from topo import steps`: a bare `steps.find_loops` in the middle of a
-150-line script doesn't say whose step it is. A caller can still import as
-they like; what topo controls is what they copy, so every example in the docs
-and docstrings uses the one form, and the rule is written at the top of
-`docs/API.md` and `docs/LLM.md`. The step names themselves (`split_non_finite`,
-`close_free_gaps`, `find_loops`) already read on their own when someone
-imports them bare anyway.
-
-`main` → **0.17.0**.
-
-### D120 — the public surface, first half: `topo.primitives`, `topo.model` ✅
-`topo.primitives` holds the five native segments (`LineSeg`, `ArcSeg`,
-`CircleSeg`, `SplineSeg`, `EllipseSeg`) and `sub_segment`: pure math, no
-role. `topo.model` becomes the full public home of the model types, roles
-included (`ContourRole`, `role_str`, `normalize_role`, `is_structural_role`)
-and `Edge` — not in `primitives`, because an `Edge` is a segment *with* a
-role, style and provenance (`core/topology/edge.py` says so), a model fact.
-The four most used types stay on the top level too (`topo.Result`, …).
-Everything under `topo.core` is internal, without guarantee.
-
-Consumers moved to the full form of D119 (`import topo`, then
-`topo.primitives.LineSeg`, `topo.model.ClosedCurve`, `topo.geometry.<fact>`
-when the fact is already exported there): snapbend (its D65), snapdraw,
-smoother, the numbered scripts here. Nothing changed in behaviour: the suites
-are as before, a third-party pipeline's output is identical to the decimal.
-
-`scripts/gen_index.py` learns two things, for the consumers: a `"*"` layer
-(every module) and dotted names (`"topo.core"` forbids that path and all under
-it). Not switched on in any consumer yet: what they still import from inside
-is the second half, below.
-
-**The second half (open, TODO.md)**: names consumers still reach inside for,
-each a decision rather than a move — the track helpers of
-`core.geometry.measure`, `group_collinear_lines`, `merge_intervals`,
-`length_inside`, `segment_length`, `items_inside`, `axis_lines` (geometry not
-exported in `topo.geometry`); the DXF layer table (`adapters.dxf.layers`);
-in snapdraw's lab `edge_geometry`, `build_node_graph`, `LoopFinder` and the
-private `_outer_face_walk`; in smoother `tools.tabs.bridge_nested_tabs`.
-Then the `"*"` rule in every consumer.
-
-`main` → **0.18.0** (new public namespaces; `topo.model.Edge` unchanged).
-
-### D121 — what makes topo trustworthy is two-way fidelity; one `Curve` protocol; a contour's signature is public, patterns stay with the caller
-Talked through with Federico (18 October), before the second half of D120.
-Direction decided, not built yet (TODO.md, road to 1.0, points 7 and 8).
-
-**Fidelity first.** The question that decides whether topo can go into
-production: is the part topo writes overlayable on the original, everywhere?
-`TestNothingDropped` (D107) proves one direction only — every input lies
-within heal's tolerance of some output — and only on the in-memory model.
-Missing: the other direction (every output lies within tolerance of some
-input: nothing invented, nothing moved further than a gap closure allows),
-and the proof on the DXF actually written and read back. The invariant is a
-two-way Hausdorff distance ≤ heal's tolerance; where heal did not touch an
-entity, its coefficients come out identical. An overlay DXF (original,
-output, points over threshold) is produced for the eye.
-
-**Curves.** Line, arc, circle, ellipse and spline are all mathematical
-curves; the real split is analytic form vs free form. Every serious kernel
-(OpenCASCADE, Parasolid, openNURBS) keeps analytic types where it can and a
-B-spline/NURBS as the universal fallback, and answers "are you an arc within
-`tol`?" as a query (`TryGetArc`). topo does the same: one `Curve` protocol over
-the five primitives, `as_analytic(tol)` returning a `Line`/`Arc`/`Ellipse`
-or `None` — recognition is a question, the original geometry stays the
-truth, never silently replaced (a false positive would change the part).
-`SplineSeg` gets its mathematical name (`BSpline`, optional weights so conics
-stay exact). No exotic families (clothoid, involute, spiral): recovering
-them from samples is ill-conditioned, and no real part has asked. Production
-speaks lines and arcs (G1/G2/G3) and today the CAM makes the biarcs, so
-`to_biarcs(tol)` is only provisioned. These rename public names, so they land
-before 1.0.
-
-**Shapes.** `ContourShape`'s closed list (circle, stadium, rectangle,
-polygon, other) cannot hold what consumers recognise (countersinks, bent
-sections). The geometric fact is the contour's *signature*: the canonical
-sequence of its primitives with their measures, independent of start point
-and direction (snapbend's private `_canonical` in `rules/read_section.py` is
-the first candidate to move here, D91). Arrangements of several contours
-already exist (`concentric_groups`, `arcs_around`). The patterns built on
-top — a countersink, a section, the match between a countersink and its
-section view — are the caller's algorithm and stay in the caller: this is
-what "every caller builds its own algorithm on topo's primitives" means. A
-declarative pattern language is extracted only if two consumers converge.
-
-### D122 — the public surface, second half: measures and axis facts in `topo.geometry`; layers and tabs stay inside ✅
-Every name a published consumer still took from `topo.core` / `topo.adapters`
-got a decision (D120's list):
-
-- **Public facts in `topo.geometry`**: `segment_length`, `length_inside`,
-  `chord_angle_deg`, `track_points`, `track_length`, `track_shape_type`
-  (measure), `group_collinear_lines` (lines), `axis_lines`, `AxisLine`,
-  `items_inside`, `merge_intervals` (axis). They would exist in any rewrite
-  of topo; unchanged, now with cards in `docs/API.md`.
-- **Replaced by an existing name**: `circular_geometry` (bounding box of the
-  discretized polygon) → `contour_shape` in snapbend (exact radius and centre;
-  snapbend D66, proved on its goldens). It stays internal, used by
-  `healing/hierarchy.py`; two answers to "how big is this circle" inside topo
-  is a thread (TODO.md).
-- **Not public, on purpose** (Federico, 18 October):
-  - the DXF layer table (`adapters.dxf.layers`). A public `topo.layers` was
-    tried and dropped the same day: topo has no layers, it has roles (D123).
-    Only snapbend's tests use the table, and tests are outside the `"*"`
-    rule.
-  - the tabs (`tools.tabs`: `bridge_tabs`, `bridge_nested_tabs`). In
-    development and certain to change: **not in the stable 1.0 API**.
-    smoother keeps calling `topo.tools.tabs.bridge_nested_tabs` as a
-    prototype does.
-
-`"*" = ["topo.core", "topo.adapters"]` is on in snapbend and snapdraw;
-smoother has no `gen_index` yet. Not decided here, left as requests (TODO.md,
-"richieste dalla superficie"): the imports of snapdraw's `lab/` (`LoopFinder`,
-`build_node_graph`, `edge_geometry`, `_outer_face_walk`, `outer_scan`'s
-pieces, `_configure_odafc`, …). A lab is a prototype and may reach inside;
-what it was rebuilding is decided when the idea is stable, never by moving the
-name as it is.
-
-`main` → **0.19.0** (new public names; nothing removed).
-
-### D123 — topo has no file format: geometry and roles, never layers
-Federico, 18 October, after D122 tried a public `topo.layers`: possibly the
-most important point of 1.0, and the one without which the rest is worthless.
-
-topo's model is geometry plus roles. There is no "topo DXF": DXF, PDF, SVG are
-adapters at the edges, a way in and a way out, and none of them is topo's.
-Layers do not exist in topo. An exporter maps a role to how it is drawn —
-line weight, colour, linetype — and, when it writes a DXF, to a layer; or to
-two different layers, if a consumer's recipe says so. Which mapping is the
-caller's choice; topo may ship a default, never impose one.
-
-What it implies (TODO.md, road to 1.0, point 0, to be planned): `ezdxf`
-becomes an optional dependency like PyMuPDF; no DXF vocabulary in `core/`,
-`model/`, `rules/` (today: ACI/`BYLAYER` in `EdgeStyle`, a palette that
-speaks of "the topo layer", role slugs constrained by DXF layer-name
-characters, `Trash` treated as a layer, `LAYER_ANNOTATION` in `recipes.py`);
-the output style per role is a map the caller owns and hands to an exporter.
-Real imports of `ezdxf` outside `adapters/` are already only two
-(`io/dxf.py`, `inspect.py`): the coupling is in the vocabulary and the public
-surface more than in the code.
-
-**The adapters leave topo entirely** (Federico, same day; the packaging reopened in D124): DXF and PDF become
-separate packages, consumers of topo like any other, and `ezdxf` is not a
-dependency of topo at all. An optional extra was proposed and set aside:
-keeping the code inside keeps the temptation to reach into it, and a second
-adapter (PDF, half done) is easier to write against a topo that knows no
-format. An adapter may use only topo's public names: what the DXF adapter
-takes from `topo.core` today (segments, the normalizer, `adapter_base`, …)
-is the list of what the public surface still lacks for anyone writing an
-adapter. The pure-geometry entry (`load_geometry`, `load_segments`) is no
-format and stays. Tests may keep DXF fixtures, read through the adapter as a
-development dependency. It is first on the road to 1.0: everything else
-comes after.
-
-### D124 — adapters in topo's repo as separate packages; `split` is topo's
-Reopening D123, the part on separate packages (Federico, 18 October). He
-already looks after four repos; what D123 needs is a boundary, not a repo.
-
-**One repo, one distribution, several importable packages.** `g-topo` ships
-`topo/` next to `topo_dxf/`, `topo_pdf/` (and `topo_svg/`, when SVG leaves
-`topo.io`). The heavy dependencies become extras: `g-topo[dxf]` brings
-`ezdxf`, `g-topo[pdf]` brings PyMuPDF; plain `g-topo` brings neither. D123
-set an extra aside because code that lives inside keeps the temptation to
-reach into it; that reason falls once the reach is checked mechanically:
-`gen_index` forbids `topo` from importing any adapter, `ezdxf` or `fitz`, and
-forbids the adapters from importing anything but topo's public names. The
-index test goes red at the first breach, as it already does in snapbend.
-Moving `topo_dxf/` to a repo of its own one day is a folder move, because the
-boundary will already be clean.
-
-**`split` is format-agnostic and stays in topo.** Today's `io/dxf.split` does
-two jobs. Choosing the parts — which clusters (`min_area`, `exclude_types`),
-their names (`namer` → `cluster.label`), which annotations travel with each,
-`on_part` — is a decision on the model. Turning one part into an ezdxf
-`Drawing` (with `annotation_layer`, `role_styles`) is the adapter's. So
-`topo.split(result, ...)` returns one model object per part, and each adapter
-writes one part in its format: the same split exports parts to DXF, SVG or
-PDF. `split_to_files` becomes a loop in the caller or in an adapter.
-
-### D125 — the adapter contract: what an adapter takes from topo, in public names
-Step 1 of D123 (TODO road to 1.0, point 0). The adapters took from
-`topo.core` segments, node rounding, a base class, the polygon builder,
-the dedup of opaque keys. Item by item:
-
-- **Segment → `Edge`, written four times** (DXF adapter, geometry loader,
-  PDF graph adapter): endpoints, `round_point` on the node grid, start = end
-  for a closed curve. It becomes one public constructor,
-  `topo.model.Edge.of(segment, role, style=None)`. The node grid (D113) is
-  topo's and an adapter no longer knows it: `load_pdf(node_decimals=)` goes.
-  A curve that can close (circle, spline, ellipse) and is closed within the
-  segment tolerance gets one node — what the DXF adapter already did for
-  SPLINE/ELLIPSE, now also for `load_geometry` and PDF; a very short line or
-  arc stays two nodes (a side, not a loop). Suites unchanged.
-- **`core.adapter_base.Adapter`**: deleted. Its `source_context` was never
-  called and `tolerance` was stored and never read: an adapter is whatever
-  returns a `Document`, no base class to inherit.
-- **`segment_endpoints`** public in `topo.primitives` (an exporter rewriting
-  a segment needs its ends); `segment_is_closed` stays inside `Edge.of`.
-- **`RoleRule`, `resolve_role`, `name_rules`, `feature_role`,
-  `DEFAULT_NODE_TOLERANCE`** public in `topo.model`, next to `Document`,
-  `Edge`, `EdgeStyle` and the annotations that already were.
-- **`build_polygon` / `entity_to_polygon`**: out of the adapter. Only a test
-  used it; it now reads the written entity with the adapter's parser and
-  takes the area of a public `Contour.from_segments`.
-- **`find_duplicates`**: moved from `core/healing/normalizer` into the DXF
-  `sanitize` as a private helper. Only the DXF dedup used it, and the key
-  is the format's anyway.
-- **`DEFAULT_TOLERANCE` in the DXF parser**: it was the flattening of a
-  SPLINE by ezdxf, a reader's choice; the parser has its own constant.
-- **`load_geometry` / `load_segments`** are no format (D123): out of
-  `adapters/geometry/` into `core/geometry_input.py`, `GeometryAdapter` →
-  `GeometryReader`. Same public names.
-
-Proof: `[tool.gen_index.layers]` gains `adapters = ["core", "tools", "io"]`,
-and the adapters' imports are `topo.model` / `topo.primitives` only (checked
-by a planted forbidden import that turned the index red). One exception left
-on purpose: `adapters/dxf/layers.py` reads `rules.palette`, which step 3
-turns into the DXF adapter's own default; `rules` joins the forbidden list
-then. The version stays 0.19.0 until point 0 closes with one breaking minor
-(step 6).
-
-### D126 — a neutral vocabulary in the model: style, colour, annotation group
-Step 2 of D123. Outside `adapters/`, the DXF words left in the model were the
-fields of `EdgeStyle`, the colour of `RoleRule` and `Annotation.layer`.
-
-- **`EdgeStyle(linetype="", linetype_desc="", dash=None, color=None)`.**
-  `linetype_pattern` was the DXF table's own form (total length first, then
-  signed marks); `dash` keeps only the signed marks (`> 0` dash, `0` dot,
-  `< 0` gap), with `()` for a declared continuous line and `None` for "the
-  source does not say". A PDF/SVG dash array `[3, 1]` is `(3, -1)`; the DXF
-  exporter adds the total back (the sum of the marks). `BYLAYER`/`BYBLOCK`
-  are not linetypes: what stays of them after the adapter resolves the layer
-  becomes `""`. `color` was an ACI index (256 = BYLAYER) next to a 24-bit
-  `true_color`: it is one effective `(r, g, b)` or `None`; the DXF adapter
-  reads true colour first, then ACI 1–255 through ezdxf's canonical table.
-- **`RoleRule(color=...)`** takes `(r, g, b)`, `"#rrggbb"` or a base colour
-  name; an int is an error, because an index belongs to one format. The
-  names keep the RGB a CAD gives its indexed colours, so `"cyan"` still
-  matches an ACI-4 line. One deliberate break: `"black"` is `(0, 0, 0)`, and a
-  DXF ACI-7 line is white `(255, 255, 255)` — it used to match `"black"`
-  because 7 is "white/black" in AutoCAD. No caller used it.
-- **`Annotation.layer` → `Annotation.group`**, default `""` instead of the
-  DXF `"0"`: the name of the source group, as `RoleRule.name` already called
-  it. The DXF writer still writes an annotation on its source layer (or
-  `"0"`); the annotation goldens changed in the key only, checked file by
-  file. snapdraw passes a role there (`group=TITLE_BLOCK`): whether an
-  annotation should carry a role, as an edge does since D63, is a question
-  for step 3.
-- **Role slugs** keep `[a-z0-9_-]`: the reason is safety in any output
-  (keys, XML, names), not DXF layer-name characters; the docstrings say so.
-
-Left on purpose: the palette's ACI colours and the `Trash` layer are the DXF
-adapter's default role → style map (step 3); `LAYER_*` in `recipes.py` and
-`io/exporter.py` sit in DXF code (`split_to_files`, XDATA) that moves with
-step 4. Suites of topo, snapbend and snapdraw unchanged.
-
-### D127 — an annotation has a role, the consumer's, as an edge does
-Federico, 18 October, from the question D126 left open: snapdraw was writing
-a role (`title_block`) into `Annotation.group`, the source group, because an
-annotation had nowhere else to say what it is. For topo the question is not
-what an annotation means, but whether a consumer that needs to say it can.
-
-Why it was not there. D20 made annotations a faithful transcription of the
-source (the adapter reads them, the writer puts them back where they were —
-hence the layer in the model), and kept their meaning out of topo, in a
-phase of its own; D43 renamed that phase `anchor_annotations` exactly
-because it is pure geometry. Edges got a role (D63) because `heal()` needs
-one to tell structural from not; annotations never enter the graph, so the
-engine never needed one and nobody added it. D53 had already taken "layer"
-out of core names; `Annotation.layer` survived because of the transcription.
-
-Decision (A + B of the discussion; C deferred):
-- **A.** `Annotation.role: str = "unknown"`, cleaned by `normalize_role`. topo
-  holds the slot and never reads it or decides it: the meaning stays the
-  consumer's, as D20 wanted. snapdraw now passes `role=TITLE_BLOCK`.
-- **B.** The same `role_rules` of `load_dxf` / `document_from_msp` give an
-  annotation its role from its source group name. Only the rules on the name
-  count: a text has no style topo compares, so `RoleRule.matches(name,
-  style=None)` (and `resolve_role`) never match a rule that reads the style
-  (`RoleRule.reads_style`). Otherwise `RoleRule("cut", dashed=False)` would
-  tag every text.
-- **Output.** `to_dxf(..., annotation_layer=None)` writes an annotation with a
-  role on its role's layer, as an edge; without one, on its source layer.
-  The default `annotation_layer="Annotation"` is unchanged, so no output
-  changes today. `to_text` shows a role when there is one.
-- **C** (drop `group`, the layer never leaving the adapter, as for edges) is
-  left for step 3 of D123: without output by role through the caller's map,
-  it would only lose the faithful return.
-
-Additive. Suites of topo, snapbend and snapdraw unchanged; the text budget
-readings are byte-identical.
-
-
-### D128 — output by role: topo's palette, the caller's maps on top, the adapter's layers; no registry; no annotation group
-Step 3 of D123 (TODO road to 1.0, point 0), Federico, 18 October.
-
-- **`RoleStyle` is neutral and lives in the model** (`topo.model.RoleStyle`,
-  still `topo.RoleStyle`): `color` (RGB), `linetype` (a name), `dash` (the
-  signed marks of `EdgeStyle.dash`, D126), `lineweight` (mm). `layer_name`
-  leaves it: where a role goes is not how it looks, and it is the exporter's
-  question.
-- **The DXF layer of a role is `to_dxf(layers=...)`** (also `split`,
-  `split_to_files`): `{role: "Name"}`, or `{role: fn(element) -> name}`.
-  Federico asked that a role can produce two layers when the caller wants
-  it — a role's entities may split by information they carry (a bend "up"
-  and a bend "down"). The function receives the element being written: the
-  `Contour`, the `cluster.detected` item (not its contour: the item carries
-  the information), the trash entity, the `Annotation`. A role's
-  `RoleStyle` lands on every layer it produces; on a layer shared by several
-  roles the first written wins.
-- **The palette is topo's, in the model, one for every format.**
-  `topo.model.DEFAULT_ROLE_STYLES`: `outer` green, `inner` yellow, `unknown`
-  red, in RGB; `CONSUMER_ROLE_STYLE` gray for any other role.
-  `topo.model.role_style(role, role_styles)` resolves a style: the palette,
-  with the non-`None` fields of the caller's map on top — a consumer adds
-  its roles without rewriting topo's, and may change one. Every exporter
-  (DXF, SVG/view model, PDF tomorrow) calls it and only translates.
-  *First draft, corrected the same day:* I had followed the TODO line "the
-  palette becomes the DXF adapter's default" literally and given each
-  exporter its own copy (ACI in the DXF adapter, hex in `view_model`).
-  Federico: "I want a standard green outer, yellow inner, red trash,
-  extendable for the consumers — if it is not in the core, how do I extend
-  the colours?". The colour choice is neutral, only its encoding (ACI, true
-  color, hex) is a format's; and the colours belong to the roles topo
-  produces (heal, island), so they sit next to `ContourRole`, as
-  `DEFAULT_NODE_TOLERANCE` sits in the model. heal does not paint: the colour
-  is looked up by role at export, so roles given after heal (`detect_flat`)
-  get theirs the same way and a palette change needs no re-heal.
-  `rules/palette.py` is deleted (it spoke ACI); `rules` joins the `adapters`
-  forbidden list in `gen_index` (D125: adapters use public names only).
-- **The DXF adapter keeps layer names, not colours.** `OuterContour`/
-  `InnerContour`/`Trash`/`Annotation` are its default layers; a palette
-  colour is written as its exact ACI index (3, 2, 1, 8 — checked against
-  ezdxf), a caller's colour as true color, as before: so no DXF changes,
-  neither topo's nor the consumers' (snapbend's magenta (255, 0, 255) is ACI 6
-  exactly and would otherwise have turned from true color into an index).
-  The annotation layer keeps ACI 7, the DXF "foreground", which is no role's
-  colour. Colours are chosen by role, not by layer name, so
-  `layers={"outer": "Cut"}` gives a green `Cut` and no empty `OuterContour`.
-- **Reopening D47: the global registry goes** (`register_role_style`,
-  `registered_role_styles`). D47 added it so a consumer would not re-pass
-  its styles on every call, mirroring `set_schema`. It is global state in a
-  library: importing snapbend changed the colours of anyone's `to_dxf` in the
-  same process, and two consumers registering one slug silently let the last
-  import win — snapdraw's docstring said so of its violet hole overriding
-  snapbend's magenta. With layers out of `RoleStyle` it would also need a
-  twin in the adapter. Now a consumer publishes its maps (`snapbend.flat.
-  ROLE_STYLES`/`LAYERS`, `snapdraw.ROLE_STYLES`/`LAYERS`) and its own exports
-  pass them; a caller composes them (`{**ROLE_STYLES, "hole": ...}`). The
-  cost is the one D47 saw: whoever calls `topo.to_dxf` directly passes the
-  maps. Federico: fine, as long as consumers can make their own rules.
-- **C of D127: `Annotation.group` goes.** The DXF annotation extractor reads
-  the layer to resolve the role with the name rules and leaves it there, as
-  for edges. An annotation with a role goes on its role's layer; one without,
-  on `annotation_layer` (now a `str`; `None` no longer means "the source
-  layer"). Who wants a text kept apart gives it a role. The annotation
-  goldens lose the `group` key and nothing else (66 lines removed, no value
-  touched).
-- **Left as it is:** the reader still skips the layers `trash`/`annotation`
-  (`_NON_STRUCTURAL_LAYERS`) on its own. Turning it into a visible default of
-  `ignore_layers` changes semantics (`ignore_layers` matches by substring and
-  a caller passing their own would lose it): to decide with step 4.
-
-Output with no maps is unchanged except for consumer-role annotations, which
-now land on their role's layer. Suites: topo unchanged (only `anch_02`/
-`anch_06`, as before), snapbend all green, snapdraw only `regr_03`/
-`regr_05`, as before.
-
-
-### D129 — the move: `topo_dxf` and `topo_pdf` next to `topo`, the boundary checked
-Step 4 of D123 (TODO road to 1.0, point 0), with step 5 in the same session
-so no consumer stays red in between. Federico, 18 October.
-
-- **Three packages, one distribution.** `topo/adapters/dxf/*`, the DXF writer
-  (`io/dxf.py` → `topo_dxf/writer.py`), the XDATA metadata (out of
-  `io/exporter.py` → `topo_dxf/xdata.py`), `inspect_dxf`/`inspect_file` and
-  `split_to_files` (`recipes.py`, gone) live in `topo_dxf/`;
-  `topo/adapters/pdf/*` in `topo_pdf/`. `ezdxf` leaves topo's dependencies:
-  extras `g-topo[dxf]` (ezdxf), `g-topo[pdf]` (PyMuPDF), `dev` brings ezdxf
-  because the tests read DXF fixtures. `import topo_dxf` without ezdxf says
-  which extra to install. Clean break, no aliases: `topo.load_dxf` →
-  `topo_dxf.load_dxf`, and so `document_from_msp`, `to_dxf`,
-  `split_to_files`, `write/read_metadata_to_dxf`, `inspect_dxf`,
-  `inspect_file`; `topo.load_pdf` → `topo_pdf.load_pdf`. `topo.inspect_document`
-  takes a `Document` only (a path meant opening a DXF).
-- **`topo.split(result, namer=None, min_area=50) -> list[Result]`**, in
-  `topo/tools/split.py`. One `Result` per kept part, with its one cluster and
-  the trash and annotations that belong to it — the part that contains them
-  or the nearest of all parts, the same rule the DXF writer applied before,
-  now on the model; nothing duplicated. No new type: every writer already
-  takes a `Result`. The DXF writer lost its "only this part" filtering; the
-  writing options (`include_annotations`, `annotation_layer`, `role_styles`,
-  `layers`) and `exclude_types` (DXF entity types) are `to_dxf`'s.
-  `on_part` is gone: the caller's loop is the hook. The split goldens are
-  unchanged, which is the proof the assignment moved without changing.
-- **`skip_layers`** (the thread left by D128): the reader's hidden skip of
-  `trash`/`annotation` becomes `load_dxf(skip_layers=SKIP_LAYERS)` /
-  `document_from_msp(skip_layers=...)`, `SKIP_LAYERS = ("Trash",
-  "Annotation")`, the writer's own default layers; exact name, any case, so
-  `Trash_old` is read. `()` reads everything. `ignore_layers` keeps its
-  substring match and stays separate.
-- **Public names an adapter needed**: `topo.build_metadata` (the XDATA writer
-  uses the same schema as `save_json`) and `topo.DEFAULT_MIN_CLUSTER_AREA`.
-- **`gen_index` indexes every package in the repo root** and a rule key that
-  names a package applies to all its modules: `topo` never imports `ezdxf`,
-  `fitz`, `pymupdf`, `topo_dxf`, `topo_pdf`; each adapter never imports
-  `topo.core`/`tools`/`io`/`rules` nor the other adapter. Checked by
-  planting three forbidden imports: all three reported. With one package the
-  output is unchanged (checked on snapbend's index before any other edit); the copy is the same in snapbend, snapdraw and the
-  `code-guardrails` skill. `tests/unit/test_no_format.py` proves it at run
-  time: `import topo`, `heal`, `split` in a process where ezdxf/fitz/pymupdf
-  cannot be imported.
-- **Consumers.** snapbend (`io/dxf.py`, tests) and snapdraw (docstrings,
-  tests, scripts, lab) moved to `topo_dxf`; their rules drop `topo.adapters`
-  and snapbend's calculation layers forbid `topo_dxf` too. smoother's use is
-  all in uncommitted work in progress: rewritten there, not committed.
-  The stalled PDF work in the sibling folder `forge-pdf-adapter` (at 0.13.1,
-  uncommitted) is not ported: it is picked up in `topo_pdf` when PDF is
-  worked on again.
-
-Suites: topo as before (only `anch_02`/`anch_06`) plus the new tests,
-snapbend all green, snapdraw only `regr_03`/`regr_05`. The editable install
-must be redone once (`pip install -e`) so that `topo_dxf`/`topo_pdf` are
-found. Docs (README, API, ARCHITECTURE, LLM) and the breaking minor: step 6.
-
-
+- **D115** — `geometry.dash_line(start, end, head, tail, middle, n_middle)`:
+  one dash glued to each end, `n` equal dashes between, equal gaps, placed from
+  the ends inward; whole segment back if the dashes cover it. Straight only.
+  Arithmetic along a segment is topo's (D91), not a consumer's second copy.
+- **D116** — `INTERPRETER.md` and `SNAPDRAW.md` left the repo: design notes of
+  projects around topo are not topo's documentation.
+- **D117** — no brand in type names: `topo.Document`, `Result`, `Cluster`,
+  `Contour` (applied in D119). The steps of `heal()` and of the island
+  reading live in `topo.steps`; the top level keeps the pipeline.
+- **D118** — primitives for a caller's own algorithms, on rings of native
+  primitives: `geometry.intersections` (exact for lines, arcs, circles; within
+  1e-4 for splines and ellipses), `point_on_contour`, `cut_by(segment, region)`,
+  `contour_minus(contour, region)`, `Contour.from_segments`. The region is
+  *any* closed ring, never a named shape; every ring left is returned, the
+  caller chooses. Which points, radii and groupings is the caller's. Pure
+  functions and typed results, with a later Rust port in mind.
+- **D119** — the rename is applied (`topo` / `g-topo`, no `Forge*`, steps in
+  `topo.steps`). Formats follow: XML root `<topo>`, DXF XDATA id `TOPO`,
+  `<name>.topo.md`. A call is written `import topo` then the full path
+  (`topo.geometry.contour_shape(...)`), never `from topo import steps`; every
+  example in the docs uses that form.
+- **D120** — the public surface, first half: `topo.primitives` (five segments,
+  `sub_segment`, pure math) and `topo.model` (types, roles, `Edge`, which is a
+  segment *with* a role). Everything under `topo.core` is internal. `gen_index`
+  gets a `"*"` layer and dotted names. The second half is D122.
+- **D121** — direction: what makes topo trustworthy is two-way fidelity (the
+  part written overlays the original; built as D143/D152). One `Curve`
+  protocol with `as_analytic(tol)` as a *question* (the original geometry
+  stays the truth), a contour's *signature* public, patterns (countersink,
+  section) the caller's. Curve protocol, `as_analytic`, signature: 1.x.
+- **D122** — the public surface, second half: measures and axis facts in
+  `topo.geometry` (`segment_length`, `length_inside`, `chord_angle_deg`,
+  `track_*`, `group_collinear_lines`, `axis_lines`, `items_inside`,
+  `merge_intervals`). Not public on purpose: the DXF layer table (topo has
+  roles, D123) and the tabs (D142). A lab may reach inside; a published
+  package may not (`"*"` rule).
+- **D123** — topo has **no file format**: geometry and roles, never layers.
+  DXF, PDF, SVG are adapters at the edges; an exporter maps a role to a
+  weight, colour, linetype and, in DXF, a layer (or two). `ezdxf` is not a
+  dependency of topo. The pure-geometry entry (`load_geometry`,
+  `load_segments`) is no format and stays.
+- **D124** — one repo, one distribution, several packages: `g-topo` ships
+  `topo/`, `topo_dxf/`, `topo_pdf/`; `g-topo[dxf]`, `[pdf]` bring the heavy
+  dependencies. The boundary is checked mechanically (`gen_index` forbids
+  `topo` from importing an adapter, `ezdxf`, `fitz`). `split` is topo's: it
+  chooses parts on the model; each adapter writes one part.
+- **D125** — the adapter contract, in public names: `Edge.of(segment, role,
+  style)` (the node grid is topo's), no adapter base class, `segment_endpoints`
+  public, `RoleRule`/`resolve_role`/`name_rules`/`DEFAULT_NODE_TOLERANCE` in
+  `topo.model`; an adapter imports only `topo.model` and `topo.primitives`.
+- **D126** — a neutral vocabulary: `EdgeStyle(linetype, linetype_desc, dash,
+  color)` with `dash` the signed marks (`> 0` dash, `0` dot, `< 0` gap, `()`
+  continuous, `None` unknown) and `color` an RGB; `RoleRule(color=)` takes RGB,
+  `"#rrggbb"` or a base name, never an index. Role slugs keep `[a-z0-9_-]` for
+  safety in any output.
+- **D127** — an annotation has a role, the consumer's (`Text.role`), set by the
+  same `role_rules` on its source group name only (a rule reading the style
+  never matches a text). topo holds the slot and never reads it.
+- **D128** — output by role. `RoleStyle` (RGB, linetype, dash, lineweight) is
+  neutral in the model; `to_dxf(layers={role: name | fn(element)})` lets a
+  role produce several layers; the palette is topo's
+  (`DEFAULT_ROLE_STYLES`, `role_style()` with the caller's map on top); the
+  global registry went (reopening D47) and `Annotation.group` with it.
+- **D129** — the move: `topo_dxf/` and `topo_pdf/` beside `topo/`;
+  `topo.split(result) -> list[Result]`; `load_dxf(skip_layers=SKIP_LAYERS)`;
+  `gen_index` indexes every package and each adapter imports only topo's public
+  names. `tests/unit/test_no_format.py` proves `topo` runs with no `ezdxf`.
 ### D130 — point 0 closed: 0.20.0, the docs speak of three packages ✅
 Step 6 of D123 (TODO road to 1.0, point 0), Federico, 18 October. The
 breaking minor that D125 announced: **0.20.0**. The docs follow D129:
