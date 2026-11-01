@@ -391,6 +391,7 @@ clusters), one drawing past 300 s, one 1 mm face read by frame.
 One repair for every reading (no per-reading gap reach, junction rule or scope:
 what differs today moves into the reading or goes). `island` → `outlines`:
 "island" already names the depth-2 region. Clean break, no aliases (pre-1.0).
+Two numbers, measured: `tolerance` (nodes) and `max_gap` (gaps, default `tolerance`); one number at 0.5 left a contour open by 0.41 mm, still `is_valid`.
 
 ## Open questions
 

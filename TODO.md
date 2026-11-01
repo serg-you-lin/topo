@@ -68,9 +68,14 @@ Sottopassi, uno per commit:
       fusi, curve rifittate, gap chiusi): fino a 900 mm di linee doppie in
       meno su un disegno. Le isole lette già oggi danno loose riparati, e
       anche heal(). Proposta: loose sempre dalla rete (uniforme, un
-      fondamento), la provenienza resta sulla rete. Da guardare a occhio i
-      tre casi del LEGGIMI. La passata dello sweep di snapdraw non è stata
-      fatta: l'hook blocca un comando che nomina la cartella di snapdraw.
+      fondamento), la provenienza resta sulla rete. Controllo "fedele"
+      (`tests/invariants.uncovered`) sui 51: 0,000 mm persi. Un numero o due:
+      **due** (D202), con uno solo un contorno resta aperto di 0,41 mm.
+      Lo sweep di snapdraw non è stato rifatto: l'hook blocca un comando che
+      nomina la cartella di snapdraw.
+- [ ] filo parcheggiato: `validate_result` non vede un salto di 0,41 mm fra
+      due segmenti consecutivi di un contorno (`is_valid` True). Va guardato
+      a parte, anche oggi senza D202.
 - [ ] C. `faces()`/`outlines()` + rinomina `island`/`read_island(s)`/`IslandReading`;
 - [ ] D. docs (LLM, API, README x2), `release_check`; i consumer si adattano
       nelle loro sessioni.
