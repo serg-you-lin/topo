@@ -279,6 +279,42 @@ class TestGapOntoCurve(unittest.TestCase):
         stem = next(e for e in base if abs(e[0] - x) < 1e-6 and abs(e[2] - x) < 1e-6)
         self.assertAlmostEqual(min(stem[1], stem[3]), y, places=6)
 
+    def test_due_incontri_sulla_continuazione_vince_il_primo(self):
+        # G6e, gruppo D, `gap_solver.py:250` (`min` sugli incontri): la retta
+        # proseguita taglia il cerchio a 0.2 e a 0.4, il capo va a 0.2 a ogni
+        # moto. Prova: la riga sceglie fra due incontri (contati al posto) e la
+        # scelta non cambia. Non c'è un pari merito fra punti distinti da
+        # provare: sulla continuazione (retta, o arco fino a un quarto di giro)
+        # la distanza dal capo cresce lungo la curva, due incontri alla stessa
+        # distanza sono lo stesso punto; la tangente dà un punto solo. Sui
+        # disegni tracciati la riga non sceglie mai (un incontro solo, 14314
+        # chiamate). Si confronta il capo della retta: la discretizzazione del
+        # cerchio ruota con la sua griglia angolare (D145).
+        from unittest import mock
+        from shapely.geometry import Point
+        from tests.invariants import MOTIONS, moved
+        from topo.core.base import gap_solver
+        x, y = -71565.8225, -3048.0985
+        doc = topo.load_segments([LineSeg(start=(x - 5, y), end=(x, y)),
+                                  CircleSeg(center=(x + 0.3, y), radius=0.1)], tolerance=0.5)
+        counts = []
+        real = gap_solver.intersections
+
+        def counted(a, b, *args, **kwargs):
+            hits = real(a, b, *args, **kwargs)
+            counts.append(len(hits))
+            return hits
+
+        for name, move, back, _ in [("al posto", lambda d: d, lambda g: g, None)] + list(MOTIONS):
+            counts.clear()
+            with mock.patch.object(gap_solver, "intersections", counted):
+                healed = topo.experimental.close_free_gaps(list(moved(doc, move).edges), 0.5)
+            self.assertIn(2, counts, name)
+            ends = [back(Point(e.segment.end)).coords[0] for e in healed if isinstance(e.segment, LineSeg)]
+            self.assertEqual(len(ends), 1, name)
+            self.assertAlmostEqual(ends[0][0], x + 0.2, places=6, msg=name)
+            self.assertAlmostEqual(ends[0][1], y, places=6, msg=name)
+
     def test_un_angolo_rotto_si_chiude_nell_angolo(self):
         # le due rette si incontrano nell'angolo vero: quello di prima (D57)
         # che island() non chiudeva, ora uguale in tutte e due le letture
