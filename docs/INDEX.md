@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`85` modules · `511` module-level functions · `63` classes · `16284` lines of code.
+`85` modules · `512` module-level functions · `63` classes · `16304` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -31,8 +31,8 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `anchor_texts` | func | `topo/tools/anchor.py:33` | Assegna ``cluster_ref`` a ogni testo di ``result.texts``. |
 | `_angle_diff` | func | `topo/core/geometry/shape.py:273` | Differenza fra due direzioni modulo 180, in [0, 90]. |
 | `angle_from_start` | func | `topo/core/primitives/segments.py:166` | Angolo, in [0, 2π), da percorrere partendo da `start_angle` nel verso |
-| `_angle_of` | func | `topo/core/primitives/trim.py:93` | Angolo (o parametro dell'ellisse) di `pt` visto dal centro della curva. |
-| `_angular` | func | `topo/core/primitives/trim.py:104` |  |
+| `_angle_of` | func | `topo/core/primitives/trim.py:94` | Angolo (o parametro dell'ellisse) di `pt` visto dal centro della curva. |
+| `_angular` | func | `topo/core/primitives/trim.py:105` |  |
 | `_angular_deviation` | func | `topo/core/topology/graph.py:388` |  |
 | `_angular_sweep` | func | `topo/core/primitives/segments.py:147` | Angolo spazzato in radianti, sempre positivo, percorrendo da `start` a |
 | `apply_gap_fixes` | func | `topo/core/base/gap_solver.py:435` | Applica i GapFix restituendo una NUOVA lista di Edge — `edges` non viene mutata. |
@@ -89,7 +89,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `circle_through` | func | `topo/core/geometry/points.py:290` | Il cerchio per tre punti: `(center, radius)`, None se sono allineati. |
 | `CircleSeg` | class | `topo/core/primitives/segments.py:683` | Cerchio geometrico puro. |
 | `circular_geometry` | func | `topo/core/geometry/measure.py:279` | (diameter, center) se il contorno è ~circolare, altrimenti (None, None). |
-| `_clamp` | func | `topo/core/primitives/trim.py:86` | Un punto appena oltre un estremo (entro tolleranza) sta su quell'estremo. |
+| `_clamp` | func | `topo/core/primitives/trim.py:87` | Un punto appena oltre un estremo (entro tolleranza) sta su quell'estremo. |
 | `clean_mtext` | func | `topo_dxf/mtext.py:18` | Testo semplice da una stringa MTEXT grezza: rimuove i codici di |
 | `_clear_polyline` | func | `topo/core/geometry/rings.py:273` | Una polilinea di `segment` entro δ che non passa su `point`, o None se |
 | `close_free_gaps` | func | `topo/core/base/cleanup.py:83` | Chiude i gap fra estremi liberi entro `tolerance` col gap solver |
@@ -243,7 +243,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `HierarchyBuilder` | class | `topo/core/base/hierarchy.py:175` |  |
 | `_hits` | func | `topo/core/geometry/strips.py:135` |  |
 | `inject` | func | `topo/tools/inject.py:40` | Arricchisce i Cluster con i dati estratti da un `data_injector` esterno. |
-| `_insert_to_degree` | func | `topo/core/primitives/trim.py:165` | Inserisce `t` nel vettore dei nodi finché compare `p` volte (agli |
+| `_insert_to_degree` | func | `topo/core/primitives/trim.py:185` | Inserisce `t` nel vettore dei nodi finché compare `p` volte (agli |
 | `_inside` | func | `topo/core/topology/noding.py:642` |  |
 | `inspect_document` | func | `topo/inspect.py:57` | Stampa un Document prodotto da un adapter (`topo_dxf.load_dxf`, …) o da |
 | `inspect_dxf` | func | `topo_dxf/inspect.py:37` | Apre un DXF/DWG con ezdxf e stampa cosa contiene, senza toccare topo. |
@@ -351,8 +351,9 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_on_border` | func | `topo/core/geometry/axis.py:184` |  |
 | `_on_boundary` | func | `topo/tools/anchor.py:118` | L'elemento col bordo più vicino a ``point``, se entro ``distance``. |
 | `_on_line` | func | `topo/core/geometry/intersections.py:128` |  |
-| `_on_line` | func | `topo/core/primitives/trim.py:47` | Proiezione di `pt` sulla retta, dentro i suoi due estremi. |
+| `_on_line` | func | `topo/core/primitives/trim.py:48` | Proiezione di `pt` sulla retta, dentro i suoi due estremi. |
 | `_on_nodes` | func | `topo/core/topology/outer_face.py:314` | Le geometrie di `edges` con gli estremi sui nodi del grafo: due estremi |
+| `_on_seam` | func | `topo/core/primitives/trim.py:158` | `pt` sta sui due capi della spline insieme: alla stessa distanza da tutti |
 | `_on_sweep` | func | `topo/core/geometry/measure.py:223` | True se l'angolo `t` cade nell'intervallo percorso da `start` per `sweep`. |
 | `_onto_curve` | func | `topo/core/base/gap_solver.py:314` | L'estremo `ep` portato dove la sua curva, proseguita, incontra `edge`: |
 | `_open` | func | `topo/core/base/curves.py:62` | Un OpenCurve per edge col suo segmento nativo, anche se chiuso da solo |
@@ -513,7 +514,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `spanning_lines` | func | `topo/core/geometry/axis.py:197` | (ys, xs): le coordinate delle linee strettamente interne a `bounds` (bordo |
 | `spatial_islands` | func | `topo/core/readings/islands.py:55` | Union-find sulle coppie di Edge a distanza <= gap_tolerance (STRtree, |
 | `_spline_moments` | func | `topo/core/geometry/integrals.py:194` | Su ogni intervallo di nodi non vuoto del dominio. Polinomiale: x, y di |
-| `_spline_param` | func | `topo/core/primitives/trim.py:145` | Parametro del punto della spline più vicino a `pt`: campioni, poi |
+| `_spline_param` | func | `topo/core/primitives/trim.py:165` | Parametro del punto della spline più vicino a `pt`: campioni, poi |
 | `_spline_samples` | func | `topo/core/geometry/measure.py:232` | (parametri, punti, portata di ciascun campione): campioni regolari su ogni |
 | `_split` | func | `topo/core/geometry/regions.py:139` | `seg` spezzato nei `points` che gli stanno sopra, nel suo verso. |
 | `split` | func | `topo/tools/split.py:27` | Un `Result` per parte, nell'ordine delle parti tenute. |
@@ -531,10 +532,10 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `structural_loops` | func | `topo/core/readings/heal_steps.py:93` | I loop in cui ogni edge con ruolo deciso è strutturale: un solo edge non |
 | `structural_segments` | func | `topo/tools/rotate.py:73` | Segmenti nativi dei contorni strutturali di ogni cluster: sempre |
 | `_style_attribs` | func | `topo_dxf/exporter.py:57` | dxfattribs per una entità in output: layer + linetype della sorgente, se |
-| `_sub_angular` | func | `topo/core/primitives/trim.py:61` |  |
+| `_sub_angular` | func | `topo/core/primitives/trim.py:62` |  |
 | `_sub_part` | func | `topo/inspect.py:183` |  |
-| `sub_segment` | func | `topo/core/primitives/trim.py:26` | Il tratto di `seg` da `a` a `b` (punti sulla curva, o a una tolleranza |
-| `_sub_spline` | func | `topo/core/primitives/trim.py:115` |  |
+| `sub_segment` | func | `topo/core/primitives/trim.py:27` | Il tratto di `seg` da `a` a `b` (punti sulla curva, o a una tolleranza |
+| `_sub_spline` | func | `topo/core/primitives/trim.py:116` |  |
 | `_swept` | func | `topo/core/geometry/rings.py:177` |  |
 | `_synthesize_dimension` | func | `topo_dxf/text_extractor.py:320` | Ricostruisce l'immagine di una DIMENSION lineare dai def-point, quando il |
 | `_tangent` | func | `topo/core/geometry/regions.py:166` | Direzione di percorrenza di `seg` nel suo capo iniziale o finale. |
@@ -608,7 +609,7 @@ Same name defined at module level in different modules. Not automatically a bug 
 | `_ends` | `topo/core/geometry/lines.py:28` · `topo/core/geometry/regions.py:115` |
 | `_length` | `topo/core/geometry/regions.py:107` · `topo/core/geometry/shape.py:269` · `topo/core/primitives/fitting.py:168` |
 | `_on_arc` | `topo/core/geometry/intersections.py:139` · `topo/core/readings/outer_scan.py:124` · `topo/core/topology/noding.py:692` |
-| `_on_line` | `topo/core/geometry/intersections.py:128` · `topo/core/primitives/trim.py:47` |
+| `_on_line` | `topo/core/geometry/intersections.py:128` · `topo/core/primitives/trim.py:48` |
 | `_place` | `topo/core/base/hierarchy.py:68` · `topo/core/geometry/build.py:21` |
 | `_reach` | `topo/core/geometry/shape.py:263` · `topo/core/geometry/strips.py:139` |
 | `_ring` | `topo/core/geometry/lines.py:98` · `topo/io/shapes.py:49` |
@@ -1047,19 +1048,20 @@ _topo/core/primitives/segments.py_
 - **class** `EllipseSeg` — L737 — Ellisse (o arco ellittico) geometrico puro — stessa parametrizzazione del
   - methods: `_sweep`, `_point_at`, `discretize`, `reversed`, `rotated`, `translated`, `mirrored`, `scaled`
 
-#### `topo/core/primitives/trim.py` — 185 lines
+#### `topo/core/primitives/trim.py` — 205 lines
 
 _topo/core/primitives/trim.py_
 
-- `sub_segment(seg, a: Point, b: Point, via: Point)` — L26 — Il tratto di `seg` da `a` a `b` (punti sulla curva, o a una tolleranza
-- `_on_line(seg: LineSeg, pt: Point) -> Point` — L47 — Proiezione di `pt` sulla retta, dentro i suoi due estremi.
-- `_sub_angular(seg, a: Point, b: Point, via: Point)` — L61
-- `_clamp(offset: float, sweep: float) -> float` — L86 — Un punto appena oltre un estremo (entro tolleranza) sta su quell'estremo.
-- `_angle_of(seg, pt: Point) -> float` — L93 — Angolo (o parametro dell'ellisse) di `pt` visto dal centro della curva.
-- `_angular(seg, lo: float, hi: float, ccw: bool)` — L104
-- `_sub_spline(seg: BSplineSeg, a: Point, b: Point) -> Optional[BSplineSeg]` — L115
-- `_spline_param(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> float` — L145 — Parametro del punto della spline più vicino a `pt`: campioni, poi
-- `_insert_to_degree(p: int, knots: List[float], cpw: List[Tuple[float, float, float]], t: float)` — L165 — Inserisce `t` nel vettore dei nodi finché compare `p` volte (agli
+- `sub_segment(seg, a: Point, b: Point, via: Point)` — L27 — Il tratto di `seg` da `a` a `b` (punti sulla curva, o a una tolleranza
+- `_on_line(seg: LineSeg, pt: Point) -> Point` — L48 — Proiezione di `pt` sulla retta, dentro i suoi due estremi.
+- `_sub_angular(seg, a: Point, b: Point, via: Point)` — L62
+- `_clamp(offset: float, sweep: float) -> float` — L87 — Un punto appena oltre un estremo (entro tolleranza) sta su quell'estremo.
+- `_angle_of(seg, pt: Point) -> float` — L94 — Angolo (o parametro dell'ellisse) di `pt` visto dal centro della curva.
+- `_angular(seg, lo: float, hi: float, ccw: bool)` — L105
+- `_sub_spline(seg: BSplineSeg, a: Point, b: Point, via: Point) -> Optional[BSplineSeg]` — L116
+- `_on_seam(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> bool` — L158 — `pt` sta sui due capi della spline insieme: alla stessa distanza da tutti
+- `_spline_param(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> float` — L165 — Parametro del punto della spline più vicino a `pt`: campioni, poi
+- `_insert_to_degree(p: int, knots: List[float], cpw: List[Tuple[float, float, float]], t: float)` — L185 — Inserisce `t` nel vettore dei nodi finché compare `p` volte (agli
 
 #### `topo/core/readings/__init__.py` — 1 lines
 
@@ -1719,7 +1721,7 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/core/primitives/__init__.py` | `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` |
 | `topo/core/primitives/fitting.py` | `topo.core.geometry.measure` · `topo.core.geometry.points` · `topo.core.primitives.segments` |
 | `topo/core/primitives/polygon_builder.py` | `topo.core.primitives` · `topo.core.primitives.segments` · `topo.model.curve` |
-| `topo/core/primitives/trim.py` | `topo.core.primitives.segments` |
+| `topo/core/primitives/trim.py` | `topo.core.geometry.measure` · `topo.core.primitives.segments` |
 | `topo/core/readings/heal.py` | `topo.core.base.cleanup` · `topo.core.base.curves` · `topo.core.base.hierarchy` · `topo.core.base.prepare` · `topo.core.geometry.measure` · `topo.core.readings.heal_steps` · `topo.core.topology.noding` · `topo.core.topology.non_contour_edges` · `topo.core.topology.outer_face` · `topo.model.curve` · `topo.model.document` · `topo.model.result` · `topo.model.role` · `topo.rules.validator` |
 | `topo/core/readings/heal_steps.py` | `topo.core.base.hierarchy` · `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.core.topology.noding` · `topo.core.topology.non_contour_edges` · `topo.model.cluster` · `topo.model.role` |
 | `topo/core/readings/island.py` | `topo.core.base.curves` · `topo.core.base.hierarchy` · `topo.core.base.prepare` · `topo.core.geometry.integrals` · `topo.core.geometry.measure` · `topo.core.geometry.shape` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.core.readings.islands` · `topo.core.topology.edge` · `topo.core.topology.noding` · `topo.core.topology.non_contour_edges` · `topo.core.topology.outer_face` · `topo.model.cluster` · `topo.model.contour` · `topo.model.document` · `topo.model.result` · `topo.model.role` |
