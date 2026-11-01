@@ -160,6 +160,49 @@ def test_sulla_corda_dentro_il_segmento_di_cerchio():
     assert not ring_contains(ring, (6.0, 0.0))
 
 
+@pytest.mark.parametrize("motion", [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
+                                    (0.7, 3.1, -2.2), (2.4, -0.37, 0.61)])
+def test_sulla_corda_e_accanto_sotto_moto(motion):
+    # G6e, gruppo C, `rings.py:244`: da che parte della corda sta il punto è il
+    # segno di `cross_pt`, nullo sulla corda. Prova: sulla corda (dove la
+    # guardia a :239 decide al posto del segno) e a 1e-7 / 5e-9 di lato (dove
+    # decide il segno, che è geometria) la risposta non cambia col moto.
+    # Senza la guardia (4.9, 0) esce fuori a (2.4, -0.37, 0.61). Non prova la
+    # riga dentro le letture: la raggiunge snapbend (`splits_contour`,
+    # `bridged_runs`), non `heal` né `island`.
+    from tests.invariants import rigid
+    move_seg, move_pt = rigid(*motion)
+    ring = [ArcSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),
+            LineSeg((0.0, -5.0), (5.0, 0.0))]
+    ring = [move_seg(s) for s in ring]
+    points = [(1, 0), (4.9, 0), (-4.99, 0), (1, 1e-7), (1, -1e-7), (4.9, -1e-7), (0, 5e-9), (0, -5e-9)]
+    assert all(ring_contains(ring, move_pt(p), 1e-12) for p in points)
+
+
+@pytest.mark.parametrize("motion", [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
+                                    (0.7, 3.1, -2.2), (2.4, -0.37, 0.61)])
+def test_a_cavallo_della_guardia_sulla_corda(motion):
+    # G6e, gruppo C, `rings.py:239`: entro 1e-9 rad dalla corda il punto si
+    # dà dentro il segmento di cerchio. Prova: a cavallo della soglia (punti a
+    # 1e-9, 2.5e-9, 3e-9, 1e-6 dalla corda, dai due lati), con la corda dentro
+    # il giro (arco convesso) e fuori (arco che morde), la risposta è la stessa
+    # a ogni moto. Il valore della soglia conta poco: sbagliando ramo l'angolo
+    # dell'arco cambia della soglia stessa, e il giro si arrotonda; con 0.5 rad
+    # o 1e-17 questi punti escono uguali. Non prova la riga dentro le letture
+    # (la raggiunge snapbend, non `heal` né `island`).
+    from tests.invariants import rigid
+    move_seg, move_pt = rigid(*motion)
+    convex = [ArcSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),
+              LineSeg((0.0, -5.0), (5.0, 0.0))]
+    bite = [LineSeg((-5.0, -10.0), (5.0, -10.0)), LineSeg((5.0, -10.0), (5.0, 0.0)),
+            ArcSeg((0.0, 0.0), 5.0, 0.0, math.pi, ccw=False), LineSeg((-5.0, 0.0), (-5.0, -10.0))]
+    points = [(x, d) for x in (0.0, 3.0, -4.5)
+              for d in (0.0, 1e-9, -1e-9, 2.5e-9, -2.5e-9, 3e-9, -3e-9, 1e-6, -1e-6)]
+    for ring, expected in ((convex, True), (bite, False)):
+        ring = [move_seg(s) for s in ring]
+        assert [ring_contains(ring, move_pt(p), 1e-12) for p in points] == [expected] * len(points)
+
+
 def test_bbox_esatto_sugli_estremi_delle_curve():
     assert ring_bbox(_rounded_rectangle()) == pytest.approx((-15.0, -6.0, 15.0, 6.0), abs=EPS)
     assert ring_bbox([CircleSeg((1.0, -2.0), 4.0)]) == pytest.approx((-3.0, -6.0, 5.0, 2.0), abs=EPS)
