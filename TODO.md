@@ -368,7 +368,11 @@ Decisi con Federico il 25 ottobre, da fare in 1.x:
 - **warning sui pezzi d'ingresso che coincidono** (un `CIRCLE` ripassato da
   una polilinea, anch_06): è un difetto del disegno, topo lo dice e non ne
   cancella nessuno (D137); cosa farne è del consumer. Sostituisce "cerchi
-  doppi".
+  doppi". Misurato il 2 novembre: due cerchi r 2 a 0.05 (tol 0.1) escono
+  2 cluster, `is_valid` True, e l'unico avviso è quello di D132 col consiglio
+  sbagliato ("spezzare i lati"). Da decidere insieme a tutti gli avvisi, non
+  da questo caso solo: due contorni chiusi che si incrociano invalidano il
+  risultato? avvisi come dati invece che frasi?
 - **terza lettura, la rete**: i gruppi di pezzi che si toccano o si
   incrociano, coi punti di contatto, senza contorni né dentro/fuori. È la
   domanda sotto `heal()` e `island()` (che già raggruppano e rendono piana
