@@ -598,540 +598,81 @@ Names in the older entries are the names of their day (`forge`, `ForgeCluster`,
   fact / piece of an algorithm / the caller's choice. Test for a new name: what
   varies between consumers must be an *argument*, never a new function.
   `topo.geometry.nearest_point` is the one fact that came out of it.
-### D141 — `simplify_points` rewritten: corners are a turn over a scale, lines where straight, arcs through their ends, splines within a tolerance; one chain ✅
-The first requests that arrived through D140 (smoother `TODO.md`, "Richieste
-a topo", 19 October): four of them are one thing. Working read-only on topo,
-smoother had rebuilt the whole point→primitive reconstruction in its own
-`smoother/fitting.py` (smoother D21), because `simplify_points` was wrong in
-three ways on a traced contour:
-
-- **A corner was an interior angle between two neighbouring samples** under
-  a threshold (50°). A right angle never is, and a corner traced from a
-  raster is spread over 2–3 samples, none under threshold: letters came out
-  rounded. Now a corner is a Douglas-Peucker vertex where the curve **turns**
-  by at least `corner_turn_deg` between the point `scale` before and `scale`
-  after, along the curve — measured over a length, the rounding counts for
-  the whole turn. Of two corners closer than `scale`, the one that turns more.
-- **Every stretch between corners became one spline**, also when straight.
-  Now: within `tolerance` of its chord → a line; within `tolerance` of an arc
-  → an arc; otherwise the long straight Douglas-Peucker sides become lines
-  (not the facets inside a curve: small turns the same way at their ends,
-  not much longer than their neighbours) and the rest arcs or splines.
-- **The arc was a least-squares (Kåsa) fit**, which moves the ends onto the
-  circle: between an arc and the line next to it a gap opened and the
-  contour no longer closed (smoother counted 321 loose pieces). Now an arc
-  passes exactly through its two ends (and the middle sample) and is taken
-  only if every point is within `tolerance` of its circle. Kåsa stays for a
-  whole closed loop with no corner, which has no ends to keep.
-- (fourth request) **The spline interpolated every point**, oscillating on
-  noisy or irregularly spaced samples. Now `approximate_bspline`
-  (Piegl & Tiller 9.4.1: chord-length parameters, averaged knots, least
-  squares with both ends fixed) finds the fewest control points that keep
-  every sample within `tolerance`; when none is enough it is the
-  interpolation.
-
-Two more facts the port needed, both geometric: samples are first evened out
-to the median step (a long side with no samples would let three points pass
-for an arc), and a corner rounded by sampling is rebuilt sharp — a curved
-piece shorter than `scale` between two lines that turn by ≥ `corner_turn_deg`
-is the rounding, and the shared vertex goes to the crossing of the two
-least-squares lines. Found while testing, both fixed here rather than
-ported: smoother's first and last Douglas-Peucker sides were always lines
-("an end is a corner, never inside a curve"), so a pure arc came out
-line-arc-line; an end side is now judged on the one neighbour it has, and a
-stretch that is one arc is tried first. A closed contour with no corner is
-opened at an arbitrary point; when the first and last pieces are the same arc
-or the same line they are joined again.
-
-**The guarantees, all geometric**: the output is a head-to-tail chain (an
-open sequence starts and ends exactly at its ends; a closed one closes);
-every sample is within `tolerance`, except samples within `scale` of a
-rebuilt corner; a primitive is a line or an arc only if its samples are,
-within `tolerance`. `scale` is the caller's statement of what is detail and
-what is shape: the length over which a turn is a corner, under which a
-straight run belongs to a curve and a curve between two sides is a rounded
-corner.
-
-**Signature, a clean break** (experimental since D33, outside `__all__`):
-`simplify_points(points, tolerance, scale, closed=True, corner_turn_deg=35,
-arcs=True, spline_degree=3)`. `tolerance` and `scale` are required: they are
-lengths in the caller's units and topo cannot guess them. Gone:
-`detect_corners`, `fit_primitives`, `interior_angle_deg`, `arc_angles`,
-`DEFAULT_ANGLE_THRESHOLD_DEG`, `min_points_for_spline`,
-`duplicate_tolerance`, `arc_fit_tolerance`. New in `core/geometry/points.py`:
-`even_spacing`, `offset_from_line`, `douglas_peucker`, `turn_corners`,
-`circle_through`, `approximate_bspline`.
-
-**Internal caller**: `steps.refit_tessellations` (inside `island()`) now calls
-it with `tolerance` (renamed from `arc_fit_tolerance`, it now bounds lines and
-splines too) and `scale=max_segment`. All island goldens unchanged.
-
-**Proof on real traces** (smoother's images: a gear, a hand-drawn circle, a
-stylised dandelion; tolerance 0.3, scale 2): same kinds of primitives as
-smoother's D21 (gear 35 lines, 1 arc, 2 circles, 18 splines vs 37/1/2/17), joints
-within 4e-11, maximum deviation 0.299 everywhere — smoother's own code reached
-0.319 on the dandelion, over its own tolerance, because its corner
-sharpening did not check. DXF for the eye: `pipeline_output/D141_fit/`
-(`*_raw`, `*_smoother`, `*_topo`).
-
-**Not done here**: the fifth request (strips that cross nothing) is fact 3 of
-D134 and lands with that rewrite. smoother's `fitting.py` is now the duplicate:
-it moves onto `simplify_points` from smoother's own session (D140).
-
-### D142 — `tools.tabs` becomes `tools.strips`: D134's four facts and the construction, on primitives; policy and `is_tab_island` go back to the caller ✅
-Federico, 19 October ("implement what belongs here"). Implements D134 and
-judges D139, which had entered because it was already written, not because a
-triage admitted it (TODO, "richieste dalla superficie").
-
-**What topo gives** (`topo.tools.strips`, experimental, D140):
-`facing_boundaries(cluster)` → `Facing(region, inside)` per empty region
-(fact 1); `gap(a, b)` → `Gap(distance, on_a, on_b)` (fact 2);
-`link(facing, a, b, at, width, placed=())` → `Link(a, b, strip)` (fact 3);
-`unconnected_regions(cluster, links)` (fact 4); `open_boundaries(links)` →
-`Opened(boundaries, sides)`, the construction. The ring-level geometry (no
-hierarchy) is `topo/core/geometry/strips.py`: `gap`, `strip_between`,
-`open_ring`, `Strip` — a brick, not in `topo.geometry.__all__` until a
-second caller uses it.
-
-**Choices, each with its reason:**
-- **Primitives, not points.** The old code discretized every contour
-  (`discretize_tolerance`) and returned point lists to be refitted. Now the
-  cuts are `intersections` of the side lines with the contour's own
-  primitives, and the opened boundary is chains of the same primitives (a cut
-  circle is an arc, exact). A caller tracing a raster still gets its
-  polyline back as `LineSeg`s; a caller with real arcs no longer loses them.
-- **The direction keeps D139's rule** (perpendicular from the nearer
-  boundary, toward the other, else toward its closest point), made
-  hierarchy-free: the normal points inward if the boundary contains the other
-  one, outward otherwise. Tangents are exact on lines, arcs and circles: a
-  one-sided difference at a circle's seam tilted the strip by 3e-5.
-- **Refused, with the reason**, when a side misses `a` or `b`, crosses
-  another boundary of the `Facing` or its own two boundaries again (concave
-  shapes), when a boundary lies wholly inside the strip, or when it touches a
-  strip in `placed`. This is smoother's `_crossing_islands`, now a fact.
-- **Which stretch the strip covers** is the one between its two cuts that
-  holds its foot (`a_at`/`b_at`), never "the shorter one": the old single-tab
-  rule was a guess that breaks on a strip wider than half a small contour.
-  Two strips overlapping on one boundary raise in `open_boundaries`.
-- **Removed, back to the caller** (policy, D134): `is_tab_island` (which
-  regions get strips), `tab_count` spaced round the centroid
-  (`bridge_nested_tabs`), the per-island `failed` bookkeeping
-  (`bridge_parent_tabs`: the caller catches `link`'s `ValueError` per
-  region). Also removed, used only by tabs: `polyline_line_intersections`,
-  `closest_point_on_track`.
-
-D134 said "smoother updated in the same change": superseded by D140, smoother
-adapts from its own session (the mapping is in TODO). Script 16 is now
-`16_strips_on_fixture.py` and holds its own policy (4 strips at 90°). Proof:
-`tests/unit/test_strips.py` — sisters and window, cousins never facing,
-four nesting levels, perpendicular from a straight side, refusals, the
-fixture rejoined and healed back to a valid cluster with four empty sectors.
-
-### D143 — what 1.0 promises: names and signatures, *and* the geometry, as invariants rather than golden numbers ✅
-
-A library that promises only its names promises that the caller's code still
-imports, not that the part comes out right; for a geometry engine that is no
-promise at all. So 1.0 promises two things for the whole 1.x line:
-
-1. **The surface:** the public names and signatures (`__all__` of `topo`,
-   `topo.geometry`, `topo_dxf`) do not break. The stable surface holds facts
-   only, never the shape of a consumer (D140).
-2. **The geometry**, as three invariants checked on every input:
-   - **faithful** — Hausdorff distance between input and output, *in both
-     directions*, ≤ heal's tolerance; where heal did not intervene, the
-     coefficients are identical (centre, radius, control points). Checked on
-     the DXF written and read back, not only on the model in memory (D121);
-   - **complete** — every input curve is a contour of some cluster or lies in
-     `result.loose` (D137); nothing is dropped, not even as a "duplicate";
-   - **deterministic** — same input, same output, whatever the order of the
-     edges (D131).
-
-**Not promised:** the exact number of segments of a discretization, the start
-point or direction of a contour, the outcome of ambiguous cases of
-`island()`. These may improve in a minor. The reason: a golden freezes a
-number, an invariant states what matters — the part stays superimposable on
-the original — so a 1.x that discretizes better keeps the promise instead of
-breaking it.
-
-**What it makes blocking for 1.0** (TODO, "la strada verso la 1.0.0"): the
-two-way fidelity test and heal's per-entity deviation report (D121); the
-128-side cap on `CircleSeg.discretize`, which already violates the tolerance
-past r ≈ 33 at tol 0.01 (and `ArcSeg`/`EllipseSeg` checked the same way);
-the four doubts on D103, verified rather than excluded — `island()` is one of
-the two readings, leaving it outside the promise removes half its value; and
-a loop discarded as a boundary duplicate goes to `result.loose`, never to a
-discard bucket (non-negotiable 7).
-
-### D144 — for 1.0, the reader's documents are English: `API.md`, `ARCHITECTURE.md`, and the docstrings of public names; internal code stays Italian ✅
-
-1.0 is for a third party who builds on topo's primitives (D143). That reader
-meets topo in three places: `API.md` (the reference), `ARCHITECTURE.md` (why it
-is built this way), and the docstring of a public name — what an IDE shows on
-hover and `help(topo.heal)` prints. For that reader the docstring of a public
-name is part of the API, like its signature; in Italian it is a wall exactly
-where they need it. So, blocking for 1.0:
-
-- `docs/API.md` and `docs/ARCHITECTURE.md` in English (the repo rule already
-  said so; both were still Italian). `LLM.md` already is.
-- Docstrings of the public names — `__all__` of `topo`, `topo.geometry`,
-  `topo_dxf` — in English, short; the full card stays in `API.md`.
-- Everything internal (private helpers, `core/`, comments) stays Italian: its
-  reader is the maintainer, with the code in front of him.
-
-This is a topo exception to the general convention (docstrings in Italian),
-written in topo's `CLAUDE.md`. The public set is known to `gen_index`, so the
-rule can be checked rather than remembered.
-
-### D145 — circles and arcs discretize on one grid per circle: no side cap, sides grow with the radius, an arc is a piece of its circle's polygon ✅
-
-The first item made blocking by D143. Two changes, one reason: the same curve
-must give the same polygon, within `tol`, however the file cut it.
-
-**No cap.** A chord of angle θ on radius r leaves a sagitta r(1 − cos θ/2);
-held at `tol`, the sides needed are ~π·√(r / 2·tol) — they grow with the
-radius. The old cap of 128 sides broke the tolerance from r ≈ 33 at tol 0.01,
-linearly with r: 0.15 at r 500, 0.60 at r 2000. Now 994 sides at r 2000,
-deviation 0.00999.
-
-**One grid per circle.** Before, a circle had at least 64 sides and an arc
-at least 32 whatever its sweep (a small quarter was eight times denser than
-its circle), with vertices starting at its own start angle: a hole that
-arrives as one CIRCLE, two halves or four quarters gave three different
-polygons — a fact about how one file was authored (non-negotiable 1). Now the
-circle has N sides (`_circle_sides`: sagitta ≤ tol, at least 64, rounded up to
-a multiple of 4) at angles k·2π/N anchored at angle 0; an arc takes its exact
-ends plus every grid point between them (`_grid_angles`). So the four
-quarters joined are the circle's polygon exactly, an arc is a piece of it, a
-reversed arc gives the same points backwards. The two end chords are shorter
-than a step (smaller sagitta, so within `tol`); an arc shorter than a step is
-one chord; a grid point is skipped only when it coincides with an end
-(1e-9), never within a fraction of a step, which would stretch a chord past
-the step and break `tol`. N a multiple of 4: the grid is symmetric about both
-axes, so quarters fall on vertices and a mirrored part gives the mirrored
-polygon.
-
-**The price, chosen:** a circle has no direction of its own, so the grid is
-anchored to the world's angle 0; rotating a part no longer rotates its
-vertices (they still lie on the curve within `tol`). Same curve → same polygon
-is the stronger invariant, and D143 promises the tolerance, not the vertices.
-Output to a machine is unaffected: `to_dxf` writes native ARC/CIRCLE.
-
-`ArcSeg`/`EllipseSeg` were measured already within `tol` (ellipse untouched).
-Proof: `tests/unit/core/test_discretize_tolerance.py` (every scale; quarters
-= circle; off-grid arc = piece of the circle; reversed; one chord; no
-degenerate side); `test_segment_rotation` now checks points on the rotated
-arc. Goldens of `heal` regenerated after proof: every changed part's area
-recomputed at tol 1e-5 and the error checked against tol × perimeter — all
-within (22 of 33 closer to the true area, 11 a little farther: small fillets
-lost the 32-side floor, still within `tol`). Goldens of `island()`
-(`golden_anchoring`, `text_budget` of anch_06) left red on purpose, frozen
-under the D103 doubts: anchoring changes only `length`/`width` of `other`
-shapes (≤ 0.017, polygon bbox), but anch_06 changes topology — `island()`
-decides self-contact on the discretized polygon, so the reading moves below
-the tolerance (TODO).
-
-### D146 — a piece of the outer contour is not also a spur: `outer_face` removes from `spurs` every edge its chosen loop uses ✅
-`outer_face` counts spurs on the walk (an edge walked twice), then may choose
-another loop: the boundary of the union of closed faces (D100), when nodes
-miss each other by microns. That loop can use an edge the walk counted twice,
-so the edge came back in `loop` *and* in `spurs`, and `island()` wrote it
-twice: in the outer contour and in `loose` (anch_08 without frame: 24 lines,
-one of 37.9 mm). The rule, where the data is made: a piece the chosen contour
-uses is contour, never a spur. Nothing else moves: suite identical.
-Proof: `tests/real/test_island_single_use.py` (no edge in both lists, on the
-eight `anch_NN_noframe` drawings; fails without the fix).
-
-Found on the same pass, not fixed here (TODO): `island()` closes gaps from
-"free" ends that lie mid-edge (a T within tolerance): the bridge lies on the
-existing edge and doubles it. Skipping those ends removes the duplicates but
-loses the loops that share a side with the outer contour — they closed only
-through the duplicate. And two coincident circles are never merged
-(`merge_cocircular_overlaps` takes `ArcSeg` only).
-
-### D147 — `island()`: an end that lies on another edge's interior is not a free end; a closed loop with a side on the contour that holds it is not an inner — ⏸ suspended, code on branch `d147-t-ends`
-**Suspended the same evening:** Federico judged `regr_04` worse after — the
-outer of the pictorial (3D) view was right before and is wrong after (the
-30.8 mm² pocket at its left edge). The code is reverted on `main`, kept on
-branch `d147-t-ends` (commit 71ca4f0); the decision on loops with a side on
-the contour (trash, Federico) stands. What follows is the state as committed
-there.
-
-`island()` closes drawing gaps up to `max_gap` (D60) from the free ends of
-the graph. An end that falls mid-edge (a T within the node tolerance) is
-"free" for the graph — the edge has no node there until
-`split_at_crossings` — so two such ends close to each other were joined: a
-bridge laid on the edge, or both lines stretched to meet outside it. Either
-way the same stretch came out twice, in the contour and in `loose` (what
-Federico saw as "inner with a part in trash"). Rule (`_on_edge_interiors`):
-an end within tolerance of another edge, away from that edge's nodes, is
-already connected — the noding makes it a node — and takes no gap fix. It
-stays free when another free end lies within tolerance (a corner: the two
-ends are one node; without this a corner on a crossing circle closed
-through a 0.01 arc and the DXF round trip changed, `regr_01`/`anch_08`).
-
-The duplicate was the only thing closing loops that share a side with the
-contour around them (`read_island` looks for inners among the pieces the
-outer does not use). They now go to `loose`. Federico's call: a rectangle
-0.5 × 1.2 hanging under the outer line of a section view is a feature of
-that view, "trash tutta la vita", not an inner. Measured on every island
-fixture: the inners lost are all thin loops (0.5 wide) with one side of
-0.5–1.04 on the larger contour; `regr_02` loses a 0.18 nub (0.06 mm²) and
-`regr_04` a 30.8 mm² pocket at its left edge (DXF in `_debug/`, to judge).
-Goldens of island that move (`anch_01`, `anch_04`, `regr_03`; anchoring and
-text budget of `anch_01`) are expected failures with the others, redone
-from scratch on the `_noframe` drawings. Proof:
-`tests/real/test_island_single_use.py` (the T case, built with topo's API;
-fails without the fix), all `island_invariants` green (round trip included).
-
-### D148 — feature freeze until topo is *1.0-ready*: a closed gate of eleven items, then every commit on `main` keeps it releasable ✅
-Federico, 22 October: stop adding things. The goal is not "release 1.0" but
-reach, as soon as possible, the state from which 1.0 can be pushed at any
-moment with nothing else to do. The version number may stay where it is; what
-matters is that from that day `main` is always releasable.
-
-**1.0-ready** means one command, `scripts/release_check.py` (gate item G11),
-exits 0: the suite green with **no** `expectedFailure`, `gen_index --check`,
-`audit_names --strict`, `audit_fixtures --strict`, the English-docstring check
-on public names. From that day every commit on `main` keeps it at 0; a change
-that cannot is a branch.
-
-**The gate is closed** — the list in `TODO.md` ("IL CANCELLO DELLA 1.0", G1–G11)
-is the whole of it. Only two kinds of work enter it: what changes a public name
-or signature (it must happen before 1.0 or wait for 2.0), and what D143's
-invariants (faithful, complete, deterministic) need to be true and proven on
-the existing fixtures, plus the reader's documents (D144) and the client-data
-history rewrite. Everything else — PDF, the `Curve` model, contour signature,
-viewer, strips, D147's T ends, coincident circles, curves from equations,
-recognition facts, new consumer requests that add names — is 1.x, additive,
-after the gate. A problem found while closing the gate enters it only if it
-breaks a public name or violates an invariant on a fixture already in the repo;
-otherwise it is a line under "dopo la 1.0".
-
-Why a closed list: the road to 1.0 in `TODO.md` grew with every session
-(D135–D147 were each right, and each added scope). A list that can grow has no
-end; a list that can only shrink does.
-
-### D149 — reopening D143 on one point: heal's per-entity deviation report is 1.x, the two-way fidelity test stays blocking ✅
-Federico, 22 October, closing the 1.0 gate (D148, item G2). D143 made two
-things blocking for fidelity: the test (Hausdorff both ways ≤ tolerance,
-identical coefficients where heal did not intervene) and a report on `Result`
-of how far heal moved each entity. The promise is kept by the test: it is what
-proves, on every fixture, that the output is superimposable on the input. The
-report is a new field on `Result` — a new name, so additive, and a 1.x minor
-can add it without breaking anyone. It leaves the gate; the test (G3) stays.
-
-### D150 — `Result` loses `classified_entities`, `all_arcs` and `_open_shapes` ✅
-Gate item G1 (D148): the fields of `Result` typed `List[Any]` are public
-surface and 1.0 would freeze them.
-
-- `_open_shapes`: nothing wrote or read it. Removed.
-- `classified_entities`: snapbend's. What went in it is a `ClassifiedEntity` —
-  `work_type` (bending, marking, …), `confidence`, `source`, `data` "ready
-  for CAM": process vocabulary (non-negotiable 4). Its geometry was already in
-  topo's result, as the loose curve or inner it came from. It stayed on
-  `Result` only because `detect()` lived in topo before D88. Removed;
-  snapbend writes what it classifies into the cluster that contains it, and a
-  shape no cluster contains now stays in `result.loose` instead of living only
-  in a list topo did not know about (D137: nothing disappears from the result).
-- `all_arcs`: geometry, but a duplicate. Every curve is a cluster's contour or
-  in `loose` (D137), so the arcs are already in their `segments`; an open arc
-  (a thread crest) is in `loose`. The need behind it is already public —
-  `topo.geometry.arcs_around(center, radius, arcs)` takes the arcs as an
-  argument. Removed; `rotate_result` no longer rotates a parallel list.
-
-Checked before removing: on 376 local drawings the arcs of contours + `loose`
-equal `all_arcs` (direction aside) on 362. On the other 14, two quarter arcs
-(r 0.64–0.8) are in `all_arcs` and nowhere in the result — a D137/D143
-"complete" violation by `heal()`, not a reason to keep the field. All 14 are
-untracked and warn of contour crossings without a common node; to reproduce
-with topo's API (TODO, G3).
-
-Suites: topo unchanged (1377 passed, 20 xfailed). snapbend 16 failed and
-snapdraw 3 failed, the same tests before and after this change (snapbend's are
-process-golden areas, e.g. `arc_arc_gap` 7851.96 vs 7850.83: plausibly D145's
-finer arcs, to be judged in snapbend, not regenerated). `main` stays 0.21.0,
-unreleased: D150 joins D135–D138 in it.
-
-### D151 — A loop that makes no contour goes to `loose`, edge by edge ✅
-Found under G3 (D148), the 14 drawings of D150. `loops_to_curves` dropped a
-loop the graph had closed but that made no contour: no valid polygon, area
-under `MIN_CONTOUR_AREA`, or a single circle under `MIN_SINGLE_LOOP_DIAMETER`.
-Its edges were already counted as "in a loop", so `edges_to_open_curves`
-skipped them too: they vanished from the result, with no warning. A D137/D143
-"complete" violation.
-
-The 14 cases are one shape: a quarter arc drawn twice, as the `ARC` and as its
-chord approximation (15 chords of 0.07 on r 0.64). Arc and chords share both
-ends, so the graph closes them into a loop of area ~6e-4 mm². The crossing
-warning those drawings carry is unrelated. Reproduced with topo's API in
-`tests/unit/core/test_heal_steps.py::TestLoopsToCurves` (arc + chords inside a
-square: before, 16 segments lost; now 16 in `loose`).
-
-The fix is in the step, not in `heal()`, so a caller composing its own recipe
-from `topo.steps` (D62) gets it too: a rejected loop comes back as one
-`OpenCurve` per edge, native segment kept. An `OpenCurve`, never a
-`ClosedCurve`, also for a lone circle: a rejected loop is by definition no
-contour, and a `ClosedCurve` would be put back in the containment tree by
-`build_hierarchy`. Only zero-length segments are left out (no geometry to
-lose). `loops_to_curves` now returns `list[ClosedCurve | OpenCurve]`.
-
-Checked: the 376 local drawings lose no source arc (was 14); suite unchanged.
-
-### D152 — Reopening D56 on one point: a welded group spans at most 0.05 mm; fidelity is tested per reading ✅
-Found by G3's measurement (D148): on `golden_islands/regr_01`, read with
-`heal()`, a source point lay 0.59 mm from the output against a tolerance of
-0.05. `weld_degenerate_linesegs` (D56) used an unbounded union-find: a curve
-drawn as a chain of 0.02 mm LineSegs welded into one node, the welded edges
-vanished, the curve collapsed to a point. D56 stays — welding, not deleting —
-but a group of welded nodes now spans at most `_DEGENERATE_LENGTH_EPS` (its
-bounding-box diagonal); a sub-threshold LineSeg whose weld would exceed that
-stays as a real edge. Candidates are welded in a canonical order (length, then
-nodes), not input order, so the groups do not depend on edge order (D131).
-
-Effect on local drawings: only sheets of views change, and Federico judged
-them (23 Oct): heal on a sheet of views is not a case heal is designed for, so
-those changes are irrelevant; on `island()` the result is a little better
-(fewer false micro-inners). Rounded rectangles drawn twice (arcs + chord
-corners) were read before as sharp-cornered inners plus a false inner per
-corner arc; now they are in `loose` — better, though not yet a contour.
-
-**Which reading a fixture gets.** It was already in the golden tests and is
-now written down: drawings in `tests/data/golden_islands/` and
-`tests/data/golden_anchoring/` are sheets of views, read with `island()`;
-every other tracked drawing is read with `heal()`. A fidelity failure of
-`heal()` on a sheet of views is not a defect.
-
-**The test** (`tests/real/test_fidelity.py`, closes G3): every tracked drawing,
-written with `to_dxf` and read back with `document_from_msp(skip_layers=())`
-(loose included), identical copies measured once (216 drawing/reading pairs):
-1. Hausdorff in both directions ≤ the reading's bound: the node tolerance for
-   `heal()`, `max_gap` for `island()` — gap closures are the only thing that
-   moves geometry in a view.
-2. Identical coefficients (≤ 1e-9: centre and radius, ellipse, control points,
-   a spline also reversed) for every curve the reading had no reason to touch:
-   both ends coincide with another source edge's, and no near-duplicate of
-   the same kind within 0.05. A free end may have been closed within the
-   tolerance, and then an arc read back from an LWPOLYLINE bulge has its centre
-   and radius recomputed from moved ends (0.09 mm on an r 420 arc of small
-   sweep — ill-conditioned, still within Hausdorff). That is heal intervening,
-   which D143 exempts. Today 7391 of 11838 source curves are compared; the
-   test asserts the count stays above 1000, so the rule cannot quietly
-   exclude everything.
-Mutation check: a bulge off by 0.1% in the writer fails 77 sub-tests. Suite
-time 90 → 154 s.
-
-### D153 — an ellipse discretizes on its parameter grid, like an arc on its circle's (D145): within `tol` by construction, a piece is a piece of the whole ✅
-Gate G4. `EllipseSeg.discretize` sampled uniformly by the smallest radius of
-curvature, then halved a piece while its *parametric midpoint* was farther
-than `tol` from the chord. Two faults, measured on 200 random ellipses:
-- **Out of tolerance on flat ellipses.** On an ellipse with ratio below
-  ~0.006 the sharp tips at the ends of the major axis are not at the
-  parametric midpoint of a piece. The midpoint passed and the piece stayed
-  too coarse: 0.0152 at a 18.6, ratio 0.0054; 0.0113 at a 139, ratio 0.0027.
-- **Same curve, different polygon.** An ellipse in two halves gave 169
-  vertices, the whole one 171, not the same points. That is the fault D145
-  removed for circles.
-
-The rule: an ellipse is the circle of radius `a` (semi-major axis) seen through
-a linear map with factors 1 and `ratio`, and that map never lengthens a
-vector. A point of the circle within `tol` of its chord maps to a point within
-`tol` of the mapped chord. So the circle's grid (`_circle_sides(a, tol)`,
-k·2π/N) taken on the *parameter* keeps the ellipse within `tol`: a proof,
-not an estimate, and no subdivision is needed. As for an arc, the exact ends
-plus every grid point between them (`_grid_angles`). The four quarters are
-the whole ellipse, a reversed ellipse gives the same points backwards, and the
-grid starts at the major axis, so it rotates with the ellipse. A `ratio`
-above 1 (outside the format) uses the larger factor as the radius.
-Vertex count is the same order as before (161 against 171 on a 40×16
-ellipse). `MIN_SEGMENTS_ARC` and `FALLBACK_ANGLE_DEG` are removed: nothing
-uses them any more. `_adaptive_polyline` stays, for splines.
-Proof: `test_discretize_tolerance` (flat ellipse, rotated partial clockwise
-ellipse far from the origin, quarters = whole, reversed); the two new
-invariants fail on the old code. No golden changed. Arcs were measured again
-(300 random: radius 0.001–3000, centers at 1e5, both directions): all within
-`tol`, nothing to change.
-
-### D154 — a curve of zero size is a point, not a curve: the primitive refuses it, the DXF adapter turns it into a warning ✅
-Gate G4. `ArcSeg.discretize` raised ZeroDivisionError on radius 0. The source
-of those arcs was not an ARC entity: 6 arcs in 4 local drawings came from
-LWPOLYLINEs with a repeated vertex that carries a bulge. `from_chord` divided
-0 by 0 on numpy floats, which warns instead of raising, and built an arc with
-center NaN and radius 0. Separately, a CIRCLE of radius 0 stopped `load_dxf`
-on the whole drawing (`CircleSeg` refuses it, nothing caught it).
-The rule, one for all three closed-form curves: a radius 0, a null axis or a
-`ratio` of 0 has no extent. It is a point (or, for the ellipse, a segment),
-and topo has no point primitive. `ArcSeg` and `EllipseSeg` refuse it at
-construction like `CircleSeg` already did (`not x > 0`, so NaN is refused
-too), and `ArcSeg.from_chord` refuses a null chord. In the adapter:
-- a null chord with a bulge in a polyline becomes the null `LineSeg` it would
-  be without the bulge (welded by D56);
-- an ARC, CIRCLE or ELLIPSE the primitive refuses is counted by type and
-  reported in `doc.warnings`, the channel D137 gives to what the model cannot
-  hold, instead of ending the load.
-Proof: `tests/integration/test_degenerate_curves.py` (all five fail on the old
-code); 683 local drawings load, 376 heal without errors, no zero-radius arc
-left in any source or result.
-D112 already met this NaN arc, on the writing side: a lone near-full arc was
-written with a zero chord and read back as a NaN arc. D112 stopped topo from
-writing it, so it now becomes a `CircleSeg`. The reading side stayed open, and
-the 4 local drawings were most likely written before D112. D154 closes the
-reading side for any file.
-
-### D155 — each closed gate item is one micro bump and one push ✅
-Federico, 23 October: "micro bump e push per ogni passo del cancello chiuso".
-Until 1.0-ready, closing an item of the D148 gate ends with a version bump in
-`pyproject.toml`, recorded here, and a push of `main`. The bump is the third
-digit, unless the item removes or renames a public name, which bumps the
-second, as before (0.21.0). A consumer then always sees the gate's progress as
-a version, and nothing waits unpushed.
-The first push under this rule carries everything since 0.21.0. That includes
-D149/D150 (public fields removed from `Result`) and D151 (`loops_to_curves`
-return type), so it is **0.22.0**. From the next item on, the bump is the
-third digit.
-`main` → **0.22.0** (G1, G2, G3, G4 closed: D145–D154; public fields removed,
-`heal()` output changes, arcs and ellipses of zero size refused).
-
-### D156 — gate G5: `contour_shape` measures `other` on the primitives; the countersink's area was the parity reading, not a bug ✅
-
-Two measurement doubts found with D145, both checked against an exact value.
-
-**`cluster.area` of `rect_with_countersink` is right.** The TODO note called the
-Ø10 circle "an inner not subtracted", comparing with outer minus the *union* of
-the inners (19293.14). But the Ø10 lies inside the Ø30: depth 2, an island in
-the void, material by the parity rule (D89). The exact value of that reading is
-200·100 − π·15² + π·5² = 19371.68; `heal()` gives 19372.16, a difference of 0.47,
-within tol × perimeter of the two circles (1.26). No code changes; a test
-(`TestHealerCountersink.test_003_area_per_parita`) now holds both the depths and
-the value. Reading the pair as one hole is a process reading (snapbend).
-
-**`contour_shape` of `other` measured the inscribed polygon.** `_generic` took
-`length`/`width` from the minimum rotated rectangle of `discretize()`: a chord
-lies inside its arc, so every curved side came out short, up to 2·tol. Measured
-on the anchoring drawings against a 1e-6 reference: up to 0.016 short — beyond
-tol. Now:
-- `segment_reach(segment, direction)` (`core/geometry/measure.py`, internal) is
-  the (min, max) of the projection of the curve itself: closed form for line,
-  arc, circle, ellipse; for a B-spline 16 samples per knot span, then every
-  local extreme that can still win refined by golden section on the parameter.
-  `Reach` keeps a spline's samples for many directions.
-- The polygon only gives the starting angle. For `other` the angle of the
-  minimum-area rectangle is searched on the primitives within ±1° of it (the two
-  differ only by the sagitta of the curved sides), and length/width are the
-  reach along the two axes. So at the returned angle the rectangle contains the
-  curve and touches it on all four sides, exactly. `polygon` (all lines) is
-  unchanged: its polygon is exact.
-- Result: within 4e-5 of the reference on every `other` of anch_01–07.
-
-**The price, chosen:** time. Searching the angle on sampled splines only was
-about 12× faster but, on nearly symmetric shapes (area almost flat with the angle),
-landed in another local minimum (3e-4 off). Federico, 23 October: correctness
-now, speed when the geometric questions move to the Rust engine (ROADMAP).
-`contour_shape` on anch_02 (133 spline shapes): 0.03 s → 5 s.
-
-Golden: anch_01 changes only `length` of one contour, 7.894 → 7.895 (reference
-7.895). anch_02–07 stay frozen for G7.
-`main` → **0.22.1**.
-
+- **D141** — `simplify_points(points, tolerance, scale, closed=True,
+  corner_turn_deg=35, arcs=True, spline_degree=3)` (experimental): a corner is
+  a Douglas-Peucker vertex where the curve *turns* by ≥ `corner_turn_deg` over
+  `scale` before and after; a stretch within `tolerance` of its chord is a
+  line, of an arc through its two ends (and middle) an arc, else a spline
+  (`approximate_bspline`, fewest control points within `tolerance`). The output
+  is a head-to-tail chain; `tolerance` and `scale` are required lengths topo
+  cannot guess. Also used by `refit_tessellations`.
+- **D142** — `tools.tabs` → `topo.tools.strips` (experimental): D134's facts on
+  primitives, not points — `facing_boundaries`, `gap`, `link` (refused with the
+  reason if a side misses, crosses a third boundary or touches a placed
+  strip), `unconnected_regions`, `open_boundaries`. A strip leaves
+  perpendicular from the nearer boundary toward the other; the stretch it
+  covers is the one holding its foot. Policy (`is_tab_island`, counts) is
+  the caller's.
+- **D143** — what 1.0 promises: (1) names and signatures of `topo`,
+  `topo.geometry`, `topo_dxf` do not break, and the stable surface holds facts
+  only; (2) the geometry, as invariants checked on every input — **faithful**
+  (Hausdorff both ways ≤ tolerance, identical coefficients where heal did not
+  intervene, on the DXF read back), **complete** (every input curve is a
+  contour or in `loose`), **deterministic** (any edge order). Not promised:
+  segment counts, a contour's start point or direction, ambiguous `island()`
+  cases. A golden freezes a number, an invariant states what matters.
+- **D144** — for 1.0 the reader's documents are English: `docs/API.md`,
+  `docs/ARCHITECTURE.md` and the docstrings of public names (`__all__` of
+  `topo`, `topo.geometry`, `topo_dxf`), short; internal code stays Italian.
+  A topo exception to the general convention, checked rather than remembered.
+- **D145** — circles and arcs discretize on one grid per circle, with no side
+  cap: N sides with sagitta ≤ `tol` (at least 64, a multiple of 4), at angles
+  k·2π/N from angle 0; an arc takes its exact ends plus the grid points
+  between. Same curve, same polygon however the file cut it; the price is that
+  rotating a part no longer rotates its vertices. `to_dxf` still writes native
+  ARC/CIRCLE.
+- **D146** — a piece the chosen outer contour uses is contour, never also a
+  spur: `outer_face` removes from `spurs` every edge of its loop.
+- **D147** ⏸ — suspended: an end lying on another edge's interior is not a free
+  end, and a loop with a side on its host contour goes to `loose`. Federico
+  judged `regr_04` worse; code kept on branch `d147-t-ends`, reverted on `main`
+  (1.x, TODO).
+- **D148** — feature freeze: topo is *1.0-ready* when `scripts/release_check.py`
+  exits 0 (suite with no `expectedFailure`, `gen_index --check`,
+  `audit_names --strict`, `audit_fixtures --strict`, English docstrings of public
+  names) and every commit on `main` keeps it at 0. The gate list in `TODO.md`
+  is closed and can only shrink; the rest is 1.x.
+- **D149** — reopening D143 on one point: heal's per-entity deviation report is
+  1.x (a new field, additive); the two-way fidelity test stays blocking.
+- **D150** — `Result` loses `classified_entities` (a consumer's, process
+  vocabulary), `all_arcs` (a duplicate of contours + `loose`) and
+  `_open_shapes`. What a consumer classifies it writes into the cluster that
+  contains it, else it stays in `loose`.
+- **D151** — a loop the graph closed that makes no contour (no valid polygon,
+  area under the minimum, a tiny lone circle) goes to `loose`, one `OpenCurve`
+  per edge with its native segment — never dropped, never a `ClosedCurve`.
+  The fix is in the step `loops_to_curves`, so a hand-made recipe gets it too.
+- **D152** — reopening D56: a welded group spans at most `0.05` mm (its
+  bounding-box diagonal), welded in canonical order. Fidelity is tested per
+  reading (`tests/real/test_fidelity.py`): Hausdorff ≤ node tolerance for
+  `heal()`, `max_gap` for `island()`; identical coefficients for curves the
+  reading had no reason to touch. Drawings in `golden_islands/` and
+  `golden_anchoring/` are read with `island()`, every other with `heal()`.
+- **D153** — an ellipse discretizes on the parameter grid of the circle of
+  radius `a` (its semi-major axis): the map to the ellipse never lengthens a
+  vector, so the result is within `tol` by proof, a piece is a piece of the
+  whole, and a reversed ellipse gives the same points backwards.
+- **D154** — a curve of zero size is a point: `ArcSeg`, `EllipseSeg` and
+  `CircleSeg` refuse radius/axis/ratio 0 (and NaN), `ArcSeg.from_chord` a null
+  chord; the DXF adapter turns a null polyline bulge into a null `LineSeg` and
+  reports a refused ARC/CIRCLE/ELLIPSE in `doc.warnings` instead of failing.
+- **D155** — each closed gate item is one micro bump (the third digit; the
+  second if a public name goes) and one push of `main`, until 1.0-ready.
+- **D156** — `contour_shape` measures `other` on the primitives
+  (`segment_reach`: exact projection of the curve, not of the inscribed
+  polygon) at the minimum-area angle searched on the curve itself; correctness
+  over speed until the Rust engine. The countersink's area was right: the Ø10
+  inside the Ø30 is material by the parity rule (D89).
 ### D157 — gate G6: the four doubts on D103 checked one by one; a dropped loop has no boundary of its own at the contact distance, and its edges are in `loose` ✅
 
 Checked on every `golden_islands` drawing by intercepting
