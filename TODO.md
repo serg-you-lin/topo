@@ -138,23 +138,22 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       una fessura larga quanto la tolleranza dipende da edge che non la
       toccano.
 - [ ] **G6e** `heal()` dipende dal riferimento (aperta il 31 ottobre, in una
-      **DOMANI SI RIPARTE DA QUI (D191).** G6e si chiude su un elenco
-      finito, non sui disegni: `_debug/2026-10-31_topo_G6e-inventario/inventario.md`,
-      ~35 punti di `core/` che decidono a zero, su una griglia, con una
-      soglia assoluta o su un pari merito. Ogni voce: micro-caso rosso → verde,
-      oppure una riga sul perché è innocua. Primo passo: chiudere
-      l'inventario — le 706 righe di `core/` con un confronto o una scelta
-      (`==`, `<`, `>`, `min`, `max`, `sorted`, `round`) passate una volta;
-      ciò che decide entra, poi l'elenco è fermo e si accorcia soltanto
-      (eccezione: righe nuove scritte in `core/`, controllate nel loro
-      commit). Misura: a fine giornata l'elenco è più corto che al mattino.
-      1 novembre: inventario chiuso a 44 righe (688 contate per token);
-      gruppo A fatto (D192: 7 corrette, 6 innocue), poi B: 3 righe chiuse; `outer_face.py:218` riaperta (prova vuota): restano 29.
-      **D193: G6e esce dal cancello della 1.0 su una soglia contata** —
-      inventario chiuso, ripasso ai punti di chiamata delle righe "innocue
-      perché a tolleranza", una passata sui 121; il resto è problema noto
-      per le 1.x. Alla fine la passata sui 121 disegni
-      una volta sola, come verifica. Il testo sotto è la storia.
+      **SI RIPARTE DA QUI: gruppo B (D191, D193).** Inventario:
+      `_debug/2026-10-31_topo_G6e-inventario/inventario.md` (le ultime
+      sezioni sono lo stato vero). Conto al 1 novembre sera: **28** (A 0,
+      B 7, C 8, D 13). B che resta: `topology/noding.py:527-528` (media dei
+      punti di un contatto arrotondata), `topology/rim.py:80`
+      (`round(project, 9)`), `topology/outer_face.py:41` (`UNION_GRID`),
+      `base/hierarchy.py:82, 86` (ordine per `round(area, 6)`),
+      `geometry/axis.py:179` (fuori dalle letture). Fatte oggi: A intero
+      (D192), B `normalizer.py:513-514` e `renode`/`_is_loop`, D Douglas-
+      Peucker e `turn_corners` (pari merito). Metodo: micro-caso col moto
+      preciso da `tests.invariants.rigid`, valore al posto controllato prima
+      (una prova vuota non prova niente), rosso sul codice vecchio, verde,
+      suite completa una volta, commit. Una riga "innocua" vale solo con un
+      test; quelle a tolleranza si giudicano dove sono chiamate (D193 punto 2).
+      Dopo B, C, D: il ripasso ai punti di chiamata, poi la passata sui 121.
+      Il testo sotto è la storia.
       chat pulita): la passata su snapdraw (`scripts/21_sweep_invariants.py`,
       voce in Pulizia) trova 32 disegni su 121 dove un moto rigido cambia la
       lettura — quasi sempre fori che non si chiudono, una volta 3 → 7
