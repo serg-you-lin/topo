@@ -24,8 +24,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Iterable, List, Tuple
 
+import numpy as np
+import shapely
+import shapely.ops
 from shapely import STRtree
 
+from ..geometry.strips import refine_gap
+from ..primitives.segments import DEFAULT_TOLERANCE
 from ..topology.edge import Edge
 from ..topology.graph import connected_groups
 from ..topology.noding import edge_geometry
@@ -54,17 +59,15 @@ class Island:
 
 def spatial_islands(edges: Iterable[Edge], gap_tolerance: float) -> List[Island]:
     """
-    Union-find sulle coppie di Edge a distanza <= gap_tolerance (STRtree,
-    predicato `dwithin`, sui segmenti discretizzati). Isole ordinate per area
-    di bbox, decrescente.
+    Union-find sulle coppie di Edge a distanza vera <= gap_tolerance
+    (`_near_pairs`). Isole ordinate per area di bbox, decrescente.
     """
     edges = list(edges)
     if not edges:
         return []
 
     geoms = [edge_geometry(e) for e in edges]
-    left, right = STRtree(geoms).query(geoms, predicate="dwithin", distance=gap_tolerance)
-    groups = connected_groups(len(edges), zip(left.tolist(), right.tolist()))
+    groups = connected_groups(len(edges), _near_pairs(edges, geoms, gap_tolerance))
 
     islands = []
     for members in groups:
@@ -76,5 +79,26 @@ def spatial_islands(edges: Iterable[Edge], gap_tolerance: float) -> List[Island]
         ))
     islands.sort(key=lambda isl: isl.width * isl.height, reverse=True)
     return islands
+
+
+def _near_pairs(edges: List[Edge], geoms: list, gap_tolerance: float) -> List[Tuple[int, int]]:
+    """Le coppie di edge a distanza vera <= `gap_tolerance`. Le
+    discretizzazioni sbagliano fino a DEFAULT_TOLERANCE per curva, e il loro
+    errore gira col disegno (D145): fuori dalla fascia di 2·DEFAULT_TOLERANCE
+    attorno alla soglia decidono loro, dentro la distanza sulle primitive."""
+    band = 2 * DEFAULT_TOLERANCE
+    left, right = STRtree(geoms).query(geoms, predicate="dwithin", distance=gap_tolerance + band)
+    keep = left < right
+    left, right = left[keep], right[keep]
+    measured = shapely.distance(np.array(geoms, dtype=object)[left], np.array(geoms, dtype=object)[right])
+    pairs = []
+    for i, j, d in zip(left.tolist(), right.tolist(), measured.tolist()):
+        if d > gap_tolerance - band:
+            pa, pb = shapely.ops.nearest_points(geoms[i], geoms[j])
+            found = refine_gap([edges[i].segment], [edges[j].segment], (pa.x, pa.y), (pb.x, pb.y))
+            if found.distance > gap_tolerance:
+                continue
+        pairs.append((i, j))
+    return pairs
 
 

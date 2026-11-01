@@ -57,7 +57,13 @@ def gap(a: Sequence, b: Sequence) -> Gap:
     cerchi; su spline ed ellissi entro `CURVE_TOLERANCE`.
     """
     pa, pb = nearest_points(LineString(_ring_points(a)), LineString(_ring_points(b)))
-    on_a, on_b = (pa.x, pa.y), (pb.x, pb.y)
+    return refine_gap(a, b, (pa.x, pa.y), (pb.x, pb.y))
+
+
+def refine_gap(a: Sequence, b: Sequence, on_a: Point, on_b: Point) -> Gap:
+    """La coppia più vicina fra le primitive `a` e `b` (anelli o pezzi
+    aperti), partendo da `on_a`, `on_b` presi sulle discretizzazioni:
+    proiezioni alterne con `nearest_point` fino a fermarsi (D200)."""
     for _ in range(20):
         new_a = nearest_point(a, on_b)
         new_b = nearest_point(b, new_a)

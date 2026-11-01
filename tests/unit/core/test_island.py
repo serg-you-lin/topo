@@ -193,3 +193,46 @@ class TestNestedInUnderMotion(unittest.TestCase):
                 outer = to_shapely(readings[tops[0]].outer)
                 self.assertAlmostEqual(outer.area, 100.0 ** 2, places=3)
                 self.assertTrue(all(r.nested_in == tops[0] for i, r in enumerate(readings) if i != tops[0]))
+
+
+class TestHostOfATinyPieceUnderMotion(unittest.TestCase):
+    """G6e, D193 punto 2, `island.py:146`: l'ospite di un pezzo si chiedeva
+    al poligono del suo outer allargato di `tolerance`. Un morso ad arco
+    (freccia 0.0099) e dentro il morso un cerchietto di raggio 0.003 a 0.051
+    dall'arco vero, soglia 0.05 (`max_gap` 0): due isole a ogni moto, ma la
+    corda sporge nel morso fino a 0.0099 e a mezzo passo della griglia
+    angolare (D145) il buffer copriva tutto il cerchietto, che finiva
+    annidato. Da quando due isole distano più della soglia sulle curve vere
+    (D200) un punto solo del pezzo dice se sta dentro, sulle primitive."""
+
+    N = 64
+    MOTIONS = [(0.0, 0.0, 0.0), (math.pi / 64, 0.0, 0.0), (math.pi / 128, 0.0, 0.0), (0.7, 0.0, 0.0),
+               (math.pi / 2, 0.0, 0.0), (0.0, 2.5e6, -1.5e6)]
+
+    def _segments(self):
+        step = 2 * math.pi / self.N
+        r = 0.01 * (1 - 1e-8) / (1 - math.cos(step / 2))
+        a = math.pi / 4
+        p1, p2 = (-r * math.cos(a), -r * math.sin(a)), (r * math.cos(a), -r * math.sin(a))
+        return [ArcSeg(center=(0.0, 0.0), radius=r, start_angle=5 * a, end_angle=7 * a, ccw=True),
+                LineSeg(start=p2, end=(p2[0], -r - 3)), LineSeg(start=(p2[0], -r - 3), end=(p1[0], -r - 3)),
+                LineSeg(start=(p1[0], -r - 3), end=p1),
+                CircleSeg(center=(0.0, -r + 0.054), radius=0.003)]
+
+    def test_il_cerchietto_nel_morso_non_e_annidato_a_nessun_moto(self):
+        from tests.invariants import rigid
+        for motion in self.MOTIONS:
+            move, _ = rigid(*motion)
+            with self.subTest(motion=motion):
+                result = topo.island(topo.load_segments([move(s) for s in self._segments()]), max_gap=0.0)
+                self.assertEqual(len(result.clusters), 2)
+
+    def test_al_posto_il_buffer_copre_il_cerchietto(self):
+        # la prova non è vuota: a mezzo passo il poligono allargato di 0.05 lo contiene
+        from shapely import Polygon
+        from tests.invariants import rigid
+        from topo.core.readings.island import read_island
+        move, _ = rigid(math.pi / 64, 0.0, 0.0)
+        segments = [move(s) for s in self._segments()]
+        host = read_island(topo.load_segments(segments[:4]).edges, 0.05, max_gap=0.0)
+        self.assertTrue(to_shapely(host.outer).buffer(0.05).contains(Polygon(segments[4].discretize())))

@@ -7429,3 +7429,21 @@ Probes: `_debug/2026-10-31_topo_G6e-inventario/attrezzi/probe_network_road1*.py`
 
 **Gate.** G6e, in the 1.0 gate; it closes the inventory (D193 point 1). No
 public name or signature changes.
+
+### D200 — G6e, D193 point 2: two islands are apart on the true curves, and a point says who hosts whom ✅
+`islands.py:66` judged `dwithin(max_gap)` on the discretizations, whose
+error (up to DEFAULT_TOLERANCE per curve) turns with the drawing (D145): a
+square 0.496 from a circle, `max_gap` 0.5, was one island at the origin and
+two half a grid step away. Now the discretizations decide only outside a
+band of 2·DEFAULT_TOLERANCE round the threshold; inside it the distance is
+refined on the primitives (`strips.refine_gap`, the loop of `gap` taken out
+so both use it). `island.py:146` asked the host's polygon grown by
+`tolerance` to contain the whole piece; a chord bulging into a concave bite
+let it cover a 0.003 circle 0.051 from the true arc at some motions. Since
+two islands are now farther apart than the threshold on the true curves, a
+piece lies inside a host iff one point of it does: `ring_contains` on the
+primitives, one endpoint of the piece. Measured: 0 readings change on the 31
+and on the 121; `island()` ~3% (D200 pairs) and ~10% (nesting) slower on the
+121; suite 3:49 → 4:15. Held by `test_islands.py::TestGapOnTrueCurvesUnderMotion`
+and `test_island.py::TestHostOfATinyPieceUnderMotion` (red before, green
+after). Gate: G6e, in the 1.0 gate; no public name changes.

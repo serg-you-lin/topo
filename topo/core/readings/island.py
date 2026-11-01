@@ -23,7 +23,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, List, Optional
 
-from shapely.ops import unary_union
 
 from ...model.cluster import Cluster
 from ...model.contour import Contour
@@ -31,9 +30,10 @@ from ...model.document import Document
 from ...model.result import Result
 from ...model.role import ContourRole, is_structural_role
 from ..primitives.polygon_builder import curve_polygon, with_polygon
-from ..primitives.segments import segment_is_closed
+from ..primitives.segments import segment_endpoints, segment_is_closed
 from ..topology.edge import Edge
 from ..geometry.integrals import ring_area
+from ..geometry.rings import ring_contains
 from ..geometry.shape import merge_runs
 from ..topology.noding import GRAPH_EPSILON, decide_nodes, edge_geometry, split_at_crossings
 from ..topology.outer_face import OuterFace, outer_face
@@ -135,15 +135,17 @@ def read_islands(edges: List[Edge], tolerance: float, max_gap: float) -> List[Is
     """
     readings = [read_island(isl.edges, tolerance, max_gap=max_gap)
                 for isl in spatial_islands(edges, max(tolerance, max_gap))]
-    outers = [(j, curve_polygon(r.outer).buffer(tolerance), ring_area(r.outer.segments))
+    outers = [(j, r.outer.segments, ring_area(r.outer.segments))
               for j, r in enumerate(readings) if r.outer is not None]
     for i, r in enumerate(readings):
+        # due isole distano più della soglia sulle curve vere (D200): un
+        # punto del pezzo sta dentro un ospite solo se ci sta tutto il pezzo
         if r.outer is not None:
-            small, area = curve_polygon(r.outer), ring_area(r.outer.segments)
+            point, area = segment_endpoints(r.outer.segments[0])[0], ring_area(r.outer.segments)
         else:
-            small, area = unary_union([edge_geometry(e) for e in r.edges]), 0.0
-        hosts = [(j, big_area) for j, probe, big_area in outers
-                 if j != i and big_area > area and probe.contains(small)]
+            point, area = r.edges[0].start, 0.0
+        hosts = [(j, big_area) for j, ring, big_area in outers
+                 if j != i and big_area > area and ring_contains(ring, point)]
         if hosts:
             r.nested_in = max(hosts, key=lambda h: h[1])[0]
     return readings
