@@ -278,544 +278,64 @@ Names in the older entries are the names of their day (`forge`, `ForgeCluster`,
   `scripts/gen_index.py` from `ast`, and the script checks names defined in
   more than one module and the dependency rule. A hand-written inventory
   lies at the next commit.
-### D73 — client names stay out of tracked files, and a tool says so ✅
-The drawings themselves were already handled: client files live in untracked
-folders, and the anchoring goldens went into git only after Federico renamed
-them (`anch_01…08`). What leaked was the *names*. D71 named an original drawing
-and, worse, said which anonymized fixture was its copy — undoing the
-anonymization in one sentence. Three commits, two of them already pushed.
-
-- **Rule**: an original drawing name, a client part code or an order number
-  never appears in a tracked file — not in `MAP.md`, not in a script's CONFIG,
-  not in a comment, not in a commit message, and above all not in a sentence
-  that maps an anonymized fixture back to its origin. In prose, describe the
-  case instead ("a dense strip view", "a real multi-view sheet"); in a script,
-  default to a tracked anonymized fixture and let the local path be edited.
-- **Done**: `MAP.md` (D49, D56, D60, D65, D71 contexts), `TODO.md` (the three
-  open sheets are now A/B/C with no legend anywhere — Federico knows his
-  files, git does not), `scripts/07_split_to_files.py` (example label),
-  `scripts/18_outer_scan.py` (pointed at `golden_anchoring/anch_02`/`anch_05`,
-  zoom windows emptied), a comment in `core/healing/normalizer.py` and one in
-  `tests/unit/core/test_normalizer.py`.
-- **`scripts/audit_names.py`** makes it repeatable instead of remembered:
-  `--strict` exits 1 on a hit, `--from-disk` also looks for the names of the
-  untracked drawings present on that machine. A part code is detected by shape
-  (letters mixed with ≥4 digits); a token of digits only is deliberately **not**
-  reported by default, because in a golden it is indistinguishable from a
-  coordinate — `--digits` enables it on `.md`/`.py` only. False positives go in
-  `ALLOWED`.
-- **Still open, see TODO.md**: ~50 tracked fixture *file names* carry real part
-  codes. Mechanical but it moves goldens in lockstep, so it needs its own
-  session and a naming scheme first.
-- **History**: the names are in commits already pushed. Scrubbing the working
-  tree does not remove them. Rewriting that history means rewriting pushed
-  commits and force-pushing, and even then the old objects can survive on the
-  host for a while — a decision to take knowingly, not a cleanup.
-
----
-
-### D74 — the consumer is called snapdraw, everywhere ✅
-snapdraw's own D20 renamed the package (`import snapdraw as sd`) and left two
-things open on purpose: forge's references to the old name, and the local
-folder. The first is now closed: `FRAMER.md` → `SNAPDRAW.md` (`git mv`, the file
-keeps its history) and all 125 occurrences across 18 tracked files replaced,
-spelled lowercase `snapdraw` like the rest of the repo — in prose, in docstrings
-(`forge/__init__.py`, `tools/non_contour.py`, `model/role.py`, `rules/palette.py`,
-`core/healing/steps.py`, `tools/model/detected_features.py`) and in the three
-tests that named it. On snapdraw's side, the five files pointing at `FRAMER.md`
-now point at `SNAPDRAW.md`. Suite: 876 passed, unchanged.
-
-Still open: the local folder is still `framer/` (a rename only Federico should
-do — venv paths and editor state point there), and whether the human-facing
-spelling becomes `SnapDraw` as `naming_convention.md` proposes. That draft also
-proposes renaming forge itself to `snapforge`; not decided, and `import
-snapforge as forge` would be the worst of the two options — either the import
-name changes for real, or it does not change at all.
-
----
-
-### D75 — fixture names: anonymized where used, untracked where unused ✅
-Second half of D73, Federico's call: what no test uses leaves git but **stays on
-disk** ("sono files che utilizzo di tanto in tanto, mi servono"), what the tests
-use gets an invented name saying what it exercises.
-
-- **Untracked (`git rm --cached`, still on disk)**: `tests/examples/batch/` (35
-  production files, no reference anywhere), `tests/examples/files_multipli/`
-  (116), `tests/examples/111-23/` (50, a job folder), and 19 matplotlib
-  `*_dashboard.png`/`*_graph.png` (2.5 MB, nothing reads them). `tests/examples/`
-  was already ignored wholesale, so they simply disappear from git; for
-  `tests/lab/*.png` one ignore line was added. 932 → 712 tracked files.
-- **Renamed**, file + its goldens + the `label`/`source_file` fields inside them
-  + the tests and docs that name them, in one step:
-  `<code>_AMBIGUO` → `contorno_ambiguo`, `<code>_P1NoLineaPiega` →
-  `senza_linea_piega`, `<code>Sviluppo` → `sviluppo_multiparte`,
-  the two-independent-views sheet of D49 → `due_viste_un_foglio`, and
-  `<code>_lineette_bastarde` → `lineette_spurie`.
-- That last one is a lesson: the obvious name `lineette_bastarde` was **already
-  taken** by a different fixture in `golden/`, and `test_golden_annotations`
-  resolves a source by searching `examples/` before `examples/golden/`, so the
-  collision silently fed the wrong drawing to the test (0 annotations instead of
-  1). An anonymizing rename has to check the target name is free, not just that
-  the old one is gone.
-- `scripts/audit_names.py` now reports **zero** suspects. Two fixes it needed on
-  the way: a golden's scientific-notation mantissa (`34788079488412e-15`) looked
-  like a part code, and the first pattern wanted 4 digits, so a whole job folder and a
-  multi-view sheet slipped past it — lowered to 3, which cost two entries in
-  `ALLOWED` (a steel grade, the flake8 codes) and found both.
-- Suite: 876 passed, unchanged throughout.
-
-**What is left, and it is not a rename.** Of 217 tracked DXFs only 8 contain any
-text, and 6 of those are the `anch_*` sheets Federico already cleaned. The
-remaining one is `senza_linea_piega.dxf` (tracked twice, in `golden/` and
-`golden_multipli/`): 19 texts, none of them a measurement, 10 fully uppercase,
-two over 50 characters — the shape of a title block. **A file name can be
-anonymized by a script; the text inside a drawing has to be read by a human.**
-Same reason the untracked parent DXFs of several tracked goldens stay untracked:
-tracking them would put drawing content in git, which is Federico's call after
-he looks at it, not a mechanical step.
-
----
-
-### D76 — the audit's "zero suspects" was three blind spots, and the drawings were never read ✅
-D73/D75 closed on `audit_names.py` reporting zero. It was reporting zero because
-it could not see. Three defects, each reproduced before being fixed, and the
-tool is only as trustworthy as the weakest of them:
-
-- **`git ls-files` quotes, `pathlib` splits.** A tracked path containing a
-  non-ASCII character comes back quoted, with octal escapes (`"…N\302\2601
-  pz.nc.dxf"`). On Windows `Path(rel).name` reads those backslashes as folder
-  separators, so the basename became the tail after the last escape and
-  everything before it — the part code — was never examined. Fixed with
-  `git ls-files -z`, which does not quote, and an explicit utf-8 decode, because
-  `text=True` would use the local codepage.
-- **`\b` does not fire inside an underscore.** `_` is a word character, so in a
-  name like `<code>_<profile>_<size>` there is no word boundary between the
-  parts: each pattern saw one long token and matched none of them. The same
-  token in isolation was matched correctly. Fixed by splitting on
-  `[^A-Za-z0-9]+` first and `fullmatch`-ing each token.
-- **A DXF is text, and nobody was reading it.** `TEXT_SUFFIXES` has no `.dxf`,
-  so the content of 220 tracked drawings was outside every check. Inside them
-  were: a UNC path naming a client, a job folder and the original file name,
-  written by the CAD as the last-saved location (`AcDbXrecord`, group 303); the
-  name of a network printer in a client office (`AcDbPlotSettings`); and part
-  codes as layer names and title-block texts. **A file name is anonymized by a
-  script, the inside of a drawing has to be read — but reading it was never a
-  thing a person was going to do by hand across 220 files.**
-
-New check number four: a name whose first token is 3+ bare digits. A part code
-of digits only has no letter to be recognized by, and in a *name* there is no
-coordinate to confuse it with — that was how two fixtures kept their original
-part number through the whole of D75. In a drawing's content bare digits are
-searched too (a coordinate is a line holding only the number, already skipped),
-and in prose and code always; in the goldens only on request, because there a
-bare 6-digit run is a measurement.
-
-What was found and what was done:
-
-- the family named after a nesting program became `quattro_sviluppi_un_foglio`
-  (four developments on one sheet) and `staffa_scarto_doppia` (the three-sided
-  scrap bracket whose duplicated overlapping sides motivated D50): 16 tracked
-  files, the `label`/`source_file` fields inside them, the annotation golden's
-  text, 5 lines of this file and 3 docstrings in `normalizer.py`;
-- the two fixtures named by bare part number became `piastra_lunga_due_archi`
-  (8 lines + 2 arcs, one closed contour, no holes) and `piastra_sei_fori`
-  (6 circles inside an outer with one arc) — byte-identical to the job-folder
-  copies untracked in D75, which is what proved the names were originals;
-- every absolute path inside a tracked drawing is replaced by the file's own
-  name, and the client printer by the format's neutral value;
-- five part codes written inside drawings as layer names and title-block texts
-  became invented sigils with no digits (`ARTX`, `ARTY`, …): no pattern can
-  mistake them for a code any more, and the fixture is still what it was — a
-  drawing with a title block and several distinct parts. The shape of the data
-  is the fixture, the client's number never was;
-- `audit_names.py` had real part codes as the comment examples of its own
-  patterns, which would have committed exactly what it exists to keep out. The
-  examples are now invented, and the file excludes itself from the content scan
-  with that reason written down.
-
-False positives are filtered by what wrote them, not case by case: a GUID, an
-ISO timestamp, a line of hex blob, a class name of the format. `ALLOWED` grew by
-four tokens, each one looked at by hand.
-
-**Second thing D75 left open, now measured.** A golden without its parent DXF
-does not fail, it `skipTest`s: the suite stays green while a clean clone runs
-fewer tests than it shows passing. Of 114 goldens, 61 were in that state.
-`scripts/audit_fixtures.py` (new) resolves every drawing the suite needs — the
-parents named inside the goldens, resolved the way each test resolves them, plus
-the fixtures a test names in code — and lists the ones git does not have: 32
-files, 3.2 MB, all clean by the checks above. Federico's call: the goldens must
-run for whoever downloads the project, so they go in; `--list` prints the list
-for `git add -f` rather than staging anything itself.
-
-Suite: 876 passed throughout, every step.
-
----
-
-### D77 — `anonymize`: a drawing is cleaned as a file, and forge says whether it worked ✅
-Federico's ask, and the reason the fixture problem is solvable at all: tests are
-made with client drawings by necessity, so the sanitizing step has to be a tool —
-one that every consumer of forge gets, not a habit repeated by hand per repo.
-
-**Not a round-trip through the model.** `load_dxf` → `heal` → `to_dxf` returns
-forge's *reading* of the drawing, not the drawing: the odd splines, the entities
-outside any contour, the `Trash` — exactly what makes that file a test case —
-would not come back. So a fixture is cleaned as a **file**: `adapters/dxf/tags.py`
-(new) opens a DXF ASCII as the sequence of (code, value) pairs it is, keeps every
-line as it sits on disk, and `tools/anonymize.py` rewrites string values only.
-Writing back a file nothing changed in leaves it identical to the byte, which is a
-test.
-
-**What can and cannot be automated.** A *code* has a shape, so a pattern finds it
-(that is `scripts/audit_names.py`). A *name* has no shape: a firm's name as the
-name of a dimension style, a client's initials as the name of a block and of
-another dimension style inside a drawing already tracked — no regex reaches those,
-and they were found by dumping every string and reading it. Both are gone from the
-drawings now (replaced by what they are: `logo_sviluppi`, `stile_quote_sviluppi`),
-and the names themselves do not belong in this file either. So `scan_dxf()` is deliberately not
-a detector: it lists everything written inside, grouped one row per **string**
-(not per occurrence) with the contexts that say what the string *is* —
-a firm's name plus `name/AcDbDimStyleTableRecord` is readable, the same word
-on its own is not. Strings the program wrote (GUIDs, ISO timestamps, hex blobs, class and
-dictionary vocabulary) are collapsed so the report is short enough that a person
-actually reads it: that collapsing is a readability filter, never a safety one,
-and `--all` shows everything.
-
-**forge is the oracle.** `clean_dxf(verify=True)` takes the geometry fingerprint
-before and after — edge count, validity, cluster count, trash count, areas,
-bounding boxes — and if anything moved it deletes what it wrote and raises. The
-tool cannot quietly damage a drawing, and that is the property that makes it safe
-to point at 32 fixtures.
-
-Two lessons from D76 are built in rather than written in a guide: a string is
-**replaced, not deleted** (dropping a title-block text changes what `annotations`
-and `inject()` see), and a substitution applies **by value**, so a layer renamed
-in the table is renamed in the `8` group of every entity too — the `MARCATURA`
-test covers exactly that, 9 occurrences in one call. `apply_mapping()` carries the
-same map to the goldens that quote those strings, because a cleaned fixture whose
-golden still expects the old text is a broken test.
-
-It stays out of `forge.__all__`: it is repo hygiene, not geometry, and the public
-API is the pipeline. Consumers import `forge.tools.anonymize` — which is enough
-for "I want it in every consumer", since they all depend on forge already.
-
-Suite: 887 passed (876 + 11).
-
----
-
-### D78 — the 32 fixtures read one string at a time, and what that caught ✅
-`anonymize scan` pointed at the 32 drawings the suite uses and git does not have
-(`scripts/audit_fixtures.py`). Read per file it is 32 reports nobody finishes, so
-the strings were aggregated into **one list, one row per distinct string** with
-the contexts and the files it appears in: 261 strings to read, down from the
-thousands the format writes. That aggregation is the shape this reading wants and
-the reason it got done at all — the same linetype table repeated in twelve
-drawings is one row, not twelve.
-
-What the reading found, and it is the point of the whole exercise:
-
-- **Zero absolute paths.** That was D76's worst blind spot (a network path
-  carrying a client name and a job number). None of these 32 has one.
-- **One person's name**, as `$LASTSAVEDBY` in one drawing — whoever last saved
-  the file. Replaced with an invented name. Federico's own name stays: he is the
-  repo's author and the git user already says so, so it identifies nobody new.
-- **A three-letter initialism** used as the prefix of three dimension-style
-  names, replaced with `STD_` — and this is the finding that matters, because the
-  same initialism was **already in three tracked drawings** that
-  `audit_names.py --strict` passes. The audit looks for *codes*, which have a
-  shape; this is a *name*, which has none. It is the exact failure D77 predicted,
-  caught by eye on a drawing already pushed. So it joins the list for the history
-  rewrite: the rewrite is not only about part codes.
-
-**A drawing the suite uses exists in several copies.** `Multipolis.dxf` and
-`Polylines.dxf` each sit in four folders (`golden/`, `golden_multipli/`,
-`files_multipli/`, `mixed_pipeline/`), and `audit_fixtures.py` lists only the
-copies that are missing from git — by design, that is its job. Cleaning must
-therefore follow the **string** across the repo, not the audit's file list: eight
-files were cleaned for two substitutions. A `grep` for the string before writing
-the map is now part of the procedure, not an afterthought.
-
-What is *not* client data, confirmed by reading: the Italian structural layer set
-(`Ancoraggi`, `Bulloni`, `Calcestruzzo`, `Muri calcestruzzo`, …) is the CAD's own
-template vocabulary; the `ARTC_*`/`ARTL`/`ARTY_*` sigle are D77's own invented
-replacements, and the title-block text `Codice Articolo: ARTC` proves that
-substitution reached the annotations too; the lone `TEXT` on the `Signature`
-layer of two drawings is the marcatura, already equal to the fixture name, and by
-D77 the marcatura stays.
-
-`heal()` reported geometry identical on all eight files, and the suite is 887
-passed after the cleaning — the substitutions touched strings only, which is what
-`clean_dxf(verify=True)` exists to guarantee.
-
-The `git add -f` of the 32 is **Federico's**, not the tool's and not the
-assistant's: the decision to put a client-sourced drawing into git is his, and
-`audit_fixtures.py --list` stops at printing the list for that reason.
-
----
-
-### D79 — `tests/data/` is the tracked root, and a drawing lives there to be publishable ✅
-The problem with D78 left unsolved: how do 32 cleaned fixtures get into git
-without a `git add -f` into an ignored folder (the thing that keeps going
-wrong, because "cleared for publication" becomes a fact someone has to
-remember per file, and `.gitignore` says the opposite of what the folder
-contents assert).
-
-The answer is to put the property on the folder instead. `.gitignore` was
-already written to ignore DXF files and then re-include `tests/data/**` — a
-pattern written and never used (D76's comment: "Test fixtures under tests/data/
-are explicitly kept"). Make that the real folder.
-
-`tests/data/` holds what the suite reads and that has passed the audits:
-- 534 files already tracked (moved with `git mv` so history follows)
-- 32 drawings read string by string in D78 and cleaned
-- 2 annotation goldens git never had but the tests tried to load
-
-`tests/examples/` stays local: client originals, `islands/`, `111-23/`,
-`cartella_3/`, all the folders a client's file comes with, and scratch output.
-`.gitignore` ignores it in one block with no re-inclusion.
-
-The goldens carry no path, only a bare filename (`source_file`, `parent_file`),
-so moving a drawing is invisible to them. 21 test roots and the script paths
-moved, 887 tests still pass.
-
-Found on the way and fixed: two annotation goldens the tests needed but git
-never had. `audit_fixtures.py` audits the drawings a golden points at, not the
-goldens themselves — a missing golden silently generates one test fewer, which
-is the exact failure the audit exists to catch (one level up). The goldens were
-moved into `tests/data/golden/annotations/` alongside their drawings.
-
-`scan` was also refined: `aggregate_scans()` merges several drawings into one
-row per distinct string (thirty separate reports are unreadable; a string in
-two files shows as `2 file` on one line); `--find PAROLA...` puts the words
-the reader suspects at the top and says which ones are absent (if you pass a
-client name and it says "nessuna traccia", that is the answer you need).
-
-Suite: 887 passed, unchanged by the move.
-
----
-
-### D80 — `anonymize` leaves forge entirely: no consumer may name it ✅
-D77 built the tool inside forge because that was the easiest place, but
-Federico named the real problem with that: having it tracked in forge's own
-`pyproject.toml`/`tools/` package means every consumer that depends on it (to
-reuse the same tool on its own fixtures, which was always the intent — "voluto
-in forge *e* in ogni consumer") would have to *declare* that dependency in
-their own tracked `pyproject.toml`. A dependency line naming a tool whose whole
-job is "scrub client-identifying strings out of drawings" is a suspicion by
-itself, true or not, and it would sit in a file every clone of snapbend or
-snapdraw can read — moving the exposure from forge to its consumers fixes
-nothing.
-
-**The dependency was already backwards.** `anonymize` calls `forge.load_dxf`
-and `forge.heal` as its verification oracle — it depends on forge, not the
-other way around. Forge never imported it (confirmed: `tags.py` and
-`anonymize.py` were used only by each other inside this tree). So the fix is
-structural, not a relocation: `anonymize` becomes its own project
-(`dxf-anonymize`, a private, non-forge repository) that depends on forge, and
-forge's own `tools/` package drops both files entirely — `forge/tools/
-anonymize.py`, `forge/adapters/dxf/tags.py`, and their 11 tests, all removed
-(876 passed, back from 887, with the 11 now passing in the new project
-instead).
-
-**No project that uses it may name it.** Not even as a dev-dependency or an
-optional extra: a `pyproject.toml` entry is visible in the tracked source
-regardless of whether it installs by default. `dxf-anonymize` is installed once
-per machine with `pipx` — a system command, not a project dependency — and
-invoked from a terminal against whatever file needs it, independent of which
-repository happens to be open. The asymmetry is deliberate: the tool's own
-(private) `pyproject.toml` may freely declare `forge` as a dependency, because
-forge is public and that direction reveals nothing; no public or shared repo
-may declare the tool, because that direction would.
-
-### D81 — the history rewritten once: what may live in git is what HEAD holds ✅
-
-Cleaning HEAD (D73–D79) left every earlier commit on GitHub carrying what had
-been cleaned: client drawings committed and later removed, old pipeline
-outputs, part and order codes in old versions of `MAP.md` and of the scripts,
-local and network paths naming firms and people, codes in commit messages.
-
-Two rules, chosen so that the rewrite is checkable rather than trusted:
-
-- **Data files that no longer exist in HEAD leave the history entirely.** A
-  drawing or golden that is gone today has no value in an old commit and is
-  exactly where an un-audited client file hides; a file that is in HEAD keeps
-  its history only from the commit where it reached `tests/data/`. Code and
-  prose keep their history.
-- **Strings are replaced everywhere else, including commit messages**, with
-  neutral placeholders (`PARTCODE`, `ORDERCODE`, `FIRM`, `LOCAL_DRAWING.dxf`, …).
-  The replacement list lives outside the repo, since it is the list of names.
-
-The proof is HEAD's tree hash: identical before and after (`cf84fa0…`), so not
-one byte of today's files changed, and `audit_names.py --history --words` on
-the rewritten history finds only known false positives. Building the list
-exposed a real blind spot in the audit — an absolute path *inside* a drawing's
-text line, not at its start — fixed in the tool, and with it one fixture in
-`tests/data/` still naming a person and a firm, cleaned with `dxf-anonymize`
-(`heal()` identical). One force-push of `main`, 2 October; GitHub may keep the
-old objects reachable by SHA for a while.
-
-From here the invariant is forward-only: `audit_names.py --strict` on every
-change, `--history` before any release.
-
-### D82 — `inject(snap_distance=...)`: the same "just outside" rule as `anchor_annotations` ✅
-
-`inject()` filtered texts by strict containment in each part's outer, while
-`anchor_annotations` already accepted a text lying *just outside* the outer
-(`snap_distance`). A callout written next to the part, not on it, reached
-`cluster_ref` through one path and was lost through the other — the gap noted
-in `ROADMAP.md`, step 1.
-
-Geometric rule, one for both: a text covered by an outer belongs to it and the
-snap never moves it; a text covered by none goes to the part whose outer is
-nearest, if that distance is at most `snap_distance`, and to no part otherwise.
-"Nearest, only one" because the snap is a guess about proximity: handing the
-same text to two parts would make it data of both. Default `0.0` keeps strict
-containment, so no existing call changes. The nearest-part computation is one
-function (`anchor._nearest_within`) used by both.
-
-`inject()` keeps its own semantics for *covered* texts (every covering outer
-receives it), which `anchor_annotations` does not share (first covering part
-wins) — not unified here, because that is a different question (overlapping or
-nested outers), not the snap one. Same change: `docs/API.md` and `docs/LLM.md`
-still documented a `texts=` argument and `extract_forge_texts`/`ForgeText`,
-removed long ago; those cards are gone.
-
-### D83 — an invalid result is rendered; refusing it is the caller's choice (`allow_invalid`) ✅
-
-`to_svg` drew an invalid `ForgeResult` (no closed outer → zero parts, all
-geometry in `trash_entities`), `to_dxf` raised `ValueError`. The refusal had a
-real reason — do not hand a machine a file of only trash — but that reason is
-about the **consumer**, not about the format: the same model, the same trash,
-was viewable in one renderer and not in the other, so "show me what forge
-understood" worked in SVG and not in DXF. And SVG is not only for viewing: some
-machines import SVG, so the "machine" reason applies to it too.
-
-One contract for both renderers: `to_dxf(..., allow_invalid=True)` and
-`to_svg(..., allow_invalid=True)`. Default `True` — forge renders whatever the
-model holds, nothing is dropped (non-negotiable 7), and an invalid result is
-the case where seeing it matters most. A caller that delivers output to a
-machine passes `allow_invalid=False` and gets `ValueError`; `snapbend` does,
-on its three `forge.to_dxf` calls. Not a second renderer
-(`document_to_dxf`, discarded): one parameter, no new concept.
-
-`split` keeps raising on an invalid result, with no parameter: it makes one
-document *per part*, and an invalid result has no parts — there is nothing to
-show, not something to refuse. `docs/` and `CLAUDE.md` (non-negotiable 6)
-follow; in the same change the READMEs, `docs/LLM.md`, `docs/ARCHITECTURE.md`
-and `docs/API.md` stop describing forge as laser-cutting preparation and use
-the scope stated in `CLAUDE.md`: a geometry engine that knows no process.
-
-### D84 — `to_text`: a reading for a language model, experimental ✅
-The fourth renderer beside `to_dxf` (machines), `to_svg` (people), `to_json`
-(business systems): `forge.to_text(result)` / `save_text`, Markdown, by
-convention `<name>.forge.md`. Built on 3 October after the probes in the
-open note "forge as the step before an AI reads a drawing" (image only 2/6,
-image + reading 6/6, raw DXF 6/6 at ~3.5× the tokens). **Experimental**:
-importable, outside `__all__`, not in `API.md` beyond a pointer — Federico:
-"è roba in alfa, stiamo provando ma non siamo sicuri del reale valore". Its
-value is tested in snapdraw once detection on islands exists.
-
-- **Ids in forge's terms**: `Cn` = cluster n (its outer), `Cn.k` = k-th
-  closed contour inside it. Not "view": a view is snapdraw's concept.
-  Dimensions and leaders reuse the ids (`-> C1.3`), read from
-  `Dimension.references` / `Leader.target`; the renderer computes no
-  anchoring — the caller runs `anchor_annotations` first.
-- **Shapes**: `contour_shape` kinds circle/rectangle/stadium on one line;
-  anything else segment by segment, or its position and outline are lost.
-- **Splines**: described by ends, bbox and length computed on the curve; the
-  exact data (control points, knots if not clamped-uniform, weights if
-  rational) only with `spline_data=True`. Reason: a reader cannot evaluate a
-  NURBS from its control points (the D42 mistake), so the data costs tokens
-  and gives nothing; measured, it was ~50k of `anch_02`'s 136k. The exact
-  curve stays available in `to_dxf`.
-- **Open edges**: listed with geometry if unclassified and inside some
-  cluster's outer (a 3/4 arc around a circle, a line across it); counted if they carry a
-  decided role or lie outside every cluster. Nothing silently dropped.
-- **`detected`**: every collection written generically — type name, which
-  contours an item *is*, its scalar fields — the same rule as D70: forge
-  reports what a consumer attached without knowing what it means.
-- **Size is a budget**: `tests/real/test_text_budget.py` holds the character
-  count per `anch_NN` and fails on growth; regenerated only after looking at
-  the new text. Today (o200k): `anch_01` 8.9k tokens vs 82k DXF, `anch_02`
-  82k vs 381k, `anch_07` 31k vs 78k. On sheets of views most of it is the
-  frame, grid ticks and hatching that nobody has classified yet — the large
-  gain arrives when snapdraw labels them, not from forge.
-- **Not done**: abstracting the renderers into a common base. They share no
-  behaviour beyond reading the same model (a DXF writer, a dict builder, a
-  text writer); a base class would be ceremony until a second renderer needs
-  the same id map.
-
-### D85 — one rule for registering a linetype in the output; an unknown name in `RoleStyle` raises ✅
-`gen_index.py` (D72) listed `_ensure_linetype` twice: `adapters/dxf/exporter.py`
-(re-registers a source edge's linetype from the pattern captured at load) and
-`io/dxf.py` (registers a `RoleStyle.linetype` from ezdxf's standard table). Same
-job — make a linetype name exist in the output document — with two different
-answers to *where its shape comes from* and *what happens when nobody knows it*.
-
-Now one `exporter.ensure_linetype(doc, name, pattern=None, description="")`,
-in this order: already in the document → the pattern the caller passes (the
-source's own definition is the truth of that drawing, so it wins over a
-standard of the same name) → the standard table by name → `None`. The caller
-decides what `None` means, because the two cases are not the same fact:
-
-- **Source edge**: the file simply did not carry the shape — nobody's mistake.
-  Falls back to the layer's line (BYLAYER), as before. One gain: a standard
-  name with no captured pattern (`DASHED`) now stays dashed instead of turning
-  continuous.
-- **`RoleStyle` from a consumer**: a name neither the document nor the standard
-  table defines is a configuration error (`"DASHHED"`). `to_dxf`/`split` raise
-  `ValueError`. Before, the name was written onto the layer anyway — a dangling
-  reference that ezdxf may refuse at save — which non-negotiable 7 forbids.
-  Nobody uses `RoleStyle.linetype` today (only colours and layer names are set),
-  so nothing breaks.
-
-The same pass cleared the other names D72 found: `_geometry` (byte-identical in
-`core/healing/islands.py`, `core/island.py`, `core/topology/noding.py`) is one
-`noding.edge_geometry`; `tools/anchor._geometry`, `tools/tabs._normalize` and
-`io/view_model._xy` were different jobs sharing a name and were renamed
-(`_item_geometry`, `_unit_vector`, `_round_points`). The index now lists no
-duplicate. Its limit stands: it sees the same *name*, not the same *job* under
-two names.
-
-### D86 — `gen_index --similar`, and the shared pieces it found ✅
-D85 closed the same-*name* duplicates; the same *job* under different names
-was still invisible. `gen_index.py --similar` compares bodies instead of names:
-local variables and parameters are renamed `v0, v1, ...` in order of
-appearance (global names, attributes and constants stay — they carry the
-meaning), then it prints identical bodies, bodies ≥ 85% alike, and runs of 2+
-statements repeated in different functions. It prints candidates, not verdicts:
-each one was read before touching it. Not in `INDEX.md`, because a similarity
-list changes with every edit and would make `--check` noisy.
-
-What it found and what became of it:
-- **Point on a circle** (`cx + r·cos θ`) written in five places →
-  `segments.point_on_circle`; `segment_endpoints` now asks `ArcSeg`/`EllipseSeg`
-  for their own `_point_at` instead of repeating the formula; the DXF exporter
-  takes arc ends from `segment_endpoints`.
-- **Chord angle from a tolerance** (the sagitta formula) three times →
-  `segments._sagitta_step`, returning None when the radius does not exceed the
-  tolerance so each caller keeps its own fallback (fixed angle for arc and
-  ellipse, 8 sides for a circle — unchanged).
-- **Angular position of a point along an arc** in `outer_scan` and `noding` →
-  `segments.angle_from_start`.
-- **Segments + styles + polygon of a loop** in `steps`, `island`,
-  `outer_face` → `loop_finder.loop_geometry`.
-- **The node tolerance**: `source_meta.get("tolerance", 0.05)` in four places
-  and `tolerance=0.05` in eight signatures were one concept with no name →
-  `model.document.DEFAULT_NODE_TOLERANCE` and `ForgeDocument.node_tolerance()`.
-  The `0.05` defaults of `to_svg`, `to_view_model` and `bridge_tabs` are a
-  different quantity (drawing precision) that happens to share the number, and
-  stay as they are.
-- Smaller: `gap_solver._gap_endpoints` (free endpoints and endpoints at given
-  nodes were one loop with two filters), `gap_solver._meet_or_bridge` (three
-  solvers ended identically), `_flattened_points`, `_outer_entity`,
-  `_outer_polygons`, `GeometryAdapter._edge`.
-
-Left alone on purpose: `segments_from_loop` / `edge_styles_from_loop` (two
-lists kept 1:1 aligned by design), `view_model._hole_entry` / `Hole.to_dict`
-(different output contracts), and the collinear/cocircular merge in
-`normalizer.py` — the biggest shared piece, but it is the core of healing and
-gets its own session (TODO).
-
+- **D73** — a client drawing name, part code or order number never appears
+  in a tracked file (MAP, script CONFIG, comment, commit message) and no
+  sentence maps an anonymized fixture back to its origin: describe the case
+  ("a dense strip view"). `scripts/audit_names.py --strict` enforces it
+  (`--from-disk` also looks for untracked drawing names); false positives go
+  in `ALLOWED`.
+- **D74** — the consumer is spelled `snapdraw` everywhere, lowercase. No
+  `snapforge` alias: an import name changes for real or not at all.
+- **D75** — a tracked fixture has an invented name saying what it exercises;
+  unused client files leave git but stay on disk. An anonymizing rename must
+  check the target name is free (a collision once fed the wrong drawing to a
+  test). A name is anonymized by script; the text inside a drawing is read by
+  a person.
+- **D76** — the audit reads drawing content too (UNC paths, printer names,
+  part codes as layers and title-block texts): `git ls-files -z`, tokens split
+  on non-alphanumerics, a bare-digit name is a code. A part code in a fixture
+  becomes an invented sigil. `audit_fixtures.py` lists the drawings the
+  suite needs and git lacks (a golden without its parent only `skipTest`s).
+- ~~D77~~ → D80: `anonymize` — clean a DXF as a file (tag pairs, strings
+  replaced never deleted, by value), with `heal()` as the oracle that refuses
+  to write if a number moved.
+- **D78** — fixtures are read one string at a time, aggregated to one row per
+  distinct string. A name (an initialism on dimension styles) has no shape
+  and slips past `audit_names`; cleaning follows the string across every copy
+  of a drawing. Putting a client-sourced drawing into git is Federico's call.
+- **D79** — `tests/data/` is the tracked root: a drawing is publishable
+  *because it lives there*, not because someone remembers a flag.
+  `tests/examples/` stays local (client originals, scratch). Goldens carry a
+  bare file name, so moving a drawing is invisible to them.
+- **D80** — `anonymize` is not in topo: it is `dxf-anonymize`, a private
+  project that depends on topo, installed with `pipx`. No public or shared
+  repo may declare it, not even as an extra: a dependency line naming it is
+  a suspicion by itself.
+- **D81** — the history was rewritten once (2 October): data files gone from
+  HEAD leave the history, strings are replaced everywhere (commit messages
+  included) from a list kept outside the repo; proof is HEAD's tree hash
+  unchanged. Forward only: `audit_names --strict` on every change,
+  `--history` before a release. Redone in D97.
+- **D82** — `inject(snap_distance=...)` and `anchor_texts` share one rule: a
+  text covered by an outer belongs to it; else to the single nearest outer
+  within `snap_distance`; else to none. Default 0 is strict containment.
+- **D83** — `to_dxf` and `to_svg` take `allow_invalid=True`: topo renders
+  whatever the model holds (nothing is dropped). A caller delivering to a
+  machine passes `False` and gets `ValueError`. `split` always raises on an
+  invalid result: it has no parts to make.
+- **D84** — `to_text(result)` is a Markdown reading for a language model,
+  experimental (outside `__all__`). Ids are topo's (`Cn` cluster, `Cn.k`
+  inner), never "view"; shapes by `contour_shape`; splines by ends, bbox and
+  length (`spline_data=True` adds the data); the size is budgeted by
+  `tests/real/test_text_budget.py`, regenerated only after reading the text.
+- **D85** — one `ensure_linetype(doc, name, pattern)`: already in the
+  document → the caller's pattern → the standard table → `None`. `None` means
+  BYLAYER for a source edge, but `ValueError` for a caller's style naming a
+  linetype nobody defines.
+- **D86** — `gen_index.py --similar` compares bodies (locals renamed) and
+  prints candidates, not verdicts; each is read before touching. Found and
+  merged: `point_on_circle`, `_sagitta_step`, `angle_from_start`,
+  `loop_geometry`, `DEFAULT_NODE_TOLERANCE`.
 ### D87 — collinear and cocircular merge share one engine ✅
 Done in the same session after all (D86 had deferred it; Federico, rightly:
 deferring the hardest item is how sessions never close). Both merges are the
