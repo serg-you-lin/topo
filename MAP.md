@@ -336,529 +336,67 @@ Names in the older entries are the names of their day (`forge`, `ForgeCluster`,
   prints candidates, not verdicts; each is read before touching. Found and
   merged: `point_on_circle`, `_sagitta_step`, `angle_from_start`,
   `loop_geometry`, `DEFAULT_NODE_TOLERANCE`.
-### D87 — collinear and cocircular merge share one engine ✅
-Done in the same session after all (D86 had deferred it; Federico, rightly:
-deferring the hardest item is how sessions never close). Both merges are the
-same operation on a different carrier: an edge is an interval `[lo, hi]` on its
-line (projection) or its circle (angle); group by carrier, sort, chain the
-intervals that touch or overlap, replace each chain of 2+ with one edge in the
-place of its first member in input order. `normalizer._merge_on_carrier` does
-that once, over a `_Span` dataclass (it replaces anonymous 7-tuples read by
-index). Each merge supplies only what is its own: how a group becomes chains
-(`_line_spans`; `_arc_chains`, which also joins the last chain into the first
-across 0/2π) and what the fused segment is (`_merged_line`; `_merged_arc`, a
-`CircleSeg` when the chain closes the turn).
-
-Proof of equivalence, not only the suite: old (`HEAD`) and new run side by
-side on all 611 DXF under `tests/`, both on the loaded edges and after
-`renode`, comparing the resulting edge lists for equality — 1222 runs, 26 862
-edges absorbed, zero differences.
-
-`--similar` now reports only what is accepted on purpose: the two pairs listed
-in D86 and four 2-statement coincidences (reading kind+layer of an entity;
-`tol`+`structural` at the top of `heal`/`island`; shapely import + written set
-in `io/dxf`; the lower-cased ignore set in the DXF loader) — extracting those
-would be ceremony, not reuse.
-
-### D88 — what stays in forge when process detection leaves ✅
-Moving `detect_flat()`'s process knowledge out of forge (TODO item 5) was
-listed as blocked by "Problem 2"; it was not — D47 had already solved it
-(`heal(is_structural=...)` takes the caller's predicate, `ContourRole` is only
-UNKNOWN/OUTER/INNER). What was missing was the line between what moves and what
-stays. Federico, 4 October, on the four open points of the "Process detection"
-note:
-
-1. **The load-time lane stays.** `role_rules` (a label → a role) plus the
-   topology cleanup is not process knowledge: forge carries the role as an
-   opaque string the caller chose. It stays in forge under a name that does not
-   say "detect" (name to choose when the move is done).
-2. **Geometric predicates stay, process thresholds leave.** "This contour is a
-   circle", its diameter, edges that are not part of any closed contour, their
-   orientation: geometry, same on any input. The 32.1 mm drill threshold,
-   countersink/threaded, "this non-contour edge is a bend", engraving: process,
-   they go to the consumer.
-3. **Without a consumer's reading, a hole is an inner contour and a bend is a
-   non-structural edge.** That is forge's neutral output, and what D47's
-   injected predicate was built for.
-4. **Output layers for holes/bends leave `to_dxf`.** The runtime style registry
-   (D47) lets the consumer register its own `RoleStyle`s; forge renders roles
-   it is told about, it does not know them in advance.
-
-5. **Splitting stays.** `split()` turns one result into one drawing per
-   cluster (an outer and what it contains): structure, not process.
-   `split_to_files` stays too; only its `detect_flat(features="all")` step
-   leaves, a consumer that wants holes and bends in each file runs its own
-   reading before splitting.
-
-**The boundary, as one rule (same day):** forge reads *structure* — what
-closes, what lies inside what, what is connected to what; consumers read
-*meaning* — hole, bend, view, dimension. So both structural readings stay in
-forge: `heal()` is the engine, not a cutting mode (a closed region with holes
-serves area, nesting, a milling pocket, an engraving fill, an extrusion as much
-as a cut), and `island()` knows no notation (it separates connected groups and
-finds each one's outer face; a sheet with several parts side by side for
-nesting is the same problem as a sheet of views). Moving `island()` to snapdraw
-would only make snapdraw reach into forge's topology internals.
-
-**The consumer keeps its name: `snapbend`.** Rolling is bending with a large
-radius — the development is the same computation (neutral fibre, radius,
-angle) — so "bend" covers it; the cutting file comes out of every process and
-names nothing specific. `snapcut` and `snapsheet` rejected.
-
-Executed the same day: D89 (goldens), D90 (the move and the renderers).
-
-### D89 — the golden split in two halves; `cluster.area` alternates sign with depth ✅
-First step of D88. The 48 golden JSON under `tests/data/golden/json/` are
-split, not regenerated: a one-off script (kept out of the repo on Federico's
-request — used once) moved the already-approved values into two halves.
-
-- **`json/` — geometry, checked by `test_golden.py` with `heal()` alone** (no
-  `is_structural`, no `detect_flat`): cluster count, area, perimeters, outer
-  shape, inner contours. Holes become inner contours (D88 point 3): their wkt
-  joins `inners_wkt`, their area is the area of that approved wkt, role
-  `inner`. The `to_dxf` round-trip runs on the same heal-only pipeline; the only
-  role it re-reads from layers is `engrave`, the one the goldens assign at load.
-- **`process/` — holes, bends, engraving, summary, and the inners left after
-  detection, checked by `test_golden_process.py`** with `heal(is_structural)` +
-  `detect_flat`. Area and outer are kept there only to identify the part. The
-  file and its JSON move to snapbend with `detect_flat`.
-
-Proof that nothing was lost: `heal()` alone reproduces 47 of 48 geometry
-halves exactly; `generate_golden.py`, rewritten to write both halves, reproduces
-all 96 on values (0 differences). Breaking one value on purpose in each half
-fails its test. Suite 956.
-
-**The 48th, `rect_with_countersink`, exposed a real bug, not a moving error.**
-Two concentric circles in a rectangle: `heal()` reads the large one as a void
-(depth 1) and the small one as material inside it (depth 2) — the parity rule
-the hierarchy already uses (D34, D40: even depth is an island). But
-`ForgeCluster.area` subtracted every inner regardless of depth, so the island
-was removed twice. Now odd depths subtract and even depths add back: the area of
-the material is outer − voids + islands − voids inside islands. No other golden
-has depth ≥ 2, so no approved value moved; three unit tests (one, two, three
-nested levels) fail on the old code and pass on the new. The countersink's
-geometry half therefore holds **new** values (area 19372.17, two inners), not
-moved ones: without a process reading, two concentric circles are a ring-shaped
-void with a disc in it. That they are one countersunk hole of Ø10 is the
-process reading, and it stays in its `process/` half (area 19921.59, one hole).
-
-**Same day, the other two golden sets.** `golden_multipli` (55 parts) split the
-same way: `golden/` keeps geometry and layers with holes read as inner contours
-(their key `holes_count` already counted holes + inners, renamed
-`inners_count`), `process/` keeps the hole layers and the summary;
-`test_golden_split.py` runs heal → split with no detection, the process half
-joins `test_golden_process.py`. 55/55 geometry halves pass on `heal()` alone;
-the rewritten generator reproduces them with 0 differences. Ten process halves
-carry an empty `custom` from before the `inject()` refactor: their feature
-counts were never checked and still are not — filling them would be
-regenerating a golden, left for Federico to approve (TODO). The annotation
-goldens stored nothing process-specific; their test and generator now use
-`heal()` instead of `heal_and_detect()`, 12/12 unchanged.
-
-Still assuming forge finds holes and bends, for the next steps of D88:
-`test_layers`, `test_writeback`, the integration tests and the recipes
-(`heal_and_detect`, `split_to_files`, `inspect`).
-
-### D90 — detection moved to snapbend; forge renders the overlay by role only ✅
-Federico, 4 October: "migra quello che c'è da migrare in snapbend". Done in one
-go, both repos green (forge 746, snapbend 464 — including three snapbend tests
-that were already broken on `cluster.bending_lines`, the pre-D44 API).
-
-**What moved** to `snapbend/flat/` (a subpackage: the rest of snapbend still
-imports nothing from forge): `detect.py` (`detect_flat`, `describe_features`,
-`ALL_FEATURES`), `holes.py` (ex `hole_detector`), `roles.py` (ex
-`manufacturing_role`: the six roles, `is_structural`, layer names, the
-`register_role_style` calls), `thresholds.py`, `model/` (`Hole`, `BendingLine`,
-`Engraving`, `ClassifiedEntity`), `pipeline.py` (`heal_and_detect`). Point 1 of
-D88 turned out to have nothing left to keep: the "bare" lane of `detect_flat`
-works only on the six process roles; what is neutral — assigning a role at load
-with `role_rules` — was already in the loader. The tests that read holes, bends
-or engraving moved with it (`snapbend/tests/flat/`, the `process/` golden
-halves, `generate_golden_process.py`), with the drawings they need copied into
-`snapbend/tests/data/flat/` (all already in forge's git, anonymized). Tests that
-only used detection in passing stay in forge on `heal()` alone; one of them ran
-`detect_flat` on `island()` output, which the working agreement forbids — that
-line is gone.
-
-**What forge keeps, made generic.** forge still owns the open overlay
-(`DetectedFeatures`, moved from `tools/model/` to `model/detected.py`, exported
-as `forge.DetectedFeatures`), but no longer knows any name in it:
-
-- **Renderers read `role` + geometry, never a collection name.** `to_dxf` has
-  one writer for all of `cluster.detected` (the D70 one, widened): an item's
-  `contours` if it has them, else the item; a contour with `polygon` is written
-  closed (LWPOLYLINE/CIRCLE), without as one native entity per primitive
-  (`write_native_segments`, ex `write_engrave_segments`). `to_view_model` puts
-  the overlay under `cluster["features"][name]`, one entry per contour plus the
-  scalar fields of the item's `to_dict()`; `to_svg` draws a true circle for any
-  entry with `center` + `diameter` (`holes_as_circles` → `true_circles`).
-  `inspect` prints the overlay generically. The JSON export loses
-  `describe_features` and the "lavorazioni" fields of the default schema (a
-  consumer adds them with `extra_metadata`/`set_schema`).
-- **Which role a contour is drawn with** (`model.role.feature_role`): its own if
-  it is a consumer role, the item's if it carries only an engine role. Why: a
-  consumer may hand forge's own `ForgeContour`s as contours (their `inner` says
-  where the geometry came from, not what it means), while snapbend's
-  countersink must land on the countersink layer though the item's role is
-  `hole` (a golden value).
-- **A void read by a consumer still counts in the area.** `ForgeCluster.area`
-  and `polygon_with_holes` subtracted `features("holes")` by name; now they
-  subtract `overlay_voids` — items with `is_void = True` and a `polygon`. A hole
-  is a region with no material, whoever names it; snapbend's `Hole` says
-  `is_void`. The process goldens (area after detection) are unchanged.
-
-`heal_and_detect` leaves forge's API; `split_to_files` keeps its place without
-the detection step (and gains `is_structural`, passed to `heal`). Scripts
-`03_detect.py`/`04_heal_and_detect.py` removed (in git history). snapbend's own
-code (`to_forge_result`, the demo) calls `snapbend.flat.heal_and_detect`.
-
-To look at it by eye (Federico): a throwaway script runs the detection on every
-golden drawing and writes `<name>_detect.dxf` into `detected/` next to the
-drawings in `snapbend/tests/data/flat/` (ignored by git). Output identical to
-the process goldens; the 8.5 mm "bend" on `quattro_sviluppi_un_foglio` part 2
-appears only in the `golden_multipli` pipeline, which loads without the
-`MARK → engrave` rule — same on this morning's code (TODO).
-
-Suite: 746 passed. `main` → **0.9.0** (minor bump: the public API lost
-`heal_and_detect`/`detect_flat`/`describe_features`/`ALL_FEATURES` — a
-breaking change, which before 1.0 moves the minor number).
-
-### D91 — concentric circles and arcs around a circle are forge facts; their meaning stays in the consumers ✅
-Federico, 4 October: "sono d'accordo su tutto", on the proposal in his notes
-(two consumers reading the same hole patterns). The trigger was concrete:
-snapdraw already read holes in views with its own copy of the concentric
-pairing, and imported `forge.tools.hole_detector`, which D88 had removed —
-snapdraw did not import against 0.9.0.
-
-**Split.** forge gets two geometric facts in `core/shape.py`, next to
-`contour_shape` and under the same rule (D68: "circle", never "hole"):
-- `concentric_groups(items, tolerance)` → `ConcentricGroup`s: a partition of
-  the circular contours by center, each group ordered from the smallest radius
-  up (`items`, `shapes`, `diameters`, `center` = the smallest circle's).
-  Singletons included, so a consumer sees every circle once.
-- `arcs_around(center, radius, arcs, tolerance)` → `ArcAround`s: every arc
-  concentric to the circle and larger, with `sweep` (degrees, from the arc's
-  own direction) and `radius_ratio`, nearest first.
-
-Neither has a threshold beyond center tolerance. "~270°" and "ratio ≤ 1.6" are
-how a metric thread is drawn; "pair with the smallest larger free circle" is
-how a seat is read; the 32.1 mm drill limit is a machine. All of that stays in
-snapbend (`flat/holes.py`, `flat/detect.py`) and snapdraw (`features.py`,
-`THREAD_*` constants), each with its own numbers.
-
-**Models are not shared.** No `Hole` base class in forge: the two consumers'
-holes have only geometry in common, and that geometry is what forge returns.
-A consumer model holds forge's fact (as snapdraw's `Feature.shape` holds a
-`ContourShape`) and adds only its meaning.
-
-Consumers moved in the same session: snapbend's countersink pairing and
-`is_threaded_hole` run on the two functions (its unused `is_countersink_outer`
-is gone); snapdraw's `_pair_concentric` and `_thread_crest` likewise, with
-`DetectedFeatures` imported from `forge.model.detected`. Suites: forge 755,
-snapbend 461 (the 8 `is_countersink_outer` tests removed, goldens with
-countersinks and threaded holes unchanged), snapdraw 78 passed + 1 failure
-that was already there with only the imports fixed (`test_rules`, a view
-bounding box, unrelated to holes). Small behaviour changes, on purpose: the
-sweep follows the arc's direction (the old `(end − start) mod 2π` read a
-clockwise arc as its complement), and among several concentric circles each
-pairs with the next larger one instead of the first in list order. A closed
-spline or ellipse that `circular_geometry` calls circular is not a
-`contour_shape` circle, so it is no longer paired as a countersink in snapbend.
-
-`main` → **0.9.1** (additive: four new public names).
-
-### D92 — the code index is one tool for every project, and the suite enforces it ✅
-Federico, 4 October: the guardrails forge has — the index of what exists, the
-dependency rule — should hold in snapbend too, and in general.
-
-`scripts/gen_index.py` is now the same file in every project (snapbend keeps it
-in `tests/`, where its generators live): the project's rule moves to
-`pyproject.toml` under `[tool.gen_index.layers]`, and a forbidden name may be an
-external package as well as an internal layer (snapbend: `core`, `model`,
-`rules` never import `forge`). `--check` now fails on a dependency violation,
-not only on a stale index, and `tests/unit/test_index.py` runs it, so the rule
-is checked on every `pytest` instead of when someone remembers.
-
-Found while porting: relative imports with two or more dots (`from ..model`)
-and those inside an `__init__.py` were resolved one level too deep, so the
-"Internal dependencies" table was wrong for most modules and the layer check
-could not see them. Fixed; forge is clean under the corrected check. The
-keywords in `pyproject.toml` lose "manufacturing", "sheet-metal",
-"laser-cutting", "cam" (CLAUDE.md: forge is not a sheet-metal tool).
-
-### D93 — line facts move to `core/lines.py`; snapbend's bend reading runs on them ✅
-Federico, 4 October, on `snapbend/flat/detect.py` (828 lines): "tutto quello che
-è calcolo e geometria l'avrei messo in forge" — so that another consumer never
-has to rewrite it. Checked function by function: most of the file is meaning
-(roles, `Hole`, bends, engraving) and stays there; about 70 lines were pure
-geometry, and two of them were already copies of forge
-(`_point_line_distance`, `_same_line` ≈ `are_collinear`).
-
-`forge/core/lines.py` now holds the facts about lines and polygons, next to
-`core/shape.py` (facts about one contour): `point_line_distance`,
-`are_collinear` and `group_collinear_lines` (moved from `core/geometry.py`,
-clean break), plus `splits_polygon` (a chord, extended by `reach`, cuts the
-polygon) and `bridged_runs` (collinear segments chained where each gap lies
-inside a given polygon) — the last two public, with `CollinearRun`. A segment
-is a `LineString` or a `(start, end)` pair. `are_collinear` gains
-`angle_tolerance` (default unchanged, 1e-6 rad) and checks both ends of the
-second segment instead of one.
-
-snapbend keeps the meaning and its numbers: a bend is a segment that
-`splits_polygon` with `reach=1 mm` (snapbend D52), or a run that
-`bridged_runs` joins across the part's voids (D53) with its 0.1 mm / 1e-3 rad
-tolerances. Process goldens unchanged (snapbend 462, forge 767).
-
-`main` → **0.9.2** (additive: `splits_polygon`, `bridged_runs`, `CollinearRun`).
-
-### D94 — axis-aligned facts move to `core/axis.py`; snapdraw's frame and title-block reading run on them ✅
-Federico, 4 October, after D93: snapdraw too should keep no geometry of its
-own. Checked function by function. The pure geometry in snapdraw was
-`geometry.py`'s rectangle finder (axis lines, coordinate clustering, interval
-coverage, sides covered, items on the border), its grid dividers and
-containment, `views.classify_view`'s measure and `features._merge` — the
-interval merge written twice (`_merge`, and inside `_coverage`).
-
-`forge/core/axis.py` holds them under geometric names: `merge_intervals`,
-`interval_coverage`, `cluster_values`, `axis_lines` / `AxisLine`,
-`covered_rectangles` / `CoveredRectangle` (the four sides covered by straight
-items — no `polygonize`, so tick marks on a frame border don't break it),
-`spanning_lines`, `items_inside`, `axis_aligned_share`. The four main ones are
-public. snapdraw's `Rect` is gone: it uses `CoveredRectangle` (same fields,
-`items` for `edges`).
-
-snapdraw keeps the meaning and its numbers: a frame side is ≥ 30% of the
-drawing, a title block side ≥ 40 mm, the ISO ratio and formats, "half of the
-line length on the axes = orthographic", the annotation density of a title
-block. Behaviour unchanged: snapdraw 80 passed (frame, title block, views,
-features, regression goldens), forge 778, snapbend 462.
-
-`main` → **0.9.3** (additive).
-
-### D95 — one home for geometry: the `forge/core/geometry/` package, public as `forge.geometry` ✅
-Federico, 4 October: with `shape.py`, `lines.py`, `axis.py` and a 500-line
-`geometry.py` side by side in `core/`, a user cannot tell what geometry forge
-offers. Time for a package.
-
-`forge/core/geometry/` holds all of it. The old `geometry.py` drawer is split
-by job: `measure.py` (node rounding, segment length and angle, open tracks,
-"is it circular?"), `points.py` (point sequences: corners, duplicates, circle
-fit, b-spline), `intersections.py`; `shape.py`, `lines.py`, `axis.py` moved in
-unchanged. `__init__.py` is the map, and it exports the public facts —
-`contour_shape`, `concentric_groups`, `arcs_around`, `splits_polygon`,
-`bridged_runs`, `covered_rectangles`, `spanning_lines`, `axis_aligned_share`
-and their result types. Clean break: they are no longer at `forge.<name>`;
-call `forge.geometry.<name>(...)`, import with
-`from forge.core.geometry import <name>`. Building blocks are imported from
-their submodule. CLAUDE.md now says where new geometry goes.
-
-`island.py`'s `_merge_runs` (re-joining consecutive segments of a loop on the
-same line or circle) was geometry used by `contour_shape`; it moved to
-`geometry/shape.py` as `merge_runs`, which also removed an import cycle
-(geometry → island → healing → geometry).
-
-Queryable objects: the facts already return frozen dataclasses
-(`ContourShape`, `ConcentricGroup`, `CoveredRectangle`, ...), computed on
-demand; nothing is precomputed or cached on the model, so the package costs no
-time until a fact is asked for. A "Geometry" object wrapping a drawing was
-not built: it would compute facts nobody asked for.
-
-Suites: forge 778, snapbend 462, snapdraw 80. `main` → **0.10.0** (breaking:
-names left the top level).
-
-### D96 — drawing with forge: shape builders and `load_segments`; the dict schema says `polygon`, not `polyline` ✅
-Federico, 4 October, on an example that drew two rectangles with
-`load_geometry([{"type": "polyline", ...}])`: "che cazzo c'entra polyline? 5
-mesi a tirare fuori il dxf dalla logica forge". The dict schema of
-`load_geometry` had kept DXF's word, and its arcs in degrees "by CAD
-convention".
-
-**Builders** in `forge/core/geometry/build.py`, public in `forge.geometry`:
-`polygon(points)`, `rectangle(length, width, center, angle)`,
-`regular_polygon(sides, radius, center, angle)`, `circle(radius, center)`,
-`stadium(length, width, center, angle)`. They return forge segments — a
-closed loop, the stadium with true `ArcSeg`s — and take the very measures
-`contour_shape` reports, so building and reading round-trip
-(`contour_shape(rectangle(80, 30, angle=20))` gives back 80, 30, 20). Rhombus,
-trapezoid and every other straight-sided shape are a `polygon`: no builder per
-quadrilateral. **`forge.load_segments(segments, tolerance, role)`** turns
-segments (or lists of them) into a `ForgeDocument`, so drawing with forge in
-hand never goes through dicts.
-
-Not shapely again: shapely's polygon has straight sides only (an arc becomes
-a chain of chords), forge keeps exact arcs to the machine. Area booleans and
-buffers stay shapely's, through `contour.polygon`.
-
-**The dict schema** stays — snapbend's calculation imports no forge (D43), so
-it needs a neutral format — but in forge's words: `polyline` becomes
-`polygon`, always closed (every use in forge, snapbend and snapdraw was
-closed). Arc angles are still degrees in the dict schema: left open in TODO,
-it reaches into snapbend's cone and section math.
-
-Suites: forge 787, snapbend 462, snapdraw 80. `main` → **0.11.0** (breaking:
-`"polyline"` is gone from `load_geometry`).
-
-### D97 — the published history rewritten a second time, by the tool this time ✅
-Federico, 4 October: `dxf-anonymize repo` (the new command of the private
-tool) found that forge's published history still named client drawings and
-part codes in 99 commits and 3 commit messages — old MAP entries, an old
-`split_metadata.json`, old scripts, a test, `docs/LLM.md`. D81's rewrite had
-not had them in its list. With Federico's explicit yes the history was
-rewritten with a local map (names plus `regex:` forms for whole code
-families, guarded so they never start inside a number: a float like
-`44.57776200087268` contains a code-shaped run of digits) and force-pushed.
-The tree changed only in `MAP.md` and `TODO.md`; drawings and goldens are
-byte-identical, the suite stays at 787, and a fresh clone from GitHub scans
-clean. A layer name that appears in five tracked drawings was left out of the
-map on purpose: it names a CAD template, not a client, and replacing it would
-have changed the fixtures.
-
-From now on a history rewrite or a force push happens only after Federico
-says yes to that specific step; Claude Code asks for it too
-(`permissions.ask`).
-
-### D98 — reopening D59 and D60 on the default only: `island_gap` and `max_gap` are required ✅
-D59 already said `island_gap` is the caller's — a layout convention — and then
-gave it a default of 10 mm; D60 justified `max_gap = 0.5` with "a view is not
-a cutting file", which is knowledge about drawings, not geometry. Both numbers
-were domain choices made at a desk, inside an engine that knows no domain.
-Measured on 4–5 October on the anonymized view drawings: the distance
-Federico judged right by eye lies anywhere between 17 and 78 mm, and two
-drawings (`anch_04`, `anch_05`) have two islands exactly 10.00 mm apart, so the
-default sat on an edge by luck. A default like that hides the choice from
-whoever calls `island()`.
-
-So: `island(doc, *, island_gap, max_gap, tolerance=None, is_structural=None)`
-— the two numbers required and by name (a positional `10, 0.5` says nothing
-to the reader); `read_islands(edges, tolerance, island_gap, max_gap)` and
-`read_island(edges, tolerance, max_gap)` with no default either. `tolerance`
-keeps its `None`: it comes from the load, it is not a domain choice.
-
-Every caller in forge (tests, `scripts/20_island.py`, the examples in
-`docs/LLM.md`, `docs/API.md`, `README*.md`) writes 10 and 0.5 explicitly, the
-values the default had: no result changes, no golden regenerated. In snapdraw
-the choice lives in one place, `sheet_islands(doc)` (snapdraw D29).
-
-**Dropped: the island scale.** TODO thread 13 had proposed that forge publish
-the "scale" of a drawing — every distance at which its islands merge — and
-that consumers pick `island_gap` from its steps. Federico, 5 October: the
-scale has nothing to do with island detection and never will. It is not
-added to `forge.geometry`, and no consumer is expected to choose its
-distance from it.
-
-Suite: forge 790. `main` → **0.12.0** (breaking: `island()` without the two
-numbers raises `TypeError`).
-
-### D99 — reopening D59 and D98: islands are outer contours, not distances ✅
-D59 grouped edges into islands by distance (`island_gap`), then kept **one**
-outer contour per group — the largest (`outer_face`). Every other closed
-contour in the group went to `outside_loops` and, for a group not nested in
-another, to the trash. At 10 mm that happened on 9 of the 13 anonymized view
-drawings. And the distance was the one number that described how a sheet is
-laid out, not its geometry: the right value, judged by eye on 5 October, ran
-from 17 to 78 mm, and on 4 drawings no value was right (a long top view with
-small side views: any distance that joins the side view to its symbols also
-joins it to the next view).
-
-Federico's rule: more than one outer contour means more than one island.
-Measured with it, the number of islands barely moves between 5 and 200 mm
-(`anch_01` 5, `anch_05` 3, `regr_01` 3 at every distance; with D59, `anch_01`
-went from 5 to 1 at 50 mm). The distance had stopped deciding anything, so it
-goes:
-
-- **pieces** are the edges that touch — `spatial_islands` at `max_gap`, the
-  same tolerance that closes drawing gaps; it says which edges belong
-  together, not how a sheet is laid out;
-- every **outer contour that is not inside another is an island**; a piece
-  inside it — with its own contour or without one, all its edges inside — is
-  the island's by containment (the hierarchy pass, D71 extended to open
-  pieces);
-- **open edges** stay in `trash_entities` as before (same contract as
-  `heal()`), but each `OpenFeature` carries `cluster_ref`, the island that
-  contains or touches it, like `Annotation.cluster_ref` (`anchor_annotations`).
-  Outside every island: `None` — nothing attaches it by guessing.
-
-Signature: `island(doc, *, max_gap, tolerance=None, is_structural=None)`,
-`read_islands(edges, tolerance, max_gap)`. `island_gap` is gone, no alias.
-
-Why it stays in forge (Federico asked): "separate the closed shapes of a sheet
-and give each what lies inside it" is geometry — a sewing pattern sheet
-(pieces with darts and notches inside), a cutting sheet with many parts. What
-was snapdraw's was the distance, a layout convention, and that is what left.
-A view drawn as several contours that do not touch becomes several islands;
-putting them back together is reading views, snapdraw's job.
-
-Golden: see the suite line below — every change listed and judged before
-regenerating (CLAUDE.md, non-negotiable 9).
-
-Golden changes, shown to Federico before regenerating (the anchoring test reads
-the sheet with the frame and without role rules, so axes count as geometry):
-`anch_05` dimensions "25" and "9" now anchor to the whole 25×9 stadium (before:
-half of it); `anch_02` "Ø25" to the whole circle (before: half); `anch_03`
-"M8", unanchored before, to the 8×8 contour of the threaded hole. Two follow
-from axes read as geometry in this test, not from the rule: `anch_06` "M5"
-now anchors to the crest arc closed by the axes (before: the Ø4.2 circle);
-`anch_02` "10" and "15" also to a half-circle cut by an axis. Text budget:
-`anch_02` +0.6%, `anch_07` +0.07% (more contours found), the others lower.
-
-Not solved, and not caused by D99 (same result before it): on some 3D views
-the outer face is a ring that crosses itself where an arc chain and a line
-cross at a grazing angle (2–6°), so its area collapses (`anch_07`, 104×68 mm
-view: 347 mm², 5% of its box) and nothing nests inside. Open in TODO.
-
-Also here: `forge.geometry.sides_on_border(bounds, border, tolerance)`, the
-sides of a box lying on the same side of another — snapdraw D31 uses it for
-the title block.
-
-Suite: forge 794. `main` → **0.13.0** (breaking: `island_gap` removed).
-
-### D100 — the outer face is the boundary of the union of the closed faces ✅
-On the 3D view of `anch_07` (an isometric lever with rounded ends) the walk of
-D59 went down the top edge and came back along the parallel thickness line,
-~3 mm away, instead of going round the end arc and the lower profile: the ring
-enclosed a 347 mm² band, and the lever's holes ended up outside it, as islands
-of their own. The view with only corners (`anch_02`) closed fine — Federico's
-clue. Where a straight edge is tangent to an end arc, the two cross at 2–6°
-in two points 0.13 mm apart, and the network's nodes there match only to the
-micron.
-
-Federico's fix: union the closed parts and drop the passage in the middle,
-which is not outer. Per component, `outer_face` now also polygonizes the
-network on a grid of `epsilon` (`shapely.unary_union(grid_size=)`), unions the
-faces and takes the edges lying on the union's exterior as the outer loop; when
-the walk encloses less than that union, the union wins. Measured on the lever:
-1476 mm² at grid 0.001, 0.01 and 0.05 mm alike (not a threshold effect), all 3
-holes inside. `anch_07` 7 → 4 islands, `anch_08` 8 → 4, `regr_05` 6 → 3.
-
-The union is taken over the **whole piece**, not per graph component — on
-`regr_04` the 3D view is one piece but three components in the graph (curves of
-the isometric, splines and ellipses, are not split where they cross), and the
-union per component kept only the biggest, losing the two small holes below
-(Federico: "potrebbero essere 3 o più le unioni da fare"). When the edges on
-the union's rim do not close a loop in the graph, the outer polygon is the
-union itself and the outer edges are the rim edges as found. After it:
-`regr_04` 6 → 4 islands, 3D view 311×320 mm with its holes; `regr_01` reads its
-long view whole (630–1810, before half of it), so it now matches its partner
-and the principal view changes; two small symbols on `anch_03`/`regr_02` and
-`anch_06` take in an attached closed face. Island and regression goldens
-regenerated after Federico checked the pages; text budgets of `anch_03`,
-`anch_06`, `anch_08` updated (more contours).
-
-**Island golden in forge** (`tests/real/test_golden_islands.py`, Federico: "sono
-roba di forge, perché sono puro riconoscimento geometrico"): the 13 view sheets
-he judged right (`anch_01`–`08`, `regr_01`–`05`) as geometry-only copies in
-`tests/data/golden_islands/` — snapdraw removed frame, title block and
-construction lines once, forge wrote the rest (layer `geometry`: forge does not
-read back its own `Trash` layer). Islands sorted by box, so two of equal area
-cannot swap. On 11 sheets forge alone gives exactly the framer's islands; on
-`regr_01` and `regr_04` one view differs by two sub-millimetre loops that the
-rewrite creates or drops (precision, four doubled lines merged on reload) —
-the golden is what forge reads from its own fixture. Suite: forge 807.
-Later the same day: `drw_0011` added (a broken view, from the 33 anonymized
-sheets Federico judged; one is enough, the rest are duplicates). Suite 808.
-`drw_0001` added after snapdraw D33 (frame with reference ticks). Suite 809.
-`main` → **0.13.1** (D100 and the island golden; no API change since 0.13.0).
-
+- **D87** — the collinear and cocircular merges are one engine
+  (`_merge_on_carrier`): an edge is an interval on its line or its circle;
+  group by carrier, chain what touches or overlaps, put the result where its
+  first member was. Proved equal to the old pair on 611 DXF (0 differences).
+- **D88** — the boundary: topo reads **structure** (what closes, what lies
+  inside what, what connects); consumers read **meaning** (hole, bend, view,
+  dimension). So `heal()` and `island()` both stay (neither is a cutting
+  mode), `split()` stays, and process thresholds, hole/bend/engrave and
+  their layers leave. Without a consumer's reading a hole is an inner contour.
+  The sheet-metal consumer is `snapbend`.
+- **D89** — golden are two halves: `json/` is geometry, checked by `heal()`
+  alone; `process/` belongs to the consumer. `cluster.area` follows the
+  parity of depth: odd depths subtract, even depths add back (outer − voids
+  + islands − voids in islands); an island was once removed twice.
+- **D90** — detection lives in `snapbend.flat`. topo keeps the open overlay
+  (`DetectedFeatures`) but knows no name in it: renderers read `role` +
+  geometry, never a collection name; `feature_role` picks the role to draw
+  (the contour's own if it is a consumer role, else the item's); an item
+  with `is_void` and a region subtracts from the area, whoever names it.
+- **D91** — two geometric facts in `topo.geometry`, under D68's "circle,
+  never hole": `concentric_groups` (a partition of circles by centre, smallest
+  first) and `arcs_around` (arcs concentric and larger, with sweep and radius
+  ratio). Thresholds ("~270°", "ratio ≤ 1.6", the drill limit) are the
+  consumers'; there is no shared `Hole` model.
+- **D92** — `gen_index.py` is the same file in every project, the rule is in
+  `pyproject.toml` (`[tool.gen_index.layers]`; a forbidden name may be an
+  external package), `--check` fails on a stale index or a broken rule, and
+  `tests/unit/test_index.py` runs it on every `pytest`.
+- **D93** — line facts live in `core/geometry/lines.py`: `point_line_distance`,
+  `are_collinear`, `group_collinear_lines`, `bridged_runs`, and a chord cut
+  (`splits_polygon`, now `splits_contour`, D168). Reaches, tolerances and
+  "this is a bend" stay the consumer's.
+- **D94** — axis-aligned facts live in `core/geometry/axis.py`:
+  `merge_intervals`, `interval_coverage`, `cluster_values`, `axis_lines`,
+  `covered_rectangles` (four sides covered by straight items, no polygonize),
+  `spanning_lines`, `items_inside`, `axis_aligned_share`. A consumer keeps its
+  numbers (a frame side ≥ 30%, the ISO ratio).
+- **D95** — all geometry is one package, `core/geometry/`, public as
+  `topo.geometry` (`__init__.py` is the map; building blocks import from their
+  submodule). Facts are frozen dataclasses computed on demand, never
+  precomputed or cached on the model; no "Geometry" wrapper of a drawing.
+- **D96** — drawing with topo: builders `polygon`, `rectangle`,
+  `regular_polygon`, `circle`, `stadium` (the very measures `contour_shape`
+  reports, so build and read round-trip) and `load_segments`. The dict schema
+  of `load_geometry` says `polygon`, never `polyline`.
+- **D97** — a history rewrite or force push happens only after Federico says
+  yes to that specific step (Claude Code asks too: `permissions.ask`). The
+  second rewrite (4 October) was done with the `dxf-anonymize repo` tool
+  and a local map of names and code families.
+- **D98** — `island()` takes no domain default: `max_gap` is required and by
+  name (`island_gap`, D59's second number, went in D99). Judged right by eye
+  it varied from 17 to 78 mm; the "scale of a drawing" is not published.
+- **D99** — islands are outer contours, not distances. Pieces are the edges
+  that touch (`spatial_islands` at `max_gap`); every outer contour not inside
+  another is an island and what lies inside it is its own by containment;
+  open edges stay in `loose` but carry `cluster_ref`. Reopened by D161.
+- **D100** — the outer face is the boundary of the union of the closed faces
+  (per whole piece, not per graph component): where a line is tangent to an
+  arc, the walk could go down one side and back along the other. D199 keeps
+  the union; its re-noding on discretizations is a known 1.x defect. The
+  13 island golden are topo's (`tests/data/golden_islands/`).
 ### D101 — one node criterion, not two: a cut within `tolerance` of another is the same node ✅
 Federico's reframing of D100, generalized: "an endpoint that lies exactly on
 another edge's curve, within tolerance, is a node (a T-junction) — not only
