@@ -393,6 +393,11 @@ what differs today moves into the reading or goes). `island` → `outlines`:
 "island" already names the depth-2 region. Clean break, no aliases (pre-1.0).
 Two numbers, measured: `tolerance` (nodes) and `max_gap` (gaps, default `tolerance`); one number at 0.5 left a contour open by 0.41 mm, still `is_valid`.
 
+### D203 — `loose` always comes from the repaired network, in every reading.
+An island the reading does not read (frame, nested, no contour) no longer goes out
+as drawn: doubles merged, gaps closed, like every other loose curve. The file as
+drawn stays in `doc`. Measured: 0.000 mm of input lost on 51 drawings.
+
 ## Open questions
 
 - **Reading for a language model (D84).** A raw DXF costs ~2.3× "bytes/4" in

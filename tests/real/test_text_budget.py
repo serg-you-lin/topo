@@ -55,11 +55,9 @@ def _make_test(name: str):
     return test
 
 
-# Fallimenti attesi, mai budget alzati per farli passare (TODO):
-# anch_06 cambia topologia con D145
-# (contatto deciso sul poligono in `island()`, lettura "dopo" giudicata più
-# corretta da Federico, ma il golden resta congelato con gli altri di island).
-KNOWN_FAILING = {"anch_06.dxf"}
+# Fallimenti attesi, mai budget alzati per farli passare (TODO). anch_06 è
+# rientrato con D202: i loose vengono dalla rete riparata, doppioni fusi.
+KNOWN_FAILING: set = set()
 
 for _name in FILES:
     _test = _make_test(_name)

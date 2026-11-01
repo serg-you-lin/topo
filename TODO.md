@@ -53,7 +53,12 @@ Sottopassi, uno per commit:
       `set_aside` (ruoli non strutturali), `warnings`, `errors`, `is_valid`,
       `source_file`, `label`; `faces()`, `outlines()`. `NodedEdges` resta
       interno.
-- [ ] B. una riparazione sola dietro `heal()` → `Network`; golden classificati.
+- [x] B. una riparazione sola dietro `heal()` → `Network`; golden classificati.
+      Fatto: `readings/network.py` (`build_network`, `repair_edges`); heal() e
+      island() leggono la stessa rete, firme invariate (il cambio è C). Loose
+      sempre dalla rete (D203). Suite verde, nessun golden cambiato; anch_06
+      rientra nel budget di testo (loose 179 → 101, doppioni fusi, 0 mm persi)
+      ed esce dai fallimenti attesi. Note della misura:
       Misura fatta il 2 novembre (`_debug/2026-11-02_topo_D202-network`,
       `measure.py`, solo lettura): `faces()` = `heal()` su 218/218 disegni;
       `outlines()` su una riparazione sola (tutto il disegno, keep_junctions
