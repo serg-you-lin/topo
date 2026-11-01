@@ -7382,3 +7382,50 @@ the old code at a half and a quarter turn, the node 0.0127 from the moved
 one; green within one grid cell). Suite 3012 passed, goldens unchanged, 3:47.
 
 **Gate.** G6e, in the 1.0 gate. No public name or signature changes.
+
+### D199 — G6e, last line: D100's union stays; its re-noding on discretizations is a known defect for 1.x ✅
+`outer_face._network`, the line added to the inventory with `UNION_GRID`
+(D195's session): the fallback of D100 builds its network with the ends on
+the rounded tuples (`_on_nodes`, up to 7e-4 off) and lets
+`unary_union` node the discretizations again (sagitta up to 0.01). A contact
+the noding on the true curves excluded (D180) can come back there. Built
+case: a bite of an arc with a sagitta just under 0.01, a triangle's corner
+0.0100003 from the true arc; at the origin the corner's tuple passes the
+chord and the union welds the two faces (46.2 mm² instead of 44.2); turned
+by 0.7 the angular grid (D145) moves the chord and it does not.
+
+**Measured.** Removing the fallback (only the walk on the planar graph; the
+faces of `face_walks` united as polygons give the same numbers):
+31 island drawings, 0 of 779 calls change, `island()` 21% faster; the 121
+drawings of the snapdraw sweep, 39 of 3074 calls change in 10 drawings, and
+one reading changes, wrongly: three copies of a small figure lose a 4.6 mm²
+lobe to `loose` (Federico looked: today's reading is right). The cause is
+not the union: at a node a spline leaves at about −146° and swings past a
+0.54 mm line leaving at −90°; `_leaving_angle` reads directions at
+`DIRECTION_SAMPLE` (3 mm, or half the edge) where the spline already points
+at −67.5°, so the order of the branches round the node is inverted, the
+walk goes round the lobe twice and calls it a spur. The union corrects the
+walk there — the same family as the tangent arcs D100 was born on.
+The defect itself is reached on the 121: the union adds 40 nodes between
+curves more than 0.01 apart, in 6 drawings; none changes a reading (in 5
+`outer_face` is identical with or without the union, in the sixth only
+nested pieces change, which go to `loose` anyway). On the 31: 0 such nodes.
+
+**Rule.** The union stays. The line is closed for the gate as known and not
+deciding a reading (D193 point 1, the D158 form): it decides only on the
+built case. Removing the union (and with it `rim.py`, `UNION_GRID`,
+`_on_nodes`) first needs the walk to order the branches at a node by how
+they actually leave it, then the same two measures again: 1.x, TODO.
+Options weighed: remove it now (one wrong reading on a real drawing in
+exchange for a red built case — moving a defect, not fixing one); fix
+`_leaving_angle` now (a new front inside the gate, touching the walk of
+both readings).
+
+**Held by** `tests/unit/core/test_outer_face.py::TestChordContactUnderMotion`,
+a `known_defect`: skips while the reading changes with the motion (value at
+the origin checked: 46.2, the faces welded), fails once it does not.
+Probes: `_debug/2026-10-31_topo_G6e-inventario/attrezzi/probe_network_road1*.py`,
+`probe_union_contacts_121.py`, `probe_network_45*.py`.
+
+**Gate.** G6e, in the 1.0 gate; it closes the inventory (D193 point 1). No
+public name or signature changes.

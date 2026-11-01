@@ -148,12 +148,12 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
       una fessura larga quanto la tolleranza dipende da edge che non la
       toccano.
 - [ ] **G6e** `heal()` dipende dal riferimento (aperta il 31 ottobre, in una
-      **SI RIPARTE DA QUI: la voce in coda (D191, D193).** Inventario:
+      **SI RIPARTE DA QUI: il ripasso di D193 punto 2, poi la passata sui 121.**
+      Inventario chiuso: **0** (MAP D199: `outer_face._network` resta, difetto
+      noto per 1.x, `TestChordContactUnderMotion`). Inventario:
       `_debug/2026-10-31_topo_G6e-inventario/inventario.md` (le ultime
-      sezioni sono lo stato vero). Conto al 2 novembre: **1** (A 0,
-      B 0, C 0, D 0, più la voce
-      nuova in coda: `outer_face._network` rifà il noding sulle discretizzazioni,
-      micro-caso rosso, 0 casi sui 31). Prossima: `outer_face._network`.
+      sezioni sono lo stato vero). Ripasso: si parte dalla `contains` di
+      `island.py:146`.
       Trovato, non contato: `decide_nodes` (`noding.py:148`, `points[0]`) fa del
       gruppo di capi entro `epsilon` il più piccolo in (x, y), la stessa scelta
       di D198; non misurato se arriva a una lettura.
@@ -397,6 +397,19 @@ Trovato con G6c (D179), da fare in 1.x:
   `None` e vince il giro più piccolo. La V col cerchio inscritto dei fixture
   ora si legge giusta perché il noding (D180) fa del lato che sfiora il
   cerchio un contatto; il ripiego resta da sistemare in generale.
+Trovato con G6e (D199), da fare in 1.x:
+- **l'ordine dei rami a un nodo in `_leaving_angle`**: la direzione si legge
+  a `DIRECTION_SAMPLE` (3 mm o metà edge); una spline che lascia il nodo a
+  −146° e passa oltre una retta di 0.54 mm a −90° lì punta già a −67.5°, e
+  l'ordine attorno al nodo si rovescia: la camminata gira due volte attorno
+  al lobo e lo dà per sporgenza (disegno [45] della passata, tre copie,
+  4.6 mm² ciascuna; oggi la salva l'unione di D100).
+- **poi togliere l'unione di D100** (`_faces_union_loop`, `_network`,
+  `_on_nodes`, `UNION_GRID`, `rim.py`): rifà il noding sulle discretizzazioni
+  coi capi sulle tuple e salda contatti che D180 esclude (40 nodi fra curve
+  separate in 6 dei 121, nessuna lettura cambiata). Dopo la voce sopra, rifare
+  le due misure (31 e 121) di D199; `TestChordContactUnderMotion` diventa
+  rosso e si toglie dalla lista dei difetti noti.
 Deciso con Federico il 30 ottobre, da fare in 1.x:
 - **in `island()` i pezzi dello stesso cerchio/retta si ricompongono anche
   in `loose`** (richiesta snapdraw/pippo, misure in "richieste dalla
