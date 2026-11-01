@@ -231,3 +231,47 @@ class TestUnionGridUnderMotion(unittest.TestCase):
                     self.assertEqual(len(result.loose), 1)
                     areas.add(round(to_shapely(result.clusters[0].outer).area, 9))
         self.assertEqual(len(areas), 1)   # lo stesso cerchio in ogni moto, con e senza griglia
+
+
+class TestChordContactUnderMotion(unittest.TestCase):
+    """G6e, `outer_face._network` (MAP D199): il ripiego D100 rifà il noding
+    sulle discretizzazioni coi capi sulle tuple. F1 ha un morso ad arco con
+    freccia appena sotto 0.01; lo spigolo del triangolo F2 sta 0.0100003
+    dall'arco vero, sopra `GRAPH_EPSILON`: il noding non li tocca, ma al posto
+    la tupla dello spigolo passa oltre la corda e l'unione salda F1 e F2.
+    Ruotato di 0.7 la griglia angolare (D145) sposta la corda e F2 resta in
+    loose. Difetto noto: l'unione non si toglie finché la camminata sbaglia
+    l'ordine dei rami a un nodo (TODO, `_leaving_angle`)."""
+
+    N = 64
+    MOTIONS = [(0.0, 0.0, 0.0), (0.0, 3e-7, 0.0), (math.pi / 2, 0.0, 0.0), (0.0, 2.5e6, -1.5e6), (0.7, 0.0, 0.0)]
+
+    def _segments(self):
+        from topo.core.primitives.segments import ArcSeg
+        step = 2 * math.pi / self.N
+        r = 0.01 * (1 - 1e-8) / (1 - math.cos(step / 2))
+        a = math.pi / 4
+        p1, p2 = (-r * math.cos(a), -r * math.sin(a)), (r * math.cos(a), -r * math.sin(a))
+        alpha = 48.5 * step
+        q = ((r - 0.0100003) * math.cos(alpha), (r - 0.0100003) * math.sin(alpha))
+        return [ArcSeg(center=(0.0, 0.0), radius=r, start_angle=5 * a, end_angle=7 * a, ccw=True),
+                LineSeg(start=p2, end=(p2[0], -r - 3)), LineSeg(start=(p2[0], -r - 3), end=(p1[0], -r - 3)),
+                LineSeg(start=(p1[0], -r - 3), end=p1),
+                LineSeg(start=q, end=(q[0] + 1, q[1] + 2)), LineSeg(start=(q[0] + 1, q[1] + 2), end=(q[0] - 1, q[1] + 2)),
+                LineSeg(start=(q[0] - 1, q[1] + 2), end=q)]
+
+    def test_il_contatto_sulla_corda_non_dipende_dal_moto(self):
+        import topo
+        from tests.invariants import known_defect, rigid
+        readings = []
+        for motion in self.MOTIONS:
+            segment, _ = rigid(*motion)
+            result = topo.island(topo.load_segments([segment(s) for s in self._segments()]), max_gap=0.0)
+            readings.append((len(result.clusters), len(result.loose),
+                             round(to_shapely(result.clusters[0].outer).area, 1)))
+        # valore al posto: senza moto l'unione salda F1 e F2 (il difetto c'è davvero)
+        self.assertEqual(readings[0], (1, 0, 46.2))
+
+        def check():
+            self.assertEqual(len(set(readings)), 1, readings)
+        known_defect(self, "case_chord, la tupla oltre la corda", "G6e 1.x (MAP D199)", check)
