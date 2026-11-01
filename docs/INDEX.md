@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`85` modules · `509` module-level functions · `63` classes · `16231` lines of code.
+`85` modules · `509` module-level functions · `63` classes · `16233` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -74,7 +74,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_candidates` | func | `topo/core/base/gap_solver.py:226` | (distanza, chiave d'ordine, i, bersaglio) per ogni estremo `i`: ("end", j) un |
 | `_chain` | func | `topo/core/base/normalizer.py:240` | Ordina per `lo` e incatena gli span che si toccano o si sovrappongono: |
 | `_chain` | func | `topo/core/geometry/regions.py:324` | Pezzi orientati incatenati testa-coda in anelli chiusi. Con |
-| `chain_runs` | func | `topo/core/base/normalizer.py:525` | Catene massimali: percorsi fra nodi di grado != 2, o anelli. |
+| `chain_runs` | func | `topo/core/base/normalizer.py:527` | Catene massimali: percorsi fra nodi di grado != 2, o anelli. |
 | `_check_factor` | func | `topo/core/primitives/segments.py:134` | Il fattore di una scala: positivo e finito. Uno negativo è una |
 | `_chord_angle` | func | `topo/core/geometry/rings.py:209` | Angolo con segno, in (−π, π], da a a b visti da `point`. |
 | `chord_angle_deg` | func | `topo/core/geometry/measure.py:125` | Angolo (gradi, 0-180°) della corda da `a` a `b`. Modulo 180 perché una |
@@ -704,7 +704,7 @@ _topo/core/base/gap_solver.py_
   - methods: `__init__`, `build`, `_build_parts`, `_collect_loose`
 - `assign_cluster_refs(curves: list, clusters: list, tolerance: float) -> None` — L221 — Scrive su ogni curva di `curves` (`result.loose`) `cluster_ref`: l'indice
 
-#### `topo/core/base/normalizer.py` — 553 lines
+#### `topo/core/base/normalizer.py` — 555 lines
 
 _topo/core/base/normalizer.py_
 
@@ -724,7 +724,7 @@ _topo/core/base/normalizer.py_
 - `_merged_arc(lo: _Span, hi: _Span)` — L395 — Il fuso di una catena cocircolare: un arco, o un cerchio se chiude il
 - `weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]` — L415 — Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale
 - `refit_tessellations(edges: Iterable[Edge], max_segment: float=0.1, min_run: int=10, tolerance: float=0.02, node_decimals: int=3) -> List[Edge]` — L472 — Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di
-- `chain_runs(short_edges: List[Edge]) -> list` — L525 — Catene massimali: percorsi fra nodi di grado != 2, o anelli.
+- `chain_runs(short_edges: List[Edge]) -> list` — L527 — Catene massimali: percorsi fra nodi di grado != 2, o anelli.
 
 #### `topo/core/base/prepare.py` — 85 lines
 

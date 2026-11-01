@@ -392,3 +392,32 @@ class TestWeldDegenerateLinesegs(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestRefitJointsUnderMotion(unittest.TestCase):
+    """G6e, gruppo B: una curva scritta a punti (retta, quarto di cerchio,
+    retta) rifittata in tre primitive resta una catena sola. Ogni giunzione
+    si arrotondava due volte, dalla fine di un pezzo e dall'inizio del
+    successivo: due copie a 1 ulp, e con un bordo di cella fra loro i due
+    pezzi prendevano nodi diversi."""
+
+    def _profile(self, angle, dx, dy):
+        import topo
+        from tests.invariants import rigid
+        pts = [(x * 0.05, 0.0) for x in range(41)]
+        pts += [(2.0 + 3 * math.sin(a / 100 * math.pi / 2), 3 - 3 * math.cos(a / 100 * math.pi / 2))
+                for a in range(1, 101)]
+        pts += [(5.0, 3.0 + y * 0.05) for y in range(1, 41)]
+        segment, _ = rigid(angle, dx, dy)
+        return topo.load_segments([segment(LineSeg(start=a, end=b)) for a, b in zip(pts, pts[1:])]).edges
+
+    def test_una_giunzione_su_un_bordo_di_cella_resta_un_nodo(self):
+        from collections import Counter
+        from topo.core.base.normalizer import refit_tessellations
+        # il moto mette la giunzione fra la retta e l'arco a metà fra due celle di 1e-3
+        for motion in [(0.0, 0.0, 0.0), (1.209, 2999999.9996208353, -2499999.9996809117)]:
+            with self.subTest(motion=motion):
+                out = refit_tessellations(self._profile(*motion))
+                ends = Counter(n for e in out for n in (e.start, e.end))
+                self.assertEqual(len(out), 3)
+                self.assertEqual(sorted(ends.values()), [1, 1, 2, 2])
