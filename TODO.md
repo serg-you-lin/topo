@@ -150,11 +150,16 @@ Ordine: prima la superficie (rompe), poi la promessa (prova), poi i documenti
 - [ ] **G6e** `heal()` dipende dal riferimento (aperta il 31 ottobre, in una
       **SI RIPARTE DA QUI: gruppo C (D191, D193).** Inventario:
       `_debug/2026-10-31_topo_G6e-inventario/inventario.md` (le ultime
-      sezioni sono lo stato vero). Conto al 2 novembre: **20** (A 0,
-      B 0, C 6, D 13, più una voce
+      sezioni sono lo stato vero). Conto al 2 novembre: **15** (A 0,
+      B 0, C 1, D 13, più una voce
       nuova in coda: `outer_face._network` rifà il noding sulle discretizzazioni,
-      micro-caso rosso, 0 casi sui 31). Prossima: C, `rim.py:150` (sonda: `face_segments` 0 chiamate sui 31).
-      Fatte: `outer_face.py:235, 241` (`_first_step`, innocue,
+      micro-caso rosso, 0 casi sui 31). Prossima: C, `normalizer.py:196` (rossa: il verso del fuso di due pezzi
+      collineari cambia col riferimento, si vede nelle `loose` di `heal`). La D `rim.py:171, 173` porta un difetto
+      trovato (sporgenza prima nell'elenco vince un lato, vedi inventario).
+      Fatte: `fitting.py:94` (corretta: giro nullo entro FLOAT_NOISE,
+      `TestFlatTopUnderMotion`), `rings.py:244, 239` (innocue, test sotto moto in
+      `test_rings.py`), `regions.py:269` (innocua, `TestCuspUnderMotion`; in coda: un taglio
+      di larghezza zero verso dentro esce convesso), `rim.py:150` (innocua, `TestSenseOfAPerpendicularSpur`), `outer_face.py:235, 241` (`_first_step`, innocue,
       `TestFirstStepUnderMotion`), `axis.py:179`
       (chiave a 0.1 tolta, `TestCoveredRectanglesUnderMotion`), `hierarchy.py:82` (D195, copie pari entro il rumore), `:86`
       (innocua, `TestTreeOrderUnderMotion`), `outer_face.py:41` (innocua,

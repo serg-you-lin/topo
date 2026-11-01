@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`85` modules · `511` module-level functions · `63` classes · `16268` lines of code.
+`85` modules · `511` module-level functions · `63` classes · `16272` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -43,7 +43,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_arc_distance` | func | `topo/core/geometry/rings.py:263` | Distanza esatta dall'arco t0 → t1 del cerchio (centro, r). |
 | `_arc_point` | func | `topo/core/readings/outer_scan.py:128` |  |
 | `arc_seg_to_bulge` | func | `topo_dxf/exporter.py:85` |  |
-| `_arc_through_ends` | func | `topo/core/primitives/fitting.py:111` | L'arco che passa esattamente per il primo e l'ultimo punto (e per quello a |
+| `_arc_through_ends` | func | `topo/core/primitives/fitting.py:115` | L'arco che passa esattamente per il primo e l'ultimo punto (e per quello a |
 | `ArcAround` | class | `topo/core/geometry/shape.py:330` | Un arco concentrico a un cerchio e più grande di lui. |
 | `arcs_around` | func | `topo/core/geometry/shape.py:343` | Gli archi di `arcs` col centro entro `tolerance` da `center` e raggio |
 | `ArcSeg` | class | `topo/core/primitives/segments.py:225` |  |
@@ -133,7 +133,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_covered_at` | func | `topo/core/geometry/axis.py:98` |  |
 | `covered_rectangles` | func | `topo/core/geometry/axis.py:146` | I rettangoli allineati agli assi con ogni lato coperto almeno per |
 | `CoveredRectangle` | class | `topo/core/geometry/axis.py:107` | An axis-aligned rectangle whose four sides are covered by strokes. |
-| `_crossing` | func | `topo/core/primitives/fitting.py:155` |  |
+| `_crossing` | func | `topo/core/primitives/fitting.py:159` |  |
 | `_crossing_warnings` | func | `topo/core/readings/heal.py:205` | Lati di contorno che si attraversano senza un nodo (D132): il disegno è |
 | `_Curve` | class | `topo/core/topology/noding.py:216` | `seg` col parametro s = lunghezza d'arco dall'inizio, in [0, length] |
 | `Curve` | class | `topo/model/curve.py:39` | Radice della gerarchia. Porta solo identità semantica e traceability. |
@@ -212,7 +212,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_first_point` | func | `topo/io/text.py:151` | Un punto che sta sul segmento, per dire in quale pezzo cade. |
 | `_first_step` | func | `topo/core/topology/outer_face.py:229` | L'edge che contiene il punto più a sinistra del componente, percorso |
 | `fit_circle_kasa` | func | `topo/core/geometry/points.py:48` | Fit algebrico (Kasa) ai minimi quadrati di un cerchio su `points`: minimizza |
-| `_fit_curve` | func | `topo/core/primitives/fitting.py:132` | Un pezzo curvo: arco per gli estremi se basta (e `arcs`), altrimenti spline entro `tolerance` per gli estremi. |
+| `_fit_curve` | func | `topo/core/primitives/fitting.py:136` | Un pezzo curvo: arco per gli estremi se basta (e `arcs`), altrimenti spline entro `tolerance` per gli estremi. |
 | `_flatten_virtual` | func | `topo_dxf/text_extractor.py:471` | Espande `virtual_entities()` ricorsivamente sugli INSERT (frecce a blocco). |
 | `flatten_z` | func | `topo_dxf/sanitize.py:29` | Porta a 0 tutte le coordinate Z != 0 per LINE, ARC, CIRCLE, |
 | `_flattened_points` | func | `topo_dxf/text_extractor.py:509` | Punti di un ARC o CIRCLE appiattito alla sagitta `_ARC_SAGITTA`. |
@@ -262,7 +262,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `IslandReading` | class | `topo/core/readings/island.py:49` | Cosa island() ha deciso su un'isola, pezzo per pezzo. |
 | `_item_geometry` | func | `topo/tools/anchor.py:152` |  |
 | `items_inside` | func | `topo/core/geometry/axis.py:219` | I tratti con entrambi i capi dentro `bounds` allargato di `margin`, nell'ordine dato. |
-| `_join_seam` | func | `topo/core/primitives/fitting.py:220` | Un contorno senza spigoli si apre in un punto qualunque: se il primo e |
+| `_join_seam` | func | `topo/core/primitives/fitting.py:224` | Un contorno senza spigoli si apre in un punto qualunque: se il primo e |
 | `_joined` | func | `topo/core/geometry/shape.py:409` |  |
 | `_key_for` | func | `topo_dxf/sanitize.py:154` | Restituisce una chiave hashable che identifica univocamente |
 | `_largest_loop` | func | `topo/core/topology/outer_face.py:332` | (loop, segments, styles, polygon) del giro di area massima. |
@@ -274,17 +274,17 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_leaving_angle` | func | `topo/core/topology/outer_face.py:251` | Direzione con cui `edge` lascia `node`, letta a DIRECTION_SAMPLE (o a |
 | `_length` | func | `topo/core/geometry/regions.py:107` |  |
 | `_length` | func | `topo/core/geometry/shape.py:269` |  |
-| `_length` | func | `topo/core/primitives/fitting.py:164` |  |
+| `_length` | func | `topo/core/primitives/fitting.py:168` |  |
 | `length_inside` | func | `topo/core/geometry/measure.py:100` | Quanta parte di `segment` (qualunque primitiva nativa) sta dentro il |
 | `_lerp` | func | `topo/core/geometry/rings.py:169` |  |
 | `_Line` | class | `topo/core/readings/outer_scan.py:94` |  |
 | `_line_circle_near` | func | `topo/core/topology/noding.py:649` | (piede sulla retta, punto dell'arco) della perpendicolare dal centro. |
 | `_line_distance` | func | `topo/core/geometry/rings.py:256` |  |
-| `_line_fit` | func | `topo/core/primitives/fitting.py:144` | Retta ai minimi quadrati sui punti: (punto, direzione unitaria). |
+| `_line_fit` | func | `topo/core/primitives/fitting.py:148` | Retta ai minimi quadrati sui punti: (punto, direzione unitaria). |
 | `_line_intersection` | func | `topo/core/geometry/intersections.py:23` | Intersezione tra retta (p1,p2) e retta (p3,p4). None se parallele. |
 | `_line_moments` | func | `topo/core/geometry/integrals.py:110` |  |
 | `_line_spans` | func | `topo/core/base/normalizer.py:189` | Span lungo la retta comune: `t` è la proiezione sulla direzione del |
-| `_line_turn` | func | `topo/core/primitives/fitting.py:168` | Di quanti gradi svolta chi passa dalla linea `a` alla linea `b`. |
+| `_line_turn` | func | `topo/core/primitives/fitting.py:172` | Di quanti gradi svolta chi passa dalla linea `a` alla linea `b`. |
 | `LineSeg` | class | `topo/core/primitives/segments.py:60` |  |
 | `Link` | class | `topo/tools/strips.py:70` | Una striscia (`strip`) fra i bordi `a` e `b` di un `Facing`. |
 | `link` | func | `topo/tools/strips.py:77` | Fatto 3: la striscia larga `width` fra `a` e `b`, due bordi di `facing`, |
@@ -378,7 +378,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_parse_line` | func | `topo_dxf/parser.py:47` |  |
 | `_parse_polyline` | func | `topo_dxf/parser.py:126` |  |
 | `_parse_spline` | func | `topo_dxf/parser.py:72` | Solo la geometria (MAP.md D135): grado, punti di controllo, nodi, pesi |
-| `_Part` | class | `topo/core/primitives/fitting.py:44` | Un pezzo della sequenza: `kind` "line" o "curve", coi punti che copre (estremi condivisi coi vicini). |
+| `_Part` | class | `topo/core/primitives/fitting.py:45` | Un pezzo della sequenza: `kind` "line" o "curve", coi punti che copre (estremi condivisi coi vicini). |
 | `_piece` | func | `topo/core/geometry/regions.py:123` | Il tratto di `seg` fra i parametri `s0` < `s1`, stessa primitiva. |
 | `_piece_side` | func | `topo/core/geometry/regions.py:214` | Da che parte di `polygon` sta un pezzo (fra due tagli non cambia): |
 | `_pieces` | func | `topo/core/readings/outer_scan.py:110` |  |
@@ -427,7 +427,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `RenderedText` | class | `topo/model/text.py:36` | Una stringa dentro l'immagine appiattita di un testo (`Text.rendered`). |
 | `renode` | func | `topo/core/topology/noding.py:113` | Nodi di ogni Edge ricalcolati dal punto reale del segmento a |
 | `resolve_role` | func | `topo/model/role_rule.py:107` | Ruolo della prima regola che matcha, in ordine; `unknown` se nessuna. |
-| `_restore_corners` | func | `topo/core/primitives/fitting.py:176` | Gli spigoli vivi che il campionamento ha smussato. Un pezzo curvo più |
+| `_restore_corners` | func | `topo/core/primitives/fitting.py:180` | Gli spigoli vivi che il campionamento ha smussato. Un pezzo curvo più |
 | `Result` | class | `topo/model/result.py:13` | Risultato completo di una sessione topo su un file DXF. |
 | `_result_bbox_center` | func | `topo/tools/rotate.py:219` | Centro del bbox unito degli outer di tutti i cluster — vedi `rotate_to_longest`. |
 | `_reversed` | func | `topo/core/geometry/regions.py:195` |  |
@@ -495,9 +495,9 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_side_cover` | func | `topo/core/topology/rim.py:128` | Per ogni lato dell'anello, gli (edge, verso) che distano meno di `band` |
 | `sides_on_border` | func | `topo/core/geometry/axis.py:229` | I lati di `bounds` ("left", "bottom", "right", "top") che stanno sul |
 | `_signed_area` | func | `topo/core/geometry/regions.py:190` | Area con segno sulle primitive (Green, D165): positiva in senso antiorario. |
-| `_signed_turn` | func | `topo/core/primitives/fitting.py:56` | Svolta con segno (gradi) in `b` andando da `a` a `c`: positiva a sinistra. |
+| `_signed_turn` | func | `topo/core/primitives/fitting.py:57` | Svolta con segno (gradi) in `b` andando da `a` a `c`: positiva a sinistra. |
 | `simple_rings` | func | `topo/core/topology/outer_face.py:180` | I giri semplici di una faccia: dove il giro ripassa da un nodo si |
-| `simplify_points` | func | `topo/core/primitives/fitting.py:249` | Primitive (LineSeg/ArcSeg/CircleSeg/BSplineSeg) per la sequenza di punti |
+| `simplify_points` | func | `topo/core/primitives/fitting.py:253` | Primitive (LineSeg/ArcSeg/CircleSeg/BSplineSeg) per la sequenza di punti |
 | `_size` | func | `topo/core/geometry/strips.py:146` |  |
 | `_size` | func | `topo/tools/anchor.py:160` | A parità di distanza vince l'elemento più piccolo: un foro sul bordo del pezzo. |
 | `_slug` | func | `topo_dxf/layers.py:85` |  |
@@ -520,7 +520,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `split_at_crossings` | func | `topo/core/topology/noding.py:161` | Spezza ogni edge nei suoi contatti con gli altri (incroci, T, estremi |
 | `_split_at_junctions` | func | `topo/core/base/normalizer.py:319` | Spezza una catena dove due span consecutivi si toccano SOLO (nessuna |
 | `split_labeled` | func | `topo/core/base/cleanup.py:26` | Separa gli Edge con un ruolo già deciso e non strutturale (cornice, |
-| `_split_stretch` | func | `topo/core/primitives/fitting.py:62` | Un tratto senza spigoli: tutto entro `tolerance` dalla corda -> una linea; |
+| `_split_stretch` | func | `topo/core/primitives/fitting.py:66` | Un tratto senza spigoli: tutto entro `tolerance` dalla corda -> una linea; |
 | `splits_contour` | func | `topo/core/geometry/lines.py:82` | True if the chord `start`-`end`, extended by `reach` at both ends, cuts |
 | `stadium` | func | `topo/core/geometry/build.py:70` | Stadio fuori tutto `length` × `width` (due semicerchi di raggio |
 | `_stadium` | func | `topo/core/geometry/shape.py:176` |  |
@@ -548,7 +548,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `to_dxf` | func | `topo_dxf/writer.py:35` | Crea un documento DXF nuovo (R2010) e vi materializza il Result. |
 | `to_json` | func | `topo/io/exporter.py:142` | Restituisce i metadati come stringa JSON secondo schema. Vedi `save_json` per `extra_metadata` e `schema`. |
 | `to_nester_input` | func | `topo/io/exporter.py:241` | Produce l'input per il nester: coordinate grezze + metadati base. |
-| `_to_primitives` | func | `topo/core/primitives/fitting.py:238` |  |
+| `_to_primitives` | func | `topo/core/primitives/fitting.py:242` |  |
 | `to_shapely` | func | `topo/io/shapes.py:22` | Convert topo geometry to a shapely object (MAP.md D166). |
 | `to_svg` | func | `topo/io/svg.py:46` | `Result` → stringa SVG completa (`<svg>…</svg>`). |
 | `to_text` | func | `topo/io/text.py:170` | Il `Result` come testo per un modello linguistico (`.topo.md`). |
@@ -582,7 +582,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_winding` | func | `topo/core/geometry/rings.py:125` | Numero di avvolgimento del giro attorno a `point`; None se `point` sta |
 | `_with_nodes` | func | `topo/core/topology/noding.py:704` |  |
 | `with_polygon` | func | `topo/core/primitives/polygon_builder.py:92` | `curve` col poligono che la lettura le ha costruito (fuso con la rete |
-| `_within` | func | `topo/core/primitives/fitting.py:50` | Tutti i punti entro `tolerance` dalla corda primo-ultimo. |
+| `_within` | func | `topo/core/primitives/fitting.py:51` | Tutti i punti entro `tolerance` dalla corda primo-ultimo. |
 | `within_diameter` | func | `topo/core/geometry/measure.py:311` | True se ogni coppia di `points` dista al più `limit`: il diametro |
 | `_within_reach` | func | `topo/core/base/gap_solver.py:345` | Un incontro che sposta un estremo più di `reach` non chiude il gap: due |
 | `_write_attached_features` | func | `topo_dxf/writer.py:257` | Ogni collezione di `cluster.detected` (D70, D90): topo non sa cosa siano. |
@@ -606,7 +606,7 @@ Same name defined at module level in different modules. Not automatically a bug 
 | `_cluster` | `topo/core/readings/island.py:189` · `topo/io/shapes.py:58` |
 | `_color_rgb` | `topo/model/role_rule.py:124` · `topo_dxf/adapter.py:63` |
 | `_ends` | `topo/core/geometry/lines.py:28` · `topo/core/geometry/regions.py:115` |
-| `_length` | `topo/core/geometry/regions.py:107` · `topo/core/geometry/shape.py:269` · `topo/core/primitives/fitting.py:164` |
+| `_length` | `topo/core/geometry/regions.py:107` · `topo/core/geometry/shape.py:269` · `topo/core/primitives/fitting.py:168` |
 | `_on_arc` | `topo/core/geometry/intersections.py:127` · `topo/core/readings/outer_scan.py:124` · `topo/core/topology/noding.py:692` |
 | `_on_line` | `topo/core/geometry/intersections.py:116` · `topo/core/primitives/trim.py:47` |
 | `_place` | `topo/core/base/hierarchy.py:68` · `topo/core/geometry/build.py:21` |
@@ -985,24 +985,24 @@ _topo/core/geometry_input.py_
 
 No module-level function or class.
 
-#### `topo/core/primitives/fitting.py` — 311 lines
+#### `topo/core/primitives/fitting.py` — 315 lines
 
 _topo/core/primitives/fitting.py_
 
-- **class** `_Part` — L44 — Un pezzo della sequenza: `kind` "line" o "curve", coi punti che copre (estremi condivisi coi vicini).
-- `_within(points: List[Point], tolerance: float) -> bool` — L50 — Tutti i punti entro `tolerance` dalla corda primo-ultimo.
-- `_signed_turn(a: Point, b: Point, c: Point) -> float` — L56 — Svolta con segno (gradi) in `b` andando da `a` a `c`: positiva a sinistra.
-- `_split_stretch(points: List[Point], tolerance: float, scale: float, corner_turn_deg: float, arcs: bool) -> List[_Part]` — L62 — Un tratto senza spigoli: tutto entro `tolerance` dalla corda -> una linea;
-- `_arc_through_ends(points: List[Point], tolerance: float) -> Optional[ArcSeg]` — L111 — L'arco che passa esattamente per il primo e l'ultimo punto (e per quello a
-- `_fit_curve(points: List[Point], tolerance: float, arcs: bool, degree: int) -> List[Primitive]` — L132 — Un pezzo curvo: arco per gli estremi se basta (e `arcs`), altrimenti spline entro `tolerance` per gli estremi.
-- `_line_fit(points: List[Point]) -> Tuple[Point, Point]` — L144 — Retta ai minimi quadrati sui punti: (punto, direzione unitaria).
-- `_crossing(l1, l2) -> Optional[Point]` — L155
-- `_length(points: List[Point]) -> float` — L164
-- `_line_turn(a: _Part, b: _Part) -> float` — L168 — Di quanti gradi svolta chi passa dalla linea `a` alla linea `b`.
-- `_restore_corners(parts: List[_Part], closed: bool, tolerance: float, scale: float, corner_turn_deg: float) -> List[_Part]` — L176 — Gli spigoli vivi che il campionamento ha smussato. Un pezzo curvo più
-- `_join_seam(prims: List[Primitive], tolerance: float) -> List[Primitive]` — L220 — Un contorno senza spigoli si apre in un punto qualunque: se il primo e
-- `_to_primitives(parts: List[_Part], tolerance: float, arcs: bool, degree: int) -> List[Primitive]` — L238
-- `simplify_points(points: Sequence[Point], tolerance: float, scale: float, closed: bool=True, corner_turn_deg: float=DEFAULT_CORNER_TURN_DEG, arcs: bool=True, spline_degree: int=DEFAULT_SPLINE_DEGREE) -> List[Primitive]` — L249 — Primitive (LineSeg/ArcSeg/CircleSeg/BSplineSeg) per la sequenza di punti
+- **class** `_Part` — L45 — Un pezzo della sequenza: `kind` "line" o "curve", coi punti che copre (estremi condivisi coi vicini).
+- `_within(points: List[Point], tolerance: float) -> bool` — L51 — Tutti i punti entro `tolerance` dalla corda primo-ultimo.
+- `_signed_turn(a: Point, b: Point, c: Point) -> float` — L57 — Svolta con segno (gradi) in `b` andando da `a` a `c`: positiva a sinistra.
+- `_split_stretch(points: List[Point], tolerance: float, scale: float, corner_turn_deg: float, arcs: bool) -> List[_Part]` — L66 — Un tratto senza spigoli: tutto entro `tolerance` dalla corda -> una linea;
+- `_arc_through_ends(points: List[Point], tolerance: float) -> Optional[ArcSeg]` — L115 — L'arco che passa esattamente per il primo e l'ultimo punto (e per quello a
+- `_fit_curve(points: List[Point], tolerance: float, arcs: bool, degree: int) -> List[Primitive]` — L136 — Un pezzo curvo: arco per gli estremi se basta (e `arcs`), altrimenti spline entro `tolerance` per gli estremi.
+- `_line_fit(points: List[Point]) -> Tuple[Point, Point]` — L148 — Retta ai minimi quadrati sui punti: (punto, direzione unitaria).
+- `_crossing(l1, l2) -> Optional[Point]` — L159
+- `_length(points: List[Point]) -> float` — L168
+- `_line_turn(a: _Part, b: _Part) -> float` — L172 — Di quanti gradi svolta chi passa dalla linea `a` alla linea `b`.
+- `_restore_corners(parts: List[_Part], closed: bool, tolerance: float, scale: float, corner_turn_deg: float) -> List[_Part]` — L180 — Gli spigoli vivi che il campionamento ha smussato. Un pezzo curvo più
+- `_join_seam(prims: List[Primitive], tolerance: float) -> List[Primitive]` — L224 — Un contorno senza spigoli si apre in un punto qualunque: se il primo e
+- `_to_primitives(parts: List[_Part], tolerance: float, arcs: bool, degree: int) -> List[Primitive]` — L242
+- `simplify_points(points: Sequence[Point], tolerance: float, scale: float, closed: bool=True, corner_turn_deg: float=DEFAULT_CORNER_TURN_DEG, arcs: bool=True, spline_degree: int=DEFAULT_SPLINE_DEGREE) -> List[Primitive]` — L253 — Primitive (LineSeg/ArcSeg/CircleSeg/BSplineSeg) per la sequenza di punti
 
 #### `topo/core/primitives/polygon_builder.py` — 97 lines
 
@@ -1717,7 +1717,7 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/core/geometry/strips.py` | `topo.core.geometry.intersections` · `topo.core.geometry.regions` · `topo.core.primitives.segments` |
 | `topo/core/geometry_input.py` | `topo.core.geometry.build` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.model.document` · `topo.model.role` |
 | `topo/core/primitives/__init__.py` | `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` |
-| `topo/core/primitives/fitting.py` | `topo.core.geometry.points` · `topo.core.primitives.segments` |
+| `topo/core/primitives/fitting.py` | `topo.core.geometry.measure` · `topo.core.geometry.points` · `topo.core.primitives.segments` |
 | `topo/core/primitives/polygon_builder.py` | `topo.core.primitives` · `topo.core.primitives.segments` · `topo.model.curve` |
 | `topo/core/primitives/trim.py` | `topo.core.primitives.segments` |
 | `topo/core/readings/heal.py` | `topo.core.base.cleanup` · `topo.core.base.curves` · `topo.core.base.hierarchy` · `topo.core.base.prepare` · `topo.core.geometry.measure` · `topo.core.readings.heal_steps` · `topo.core.topology.noding` · `topo.core.topology.non_contour_edges` · `topo.core.topology.outer_face` · `topo.model.curve` · `topo.model.document` · `topo.model.result` · `topo.model.role` · `topo.rules.validator` |
