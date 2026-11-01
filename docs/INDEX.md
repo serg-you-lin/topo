@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`85` modules · `510` module-level functions · `63` classes · `16247` lines of code.
+`85` modules · `510` module-level functions · `63` classes · `16262` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -37,7 +37,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_angular_sweep` | func | `topo/core/primitives/segments.py:147` | Angolo spazzato in radianti, sempre positivo, percorrendo da `start` a |
 | `apply_gap_fixes` | func | `topo/core/base/gap_solver.py:435` | Applica i GapFix restituendo una NUOVA lista di Edge — `edges` non viene mutata. |
 | `_apply_role_style` | func | `topo_dxf/writer.py:358` | Un `RoleStyle` (D37, D128) sul layer: colore in true color (l'ACI non ha |
-| `approximate_bspline` | func | `topo/core/geometry/points.py:332` | La B-spline di grado `degree` con meno punti di controllo che passa per il |
+| `approximate_bspline` | func | `topo/core/geometry/points.py:347` | La B-spline di grado `degree` con meno punti di controllo che passa per il |
 | `_Arc` | class | `topo/core/readings/outer_scan.py:101` |  |
 | `_arc_chains` | func | `topo/core/base/normalizer.py:369` | Catene angolari di un gruppo sullo stesso cerchio. Se l'ultima catena |
 | `_arc_distance` | func | `topo/core/geometry/rings.py:263` | Distanza esatta dall'arco t0 → t1 del cerchio (centro, r). |
@@ -79,14 +79,14 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_chord_angle` | func | `topo/core/geometry/rings.py:209` | Angolo con segno, in (−π, π], da a a b visti da `point`. |
 | `chord_angle_deg` | func | `topo/core/geometry/measure.py:125` | Angolo (gradi, 0-180°) della corda da `a` a `b`. Modulo 180 perché una |
 | `_chord_cuts` | func | `topo/core/geometry/rings.py:143` | (t, sul bordo) lungo `start`→`end`, t in [0, 1]: i due capi e i punti |
-| `_chord_params` | func | `topo/core/geometry/points.py:294` |  |
+| `_chord_params` | func | `topo/core/geometry/points.py:309` |  |
 | `circle` | func | `topo/core/geometry/build.py:52` | Il cerchio di raggio `radius` in `center`. |
 | `_circle` | func | `topo/core/geometry/shape.py:144` |  |
 | `_circle_circle_intersections` | func | `topo/core/geometry/intersections.py:71` | Intersezioni tra due circonferenze. Restituisce 0, 1 o 2 punti. |
 | `_circle_circle_near` | func | `topo/core/topology/noding.py:666` | I due punti più vicini fra due archi, sulla retta dei centri. |
 | `_circle_line_intersections` | func | `topo/core/geometry/intersections.py:44` | Intersezioni tra la circonferenza (cx, cy, r) e la retta infinita (p1, p2). |
 | `_circle_sides` | func | `topo/core/primitives/segments.py:188` | Lati della griglia del cerchio di raggio `radius`: sagitta <= tolerance, |
-| `circle_through` | func | `topo/core/geometry/points.py:275` | Il cerchio per tre punti: `(center, radius)`, None se sono allineati. |
+| `circle_through` | func | `topo/core/geometry/points.py:290` | Il cerchio per tre punti: `(center, radius)`, None se sono allineati. |
 | `CircleSeg` | class | `topo/core/primitives/segments.py:683` | Cerchio geometrico puro. |
 | `circular_geometry` | func | `topo/core/geometry/measure.py:279` | (diameter, center) se il contorno è ~circolare, altrimenti (None, None). |
 | `_clamp` | func | `topo/core/primitives/trim.py:86` | Un punto appena oltre un estremo (entro tolleranza) sta su quell'estremo. |
@@ -270,7 +270,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_Layers` | class | `topo_dxf/writer.py:302` | I layer di un documento in scrittura (D128): il nome viene dalla scelta |
 | `_leader_text` | func | `topo_dxf/text_extractor.py:378` |  |
 | `_leader_vertices` | func | `topo_dxf/text_extractor.py:415` |  |
-| `_least_squares` | func | `topo/core/geometry/points.py:307` | Spline di grado `degree` con `count` punti di controllo ai minimi quadrati |
+| `_least_squares` | func | `topo/core/geometry/points.py:322` | Spline di grado `degree` con `count` punti di controllo ai minimi quadrati |
 | `_leaving_angle` | func | `topo/core/topology/outer_face.py:249` | Direzione con cui `edge` lascia `node`, letta a DIRECTION_SAMPLE (o a |
 | `_length` | func | `topo/core/geometry/regions.py:107` |  |
 | `_length` | func | `topo/core/geometry/shape.py:269` |  |
@@ -847,7 +847,7 @@ _topo/core/geometry/measure.py_
 - `within_diameter(points, limit: float) -> bool` — L311 — True se ogni coppia di `points` dista al più `limit`: il diametro
 - `reach(limit: float) -> float` — L324 — Fin dove arriva una soglia di topo: `limit` compreso, a meno del rumore
 
-#### `topo/core/geometry/points.py` — 366 lines
+#### `topo/core/geometry/points.py` — 381 lines
 
 _topo/core/geometry/points.py_
 
@@ -861,10 +861,10 @@ _topo/core/geometry/points.py_
 - `_turn(back: Point, at: Point, forward: Point) -> float` — L200 — Di quanto gira (gradi, 0..180) chi va da `back` ad `at` e poi a `forward`.
 - `_point_at(points: List[Point], cum: List[float], s: float) -> Point` — L211 — Punto della polilinea `points` all'ascissa curvilinea `s` (troncata agli estremi).
 - `turn_corners(points: List[Point], closed: bool, turn_deg: float, scale: float, tolerance: float) -> List[int]` — L229 — Indici degli spigoli di una sequenza campionata: vertici Douglas-Peucker
-- `circle_through(a: Point, m: Point, b: Point) -> Optional[Tuple[Point, float]]` — L275 — Il cerchio per tre punti: `(center, radius)`, None se sono allineati.
-- `_chord_params(points: List[Point]) -> List[float]` — L294
-- `_least_squares(points: np.ndarray, t: List[float], degree: int, count: int)` — L307 — Spline di grado `degree` con `count` punti di controllo ai minimi quadrati
-- `approximate_bspline(points: List[Point], degree: int, tolerance: float) -> Tuple[List[Point], List[float]]` — L332 — La B-spline di grado `degree` con meno punti di controllo che passa per il
+- `circle_through(a: Point, m: Point, b: Point) -> Optional[Tuple[Point, float]]` — L290 — Il cerchio per tre punti: `(center, radius)`, None se sono allineati.
+- `_chord_params(points: List[Point]) -> List[float]` — L309
+- `_least_squares(points: np.ndarray, t: List[float], degree: int, count: int)` — L322 — Spline di grado `degree` con `count` punti di controllo ai minimi quadrati
+- `approximate_bspline(points: List[Point], degree: int, tolerance: float) -> Tuple[List[Point], List[float]]` — L347 — La B-spline di grado `degree` con meno punti di controllo che passa per il
 
 #### `topo/core/geometry/regions.py` — 521 lines
 

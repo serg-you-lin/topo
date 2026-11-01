@@ -171,3 +171,32 @@ class TestArcOnCircleGrid(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestGridSnapUnderMotion(unittest.TestCase):
+    """G6e, `segments.py:46` (`_GRID_SNAP`): un vertice della griglia del
+    cerchio a meno di 1e-9 mm da un capo dell'arco si salta. Un cerchio
+    tagliato a 5e-10 mm da un vertice: `heal()` dà la stessa lettura al
+    posto, ruotato e lontano (la griglia resta ancorata all'angolo 0, D145)."""
+
+    def test_cerchio_tagliato_vicino_a_un_vertice_della_griglia(self):
+        import topo
+        from tests.invariants import rigid
+        from topo.core.primitives.segments import ArcSeg, _circle_sides, DEFAULT_TOLERANCE
+        r = 10.0
+        cut = 5 * 2 * math.pi / _circle_sides(r, DEFAULT_TOLERANCE) + 5e-10 / r
+        arcs = [ArcSeg(center=(0.0, 0.0), radius=r, start_angle=cut, end_angle=cut + math.pi),
+                ArcSeg(center=(0.0, 0.0), radius=r, start_angle=cut + math.pi, end_angle=cut + 2 * math.pi)]
+
+        def reading(motion):
+            segment, _ = rigid(*motion)
+            res = topo.heal(topo.load_segments([segment(a) for a in arcs]), tolerance=0.05)
+            return res.is_valid, len(res.clusters), len(res.loose), res.clusters[0].outer.area
+
+        at_rest = reading((0.0, 0.0, 0.0))
+        self.assertEqual(at_rest[:3], (True, 1, 0))
+        for motion in ((0.031, 0.0, 0.0), (0.7, 3e6, -2.5e6), (2.294, 3e6, -2.5e6)):
+            with self.subTest(motion=motion):
+                moved = reading(motion)
+                self.assertEqual(moved[:3], at_rest[:3])
+                self.assertAlmostEqual(moved[3], at_rest[3], delta=1e-2)

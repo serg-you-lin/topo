@@ -265,10 +265,25 @@ def turn_corners(points: List[Point], closed: bool, turn_deg: float, scale: floa
         d = abs(cum[k] - cum[a])
         return min(d, perimeter - d)
 
+    def ahead(a: int, b: int) -> float:
+        """Quanto `b` viene dopo `a` lungo la curva (sul giro, se chiusa)."""
+        return (cum[b] - cum[a]) % perimeter
+
+    # dal più svoltato; due svolte più vicine del rumore (l'angolo che
+    # FLOAT_NOISE sottende su `scale`) e a meno di `scale` sono pari merito:
+    # vince il primo lungo la curva dentro il loro tratto, non l'ultimo bit
+    # del moto né il punto dove l'anello comincia (G6e)
+    slack = math.degrees(FLOAT_NOISE / scale)
+    remaining = sorted(scored, key=lambda t: t[1])
     accepted: List[int] = []
-    for _, k in sorted(scored, reverse=True):
-        if all(apart(k, a) >= scale for a in accepted):
-            accepted.append(k)
+    while remaining:
+        top = max(turn for turn, _ in remaining)
+        seed = next(c for c in remaining if c[0] >= top - slack)
+        group = [c for c in remaining if c[0] >= top - slack and apart(c[1], seed[1]) < scale]
+        pick = min(group, key=lambda c: max(ahead(c[1], o[1]) for o in group))
+        remaining.remove(pick)
+        if all(apart(pick[1], a) >= scale for a in accepted):
+            accepted.append(pick[1])
     return sorted(k - n for k in accepted) if closed else sorted(accepted)
 
 

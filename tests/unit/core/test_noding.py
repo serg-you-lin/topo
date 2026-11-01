@@ -163,3 +163,49 @@ class TestNodesUnderMotion(unittest.TestCase):
                 out, _ = decide_nodes(topo.load_segments([segment(a) for a in arcs]).edges)
                 ends = Counter(n for e in out for n in (e.start, e.end))
                 self.assertEqual(sorted(ends.values()).count(1), 2)
+
+
+class TestEndContactsUnderMotion(unittest.TestCase):
+    """G6e, `noding.py:404` e `:658`: un contatto a meno di 1e-9 da un capo
+    (`at_end`, `_EPS`) e due archi quasi concentrici (`d < _EPS`). Le due
+    soglie sono vicine al rumore; questi casi, pensati per romperle, danno
+    gli stessi pezzi e gli stessi nodi al posto, ruotati e lontano."""
+
+    MOTIONS = [(0.031, 0.0, 0.0), (0.7, 3e6, -2.5e6), (2.294, 3e6, -2.5e6), (math.pi / 2, -7e5, 4e5)]
+
+    def _reading(self, segs, motion):
+        from collections import Counter
+        import topo
+        from tests.invariants import rigid
+        segment, _ = rigid(*motion)
+        out = split_at_crossings(topo.load_segments([segment(s) for s in segs]).edges, 0.5)
+        nodes = Counter(n for e in out.pieces for n in (e.start, e.end))
+        return len(out.pieces), sorted(nodes.values())
+
+    def _same_at_every_motion(self, segs, at_rest):
+        self.assertEqual(self._reading(segs, (0.0, 0.0, 0.0)), at_rest)
+        for motion in self.MOTIONS:
+            with self.subTest(motion=motion):
+                self.assertEqual(self._reading(segs, motion), at_rest)
+
+    def test_t_sul_capo_di_un_tratto_piu_corto_di_node(self):
+        # 0.008 < node (0.01): il caso in cui `_union` può rifiutare
+        self._same_at_every_motion(
+            [LineSeg(start=(0.0, 0.0), end=(0.008, 0.0)), LineSeg(start=(0.008, 0.0), end=(0.008, 5.0)),
+             LineSeg(start=(0.0, 0.0), end=(0.0, -5.0))], (3, [1, 1, 2, 2]))
+
+    def test_retta_sul_capo_di_un_arco_corto(self):
+        end = (0.05 * math.cos(0.15), 0.05 * math.sin(0.15))
+        self._same_at_every_motion(
+            [ArcSeg(center=(0.0, 0.0), radius=0.05, start_angle=0.0, end_angle=0.15),
+             LineSeg(start=end, end=(3.0, 3.0))], (2, [1, 1, 2]))
+
+    def test_archi_quasi_concentrici_a_meno_di_node(self):
+        for offset in (0.0, 0.8e-9, 1.2e-9, 3e-9, 1e-7):
+            with self.subTest(offset=offset):
+                c = (offset * math.cos(0.7), offset * math.sin(0.7))
+                self._same_at_every_motion(
+                    [ArcSeg(center=(0.0, 0.0), radius=5.0, start_angle=0.2, end_angle=1.2),
+                     ArcSeg(center=c, radius=5.005, start_angle=0.0, end_angle=1.4)], self._reading(
+                        [ArcSeg(center=(0.0, 0.0), radius=5.0, start_angle=0.2, end_angle=1.2),
+                         ArcSeg(center=c, radius=5.005, start_angle=0.0, end_angle=1.4)], (0.0, 0.0, 0.0)))

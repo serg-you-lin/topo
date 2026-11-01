@@ -112,3 +112,38 @@ class TestContattiPerDistanza(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestOverlapFromANodeUnderMotion(unittest.TestCase):
+    """G6e, `outer_face.py:218`: una svolta ~0 (un edge che riparte lungo
+    quello da cui si arriva) la deciderebbe il segno del rumore, e arriva solo
+    con due edge sovrapposti da un nodo. Qui ci sono: le due letture danno la
+    stessa risposta al posto, ruotate e lontano. Misurato il 1 novembre con un
+    tracciamento: la sovrapposizione è tolta prima delle facce, e la 218
+    scatta solo sull'edge d'arrivo (36 volte su 36), mai su un altro."""
+
+    def test_heal_e_island_non_dipendono_dal_moto(self):
+        import topo
+        from tests.invariants import rigid
+        from topo.core.primitives.segments import LineSeg
+        # triangolo con il lato di base doppio dal nodo (0, 0): 10 mm e 20 mm sovrapposti
+        segs = [LineSeg(start=(0.0, 0.0), end=(10.0, 0.0)), LineSeg(start=(0.0, 0.0), end=(20.0, 0.0)),
+                LineSeg(start=(20.0, 0.0), end=(10.0, 10.0)), LineSeg(start=(10.0, 10.0), end=(0.0, 0.0)),
+                LineSeg(start=(10.0, 0.0), end=(10.0, 10.0))]
+        readings = {"heal": lambda d: topo.heal(d, tolerance=0.05),
+                    "island": lambda d: topo.island(d, tolerance=0.05, max_gap=0.5)}
+
+        def reading(read, motion):
+            segment, _ = rigid(*motion)
+            r = read(topo.load_segments([segment(s) for s in segs]))
+            return r.is_valid, len(r.clusters), [len(c.inners) for c in r.clusters], len(r.loose), \
+                sum(c.outer.area for c in r.clusters)
+
+        for name, read in readings.items():
+            at_rest = reading(read, (0.0, 0.0, 0.0))
+            self.assertEqual(at_rest[:4], (True, 1, [0], 1), name)
+            for motion in ((0.031, 0.0, 0.0), (0.7, 0.0, 0.0), (0.7, 3e6, -2.5e6), (2.294, 3e6, -2.5e6)):
+                with self.subTest(reading=name, motion=motion):
+                    moved = reading(read, motion)
+                    self.assertEqual(moved[:4], at_rest[:4])
+                    self.assertAlmostEqual(moved[4], at_rest[4], delta=1e-2)   # la griglia dei nodi, lontano
