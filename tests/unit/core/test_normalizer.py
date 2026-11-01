@@ -233,6 +233,26 @@ class TestSameCarrierUnderMotion(unittest.TestCase):
             merge_cocircular_overlaps, 1)
 
 
+    def test_il_fuso_va_nel_verso_del_primo_pezzo(self):
+        # G6e C, `normalizer.py:196`: la retta comune prendeva un verso
+        # canonico (x crescente, poi y), che dipende dal riferimento: una
+        # verticale ruotata di +1e-12 rad usciva fusa all'ingiù, e ogni retta
+        # si girava a mezzo giro. Si vede nelle `loose` di `heal`.
+        from tests.invariants import rigid
+        for pieces in ([((0, 0), (0, 6)), ((0, 4), (0, 10))],
+                       [((10, 0), (4, 0)), ((6, 0), (0, 0))]):
+            for motion in [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
+                           (math.pi, 0.0, 0.0), (0.7, 3.1, -2.2)]:
+                with self.subTest(pieces=pieces, motion=motion):
+                    move_pt = rigid(*motion)[1]
+                    edges = [_line(move_pt(a), move_pt(b)) for a, b in pieces]
+                    merged = merge_collinear_overlaps(edges)
+                    self.assertEqual(len(merged), 1)
+                    seg, first = merged[0].segment, edges[0].segment
+                    self.assertGreater((seg.end[0] - seg.start[0]) * (first.end[0] - first.start[0])
+                                       + (seg.end[1] - seg.start[1]) * (first.end[1] - first.start[1]), 0)
+
+
 class TestMergeCocircularOverlaps(unittest.TestCase):
 
     def test_catena_di_frammenti_si_fonde(self):

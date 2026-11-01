@@ -188,13 +188,13 @@ def merge_collinear_overlaps(edges: Iterable[Edge], keep_junctions: bool = False
 
 def _line_spans(group: List[Edge]) -> List[_Span]:
     """Span lungo la retta comune: `t` è la proiezione sulla direzione del
-    primo edge, in verso canonico, quindi confrontabile fra edge."""
+    primo edge, la stessa per tutti, quindi confrontabile fra edge; il fuso
+    va nel verso del primo edge (un verso canonico dipenderebbe dal
+    riferimento, G6e)."""
     s0, e0 = group[0].segment.start, group[0].segment.end
     ux, uy = e0[0] - s0[0], e0[1] - s0[1]
     length0 = math.hypot(ux, uy)
     ux, uy = (ux / length0, uy / length0) if length0 else (1.0, 0.0)
-    if ux < 0 or (ux == 0 and uy < 0):
-        ux, uy = -ux, -uy
 
     def _t(point):
         return (point[0] - s0[0]) * ux + (point[1] - s0[1]) * uy
