@@ -23,18 +23,16 @@ fuori da git.
 ## DECISO prima della 1.0 (D202) — `heal()` ripara, `faces()`/`outlines()` leggono (2 novembre)
 
 Deciso da Federico il 2 novembre: si fa comunque, bene, in pochi giorni.
-Le misure sotto non sono più un cancello: la 1 è la verifica del lavoro
-(golden cambiati classificati + DXF in `_debug`), la 3 il tetto dei tempi.
+Verifica del lavoro: golden cambiati classificati + DXF in `_debug`;
+tetto dei tempi: quello della suite.
 Sottopassi, uno per commit:
 - [x] A. inventario (2 novembre). Le differenze sono quattro, non tre
       (`heal.py:87,110` contro `island.py:136-165`):
       1. portata dei gap: `reach(tol)` contro `reach(max(tol, max_gap))`.
          `faces()` non ne ha bisogno: nessun consumer chiede a heal() gap
-         larghi (passano solo `tolerance`). B prova un numero solo (D202:
-         `outlines` via `heal(doc, tolerance=max_gap)`); il rischio è che i
-         nodi si decidano a `max_gap`. Se i golden di island non peggiorano
-         a occhio resta uno; se peggiorano, i numeri sono due — lo dice la
-         misura, non una scelta a tavolino.
+         larghi (passano solo `tolerance`). Risolto in B: i numeri sono
+         **due** (D202), `tolerance` per i nodi e `max_gap` per i gap
+         (default `tolerance`).
       2. `keep_junctions`: True (D110) contro False (D50). Nella rete i pezzi
          restano separati (non si perde niente); `outlines()` ricompone già
          lungo il contorno (`merge_runs`, `island.py:200`). Da misurare in B.
@@ -81,36 +79,10 @@ Sottopassi, uno per commit:
       (spigolo tagliato di ~0,2 mm); heal() a 0,5 lo scarta e il contorno
       resta aperto di 0,41 mm, con `is_valid` True. Nessuno dei due è lo
       spigolo del file. Con la tolleranza del file (0,05) heal() è giusto.
-- [ ] C. `faces()`/`outlines()` + rinomina `island`/`read_island(s)`/`IslandReading`;
+- [ ] C. `faces()`/`outlines()` + rinomina `island`/`read_island(s)`/`IslandReading`
+      → `outlines`/`read_outline(s)`/`OutlineReading` (taglio netto, D202);
 - [ ] D. docs (LLM, API, README x2), `release_check`; i consumer si adattano
       nelle loro sessioni.
-
-Testo di partenza: oggi `heal()` fa due cose (ripara con la base
-comune + legge le facce annidate) e `island()` ripara e legge il bordo
-esterno di ogni componente; "isola" in topo vuol dire anche la regione di
-profondità 2 (D89). Proposta: `topo.heal(doc, *, tolerance, is_structural,
-label, source_file) -> Network` (il disegno riparato: `edges`, `bridges`,
-`free_ends`, `set_aside`, `warnings`, `is_valid`), poi `Network.faces() ->
-Result` (l'heal di oggi) e `Network.outlines() -> Result` (l'island di oggi;
-`max_gap` diventa la `tolerance` di heal). Via `island`, `read_island(s)`,
-`IslandReading` → `read_outline(s)`, `OutlineReading`. Rompe tre nomi:
-riapre G14 su questo punto, solo prima della 1.0.
-
-Regge solo se la rete è una sola. Oggi la riparazione differisce in tre
-punti (`heal.py:87`, `island.py:137,163`): portata dei gap (`tolerance` vs
-`max(tolerance, max_gap)`), `keep_junctions` (True in heal, D110; False in
-island), scope (tutto il disegno vs per gruppo di `spatial_islands`).
-**Misura prima di aprire qualunque cosa** (solo lettura, costo annunciato):
-1. una sola riparazione (stessa portata, una scelta di `keep_junctions`,
-   tutto il disegno) e le due letture sopra: golden di heal e island
-   cambiati? quanti, e i cambiati in DXF in `_debug` per l'occhio;
-2. stesso confronto sul sweep di snapdraw (`scripts/21_sweep_invariants.py`);
-3. tempo della suite e dei disegni grossi prima/dopo;
-4. chiamate a `heal(`/`island(` nei consumer (prima conta: snapdraw 19,
-   snapbend 8, pippo 2, forge-pdf-adapter 43 di `island` — da ricontare);
-5. cosa di `Network` sarebbe pubblico senza esporre tipi interni.
-Vale la pena se 1–2 non peggiorano nessuna lettura a occhio e 3 resta nel
-tetto; se no, ripiego: `heal()` com'è + `island` → `outlines` (solo nome).
 
 ## IL CANCELLO DELLA 1.0 (D148, 22 ottobre)
 
