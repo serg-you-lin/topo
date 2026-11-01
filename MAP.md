@@ -539,494 +539,65 @@ Names in the older entries are the names of their day (`forge`, `ForgeCluster`,
   `topo.split(result) -> list[Result]`; `load_dxf(skip_layers=SKIP_LAYERS)`;
   `gen_index` indexes every package and each adapter imports only topo's public
   names. `tests/unit/test_no_format.py` proves `topo` runs with no `ezdxf`.
-### D130 — point 0 closed: 0.20.0, the docs speak of three packages ✅
-Step 6 of D123 (TODO road to 1.0, point 0), Federico, 18 October. The
-breaking minor that D125 announced: **0.20.0**. The docs follow D129:
-README/README_IT install with `[dxf]`, a table of the three packages, the
-multi-part example as `topo.split` + a writer per part; `docs/API.md` keeps
-§1–§8 for `topo` (§1 is now "geometry in", the `split` card rewritten, a
-`build_metadata` card) and gains §9 `topo_dxf` (every DXF card moved there,
-with `skip_layers`, `exclude_types` and the default layers) and §10
-`topo_pdf`; `docs/LLM.md` gets an adapters table and a hard rule naming the
-removed `topo.*` names; `docs/ARCHITECTURE.md` draws three packages and states
-the boundary rule as `gen_index` checks it. Every name in the three
-`__all__` is in API.md and LLM.md (checked by script). The contract and the
-current status at the top of this file, frozen at forge 0.9.0, are rewritten.
-Suite: 1318 passed, only `anch_02`/`anch_06` red.
-
-### D131 — the non-contour criterion judges a chain, not an edge; edge order no longer changes `heal()` ✅
-Road to 1.0, point 4 (TODO), Federico, 18 October. Closes the defect D111
-left open (`KNOWN_ORDER_DEPENDENT`).
-
-**The defect.** On `linee_di_piegatura_interne` three bends run from one
-vertex of a quadrilateral to the opposite one, through two points that lie
-on the top and bottom sides. `heal()`'s graph never nodes a T-junction, so
-those two points have degree 2 there. D111's criterion 1 asked of each
-*edge* that both its ends be branching nodes. No piece of the chain
-qualified, so the chain stayed in the graph. The graph is then a theta (two
-nodes joined by three paths), and `LoopFinder` takes the first loop its
-greedy walk closes: in file order that was the outer, reversed it was not,
-and `polygonize` gave 4 faces.
-
-**The criterion now.** A node of degree 2 is not a fork: the edges through
-it are one arc of the graph, cut into pieces. `Graph.chains()` returns the
-maximal chains (edges in a row through degree-2 nodes, with the two nodes
-they end on). The candidate is the chain whose two ends are *distinct*
-branching nodes. It is judged whole, by D111's rule summed over its pieces
-(on the boundary of the outer face for more than half its length), and kept
-or excluded whole: a degree-2 path is either all in a loop or in none, so
-judging its pieces apart could only leave stubs. A chain closed on one node
-is already a loop, never a chord between two points of a boundary, so it is
-never a candidate (a hole touching the outer at one node stays a hole). A
-single edge between two branching nodes is a chain of one: the same as
-before.
-
-**The ambiguity this extends, on purpose.** Topology alone says only that
-the outer face is empty. A line between two closed faces is either contour
-(material on one side) or chord (material on both), and D111 chose chord
-for whatever does not border the outer face. That now reaches chains too:
-a closed face that touches the outer face only across a contour edge, and
-the rest of the part through a chain, now reads as material, and the chain
-goes to the trash, recoverable.
-
-**Effect.** Old vs new `heal()` on the 782 DXF under topo/ and snapbend/
-`tests/`: 85 change. `linee_di_piegatura_interne` is now right in every
-order. All the others are drawing sheets read with `heal()`, where its
-output means nothing (non-negotiable 5); Federico judged them by eye
-(`tests/lab/chain_candidates/`, not in git). No golden changes; `island()`
-uses the detector only to sort its leftovers, and its goldens and
-invariants are unchanged. snapbend green; snapdraw's red `regr_03`/`regr_05`
-were red before.
-
-**Tests.** `TestEdgeOrder` now tries the reversed order plus 5 shuffles with
-fixed seeds (`SHUFFLES`), every golden; `KNOWN_ORDER_DEPENDENT` is empty.
-`TestChainCandidates` and `TestGraphChains` in `test_non_contour_edges.py`.
-`main` → **0.20.1** (`heal()` output changes, no signature change).
-
-### D132 — the non-contour choices, each pinned by an edge case; crossing sides are reported, not repaired
-Federico, 18 October, after D131 (a page drawing each choice). The criterion
-has facts (the chain is the unit; a candidate ends on two distinct branching
-nodes; the passes of the outer face are a count) and choices. Each choice now
-has its minimal drawing in `tests/unit/core/test_non_contour_choices.py`,
-which states the default. A default changes there, on purpose and by a
-written decision.
-
-- **A. An interior chain (0 passes) is a chord.** Rectangle + inner square +
-  4 corner-to-corner diagonals reads as one solid part, 8 lines in the trash.
-  On sheet metal those diagonals cannot be bends (a flat like that does not
-  fold); the only sensible reading is stiffening creases, so solid is right
-  there. Federico wants "chord, and optionally hole" for readings where a
-  closed interior face is empty (a future mesh reading, a consumer that
-  knows from another view). The rule for which faces the option empties is
-  not decided: open in TODO.
-- **B. A bridge (2 passes) splits the parts:** two parts and the joining-edge
-  warning, unchanged. A consumer that wants them as one (smoother building
-  ribs by hand) does so itself.
-- **C. A chain on the outer boundary for half its length or less is a chord.**
-  A chord grazing the outline goes to the trash; a bend line drawn a little
-  long or short ends there too (spur or free end), and `detect_flat` reads it
-  with its own bending tolerance, not heal's. Unchanged.
-- **D. Sides that cross without a node are judged on the planar network and
-  reported.** The planar copy is only how the detector counts passes; it never
-  changes the delivered geometry. A drawing whose contour sides cross is
-  broken, and the caller must hear it: `heal()` now warns with the points and
-  what to fix (`interior_crossings` in `topology/noding.py`: a cut interior to
-  two edges; a T contact does not count). No repair by default: a family of
-  bad drawings gets its own algorithm, as an explicit step.
-- **E. A chain closed on one node is never a candidate**, so a hole sharing a
-  vertex with the outer stays a hole today. Federico's view is that it is
-  trash; no golden of heal and no snapbend DXF has one (counted), so it stays
-  open in TODO until a real drawing shows it.
-
-The new warning appears on no heal golden and no snapbend test DXF. Suite
-1333 passed; snapbend green; snapdraw's `regr_03`/`regr_05` red as before.
-
-### D133 — the viewer stays outside the 1.0 stable API
-Road to 1.0, point 5, Federico, 18 October: the viewer can stay out for now.
-`to_view_model`, `to_svg` and `save_svg` leave `__all__` and stay importable
-as `topo.<name>`, the same treatment as `to_text` (D84) and the rotations.
-They are known to need a rewrite (TODO, "Rifare il viewer": it discretizes
-arcs and circles, and on a sheet of views it outweighs the source DXF), so
-1.0 must not freeze their signatures or output. API.md keeps their cards
-under a note; LLM.md, ARCHITECTURE.md and the READMEs mark them. Callers
-(smoother, snapbend's tests) use `topo.to_svg`, which still works.
-
-### D134 — joining nested regions: topo gives the facts and the construction, the caller the policy; siblings join too; geometric names only (done in D142)
-Federico, 19 October, correcting Claude (who had proposed moving the code
-out of topo, against D39). Supersedes the "known unresolved limit" of D40.
-
-**The defect.** `bridge_nested_tabs` joins every filled region of even
-depth ≥ 2 to its direct parent, `tab_count` strips equally spaced around its
-centroid. Two sibling regions side by side in the same empty region are each
-joined to the parent, unaware of each other: the strip aimed at the parent
-runs into the sibling, or the long way round when the sibling is 10 units
-away. Seen in smoother's output.
-
-**The split (D39 restated).** Constructing a strip of width `w` between two
-boundaries at a given place is deterministic geometry: topo. How many, where,
-and which region joins which is the caller's. topo gives, as facts:
-
-1. **Which boundaries face each other**: for every empty region, its own
-   boundary plus the boundaries of the filled regions directly inside it.
-   Two regions inside different empty regions (cousins) never face each
-   other: material lies between them, a strip would cross a third boundary.
-   They are excluded by construction, not by a rule.
-2. **The gap between two facing boundaries**: minimum distance and the pair
-   of closest points.
-3. **The strip**: between any two facing boundaries (parent–child *and*
-   sibling–sibling) at a given place and width; refused if it crosses a
-   third boundary.
-4. **Which filled regions are not connected** to the outermost filled region,
-   through any chain of strips, given a set of strips. A caller placing
-   strips by hand learns what is still unconnected.
-
-**Policy stays with the caller.** "Join each region to its nearest
-neighbour" alone fails: two discs 10 apart in a window, 100 from its edge,
-join each other and neither reaches the edge. Growing from the parent,
-joining each time the nearest region to something already connected, gives
-the nearest-neighbour behaviour and connects everything. That is one policy
-among several (count, mid-point snaps, by hand), so it lives in the caller
-(smoother today); fact 4 is how the caller checks it. No separate project
-for it: one caller places strips today; when a second does, what both
-rebuild gets promoted.
-
-**Names are geometry only.** topo is geometry for the real world, never the
-vocabulary of one trade. No manufacturing words in names, docstrings or
-docs: not "tab", "bridge" in the cutting sense, "fall out", "cut", "laser",
-"sheet". The current names (`tools/tabs.py`, `bridge_tabs`,
-`bridge_nested_tabs`, `tab_width`, `tab_count`) are renamed when rewritten;
-experimental and outside `__all__`, so a clean break (smoother updated in
-the same change).
-
-**Not blocking 1.0**: all of it is new names, added in a 1.x.
-
-### D135 — `SplineSeg` becomes `BSplineSeg`, and carries geometry only ✅
-Federico, 19 October. Reopens D121 on the form of the name only (D121 said
-`BSpline`).
-
-Every spline topo holds is a B-spline: degree, control points, knots, and
-weights when it is rational. The same type receives a free-form profile from
-any source: cubic Béziers are B-splines with clamped knots, a conic exported
-as a spline needs weights. So the name says the representation: `BSplineSeg`,
-keeping the family `LineSeg`/`ArcSeg`/`CircleSeg`/`EllipseSeg` (the user
-writes one pattern, not five).
-
-Fields: `degree`, `control_points`, `knots`, `weights` (optional), plus what
-follows from them (closed, periodic). Today half the fields describe how one
-file format stored the curve (raw flags, three tolerances, 3D fit points and
-tangents, sampled points); topo has no format (D123), so they leave the
-model. Whatever an adapter needs to keep about its source stays in the
-adapter. Fidelity (D121): an untouched spline comes out with the same control
-points, knots and weights. To verify in the adapter: a source spline given by
-fit points only is turned into control points on reading.
-
-Clean break before 1.0 (49 files in topo and its adapters, 3 lines in
-smoother, nothing in snapbend/snapdraw/snapfence).
-
-**Done (19 October).** Fields `degree`, `control_points`, `knots`,
-`weights`; `clamped`, `closed` (start and end within `DEFAULT_TOLERANCE`) and
-`periodic` (closed and not clamped) are properties, `endpoints()` evaluates
-the curve at the ends of its domain (for an unclamped spline they are not
-the first and last control point; `_evaluate` no longer returns them outside
-the domain either). The DXF reader keeps control points, knots and weights
-as written; a SPLINE given by fit points only, or without knots, gets them
-from the CAD's own construction (ezdxf `construction_tool`). The writer sets
-only the closed/periodic/rational flags. `load_geometry` and
-`_fit_spline` lose `fit_points`/`closed`.
-
-The sampled points the reader used to keep (`approx_points`, ezdxf's
-flattening) are gone, so every spline is now discretized by topo from its
-definition. That exposed a bug in `_refine_segment`: a cap of 400 points per
-curve left the rest of the curve at coarse chords, out of tolerance, so a
-finer tolerance gave a *worse* area (a spline hole: 12478.4 at 0.001 against
-12482.8 true). The cap is gone; `max_depth` still bounds a noisy stretch.
-At 0.01 both samplings are within tolerance (max deviation 0.00988 topo,
-0.00999 ezdxf), so four expected areas moved inside the error the tolerance
-allows, and were updated value by value, not regenerated:
-`quadro_fori_spline` (65537.43 → 65537.55, true 65536.11; its hole 12481.47
-→ 12481.35), `fa_che_non_mi_incazzi__001`/`sviluppo_multiparte__004`
-(38791.157 → 38791.054, true 38791.035), and the two island regressions
-(16.247 → 16.287, true 16.289; 1011.27 → 1011.35, true 1011.36).
-
-Cost: without the reader's points, `heal()` on the drawings with splines
-went from 17.8 s to 63.8 s — it asks for the same spline ~4 times at the
-same tolerance, and de Boor ran on tuples built per step. A per-tolerance
-cache inside the spline (not a field: a spline is never changed in place)
-and de Boor on plain coordinate lists bring it to 19.5 s.
-
-`main` → **0.21.0** (D135 and D136, one bump: public names and
-`contour_shape` output changed).
-
-### D136 — `contour_shape.kind` is a closed list of six, and a contour's kind never changes in 1.x ✅
-Federico, 19 October: "the choice that gives fewer problems tomorrow".
-
-**The criterion for a kind**: the contour is fully determined by the measures
-the record already carries (centre, length, width, angle). Circle, stadium,
-rectangle pass, and so does the **ellipse** (centre, two axes, angle).
-`polygon` and `other` are the two catch-alls (their measures are the minimum
-rotated rectangle, not a determination). A rounded rectangle (needs a corner
-radius), an arc-shaped slot, a D-shaped hole, a regular hexagon (a `polygon`,
-D96) fail the criterion: they are read from the contour's signature (D121,
-1.x) by the caller.
-
-The ellipse is decided now because adding it later would reclassify existing
-`other` contours: every circle seen in an isometric view is an ellipse.
-
-**A contour's kind is stable, not only the list of names.** The rules read
-the primitives as they are: a circle made of four Béziers stays `other` even
-after `as_analytic` exists (1.x); a caller who wants recognition asks for it
-in its own step. Only exact equivalence counts: an ellipse with equal axes is
-a `circle`, arcs on one circle merged by `merge_runs` are a circle; an
-approximation within a tolerance is not. The default tolerances (1 %, 1°)
-are part of the contract.
-
-`kind` becomes `ShapeKind(str, Enum)` (comparisons with `"circle"` keep
-working); an `ellipse()` builder joins the others for the round trip (D96);
-one test fixes the set of kinds and the edge cases (square, equal-axis
-ellipse, spline circle, rounded rectangle, a hole in an isometric view).
-
-**Done** the same day: `TestShapeKindStabile` in `test_shape.py`, the
-`ellipse()` round trip in `test_build.py`; `to_text` writes an ellipse on one
-line like a rectangle or a stadium. No golden of topo, snapbend or snapdraw
-changed (no fixture has a closed ellipse today). `ShapeKind` overrides
-`__str__`/`__format__` rather than using `StrEnum`, which needs Python 3.11
-while the package declares 3.10. Failing before and after, untouched: the two
-`to_text` budgets (`anch_02`, `anch_06`) and snapdraw's frame bbox on
-`regr_03`/`regr_05`.
-
-### D137 — `trash_entities` becomes `loose`: every curve knows which cluster contains it, and any curve can be promoted ✅
-Federico, 19 October. The DXF layer is not an argument (a format's concern,
-D123); the name is.
-
-**What is in it.** Every curve that is not a contour of any cluster: chains
-that close nothing (D131), open curves, closed curves with a non-structural
-role, curves the caller had already labelled. Some of it is stray geometry,
-much of it is not (lines inside a part a consumer reads as folds or ribs, a
-guide line a reader uses to locate a feature). "Trash" judged them; `loose`
-only says they are attached to no contour.
-
-**One list, one geometric fact per curve.** `result.loose` stays a single
-list (no split per cluster): what a curve *is* is the consumer's, and a
-consumer promotes it. topo adds the fact consumers recompute by hand today
-(snapbend finds the containing cluster by midpoint, twice): `cluster_ref`,
-the index of the cluster whose outer contour contains the curve entirely,
-boundary and holes included (a line from edge to edge, a centre cross inside
-a hole), `None` otherwise. Same name and convention as annotations (`anchor`)
-and `island()` (D99), which already set it.
-
-**Promotion is not bound by position.** A curve outside every part can still
-belong to one: a guide line next to a part that points at a feature. A
-consumer attaches any loose curve to any cluster, through one public
-operation that moves it out of `loose` into `cluster.detected` (D44, D90):
-never in both places (snapbend's comment: the same line written twice), never
-dropped (non-negotiable 7). No default: topo never decides which loose curves
-matter.
-
-`split` hands each curve to the cluster of its `cluster_ref` (one rule
-instead of its own probe point); a promoted curve travels with its cluster.
-The type is declared (`List[OpenCurve | ClosedCurve]`, not `List[Any]`).
-`Result.classified_entities` (D88), which snapbend fills next to this, is
-looked at in the review of `Result`/`Cluster` fields, not here.
-
-**Done (19 October).** `Result.loose: List[OpenCurve | ClosedCurve]`;
-`ClosedCurve` gains `cluster_ref` next to `OpenCurve`'s. The fact is
-`geometry.regions.enclosing` (smallest outer polygon whose exterior covers
-the whole trace, buffered by the node tolerance), written by
-`assign_cluster_refs` in `heal()` on every loose curve. `island()` keeps D99
-for what it already attaches (the island a curve touches) and gives the
-curves that touch nothing the island that contains them, if any: a detached
-axis inside a view, a caller-marked frame stays `None`. `topo.promote(result,
-curve, cluster, name, item=None)` is public; it raises if the curve is not in
-`loose` or the cluster is not in the result. `split` hands each curve to the
-part of its `cluster_ref` (nearest part only for `None`, as before) and gives
-each part *copies* whose `cluster_ref` refers to that part (`0` or `None`);
-the same for annotations, which before kept their index in the whole result
-and pointed past the end of a one-cluster part.
-
-Found on the way: `rotate_result` rotated only open loose curves, a closed
-one (a marked circle) kept its old position; it now goes through
-`_rotate_contour` like any closed contour.
-
-What did not change: the DXF adapter's default layer for role `unknown` is
-still `Trash` (`TRASH_LAYER`, `SKIP_LAYERS`) — a layer name is the format's
-(D123), and a file written before reads back the same. `include_trash` is
-`include_loose` in `to_dxf`/`to_view_model`/`to_svg`, and the view model's
-key is `loose`.
-
-Consumers: snapbend's `detect_flat` reads `cluster_ref` instead of probing
-midpoints (bend lines, open and closed engravings) and moves bend lines with
-`promote` instead of filtering `loose` by id; its 435 tests and goldens are
-unchanged. snapdraw, snapfence, cogo: rename only. No golden of topo changed.
-`main` stays **0.21.0**: not released yet, D137 joins D135 and D136 in it.
-
-### D138 — `Annotation`, `Note`, `Dimension`, `Leader` become one type, `Text` ✅
-Federico, 19 October, reopening the naming of D20 (the typed model stays).
-"Annotation" is the vocabulary of whoever draws on top of a drawing; a quote
-and a leader are drafting notation. Neither is topo's: the test of
-non-negotiable 1 fails for `Dimension` and `Leader` — a PDF gives two lines,
-two arrows and a string, and calling that a dimension is a reading, a
-consumer's. They exist in topo only because a DXF has DIMENSION and LEADER
-entities.
-
-What stays when the drafting names go is geometry: a string at a point
-(today's `Note`); a string with a polyline whose tip lands on something
-(`Leader`: `vertices`, `target`); a string with the points it measures
-between (`Dimension`: `measured_points`, `references`). One type, `Text`,
-with those parts optional: `pointer` (tip first) and `target`,
-`measured_points` and `references`, `rendered` (the image the source draws
-around the string, which the DXF writer already re-emits instead of a native
-DIMENSION/LEADER). Where it came from stays a fact of the source,
-`source_kind`, so the writer can rebuild it faithfully. Saying "this is a
-dimension" is a consumer's, even when the format says it already.
-
-Consequences on public names (frozen for 1.0, so before it):
-`result.annotations`/`doc.annotations` → `texts`, `anchor_annotations` →
-`anchor_texts`, `include_annotations` → `include_texts`, `display_text` →
-the text itself. The DXF adapter's default layer `Annotation` stays, as
-`Trash` stayed in D137: a layer name is the format's (D123).
-Consumers: snapdraw (reads `Dimension`, `dim_type`, `measured_value`,
-`topo.Note`), to_text.
-
-Decided with Federico the same day, on the three fields of `Dimension`
-that are drafting words:
-- **`dim_type` goes.** "Diameter" is a reading of the points: two
-  `measured_points` opposite on one circle (a Ø12 on a hole; a linear
-  dimension tangent to a circle at its two extremes is its diameter too, and
-  reads as one). What geometry cannot say is whether the number is a length
-  or an angle — a consumer computing a scale must leave angles out — so that
-  one fact stays: `measure_is_angle: bool`.
-- **`measured_value` → `measure`**: the number the source says it measured,
-  a fact of the source like a text height; `None` when the source says none
-  (a PDF).
-- **`text_override` goes**: its `<>` is DXF syntax ("<> H7" = the measure,
-  then H7). The adapter resolves it on reading and `text` is what is shown
-  ("12 H7"); the writer re-emits `rendered`, never a native DIMENSION, so
-  `<>` had no effect on output anyway.
-Federico: `measured_points` and `measure` are also what a future datum (a
-reference frame on the drawing) would read — nothing to build for it now.
-
-**Done (19 October).** `topo/model/text.py` (was `annotation.py`): `Text`
-with `position`, `text`, `height`, `rotation`, `width_factor`, `role`,
-`origin`, `cluster_ref`, `source_kind`, `pointer`, `target`,
-`measured_points`, `measure`, `measure_is_angle`, `references`, `rendered`.
-`kind` (an alias of `source_kind`) and `display_text` are gone. The DXF
-reader is `topo_dxf/text_extractor.py`: the logic that was
-`Dimension.display_text` (override with `<>` → the measure as drawn, else the
-drawn fragments, else the measure) runs there, once, on reading. The writer
-picks by geometry, not by type: a `Text` with a `rendered` image is written as
-that image, one without as a TEXT/MTEXT — the same split as before, since
-only DIMENSION/LEADER entities ever carried an image. `anchor_texts`
-(`pointer_distance`), `pointer_target`, `measured_references`;
-`include_texts`, `text_layer`; view-model key `texts`. `to_text` format 1:
-`## measures and pointers`, lines `measure '…' measured N [(angle)] -> …` and
-`pointer …`.
-
-Goldens: the two families that stored the old types (`golden/texts`, was
-`golden/annotations`; `golden_anchoring/json`) were converted key by key
-with the same values — `kind` → `source_kind`, `display_text` → `text`,
-`measured_value` → `measure`, `dim_type` → `measure_is_angle` (true for
-angular), `vertices` → `pointer`; `text_override` dropped, its effect was
-already in `display_text`. The new code reproduces them unchanged. Nothing
-else in topo's goldens moved. `text_budget` anch_06 now fits (the lines are
-shorter); anch_02 still does not (open, not to be reopened).
-
-snapdraw: `dim_type == "diameter"` became geometry, as decided — two
-measured points, one element, a circle, their midpoint on its centre (so a
-dimension on a thread's crest, anchored to the core circle, still counts);
-`_anchor_by_center` already tested centre and radius and only lost the type
-check; `parse_callout(text, diameter=False)` gets the "a bare 15 is a Ø" rule
-from its caller. The scale leaves out `measure_is_angle` (now also 3-point
-angles, which `== "angular"` missed). Its regression readings are unchanged
-(regr_03/05 fail on the frame bbox as before). snapbend, snapfence: rename.
-
-### D139 — Tabs at caller-chosen points: `bridge_parent_tabs`, one parent split once ✅ (names re-scoped by D140: experimental, not the stable surface) — superseded by D142
-Federico, 19 October, from smoother (its D20): tabs placed by hand, a click
-with snap in smoother's web UI, instead of `tab_count` equally spaced around
-the island centroid. `topo.tools.tabs.bridge_parent_tabs(parent,
-[(island, anchors), ...], tab_width)` → `ParentBridgeResult`.
-
-Three geometric choices, each forced by a case that broke:
-
-- **The tab leaves the contour perpendicular at the chosen point**, outward
-  from the island or inward from the parent (into the island; if the island
-  is not that way, toward its closest point). Toward "the closest point of
-  the other contour" fails on a straight side: from the middle of an
-  island's side the parent's closest point can be beside it, the offset
-  lines run along the side and `bridge_tabs` finds no intersection.
-  Outward is read from the ring's orientation (signed area), exact on thin
-  or concave contours where a nudged inside/outside test is not.
-- **A parent is split once, on the cuts of all its islands.** Splitting it
-  once per island (what a per-island call would do) gives overlapping
-  copies of the parent that no longer close.
-- **An island that cannot be bridged goes to `failed` with the reason**,
-  all its tabs dropped (never an island half attached); the other islands
-  go on. Nothing silently dropped, and one bad island does not cost the
-  whole parent.
-
-Found on the way, fixed: `_split_closed_polyline_at_cuts` dropped both arcs
-when a contour had a single tab (both cuts belong to the same tab, so the
-rest of the contour also ran "from a cut of tab 0 to a cut of tab 0"). With
-one tab only the shorter arc is the one under the tab. `bridge_nested_tabs`
-with `tab_count=1` had the same hole.
-
-Also added `topo.core.geometry.measure.closest_point_on_track` and the
-predicate `is_tab_island` (even depth >= 2 with a parent), now shared by
-both bridging functions. Not addressed: a perpendicular tab can still cross
-another island of the same parent (the obstacle question already open for
-`bridge_nested_tabs`).
-
-### D140 — a consumer uses topo as it uses numpy: topo is read-only from a consumer's session, and what it lacks arrives as a request ✅
-Federico, 19 October, from smoother: "the consumers I build must be as if I
-imported numpy. I don't touch numpy to fix what it exports for a thing of
-mine, I adapt my code to what I have to do, as I do here with shapely."
-
-**What happened.** Working in smoother, a session could also write in
-`../topo`, and did: `bridge_island_tabs`, then `bridge_parent_tabs`,
-`is_tab_island`, `closest_point_on_track`, and D139, all shaped by one web
-UI (a click with snap). Each was reasonable alone; together they are the
-road to one API per consumer, which is the fear that would block 1.0. D139 also
-went against D134 without reopening it (trade words in names: "tab",
-"bridge"; a policy, the anchor rule, inside topo).
-
-**The rule.**
-1. From a session opened in a consumer, topo is **read-only**. A global hook
-   (`~/.claude/hooks/library_guard.py`, Federico's machine, outside this repo)
-   refuses every Edit/Write/shell write into this repo unless the session is
-   opened in topo, and at session start puts in context what a consumer needs:
-   `docs/LLM.md`, `docs/INDEX.md`, the titles of every decision here.
-2. The consumer adapts to the public surface. What it lacks is a line in
-   **its own** `TODO.md`, section `## Richieste a topo` (what, why, which code
-   would use it); meanwhile the consumer writes it locally.
-3. A session opened in topo triages those lines, as "richieste dalla
-   superficie" already says: a geometric fact → a public name with docs, test
-   and a D##; a piece of an algorithm → offer what it was rebuilding; a choice
-   of the caller → stays in the caller.
-4. The test for a new name: what changes from one consumer to the next must be
-   an **argument** (a point, a width, a ring), never a **new function**. D118
-   (`cut_by` takes any ring, not "a disc" and "a square") and D134 (the four
-   facts for joining regions) are the precedents.
-
-**What it means for D139.** Its geometric findings stay true and stay
-recorded (perpendicular exit read from the ring's orientation; a parent split
-once on all its cuts; an island that cannot be joined is reported, not half
-joined; the one-cut split bug, fixed). Its names do not enter the stable
-surface: `topo.tools.tabs` stays experimental and outside 1.0 (D122), frozen
-from consumer sessions, and is rewritten as D134's facts with geometric names;
-`bridge_nested_tabs` and the click rule then become smoother's policy on top
-of them, migrated from smoother's own session. Until then smoother keeps
-importing `topo.tools.tabs` as a prototype does (D122).
-
-**Point 2, done now.** The one fact the click rule really needed was "the point
-of a contour closest to a point": `topo.geometry.nearest_point(segments,
-point)`, on the exact primitives (lines, arcs, circles exact; splines and
-ellipses within `CURVE_TOLERANCE`), composable with `point_on_contour`.
-`closest_point_on_track` is now that same function on a track's sides (one
-job, one implementation); it stays internal, used by `tools.tabs`.
-
-**Not blocking 1.0.** The stable surface already holds facts only; what the
-hook adds is that nothing else gets in by accident. The sentence "what 1.0
-promises" (TODO, road to 1.0) should say it in so many words.
-
+- **D130** — 0.20.0 closed the split into three packages: README, API (§9
+  `topo_dxf`, §10 `topo_pdf`), ARCHITECTURE and LLM speak of three packages,
+  and every name in the three `__all__` has a card in API.md and a line in
+  LLM.md (checked by script).
+- **D131** — the non-contour criterion judges a **chain**, not an edge. A
+  node of degree 2 is not a fork (`Graph.chains()`); the candidate is a chain
+  between two distinct branching nodes, judged whole by D111's rule summed
+  over its pieces (on the outer boundary for more than half its length) and
+  kept or excluded whole. A chain closed on one node is a loop, never a
+  candidate. Edge order no longer changes `heal()`: `TestEdgeOrder` tries the
+  reversed order and 5 seeded shuffles on every golden.
+- **D132** — the non-contour choices, each pinned by a minimal drawing in
+  `test_non_contour_choices.py`: an interior chain (0 passes) is a chord; a
+  bridge (2 passes) splits the parts; a chain on the outer boundary for half
+  its length or less is a chord; sides that cross without a node are judged on
+  the planar network and **reported** (`interior_crossings`), never repaired;
+  a chain closed on one node is never a candidate (a hole sharing a vertex
+  with the outer stays a hole — open). A default changes by a written decision.
+- **D133** — the viewer stays outside the stable 1.0: `to_view_model`,
+  `to_svg`, `save_svg` are out of `__all__` (importable, like `to_text`), so
+  1.0 freezes neither their signatures nor their output.
+- **D134** — joining nested regions: topo gives **facts** (which boundaries
+  face each other, siblings included; the gap between two; the strip between
+  them at a place and width, refused if it crosses a third boundary; which
+  filled regions stay unconnected) and the construction; **policy** (how many,
+  where, who joins whom) is the caller's. Names are geometric, never a trade's
+  ("tab", "cut", "sheet"). Done in D142.
+- **D135** — `SplineSeg` → `BSplineSeg`: `degree`, `control_points`, `knots`,
+  `weights`, with `clamped`/`closed`/`periodic` derived; the fields that
+  described how one format stored the curve left the model, and a spline given
+  by fit points is converted on reading. Every spline is discretized by topo
+  from its definition; the 400-point cap of `_refine_segment` is gone.
+- **D136** — `contour_shape.kind` is a closed list of six: `circle`,
+  `stadium`, `rectangle`, `ellipse`, `polygon`, `other` (`ShapeKind`). A kind
+  needs a contour fully determined by the measures the record carries; a
+  rounded rectangle or a D-hole is read from the signature by the caller. A
+  contour's kind never changes in 1.x: only exact equivalence counts (an
+  equal-axis ellipse is a circle), never an approximation.
+- **D137** — `trash_entities` → `loose`: every curve attached to no contour.
+  One list; each curve gets `cluster_ref` (the cluster whose outer encloses it
+  entirely, else `None`); a consumer promotes any curve to any cluster
+  (`promote`, now a method of `Result`, D173) out of `loose` into
+  `cluster.detected`, never in both, never dropped. topo decides none.
+- **D138** — `Annotation`/`Note`/`Dimension`/`Leader` are one type, `Text`
+  (`position`, `text`, `pointer`, `target`, `measured_points`, `measure`,
+  `measure_is_angle`, `references`, `rendered`, `source_kind`): "dimension" and
+  "leader" are drafting readings. `dim_type` and `text_override` went; the
+  adapter resolves `<>` on reading. The writer re-emits `rendered`, never a
+  native DIMENSION.
+- ~~D139~~ → D142: `bridge_parent_tabs`, tabs at caller-chosen points. Its
+  geometric findings (the strip leaves perpendicular, read from the ring's
+  orientation; a parent is split once on all its cuts; an island that cannot
+  be joined is reported whole) live on in D142.
+- **D140** — a consumer uses topo as it uses numpy: from a session opened in a
+  consumer topo is **read-only** (a global hook). What is lacking becomes a
+  line in the consumer's `TODO.md`, `## Richieste a topo`, triaged here as
+  fact / piece of an algorithm / the caller's choice. Test for a new name: what
+  varies between consumers must be an *argument*, never a new function.
+  `topo.geometry.nearest_point` is the one fact that came out of it.
 ### D141 — `simplify_points` rewritten: corners are a turn over a scale, lines where straight, arcs through their ends, splines within a tolerance; one chain ✅
 The first requests that arrived through D140 (smoother `TODO.md`, "Richieste
 a topo", 19 October): four of them are one thing. Working read-only on topo,
