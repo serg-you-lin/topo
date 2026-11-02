@@ -129,7 +129,10 @@ volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
       `outlines()` di 14–15; a 0,05 sono 12 tutti e due. Nato con D189
       (`f477804`): `6c0cca6`, il commit prima, dava `heal()` a 12 segmenti e 0
       inner; da `f477804` 1136 (anche `ca3cac5`, prima di D202). Non dipende dalla
-      modifica di G15. Più indietro (`b7ca910`) era un'altra cosa: 70 cluster. Le righe del contorno nascono quando si spezzano gli incroci. Federico:
+      modifica di G15. Più indietro (`b7ca910`) era un'altra cosa: 70 cluster. I 1136 sono i 12 lati veri, nella forma giusta, spezzati in ogni punto
+      in cui una riga di tratteggio li tocca (681 orizzontali, 451 verticali,
+      4 altri, nessuno a 45°): la rete piana ha 7885 pezzi, il contorno non li
+      rifonde. Resta da guardare lo stretto (`outlines()` ha 2–3 segmenti in più). Federico:
       né `faces()` né `outlines()` vanno bene così.
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
       rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF);
