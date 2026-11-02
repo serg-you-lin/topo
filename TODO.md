@@ -76,14 +76,7 @@ Sottopassi, uno per commit:
       **due** (D202), con uno solo un contorno resta aperto di 0,41 mm.
       Lo sweep di snapdraw non è stato rifatto: l'hook blocca un comando che
       nomina la cartella di snapdraw.
-- [ ] filo parcheggiato, **c'è già oggi**: `heal(doc, tolerance=0.5)` su
-      `regr_02` (e i suoi gemelli): uno spigolo a 90° con un'obliqua a 45°
-      sopra, interrotta di 0,41 mm proprio sullo spigolo. `close_free_gaps`
-      chiude il buco; il pezzo di chiusura taglia lo spigolo e nella rete
-      compare **due volte** (`split_at_crossings`). island() lo usa come lato
-      (spigolo tagliato di ~0,2 mm); heal() a 0,5 lo scarta e il contorno
-      resta aperto di 0,41 mm, con `is_valid` True. Nessuno dei due è lo
-      spigolo del file. Con la tolleranza del file (0,05) heal() è giusto.
+- [ ] filo parcheggiato → **G15** (cancello): vedi sotto.
 - [x] C. `heal()` → `Network`; `faces()`/`outlines()`; `island()` tolto;
       `read_outline(s)`/`OutlineReading` (taglio netto, D202). `source_file`
       di default da `doc.source_path`, `label` su tutte e due le letture (D204).
@@ -108,6 +101,20 @@ volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
 (nessun tipo shapely nella superficie, D166–D168).
 
 **Aperti**
+- [ ] **G15** Un contorno consegnato si chiude entro tolleranza (3 novembre).
+      Rende vera la regola 6 di CLAUDE.md (`is_valid` prima di una macchina);
+      allarga D143 con la chiusura. Caso: `heal(doc, tolerance=0.5)` su
+      `regr_02`, `anch_03`, `anch_03_noframe`: uno spigolo a 90° con
+      un'obliqua a 45° sopra, interrotta di 0,41 mm sullo spigolo.
+      `close_free_gaps` chiude il buco, il pezzo di chiusura taglia lo
+      spigolo e nella rete compare due volte (`split_at_crossings`).
+      Misurato su 25 DXF (`golden_islands/`, `golden_anchoring/`): salto di
+      0,411 mm in `faces()` su tutti e tre, in `outlines()` su `regr_02` e
+      `anch_03_noframe`; `is_valid` True ovunque. A 0,05 (tolleranza del file)
+      nessun buco. `validate_result` non controlla la chiusura.
+      Sottopassi: 2 controllo di chiusura in `validate_result`; 3 meccanismo
+      in `readings/network.py` (non il solo regr_02); 4 golden, se cambiano;
+      5 decisione in MAP.md.
 - [ ] **G14** Superficie allineata alle API di una libreria matura (D174,
       D175). Fatti: la regola (D175), la passata sui nomi (D176, D177), la
       regola 1 come test (D178). Restano: la regola 8 (con G9) e il test di
