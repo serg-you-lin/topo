@@ -217,9 +217,116 @@ Additivi decisi con Federico (25–30 ottobre):
   usa, D91/D118); **curve da equazione**; **viewer**; **strisce** (D142,
   promozione a `topo.geometry` quando un secondo chiamante le usa); **D147**
   (ponti sui T, branch `d147-t-ends`; `regr_04` peggiora); **snapfence**.
+- **bisettrice e offset** (2 novembre; ricerca: nulla di simile in
+  `topo.geometry`, vicino c'è solo `offset_from_line` = distanza con segno,
+  positiva a sinistra, e le strisce D142). In due minor: (1) primitive esatte,
+  senza politica, in `core/geometry/` + `topo.geometry`: `offset_segment`
+  (retta traslata, arco concentrico r±d, mai un poligono discretizzato) e la
+  bisettrice di due tratti come `LineSeg` con `length` richiesta (nessun
+  tipo nuovo di retta infinita); stesso segno di `offset_from_line`. I due
+  tratti NON devono toccarsi: il vertice è l'incrocio delle rette (con un
+  raccordo o uno smusso in mezzo è fuori dal materiale); se un tratto
+  contiene il vertice l'angolo è ambiguo → `ValueError`. La linea di mezzo
+  fra parallele è un fatto a parte (`midline`, lista di tratti). L'offset di
+  una catena aperta e quello di un contorno chiuso sono lo stesso meccanismo.
+  (2) offset di contorno (giunzioni, collasso, un contorno che si divide in
+  due) in `topo.experimental` finché non regge D143; mai silenzioso (regola 7).
+  "Kerf" è l'uso di un consumer, non un nome di topo. Da decidere prima di
+  scrivere: `side` o due funzioni; dove finisce la bisettrice (solo `length`).
 - **dipendenze** (D169): misurare i tempi di `heal()`/`island()` sulle
   fixture; inventario shapely/numpy → sostituto; poi un pezzo alla volta e a
   pari golden. Il noding resta a GEOS.
+
+## Catalogo dei fatti geometrici futuri (2 novembre) — 1.x, nulla deciso
+
+Un elenco di candidati, non un impegno: ognuno passa dal triage di "Richieste
+dalla superficie" (D139: non entra perché esiste altrove) e, se la firma non è
+sicura, da `topo.experimental`. Cosa NON c'è già (controllato su `API.md` §
+geometria): `contour_shape`, `concentric_groups`, `arcs_around`,
+`splits_contour`, `bridged_runs`, `intersections`, `point_on_contour`,
+`nearest_point`, `cut_by`, `contour_minus`, `contour_union`, `dash_line`,
+`covered_rectangles`, `segment_length`, `length_inside`, `chord_angle_deg`,
+`track_*`, i costruttori (`polygon`…`stadium`), le strisce D142
+(sperimentali). Da controllare prima di scrivere: `core/geometry/integrals.py`
+(centroide e momenti potrebbero già esserci) e `measure.py`.
+
+**Regole d'ingresso** (tutte, per ogni voce): (1) vale anche se la geometria
+arriva da un PDF senza layer (non-negoziabile 1); (2) esatta sulle primitive,
+mai su un poligono discretizzato, salvo dirlo; (3) tipo restituito dichiarato,
+dati posizionali e opzioni solo per nome (D175); (4) nessuna soglia del
+consumer dentro, nessuna parola di processo (foro, piega, fresa, taglio);
+(5) una **proprietà** come test, senza golden (es. bisettrice: stessa
+distanza dalle due rette; offset: distanza d dall'originale, Hausdorff ≤ tol);
+(6) scheda in `API.md` e riga in `docs/INDEX.md`. Sigle: **P** una primitiva,
+**C** catena o contorno, **R** regione (più contorni).
+
+**Onda 1 — piccole, esatte, senza politica** (candidate per la prima minor):
+- P `offset_segment` e `bisector` (voce "bisettrice e offset" sopra), `midline`
+  fra parallele (lista di tratti).
+- P `tangent_at(seg, point)` e `normal_at`: la direzione di una primitiva in un
+  punto; oggi privata in `strips.py` (`_tangent_at`, `_normal_toward`).
+- P `angle_between(a, b)`: angolo fra due rette o direzioni (diverso da
+  `chord_angle_deg`, che è di una corda).
+- C `corner_angles(chain)`: angolo interno e verso di svolta a ogni vertice
+  (oggi `_turn`, privato); giunzione liscia (tangente) o spigolo.
+- P/C `distance(a, b)` esatta fra due primitive o catene, con la coppia di
+  punti: promuove `gap`/`refine_gap` delle strisce.
+- C `hausdorff(a, b)`: è già l'invariante di D143 nei test
+  (`tests/invariants`); renderlo un fatto pubblico.
+- C `convex_hull`, `oriented_bbox` (rettangolo di area minima),
+  `min_enclosing_circle`, `width_range` (larghezza minima e massima, i
+  calibri): deterministici, nomi puramente geometrici.
+- C `centroid`, `inertia` (assi principali) se non già in `integrals.py`.
+- C `is_convex`, `concave_vertices`, `is_simple` (non si autoincrocia),
+  `orientation` (area con segno).
+- P `arc_through(a, b, c)`, arco da bulge: costruttori, accanto a `circle_through`.
+- P/C `transform` rigida (traslazione, rotazione, specchio) esatta su tutte le
+  primitive; le affini non uniformi cambiano il tipo (un arco diventa
+  un'ellisse): fuori finché non è deciso cosa restituiscono.
+
+**Onda 2 — costruzioni con una politica da decidere:**
+- C `fillet(a, b, radius)` e `chamfer(a, b, distance)`: costruiscono l'arco
+  tangente a due rette e tagliano i tratti; l'inverso, "arco tangente a
+  entrambi i vicini" (continuità di tangente), è una lettura strutturale che
+  il consumer chiama raccordo.
+- P `tangent_lines(circle, circle)`, tangenti da un punto a un cerchio,
+  cerchio tangente a due rette di raggio dato.
+- P `trim_to` / `extend_to`: un tratto fino all'incrocio con un altro tratto
+  aperto. Il taglio contro una regione chiusa c'è già: `cut_by` (D118).
+- C `offset` di catena aperta e di contorno chiuso (un meccanismo solo, lista
+  di contorni, giunzione `round` di default, collasso mai silenzioso).
+- R `contour_intersection`, differenza simmetrica: a fianco di `contour_union`
+  e `contour_minus` con la stessa convenzione di input e di tolleranza.
+- R somma/differenza di Minkowski di due contorni (l'offset ne è il caso del
+  cerchio).
+- C/R `clearance`: la distanza minima fra due contorni o fra un contorno e il
+  bordo; relazioni tipizzate tolleranti (disgiunti, si toccano, si incrociano,
+  tangenti dentro/fuori), da D134/D142.
+- C simmetrie: asse di simmetria, simmetria rotazionale e ordine; congruenza
+  di due contorni a meno di un moto rigido (la firma dei contorni, D121).
+- R schemi ripetuti: contorni uguali legati da passo costante in linea o su
+  cerchio (traslazione/rotazione), come fatto, non come "serie di fori".
+
+**Onda 3 — algoritmi grossi, ognuno la sua lettura (D202 lascia lo spazio):**
+- R asse mediale / scheletro, e lo scheletro retto (straight skeleton).
+- R spessore locale (distanza dal bordo opposto lungo l'asse mediale):
+  minimo e dove; lo "spessore minimo" di un consumer è questo numero letto.
+- R decomposizione: in parti convesse, in rettangoli (generalizza
+  `covered_rectangles`, che è solo sugli assi), in strisce.
+- R partizione di una regione lungo i lati in comune (la lettura che spezza
+  un assieme, "scelta A" in "Fili da ragionare").
+
+**Curve (con "modello `Curve`" e "curve da equazione" sopra):** lunghezza e
+ascissa curvilinea, curvatura e raggio in un punto, flessi, tangente di una
+`BSplineSeg`; rifitto di una catena in rette e archi (biarchi) oltre
+`simplify_points`; offset di una spline (approssimato, dichiarato tale);
+ellisse: lunghezza d'arco, tangenti, offset (non è un'ellisse).
+
+**Ordine proposto:** onda 1 in blocco, una minor; poi le singole voci di onda
+2 su richiesta di un secondo consumer; l'onda 3 solo con una misura di tempo
+e un golden di proprietà. Le voci che riguardano più di una primitiva
+(`offset`, `fillet`, `trim_to`) condividono lo stesso nodo di partenza (la
+giunzione fra due tratti): costruirlo una volta.
 
 ## Richieste dalla superficie
 
@@ -329,8 +436,8 @@ Aperte:
   per validare una parte; "meccanismo anti-rotazione di un pezzo staccato"
   (un ponticello su un contorno singolo, nome non deciso: non "microjoint").
 - Idee di tool sul motore (misura, classificazione, confronto, validazione,
-  offset/kerf, normalizzazione, orientamento per nesting, scheletro,
-  decomposizione in regioni): nessuna decisa, ognuna passa dal triage sopra.
+  normalizzazione, orientamento, scheletro, decomposizione): ora nel
+  "Catalogo dei fatti geometrici futuri".
 
 ## Regola da ricordare
 
