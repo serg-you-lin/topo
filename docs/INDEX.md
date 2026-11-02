@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`87` modules · `520` module-level functions · `64` classes · `16503` lines of code.
+`87` modules · `521` module-level functions · `64` classes · `16540` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -144,8 +144,8 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `dash_line` | func | `topo/core/geometry/lines.py:164` | Il segmento `start`→`end` ridotto a tratti: uno lungo `head` che parte da |
 | `_deboor` | func | `topo/core/geometry/integrals.py:239` | Punto al parametro `t` di una B-spline di vettori (de Boor, A5.1). |
 | `decide_nodes` | func | `topo/core/topology/noding.py:126` | I nodi di ogni lettura, decisi una volta: dai punti reali dei segmenti |
-| `deduplicate` | func | `topo_dxf/sanitize.py:243` | Shortcut: estrae chiavi, trova duplicati, li elimina. |
-| `delete_entities` | func | `topo_dxf/sanitize.py:210` | Elimina le entità dal msp in-place. |
+| `deduplicate` | func | `topo_dxf/sanitize.py:276` | Shortcut: estrae chiavi, trova duplicati, li elimina. |
+| `delete_entities` | func | `topo_dxf/sanitize.py:243` | Elimina le entità dal msp in-place. |
 | `_derivative_points` | func | `topo/core/geometry/integrals.py:229` | Punti di controllo della derivata (grado p − 1, nodi senza il primo e l'ultimo). |
 | `_describe_dxf_entity` | func | `topo_dxf/inspect.py:77` |  |
 | `_describe_segment` | func | `topo/inspect.py:113` |  |
@@ -160,7 +160,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_dimension_text_of` | func | `topo_dxf/text_extractor.py:193` |  |
 | `_distance` | func | `topo/core/geometry/intersections.py:40` |  |
 | `Document` | class | `topo/model/document.py:37` | Documento di dominio prodotto da load_dxf() / load_svg() / load_pdf(). |
-| `document_from_msp` | func | `topo_dxf/loader.py:344` | Costruisce un Document da un modelspace ezdxf già aperto. |
+| `document_from_msp` | func | `topo_dxf/loader.py:348` | Costruisce un Document da un modelspace ezdxf già aperto. |
 | `douglas_peucker` | func | `topo/core/geometry/points.py:179` | Indici dei vertici che Douglas-Peucker tiene sulla polilinea aperta |
 | `drop_duplicate_points` | func | `topo/core/geometry/points.py:34` | Rimuove punti consecutivi coincidenti entro `tolerance`. |
 | `dxf_pattern` | func | `topo_dxf/exporter.py:49` | Il tratto di topo (segni con segno) nel pattern della tabella DXF, che |
@@ -188,11 +188,12 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_entity_style` | func | `topo_dxf/adapter.py:74` | Cattura l'aspetto EFFETTIVO (linetype/colore) di un'entità DXF in un |
 | `even_spacing` | func | `topo/core/geometry/points.py:147` | I punti con altri aggiunti dove due vicini distano più del passo mediano. |
 | `_exact_parts` | func | `topo/core/geometry/intersections.py:119` | Retta, arco, cerchio restano se stessi; spline ed ellisse diventano |
+| `_explode_hatches` | func | `topo_dxf/sanitize.py:131` | Sostituisce ogni HATCH a pattern con le LINE del suo pattern, tagliate |
 | `_explode_inserts` | func | `topo_dxf/sanitize.py:106` | Esplode tutti gli INSERT (blocchi) nel modelspace in entità primitive. |
 | `_extent` | func | `topo/core/readings/outer_scan.py:132` | (min, max) del pezzo lungo la coordinata `a` (0 = x, 1 = y). |
 | `_extract_content` | func | `topo_dxf/text_extractor.py:153` | Testo pulito dell'entità, stringa vuota se non ne ha. |
 | `extract_drawings_from_page` | func | `topo_pdf/extractor_adapter.py:23` | Estrae i disegni vettoriali dalla pagina PDF e normalizza l'output. |
-| `extract_keyed_entities` | func | `topo_dxf/sanitize.py:201` | Produce la lista (key, entity) per tutte le entità del msp. |
+| `extract_keyed_entities` | func | `topo_dxf/sanitize.py:234` | Produce la lista (key, entity) per tutte le entità del msp. |
 | `_f` | func | `topo_dxf/text_extractor.py:570` |  |
 | `face_loops` | func | `topo/core/topology/outer_face.py:157` | I giri delle facce limitate della rete piana `edges` (split_at_crossings; |
 | `face_segments` | func | `topo/core/topology/rim.py:32` | (segments, styles, used) lungo il bordo esterno di `polygon`, in senso |
@@ -206,7 +207,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_feature_entries` | func | `topo/io/view_model.py:63` | Un elemento dell'overlay (MAP.md D90) → una voce per contorno: ruolo, |
 | `feature_role` | func | `topo/model/role.py:91` | Il ruolo con cui si disegna un contorno di un elemento dell'overlay (D90): |
 | `_features` | func | `topo/io/view_model.py:94` | `cluster.detected` per nome → lista di voci disegnabili. |
-| `_find_duplicates` | func | `topo_dxf/sanitize.py:216` | Restituisce i ref delle entità duplicate (seconda occorrenza in poi). |
+| `_find_duplicates` | func | `topo_dxf/sanitize.py:249` | Restituisce i ref delle entità duplicate (seconda occorrenza in poi). |
 | `find_joining_edges` | func | `topo/core/readings/heal_steps.py:45` | Gli Edge fra `candidate_ids` (di solito i non-contorno) che uniscono due |
 | `find_non_contour_edges` | func | `topo/core/readings/heal_steps.py:28` | id(edge) degli Edge che non chiudono un contorno (catene fra due nodi di |
 | `_first_coord` | func | `topo/core/topology/graph.py:372` |  |
@@ -263,7 +264,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `items_inside` | func | `topo/core/geometry/axis.py:219` | I tratti con entrambi i capi dentro `bounds` allargato di `margin`, nell'ordine dato. |
 | `_join_seam` | func | `topo/core/primitives/fitting.py:224` | Un contorno senza spigoli si apre in un punto qualunque: se il primo e |
 | `_joined` | func | `topo/core/geometry/shape.py:417` |  |
-| `_key_for` | func | `topo_dxf/sanitize.py:154` | Restituisce una chiave hashable che identifica univocamente |
+| `_key_for` | func | `topo_dxf/sanitize.py:187` | Restituisce una chiave hashable che identifica univocamente |
 | `_largest_loop` | func | `topo/core/topology/outer_face.py:332` | (loop, segments, styles, polygon) del giro di area massima. |
 | `layer_skipper` | func | `topo_dxf/adapter.py:223` | Il predicato "questo layer si salta" da `skip_layers` (D176): una |
 | `_Layers` | class | `topo_dxf/writer.py:302` | I layer di un documento in scrittura (D128): il nome viene dalla scelta |
@@ -1576,7 +1577,7 @@ _topo_dxf/layers.py_
 - `color_for_role(role) -> Optional[int]` — L79 — Il colore della palette di topo per `role` (D128) come indice ACI:
 - `_slug(role) -> str` — L85
 
-#### `topo_dxf/loader.py` — 381 lines
+#### `topo_dxf/loader.py` — 385 lines
 
 _topo_dxf/loader.py_
 
@@ -1588,7 +1589,7 @@ _topo_dxf/loader.py_
 - `_read_dwg(path: str, sink: list=None, verbose: bool=False)` — L148 — Legge un file DWG usando ezdxf.addons.odafc (wrapper di ODA File Converter).
 - `_upgrade_to_r2010(doc, sink: list=None, verbose: bool=False) -> object` — L180 — Converte un documento DXF legacy in R2010.
 - `load_dxf(path: str, *, upgrade: bool=False, explode_inserts: bool=True, flatten_z: bool=True, verbose: bool=False, tolerance: float=DEFAULT_NODE_TOLERANCE, role_rules: Sequence[RoleRule]=(), skip_layers: Union[Sequence[str], Callable[[str], bool]]=SKIP_LAYERS) -> Document` — L219 — Apre un documento DXF o DWG e lo traduce in un Document.
-- `document_from_msp(msp, *, tolerance: float=DEFAULT_NODE_TOLERANCE, role_rules: Sequence[RoleRule]=(), source_path: str='', skip_layers: Union[Sequence[str], Callable[[str], bool]]=SKIP_LAYERS) -> Document` — L344 — Costruisce un Document da un modelspace ezdxf già aperto.
+- `document_from_msp(msp, *, tolerance: float=DEFAULT_NODE_TOLERANCE, role_rules: Sequence[RoleRule]=(), source_path: str='', skip_layers: Union[Sequence[str], Callable[[str], bool]]=SKIP_LAYERS) -> Document` — L348 — Costruisce un Document da un modelspace ezdxf già aperto.
 
 #### `topo_dxf/mtext.py` — 45 lines
 
@@ -1610,7 +1611,7 @@ _topo_dxf/parser.py_
 - `_parse_ellipse(entity, rev) -> EllipseSeg` — L108 — Un'ELLIPSE DXF è sempre percorsa CCW da `start_param` a `end_param`
 - `_parse_polyline(entity, rev) -> list` — L126
 
-#### `topo_dxf/sanitize.py` — 252 lines
+#### `topo_dxf/sanitize.py` — 285 lines
 
 _topo_dxf/sanitize.py_
 
@@ -1618,11 +1619,12 @@ _topo_dxf/sanitize.py_
 - `flatten_z(msp, verbose: bool=False) -> int` — L29 — Porta a 0 tutte le coordinate Z != 0 per LINE, ARC, CIRCLE,
 - `sanitize(msp, flatten_z_flag: bool=True, verbose: bool=False) -> int` — L88 — Esegue tutti i sanitizer in sequenza sul modelspace ricevuto.
 - `_explode_inserts(msp, sink: list=None) -> int` — L106 — Esplode tutti gli INSERT (blocchi) nel modelspace in entità primitive.
-- `_key_for(entity) -> Optional[Hashable]` — L154 — Restituisce una chiave hashable che identifica univocamente
-- `extract_keyed_entities(msp) -> List[Tuple[Hashable, Any]]` — L201 — Produce la lista (key, entity) per tutte le entità del msp.
-- `delete_entities(refs: List[Any], msp) -> None` — L210 — Elimina le entità dal msp in-place.
-- `_find_duplicates(keyed_entities: Iterable[Tuple[Hashable, Any]]) -> List[Any]` — L216 — Restituisce i ref delle entità duplicate (seconda occorrenza in poi).
-- `deduplicate(msp) -> int` — L243 — Shortcut: estrae chiavi, trova duplicati, li elimina.
+- `_explode_hatches(msp, sink: list=None) -> int` — L131 — Sostituisce ogni HATCH a pattern con le LINE del suo pattern, tagliate
+- `_key_for(entity) -> Optional[Hashable]` — L187 — Restituisce una chiave hashable che identifica univocamente
+- `extract_keyed_entities(msp) -> List[Tuple[Hashable, Any]]` — L234 — Produce la lista (key, entity) per tutte le entità del msp.
+- `delete_entities(refs: List[Any], msp) -> None` — L243 — Elimina le entità dal msp in-place.
+- `_find_duplicates(keyed_entities: Iterable[Tuple[Hashable, Any]]) -> List[Any]` — L249 — Restituisce i ref delle entità duplicate (seconda occorrenza in poi).
+- `deduplicate(msp) -> int` — L276 — Shortcut: estrae chiavi, trova duplicati, li elimina.
 
 #### `topo_dxf/text_extractor.py` — 574 lines
 

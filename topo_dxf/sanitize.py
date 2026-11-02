@@ -128,6 +128,39 @@ def _explode_inserts(msp, sink: list = None) -> int:
     return len(inserts)
 
 
+def _explode_hatches(msp, sink: list = None) -> int:
+    """
+    Sostituisce ogni HATCH a pattern con le LINE del suo pattern, tagliate
+    sul bordo, con layer/colore/tipo linea dell'HATCH. Un riempimento pieno
+    non ha righe: resta e finisce negli avvisi. Restituisce gli HATCH esplosi.
+    """
+    from ezdxf.render.hatching import hatch_entity
+
+    hatches = [h for h in msp.query("HATCH") if not h.dxf.solid_fill]
+    for hatch in hatches:
+        attribs = {
+            k: hatch.dxf.get(k)
+            for k in ("layer", "color", "linetype", "true_color")
+            if hatch.dxf.hasattr(k)
+        }
+        try:
+            # jiggle_origin di ezdxf sposta l'origine del pattern a caso: le
+            # righe devono essere quelle del file, uguali a ogni lettura
+            segments = list(hatch_entity(hatch, jiggle_origin=False))
+        except Exception as ex:
+            msg = f"esplosione HATCH fallita: {ex}"
+            if sink is not None:
+                sink.append(msg)
+            else:
+                print(f"  [WARN] {msg}")
+            continue
+        for start, end in segments:
+            msp.add_line(start, end, dxfattribs=attribs)
+        msp.delete_entity(hatch)
+
+    return len(hatches)
+
+
 """
 adapters/dxf/dedup_adapter.py
 ------------------------------
