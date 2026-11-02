@@ -121,6 +121,16 @@ volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
       rimozione delle deprecazioni (vuoto finché non ce n'è una). Consumer da
       adeguare con le tabelle vecchio → nuovo di D176/D177: snapbend,
       snapdraw, smoother, pippo — dalle loro sessioni.
+- [ ] **G16** Un tratteggio dentro un pezzo non sporca il contorno (2 novembre).
+      `tests/data/sbagli_tratteggio.dxf` (non tracciato; 12 linee + un `HATCH`
+      ANSI31 che `topo_dxf` non legge), con il tratteggio esploso in 2622 righe
+      a 45° (0,125 mm) e un restringimento di 0,3 mm nel contorno. A tolleranza
+      0,5: `faces()` ha un contorno di **1136** segmenti (dovrebbero essere 12),
+      `outlines()` di 14–15; a 0,05 sono 12 tutti e due. Nato con D189
+      (`f477804`): `6c0cca6`, il commit prima, dava `heal()` a 12 segmenti e 0
+      inner; da `f477804` 1136 (anche `ca3cac5`, prima di D202). Non dipende dalla
+      modifica di G15. Più indietro (`b7ca910`) era un'altra cosa: 70 cluster. Le righe del contorno nascono quando si spezzano gli incroci. Federico:
+      né `faces()` né `outlines()` vanno bene così.
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
       rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF);
       `test_text_budget` anch_02 (+3.7% di caratteri dal D138: capire se è
@@ -180,6 +190,13 @@ Primo lavoro (deciso il 30 ottobre):
 - **discretizzazione delle spline in Rust** (o almeno numpy): De Boor in Python
   è il costo singolo più grosso di `island()`. Prova numpy a blocchi: scende
   solo da 6.5 a 5.1 s (D169 chiede la misura per un core Rust).
+
+- **`topo_dxf` non legge `HATCH`** (adapter, 1.x; Federico, 2 novembre): oggi
+  solo un avviso in `doc.warnings`. Un tratteggio (es. ANSI31) va esploso in
+  righe e dato come edge normali: topo non sa che cosa sono (regola 4), lo sa
+  il consumer. `ezdxf.render.hatching.hatch_entity` le genera; sul fixture
+  `tests/data/sbagli_tratteggio.dxf` (non tracciato) sono 2622 righe a 45°
+  ogni 0,125 mm. Da decidere con lui: edge con ruolo `unknown`, o altro.
 
 Da G6e (D199, D201) e G6c (D179):
 - **ordine dei rami a un nodo in `_leaving_angle`**: la direzione si legge a
