@@ -81,5 +81,10 @@ def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normali
     out.welded, edges = len(edges) - len(merged), merged
     edges, out.full_arcs = close_near_full_arcs(edges, gap)
     out.ambiguous = ambiguous_free_ends(edges, gap)
-    out.edges = close_free_gaps(edges, gap)
+    closed = close_free_gaps(edges, gap)
+    # chiudere un gap allunga le due metà una verso l'altra: si sovrappongono
+    # sul tratto del gap, e quel tratto resta doppio nella rete (G15)
+    merged = merge_collinear_overlaps(closed, keep_junctions=keep_junctions)
+    out.merged_lines += len(closed) - len(merged)
+    out.edges = merged
     return out
