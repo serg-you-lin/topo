@@ -402,6 +402,10 @@ drawn stays in `doc`. Measured: 0.000 mm of input lost on 51 drawings.
 The two numbers are public because `heal()` resolves them (from the document, `max_gap ≥ tolerance`)
 and a caller must know what was used. Built only by `heal()` (keyword-only fields); the
 predicate, the texts and the planar net (`NodedEdges`) stay private. Modules: `heal.py`, `faces.py`, `outline.py`.
+### D205 — `topo_dxf` explodes a pattern `HATCH` into its pattern lines, as plain `LINE` edges.
+The adapter only translates: recognizing "a hatch" is the consumer's reading (rule 4), never
+topo's. `jiggle_origin=False`: ezdxf otherwise shifts the pattern origin by `random.random()`,
+and the same file read twice gave different `faces()`/`outlines()`. Solid fills stay a warning.
 
 ## Open questions
 

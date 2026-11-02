@@ -20,7 +20,7 @@ from typing import Callable, Sequence, Union
 import ezdxf
 from ezdxf.addons import odafc
 
-from .sanitize import sanitize, _explode_inserts, deduplicate
+from .sanitize import sanitize, _explode_inserts, _explode_hatches, deduplicate
 from .adapter import DxfAdapter
 from .text_extractor import DxfTextExtractor
 from .layers import SKIP_LAYERS
@@ -305,6 +305,10 @@ def load_dxf(
                 "usa explode_inserts=True in load_dxf() per includerli",
                 verbose,
             )
+
+    n = _explode_hatches(msp, sink=warnings)
+    if n:
+        _emit(warnings, f"{n} HATCH esplosi nelle righe del pattern", verbose)
 
     removed = deduplicate(msp)
     if removed > 0:
