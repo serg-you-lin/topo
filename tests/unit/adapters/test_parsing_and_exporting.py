@@ -19,6 +19,7 @@ from topo.core.topology.loop_finder import segments_from_loop
 from topo_dxf.exporter import (
     arc_seg_to_bulge,
     segments_to_pts_with_bulge,
+    write_open_segments,
     write_segments,
 )
 from topo.model.role import ContourRole
@@ -707,6 +708,35 @@ class TestWriteContourToMsp(unittest.TestCase):
         self.assertIsNotNone(result)
         entity = self.msp.entities[0]
         self.assertEqual(entity['type'], 'POLYLINE2D')
+
+    def test_006_salto_resta_visibile(self):
+        """Un anello con un salto (anch_01: un trattino da 0,05 tolto) non si
+        scrive chiuso: la polilinea chiusa tirerebbe un lato storto sopra il
+        buco e il salto sparirebbe dal DXF (D208)."""
+        segments = [
+            LineSeg(start=(171.0068, 90.4406), end=(171.0068, 138.3906)),
+            LineSeg(start=(171.0068, 138.3906), end=(168.0068, 138.3906)),
+            LineSeg(start=(168.0068, 138.3906), end=(168.0068, 90.3906)),
+            LineSeg(start=(168.0068, 90.3906), end=(171.0068, 90.3906)),
+        ]
+        write_segments(segments, self.msp, "TEST")
+        self.assertTrue(all(not e.get('close', False) for e in self.msp.entities))
+        points = [tuple(p[:2]) for e in self.msp.entities for p in e['points']]
+        self.assertIn((171.0068, 90.3906), points)   # la fine del lato in basso
+        self.assertIn((171.0068, 90.4406), points)   # l'inizio del lato dopo
+
+    def test_007_salto_dentro_un_tratto_aperto(self):
+        """write_open_segments spezza la polilinea dove un segmento non parte
+        dalla fine del precedente: nessun vertice salta la fine di un tratto (D208)."""
+        segments = [
+            LineSeg(start=(0, 0), end=(10, 0)),
+            LineSeg(start=(10, 0.05), end=(10, 10)),
+        ]
+        write_open_segments(segments, self.msp, "TEST")
+        points = [tuple(p[:2]) for e in self.msp.entities for p in e['points']]
+        self.assertIn((10, 0), points)
+        self.assertIn((10, 0.05), points)
+        self.assertEqual(len(self.msp.entities), 2)
 
 
 if __name__ == "__main__":
