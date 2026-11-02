@@ -105,6 +105,9 @@ def read_network_outlines(net: Network) -> Result:
     if not result.clusters:
         result.is_valid = False
         result.errors.append("Nessun gruppo con un contorno esterno chiuso.")
+        return result
+    from ...rules.validator import validate_result
+    validate_result(result)
     return result
 
 

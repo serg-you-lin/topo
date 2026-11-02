@@ -406,6 +406,14 @@ predicate, the texts and the planar net (`NodedEdges`) stay private. Modules: `h
 The adapter only translates: recognizing "a hatch" is the consumer's reading (rule 4), never
 topo's. `jiggle_origin=False`: ezdxf otherwise shifts the pattern origin by `random.random()`,
 and the same file read twice gave different `faces()`/`outlines()`. Solid fills stay a warning.
+### D206 — a delivered contour is exactly closed; a gap is never hidden (G15, extends D143).
+A gap within tolerance is closed by the engine: every segment starts where the previous one ends,
+the last returns to the first. A jump left in a delivered contour is an engine bug, not a tolerance
+case. A gap beyond tolerance leaves the profile open (in `loose`) with a warning; the rest of the drawing is still read.
+### D207 — the 1.0 gate only shrinks, with a ratchet: no engine rewrites, a commit that adds a defect is reverted.
+Measured: contours with a jump went 32 (0.23.0) → 48 (2 November) while the gate stayed at 7 items;
+each rewrite broke what no test measured. A found defect goes to 1.x, never into a new G item;
+the jump count never rises. Plan in TODO.md "PIANO".
 
 ## Open questions
 

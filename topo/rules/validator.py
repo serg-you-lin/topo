@@ -15,11 +15,15 @@ Due validazioni distinte, entrambe utili:
 """
 
 
+import math
+
 from ..model import Result
 from ..model.document import Document
 from ..core.topology.graph import build_node_graph
 from ..core.primitives.segments import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg
 from ..core.primitives.polygon_builder import curve_polygon
+from ..core.geometry.measure import FLOAT_NOISE
+from ..core.geometry.rings import ring_jumps
 
 
 # ---------------------------------------------------------------------------
@@ -120,12 +124,23 @@ def validate_result(result: Result) -> None:
     ritorna `None` (D176).
 
     Controlli per ogni cluster:
+      - outer e inner chiusi testa-coda: un salto oltre FLOAT_NOISE è un
+        errore (D206, D208)
       - poligono outer valido (non self-intersecting) e non vuoto
       - area outer > 0
       - fori effettivamente contenuti nell'outer
     """
     for i, cluster in enumerate(result.clusters):
         label = cluster.label or f"Part {i}"
+
+        for name, contour in [("outer", cluster.outer)] + [
+                (f"inner {j}", c) for j, c in enumerate(cluster.inners)]:
+            gaps = [math.dist(end, start) for end, start in ring_jumps(contour.segments)
+                    if math.dist(end, start) > FLOAT_NOISE]
+            if gaps:
+                result.errors.append(
+                    f"{label}: {name} non chiuso, {len(gaps)} salti (max {max(gaps):.6g} mm).")
+                result.is_valid = False
 
         poly = curve_polygon(cluster.outer)
         if poly is None:

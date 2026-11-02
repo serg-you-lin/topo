@@ -7,6 +7,46 @@ fuori da git.
 
 ---
 
+## PIANO — ultimo tentativo (Federico, 2 novembre; D207)
+
+Data di consegna di cui parla Federico: 1 dicembre.
+
+Se questo piano apre cose nuove nel cancello, Federico chiude topo.
+Ogni sessione parte da qui e lo dice in chat: passo, contatore.
+
+**Regole (valgono per Claude, non si discutono a metà strada)**
+1. Il cancello non cresce. Un difetto trovato strada facendo va in "Dopo la
+   1.0" con una riga di fatti, mai in un G nuovo. Unica eccezione: un difetto
+   causato da un nostro commit di questo piano → quel commit si revoca.
+2. Nessun rifacimento del motore. Solo correzioni locali, un meccanismo per
+   commit. Una modifica in `normalize`/`heal`/letture si misura prima e dopo
+   su tutte le 162 letture (81 disegni × faces/outlines).
+3. Cricchetto: il contatore delle letture con un salto (oggi 48) scende o
+   resta, mai sale. Un commit che lo alza si revoca, non si rattoppa.
+4. Ogni test nuovo si mostra rosso su un difetto vero prima di contare.
+5. "Verde" non vuol dire "stabile": vuol dire solo le promesse della lista
+   (D143 + D206). Ogni report dice quale promessa ha controllato.
+6. Pezzi cambiati → DXF in `_debug` con cosa guardare; giudica Federico.
+
+**Passi**
+- [ ] L1 Commit del lavoro di oggi (D206, D207, `largo` +
+      golden, TODO). Controllo D206 in `validate_result`, chiamato anche da
+      `outlines()`: un salto → warning + `is_valid=False`. Test
+      `test_closure` su 162 letture con la lista dei 48 noti scritta nel test:
+      fallisce se ne compare uno nuovo o se uno guarito non viene tolto.
+- [ ] L2 I 48 raggruppati per causa (salti 0,05 esatti,
+      0,0032, 0,0051, 0,0087, 0,0002, sotto 1e-4…), con il commit in cui
+      ciascuno è nato (17 dopo il 25 ottobre). Esce il numero di meccanismi →
+      la stima del lavoro. Federico decide lì se si va avanti.
+- [ ] L3 Un meccanismo per commit, dal gruppo più grande.
+      Ogni commit: contatore giù, suite verde nel budget, DXF in `_debug`.
+- [ ] L4 Solo se L3 è a zero: G16 (stretto, 1136 segmenti in `faces()`),
+      stesse regole.
+- [ ] L5 Bilancio con numeri: contatore (48 → ?), voci del
+      cancello (7 → ?), voci entrate (deve essere 0). Federico decide.
+
+Fuori da questo piano: G7, G8, G9, G10, G14 (non toccati).
+
 ## Fuori dal cancello: MAP e TODO corte (Federico, 1 novembre) — fatto il 2 novembre
 
 - [x] **MAP.md** 7 464 → 400 righe: una voce `### D##` per decisione (titolo =
@@ -115,6 +155,23 @@ volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
       Sottopassi: 2 controllo di chiusura in `validate_result`; 3 meccanismo
       in `readings/network.py` (non il solo regr_02); 4 golden, se cambiano;
       5 decisione in MAP.md.
+      Fatto il 3 (`78b460c`): `normalize` fonde i collineari due volte, prima
+      (doppioni del disegno) e dopo `close_free_gaps` (le due metà allungate
+      sul gap si sovrappongono). Federico (2 novembre, DXF in `_debug`):
+      `sbagli_tratteggio_largo` con G15 giusto in `faces()` (12) e
+      `outlines()` (10), senza G15 sbagliato in tutte e due. Lo stretto non
+      ancora giudicato. Restano 2, 4, 5.
+      `largo` in `tests/data/golden/` con golden `faces()` (passa con G15,
+      senza fallisce: area +1607 mm²). Per il 2: `outlines()` non chiama
+      `validate_result`. Salti testa-coda misurati a 0,5 con G15 (81 file
+      golden/islands/anchoring, 162 letture): 72 a zero, 45 > 1e-6, 9 > 0,01
+      (max 0,062 `regr_01` faces; 0,05 su regr_03, anch_01, anch_01_noframe),
+      il salto G15 era 0,411. Deciso D206: chiuso esatto, ogni salto è un
+      bug del motore → le 48 letture con salto > 1e-9 vanno corrette.
+      Storia (stessi 81 file, faces+outlines a 0,5; letture con salto > 1e-9):
+      0.23.0 `66829cb` 32 (max 0,05) · prima di D189 `6c0cca6` 36 (max 0,064)
+      · D189 `f477804` 47 (9 a 0,41–0,42, tolti da G15) · oggi 48 (max 0,062).
+      Dal 25 ottobre: 31 rotte allora e oggi, 1 guarita, 17 nuove.
 - [ ] **G14** Superficie allineata alle API di una libreria matura (D174,
       D175). Fatti: la regola (D175), la passata sui nomi (D176, D177), la
       regola 1 come test (D178). Restano: la regola 8 (con G9) e il test di
@@ -128,12 +185,18 @@ volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
       0,5: `faces()` ha un contorno di **1136** segmenti (dovrebbero essere 12),
       `outlines()` di 14–15; a 0,05 sono 12 tutti e due. Nato con D189
       (`f477804`): `6c0cca6`, il commit prima, dava `heal()` a 12 segmenti e 0
-      inner; da `f477804` 1136 (anche `ca3cac5`, prima di D202). Non dipende dalla
-      modifica di G15. Più indietro (`b7ca910`) era un'altra cosa: 70 cluster. I 1136 sono i 12 lati veri, nella forma giusta, spezzati in ogni punto
+      inner; da `f477804` 1136 (anche `ca3cac5`, prima di D202). Dipende dalla modifica
+      di G15 (misurato a 0,5, HEAD `be2d3b8` con/senza la seconda fusione):
+      stretto `faces()` 1136 seg + 0/1 inner, `outlines()` 15/14; largo
+      `faces()` 12/9, `outlines()` 10/9. Più indietro (`b7ca910`) era un'altra cosa: 70 cluster. I 1136 sono i 12 lati veri, nella forma giusta, spezzati in ogni punto
       in cui una riga di tratteggio li tocca (681 orizzontali, 451 verticali,
       4 altri, nessuno a 45°): la rete piana ha 7885 pezzi, il contorno non li
-      rifonde. Resta da guardare lo stretto (`outlines()` ha 2–3 segmenti in più). Federico:
+      rifonde. Resta da guardare lo stretto (`outlines()` dà 14–15 segmenti; quanti
+      debbano essere lo stabilisce Federico). Federico:
       né `faces()` né `outlines()` vanno bene così.
+      Causa: i 1136 sono i lati spezzati dai contatti del tratteggio, mai
+      rifusi → `faces()` rifonde i collineari. `largo`: con G15 giusto per
+      Federico (vedi G15), non fa più parte di G16.
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
       rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF);
       `test_text_budget` anch_02 (+3.7% di caratteri dal D138: capire se è

@@ -106,6 +106,27 @@ def _seg_end_point(seg) -> Optional[tuple]:
     return None
 
 
+# un estremo che dista dal successivo più del rumore dei double è un salto
+# (D208): lo stesso 1e-6 mm di FLOAT_NOISE in topo (D183), che non è pubblico
+JUMP = 1e-6
+
+
+def _joined(a, b) -> bool:
+    return math.dist(a, b) <= JUMP
+
+
+def _head_to_tail_runs(segments: list) -> List[list]:
+    """`segments` spezzati dove uno non parte esattamente dalla fine del
+    precedente (D17, D208): ogni run è una catena senza salti."""
+    runs: List[list] = []
+    for seg in segments:
+        if runs and _joined(segment_endpoints(runs[-1][-1])[1], segment_endpoints(seg)[0]):
+            runs[-1].append(seg)
+        else:
+            runs.append([seg])
+    return runs
+
+
 def segments_to_pts_with_bulge(segments: list) -> list:
     pts = []
     for seg in segments:
@@ -226,6 +247,12 @@ def write_segments(segments: List, msp, layer: str, styles: Optional[List] = Non
         created = write_open_segments(segments, msp, layer, styles)
         return created or None
 
+    runs = _head_to_tail_runs(segments)
+    if len(runs) > 1 or not _joined(segment_endpoints(segments[-1])[1], segment_endpoints(segments[0])[0]):
+        # un salto (D208): chiusa, la polilinea tirerebbe un lato sopra il
+        # buco e il DXF mostrerebbe un contorno che il Result non ha
+        return [_add_open_run(run, msp, layer, style) for run in runs]
+
     pts = segments_to_pts_with_bulge(segments)
     if not pts:
         return None
@@ -249,6 +276,22 @@ def write_segments(segments: List, msp, layer: str, styles: Optional[List] = Non
             dxfattribs=attribs,
             close=True,
         )
+
+
+def _add_open_run(run: list, msp, layer: str, style: Optional[EdgeStyle] = None) -> object:
+    """Una catena di LineSeg/ArcSeg come polilinea aperta: i vertici sono gli
+    inizi più la fine dell'ultimo, così ogni estremo resta dov'è."""
+    pts = segments_to_pts_with_bulge(run)
+    end = _seg_end_point(run[-1])
+    pts.append((end[0], end[1], 0.0, 0.0, 0.0))
+    attribs = _style_attribs(msp.doc, layer, style)
+    if msp.doc is not None and msp.doc.dxfversion < "AC1015":
+        pline = msp.add_polyline2d([(p[0], p[1]) for p in pts], dxfattribs=attribs)
+        for vertex, pt in zip(pline.vertices, pts):
+            if pt[4] != 0.0:
+                vertex.dxf.bulge = pt[4]
+        return pline
+    return msp.add_lwpolyline(pts, format="xyseb", dxfattribs=attribs, close=False)
 
 
 # ---------------------------------------------------------------------------
@@ -367,6 +410,8 @@ def write_open_segments(segments: List, msp, layer: str, styles: Optional[List] 
     for i, seg in enumerate(segments):
         style = styles[i] if i < len(styles) else None
         if isinstance(seg, (LineSeg, ArcSeg)):
+            if poly_run and not _joined(_seg_end_point(poly_run[-1]), segment_endpoints(seg)[0]):
+                _flush_poly_run()   # un salto non si copre con un vertice (D208)
             if not poly_run:
                 poly_run_style = style
             poly_run.append(seg)
