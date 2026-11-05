@@ -31,8 +31,10 @@ class TestTangentSpike(unittest.TestCase):
         doc = topo_dxf.load_dxf(str(FIXTURES / "island_tangent_spike.dxf"), tolerance=TOLERANCE)
         reading = read_outline(doc.edges, tolerance=TOLERANCE, max_gap=MAX_GAP)
         self.assertIsNotNone(reading.outer)
-        # 1011.359 a discretizzazione fine; 1011.27 coi punti di ezdxf (D135)
-        self.assertAlmostEqual(to_shapely(reading.outer).area, 1011.35, places=1)
+        # 1011.359 a discretizzazione fine; 1011.27 coi punti di ezdxf (D135);
+        # 1011.286 con join_ends (eabf73c): due rette da 74 mm portate sul capo
+        # dell'arco, 0.0016 mm di spostamento (Hausdorff misurato), ~0.06 mm²
+        self.assertAlmostEqual(to_shapely(reading.outer).area, 1011.35, delta=0.1)
         max_x = max(x for x, _ in to_shapely(reading.outer).exterior.coords)
         # pulito (D99) = 1506.30; rotto (D100, oggi) = 1506.63 (spike di 0.33mm)
         self.assertLess(max_x, 1506.4,
