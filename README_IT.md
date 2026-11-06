@@ -200,7 +200,6 @@ topo.load_segments(segs)  ──►  Document   l'adapter è l'unico codice che 
    topo_dxf.to_dxf(result, doc)  ──►  ezdxf Drawing    render — un Result intero o un pezzo
    to_svg(result)                ──►  stringa SVG      render — per una UI / un report (`topo.experimental`, fuori dall'API stabile 1.0, D133)
    to_view_model(result)         ──►  dict (geometria completa) per un renderer esterno (fuori dall'API stabile 1.0)
-   to_text(result)               ──►  Markdown         sperimentale: una lettura per un modello linguistico (D84)
    save_json / save_xml                                export del modello (metadati)
    inject(result, ...)                                 arricchimento opzionale dai testi
 ```

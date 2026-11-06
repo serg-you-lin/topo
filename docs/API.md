@@ -1203,11 +1203,6 @@ topo.experimental.to_view_model(
 solo metadati). Lo consuma `to_svg` e lo consumerebbe un front-end esterno
 (dashboard JS che disegna con SVG/Canvas).
 
-> `topo.experimental.to_text(result) -> str` / `save_text(result, path)` — la
-> lettura per un modello linguistico (`<nome>.topo.md`) — è **sperimentale**
-> finché non ha un chiamante vero (MAP.md D84, D176). Firma e sezioni in
-> `docs/LLM.md`, insieme a una tabella di cosa dà ogni uscita.
-
 > `topo.experimental.to_nester_input(result) -> list[dict]` esiste ancora
 > (`label`, `bbox`, `outer_coords`, `holes_coords` per parte) ma è
 > **sperimentale** — scritto per un nester mai realizzato (MAP.md D18, D176). Per serializzare
@@ -1340,7 +1335,7 @@ garanzie. Gli adapter sono pacchetti a parte (§9, §10):
   segmento con ruolo e stile), `EdgeStyle`, i testi, le feature
   rilevate e i ruoli: `ContourRole`, `role_str`, `normalize_role`,
   `is_structural_role`. I quattro più usati stanno anche in `topo.<Nome>`.
-- **`topo.experimental`** — quello che si usa senza promessa di stabilità (D175 C, D176): i passi di `heal()` e i mattoni di `outlines()` (§3), il viewer (§4), `to_text`, `rotate_*`, `simplify_points`, `to_nester_input`.
+- **`topo.experimental`** — quello che si usa senza promessa di stabilità (D175 C, D176): i passi di `heal()` e i mattoni di `outlines()` (§3), il viewer (§4), `rotate_*`, `simplify_points`, `to_nester_input`.
 
 ```python
 import topo

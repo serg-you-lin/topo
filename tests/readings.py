@@ -2,7 +2,7 @@
 tests/readings.py
 -----------------
 Una sola lettura `outlines()` per disegno in tutta la suite: invarianti,
-golden, ancoraggio e budget di `to_text` leggono gli stessi fogli con gli
+golden e ancoraggio leggono gli stessi fogli con gli
 stessi parametri. Ogni chiamata riceve una copia indipendente (documento e
 risultato), perché alcuni test li modificano (`anchor_texts` scrive
 `cluster_ref` sul posto).

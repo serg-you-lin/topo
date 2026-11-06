@@ -14,7 +14,7 @@ in una minor; qui resta come alias con avviso per due minor.
 - `read_outlines` / `read_outline` / `OutlineReading`: `outlines()` prima di
   diventare un `Result` (D58);
 - `simplify_points` (D33, D141), `rotate_*` (D46), `to_nester_input` (D18),
-  `to_view_model` / `to_svg` / `save_svg` (D133), `to_text` / `save_text` (D84);
+  `to_view_model` / `to_svg` / `save_svg` (D133);
 - le strisce fra bordi affacciati: `facing_boundaries`, `gap`, `link`,
   `unconnected_regions`, `open_boundaries` (D134, D142).
 
@@ -39,7 +39,6 @@ from .tools.rotate import rotate_result, rotate_cluster, rotate_document, rotate
 from .io.exporter import to_nester_input
 from .io.view_model import to_view_model
 from .io.svg import to_svg, save_svg
-from .io.text import to_text, save_text
 from .tools.strips import (
     facing_boundaries, Facing, gap, Gap, link, Link, Strip,
     unconnected_regions, open_boundaries, Opened,
@@ -62,7 +61,6 @@ __all__ = [
     "rotate_result", "rotate_cluster", "rotate_document", "rotate_to_longest",
     "to_nester_input",
     "to_view_model", "to_svg", "save_svg",
-    "to_text", "save_text",
     "facing_boundaries", "Facing", "gap", "Gap", "link", "Link", "Strip",
     "unconnected_regions", "open_boundaries", "Opened",
 ]

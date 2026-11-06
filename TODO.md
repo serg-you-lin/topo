@@ -261,8 +261,7 @@ novembre, ramo `no-join-ends` fuso in `main`.
       file `stretto` resta non tracciato, per il suo test.
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
       rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF);
-      `test_text_budget` anch_02 (+3.7% di caratteri dal D138: capire se è
-      testo legittimo prima di toccare il budget); inner che si incrociano
+      inner che si incrociano
       su anch_03/regr_02 e 10 disegni di `golden_anchoring/`
       (`KNOWN["inners cross"]`: cicli accettati che non sono facce, D107);
       roundtrip di anch_03/regr_02/anch_03_noframe (`KNOWN["roundtrip"]`).
@@ -587,7 +586,6 @@ Aperte:
   rifare in una sessione a parte: non scala (su un foglio di viste pesa più
   del DXF di partenza), e non deve più discretizzare archi e cerchi (riapre
   D12; coordinate a 3 decimali nelle uscite di lettura, non in `to_dxf`).
-- `to_text` (D84) sperimentale: la prova del valore sta in snapdraw.
 - Estrazione dei loop planari (half-edge/DCEL): ricorrente sui fogli densi
   (grafo con il 91% dei nodi a grado > 2, un file Creo quasi tutto SPLINE).
   Da riverificare con la lettura di oggi (D189) prima di riaprire.

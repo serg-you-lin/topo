@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`87` modules · `527` module-level functions · `64` classes · `16745` lines of code.
+`86` modules · `523` module-level functions · `63` classes · `16474` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -213,7 +213,6 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `find_joining_edges` | func | `topo/core/readings/heal_steps.py:47` | Gli Edge fra `candidate_ids` (di solito i non-contorno) che uniscono due |
 | `find_non_contour_edges` | func | `topo/core/readings/heal_steps.py:30` | id(edge) degli Edge che non chiudono un contorno (catene fra due nodi di |
 | `_first_coord` | func | `topo/core/topology/graph.py:372` |  |
-| `_first_point` | func | `topo/io/text.py:151` | Un punto che sta sul segmento, per dire in quale pezzo cade. |
 | `_first_step` | func | `topo/core/topology/outer_face.py:229` | L'edge che contiene il punto più a sinistra del componente, percorso |
 | `fit_circle_kasa` | func | `topo/core/geometry/points.py:48` | Fit algebrico (Kasa) ai minimi quadrati di un cerchio su `points`: minimizza |
 | `_fit_curve` | func | `topo/core/primitives/fitting.py:136` | Un pezzo curvo: arco per gli estremi se basta (e `arcs`), altrimenti spline entro `tolerance` per gli estremi. |
@@ -489,7 +488,6 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `sanitize_pdf_geometries` | func | `topo_pdf/sanitize.py:12` | Prende gli item geometrici grezzi estratti dall'extractor, applica la conversione |
 | `save_json` | func | `topo/io/exporter.py:108` | Salva i metadati in JSON secondo lo schema di metadata_schema.py. |
 | `save_svg` | func | `topo/io/svg.py:173` | Scrive `to_svg(result, **kwargs)` su file. |
-| `save_text` | func | `topo/io/text.py:266` | Scrive `to_text(result)` su `path` (per convenzione `<nome>.topo.md`). |
 | `save_xml` | func | `topo/io/exporter.py:166` | Salva i metadati in XML secondo lo schema di metadata_schema.py. |
 | `_scale_point` | func | `topo/core/primitives/segments.py:128` | `pt` scalato di `factor` attorno a `origin`. |
 | `_scan_axis` | func | `topo/core/readings/outer_scan.py:181` |  |
@@ -568,7 +566,6 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_to_primitives` | func | `topo/core/primitives/fitting.py:242` |  |
 | `to_shapely` | func | `topo/io/shapes.py:22` | Convert topo geometry to a shapely object (MAP.md D166). |
 | `to_svg` | func | `topo/io/svg.py:46` | `Result` → stringa SVG completa (`<svg>…</svg>`). |
-| `to_text` | func | `topo/io/text.py:170` | Il `Result` come testo per un modello linguistico (`.topo.md`). |
 | `_to_text` | func | `topo_dxf/text_extractor.py:61` |  |
 | `to_view_model` | func | `topo/io/view_model.py:136` | `Result` → dizionario JSON-ready con la geometria di ogni feature. |
 | `_track` | func | `topo/io/view_model.py:50` | Traccia aperta (lista di segmenti nativi) discretizzata a lista di [x, y]. |
@@ -585,7 +582,6 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `turn_corners` | func | `topo/core/geometry/points.py:229` | Indici degli spigoli di una sequenza campionata: vertici Douglas-Peucker |
 | `_twin` | func | `topo/core/geometry/regions.py:414` | L'indice del pezzo di `pieces` che ricopre `piece` (stessi capi, stesso |
 | `unconnected_regions` | func | `topo/tools/strips.py:102` | Fatto 4: le regioni piene di `cluster` (contorni di profondità pari |
-| `_uniform_knots` | func | `topo/io/text.py:159` | Nodi bloccati agli estremi e passo interno costante: non serve scriverli. |
 | `_unit` | func | `topo/core/base/normalizer.py:86` |  |
 | `_unit` | func | `topo/core/geometry/shape.py:259` |  |
 | `_unit` | func | `topo/core/geometry/strips.py:104` |  |
@@ -609,7 +605,6 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `write_open_segments` | func | `topo_dxf/exporter.py:360` | Materializza una lista di segmenti puri come geometria APERTA su msp. |
 | `write_segments` | func | `topo_dxf/exporter.py:200` | Materializza una lista di segmenti puri su msp. |
 | `_write_texts` | func | `topo_dxf/writer.py:147` | Riscrive i testi della sorgente nel documento di output, tutti: quale |
-| `_Writer` | class | `topo/io/text.py:41` | Numeri arrotondati e id dei contorni per una sola chiamata di `to_text`. |
 | `_xy` | func | `topo_dxf/text_extractor.py:505` |  |
 
 ## Duplicate names
@@ -1265,7 +1260,7 @@ _topo/core/topology/rim.py_
 
 ### `topo/` (root)
 
-#### `topo/experimental.py` — 68 lines
+#### `topo/experimental.py` — 66 lines
 
 _topo/experimental.py_
 
@@ -1313,17 +1308,6 @@ _io/svg.py_
 - `to_svg(result: Result, tolerance: float=0.05, include_loose: bool=True, include_texts: bool=True, padding: float=0.03, background: Optional[str]='#1e1e1e', true_circles: bool=True, stroke_width: Optional[float]=None, size: Optional[str]=None, units: Optional[str]=None, allow_invalid: bool=True, role_styles: Optional[Mapping[str, RoleStyle]]=None) -> str` — L46 — `Result` → stringa SVG completa (`<svg>…</svg>`).
 - `save_svg(result: Result, path: str, **kwargs) -> None` — L173 — Scrive `to_svg(result, **kwargs)` su file.
 - `_scan_bbox(vm: dict) -> Optional[list]` — L180 — bbox da tutti i punti del view model — fallback quando vm['bbox'] è None.
-
-#### `topo/io/text.py` — 269 lines
-
-_io/text.py_
-
-- **class** `_Writer` — L41 — Numeri arrotondati e id dei contorni per una sola chiamata di `to_text`.
-  - methods: `__init__`, `num`, `pt`, `deg`, `label`, `segment`, `spline`, `contour`, `detected_item`
-- `_first_point(s) -> Optional[tuple]` — L151 — Un punto che sta sul segmento, per dire in quale pezzo cade.
-- `_uniform_knots(knots, degree: int) -> bool` — L159 — Nodi bloccati agli estremi e passo interno costante: non serve scriverli.
-- `to_text(result: Result, source_name: str='', decimals: int=3, spline_data: bool=False) -> str` — L170 — Il `Result` come testo per un modello linguistico (`.topo.md`).
-- `save_text(result: Result, path: str \| Path, source_name: str='', decimals: int=3, spline_data: bool=False) -> None` — L266 — Scrive `to_text(result)` su `path` (per convenzione `<nome>.topo.md`).
 
 #### `topo/io/view_model.py` — 199 lines
 
@@ -1781,12 +1765,11 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/core/topology/non_contour_edges.py` | `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.core.topology.noding` · `topo.core.topology.outer_face` |
 | `topo/core/topology/outer_face.py` | `topo.core.geometry.integrals` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.core.topology.loop_finder` · `topo.core.topology.noding` · `topo.core.topology.rim` |
 | `topo/core/topology/rim.py` | `topo.core.geometry.measure` · `topo.core.primitives.segments` · `topo.core.primitives.trim` · `topo.core.topology.edge` · `topo.core.topology.noding` |
-| `topo/experimental.py` | `topo.core.base.cleanup` · `topo.core.base.curves` · `topo.core.base.normalizer` · `topo.core.base.prepare` · `topo.core.primitives.fitting` · `topo.core.readings.heal_steps` · `topo.core.readings.islands` · `topo.core.readings.outline` · `topo.core.topology.noding` · `topo.core.topology.non_contour_edges` · `topo.core.topology.outer_face` · `topo.io.exporter` · `topo.io.svg` · `topo.io.text` · `topo.io.view_model` · `topo.tools.rotate` · `topo.tools.strips` |
+| `topo/experimental.py` | `topo.core.base.cleanup` · `topo.core.base.curves` · `topo.core.base.normalizer` · `topo.core.base.prepare` · `topo.core.primitives.fitting` · `topo.core.readings.heal_steps` · `topo.core.readings.islands` · `topo.core.readings.outline` · `topo.core.topology.noding` · `topo.core.topology.non_contour_edges` · `topo.core.topology.outer_face` · `topo.io.exporter` · `topo.io.svg` · `topo.io.view_model` · `topo.tools.rotate` · `topo.tools.strips` |
 | `topo/inspect.py` | `topo.core.geometry.measure` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.core.topology.graph` |
 | `topo/io/exporter.py` | `topo.core.geometry.rings` · `topo.core.primitives.polygon_builder` · `topo.model` · `topo.rules.metadata_schema` |
 | `topo/io/shapes.py` | `topo.core.geometry.measure` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.model` |
 | `topo/io/svg.py` | `topo.io.view_model` · `topo.model` |
-| `topo/io/text.py` | `topo.core.geometry.shape` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.model` |
 | `topo/io/view_model.py` | `topo.core.geometry.measure` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.model` · `topo.model.role` |
 | `topo/model/__init__.py` | `topo.core.topology.edge` · `topo.model.cluster` · `topo.model.contour` · `topo.model.curve` · `topo.model.detected` · `topo.model.document` · `topo.model.result` · `topo.model.role` · `topo.model.role_rule` · `topo.model.style` · `topo.model.text` |
 | `topo/model/cluster.py` | `topo.core.geometry.integrals` · `topo.core.primitives.polygon_builder` · `topo.model.contour` |

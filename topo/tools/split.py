@@ -5,7 +5,7 @@ Un Result per parte (MAP.md D124, D129). Scegliere le parti è una decisione
 sul modello, non su un formato: quali cluster tenere (`min_area`), come si
 chiamano (`namer` → `cluster.label`), quali curve sciolte e quali testi
 viaggiano con ognuna. Ogni exporter scrive poi una parte nel suo formato
-(`topo_dxf.to_dxf`, `topo.experimental.to_svg`, `topo.experimental.to_text`): lo stesso split esporta
+(`topo_dxf.to_dxf`, `topo.experimental.to_svg`): lo stesso split esporta
 parti in DXF, SVG o PDF.
 """
 

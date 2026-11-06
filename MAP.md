@@ -170,7 +170,7 @@ Redone in D97.
 A covered text belongs to its outer; else the nearest within `snap_distance`;
 else none.
 ### D83 — `allow_invalid=True` on `to_dxf`/`to_svg`; a machine caller passes `False`; `split` always raises on an invalid result.
-### D84 — `to_text` (experimental): Markdown for a language model.
+### ~~D84~~ → D213: `to_text` (experimental): Markdown for a language model; removed.
 Ids `Cn`, `Cn.k`; size budgeted by `test_text_budget.py`, regenerated only
 after reading it.
 ### D85 — `ensure_linetype`: document → caller's pattern → standard table → `None` (BYLAYER for a source edge, `ValueError` for a caller's style).
@@ -429,13 +429,17 @@ never a flag (merging moves the vertex between two curves). `outlines()` still d
 ### D212 — D160's suite time is a 1.0 gate item (Federico, 6 November).
 D160 was always in force; the TODO of 1 November filed it as "outside the gate", so nothing tracked it.
 Last measured 4:27 against ~3 min.
+### D213 — reopening D84: `to_text` is removed (Federico, 6 November).
+It had no caller in any consumer, and the run that was to prove its value on anonymized drawings
+was never made. `topo.experimental` carries no promise (D175), so it goes without deprecation; its
+tests left the suite (~15 s). It is in git history if a caller ever needs it.
+### D214 — 0.27.0: G15 and G16 closed (D155), with D202's `heal()` → `Network` and D209 since 0.26.0.
+A minor, not a micro: the public surface changed after 0.26.0 (`heal()` returns a `Network`, read
+with `.faces()`/`.outlines()`; a jump within tolerance becomes a new `LineSeg` with a warning).
+`to_text` leaves `topo.experimental` (D213).
 
 ## Open questions
 
-- **Reading for a language model (D84).** A raw DXF costs ~2.3× "bytes/4" in
-  tokens; `to_view_model`/`to_svg` can exceed the source on spline-heavy sheets; an
-  image alone misses exactness; image + a topo reading 6/6, raw DXF 6/6 at ~3.5×
-  the tokens. The case is cost and scale. A serious run needs anonymized drawings.
 - **Name of the role `outer`** in the island reading: unresolved; it stays
   `ContourRole.OUTER` (renaming touches `heal`, golden and layers).
 - `inspect_dxf` wants an entity-type filter (`types`): queued.
