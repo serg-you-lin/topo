@@ -286,7 +286,8 @@ volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
          `generate_two_flanges`) e i .dxf che nessun test legge più; restano
          i .dxf piccoli che provano l'adapter in lettura. I `generate_golden*.py`
          restano (regola 9), al più in `tests/tools/`.
-      Fuori dal cancello (solo test); misurare il tempo prima e dopo.
+      Nel cancello (Federico, 6 novembre: i test costano troppo); misurare
+      il tempo prima e dopo.
 - [ ] **Generatore di disegni credibili** (30 ottobre): compone forme vere
       (contorni con raccordi, cerchi e asole dentro, archi tangenti, spline,
       annidamenti) e le guasta come i file veri (piccoli buchi, ripassati,

@@ -414,6 +414,20 @@ case. A gap beyond tolerance leaves the profile open (in `loose`) with a warning
 Measured: contours with a jump went 32 (0.23.0) → 48 (2 November) while the gate stayed at 7 items;
 each rewrite broke what no test measured. A found defect goes to 1.x, never into a new G item;
 the jump count never rises. Plan in TODO.md "PIANO".
+### D209 — a jump within tolerance in a delivered contour becomes a new straight segment (G15, how D206 closes).
+No curve is moved: the readings insert a `LineSeg` between the two ends (`close_contour_jumps`) and
+say how many in `warnings`. Moving an end sideways changes the drawing; a new segment only adds what
+the polygon already counted as its chord. A jump beyond tolerance stays an error.
+### D210 — what is not a contour is removed by the consumer before `heal()`, by role (G16).
+A hatch or any other fill is a meaning, not geometry: the consumer gives those edges a non-structural
+role and `heal()` keeps them out of the network, in `loose`. topo does not recognize hatches. The
+readings only rejoin what their own cut split; two different curves of the file are never merged.
+### D211 — merging nearly collinear / cocircular curves is a public function on the result, 1.x.
+Called by the user after `faces()`/`outlines()`, with their own threshold; never inside a reading,
+never a flag (merging moves the vertex between two curves). `outlines()` still does it today via
+`merge_runs`: removed when the function exists.
+### D212 — the suite time is in the 1.0 gate (Federico, 6 November), against D207's "the gate only shrinks".
+The tests cost too much to run: the budget is ~2.5–3 min, last measured 4:27.
 
 ## Open questions
 
