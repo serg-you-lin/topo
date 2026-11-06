@@ -23,7 +23,7 @@ from typing import Callable, List, Optional
 
 from ..topology.edge import Edge
 from ..topology.noding import decide_nodes
-from .normalizer import (merge_cocircular_overlaps, merge_collinear_overlaps, refit_tessellations, weld_degenerate_linesegs)
+from .normalizer import (merge_cocircular_overlaps, merge_collinear_overlaps, refit_tessellations)
 from .cleanup import (ambiguous_free_ends, close_free_gaps, close_near_full_arcs, split_labeled)
 
 
@@ -63,7 +63,7 @@ def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normali
     chiudono, già comprensiva del margine (`geometry.measure.reach`).
 
     Curve scritte a punti rifittate (D60 riaperto), doppioni collineari e
-    cocircolari fusi, tratti degeneri saldati, archi quasi completi chiusi,
+    cocircolari fusi, archi quasi completi chiusi,
     gap a coppie: ogni estremo chiude al più un gap, col compagno più vicino;
     a pari merito nessuno (D112, D185).
 
@@ -77,8 +77,6 @@ def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normali
     out.merged_lines, edges = len(edges) - len(merged), merged
     merged = merge_cocircular_overlaps(edges)
     out.merged_arcs, edges = len(edges) - len(merged), merged
-    merged = weld_degenerate_linesegs(edges)
-    out.welded, edges = len(edges) - len(merged), merged
     edges, out.full_arcs = close_near_full_arcs(edges, gap)
     out.ambiguous = ambiguous_free_ends(edges, gap)
     closed = close_free_gaps(edges, gap)
