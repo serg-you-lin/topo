@@ -10,7 +10,8 @@ test_island_invariants.py, MAP.md D143, D158):
   file è stato scritto, non dalla geometria;
 - il confronto fra due letture (poligoni accoppiati uno a uno);
 - i tratti di `loose` che corrono lungo un contorno: un pezzo d'ingresso
-  uscito due volte.
+  uscito due volte;
+- i salti dentro un contorno consegnato (D206).
 """
 
 import math
@@ -23,7 +24,8 @@ from shapely import STRtree, prepare
 from shapely.geometry import LineString, Point
 from shapely.ops import unary_union
 
-from topo.core.geometry.measure import round_point
+from topo.core.geometry.measure import FLOAT_NOISE, round_point
+from topo.core.geometry.rings import ring_jumps
 from topo.core.primitives.segments import (DEFAULT_TOLERANCE, segment_endpoints,
                                            _rotate_point, _translate_point)
 from topo.model.document import Document
@@ -257,3 +259,16 @@ def known_defect(test, where: str, gate: str, check) -> None:
     except AssertionError:
         test.skipTest(f"difetto noto, {gate}: {where}")
     test.fail(f"{where} passa: il difetto di {gate} è risolto, togli il caso dalla lista")
+
+
+def contour_jumps(result) -> list:
+    """(cluster, contorno, lunghezza, punto) di ogni salto oltre FLOAT_NOISE fra
+    un segmento e il seguente nei contorni consegnati: dev'essere vuota (D206)."""
+    found = []
+    for ci, cluster in enumerate(result.clusters):
+        for name, contour in [("outer", cluster.outer)] + [(f"inner[{i}]", c) for i, c in enumerate(cluster.inners)]:
+            for end, start in ring_jumps(contour.segments):
+                gap = math.dist(end, start)
+                if gap > FLOAT_NOISE:
+                    found.append((ci, name, gap, end))
+    return found
