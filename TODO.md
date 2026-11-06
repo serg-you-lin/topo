@@ -180,10 +180,12 @@ vie, D152), G4 (discretizzazione, D145/D153/D154), G5 (misure, D156), G6 (4
 dubbi D103, D157), G6b (ogni pezzo una volta, D163), G6c (contatto deciso una
 volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
 3 residui in 1.x), G11 (`release_check.py`), G12 (area esatta, D165), G13
-(nessun tipo shapely nella superficie, D166–D168).
+(nessun tipo shapely nella superficie, D166–D168), G15 (contorni chiusi
+esatti, D206/D209), G16 (tratteggio per ruolo, D210) — tutti e due il 6
+novembre, ramo `no-join-ends` fuso in `main`.
 
 **Aperti**
-- [ ] **G15** Un contorno consegnato si chiude entro tolleranza (3 novembre).
+- [x] **G15** Un contorno consegnato si chiude entro tolleranza (3 novembre).
       Rende vera la regola 6 di CLAUDE.md (`is_valid` prima di una macchina);
       allarga D143 con la chiusura. Caso: `heal(doc, tolerance=0.5)` su
       `regr_02`, `anch_03`, `anch_03_noframe`: uno spigolo a 90° con
@@ -214,13 +216,16 @@ volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
       0.23.0 `66829cb` 32 (max 0,05) · prima di D189 `6c0cca6` 36 (max 0,064)
       · D189 `f477804` 47 (9 a 0,41–0,42, tolti da G15) · oggi 48 (max 0,062).
       Dal 25 ottobre: 31 rotte allora e oggi, 1 guarita, 17 nuove.
+      **Chiuso il 6 novembre**: `test_fidelity` (218 test, 162 letture)
+      pretende 0 salti e passa; un salto entro tolleranza lo chiude una retta
+      nuova con un warning (D209). Suite intera verde (3046, 0 falliti).
 - [ ] **G14** Superficie allineata alle API di una libreria matura (D174,
       D175). Fatti: la regola (D175), la passata sui nomi (D176, D177), la
       regola 1 come test (D178). Restano: la regola 8 (con G9) e il test di
       rimozione delle deprecazioni (vuoto finché non ce n'è una). Consumer da
       adeguare con le tabelle vecchio → nuovo di D176/D177: snapbend,
       snapdraw, smoother, pippo — dalle loro sessioni.
-- [ ] **G16** Un tratteggio dentro un pezzo non sporca il contorno (2 novembre).
+- [x] **G16** Un tratteggio dentro un pezzo non sporca il contorno (2 novembre).
       `tests/data/sbagli_tratteggio.dxf` (non tracciato; 12 linee + un `HATCH`
       ANSI31 che `topo_dxf` non legge), con il tratteggio esploso in 2622 righe
       a 45° (0,125 mm) e un restringimento di 0,3 mm nel contorno. A tolleranza
@@ -247,6 +252,13 @@ volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
       tratteggio sugli angoli). Federico (6 novembre): il tratteggio lo toglie
       il consumer prima di `heal()`, con un ruolo non strutturale; così
       stretto dà 12 in tutte e due le letture. DXF in `_debug/2026-11-06_topo_g16-tratteggio`.
+      **Chiuso il 6 novembre**: `tests/real/test_hatch_by_role.py` su stretto e
+      largo, a 0,05 e 0,5, `faces()` e `outlines()`: righe a 45° col ruolo
+      `hatch` → 1 cluster, 12 segmenti, 0 fori, area delle 12 LINE da sole,
+      ogni riga in `loose`. Già verde su `main` (la via del ruolo non era
+      rotta); il rosso→verde del meccanismo è `TestPartOfACurveOnTheContour`
+      (`test_noding.py`, rosso su `main`). Senza ruolo `faces()` dà 14
+      (12 lati + righe sugli angoli): per D210 non è una promessa.
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
       rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF);
       `test_text_budget` anch_02 (+3.7% di caratteri dal D138: capire se è
