@@ -61,6 +61,28 @@ la tolleranza rimasto in un contorno consegnato lo chiude ora una retta nuova
 ovunque. Le cause qui sotto restano: dicono quando nasce quella retta.
 Ramo `node-moves-geometry`: abbandonato (spostava i capi).
 Aperti, con i fatti:
+- Sweep 6 novembre (`21_sweep_invariants.py` su `snapdraw/`, 121 disegni, ora
+  con il controllo `jumps`): `faces()` rossa su 18 disegni contro 3 del 2
+  novembre. "out once" nuovo su 17 (es. drw_0012 4,58 mm, drw_0016 fino a
+  57,5 mm); drw_0016 nuovo anche in "scrambled" (inner 22 → 20); drw_0017 ha
+  due salti di 0,8395 mm (oltre la tolleranza 0,5) negli inner 41 e 42 a
+  (318.61, 249.23), con `is_valid=False`. `outlines()` verde ovunque.
+  Riletti i 18 a ogni commit del motore da `4e5d9c0` (`per_commit.json`): "out
+  once" 0 → 17 con `db780b7`; drw_0016 "scrambled" nasce con `df67722`; il
+  salto 0,8395 di drw_0017 nasce con `34102bc`. Disegni con un salto 17 → 1
+  (con `384aebc`). Il perché di ciascuno non è cercato. Rapporto in
+  `_debug/2026-11-06_topo_sweep-jumps`.
+  `db780b7` ritirato (Federico, 6 novembre): out once 17 → 0, suite verde;
+  restano drw_0016 (`df67722`), drw_0017, sweep #8 e #79 (oltre 300 s).
+- Precisioni (Federico, 2 novembre, chiese di uniformarle; D196 le tenne
+  separate): in `core/` + `sanitize` ~40 soglie di coincidenza su 9 valori
+  (1e-2 … 1e-12). Misurato sui 18 rossi: solo `NODE_DECIMALS` 6 → drw_0016 e
+  il salto di drw_0017 guariti, +36% tempo; 9 → nulla di più, ×20 tempo.
+  Tutte le soglie a un valore: 1e-3 meglio (out once 17 → 9, 0 salti, 39 s),
+  1e-6 e 1e-9 peggio. Sweep 121 con tutto a 1e-3: rossi 18 → 17, 7 guariti,
+  5 nuovi in "scrambled" (regr_04 e due derivati, sweep #83 e #97), #79
+  finisce (279 s), 0 salti, `outlines()` sempre verde. Script `per_unified.py`
+  e rapporto `unified_1e-3/` in `_debug/2026-11-06_topo_sweep-jumps`.
 - un contatto dove una curva supera l'altra di pochi millesimi (anch_07: retta
   oltre un arco di 0,003; regr_01: spline oltre una retta di 0,004): l'arco si
   taglia all'incrocio, la retta no, i due punti finiscono nello stesso nodo →
