@@ -73,7 +73,8 @@ Aperti, con i fatti:
   (con `384aebc`). Il perché di ciascuno non è cercato. Rapporto in
   `_debug/2026-11-06_topo_sweep-jumps`.
   `db780b7` ritirato (Federico, 6 novembre): out once 17 → 0, suite verde;
-  restano drw_0016 (`df67722`), drw_0017, sweep #8 e #79 (oltre 300 s).
+  `df67722` ritirato: drw_0016 verde, suite verde (il salto di anch_01_noframe
+  lo chiude `384aebc`). Restano drw_0017 (salto + scrambled), sweep #8, #79 (oltre 300 s).
 - Precisioni (Federico, 2 novembre, chiese di uniformarle; D196 le tenne
   separate): in `core/` + `sanitize` ~40 soglie di coincidenza su 9 valori
   (1e-2 … 1e-12). Misurato sui 18 rossi: solo `NODE_DECIMALS` 6 → drw_0016 e
