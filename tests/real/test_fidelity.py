@@ -23,7 +23,6 @@ Ogni disegno con la sua lettura (D152): quelli di `golden_islands/` e
 altri con `heal()`. Le copie identiche si misurano una volta.
 """
 
-import math
 import sys
 import unittest
 from collections import Counter
@@ -38,10 +37,9 @@ sys.path.insert(0, str(project_root))
 
 import topo
 import topo_dxf
-from topo.core.geometry.measure import FLOAT_NOISE
-from topo.core.geometry.rings import ring_jumps
 from topo.core.primitives.segments import segment_endpoints
 from tests.drawings import case_name, tracked_drawings
+from tests.invariants import contour_jumps
 from tests.readings import outline_reading
 
 MAX_GAP = 0.5            # quello di snapdraw, come test_golden_islands
@@ -167,12 +165,6 @@ def _round_trip(rel: str, reading: str):
     return doc, result, back, bound
 
 
-def _jumps(result) -> int:
-    """Quanti salti oltre FLOAT_NOISE nei contorni dei cluster di `result`."""
-    return sum(1 for c in result.clusters for contour in [c.outer] + list(c.inners)
-               for end, start in ring_jumps(contour.segments) if math.dist(end, start) > FLOAT_NOISE)
-
-
 class TestFidelity(unittest.TestCase):
     """Un test per disegno tracciato, così la suite li divide fra i core
     (D160): in un test solo, il ciclo su tutti i disegni era il più lento
@@ -188,7 +180,7 @@ class TestFidelity(unittest.TestCase):
 def _make_fidelity_test(rel: str, reading: str):
     def test(self):
         doc, result, back, bound = _round_trip(rel, reading)
-        self.assertEqual(_jumps(result), 0, "salti nei contorni consegnati")
+        self.assertEqual(contour_jumps(result), [], "salti nei contorni consegnati")
         src_lines, src_samples = _lines_and_samples(doc.edges)
         out_lines, out_samples = _lines_and_samples(back.edges)
         self.assertLessEqual(_directed(src_samples, out_lines), bound,

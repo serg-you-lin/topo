@@ -11,6 +11,7 @@ repo non contenga già (stesso contenuto). Per ogni lettura:
     polygon     ogni outer e inner è una forma semplice di area positiva
     dropped     ogni pezzo d'ingresso sta in un'uscita (entro la tolleranza)
     out once    nessun tratto di `loose` corre lungo un contorno (D137)
+    jumps       nessun salto fra due segmenti di un contorno consegnato (D206)
     scrambled   rimescolato, ruotato, lontano e specchiato: stessi contorni
 
 Ogni disegno gira in un processo a parte con un tempo massimo: un disegno
@@ -60,7 +61,7 @@ def _polygon_problems(result) -> list:
 
 def _check_reading(name: str, doc, read, distance: float, band: float) -> dict:
     """Le invarianti di una lettura: {controllo: [problemi]}, più tempo e conti."""
-    from tests.invariants import along_contours, contours, scrambled, shape_differences, uncovered, unscrambled
+    from tests.invariants import along_contours, contour_jumps, contours, scrambled, shape_differences, uncovered, unscrambled
     out = {"checks": {}}
     start = time.perf_counter()
     try:
@@ -75,6 +76,8 @@ def _check_reading(name: str, doc, read, distance: float, band: float) -> dict:
     lost = uncovered(doc, result, distance)
     checks["dropped"] = [f"{lost.length:.3f} mm vicino a {lost.representative_point()}"] if lost.length > band else []
     checks["out once"] = [f"{length:.2f} mm a {point}" for length, point in along_contours(result, doc)[:5]]
+    checks["jumps"] = [f"cluster[{ci}].{name} {gap:.4f} mm a {tuple(round(v, 3) for v in point)}"
+                       for ci, name, gap, point in contour_jumps(result)]
     try:
         again = read(scrambled(doc))
         outers, inners = contours(result)
