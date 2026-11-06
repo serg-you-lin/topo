@@ -500,6 +500,10 @@ class _Contacts:
             ra, rb = find(a), find(b)
             if ra == rb:
                 continue
+            # due contatti con capi diversi sono due punti del file: un capo
+            # non si fonde con un altro capo perché la coppia si tocca due volte
+            if ends[ra] and ends[rb] and not ends[ra] & ends[rb]:
+                continue
             both = ends[ra] | ends[rb]
             if not self._joinable(self._find(e) for e in both):
                 continue
@@ -540,8 +544,12 @@ class _Contacts:
             first = None
             for k in ks:
                 s = self.stops[k][1]
+                side = 0 if s <= curve.length - s else 1
+                # entro `node` anche sul piano: il punto del contatto può stare
+                # di lato alla curva, e allora è più lontano dal capo che lungo l'edge
                 if i in self.ends and min(s, curve.length - s) <= r and \
-                        self._union(k, self.ends[i][0 if s <= curve.length - s else 1]):
+                        math.dist(self.stops[k][2], segment_endpoints(self.edges[i].segment)[side]) <= r and \
+                        self._union(k, self.ends[i][side]):
                     self.absorbed.add(k)
                     continue
                 if first is None or s - self.stops[first][1] > r or not self._union(k, first):

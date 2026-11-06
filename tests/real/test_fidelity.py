@@ -70,7 +70,7 @@ KNOWN_JUMPS = {
     "data/golden_islands/anch_06": 2,
     "data/golden_islands/anch_08": 3,
     "data/golden_islands/drw_0011": 2,
-    "data/golden_islands/regr_01": 69,
+    "data/golden_islands/regr_01": 66,
     "data/golden_islands/regr_02": 4,
     "data/golden_islands/regr_04": 2,
 }
