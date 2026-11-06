@@ -426,8 +426,9 @@ readings only rejoin what their own cut split; two different curves of the file 
 Called by the user after `faces()`/`outlines()`, with their own threshold; never inside a reading,
 never a flag (merging moves the vertex between two curves). `outlines()` still does it today via
 `merge_runs`: removed when the function exists.
-### D212 — the suite time is in the 1.0 gate (Federico, 6 November), against D207's "the gate only shrinks".
-The tests cost too much to run: the budget is ~2.5–3 min, last measured 4:27.
+### D212 — D160's suite time is a 1.0 gate item (Federico, 6 November).
+D160 was always in force; the TODO of 1 November filed it as "outside the gate", so nothing tracked it.
+Last measured 4:27 against ~3 min.
 
 ## Open questions
 
