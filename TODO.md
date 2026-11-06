@@ -252,13 +252,13 @@ novembre, ramo `no-join-ends` fuso in `main`.
       tratteggio sugli angoli). Federico (6 novembre): il tratteggio lo toglie
       il consumer prima di `heal()`, con un ruolo non strutturale; così
       stretto dà 12 in tutte e due le letture. DXF in `_debug/2026-11-06_topo_g16-tratteggio`.
-      **Chiuso il 6 novembre**: `tests/real/test_hatch_by_role.py` su stretto e
-      largo, a 0,05 e 0,5, `faces()` e `outlines()`: righe a 45° col ruolo
-      `hatch` → 1 cluster, 12 segmenti, 0 fori, area delle 12 LINE da sole,
-      ogni riga in `loose`. Già verde su `main` (la via del ruolo non era
-      rotta); il rosso→verde del meccanismo è `TestPartOfACurveOnTheContour`
-      (`test_noding.py`, rosso su `main`). Senza ruolo `faces()` dà 14
-      (12 lati + righe sugli angoli): per D210 non è una promessa.
+      **Chiuso il 6 novembre**: il rosso→verde del meccanismo è
+      `TestPartOfACurveOnTheContour` (`test_noding.py`, rosso su `main`); la
+      promessa di D210 è `tests/integration/test_non_structural_role.py`
+      (righe con ruolo non strutturale che tagliano gli angoli: pezzo e area
+      uguali a quelli senza righe, righe in `loose`; rosso se le righe restano
+      nella rete). Riconoscere un tratteggio è del consumer (snapdraw): il
+      file `stretto` resta non tracciato, per il suo test.
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
       rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF);
       `test_text_budget` anch_02 (+3.7% di caratteri dal D138: capire se è
@@ -313,6 +313,13 @@ mm², probabilmente D145; snapdraw 3 regressioni). Si giudicano nei loro repo,
 mai rigenerando alla cieca.
 
 ## Dopo la 1.0 (1.x, additivo — non toccare finché il cancello è aperto)
+
+Difetti trovati il 6 novembre (fatti, nessuna analisi):
+- `tests/integration/test_non_structural_role.py`, stesso disegno, righe
+  senza ruolo (`unknown`) a 0,5: `faces()` 0 cluster, `is_valid` False,
+  435 curve in `loose` su 475 edge. Con `is_structural=lambda r: True` e
+  ruolo `x`: 0 cluster, `loose` vuoto, warning "508 edge non di contorno
+  esclusi dal grafo" → edge non consegnati da nessuna parte (D137?).
 
 Primo lavoro (deciso il 30 ottobre):
 - **discretizzazione delle spline in Rust** (o almeno numpy): De Boor in Python
@@ -463,6 +470,10 @@ distanza dalle due rette; offset: distanza d dall'originale, Hausdorff ≤ tol);
   tangenti dentro/fuori), da D134/D142.
 - C simmetrie: asse di simmetria, simmetria rotazionale e ordine; congruenza
   di due contorni a meno di un moto rigido (la firma dei contorni, D121).
+- R famiglie di tratti paralleli (6 novembre): direzione, passo, membri;
+  giudicare la direzione di un tratto corto con l'errore dei suoi capi (un
+  tratteggio tagliato sul bordo esce a 44,97°–45,09°). Un tratteggio da PDF o
+  SVG si riconosce solo così; "è un tratteggio" resta del consumer (D210).
 - R schemi ripetuti: contorni uguali legati da passo costante in linea o su
   cerchio (traslazione/rotazione), come fatto, non come "serie di fori".
 
