@@ -24,7 +24,7 @@ from ..base.prepare import normalize, prepare
 from ..geometry.measure import reach
 from ..primitives.segments import segment_is_closed
 from ..topology.edge import Edge
-from ..topology.noding import GRAPH_EPSILON, NodedEdges, decide_nodes, join_ends, split_at_crossings
+from ..topology.noding import GRAPH_EPSILON, NodedEdges, decide_nodes, split_at_crossings
 from .heal_steps import free_ends
 
 if TYPE_CHECKING:
@@ -137,7 +137,7 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
         first = ", ".join(f"({p[0]:.2f}, {p[1]:.2f})" for p in clean.ambiguous[:4])
         net.warnings.append(f"{len(clean.ambiguous)} estremi liberi con due compagni alla stessa distanza "
                             f"(figura simmetrica): nessun gap chiuso lì, decide il disegno ({first}).")
-    net.edges = join_ends(_no_degenerate(clean.edges))
+    net.edges = _no_degenerate(clean.edges)
     if dangling_splines(net.edges):
         net.warnings.append(
             "SPLINE con endpoint non connesso trovata — "
@@ -151,7 +151,7 @@ def repair_edges(edges: List[Edge], tolerance: float, max_gap: float) -> List[Ed
     """La stessa riparazione su edge sciolti, per chi legge senza un Document
     (experimental): nodi decisi, `normalize`, degeneri tolti."""
     noded, _ = decide_nodes(edges)
-    return join_ends(_no_degenerate(normalize(noded, reach(max(tolerance, max_gap)), keep_junctions=True).edges))
+    return _no_degenerate(normalize(noded, reach(max(tolerance, max_gap)), keep_junctions=True).edges)
 
 
 def _no_degenerate(edges: List[Edge]) -> List[Edge]:

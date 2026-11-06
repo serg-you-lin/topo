@@ -44,7 +44,7 @@ from .edge import Edge
 from ..geometry.intersections import intersections
 from ..primitives.trim import sub_segment
 from ..primitives.segments import (
-    LineSeg, ArcSeg, BSplineSeg, CircleSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle,
+    LineSeg, ArcSeg, CircleSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle,
     segment_endpoints, segment_is_closed,
 )
 
@@ -76,16 +76,9 @@ class NodedEdges:
     parent:    Dict[int, Edge]       = field(default_factory=dict)   # id(pezzo) -> Edge originale
     crossings: List[tuple]           = field(default_factory=list)
     planar:    bool                  = True    # tagliata anche agli incroci (`cut_crossings`)
-    rejoined:  Dict[int, Edge]       = field(default_factory=dict)   # id(Edge originale) -> coi capi di `join_ends`
-    origin:    Dict[int, Edge]       = field(default_factory=dict)   # id(copia in `rejoined`) -> Edge originale
 
     def parent_of(self, piece: Edge) -> Edge:
         return self.parent[id(piece)]
-
-    def original(self, edge: Edge) -> Edge:
-        """L'Edge d'ingresso di una copia di `whole()` coi capi spostati
-        (`rejoined`); ogni altro edge è sé stesso."""
-        return self.origin.get(id(edge), edge)
 
     def whole(self, loop: list) -> list:
         """`loop` [(pezzo, al contrario)] con l'Edge originale al posto dei suoi
@@ -106,7 +99,7 @@ class NodedEdges:
             while j + 1 < len(loop) and parents[j + 1] is parents[i] and loop[j + 1][1] == loop[i][1]:
                 j += 1
             if j - i + 1 == counts[id(parents[i])] and (j > i or loop[i][0] is not parents[i]):
-                out.append((self.rejoined.get(id(parents[i]), parents[i]), loop[i][1]))
+                out.append((parents[i], loop[i][1]))
             else:
                 out.extend(loop[i:j + 1])
             i = j + 1
@@ -116,70 +109,6 @@ class NodedEdges:
 # ---------------------------------------------------------------------------
 # API pubblica
 # ---------------------------------------------------------------------------
-
-def join_ends(edges: List[Edge], movable: frozenset = frozenset(),
-              reach: Optional[float] = None) -> List[Edge]:
-    """
-    I capi reali che arrivano allo stesso nodo portati sullo stesso punto: il
-    nodo dice che si toccano, la geometria consegnata lo deve dire uguale
-    (D206). Il punto è la media dei capi di spline del nodo, se ce ne sono,
-    poi di quelli d'arco, poi di tutti: non dipende dall'ordine né dal
-    riferimento. Una spline non si sposta mai: i suoi punti di controllo sono
-    il file (D143); fra due spline il salto resta. Un arco ha i capi
-    calcolati: ruota il capo verso il punto, centro e raggio restano. Una
-    retta si sposta esatta.
-    `movable`: fra le rette, i capi che vanno sugli altri. A un contatto a T il
-    taglio sta sulla curva che lo riceve, il capo che arriva no: è lui che si
-    sposta, la curva tagliata resta dritta.
-    `reach`: un nodo i cui capi non stanno entro questo diametro non è un punto
-    (un contatto deciso entro la tolleranza, D101) e resta com'è: spostarlo
-    cambierebbe il disegno. None: nessun limite.
-    Gli edge chiusi restano come sono.
-    """
-    at: Dict[tuple, list] = defaultdict(list)
-    for k, edge in enumerate(edges):
-        if _is_loop(edge.segment):
-            continue
-        s, e = segment_endpoints(edge.segment)
-        at[edge.start].append((k, "start", s))
-        at[edge.end].append((k, "end", e))
-    moves: Dict[int, Dict[str, tuple]] = defaultdict(dict)
-    for ends in at.values():
-        distinct = sorted({pt for _, _, pt in ends})
-        if len(distinct) < 2 or (reach is not None and not within_diameter(distinct, reach)):
-            continue
-        splines = [pt for k, _, pt in ends if isinstance(edges[k].segment, BSplineSeg)]
-        arcs = [pt for k, _, pt in ends if isinstance(edges[k].segment, ArcSeg)]
-        fixed = [pt for _, _, pt in ends if pt not in movable]
-        pool = splines or arcs or fixed or [pt for _, _, pt in ends]
-        target = (sum(p[0] for p in pool) / len(pool), sum(p[1] for p in pool) / len(pool))
-        for k, role, pt in ends:
-            if pt != target:
-                moves[k][role] = target
-    if not moves:
-        return list(edges)
-    out = list(edges)
-    for k, roles in moves.items():
-        seg = out[k].segment
-        for role, target in roles.items():
-            seg = _end_moved(seg, role, target)
-        out[k] = replace(out[k], segment=seg)
-    return out
-
-
-def _end_moved(seg, role: str, target: tuple):
-    """`seg` col capo `role` portato su `target`. Spline ed ellissi restano come
-    sono: i loro coefficienti sono il file (D143)."""
-    if isinstance(seg, LineSeg):
-        return replace(seg, **{role: target})
-    if isinstance(seg, ArcSeg):
-        old = getattr(seg, f"{role}_angle")
-        turn = math.atan2(target[1] - seg.center[1], target[0] - seg.center[0]) - old
-        # la rotazione più corta: un arco quasi completo non cambia giro
-        turn = (turn + math.pi) % (2 * math.pi) - math.pi
-        return replace(seg, **{f"{role}_angle": old + turn})
-    return seg
-
 
 def renode(edges: List[Edge], decimals: int = NODE_DECIMALS) -> List[Edge]:
     """Nodi di ogni Edge ricalcolati dal punto reale del segmento a
@@ -254,39 +183,12 @@ def split_at_crossings(edges: List[Edge], tolerance: float,
 
     noded = NodedEdges(planar=cut_crossings)
     skip = frozenset() if cut_crossings else frozenset(net.crossing_roots())
-    owners = [(piece, edge) for i, edge in enumerate(edges) for piece in net.pieces(i, nodes, skip)]
-    # a un contatto a T il capo che arriva va sul taglio, che sta sulla curva (D206)
-    drawn = frozenset(p for e in edges if not _is_loop(e.segment) for p in segment_endpoints(e.segment))
-    joined = join_ends([piece for piece, _ in owners], drawn, GRAPH_EPSILON)
-    noded.rejoined = _parents_moved(owners, joined)
-    noded.origin = {id(noded.rejoined[id(e)]): e for e in edges if id(e) in noded.rejoined}
-    for piece, (_, edge) in zip(joined, owners):
-        noded.pieces.append(piece)
-        noded.parent[id(piece)] = edge
+    for i, edge in enumerate(edges):
+        for piece in net.pieces(i, nodes, skip):
+            noded.pieces.append(piece)
+            noded.parent[id(piece)] = edge
     noded.crossings = sorted(net.crossings(nodes))
     return noded
-
-
-def _parents_moved(owners: list, joined: List[Edge]) -> Dict[int, Edge]:
-    """Gli edge d'origine coi capi spostati come i loro pezzi: `whole()` rimette
-    l'edge intero al posto dei pezzi, e deve rimetterlo chiuso."""
-    shift: Dict[int, Dict[tuple, tuple]] = defaultdict(dict)
-    parents: Dict[int, Edge] = {}
-    for (old, edge), new in zip(owners, joined):
-        parents[id(edge)] = edge
-        for p, q in zip(segment_endpoints(old.segment), segment_endpoints(new.segment)):
-            if p != q:
-                shift[id(edge)][p] = q
-    out: Dict[int, Edge] = {}
-    for key, moves in shift.items():
-        edge = parents[key]
-        seg = edge.segment
-        for role, p in zip(("start", "end"), segment_endpoints(edge.segment)):
-            if p in moves:
-                seg = _end_moved(seg, role, moves[p])
-        if seg is not edge.segment:
-            out[key] = replace(edge, segment=seg)
-    return out
 
 
 def interior_crossings(edges: List[Edge], tolerance: float) -> List[tuple]:
