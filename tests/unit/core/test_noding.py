@@ -266,3 +266,24 @@ class TestCrossingNodesUnderMotion(unittest.TestCase):
                 self.assertEqual(len(result.clusters[0].outer.segments), 4)
                 self.assertTrue(result.is_valid, result.errors)
                 self.assertEqual(len(result.loose), 5)
+
+
+class TestPartOfACurveOnTheContour(unittest.TestCase):
+    """G16: un contorno che percorre solo una parte di una curva (la punta
+    dell'angolo resta fuori, oltre lo smusso) la riportava in tanti pezzi quante
+    le righe che la toccano. I pezzi di fila sono un tratto solo della curva."""
+
+    def test_il_lato_toccato_da_righe_torna_un_segmento(self):
+        import topo
+
+        def _seg(a, b):
+            return LineSeg(start=a, end=b)
+        corners = [(0, 0), (10, 0), (10, 5), (5, 5), (5, 10), (0, 10)]
+        segs = [_seg(corners[i], corners[(i + 1) % 6]) for i in range(6)]
+        segs.append(_seg((5.2, 5), (5, 5.2)))                         # smusso
+        segs += [_seg((x, 5), (x - 1, 4)) for x in (6, 7, 8, 9)]      # righe sul lato
+        for reading in ("faces", "outlines"):
+            with self.subTest(reading=reading):
+                result = getattr(topo.heal(topo.load_segments(segs), tolerance=0.5), reading)()
+                self.assertTrue(result.is_valid, result.errors)
+                self.assertEqual(len(result.clusters[0].outer.segments), 7)

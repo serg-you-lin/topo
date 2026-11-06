@@ -239,6 +239,14 @@ volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
       Causa: i 1136 sono i lati spezzati dai contatti del tratteggio, mai
       rifusi → `faces()` rifonde i collineari. `largo`: con G15 giusto per
       Federico (vedi G15), non fa più parte di G16.
+      Ramo `no-join-ends` (6 novembre): la causa vera era `NodedEdges.whole`,
+      che ricomponeva un lato solo se il giro lo percorreva tutto; agli angoli
+      una riga di tratteggio lascia fuori la punta, e il lato restava a pezzi.
+      Ora i pezzi di fila tornano un tratto solo della curva (`_joined_run`):
+      stretto `faces()` 1136 → 14, `outlines()` 15 (12 lati + righe di
+      tratteggio sugli angoli). Federico (6 novembre): il tratteggio lo toglie
+      il consumer prima di `heal()`, con un ruolo non strutturale; così
+      stretto dà 12 in tutte e due le letture. DXF in `_debug/2026-11-06_topo_g16-tratteggio`.
 - [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
       rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF);
       `test_text_budget` anch_02 (+3.7% di caratteri dal D138: capire se è
@@ -298,6 +306,13 @@ Primo lavoro (deciso il 30 ottobre):
 - **discretizzazione delle spline in Rust** (o almeno numpy): De Boor in Python
   è il costo singolo più grosso di `island()`. Prova numpy a blocchi: scende
   solo da 6.5 a 5.1 s (D169 chiede la misura per un core Rust).
+
+- **Fusione delle curve quasi allineate / quasi coarcali** (Federico, 6
+  novembre): funzione pubblica a parte, chiamata da chi usa topo sul
+  risultato, con la soglia sua. Le letture non fondono mai due curve diverse
+  del file (sposterebbe il vertice fra le due); `merge_runs` è la base.
+  Oggi `outlines()` le fonde (`_contour`, `merge_runs` a 1e-3): da togliere
+  quando c'è la funzione.
 
 - **`topo_dxf` non legge `HATCH`** (adapter, 1.x; Federico, 2 novembre): oggi
   solo un avviso in `doc.warnings`. Un tratteggio (es. ANSI31) va esploso in
