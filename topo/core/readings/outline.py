@@ -39,6 +39,7 @@ from ..base.curves import loose_curves
 from ..topology.non_contour_edges import non_contour_pieces
 from .islands import spatial_islands
 from .network import repair_edges
+from .heal_steps import close_contour_jumps
 
 if TYPE_CHECKING:
     from .network import Network
@@ -106,6 +107,7 @@ def read_network_outlines(net: Network) -> Result:
         result.is_valid = False
         result.errors.append("Nessun gruppo con un contorno esterno chiuso.")
         return result
+    close_contour_jumps(result, tol)
     from ...rules.validator import validate_result
     validate_result(result)
     return result

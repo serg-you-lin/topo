@@ -23,6 +23,8 @@ from ..topology.noding import split_at_crossings
 from ...model.cluster import Cluster
 from ...model.role import ContourRole, is_structural_role
 from ..base.hierarchy import HierarchyBuilder
+from ..geometry.measure import FLOAT_NOISE
+from ..geometry.rings import ring_bridges
 
 
 def find_non_contour_edges(edges: List[Edge], tolerance: float) -> Set[int]:
@@ -112,6 +114,29 @@ def build_hierarchy(curves: list, label: str = "", source_file: str = "",
     """
     builder = HierarchyBuilder(label=label, source_file=source_file, is_structural=is_structural)
     return builder.build(curves)
+
+
+def close_contour_jumps(result, tolerance: float) -> None:
+    """
+    Ogni contorno consegnato chiude esatto (D206): un salto entro `tolerance`
+    fra un segmento e il successivo diventa una retta nuova fra i due capi,
+    con lo stile del segmento prima. Nessuna curva si sposta; il poligono
+    contava già il salto come la sua corda. **Muta** `result` e lo dice in
+    `warnings`.
+    """
+    count, widest = 0, 0.0
+    for cluster in result.clusters:
+        for contour in [cluster.outer] + list(cluster.inners):
+            bridges = ring_bridges(contour.segments, tolerance, FLOAT_NOISE)
+            for k, line in reversed(bridges):
+                contour.segments.insert(k + 1, line)
+                if len(contour.styles) > k:
+                    contour.styles.insert(k + 1, contour.styles[k])
+                widest = max(widest, math.dist(line.start, line.end))
+            count += len(bridges)
+    if count:
+        result.warnings.append(
+            f"{count} salti nei contorni (fino a {widest:.3g} mm) chiusi con un segmento nuovo.")
 
 
 # ---------------------------------------------------------------------------

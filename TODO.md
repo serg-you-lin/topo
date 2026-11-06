@@ -55,9 +55,11 @@ regr_01 `outlines()` 0,0237 → 0,0903 (contatto linea–arco quasi tangente);
 `sbagli_tratteggio_stretto.dxf` non tracciato; nessun push.
 
 **Ramo `no-join-ends` (6 novembre)**: `join_ends` tolto (revert di
-`eabf73c`), saldatura dei tratti corti tolta da `normalize`; il conto dei
-salti è in `test_fidelity` (`KNOWN_JUMPS`: 20 letture su 217; su main con
-`join_ends` erano 7). Ramo `node-moves-geometry`: abbandonato (spostava i capi).
+`eabf73c`), saldatura dei tratti corti tolta da `normalize`. Ogni salto entro
+la tolleranza rimasto in un contorno consegnato lo chiude ora una retta nuova
+(`close_contour_jumps`, D206), con un warning; `test_fidelity` pretende 0 salti
+ovunque. Le cause qui sotto restano: dicono quando nasce quella retta.
+Ramo `node-moves-geometry`: abbandonato (spostava i capi).
 Aperti, con i fatti:
 - un contatto dove una curva supera l'altra di pochi millesimi (anch_07: retta
   oltre un arco di 0,003; regr_01: spline oltre una retta di 0,004): l'arco si
