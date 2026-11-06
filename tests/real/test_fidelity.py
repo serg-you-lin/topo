@@ -53,8 +53,8 @@ CUT_EPS = 2e-6           # un pezzo tagliato sta sulla sua spline (taglio esatto
 CUT_SAMPLE = 1e-6        # errore di corda nel confronto, sotto CUT_EPS
 CUT_GAP = 0.02           # un tratto più corto resta dentro la fascia del bordo (2·GRAPH_EPSILON)
 
-# letture con un salto in un contorno consegnato, e quanti (misurati il 6
-# novembre, senza join_ends né saldatura): il conto scende, mai sale
+# letture con un salto in un contorno consegnato, e quanti: il conto
+# scende, mai sale
 KNOWN_JUMPS = {
     "data/contorno_ambiguo": 4,
     "data/golden/lineette_bastarde": 2,
@@ -63,19 +63,16 @@ KNOWN_JUMPS = {
     "data/golden_anchoring/anch_03_noframe": 4,
     "data/golden_anchoring/anch_04_noframe": 2,
     "data/golden_anchoring/anch_06_noframe": 2,
-    "data/golden_anchoring/anch_07_noframe": 6,
     "data/golden_anchoring/anch_08_noframe": 3,
     "data/golden_islands/anch_02": 1,
     "data/golden_islands/anch_03": 4,
     "data/golden_islands/anch_04": 2,
     "data/golden_islands/anch_06": 2,
-    "data/golden_islands/anch_07": 6,
     "data/golden_islands/anch_08": 3,
-    "data/golden_islands/drw_0011": 6,
+    "data/golden_islands/drw_0011": 2,
     "data/golden_islands/regr_01": 69,
     "data/golden_islands/regr_02": 4,
-    "data/golden_islands/regr_04": 3,
-    "data/golden_islands/regr_05": 6,
+    "data/golden_islands/regr_04": 2,
 }
 
 
