@@ -45,6 +45,30 @@ Ogni sessione parte da qui e lo dice in chat: passo, contatore.
 - [ ] L5 Bilancio con numeri: contatore (48 → ?), voci del
       cancello (7 → ?), voci entrate (deve essere 0). Federico decide.
 
+**Stato (4 novembre)**: L1 fatto (`773a4e3`). `eabf73c` `join_ends`: i capi
+sullo stesso nodo portati sullo stesso punto (linee spostate, archi ruotati,
+spline ed ellissi no) → contatore 48 → 28, nessuno nuovo. Rossi/aperti:
+`TestTangentSpike` (due linee da 74 mm spostate 0,0016 sul capo dell'arco,
+area 1011,35 → 1011,29: accettare o lasciare aperto); D208 citata nel codice
+ma non scritta in MAP; `join_ends` non scritto in MAP; suite 4:27 (budget 3);
+regr_01 `outlines()` 0,0237 → 0,0903 (contatto linea–arco quasi tangente);
+`sbagli_tratteggio_stretto.dxf` non tracciato; nessun push.
+
+**Ramo `no-join-ends` (6 novembre)**: `join_ends` tolto (revert di
+`eabf73c`), saldatura dei tratti corti tolta da `normalize`; il conto dei
+salti è in `test_fidelity` (`KNOWN_JUMPS`: 20 letture su 217; su main con
+`join_ends` erano 7). Ramo `node-moves-geometry`: abbandonato (spostava i capi).
+Aperti, con i fatti:
+- un contatto dove una curva supera l'altra di pochi millesimi (anch_07: retta
+  oltre un arco di 0,003; regr_01: spline oltre una retta di 0,004): l'arco si
+  taglia all'incrocio, la retta no, i due punti finiscono nello stesso nodo →
+  salto. Da fare: accorciare/prolungare lungo la curva fino all'incrocio.
+- `decide_nodes` salda ancora un tratto più corto di 0,01 coi due capi sullo
+  stesso nodo (warning "2 LineSeg degeneri" su anch_01).
+- tratteggi esplosi (D205) che toccano un contorno: un salto di 0,0107 su
+  anch_01 faces e due pezzi di area 0,02 su anch_01_noframe; spariscono se i
+  tratteggi si escludono.
+
 Fuori da questo piano: G7, G8, G9, G10, G14 (non toccati).
 
 ## Fuori dal cancello: MAP e TODO corte (Federico, 1 novembre) — fatto il 2 novembre
