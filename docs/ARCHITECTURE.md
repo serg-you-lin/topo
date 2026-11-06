@@ -31,7 +31,6 @@ una spline in quanto entità di CAD — lavora su primitive geometriche pure.
   PDF ──────── topo_pdf (sperim.)►│    Result    ├──────────────► JSON / XML (save_json, save_xml)
   geometria ── load_segments ────►│  il modello  ├──────────────► view model (to_view_model)
                                   │              ├──────────────► SVG (to_svg, save_svg)
-                                  │              ├──────────────► testo per un agente AI (to_text)
                                   └──────┬───────┘
                                          └── split ──► un Result per parte, poi uno qualunque dei render
 ```
@@ -130,14 +129,13 @@ topo/
 ├── io/           RENDERER del modello senza dipendenze di formato
 │   ├── svg.py        to_svg(), save_svg()  (fuori dalla 1.0 stabile, D133)
 │   ├── view_model.py to_view_model()  (fuori dalla 1.0 stabile, D133)
-│   ├── text.py       to_text(), save_text()  (sperimentale, D84)
 │   └── exporter.py   build_metadata / save_json / save_xml
 │
 ├── rules/        REGOLE di dominio                     (schema, validazione)
 ├── inspect.py    ispezione: inspect_document, inspect_result (il livello del
 │                 file è dell'adapter: topo_dxf.inspect_dxf)
 └── experimental.py  tutto ciò che si usa senza promessa di stabilità: passi di
-                  heal/faces/outlines, viewer, to_text, rotate_*, simplify_points,
+                  heal/faces/outlines, viewer, rotate_*, simplify_points,
                   strisce (D175 C, D176)
 ```
 
