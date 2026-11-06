@@ -14,11 +14,17 @@ risultato scritto in DXF e riletto si sovrappone al sorgente.
    tolleranza, e allora l'arco riletto da un bulge ha centro e raggio
    ricalcolati; un doppione viene fuso. Lì vale solo il punto 1.
 
+3. Contorni chiusi esatti (D206): nessun salto fra un segmento e il seguente
+   oltre FLOAT_NOISE, tranne nelle letture di `KNOWN_JUMPS`. Un salto nuovo
+   fallisce, e anche uno noto che è guarito: la lista va tolta a mano, così
+   il numero dei salti lo dice la suite.
+
 Ogni disegno con la sua lettura (D152): quelli di `golden_islands/` e
 `golden_anchoring/` sono fogli di viste e si leggono con `outlines()`, gli
 altri con `heal()`. Le copie identiche si misurano una volta.
 """
 
+import math
 import sys
 import unittest
 from collections import Counter
@@ -33,8 +39,10 @@ sys.path.insert(0, str(project_root))
 
 import topo
 import topo_dxf
+from topo.core.geometry.measure import FLOAT_NOISE
+from topo.core.geometry.rings import ring_jumps
 from topo.core.primitives.segments import segment_endpoints
-from tests.drawings import case_name, tracked_drawings
+from tests.drawings import case_name, drawing_key, tracked_drawings
 from tests.readings import outline_reading
 
 MAX_GAP = 0.5            # quello di snapdraw, come test_golden_islands
@@ -44,6 +52,31 @@ DUPLICATE_EPS = 0.05     # due curve così vicine sono un doppione da fondere
 CUT_EPS = 2e-6           # un pezzo tagliato sta sulla sua spline (taglio esatto)
 CUT_SAMPLE = 1e-6        # errore di corda nel confronto, sotto CUT_EPS
 CUT_GAP = 0.02           # un tratto più corto resta dentro la fascia del bordo (2·GRAPH_EPSILON)
+
+# letture con un salto in un contorno consegnato, e quanti (misurati il 6
+# novembre, senza join_ends né saldatura): il conto scende, mai sale
+KNOWN_JUMPS = {
+    "data/contorno_ambiguo": 4,
+    "data/golden/lineette_bastarde": 2,
+    "data/golden_anchoring/anch_01_noframe": 1,
+    "data/golden_anchoring/anch_02_noframe": 1,
+    "data/golden_anchoring/anch_03_noframe": 4,
+    "data/golden_anchoring/anch_04_noframe": 2,
+    "data/golden_anchoring/anch_06_noframe": 2,
+    "data/golden_anchoring/anch_07_noframe": 6,
+    "data/golden_anchoring/anch_08_noframe": 3,
+    "data/golden_islands/anch_02": 1,
+    "data/golden_islands/anch_03": 4,
+    "data/golden_islands/anch_04": 2,
+    "data/golden_islands/anch_06": 2,
+    "data/golden_islands/anch_07": 6,
+    "data/golden_islands/anch_08": 3,
+    "data/golden_islands/drw_0011": 6,
+    "data/golden_islands/regr_01": 69,
+    "data/golden_islands/regr_02": 4,
+    "data/golden_islands/regr_04": 3,
+    "data/golden_islands/regr_05": 6,
+}
 
 
 def _lines_and_samples(edges):
@@ -156,7 +189,13 @@ def _round_trip(rel: str, reading: str):
     drawing = topo_dxf.to_dxf(result, doc, include_texts=False)
     # skip_layers=(): il layer di `loose` si rilegge, è parte del risultato
     back = topo_dxf.document_from_msp(drawing.modelspace(), skip_layers=())
-    return doc, back, bound
+    return doc, result, back, bound
+
+
+def _jumps(result) -> int:
+    """Quanti salti oltre FLOAT_NOISE nei contorni dei cluster di `result`."""
+    return sum(1 for c in result.clusters for contour in [c.outer] + list(c.inners)
+               for end, start in ring_jumps(contour.segments) if math.dist(end, start) > FLOAT_NOISE)
 
 
 class TestFidelity(unittest.TestCase):
@@ -173,7 +212,9 @@ class TestFidelity(unittest.TestCase):
 
 def _make_fidelity_test(rel: str, reading: str):
     def test(self):
-        doc, back, bound = _round_trip(rel, reading)
+        doc, result, back, bound = _round_trip(rel, reading)
+        self.assertEqual(_jumps(result), KNOWN_JUMPS.get(drawing_key(project_root / rel), 0),
+                         "salti nei contorni diversi da KNOWN_JUMPS")
         src_lines, src_samples = _lines_and_samples(doc.edges)
         out_lines, out_samples = _lines_and_samples(back.edges)
         self.assertLessEqual(_directed(src_samples, out_lines), bound,
