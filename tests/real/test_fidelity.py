@@ -58,7 +58,6 @@ CUT_GAP = 0.02           # un tratto più corto resta dentro la fascia del bordo
 KNOWN_JUMPS = {
     "data/contorno_ambiguo": 4,
     "data/golden/lineette_bastarde": 2,
-    "data/golden_anchoring/anch_01_noframe": 1,
     "data/golden_anchoring/anch_02_noframe": 1,
     "data/golden_anchoring/anch_03_noframe": 4,
     "data/golden_anchoring/anch_04_noframe": 2,

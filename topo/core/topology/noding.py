@@ -345,6 +345,7 @@ class _Contacts:
         self.anchor: Dict[int, int] = {}   # fermata interna -> prima fermata del suo gruppo sull'edge
         self.trim_at: Dict[int, List[float]] = defaultdict(list)   # fermata di un capo -> s degli incroci del suo contatto
         self.absorbed: set = set()         # fermate interne fuse con un estremo dell'edge
+        self.kept: set = set()             # incroci vicini a un capo che restano un taglio
         self.sides: Dict[int, Dict[int, int]] = {}   # radice -> {edge: estremi nel nodo, 1 inizio 2 fine}
         by_node: Dict[tuple, int] = {}
         for i, edge in enumerate(edges):
@@ -451,15 +452,25 @@ class _Contacts:
                 if end is None:
                     stops.append(self._place([c[n] for c in crossing or group], kind))
                     continue
-                stops.append(end)
                 # si accorcia solo un capo che sporge: uno che sta già
                 # sull'altra curva è lui il punto d'incontro (un raccordo
                 # tangente ha l'incrocio instabile, il capo no)
                 edge = group[0][n][0]
                 other = self.curves[group[0][1 - n][0]]
                 end_pt = segment_endpoints(self.edges[edge].segment)[0 if end == self.ends[edge][0] else 1]
-                if crossing and end not in self.shared and other.locate(end_pt)[1] > FLOAT_NOISE:
-                    trims.append((end, sum(c[n][1] for c in crossing) / len(crossing)))
+                if not crossing or other.locate(end_pt)[1] <= FLOAT_NOISE:
+                    stops.append(end)
+                elif end in self.shared and all(self._inside(c[1 - n]) for c in crossing):
+                    # un capo che sporge ma tocca un'altra curva non si accorcia:
+                    # l'edge si taglia all'incrocio e l'avanzo resta un pezzo;
+                    # l'incrocio sta dentro l'altra curva, non su un suo capo (un T)
+                    k = self._place([c[n] for c in crossing], "x")
+                    self.kept.add(k)
+                    stops.append(k)
+                else:
+                    stops.append(end)
+                    if end not in self.shared:
+                        trims.append((end, sum(c[n][1] for c in crossing) / len(crossing)))
             if not self._union(*stops):
                 # un contatto che chiuderebbe un lato su se stesso: le sue
                 # fermate nuove non tagliano nulla
@@ -467,6 +478,12 @@ class _Contacts:
                 continue
             for end, s in trims:
                 self.trim_at[end].append(s)
+
+    def _inside(self, side: tuple) -> bool:
+        """Il lato di un contatto sta oltre `node` dai capi della sua curva."""
+        i, s = side[0], side[1]
+        curve = self.curves[i]
+        return i not in self.ends or self.node < s < curve.length - self.node
 
     def _same_contact(self, contacts: list) -> List[list]:
         """I contatti di una coppia entro tolerance lungo uno dei due edge sono
@@ -547,7 +564,7 @@ class _Contacts:
                 side = 0 if s <= curve.length - s else 1
                 # entro `node` anche sul piano: il punto del contatto può stare
                 # di lato alla curva, e allora è più lontano dal capo che lungo l'edge
-                if i in self.ends and min(s, curve.length - s) <= r and \
+                if i in self.ends and k not in self.kept and min(s, curve.length - s) <= r and \
                         math.dist(self.stops[k][2], segment_endpoints(self.edges[i].segment)[side]) <= r and \
                         self._union(k, self.ends[i][side]):
                     self.absorbed.add(k)
