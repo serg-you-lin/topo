@@ -62,12 +62,28 @@ Aperti, con i fatti:
 - un contatto dove una curva supera l'altra di pochi millesimi (anch_07: retta
   oltre un arco di 0,003; regr_01: spline oltre una retta di 0,004): l'arco si
   taglia all'incrocio, la retta no, i due punti finiscono nello stesso nodo →
-  salto. Da fare: accorciare/prolungare lungo la curva fino all'incrocio.
+  salto. Fatto per l'accorciamento in `34102bc` (anch_07 e regr_05 a 0 salti).
 - `decide_nodes` salda ancora un tratto più corto di 0,01 coi due capi sullo
   stesso nodo (warning "2 LineSeg degeneri" su anch_01).
-- tratteggi esplosi (D205) che toccano un contorno: un salto di 0,0107 su
-  anch_01 faces e due pezzi di area 0,02 su anch_01_noframe; spariscono se i
-  tratteggi si escludono.
+- I salti si guardano un file alla volta (DXF in `_debug`, salti cerchiati) e
+  ognuno prende un nome:
+  - **N1** (anch_01 faces, 0,0107; chiuso in `e15c053`). Natura: due capi
+    diversi fusi in un nodo. Una lineetta di tratteggio da 0,015 taglia in
+    diagonale un angolo esatto (due orizzontali e una verticale); l'angolo sta
+    a 0,0075 di lato dalla lineetta, il capo della lineetta sul lato a 0,0107
+    dall'angolo. `_same_contact` fondeva i due contatti della coppia (entro
+    `tolerance` lungo il lato) e `merge_along_edges` misurava solo lungo la
+    lineetta (0,0075), non sul piano (0,0107): angolo e capo nello stesso nodo,
+    il pezzo di lato fra i due spariva. Ora due capi diversi restano due punti.
+  - **N2** (anch_01_noframe outlines, 0,0040; aperto). Natura: un contatto a T
+    il cui capo non tocca la curva. Tre lineette di tratteggio, una da 0,011;
+    heal chiude due buchi con due segmenti suoi, uno per capo della lineetta
+    corta. Il capo del primo (0,129) resta a 0,004 di lato dal secondo (0,406):
+    sotto 0,01 è un T, il secondo si taglia nel suo punto più vicino, col nome
+    del capo, e i due punti veri restano a 0,004. Da fare: il capo si
+    prolunga o accorcia lungo se stesso fino all'altra curva (come agli incroci,
+    `34102bc`); su una spline non si può prolungare, lì un segmento nuovo.
+    Il contorno è un triangolino di tre lineette e due segmenti di heal.
 
 Fuori da questo piano: G7, G8, G9, G10, G14 (non toccati).
 
