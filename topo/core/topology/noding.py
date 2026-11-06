@@ -31,7 +31,7 @@ Puro: solo Edge e primitive, nessun formato.
 from __future__ import annotations
 
 import math
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field, replace
 from typing import Dict, List, Optional, Tuple
 
@@ -76,6 +76,7 @@ class NodedEdges:
     parent:    Dict[int, Edge]       = field(default_factory=dict)   # id(pezzo) -> Edge originale
     crossings: List[tuple]           = field(default_factory=list)
     planar:    bool                  = True    # tagliata anche agli incroci (`cut_crossings`)
+    trimmed:   set                   = field(default_factory=set)    # id(Edge) accorciati fino a un incrocio
 
     def parent_of(self, piece: Edge) -> Edge:
         return self.parent[id(piece)]
@@ -83,7 +84,8 @@ class NodedEdges:
     def whole(self, loop: list) -> list:
         """`loop` [(pezzo, al contrario)] con l'Edge originale al posto dei suoi
         pezzi, dove il giro li percorre tutti di fila: un lato tagliato da un
-        contatto torna il segmento del file, coefficienti compresi (D143)."""
+        contatto torna il segmento del file, coefficienti compresi (D143); non
+        uno accorciato fino a un incrocio, che riporterebbe il capo che sporge."""
         if not loop:
             return loop
         counts: Dict[int, int] = {}
@@ -98,7 +100,7 @@ class NodedEdges:
             j = i
             while j + 1 < len(loop) and parents[j + 1] is parents[i] and loop[j + 1][1] == loop[i][1]:
                 j += 1
-            if j - i + 1 == counts[id(parents[i])] and (j > i or loop[i][0] is not parents[i]):
+            if j - i + 1 == counts[id(parents[i])] and (j > i or loop[i][0] is not parents[i])                     and id(parents[i]) not in self.trimmed:
                 out.append((parents[i], loop[i][1]))
             else:
                 out.extend(loop[i:j + 1])
@@ -184,6 +186,8 @@ def split_at_crossings(edges: List[Edge], tolerance: float,
     noded = NodedEdges(planar=cut_crossings)
     skip = frozenset() if cut_crossings else frozenset(net.crossing_roots())
     for i, edge in enumerate(edges):
+        if i in net.ends and net._span_to_crossings(i) != (0.0, curves[i].length):
+            noded.trimmed.add(id(edge))
         for piece in net.pieces(i, nodes, skip):
             noded.pieces.append(piece)
             noded.parent[id(piece)] = edge
@@ -339,6 +343,7 @@ class _Contacts:
         self.on_edge: Dict[int, List[int]] = defaultdict(list)
         self.ends: Dict[int, Tuple[int, int]] = {}
         self.anchor: Dict[int, int] = {}   # fermata interna -> prima fermata del suo gruppo sull'edge
+        self.trim_at: Dict[int, List[float]] = defaultdict(list)   # fermata di un capo -> s degli incroci del suo contatto
         self.absorbed: set = set()         # fermate interne fuse con un estremo dell'edge
         self.sides: Dict[int, Dict[int, int]] = {}   # radice -> {edge: estremi nel nodo, 1 inizio 2 fine}
         by_node: Dict[tuple, int] = {}
@@ -350,6 +355,11 @@ class _Contacts:
                 self.sides[pair[0]], self.sides[pair[1]] = {i: 1}, {i: 2}
                 for k, node in zip(pair, (edge.start, edge.end)):
                     self._union(k, by_node.setdefault(node, k))
+        # un capo che coincide col capo di un'altra curva è un vertice del
+        # disegno: non si accorcia mai
+        count = Counter(node for i in self.ends for node in (edges[i].start, edges[i].end))
+        self.shared = {k for i, pair in self.ends.items()
+                       for k, node in zip(pair, (edges[i].start, edges[i].end)) if count[node] > 1}
 
     def _is_open(self, i: int) -> bool:
         edge, curve = self.edges[i], self.curves[i]
@@ -426,12 +436,37 @@ class _Contacts:
                 contacts.append(((i, ci.locate(mid)[0], mid, None),
                                  (j, cj.locate(mid)[0], mid, None), "g"))
         for group in self._same_contact(contacts):
+            # un incrocio è il punto che sta su tutte e due le curve: il
+            # contatto si taglia lì, non nella media coi piedi dei capi vicini;
+            # un capo nel contatto resta il nodo e la sua curva si accorcia
+            # lungo se stessa fino all'incrocio
             kind = "x" if any(c[2] == "x" for c in group) else group[0][2]
-            stops = [self._place([c[n] for c in group], kind) for n in (0, 1)]
+            # solo un incrocio che sta su tutte e due le curve: `intersections`
+            # dà anche un punto appena oltre un capo
+            crossing = [c for c in group if c[2] == "x" and all(
+                self.curves[c[m][0]].locate(c[m][2])[1] <= _MIN_PIECE for m in (0, 1))]
+            stops, trims = [], []
+            for n in (0, 1):
+                end = next((c[n][3] for c in group if c[n][3] is not None), None)
+                if end is None:
+                    stops.append(self._place([c[n] for c in crossing or group], kind))
+                    continue
+                stops.append(end)
+                # si accorcia solo un capo che sporge: uno che sta già
+                # sull'altra curva è lui il punto d'incontro (un raccordo
+                # tangente ha l'incrocio instabile, il capo no)
+                edge = group[0][n][0]
+                other = self.curves[group[0][1 - n][0]]
+                end_pt = segment_endpoints(self.edges[edge].segment)[0 if end == self.ends[edge][0] else 1]
+                if crossing and end not in self.shared and other.locate(end_pt)[1] > FLOAT_NOISE:
+                    trims.append((end, sum(c[n][1] for c in crossing) / len(crossing)))
             if not self._union(*stops):
                 # un contatto che chiuderebbe un lato su se stesso: le sue
                 # fermate nuove non tagliano nulla
                 self._drop(stops)
+                continue
+            for end, s in trims:
+                self.trim_at[end].append(s)
 
     def _same_contact(self, contacts: list) -> List[list]:
         """I contatti di una coppia entro tolerance lungo uno dei due edge sono
@@ -505,7 +540,8 @@ class _Contacts:
             first = None
             for k in ks:
                 s = self.stops[k][1]
-                if i in self.ends and min(s, curve.length - s) <= r and                         self._union(k, self.ends[i][0 if s <= curve.length - s else 1]):
+                if i in self.ends and min(s, curve.length - s) <= r and \
+                        self._union(k, self.ends[i][0 if s <= curve.length - s else 1]):
                     self.absorbed.add(k)
                     continue
                 if first is None or s - self.stops[first][1] > r or not self._union(k, first):
@@ -543,6 +579,17 @@ class _Contacts:
                              round(math.fsum(p[1] for p in pts) / len(pts), decimals))
         return out
 
+    def _span_to_crossings(self, i: int) -> Tuple[float, float]:
+        """(s0, s1) dell'edge `i` accorciato lungo se stesso: un capo che
+        sporge oltre un incrocio del suo contatto finisce sull'incrocio più
+        vicino a lui, il punto che sta su tutte e due le curve; l'avanzo oltre
+        non è un lato. Senza incroci, (0, length)."""
+        curve = self.curves[i]
+        near = {0: list(self.trim_at.get(self.ends[i][0], ())), 1: list(self.trim_at.get(self.ends[i][1], ()))}
+        s0 = min(near[0]) if near[0] else 0.0
+        s1 = max(near[1]) if near[1] else curve.length
+        return (s0, s1) if s1 - s0 > _MIN_PIECE else (0.0, curve.length)
+
     def crossing_roots(self) -> set:
         """I nodi senza estremi con almeno un incrocio fra due edge diversi:
         due curve che si attraversano e proseguono tutte e due."""
@@ -567,7 +614,8 @@ class _Contacts:
                 groups.setdefault(self.anchor[k], []).append(k)
         cuts = []
         for ks in groups.values():
-            s = [self.stops[k][1] for k in ks]
+            # il taglio di un gruppo con un incrocio sta sull'incrocio
+            s = [self.stops[k][1] for k in ks if self.stops[k][3] == "x"] or [self.stops[k][1] for k in ks]
             if curve.closed and max(s) - min(s) > curve.length / 2:   # gruppo a cavallo dell'inizio
                 s = [x if x >= curve.length / 2 else x + curve.length for x in s]
             cuts.append(((sum(s) / len(s)) % curve.length if curve.closed else sum(s) / len(s),
@@ -577,11 +625,19 @@ class _Contacts:
             return [edge]
         if i in self.ends:
             start, end = (nodes[self._find(k)] for k in self.ends[i])
-            bounds = [(0.0, start)]
+            s0, s1 = self._span_to_crossings(i)
+            bounds = [(s0, start)]
             for s, node in cuts:
-                if s - bounds[-1][0] > _MIN_PIECE and curve.length - s > _MIN_PIECE:
+                if s - bounds[-1][0] > _MIN_PIECE and s1 - s > _MIN_PIECE:
                     bounds.append((s, node))
-            bounds.append((curve.length, end))
+            bounds.append((s1, end))
+            if (s0, s1) != (0.0, curve.length):
+                # accorciato fino all'incrocio: il pezzo è un tratto nuovo
+                segs = [curve.piece(a, b) for (a, _), (b, _) in zip(bounds, bounds[1:])]
+                if all(seg is not None for seg in segs):
+                    return [replace(edge, segment=seg, start=n0, end=n1)
+                            for seg, (_, n0), (_, n1) in zip(segs, bounds, bounds[1:])]
+                bounds[0], bounds[-1] = (0.0, start), (curve.length, end)
         else:
             if len(cuts) < 2:
                 return [edge]
