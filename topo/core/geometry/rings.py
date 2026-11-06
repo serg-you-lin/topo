@@ -36,6 +36,24 @@ def ring_jumps(segments: Sequence) -> Iterator[Tuple[Point, Point]]:
             yield end, start
 
 
+def ring_bridges(segments: Sequence, tolerance: float, noise: float) -> List[Tuple[int, LineSeg]]:
+    """
+    (indice, segmento nuovo) per ogni salto oltre `noise` ed entro `tolerance`:
+    la retta dalla fine del segmento `indice` all'inizio del successivo, da
+    inserire dopo di lui. Nessuna curva si sposta; un salto oltre `tolerance`
+    resta (D206).
+    """
+    segments = list(segments)
+    out = []
+    for k, (segment, following) in enumerate(zip(segments, segments[1:] + segments[:1])):
+        if isinstance(segment, CircleSeg) or isinstance(following, CircleSeg):
+            continue
+        end, start = segment_endpoints(segment)[1], segment_endpoints(following)[0]
+        if noise < math.dist(end, start) <= tolerance:
+            out.append((k, LineSeg(end, start)))
+    return out
+
+
 def ring_closes(segments: Sequence, tolerance: float = DEFAULT_TOLERANCE) -> bool:
     """I segmenti chiudono un giro testa-coda: ognuno parte entro `tolerance`
     da dove finisce il precedente, l'ultimo torna al primo."""

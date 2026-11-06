@@ -261,5 +261,8 @@ class TestCrossingNodesUnderMotion(unittest.TestCase):
                 segment, _ = rigid(*motion)
                 result = topo.heal(topo.load_segments([segment(s) for s in self.SEGMENTS]), max_gap=0.0).outlines()
                 self.assertEqual(len(result.clusters), 1)
-                self.assertEqual(len(result.clusters[0].outer.segments), 3)
+                # i tre lati e la retta nuova che chiude il salto di 0.0086 fra
+                # il capo della terza e la prima (D206): prima il contorno restava aperto
+                self.assertEqual(len(result.clusters[0].outer.segments), 4)
+                self.assertTrue(result.is_valid, result.errors)
                 self.assertEqual(len(result.loose), 5)

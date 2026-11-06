@@ -23,7 +23,7 @@ from ..base.curves import loops_to_curves, loose_curves
 from ..topology.outer_face import face_loops
 from ..topology.non_contour_edges import non_contour_pieces
 from ..base.hierarchy import assign_cluster_refs
-from .heal_steps import find_joining_edges, structural_loops, build_hierarchy
+from .heal_steps import find_joining_edges, structural_loops, build_hierarchy, close_contour_jumps
 
 if TYPE_CHECKING:
     from .network import Network
@@ -104,6 +104,7 @@ def read_faces(net: Network) -> Result:
         result.is_valid = False
         return result
 
+    close_contour_jumps(result, tol)
     from ...rules.validator import validate_result
     validate_result(result)
     return result
