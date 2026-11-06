@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`87` modules · `524` module-level functions · `64` classes · `16603` lines of code.
+`87` modules · `524` module-level functions · `64` classes · `16601` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -744,7 +744,7 @@ _topo/core/base/normalizer.py_
 - `refit_tessellations(edges: Iterable[Edge], max_segment: float=0.1, min_run: int=10, tolerance: float=0.02, node_decimals: int=3) -> List[Edge]` — L472 — Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di
 - `chain_runs(short_edges: List[Edge]) -> list` — L527 — Catene massimali: percorsi fra nodi di grado != 2, o anelli.
 
-#### `topo/core/base/prepare.py` — 90 lines
+#### `topo/core/base/prepare.py` — 88 lines
 
 _topo/core/base/prepare.py_
 
