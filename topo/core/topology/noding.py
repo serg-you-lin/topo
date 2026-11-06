@@ -85,9 +85,7 @@ class NodedEdges:
         """`loop` [(pezzo, al contrario)] con l'Edge originale al posto dei suoi
         pezzi, dove il giro li percorre tutti di fila: un lato tagliato da un
         contatto torna il segmento del file, coefficienti compresi (D143); non
-        uno accorciato fino a un incrocio, che riporterebbe il capo che sporge.
-        Dove il giro ne percorre solo una parte, i pezzi di fila tornano un
-        tratto solo della stessa curva, dal primo all'ultimo capo."""
+        uno accorciato fino a un incrocio, che riporterebbe il capo che sporge."""
         if not loop:
             return loop
         counts: Dict[int, int] = {}
@@ -104,25 +102,10 @@ class NodedEdges:
                 j += 1
             if j - i + 1 == counts[id(parents[i])] and (j > i or loop[i][0] is not parents[i])                     and id(parents[i]) not in self.trimmed:
                 out.append((parents[i], loop[i][1]))
-            elif j > i:
-                out.extend(_joined_run(loop[i:j + 1], parents[i]))
             else:
                 out.extend(loop[i:j + 1])
             i = j + 1
         return out
-
-
-def _joined_run(run: list, parent: Edge) -> list:
-    """Pezzi di fila di `parent` [(pezzo, al contrario)] come un tratto solo
-    di `parent`; i pezzi come sono se la curva non si taglia esatta."""
-    reverse = run[0][1]
-    ordered = [e for e, _ in (reversed(run) if reverse else run)]   # nel verso di `parent`
-    first, last = ordered[0], ordered[-1]
-    a, b = segment_endpoints(first.segment)[0], segment_endpoints(last.segment)[1]
-    seg = sub_segment(parent.segment, a, b, segment_endpoints(first.segment)[1])
-    if seg is None:
-        return run
-    return [(replace(first, segment=seg, start=first.start, end=last.end), reverse)]
 
 
 # ---------------------------------------------------------------------------
