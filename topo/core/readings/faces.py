@@ -63,7 +63,7 @@ def read_faces(net: Network) -> Result:
         curves = loops_to_curves([loop])
         if len(curves) == 1 and isinstance(curves[0], ClosedCurve):
             closed += curves
-            used |= {id(noded.original(e)) for e, _ in loop}
+            used |= {id(e) for e, _ in loop}
     kept = closed
     if kept:
         result.warnings += _loose_ends_warnings(net.free_ends, noded.pieces, non_contour)
