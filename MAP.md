@@ -472,6 +472,11 @@ The adapter tests (writeback, split) need a real source file, so building the sa
 one: the files stay, the 4 generators written with ezdxf go (rule 2; they live in git history). Byte-identical copies
 nobody reads by name go too: the invariants already read each content once.
 
+### D224 — A test file that proves one promise across layers stays whole (Federico, 7 November).
+D222 files by what a test proves: `test_role_palette` (one palette in DXF and SVG), `test_text_role`, `test_degenerate_curves`
+are one promise end to end and are not split by layer. A test moves when its subject is another one (e.g. the DXF
+dimension string inside the anchoring tests), and a move that would mean rewriting the test is not a move.
+
 ## Open questions
 
 - **Name of the role `outer`** in the outlines reading: unresolved; it stays

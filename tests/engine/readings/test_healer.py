@@ -16,7 +16,6 @@ import unittest
 
 import topo
 import topo_dxf
-from topo_dxf.layers import LAYER_OUTER, LAYER_INNER
 from tests.paths import DATA
 
 EXAMPLES_DIR = DATA
@@ -50,11 +49,6 @@ class TestHealerRectLines(unittest.TestCase):
 
     def test_005_no_holes(self):
         self.assertEqual(len(self.result.clusters[0].inners), 0)
-
-    # helper riutilizzabile
-    def assert_entity(self, entity, expected_layer, expected_color):
-        self.assertEqual(entity.layer, expected_layer)
-        self.assertEqual(entity.color, expected_color)
 
 
     

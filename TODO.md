@@ -360,8 +360,19 @@ novembre, ramo `no-join-ends` fuso in `main`.
       Poi anche `test_edge_cases` e il giro di `test_splitter` su tutti i file con
       `load_dxf`; quel giro era sempre verde (`except Exception: pass` prendeva anche
       l'assert): ora controlla, e i contorni misti (pezzi aperti, `write_segments`)
-      sono esclusi. Da qui: piano A, poi B.
-      Spazzatura tracciata: `tests/python` (vuoto) e `tests/data/mixed_pipeline/*.dwl*`
+      sono esclusi.
+      Passata sui test deboli (7 novembre, analisi verificata): fatti gli spostamenti
+      (D224: le quote DXF in `adapters/dxf/test_dimension_text.py`, `test_pipeline` dentro
+      `test_writeback`, `non_contour_candidates` in `engine/tools/`, `edge_cases` in
+      `adapters/dxf/`) e tolto codice morto; stessi 2639 test. Restano, da decidere:
+      - test vuoti: `test_gap` `TestOverlapNoClose` (0 pezzi, nessun assert gira);
+        `test_edge_cases` (assert che non possono fallire, i 4 file sono copie);
+        `TestChordsKeepTheOuter` passa senza heal su 82 disegni su 120 (nessuna corda);
+      - gemelli: 151 disegni, 138 geometrie; `drawings.py` deduplica per byte (~6 s);
+      - per `--full`: `test_outlines_single_use` (11 s), fedeltà "confronto non vuoto" (6,5 s);
+      - `test_golden_split` su 7 padri ripete i confronti di `test_golden_faces`, non guarda i figli.
+      Poi piano A, poi B.
+      Spazzatura tracciata: `tests/data/mixed_pipeline/*.dwl*`
       (file di blocco AutoCAD, di solito portano utente e PC: non aperti, audit pre-1.0).
       1. Fatto (sopra).
       2. I test che provano un adapter vanno in `tests/adapters/dxf/` e
