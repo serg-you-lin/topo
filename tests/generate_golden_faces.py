@@ -1,5 +1,5 @@
 """
-tests/generate_golden.py
+tests/generate_golden_faces.py
 ------------------------
 Genera i golden file per il test di regressione geometrica: solo heal(), un
 foro è un contorno interno (MAP.md D88). La metà di processo (fori, pieghe,
@@ -7,7 +7,7 @@ incisioni) la genera snapbend, tests/flat/generate_golden_process.py.
 
 Runna UNA VOLTA quando sei soddisfatto dell'output corrente.
 
-DXF sorgente: tests/data/golden/
+DXF sorgente: tests/data/golden_faces/
 
 Per ogni DXF è possibile affiancare un file di configurazione opzionale:
     tests/data/config/la_104.json
@@ -19,10 +19,10 @@ Formato config (tutti i campi sono opzionali):
     }
 
 Lancia:
-    python generate_golden.py                        # genera solo i mancanti
-    python generate_golden.py --force                # rigenera tutti
-    python generate_golden.py --only la_104          # solo quel file (senza estensione)
-    python generate_golden.py --force --only la_104  # forza rigenera solo quel file
+    python generate_golden_faces.py                        # genera solo i mancanti
+    python generate_golden_faces.py --force                # rigenera tutti
+    python generate_golden_faces.py --only la_104          # solo quel file (senza estensione)
+    python generate_golden_faces.py --force --only la_104  # forza rigenera solo quel file
 """
 
 import json
@@ -38,8 +38,8 @@ import topo_dxf
 from topo import to_shapely
 
 EXAMPLES_DIR      = project_root / "tests" / "data"
-GOLDEN_DXF_DIR    = EXAMPLES_DIR / "golden"
-GOLDEN_JSON_DIR   = EXAMPLES_DIR / "golden" / "json"
+GOLDEN_DXF_DIR    = EXAMPLES_DIR / "golden_faces"
+GOLDEN_JSON_DIR   = EXAMPLES_DIR / "golden_faces" / "json"
 DEFAULT_TOLERANCE = 0.5
 
 GLOBAL_NAME_ROLES = {

@@ -2,7 +2,7 @@
 test_view_model_svg.py — to_view_model() + to_svg()
 
 Fixture tracciati nel repo:
-    golden/example_4_polylines.dxf  — 4 parti, un cerchio interno ciascuna
+    golden_faces/example_4_polylines.dxf  — 4 parti, un cerchio interno ciascuna
 
 L'overlay (MAP.md D90) si prova con un elemento di prova attaccato a mano:
 topo lo disegna dal suo ruolo e dalla sua geometria, senza sapere cos'è.
@@ -21,7 +21,7 @@ from topo.model import DetectedFeatures
 from topo import to_shapely
 
 EXAMPLES = Path(__file__).resolve().parents[1] / "data"
-MULTI_PART   = EXAMPLES / "golden" / "example_4_polylines.dxf"
+MULTI_PART   = EXAMPLES / "golden_faces" / "example_4_polylines.dxf"
 
 
 class _Mark:

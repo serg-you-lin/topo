@@ -7,7 +7,7 @@ dopo heal() e anchor_texts(). Lo schema è quello di
 `tests/real/test_golden_texts.text_dict`.
 
 DXF sorgente: tests/data/*.dxf (quelli che contengono testi)
-Golden JSON:  tests/data/golden/texts/
+Golden JSON:  tests/data/golden_faces/texts/
 
 Runna UNA VOLTA quando sei soddisfatto della lettura corrente, e mai per far
 passare un test senza aver prima verificato che l'output è giusto.
@@ -34,9 +34,9 @@ from topo.tools.anchor import anchor_texts
 from tests.real.test_golden_texts import sort_key, text_dict
 
 EXAMPLES_DIR = project_root / "tests" / "data"
-GOLDEN_DIR = EXAMPLES_DIR / "golden" / "texts"
-# I DXF sorgente vivono sotto tests/data/ o tests/data/golden/.
-_SOURCE_DIRS = [EXAMPLES_DIR, EXAMPLES_DIR / "golden"]
+GOLDEN_DIR = EXAMPLES_DIR / "golden_faces" / "texts"
+# I DXF sorgente vivono sotto tests/data/ o tests/data/golden_faces/.
+_SOURCE_DIRS = [EXAMPLES_DIR, EXAMPLES_DIR / "golden_faces"]
 
 _TEXT_DXF_TYPES = {"TEXT", "MTEXT", "DIMENSION", "LEADER", "MULTILEADER"}
 

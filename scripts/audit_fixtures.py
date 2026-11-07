@@ -12,9 +12,9 @@ Due strade per arrivare a un disegno, entrambe guardate qui:
 
 1. **I padri dei golden.** Ogni golden porta dentro il nome del disegno da cui
    è stato prodotto (`source_file`, `parent_file`), risolto come fa il test che
-   lo usa: `golden/` per `test_golden`, `golden_multipli/` per
+   lo usa: `golden_faces/` per `test_golden_faces`, `golden_split/` per
    `test_golden_split`, e per le annotazioni la ricerca in `examples/` prima di
-   `examples/golden/`.
+   `examples/golden_faces/`.
 2. **I fixture nominati a codice**, cioè le stringhe `"qualcosa.dxf"` dentro i
    test: lì il disegno non è scritto in nessun golden, lo nomina il test.
 
@@ -58,8 +58,8 @@ DATA = ROOT / "tests" / "data"
 il fatto di stare qui (`.gitignore` tiene `tests/data/**`), non per un
 `git add -f` che qualcuno si e' ricordato di dare."""
 
-GOLDEN = DATA / "golden"
-MULTIPLI = DATA / "golden_multipli"
+GOLDEN = DATA / "golden_faces"
+MULTIPLI = DATA / "golden_split"
 
 DXF_LITERAL = re.compile(r'["\']([^"\'*{]+\.(?:dxf|DXF))["\']')
 """Una stringa che nomina un disegno dentro un test. Esclude i modelli con

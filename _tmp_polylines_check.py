@@ -8,9 +8,9 @@ from shapely import wkt as swkt
 import topo
 
 ex = Path("tests/examples")
-g = json.loads((ex / "golden_multipli" / "golden" / "Polylines__000.json").read_text(encoding="utf-8"))
-parent = ex / "golden_multipli" / "Polylines.dxf"
-cfg = ex / "golden_multipli" / "config" / "Polylines.json"
+g = json.loads((ex / "golden_split" / "golden" / "Polylines__000.json").read_text(encoding="utf-8"))
+parent = ex / "golden_split" / "Polylines.dxf"
+cfg = ex / "golden_split" / "config" / "Polylines.json"
 c = json.loads(cfg.read_text(encoding="utf-8")) if cfg.exists() else {}
 tol = c.get("tolerance", 0.5)
 

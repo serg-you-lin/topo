@@ -18,7 +18,7 @@ import topo
 import topo_dxf
 
 # --- CONFIG ----------------------------------------------------------------
-INPUT     = r"tests/data/golden/example_4_polylines.dxf"
+INPUT     = r"tests/data/golden_faces/example_4_polylines.dxf"
 TOLERANCE = 0.5
 OUTDIR    = "pipeline_output/batch_demo"
 LABEL     = "P-1024"

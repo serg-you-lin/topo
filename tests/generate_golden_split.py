@@ -6,9 +6,9 @@ layer, un foro è un contorno interno (MAP.md D88). La metà di processo la
 genera snapbend, tests/flat/generate_golden_process.py.
 
 Struttura attesa:
-    tests/data/golden_multipli/          ← DXF multiparte sorgente
-    tests/data/golden_multipli/config/   ← config opzionali
-    tests/data/golden_multipli/golden/   ← geometria (heal → split), uno per parte
+    tests/data/golden_split/          ← DXF multiparte sorgente
+    tests/data/golden_split/config/   ← config opzionali
+    tests/data/golden_split/golden/   ← geometria (heal → split), uno per parte
 
 Il golden di ogni parte viene costruito direttamente dal result del padre
 (result.clusters[i]) — senza riprocessare il figlio.
@@ -35,7 +35,7 @@ import topo_dxf
 from topo_dxf.layers import role_to_dxf_layer
 from topo import to_shapely
 
-MULTIPLI_DIR      = project_root / "tests" / "data" / "golden_multipli"
+MULTIPLI_DIR      = project_root / "tests" / "data" / "golden_split"
 GOLDEN_DIR        = MULTIPLI_DIR / "golden"
 DEFAULT_TOLERANCE = 0.5
 

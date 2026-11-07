@@ -5,8 +5,8 @@ Invarianti di `heal()` che devono valere sempre, per qualunque disegno — come
 quelle di `outlines()` (test_outlines_invariants.py): non confrontano contro un
 valore congelato, o sono vere o il motore ha un difetto. Non si rigenerano
 mai. Fixture: ogni disegno tracciato che si legge con `heal()` (tests/drawings.py,
-D158), letto come lo legge `tests/real/test_golden.py`; i golden di heal,
-`tests/data/golden/`, con tolleranza e ruoli da `tests/data/config/`.
+D158), letto come lo legge `tests/real/test_golden_faces.py`; i golden di heal,
+`tests/data/golden_faces/`, con tolleranza e ruoli da `tests/data/config/`.
 
 Un golden congela un'uscita e protegge anche un difetto che c'era quando è
 stato scritto; queste no (MAP.md D111).
@@ -35,8 +35,8 @@ from tests.invariants import (
 from topo import to_shapely
 
 DATA = Path(__file__).resolve().parent.parent.parent / "data"
-SOURCE_DIR = DATA / "golden"
-DEFAULT_HEAL_TOLERANCE = 0.5          # come tests/real/test_golden.py
+SOURCE_DIR = DATA / "golden_faces"
+DEFAULT_HEAL_TOLERANCE = 0.5          # come tests/real/test_golden_faces.py
 GLOBAL_NAME_ROLES = {"MARK": "engrave", "Signature": "engrave"}
 # disegni con un gap largo esattamente la tolleranza: ruotato di un angolo
 # qualunque, l'arrotondamento dei nodi alla griglia (D96) lo porta di poco
@@ -64,7 +64,7 @@ def _sources() -> list:
 
 
 def _config(dxf: Path) -> dict:
-    # tolleranza e ruoli scelti per i golden di heal (test_golden.py); ogni
+    # tolleranza e ruoli scelti per i golden di heal (test_golden_faces.py); ogni
     # altro disegno si legge con quelli di default
     path = DATA / "config" / f"{dxf.stem}.json"
     if dxf.parent != SOURCE_DIR:
