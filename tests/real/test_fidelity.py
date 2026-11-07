@@ -43,7 +43,12 @@ from tests.invariants import contour_jumps
 from tests.readings import outline_reading
 
 MAX_GAP = 0.5            # quello di snapdraw, come test_golden_outlines
-SAMPLE_TOL = 0.01        # passo della discretizzazione su cui si misura
+# passo della discretizzazione su cui si misura, in frazione del limite: la
+# misura sbaglia al più di un passo (un decimo del limite) a ogni tolleranza.
+# Il controllo resta `<= limite`: un gap chiuso largo esattamente la tolleranza
+# sposta un capo di tutto il limite (Multipolis), e non è un difetto
+SAMPLE_RATIO = 0.1
+SPLINE_BOX = 0.01        # margine dei rettangoli delle spline scritte (_written_splines)
 COEFF_EPS = 1e-9         # "identico" in virgola mobile
 DUPLICATE_EPS = 0.05     # due curve così vicine sono un doppione da fondere
 CUT_EPS = 2e-6           # un pezzo tagliato sta sulla sua spline (taglio esatto)
@@ -52,10 +57,10 @@ CUT_GAP = 0.02           # un tratto più corto resta dentro la fascia del bordo
 
 
 
-def _lines_and_samples(edges):
+def _lines_and_samples(edges, step: float):
     lines, samples = [], []
     for e in edges:
-        pts = e.segment.discretize(tolerance=SAMPLE_TOL) if e.segment is not None else [e.start, e.end]
+        pts = e.segment.discretize(tolerance=step) if e.segment is not None else [e.start, e.end]
         if len(pts) >= 2 and LineString(pts).length > 0:
             lines.append(LineString(pts))
         samples += pts
@@ -129,7 +134,7 @@ def _written_splines(written_edges):
     """(spline, indice sui loro rettangoli) delle spline scritte: la
     discretizzazione fine si fa solo per quelle vicine a una curva."""
     splines = [e.segment for e in written_edges if isinstance(e.segment, topo.primitives.BSplineSeg)]
-    boxes = [box(*LineString(s.discretize(tolerance=SAMPLE_TOL)).buffer(SAMPLE_TOL).bounds) for s in splines]
+    boxes = [box(*LineString(s.discretize(tolerance=SPLINE_BOX)).buffer(SPLINE_BOX).bounds) for s in splines]
     return splines, STRtree(boxes)
 
 
@@ -181,8 +186,9 @@ def _make_fidelity_test(rel: str, reading: str):
     def test(self):
         doc, result, back, bound = _round_trip(rel, reading)
         self.assertEqual(contour_jumps(result), [], "salti nei contorni consegnati")
-        src_lines, src_samples = _lines_and_samples(doc.edges)
-        out_lines, out_samples = _lines_and_samples(back.edges)
+        step = SAMPLE_RATIO * bound
+        src_lines, src_samples = _lines_and_samples(doc.edges, step)
+        out_lines, out_samples = _lines_and_samples(back.edges, step)
         self.assertLessEqual(_directed(src_samples, out_lines), bound,
                              "un punto del sorgente non è nel risultato")
         self.assertLessEqual(_directed(out_samples, src_lines), bound,
