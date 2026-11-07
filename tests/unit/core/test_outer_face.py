@@ -228,7 +228,7 @@ class TestUnionGridUnderMotion(unittest.TestCase):
                 with self.subTest(motion=motion, grid=grid), mock.patch.object(module, "UNION_GRID", grid):
                     result = topo.heal(topo.load_segments([segment(s) for s in self.CIRCLES]), max_gap=0.0).outlines()
                     self.assertEqual(len(result.clusters), 1)
-                    self.assertEqual(len(result.loose), 1)
+                    self.assertEqual(len(result.loose), 0)   # i doppioni sono un cerchio solo (D217)
                     areas.add(round(to_shapely(result.clusters[0].outer).area, 9))
         self.assertEqual(len(areas), 1)   # lo stesso cerchio in ogni moto, con e senza griglia
 

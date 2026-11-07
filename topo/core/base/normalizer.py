@@ -19,7 +19,7 @@ identica, entità per entità, la toglie l'adapter DXF prima: D125):
                              sostituisce il gruppo, non solo confrontare due
                              valori.
 
-merge_cocircular_overlaps — stesso principio, sugli ArcSeg co-circolari
+merge_cocircular_overlaps — stesso principio, sugli ArcSeg (e CircleSeg) co-circolari
                              invece dei LineSeg collineari (v. MAP.md D52).
 
 weld_degenerate_linesegs — non sovrapposizione ma degenerazione: un LineSeg
@@ -344,26 +344,28 @@ def _split_at_junctions(chain: List[_Span], junction: Callable[[Point], bool]) -
 _TWO_PI = 2.0 * math.pi
 
 
-def _same_circle(a: ArcSeg, b: ArcSeg) -> bool:
+def _same_circle(a, b) -> bool:
     """Stesso cerchio: centri e raggi entro `_SAME_OFFSET` — v. `_same_line`."""
     return math.dist(a.center, b.center) <= _SAME_OFFSET and abs(a.radius - b.radius) <= _SAME_OFFSET
 
 
 def merge_cocircular_overlaps(edges: Iterable[Edge]) -> List[Edge]:
     """
-    `merge_collinear_overlaps` per gli ArcSeg: fonde gruppi co-circolari
+    `merge_collinear_overlaps` per gli ArcSeg e i CircleSeg (un giro intero):
+    fonde gruppi co-circolari
     (stesso centro+raggio, `_same_circle`) che si toccano/sovrappongono
     angolarmente in un solo Edge ciascuno, incatenando a catena sul dominio
     circolare [0, 2*pi) (srotolando oltre il taglio 0/2*pi quando serve).
     Se la copertura totale chiude un giro intero, il fuso ha
-    Edge.start == Edge.end (loop degenere, v. MAP.md D52).
+    Edge.start == Edge.end (loop degenere, v. MAP.md D52): due cerchi uguali
+    sono un cerchio, un arco sopra un cerchio sparisce nel cerchio.
 
     Stesse regole di `merge_collinear_overlaps`: esclude segmenti non ArcSeg
     e `role != UNKNOWN`; usa `edge.start`/`edge.end` (arrotondati) come
     estremi conservati, mai il punto ricalcolato a piena precisione;
     preserva l'ordine di input per tutto ciò che non fonde.
     """
-    return _merge_on_carrier(edges, ArcSeg, _same_circle, _arc_chains, _merged_arc)
+    return _merge_on_carrier(edges, (ArcSeg, CircleSeg), _same_circle, _arc_chains, _merged_arc)
 
 
 def _arc_chains(group: List[Edge]) -> List[List[_Span]]:
@@ -375,6 +377,9 @@ def _arc_chains(group: List[Edge]) -> List[List[_Span]]:
     spans = []
     for e in group:
         seg = e.segment
+        if isinstance(seg, CircleSeg):
+            spans.append(_Span(0.0, e.start, _TWO_PI, e.end, e, (seg.center, seg.radius)))
+            continue
         if seg.ccw:
             lo, lo_node, hi_node = seg.start_angle % _TWO_PI, e.start, e.end
         else:
