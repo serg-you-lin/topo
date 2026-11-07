@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`86` modules · `525` module-level functions · `63` classes · `16494` lines of code.
+`86` modules · `525` module-level functions · `63` classes · `16492` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -261,7 +261,6 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `interval_coverage` | func | `topo/core/geometry/axis.py:45` | Frazione di [lo, hi] coperta dall'unione degli intervalli. |
 | `_is_loop` | func | `topo/core/topology/noding.py:61` | La curva torna su se stessa: un cerchio, o una spline/ellisse coi capi |
 | `is_structural_role` | func | `topo/model/role.py:79` | True se ``role`` è OUTER o INNER per il motore (vedi ``STRUCTURAL_ROLES``). |
-| `Island` | class | `topo/core/readings/islands.py:42` | Gruppo di Edge vicini, con la bbox che li contiene tutti. |
 | `_item_geometry` | func | `topo/tools/anchor.py:152` |  |
 | `items_inside` | func | `topo/core/geometry/axis.py:219` | I tratti con entrambi i capi dentro `bounds` allargato di `margin`, nell'ordine dato. |
 | `_join_seam` | func | `topo/core/primitives/fitting.py:224` | Un contorno senza spigoli si apre in un punto qualunque: se il primo e |
@@ -333,7 +332,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_moved_segment` | func | `topo/core/base/gap_solver.py:417` | Nuovo segmento con l'endpoint `role` spostato su `new_pt`. None se non gestito. |
 | `MoveEndpoint` | class | `topo/core/base/gap_solver.py:76` | Istruzione: sposta l'endpoint role di ref al punto new_pt. |
 | `name_rules` | func | `topo/model/role_rule.py:115` | Scorciatoia: {nome: ruolo} → una RoleRule(name=...) per voce. |
-| `_near_pairs` | func | `topo/core/readings/islands.py:84` | Le coppie di edge a distanza vera <= `gap_tolerance`. Le |
+| `_near_pairs` | func | `topo/core/readings/touching.py:84` | Le coppie di edge a distanza vera <= `gap_tolerance`. Le |
 | `_near_pairs` | func | `topo/core/topology/noding.py:315` | Le coppie (i < j) da giudicare. Il filtro misura sulle discretizzazioni |
 | `nearest_point` | func | `topo/core/geometry/regions.py:278` | Il punto delle primitive `segments` più vicino a `point`: anche a metà di |
 | `_nearest_within` | func | `topo/tools/anchor.py:174` | L'indice della parte più vicina a ``probe``, se entro ``snap_distance`` (> 0). |
@@ -528,7 +527,6 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_Span` | class | `topo/core/base/normalizer.py:224` | Un edge come intervallo [lo, hi] sul suo supporto (posizione lungo la |
 | `_span` | func | `topo/core/geometry/regions.py:56` |  |
 | `spanning_lines` | func | `topo/core/geometry/axis.py:197` | (ys, xs): le coordinate delle linee strettamente interne a `bounds` (bordo |
-| `spatial_islands` | func | `topo/core/readings/islands.py:60` | Union-find sulle coppie di Edge a distanza vera <= gap_tolerance |
 | `_spline_moments` | func | `topo/core/geometry/integrals.py:194` | Su ogni intervallo di nodi non vuoto del dominio. Polinomiale: x, y di |
 | `_spline_param` | func | `topo/core/primitives/trim.py:165` | Parametro del punto della spline più vicino a `pt`: campioni, poi |
 | `_spline_samples` | func | `topo/core/geometry/measure.py:245` | (parametri, punti, portata di ciascun campione): campioni regolari su ogni |
@@ -570,6 +568,8 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `to_svg` | func | `topo/io/svg.py:46` | `Result` → stringa SVG completa (`<svg>…</svg>`). |
 | `_to_text` | func | `topo_dxf/text_extractor.py:61` |  |
 | `to_view_model` | func | `topo/io/view_model.py:136` | `Result` → dizionario JSON-ready con la geometria di ogni feature. |
+| `touching_groups` | func | `topo/core/readings/touching.py:60` | Union-find sulle coppie di Edge a distanza vera <= gap_tolerance |
+| `TouchingGroup` | class | `topo/core/readings/touching.py:42` | Gruppo di Edge vicini, con la bbox che li contiene tutti. |
 | `_track` | func | `topo/io/view_model.py:50` | Traccia aperta (lista di segmenti nativi) discretizzata a lista di [x, y]. |
 | `track_length` | func | `topo/core/geometry/measure.py:82` | Lunghezza totale di una polilinea (somma delle corde). |
 | `track_points` | func | `topo/core/geometry/measure.py:63` | Vertici di una traccia aperta come catena di segmenti nativi. |
@@ -622,7 +622,7 @@ Same name defined at module level in different modules. Not automatically a bug 
 | `_ends` | `topo/core/geometry/lines.py:28` · `topo/core/geometry/regions.py:115` |
 | `_joined` | `topo/core/geometry/shape.py:417` · `topo_dxf/exporter.py:114` |
 | `_length` | `topo/core/geometry/regions.py:107` · `topo/core/geometry/shape.py:269` · `topo/core/primitives/fitting.py:168` |
-| `_near_pairs` | `topo/core/readings/islands.py:84` · `topo/core/topology/noding.py:315` |
+| `_near_pairs` | `topo/core/readings/touching.py:84` · `topo/core/topology/noding.py:315` |
 | `_on_arc` | `topo/core/geometry/intersections.py:139` · `topo/core/readings/outer_scan.py:124` · `topo/core/topology/noding.py:757` |
 | `_on_line` | `topo/core/geometry/intersections.py:128` · `topo/core/primitives/trim.py:48` |
 | `_place` | `topo/core/base/hierarchy.py:68` · `topo/core/geometry/build.py:21` |
@@ -1113,15 +1113,6 @@ _topo/core/readings/heal_steps.py_
 - `build_hierarchy(curves: list, label: str='', source_file: str='', is_structural: Optional[Callable[[str], bool]]=None) -> Tuple[List[Cluster], list]` — L106 — Albero di contenimento sui ClosedCurve: ogni radice è un Cluster
 - `close_contour_jumps(result, tolerance: float) -> None` — L119 — Ogni contorno consegnato chiude esatto (D206): un salto entro `tolerance`
 
-#### `topo/core/readings/islands.py` — 104 lines
-
-_topo/core/readings/islands.py_
-
-- **class** `Island` — L42 — Gruppo di Edge vicini, con la bbox che li contiene tutti.
-  - methods: `width`, `height`
-- `spatial_islands(edges: Iterable[Edge], gap_tolerance: float) -> List[Island]` — L60 — Union-find sulle coppie di Edge a distanza vera <= gap_tolerance
-- `_near_pairs(edges: List[Edge], geoms: list, gap_tolerance: float) -> List[Tuple[int, int]]` — L84 — Le coppie di edge a distanza vera <= `gap_tolerance`. Le
-
 #### `topo/core/readings/network.py` — 169 lines
 
 _topo/core/readings/network.py_
@@ -1161,6 +1152,15 @@ _topo/core/readings/outline.py_
 - `_read_group(edges: List[Edge], tolerance: float) -> OutlineReading` — L159 — Un gruppo di edge già riparati: la rete piana con gli incroci tagliati
 - `_cluster(reading: OutlineReading, source_file: str, label: str) -> Cluster` — L184
 - `_contour(segments, styles, polygon, role, parent) -> Contour` — L190 — Il poligono resta quello dei pezzi della rete piana; i segmenti sono
+
+#### `topo/core/readings/touching.py` — 104 lines
+
+_topo/core/readings/touching.py_
+
+- **class** `TouchingGroup` — L42 — Gruppo di Edge vicini, con la bbox che li contiene tutti.
+  - methods: `width`, `height`
+- `touching_groups(edges: Iterable[Edge], gap_tolerance: float) -> List[TouchingGroup]` — L60 — Union-find sulle coppie di Edge a distanza vera <= gap_tolerance
+- `_near_pairs(edges: List[Edge], geoms: list, gap_tolerance: float) -> List[Tuple[int, int]]` — L84 — Le coppie di edge a distanza vera <= `gap_tolerance`. Le
 
 #### `topo/core/topology/edge.py` — 80 lines
 
@@ -1264,7 +1264,7 @@ _topo/core/topology/rim.py_
 
 ### `topo/` (root)
 
-#### `topo/experimental.py` — 66 lines
+#### `topo/experimental.py` — 64 lines
 
 _topo/experimental.py_
 
@@ -1758,10 +1758,10 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/core/readings/faces.py` | `topo.core.base.curves` · `topo.core.base.hierarchy` · `topo.core.geometry.measure` · `topo.core.readings.heal_steps` · `topo.core.readings.network` · `topo.core.topology.non_contour_edges` · `topo.core.topology.outer_face` · `topo.model.curve` · `topo.model.result` · `topo.rules.validator` |
 | `topo/core/readings/heal.py` | `topo.core.readings.network` · `topo.model.document` |
 | `topo/core/readings/heal_steps.py` | `topo.core.base.hierarchy` · `topo.core.geometry.measure` · `topo.core.geometry.rings` · `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.core.topology.noding` · `topo.core.topology.non_contour_edges` · `topo.model.cluster` · `topo.model.role` |
-| `topo/core/readings/islands.py` | `topo.core.geometry.strips` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.core.topology.noding` |
 | `topo/core/readings/network.py` | `topo.core.base.cleanup` · `topo.core.base.prepare` · `topo.core.geometry.measure` · `topo.core.primitives.segments` · `topo.core.readings.faces` · `topo.core.readings.heal_steps` · `topo.core.readings.outline` · `topo.core.topology.edge` · `topo.core.topology.noding` · `topo.model.document` · `topo.model.result` · `topo.model.role` · `topo.model.text` |
 | `topo/core/readings/outer_scan.py` | `topo.core.primitives.segments` · `topo.core.topology.edge` |
-| `topo/core/readings/outline.py` | `topo.core.base.curves` · `topo.core.base.hierarchy` · `topo.core.geometry.integrals` · `topo.core.geometry.rings` · `topo.core.geometry.shape` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.core.readings.heal_steps` · `topo.core.readings.islands` · `topo.core.readings.network` · `topo.core.topology.edge` · `topo.core.topology.noding` · `topo.core.topology.non_contour_edges` · `topo.core.topology.outer_face` · `topo.model.cluster` · `topo.model.contour` · `topo.model.result` · `topo.model.role` · `topo.rules.validator` |
+| `topo/core/readings/outline.py` | `topo.core.base.curves` · `topo.core.base.hierarchy` · `topo.core.geometry.integrals` · `topo.core.geometry.rings` · `topo.core.geometry.shape` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.core.readings.heal_steps` · `topo.core.readings.network` · `topo.core.readings.touching` · `topo.core.topology.edge` · `topo.core.topology.noding` · `topo.core.topology.non_contour_edges` · `topo.core.topology.outer_face` · `topo.model.cluster` · `topo.model.contour` · `topo.model.result` · `topo.model.role` · `topo.rules.validator` |
+| `topo/core/readings/touching.py` | `topo.core.geometry.strips` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.core.topology.noding` |
 | `topo/core/topology/edge.py` | `topo.core.geometry.measure` · `topo.core.primitives.segments` · `topo.model.style` |
 | `topo/core/topology/graph.py` | `topo.core.geometry.measure` · `topo.core.primitives.segments` · `topo.core.topology.edge` |
 | `topo/core/topology/loop_finder.py` | `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.core.topology.graph` |
@@ -1769,7 +1769,7 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/core/topology/non_contour_edges.py` | `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.core.topology.noding` · `topo.core.topology.outer_face` |
 | `topo/core/topology/outer_face.py` | `topo.core.geometry.integrals` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.core.topology.loop_finder` · `topo.core.topology.noding` · `topo.core.topology.rim` |
 | `topo/core/topology/rim.py` | `topo.core.geometry.measure` · `topo.core.primitives.segments` · `topo.core.primitives.trim` · `topo.core.topology.edge` · `topo.core.topology.noding` |
-| `topo/experimental.py` | `topo.core.base.cleanup` · `topo.core.base.curves` · `topo.core.base.normalizer` · `topo.core.base.prepare` · `topo.core.primitives.fitting` · `topo.core.readings.heal_steps` · `topo.core.readings.islands` · `topo.core.readings.outline` · `topo.core.topology.noding` · `topo.core.topology.non_contour_edges` · `topo.core.topology.outer_face` · `topo.io.exporter` · `topo.io.svg` · `topo.io.view_model` · `topo.tools.rotate` · `topo.tools.strips` |
+| `topo/experimental.py` | `topo.core.base.cleanup` · `topo.core.base.curves` · `topo.core.base.normalizer` · `topo.core.base.prepare` · `topo.core.primitives.fitting` · `topo.core.readings.heal_steps` · `topo.core.readings.outline` · `topo.core.topology.noding` · `topo.core.topology.non_contour_edges` · `topo.core.topology.outer_face` · `topo.io.exporter` · `topo.io.svg` · `topo.io.view_model` · `topo.tools.rotate` · `topo.tools.strips` |
 | `topo/inspect.py` | `topo.core.geometry.measure` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.core.topology.graph` |
 | `topo/io/exporter.py` | `topo.core.geometry.rings` · `topo.core.primitives.polygon_builder` · `topo.model` · `topo.rules.metadata_schema` |
 | `topo/io/shapes.py` | `topo.core.geometry.measure` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.model` |

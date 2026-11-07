@@ -413,7 +413,7 @@ sta dentro chi) e trova il pezzo per contenimento. `outlines()` legge il disegno
 dall'esterno. La riparazione è già fatta da `heal()` (gap fino a `max_gap`,
 tassellature rifittate, doppioni fusi); `outlines()`:
 
-1. separa i **gruppi**: gli edge che si toccano, entro `max_gap` (`spatial_islands`);
+1. separa i **gruppi**: gli edge che si toccano, entro `max_gap` (`touching_groups`, interno);
 2. per ogni gruppo rende la rete **piana** (`split_at_crossings`, gli incroci
    tagliano);
 3. il **contorno** è il bordo della faccia esterna della rete (`outer_face`) —
@@ -461,7 +461,6 @@ per ruolo, poi leggere le viste) — stessi pezzi, nessun criterio duplicato.
 ```python
 topo.experimental.read_outlines(edges, tolerance, max_gap) -> list[OutlineReading]
 topo.experimental.read_outline(edges, tolerance, max_gap) -> OutlineReading
-topo.experimental.spatial_islands(edges, gap_tolerance) -> list[Island]
 topo.experimental.split_at_crossings(edges, tolerance, cut_crossings=True) -> NodedEdges
 topo.experimental.outer_face(edges, epsilon=0.0) -> OuterFace | None
 topo.experimental.refit_tessellations(edges, max_segment=0.1, min_run=10,
@@ -472,7 +471,6 @@ topo.experimental.refit_tessellations(edges, max_segment=0.1, min_run=10,
 |---|---|---|
 | `read_outlines` | `list[Edge]` → `list[OutlineReading]` | la stessa riparazione di `heal()` su edge sciolti, poi i gruppi a contatto + `read_outline` per ognuno + annidamento (`nested_in`, anche per un gruppo senza contorno tutto dentro un altro). È `outlines()` prima di diventare `Result`. |
 | `read_outline` | `list[Edge]` → `OutlineReading` | un gruppo: la stessa riparazione di `heal()`, rete piana, faccia esterna, il resto classificato. |
-| `spatial_islands` | `list[Edge]` → `list[Island]` | union-find sulle coppie di edge a distanza vera `<= gap_tolerance` (STRtree). Nessuna nozione di chiusura. |
 | `split_at_crossings` | `list[Edge]` → `NodedEdges` | rete piana (D180): ogni contatto si decide una volta per coppia di edge, sulle curve vere — un incrocio, un estremo entro `GRAPH_EPSILON` (0.01 mm) dall'altra curva (T o due estremi), due curve che passano entro `GRAPH_EPSILON` senza incrociarsi — e dà una sola tupla di nodo per tutti gli edge che tocca (union-find; mai i due estremi dello stesso edge). Più incontri della stessa coppia entro `tolerance` lungo uno dei due edge sono un contatto solo (D101: le due radici di una quasi-tangenza). Si taglia ogni tipo, spline ed ellissi comprese (una spline periodica resta intera). `NodedEdges.parent_of(pezzo)` dà l'`Edge` originale, `.crossings` gli incroci interni (D132). |
 | `outer_face` | `list[Edge]` (rete piana) → `OuterFace \| None` | bordo della faccia esterna, per componente, quella di area massima; `spurs` = edge percorsi andata e ritorno. |
 | `refit_tessellations` | `list[Edge]` → `list[Edge]` | catene di `LineSeg` corti (curva scritta a punti) rifittate da `simplify_points` (linee, archi, spline entro `tolerance`, spigoli per svolta su `max_segment`, D141); estremi della catena sui nodi originali. |

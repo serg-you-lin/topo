@@ -181,7 +181,7 @@ Sottopassi, uno per commit:
       2. `keep_junctions`: True (D110) contro False (D50). Nella rete i pezzi
          restano separati (non si perde niente); `outlines()` ricompone già
          lungo il contorno (`merge_runs`, `island.py:200`). Da misurare in B.
-      3. scope: tutto il disegno contro un gruppo `spatial_islands` alla
+      3. scope: tutto il disegno contro un gruppo `touching_groups` alla
          volta. I gap si chiudono entro `max_gap` e i gruppi sono a `max_gap`,
          quindi le coppie dovrebbero essere le stesse: il raggruppamento
          diventa un passo di `outlines()`. Da misurare: risultati e tempi.
