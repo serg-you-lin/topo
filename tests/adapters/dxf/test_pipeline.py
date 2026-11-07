@@ -28,8 +28,7 @@ def ex(name: str) -> str:
     path = EXAMPLES_DIR / name
     if not path.exists():
         raise FileNotFoundError(
-            f"Missing example file: {path}. "
-            f"Run generate_examples.py first."
+            f"Missing example file: {path}."
         )
     return str(path)
 
