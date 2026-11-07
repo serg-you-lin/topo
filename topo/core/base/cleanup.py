@@ -18,8 +18,9 @@ from typing import Callable, List, Optional, Tuple
 from ..geometry.measure import node_point
 from ..primitives.segments import ArcSeg, CircleSeg, BSplineSeg, segment_endpoints
 from ..topology.edge import Edge
-from ..topology.graph import build_node_graph
+from ..topology.graph import build_node_graph, connected_groups
 from ...model.role import ContourRole, is_structural_role
+from .normalizer import _same_circle
 from .gap_solver import free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, ambiguous_gap_ends
 
 
@@ -46,38 +47,58 @@ NEAR_FULL_ARC_MISSING = math.radians(2.0)   # angolo mancante oltre il quale un 
 def close_near_full_arcs(edges: List[Edge], tolerance: float,
                          max_missing_angle: float = NEAR_FULL_ARC_MISSING) -> Tuple[List[Edge], int]:
     """
-    Un ArcSeg coi due capi liberi diventa CircleSeg (stesso centro e raggio)
-    solo se il gap fra i capi è entro `tolerance` E l'angolo mancante è entro
-    `max_missing_angle` (MAP.md D112): la tolleranza dice se il buco è un gap,
-    l'angolo se l'arco è un cerchio. `tolerance=math.inf` lascia solo l'angolo.
-    Ritorna (edge, n_archi_chiusi).
+    Gli ArcSeg coi due capi liberi sullo stesso cerchio (`_same_circle`, D184)
+    diventano un CircleSeg solo se ogni buco fra un arco e il seguente è entro
+    `tolerance` E il suo angolo entro `max_missing_angle` (MAP.md D112, D218):
+    la tolleranza dice se il buco è un gap, l'angolo se l'arco è un cerchio.
+    Un arco solo ha un buco solo; due archi due buchi, ognuno giudicato da sé.
+    `tolerance=math.inf` lascia solo l'angolo. Ritorna (edge, n_cerchi_fatti).
     """
     graph = build_node_graph(edges)
-    closed, out = 0, []
-    for edge in edges:
-        seg = edge.segment
-        if isinstance(seg, ArcSeg) and _is_near_full_arc(edge, graph, tolerance, max_missing_angle):
-            node = node_point(segment_endpoints(CircleSeg(center=seg.center, radius=seg.radius))[0])
-            edge = replace(edge, start=node, end=node,
-                           segment=CircleSeg(center=seg.center, radius=seg.radius))
-            closed += 1
-        out.append(edge)
-    return out, closed
+    free = [k for k, e in enumerate(edges) if isinstance(e.segment, ArcSeg) and _both_ends_free(e, graph)]
+    pairs = [(a, b) for i, a in enumerate(free) for b in free[i + 1:]
+             if _same_circle(edges[a].segment, edges[b].segment)]
+    replaced, drop = {}, set()
+    for members in connected_groups(len(free), [(free.index(a), free.index(b)) for a, b in pairs]):
+        group = [free[m] for m in members]
+        if not _closes_circle([edges[k] for k in group], tolerance, max_missing_angle):
+            continue
+        first = min(group)
+        seg = edges[first].segment
+        circle = CircleSeg(center=seg.center, radius=seg.radius)
+        node = node_point(segment_endpoints(circle)[0])
+        replaced[first] = replace(edges[first], start=node, end=node, segment=circle)
+        drop.update(k for k in group if k != first)
+    out = [replaced.get(k, e) for k, e in enumerate(edges) if k not in drop]
+    return out, len(replaced)
 
 
-def _is_near_full_arc(edge: Edge, graph, tolerance: float, max_missing_angle: float) -> bool:
-    seg = edge.segment
-    if 2 * math.pi - seg._sweep() > max_missing_angle:
-        return False
-    start, end = segment_endpoints(seg)
-    if math.dist(start, end) > tolerance:
-        return False
+def _both_ends_free(edge: Edge, graph) -> bool:
     # un capo che tocca altra geometria non è libero: l'arco fa parte di un giro.
     # Capi fusi nello stesso nodo: il self-loop sta fra i degeneri, quindi il
     # nodo deve restare senza altri edge (la punta di uno spigolo non è un cerchio)
     if edge.start == edge.end:
         return graph.degree(edge.start) == 0
     return graph.degree(edge.start) == 1 and graph.degree(edge.end) == 1
+
+
+def _closes_circle(arcs: List[Edge], tolerance: float, max_missing_angle: float) -> bool:
+    """Gli archi, in giro sul cerchio, lasciano solo buchi entro `tolerance` e
+    `max_missing_angle`, ognuno; due archi che si sovrappongono non chiudono
+    (li fonde `merge_cocircular_overlaps`, non questa regola)."""
+    spans = []
+    for e in arcs:
+        seg = e.segment
+        start, end = segment_endpoints(seg)
+        lo, lo_pt, hi_pt = ((seg.start_angle, start, end) if seg.ccw else (seg.end_angle, end, start))
+        spans.append((lo % (2 * math.pi), seg._sweep(), lo_pt, hi_pt))
+    spans.sort(key=lambda s: s[0])
+    for k, (lo, sweep, _, hi_pt) in enumerate(spans):
+        nxt_lo, _, nxt_pt, _ = spans[(k + 1) % len(spans)]
+        missing = (nxt_lo - (lo + sweep)) % (2 * math.pi)
+        if missing > max_missing_angle or math.dist(hi_pt, nxt_pt) > tolerance:
+            return False
+    return math.fsum(s[1] for s in spans) <= 2 * math.pi
 
 
 def close_free_gaps(edges: List[Edge], tolerance: float) -> List[Edge]:

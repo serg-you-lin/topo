@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`86` modules · `522` module-level functions · `63` classes · `16436` lines of code.
+`86` modules · `523` module-level functions · `63` classes · `16457` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -26,7 +26,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_add_open_run` | func | `topo_dxf/exporter.py:281` | Una catena di LineSeg/ArcSeg come polilinea aperta: i vertici sono gli |
 | `_add_spline` | func | `topo_dxf/exporter.py:145` | Materializza una BSplineSeg come SPLINE nativa, ricostruita dalla primitiva |
 | `AddSegment` | class | `topo/core/base/gap_solver.py:87` | Istruzione: aggiungi un segmento retto tra pt_a e pt_b. |
-| `ambiguous_free_ends` | func | `topo/core/base/cleanup.py:98` | Gli estremi liberi che `close_free_gaps` lascia aperti: due punti |
+| `ambiguous_free_ends` | func | `topo/core/base/cleanup.py:119` | Gli estremi liberi che `close_free_gaps` lascia aperti: due punti |
 | `_ambiguous_from` | func | `topo/core/base/gap_solver.py:293` | Gli estremi i cui due punti più vicini (distinti oltre GRAPH_EPSILON) distano |
 | `ambiguous_gap_ends` | func | `topo/core/base/gap_solver.py:323` | Gli estremi che `compute_gap_fixes` lascia aperti perché i loro due punti |
 | `anchor_texts` | func | `topo/tools/anchor.py:33` | Assegna ``cluster_ref`` a ogni testo di ``result.texts``. |
@@ -61,6 +61,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `AxisLine` | class | `topo/core/geometry/axis.py:71` | Un tratto orizzontale o verticale. |
 | `_bbox_center` | func | `topo_dxf/text_extractor.py:497` |  |
 | `_bbox_of` | func | `topo/io/view_model.py:124` |  |
+| `_both_ends_free` | func | `topo/core/base/cleanup.py:76` |  |
 | `_bridge` | func | `topo/core/base/gap_solver.py:169` | Il segmento fra due estremi, attaccato ai loro nodi. |
 | `_bridged` | func | `topo/core/geometry/lines.py:154` | Lo spazio `a`→`b` sta tutto dentro uno dei giri (bordo compreso). |
 | `bridged_runs` | func | `topo/core/geometry/lines.py:115` | Runs of two or more strokes on one line where the gap between a stroke |
@@ -95,11 +96,12 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `clean_mtext` | func | `topo_dxf/mtext.py:18` | Testo semplice da una stringa MTEXT grezza: rimuove i codici di |
 | `_clear_polyline` | func | `topo/core/geometry/rings.py:291` | Una polilinea di `segment` entro δ che non passa su `point`, o None se |
 | `close_contour_jumps` | func | `topo/core/readings/heal_steps.py:119` | Ogni contorno consegnato chiude esatto (D206): un salto entro `tolerance` |
-| `close_free_gaps` | func | `topo/core/base/cleanup.py:83` | Chiude i gap fra estremi liberi entro `tolerance` col gap solver |
-| `close_near_full_arcs` | func | `topo/core/base/cleanup.py:46` | Un ArcSeg coi due capi liberi diventa CircleSeg (stesso centro e raggio) |
+| `close_free_gaps` | func | `topo/core/base/cleanup.py:104` | Chiude i gap fra estremi liberi entro `tolerance` col gap solver |
+| `close_near_full_arcs` | func | `topo/core/base/cleanup.py:47` | Gli ArcSeg coi due capi liberi sullo stesso cerchio (`_same_circle`, D184) |
 | `_close_self_loop` | func | `topo/core/topology/graph.py:291` | ArcSeg il cui sviluppo (raggio*sweep) supera epsilon -> CircleSeg (loop degenere vero). Altrimenti `None` (sl… |
 | `ClosedCurve` | class | `topo/model/curve.py:49` | Curva chiusa: una lista di segmenti che chiude un giro. I suoi fatti |
 | `_closes` | func | `topo/core/geometry/shape.py:110` | I segmenti, in fila, fanno un anello: ognuno parte dove finisce il |
+| `_closes_circle` | func | `topo/core/base/cleanup.py:85` | Gli archi, in giro sul cerchio, lasciano solo buchi entro `tolerance` e |
 | `_closest_to` | func | `topo/core/geometry/intersections.py:92` | Il candidato più vicino a `ref`; a pari merito entro FLOAT_NOISE quello più |
 | `_cluster` | func | `topo/core/readings/outline.py:184` |  |
 | `_cluster` | func | `topo/io/shapes.py:58` | Pari-dispari sulla gerarchia: ogni contorno a depth pari è un guscio, |
@@ -142,7 +144,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `Curve` | class | `topo/model/curve.py:39` | Radice della gerarchia. Porta solo identità semantica e traceability. |
 | `curve_polygon` | func | `topo/core/primitives/polygon_builder.py:68` | Il poligono shapely di `item` per le domande fra più curve (contenimento, |
 | `cut_by` | func | `topo/core/geometry/regions.py:299` | I pezzi di `segment` fuori (`keep="outside"`) o dentro (`keep="inside"`) |
-| `dangling_splines` | func | `topo/core/base/cleanup.py:104` | BSplineSeg aperte con almeno un estremo non collegato a nient'altro. |
+| `dangling_splines` | func | `topo/core/base/cleanup.py:125` | BSplineSeg aperte con almeno un estremo non collegato a nient'altro. |
 | `dash_line` | func | `topo/core/geometry/lines.py:164` | Il segmento `start`→`end` ridotto a tratti: uno lungo `head` che parte da |
 | `_deboor` | func | `topo/core/geometry/integrals.py:239` | Punto al parametro `t` di una B-spline di vettori (de Boor, A5.1). |
 | `decide_nodes` | func | `topo/core/topology/noding.py:125` | I nodi di ogni lettura, decisi una volta: dai punti reali dei segmenti |
@@ -259,7 +261,6 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_intersections` | func | `topo/core/readings/outer_scan.py:147` | Punti del pezzo con coordinata `a` == level. |
 | `interval_coverage` | func | `topo/core/geometry/axis.py:45` | Frazione di [lo, hi] coperta dall'unione degli intervalli. |
 | `_is_loop` | func | `topo/core/topology/noding.py:61` | La curva torna su se stessa: un cerchio, o una spline/ellisse coi capi |
-| `_is_near_full_arc` | func | `topo/core/base/cleanup.py:68` |  |
 | `is_structural_role` | func | `topo/model/role.py:79` | True se ``role`` è OUTER o INNER per il motore (vedi ``STRUCTURAL_ROLES``). |
 | `Island` | class | `topo/core/readings/islands.py:42` | Gruppo di Edge vicini, con la bbox che li contiene tutti. |
 | `_item_geometry` | func | `topo/tools/anchor.py:152` |  |
@@ -533,7 +534,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `split` | func | `topo/tools/split.py:27` | Un `Result` per parte, nell'ordine delle parti tenute. |
 | `split_at_crossings` | func | `topo/core/topology/noding.py:160` | Spezza ogni edge nei suoi contatti con gli altri (incroci, T, estremi |
 | `_split_at_junctions` | func | `topo/core/base/normalizer.py:319` | Spezza una catena dove due span consecutivi si toccano SOLO (nessuna |
-| `split_labeled` | func | `topo/core/base/cleanup.py:26` | Separa gli Edge con un ruolo già deciso e non strutturale (cornice, |
+| `split_labeled` | func | `topo/core/base/cleanup.py:27` | Separa gli Edge con un ruolo già deciso e non strutturale (cornice, |
 | `_split_stretch` | func | `topo/core/primitives/fitting.py:66` | Un tratto senza spigoli: tutto entro `tolerance` dalla corda -> una linea; |
 | `splits_contour` | func | `topo/core/geometry/lines.py:82` | True if the chord `start`-`end`, extended by `reach` at both ends, cuts |
 | `stadium` | func | `topo/core/geometry/build.py:70` | Stadio fuori tutto `length` × `width` (due semicerchi di raggio |
@@ -659,16 +660,17 @@ _topo/core/base — le basi comuni a ogni lettura (D187, D188)._
 
 No module-level function or class.
 
-#### `topo/core/base/cleanup.py` — 112 lines
+#### `topo/core/base/cleanup.py` — 133 lines
 
 _topo/core/base/cleanup.py_
 
-- `split_labeled(edges: List[Edge], is_structural: Optional[Callable[[str], bool]]=None) -> Tuple[List[Edge], List[Edge]]` — L26 — Separa gli Edge con un ruolo già deciso e non strutturale (cornice,
-- `close_near_full_arcs(edges: List[Edge], tolerance: float, max_missing_angle: float=NEAR_FULL_ARC_MISSING) -> Tuple[List[Edge], int]` — L46 — Un ArcSeg coi due capi liberi diventa CircleSeg (stesso centro e raggio)
-- `_is_near_full_arc(edge: Edge, graph, tolerance: float, max_missing_angle: float) -> bool` — L68
-- `close_free_gaps(edges: List[Edge], tolerance: float) -> List[Edge]` — L83 — Chiude i gap fra estremi liberi entro `tolerance` col gap solver
-- `ambiguous_free_ends(edges: List[Edge], tolerance: float) -> List[Tuple[float, float]]` — L98 — Gli estremi liberi che `close_free_gaps` lascia aperti: due punti
-- `dangling_splines(edges: List[Edge]) -> List[Edge]` — L104 — BSplineSeg aperte con almeno un estremo non collegato a nient'altro.
+- `split_labeled(edges: List[Edge], is_structural: Optional[Callable[[str], bool]]=None) -> Tuple[List[Edge], List[Edge]]` — L27 — Separa gli Edge con un ruolo già deciso e non strutturale (cornice,
+- `close_near_full_arcs(edges: List[Edge], tolerance: float, max_missing_angle: float=NEAR_FULL_ARC_MISSING) -> Tuple[List[Edge], int]` — L47 — Gli ArcSeg coi due capi liberi sullo stesso cerchio (`_same_circle`, D184)
+- `_both_ends_free(edge: Edge, graph) -> bool` — L76
+- `_closes_circle(arcs: List[Edge], tolerance: float, max_missing_angle: float) -> bool` — L85 — Gli archi, in giro sul cerchio, lasciano solo buchi entro `tolerance` e
+- `close_free_gaps(edges: List[Edge], tolerance: float) -> List[Edge]` — L104 — Chiude i gap fra estremi liberi entro `tolerance` col gap solver
+- `ambiguous_free_ends(edges: List[Edge], tolerance: float) -> List[Tuple[float, float]]` — L119 — Gli estremi liberi che `close_free_gaps` lascia aperti: due punti
+- `dangling_splines(edges: List[Edge]) -> List[Edge]` — L125 — BSplineSeg aperte con almeno un estremo non collegato a nient'altro.
 
 #### `topo/core/base/curves.py` — 71 lines
 
@@ -1726,7 +1728,7 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | module | imports |
 |---|---|
 | `topo/__init__.py` | `topo` · `topo.core` · `topo.core.geometry_input` · `topo.core.readings.heal` · `topo.core.readings.network` · `topo.inspect` · `topo.io.exporter` · `topo.io.shapes` · `topo.model` · `topo.model.role` · `topo.model.role_rule` · `topo.model.style` · `topo.rules.validator` · `topo.tools.anchor` · `topo.tools.inject` · `topo.tools.non_contour` · `topo.tools.split` |
-| `topo/core/base/cleanup.py` | `topo.core.base.gap_solver` · `topo.core.geometry.measure` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.model.role` |
+| `topo/core/base/cleanup.py` | `topo.core.base.gap_solver` · `topo.core.base.normalizer` · `topo.core.geometry.measure` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.model.role` |
 | `topo/core/base/curves.py` | `topo.core.base.hierarchy` · `topo.core.base.normalizer` · `topo.core.geometry.measure` · `topo.core.primitives` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.loop_finder` · `topo.model.curve` · `topo.model.role` |
 | `topo/core/base/gap_solver.py` | `topo.core.geometry.intersections` · `topo.core.geometry.measure` · `topo.core.geometry.regions` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.noding` · `topo.model.role` |
 | `topo/core/base/hierarchy.py` | `topo.core.geometry.integrals` · `topo.core.geometry.measure` · `topo.core.geometry.regions` · `topo.core.geometry.rings` · `topo.core.primitives.polygon_builder` · `topo.core.topology.loop_finder` · `topo.model.cluster` · `topo.model.contour` · `topo.model.curve` · `topo.model.role` |

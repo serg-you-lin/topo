@@ -90,11 +90,12 @@ Aperti, con i fatti:
      loose a pezzi, ruotato 90° manda in loose l'altra. Un DXF vero fuori dal repo;
      caso minimo da costruire.
   2. ~~Cerchio scritto due volte~~ fatto (D217).
-  3. Foro piccolo in archi con un buco sotto la tolleranza non si chiude. Misurato
-     7 novembre: non è la fusione dei due archi (un arco solo fa lo stesso) ma la
-     regola "i due capi dello stesso edge non sono mai un gap" (`gap_solver.py`,
-     `compute_gap_fixes`), che lascia solo i 2° di D112. Caso minimo: r 5, corda 0,3
-     (3,4°), tolleranza 0,5 → 0 fori. Riaprire D112: decisione di Federico.
+  3. ~~Foro in archi~~ fatto (D218). La voce di prima era sbagliata: r 5 con buco 0,3
+     sono 3,4°, sopra i 2° di D112, e restare aperto è giusto. Il difetto vero: due
+     archi con buchi sotto i 2° si chiudevano con segmenti, non col cerchio.
+  Prima di confrontare: il controllo della forza bruta contava "foro mancante" anche
+  un cerchio spezzato oltre i 2° (giusto per D112); quanti siano: non misurato.
+  Va corretto il controllo e ricontati i numeri di prima.
   Numeri prima delle fix (attuale / senza griglia): 3000 inventati, risposta sbagliata
   790 / 767 (fori in più: quasi sempre con un doppione nel disegno; fori mancanti: quasi
   sempre con un cerchio spezzato + un buco; 8 senza nessuno dei due; compatibile con 2 e
