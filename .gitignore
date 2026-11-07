@@ -129,3 +129,6 @@ tests/lab/
 # Testo intero di MAP.md e TODO.md prima dell accorciamento (solo locale)
 MAP_ARCHIVE.md
 TODO_ARCHIVE.md
+
+# uscite salvate di topo (scripts/11_batch_heal.py): restano sul disco, fuori da git
+tests/**/*healed*
