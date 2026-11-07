@@ -113,12 +113,13 @@ class NodedEdges:
 # ---------------------------------------------------------------------------
 
 def renode(edges: List[Edge]) -> List[Edge]:
-    """Nodi di ogni Edge ricalcolati dal punto reale del segmento. Gli edge
-    chiusi restano come sono. Due capi reali entro FLOAT_NOISE sono lo stesso
-    punto (D183): un nodo solo, non due copie a 1 ulp (G6e)."""
+    """Nodi di ogni Edge ricalcolati dal punto reale del segmento. Due capi
+    reali entro FLOAT_NOISE sono lo stesso punto (D183): un nodo solo, non due
+    copie a 1 ulp (G6e). Una curva chiusa ha un nodo solo, il suo inizio, come
+    in `Edge.of`, comunque l'Edge fosse scritto (D219)."""
     ends = [p for e in edges if not _is_loop(e.segment) for p in segment_endpoints(e.segment)]
     same = cluster_points(ends, FLOAT_NOISE)
-    return [e if _is_loop(e.segment) else _with_nodes(e, e.segment, same)
+    return [_loop_node(e) if _is_loop(e.segment) else _with_nodes(e, e.segment, same)
             for e in edges]
 
 
@@ -770,3 +771,9 @@ def _with_nodes(edge, seg, same=None):
     if same is not None:
         s, e = same.get(s, s), same.get(e, e)
     return replace(edge, start=node_point(s), end=node_point(e), segment=seg)
+
+
+def _loop_node(edge):
+    """L'edge di una curva chiusa col nodo unico del suo inizio."""
+    node = node_point(segment_endpoints(edge.segment)[0])
+    return edge if edge.start == edge.end == node else replace(edge, start=node, end=node)

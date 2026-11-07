@@ -136,6 +136,36 @@ class TestRenode(unittest.TestCase):
                  segment=LineSeg(start=(0.0, 0.0), end=(1.034, 0.0)))
         self.assertEqual(renode([e])[0].end, (1.034, 0.0))
 
+    # D219: una spline chiusa che incrocia se stessa (un quadrato con un
+    # ricciolo sul lato basso), di grado 1 perché i conti si leggono a mano
+    _CURL = [(0, 0), (40, 0), (60, -20), (50, -30), (40, -20), (60, 0),
+             (100, 0), (100, 100), (0, 100), (0, 0)]
+
+    def _curl_edge(self, end_shift):
+        from topo.core.primitives.segments import BSplineSeg
+        n = len(self._CURL)
+        knots = [0.0, 0.0] + [k / (n - 1) for k in range(1, n - 1)] + [1.0, 1.0]
+        seg = BSplineSeg(degree=1, control_points=self._CURL, knots=knots)
+        return Edge(role="unknown", start=(0.0, 0.0), end=(end_shift, 0.0), segment=seg)
+
+    def test_curva_chiusa_un_nodo_solo(self):
+        # un Edge scritto a mano (o ruotato) col capo finale a 1e-13 dall'inizio:
+        # la curva è chiusa, il nodo è uno solo come in Edge.of
+        e = renode([self._curl_edge(1e-13)])[0]
+        self.assertEqual(e.start, e.end)
+
+    def test_outlines_non_dipende_da_come_e_scritto_il_capo(self):
+        # prima: capo esatto → un contorno da 9900; capo a 1e-13 → nessun
+        # contorno, la spline intera in loose e is_valid False
+        import topo
+        from dataclasses import replace
+        exact = topo.load_segments([self._curl_edge(0.0).segment])
+        shifted = replace(exact, edges=[self._curl_edge(1e-13)])
+        areas = [[round(c.outer.area, 6) for c in topo.heal(d, max_gap=0.5).outlines().clusters]
+                 for d in (exact, shifted)]
+        self.assertEqual(areas[0], [9900.0])
+        self.assertEqual(areas[1], areas[0])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
