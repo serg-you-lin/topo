@@ -1,7 +1,7 @@
 """
 tests/readings.py
 -----------------
-Una sola lettura `outlines()` per disegno in tutta la suite: invarianti,
+Una sola lettura `outlines()` per geometria in tutta la suite (i file gemelli contano una volta): invarianti,
 golden e ancoraggio leggono gli stessi fogli con gli
 stessi parametri. Ogni chiamata riceve una copia indipendente (documento e
 risultato), perché alcuni test li modificano (`anchor_texts` scrive
@@ -26,15 +26,25 @@ from tests.invariants import ROTATION, scrambled
 
 
 @lru_cache(maxsize=None)
-def _outline_bytes(path: str, max_gap: float) -> bytes:
+def _document(path: str) -> Tuple[bytes, str]:
+    """Il documento di `path` e l'impronta di geometria e testi: due file
+    gemelli danno la stessa lettura, che si fa una volta sola."""
     doc = topo_dxf.load_dxf(path)
-    return pickle.dumps((doc, topo.heal(doc, max_gap=max_gap).outlines()))
+    key = geometry_key(doc) + hashlib.sha1(repr(doc.texts).encode()).hexdigest()
+    return pickle.dumps(doc), key
+
+
+_OUTLINES: dict = {}   # (impronta, max_gap) → risultato di outlines()
 
 
 def outline_reading(path: Path, max_gap: float) -> Tuple[Document, topo.Result]:
     """(documento, risultato) di `heal(load_dxf(path), max_gap=max_gap).outlines()`,
-    letti una volta per sessione e restituiti come copia nuova."""
-    return pickle.loads(_outline_bytes(str(Path(path).resolve()), max_gap))
+    letti una volta per sessione (una per gemelli) e restituiti come copia nuova."""
+    data, key = _document(str(Path(path).resolve()))
+    doc = pickle.loads(data)
+    if (key, max_gap) not in _OUTLINES:
+        _OUTLINES[(key, max_gap)] = pickle.dumps(topo.heal(doc, max_gap=max_gap).outlines())
+    return doc, pickle.loads(_OUTLINES[(key, max_gap)])
 
 
 
