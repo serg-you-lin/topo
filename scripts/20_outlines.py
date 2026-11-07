@@ -1,12 +1,12 @@
 """
-20_island.py — lettura per isole su tutti i disegni di una cartella
+20_outlines.py — lettura per contorni su tutti i disegni di una cartella
 ==================================================================
 
 API topo usate:
     topo.heal(doc, max_gap=).outlines()
-                                -> Result, un Cluster per isola
+                                -> Result, un Cluster per contorno esterno
                                    (outer = contorno esterno, inners = giri
-                                   chiusi dentro; isole annidate → interno
+                                   chiusi dentro; contorni annidati → interno
                                    di quella che le contiene)
     topo.experimental.read_outlines(edges, tolerance, max_gap)
                                 -> [OutlineReading]: per ogni pezzo cosa è
@@ -16,13 +16,13 @@ Per ogni file un DXF con un layer per decisione, per vedere cosa ha fatto
 ogni passo (i ruoli qui sotto sono solo del DXF di controllo: outlines() non
 assegna ruoli, mette tutto il resto in trash come `unknown`):
     OuterContour     contorno esterno di ogni isola non annidata
-    InnerContour     giri chiusi dentro (e contorni delle isole annidate)
+    InnerContour     giri chiusi dentro (e contorni delle contorni annidati)
     sporgenza        percorsi andata e ritorno dal contorno (assi, segni)
     fuori_contorno   pezzi dell'isola rimasti fuori dal contorno
     non_contorno     candidati non-contorno (criterio di heal, D49)
     Trash            il resto, non classificato
 
-    python scripts/20_island.py
+    python scripts/20_outlines.py
 """
 
 import _paths  # noqa: F401  — chdir alla radice del repo
@@ -41,7 +41,7 @@ INPUT_DIR = r"tests/examples/islands"          # tutti i .dxf/.dwg qui dentro
 EXCLUDE = ["_healed"]                           # file il cui nome contiene questi pezzi
 TOLERANCE = 0.05
 MAX_GAP = 0.5                                   # mm — edge che si toccano, gap chiusi fra estremi liberi
-OUTDIR = r"pipeline_output/island"
+OUTDIR = r"pipeline_output/outlines"
 # ---------------------------------------------------------------------------
 
 

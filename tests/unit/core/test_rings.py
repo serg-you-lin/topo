@@ -169,7 +169,7 @@ def test_sulla_corda_e_accanto_sotto_moto(motion):
     # decide il segno, che è geometria) la risposta non cambia col moto.
     # Senza la guardia (4.9, 0) esce fuori a (2.4, -0.37, 0.61). Non prova la
     # riga dentro le letture: la raggiunge snapbend (`splits_contour`,
-    # `bridged_runs`), non `heal` né `island`.
+    # `bridged_runs`), non `faces()` né `outlines()`.
     from tests.invariants import rigid
     move_seg, move_pt = rigid(*motion)
     ring = [ArcSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),
@@ -189,7 +189,7 @@ def test_a_cavallo_della_guardia_sulla_corda(motion):
     # a ogni moto. Il valore della soglia conta poco: sbagliando ramo l'angolo
     # dell'arco cambia della soglia stessa, e il giro si arrotonda; con 0.5 rad
     # o 1e-17 questi punti escono uguali. Non prova la riga dentro le letture
-    # (la raggiunge snapbend, non `heal` né `island`).
+    # (la raggiunge snapbend, non `faces()` né `outlines()`).
     from tests.invariants import rigid
     move_seg, move_pt = rigid(*motion)
     convex = [ArcSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),

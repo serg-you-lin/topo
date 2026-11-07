@@ -1,4 +1,4 @@
-# tests/unit/core/test_island.py
+# tests/unit/core/test_outlines.py
 
 import math
 import unittest
@@ -32,7 +32,7 @@ def _doc(edges):
     return Document(edges=edges, texts=[], source_meta={"tolerance": 0.05}, source_path="")
 
 
-class TestIsland(unittest.TestCase):
+class TestOutlines(unittest.TestCase):
 
     def test_due_viste_separate_due_cluster(self):
         edges = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + _poly((50, 0), (60, 0), (60, 5), (50, 5))
@@ -165,7 +165,7 @@ if __name__ == "__main__":
 
 
 class TestNestedInUnderMotion(unittest.TestCase):
-    """G6e, gruppo D, `island.py:148`: `read_outlines` sceglie l'ospite col
+    """G6e, gruppo D, `outline.py:148`: `read_outlines` sceglie l'ospite col
     `max` sull'area dell'outer. Un pari merito non c'è: due ospiti che
     contengono lo stesso pezzo sono isole distinte, quindi i loro bordi non si
     toccano e uno contiene l'altro; le aree differiscono almeno di distanza ×
@@ -196,7 +196,7 @@ class TestNestedInUnderMotion(unittest.TestCase):
 
 
 class TestHostOfATinyPieceUnderMotion(unittest.TestCase):
-    """G6e, D193 punto 2, `island.py:146`: l'ospite di un pezzo si chiedeva
+    """G6e, D193 punto 2, `outline.py:146`: l'ospite di un pezzo si chiedeva
     al poligono del suo outer allargato di `tolerance`. Un morso ad arco
     (freccia 0.0099) e dentro il morso un cerchietto di raggio 0.003 a 0.051
     dall'arco vero, soglia 0.05 (`max_gap` 0): due isole a ogni moto, ma la

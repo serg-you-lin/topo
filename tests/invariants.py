@@ -2,7 +2,7 @@
 tests/invariants.py
 -------------------
 Gli attrezzi comuni alle invarianti delle due letture (test_heal_invariants.py,
-test_island_invariants.py, MAP.md D143, D158):
+test_outlines_invariants.py, MAP.md D143, D158):
 
 - quello che si fa a un disegno senza cambiarne la forma: i moti rigidi
   (rotazione, traslazione lontano dall'origine, specchio) e gli ordini diversi

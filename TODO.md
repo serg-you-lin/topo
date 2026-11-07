@@ -172,7 +172,7 @@ Verifica del lavoro: golden cambiati classificati + DXF in `_debug`;
 tetto dei tempi: quello della suite.
 Sottopassi, uno per commit:
 - [x] A. inventario (2 novembre). Le differenze sono quattro, non tre
-      (`heal.py:87,110` contro `island.py:136-165`):
+      (`heal.py:87,110` contro `outline.py:136-165`):
       1. portata dei gap: `reach(tol)` contro `reach(max(tol, max_gap))`.
          `faces()` non ne ha bisogno: nessun consumer chiede a heal() gap
          larghi (passano solo `tolerance`). Risolto in B: i numeri sono
@@ -180,19 +180,19 @@ Sottopassi, uno per commit:
          (default `tolerance`).
       2. `keep_junctions`: True (D110) contro False (D50). Nella rete i pezzi
          restano separati (non si perde niente); `outlines()` ricompone già
-         lungo il contorno (`merge_runs`, `island.py:200`). Da misurare in B.
+         lungo il contorno (`merge_runs`, `outline.py:200`). Da misurare in B.
       3. scope: tutto il disegno contro un gruppo `touching_groups` alla
          volta. I gap si chiudono entro `max_gap` e i gruppi sono a `max_gap`,
          quindi le coppie dovrebbero essere le stesse: il raggruppamento
          diventa un passo di `outlines()`. Da misurare: risultati e tempi.
-      4. `cut_crossings`: False in heal (D132, D189), True in island (D101).
+      4. `cut_crossings`: False in heal (D132, D189), True in outlines (D101).
          È già "lo dice la lettura" (docstring `noding.py:170`): la rete
          tiene gli incroci come dato (`crossings`), il taglio lo fa
          `outlines()`. Serve un taglio applicabile a una rete già fatta.
-      Minori: il filtro dei degeneri (`island.py:163`) va nella riparazione
-      comune; il secondo `decide_nodes` in `read_island` sparisce; gli errori
+      Minori: il filtro dei degeneri (`outline.py:163`) va nella riparazione
+      comune; il secondo `decide_nodes` in `read_outline` sparisce; gli errori
       di disegno vuoto (solo in heal) valgono per tutti; `label` e
-      `source_file` (heal li prende, island usa `doc.source_path`) vanno
+      `source_file` (heal li prende, outlines usa `doc.source_path`) vanno
       sulla rete.
       Superficie di `Network`: `edges` (riparati), `crossings`, `free_ends`,
       `set_aside` (ruoli non strutturali), `warnings`, `errors`, `is_valid`,
@@ -200,7 +200,7 @@ Sottopassi, uno per commit:
       interno.
 - [x] B. una riparazione sola dietro `heal()` → `Network`; golden classificati.
       Fatto: `readings/network.py` (`build_network`, `repair_edges`); heal() e
-      island() leggono la stessa rete, firme invariate (il cambio è C). Loose
+      outlines() leggono la stessa rete, firme invariate (il cambio è C). Loose
       sempre dalla rete (D203). Suite verde, nessun golden cambiato; anch_06
       rientra nel budget di testo (loose 179 → 101, doppioni fusi, 0 mm persi)
       ed esce dai fallimenti attesi. Note della misura:
@@ -210,7 +210,7 @@ Sottopassi, uno per commit:
       True), con un numero solo o con due: geometria dei contorni identica
       su 51/51, i loose fuori da ogni isola (quelli del golden) uguali sui 15
       golden; tempi uguali o un poco sotto (52 s contro 55). Cambia una cosa
-      sola: le isole che island() non legge (riquadro, isole annidate,
+      sola: le isole che outlines() non legge (riquadro, isole annidate,
       gruppi senza contorno) oggi vanno in loose **come nel file**
       (docstring: "intatto"), dalla rete arrivano **riparate** (doppioni
       fusi, curve rifittate, gap chiusi): fino a 900 mm di linee doppie in
@@ -255,7 +255,7 @@ novembre, ramo `no-join-ends` fuso in `main`.
       un'obliqua a 45° sopra, interrotta di 0,41 mm sullo spigolo.
       `close_free_gaps` chiude il buco, il pezzo di chiusura taglia lo
       spigolo e nella rete compare due volte (`split_at_crossings`).
-      Misurato su 25 DXF (`golden_islands/`, `golden_anchoring/`): salto di
+      Misurato su 25 DXF (`golden_outlines/`, `golden_anchoring/`): salto di
       0,411 mm in `faces()` su tutti e tre, in `outlines()` su `regr_02` e
       `anch_03_noframe`; `is_valid` True ovunque. A 0,05 (tolleranza del file)
       nessun buco. `validate_result` non controlla la chiusura.
@@ -271,7 +271,7 @@ novembre, ramo `no-join-ends` fuso in `main`.
       `largo` in `tests/data/golden/` con golden `faces()` (passa con G15,
       senza fallisce: area +1607 mm²). Per il 2: `outlines()` non chiama
       `validate_result`. Salti testa-coda misurati a 0,5 con G15 (81 file
-      golden/islands/anchoring, 162 letture): 72 a zero, 45 > 1e-6, 9 > 0,01
+      golden_outlines/anchoring, 162 letture): 72 a zero, 45 > 1e-6, 9 > 0,01
       (max 0,062 `regr_01` faces; 0,05 su regr_03, anch_01, anch_01_noframe),
       il salto G15 era 0,411. Deciso D206: chiuso esatto, ogni salto è un
       bug del motore → le 48 letture con salto > 1e-9 vanno corrette.
@@ -325,7 +325,7 @@ novembre, ramo `no-join-ends` fuso in `main`.
 - [x] **G7** Zero `expectedFailure` (7 novembre, D220). Difetti noti ne restano
       (curva che incrocia sé stessa, curva chiusa che tocca col nodo, agganci persi):
       sono limiti della 1.0, scritti qui sotto, non test rossi.
-      golden di island e di aggancio rigenerati, liste dei noti vuote,
+      golden di outlines e di aggancio rigenerati, liste dei noti vuote,
       suite senza rossi attesi. Golden dei `_noframe` non fatti (Federico).
 - [ ] **G8** README / README_IT / `description` di pyproject / prima riga di
       CLAUDE.md: motore di geometria 2D, i disegni tecnici sono un caso.
@@ -341,10 +341,10 @@ novembre, ramo `no-join-ends` fuso in `main`.
       e mai usati di `anch_01…06` (D97).
 - [ ] **Tempo della suite**: 3:23 dopo D181, sopra il tetto di 2.5–3 min.
       Misura del 2 novembre: 4:07 a `fc9997e` (prima di D202 C), 4:08 dopo.
-      Restano `test_fidelity` sulle spline e le letture di `island()`.
+      Restano `test_fidelity` sulle spline e le letture di `outlines()`.
       Misura del 7 novembre a `43cf58a` (seriale, `--durations=0`): 4:35, 3242 test.
-      Le letture di `island()` valgono ~159 s su 272: `test_fidelity` _island 81 s
-      (31 test), `test_island_invariants` 65 s (`TestScrambled` 47), `test_island_single_use`
+      Le letture di `outlines()` valgono ~159 s su 272: `test_fidelity` _outlines 81 s
+      (31 test), `test_outlines_invariants` 65 s (`TestScrambled` 47), `test_outlines_single_use`
       13 s. `test_heal_invariants` 57 s (1496 test). I 17 file con `ezdxf`: 7,5 s in tutto,
       quindi il punto 1 qui sotto non accorcia la suite. Il disegno più caro: anch_02 (38 s + 18 il noframe).
       **Si riparte da qui** (deciso il 1 novembre): riordino dei test.
@@ -388,7 +388,7 @@ Difetti trovati il 6 novembre (fatti, nessuna analisi):
 
 Primo lavoro (deciso il 30 ottobre):
 - **discretizzazione delle spline in Rust** (o almeno numpy): De Boor in Python
-  è il costo singolo più grosso di `island()`. Prova numpy a blocchi: scende
+  è il costo singolo più grosso di `outlines()`. Prova numpy a blocchi: scende
   solo da 6.5 a 5.1 s (D169 chiede la misura per un core Rust).
 
 - **Fusione delle curve quasi allineate / quasi coarcali** (Federico, 6
@@ -429,7 +429,7 @@ Additivi decisi con Federico (25–30 ottobre):
   come dati invece che frasi?
 - **terza lettura, la rete**: gruppi di pezzi che si toccano o si incrociano,
   coi punti di contatto, senza contorni né dentro/fuori.
-- **in `island()` i pezzi dello stesso cerchio/retta si ricompongono anche in
+- **in `outlines()` i pezzi dello stesso cerchio/retta si ricompongono anche in
   `loose`** (richiesta snapdraw/pippo): un cerchio attraversato da linee esce
   in archi aperti; estendere a `loose` la ricomposizione di D65, senza
   scegliere cicli (D161). Fino ad allora i consumer ricompongono da sé.
@@ -464,7 +464,7 @@ Additivi decisi con Federico (25–30 ottobre):
   due) in `topo.experimental` finché non regge D143; mai silenzioso (regola 7).
   "Kerf" è l'uso di un consumer, non un nome di topo. Da decidere prima di
   scrivere: `side` o due funzioni; dove finisce la bisettrice (solo `length`).
-- **dipendenze** (D169): misurare i tempi di `heal()`/`island()` sulle
+- **dipendenze** (D169): misurare i tempi di `heal()`/`outlines()` sulle
   fixture; inventario shapely/numpy → sostituto; poi un pezzo alla volta e a
   pari golden. Il noding resta a GEOS.
 
@@ -602,7 +602,7 @@ Aperte:
   consumer. Additivo; la 1.0 non deve legare niente al solo sistema mondo.
 - **La scansione** (`healing/outer_scan`, raggi del lab `island_rays`): come
   farla completa e a cosa serve oltre al giro esterno.
-- **Ricette di ricomposizione**: oggi `heal` (un pezzo piano) e `island` (più
+- **Ricette di ricomposizione**: oggi `heal` (un pezzo piano) e `outlines` (più
   viste, per isole); se ne servono altre. Candidata: una lettura "mesh" dove
   una faccia interna chiusa è vuota per default. Legato al filo `faces()`/
   `outlines()` in cima.
@@ -618,7 +618,7 @@ Aperte:
 - **Scelta E: foro con un vertice in comune col contorno esterno** (D132). Oggi
   resta foro; per Federico è `loose` con warning. Nessun golden lo contiene:
   si decide quando arriva un disegno vero.
-- **`island()` e cornici**: i test girano sui disegni grezzi, la cornice
+- **`outlines()` e cornici**: i test girano sui disegni grezzi, la cornice
   diventa l'isola più esterna (la riconosce snapdraw, D90). Copie
   `*_noframe.dxf` fatte; un cerchio chiuso non dovrebbe cambiare natura per
   ciò che gli sta attorno (anch_07: due cerchi sono inner con la cornice,
@@ -626,7 +626,7 @@ Aperte:
 - **Contatto di un giro con sé stesso deciso sul poligono discretizzato**
   (`_loop_faces`, anch_06: un cerchio D2.2 toccato da un simbolo passa da
   `circle` a `other` cambiando la discretizzazione): decidere il contatto sulle
-  primitive prima di rifare i golden di island (G7).
+  primitive prima di rifare i golden di outlines (G7).
 - **Lato PDF dei fix di D101** (`_drop_redundant_meets`,
   `_drop_boundary_duplicates`): provati solo sui DXF; su un PDF Federico li ha
   visti sbagliati (12 ottobre). Ipotesi non verificata: `band = tolerance +

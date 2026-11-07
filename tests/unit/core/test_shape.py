@@ -243,7 +243,7 @@ class TestContourShapeSuIsole(unittest.TestCase):
     def _kinds(self, cluster):
         return sorted(contour_shape(c).kind for c in cluster.inners)
 
-    def test_island(self):
+    def test_outlines(self):
         # D161: outlines() non fa inner; i pezzi che chiudono da sé sono in loose (D162)
         result = topo.heal(self._doc(), max_gap=MAX_GAP).outlines()
         self.assertEqual(contour_shape(result.clusters[0].outer).kind, RECTANGLE)

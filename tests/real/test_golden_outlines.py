@@ -1,22 +1,22 @@
 """
-test_golden_islands.py
-----------------------
-Regressione su `outlines()` (D99-D100): per ogni foglio di viste, le isole —
+test_golden_outlines.py
+-----------------------
+Regressione su `outlines()` (D99-D100): per ogni foglio di viste, i cluster —
 riquadro del contorno esterno e numero di contorni interni — e le linee
-aperte fuori da ogni isola.
+aperte fuori da ogni cluster.
 
-Disegni in `tests/data/golden_islands/` (`anch_NN`, `regr_NN`): copie
+Disegni in `tests/data/golden_outlines/` (`anch_NN`, `regr_NN`): copie
 anonimizzate dei fogli di snapdraw con la sola geometria che `outlines()` legge
 nel framer — cornice, cartiglio e linee di costruzione tolti da snapdraw, il
 file scritto da topo (layer `geometry`). topo non sa cos'è una cornice:
-riceve il foglio già ripulito. Isole giudicate giuste da Federico sulla
+riceve il foglio già ripulito. Cluster giudicati giusti da Federico sulla
 pagina "Scala delle isole" (5 ottobre). Golden in `json/` accanto; senza i
 disegni il test si salta.
 
-Golden da rigenerare solo dopo aver verificato a occhio che le isole sono
-giuste, mai per far passare un test:
+Golden da rigenerare solo dopo aver verificato a occhio che i cluster sono
+giusti, mai per far passare un test:
 
-    python tests/real/test_golden_islands.py --generate
+    python tests/real/test_golden_outlines.py --generate
 """
 
 import json
@@ -34,21 +34,21 @@ from topo import to_shapely
 MAX_GAP = 0.5    # quello di snapdraw (SHEET_MAX_GAP)
 TOL = 0.01       # mm
 
-SOURCE_DIR = project_root / "tests" / "data" / "golden_islands"
+SOURCE_DIR = project_root / "tests" / "data" / "golden_outlines"
 GOLDEN_DIR = SOURCE_DIR / "json"
 
 
 def snapshot(dxf_path: Path) -> dict:
-    """Le isole in ordine di riquadro (due isole di area uguale non scambiano il golden)."""
+    """I cluster in ordine di riquadro (due cluster di area uguale non scambiano il golden)."""
     _, result = outline_reading(dxf_path, MAX_GAP)
-    islands = sorted([round(float(v), 3) for v in to_shapely(c.outer).bounds] + [len(c.inners)]
+    clusters = sorted([round(float(v), 3) for v in to_shapely(c.outer).bounds] + [len(c.inners)]
                      for c in result.clusters)
     return {"source_file": dxf_path.name,
-            "islands": [{"bbox": i[:4], "inners": i[4]} for i in islands],
+            "clusters": [{"bbox": i[:4], "inners": i[4]} for i in clusters],
             "open_outside": sum(1 for t in result.loose if getattr(t, "cluster_ref", None) is None)}
 
 
-class TestGoldenIslands(unittest.TestCase):
+class TestGoldenOutlines(unittest.TestCase):
 
     def _compare(self, expected, actual, where):
         if isinstance(expected, dict):
@@ -82,7 +82,7 @@ for _dxf in sorted(SOURCE_DIR.glob("*.dxf")):
         _test = _make_test(_dxf, _golden)
         if _dxf.stem in KNOWN_STALE:
             _test = unittest.expectedFailure(_test)
-        setattr(TestGoldenIslands, f"test_{_dxf.stem}", _test)
+        setattr(TestGoldenOutlines, f"test_{_dxf.stem}", _test)
 
 
 def generate():
@@ -90,7 +90,7 @@ def generate():
     for dxf in sorted(SOURCE_DIR.glob("*.dxf")):
         snap = snapshot(dxf)
         (GOLDEN_DIR / f"{dxf.stem}.json").write_text(json.dumps(snap, indent=2), encoding="utf-8")
-        print(f"  OK: {dxf.name} — {len(snap['islands'])} isole, {snap['open_outside']} linee aperte fuori")
+        print(f"  OK: {dxf.name} — {len(snap['clusters'])} cluster, {snap['open_outside']} linee aperte fuori")
 
 
 if __name__ == "__main__":

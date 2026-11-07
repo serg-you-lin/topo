@@ -98,7 +98,7 @@ def _leader(*vertices):
 class TestPointerTarget(unittest.TestCase):
     """`Text.target`: l'elemento su cui cade la punta di `pointer` (D66)."""
 
-    def _island(self, *leaders):
+    def _outlines(self, *leaders):
         result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
         result.texts = list(leaders)
         anchor_texts(result)
@@ -110,26 +110,26 @@ class TestPointerTarget(unittest.TestCase):
                     if to_shapely(c) is not None and to_shapely(c).centroid.distance(Point(center)) < 0.1)
 
     def test_punta_sul_bordo_del_foro(self):
-        result = self._island(_leader((24, 25), (40, 60)))
+        result = self._outlines(_leader((24, 25), (40, 60)))
         k = self._hole_at(result, (20, 25))
         self.assertIs(result.texts[0].target, result.loose[k])
 
     def test_punta_dentro_il_foro(self):
-        result = self._island(_leader((72, 27), (90, 70)))
+        result = self._outlines(_leader((72, 27), (90, 70)))
         k = self._hole_at(result, (70, 25))
         self.assertIs(result.texts[0].target, result.loose[k])
 
     def test_punta_sul_contorno_esterno(self):
-        result = self._island(_leader((100, 40), (120, 60)))
+        result = self._outlines(_leader((100, 40), (120, 60)))
         self.assertIs(result.texts[0].target, result.clusters[0].outer)
 
     def test_freccia_lontana_nessun_target(self):
         # freccia di sezione: si ferma a 5 mm dal pezzo
-        result = self._island(_leader((-5, 25), (-15, 25)))
+        result = self._outlines(_leader((-5, 25), (-15, 25)))
         self.assertIsNone(result.texts[0].target)
 
     def test_senza_vertici_nessun_target(self):
-        result = self._island(Text(position=(20, 25), text="M8"))
+        result = self._outlines(Text(position=(20, 25), text="M8"))
         self.assertIsNone(result.texts[0].target)
 
     def test_elemento_dell_overlay(self):
@@ -151,7 +151,7 @@ class TestTargetIsTheObject(unittest.TestCase):
     """D177: `target`/`references` sono gli oggetti, non posizioni nel
     risultato — restano giusti quando le collezioni cambiano dopo."""
 
-    def _island(self):
+    def _outlines(self):
         result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
         result.texts = [_leader((24, 25), (40, 60)),
                         Text(position=(40, 40), measured_points=[(60, 25), (80, 25)])]
@@ -160,7 +160,7 @@ class TestTargetIsTheObject(unittest.TestCase):
 
     def test_promote_non_sposta_il_target(self):
         # promuovere una curva che sta prima in loose spostava "loose[k]"
-        result = self._island()
+        result = self._outlines()
         hole, big = result.texts[0].target, result.texts[1].references[0]
         before = [c for c in result.loose if c is not hole][0]
         result.promote(before, result.clusters[0], "mine")
@@ -168,14 +168,14 @@ class TestTargetIsTheObject(unittest.TestCase):
         self.assertIs(result.texts[1].references[0], big)
 
     def test_promote_del_target_stesso(self):
-        result = self._island()
+        result = self._outlines()
         hole = result.texts[0].target
         result.promote(hole, result.clusters[0], "holes")
         self.assertIs(result.texts[0].target, hole)
         self.assertIs(result.clusters[0].features("holes")[0], hole)
 
     def test_split_punta_alle_copie_della_parte(self):
-        result = self._island()
+        result = self._outlines()
         part = topo.split(result)[0]
         target = part.texts[0].target
         self.assertTrue(any(target is c for c in part.loose))
@@ -185,7 +185,7 @@ class TestTargetIsTheObject(unittest.TestCase):
         self.assertTrue(any(result.texts[0].target is c for c in result.loose))
 
     def test_repr_e_uguaglianza_senza_i_riferimenti(self):
-        result = self._island()
+        result = self._outlines()
         text = result.texts[0]
         self.assertNotIn("target", repr(text))
         self.assertEqual(text, Text(position=text.position, text=text.text,

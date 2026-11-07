@@ -145,7 +145,7 @@ class TestClosedSplineSeamUnderMotion(unittest.TestCase):
                 self.assertTrue(_close(segment_endpoints(short)[0], seam))
                 self.assertTrue(_close(segment_endpoints(long)[1], seam))
 
-    def test_island_la_spline_chiusa_tagliata_resta_intera(self):
+    def test_outlines_la_spline_chiusa_tagliata_resta_intera(self):
         import topo
         from tests.invariants import rigid
         X, Y = self.X, self.Y

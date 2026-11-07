@@ -49,7 +49,7 @@ class NonContourEdgeDetector:
 
     def detect(self, graph: Graph, edges: list[Edge], planar: bool = False) -> set[int]:
         """id(edge) delle catene che non sono contorno. `planar`: gli edge sono
-        già la rete piana di `split_at_crossings` (island), non si rispezzano."""
+        già la rete piana di `split_at_crossings` (`outlines()`), non si rispezzano."""
         branching = set(graph.branching_nodes())
         if not branching:
             return set()

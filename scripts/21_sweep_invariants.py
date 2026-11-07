@@ -35,7 +35,7 @@ from pathlib import Path
 sys.path.insert(0, str(_paths.ROOT))
 
 HEAL_TOLERANCE = 0.5     # come tests/unit/core/test_heal_invariants.py
-MAX_GAP = 0.5            # come tests/unit/core/test_island_invariants.py
+MAX_GAP = 0.5            # come tests/unit/core/test_outlines_invariants.py
 TIMEOUT = 300            # secondi per disegno, tutte e due le letture
 
 
@@ -105,13 +105,13 @@ def check_one(path: Path) -> dict:
     try:
         heal_doc = topo_dxf.load_dxf(str(path), upgrade=True, explode_inserts=True, flatten_z=True,
                                      tolerance=HEAL_TOLERANCE)
-        island_doc = topo_dxf.load_dxf(str(path))
+        outlines_doc = topo_dxf.load_dxf(str(path))
     except Exception as exc:  # noqa: BLE001  — un file che non si apre non è un difetto di lettura
         return {"load": f"{type(exc).__name__}: {exc}"}
     report["edges"] = len(heal_doc.edges)
-    report["heal"] = _check_reading("heal", heal_doc, lambda d: topo.heal(d, tolerance=HEAL_TOLERANCE).faces(),
+    report["faces"] = _check_reading("faces", heal_doc, lambda d: topo.heal(d, tolerance=HEAL_TOLERANCE).faces(),
                                     HEAL_TOLERANCE, 2 * DEFAULT_TOLERANCE)
-    report["island"] = _check_reading("island", island_doc, lambda d: topo.heal(d, max_gap=MAX_GAP).outlines(),
+    report["outlines"] = _check_reading("outlines", outlines_doc, lambda d: topo.heal(d, max_gap=MAX_GAP).outlines(),
                                       MAX_GAP, 2 * (DEFAULT_TOLERANCE + GRAPH_EPSILON))
     return report
 
@@ -119,7 +119,7 @@ def check_one(path: Path) -> dict:
 def _failures(report: dict) -> list:
     if "load" in report:
         return []
-    return [f"{reading}.{check}" for reading in ("heal", "island")
+    return [f"{reading}.{check}" for reading in ("faces", "outlines")
             for check, problems in report.get(reading, {}).get("checks", {}).items() if problems]
 
 

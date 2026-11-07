@@ -1,10 +1,10 @@
-# tests/unit/core/test_island_invariants.py
+# tests/unit/core/test_outlines_invariants.py
 
 """
 Invarianti di `outlines()` che devono valere sempre, per qualunque disegno —
 non confrontano contro un valore congelato (un golden): o sono vere o il
 motore ha un difetto. Non vanno mai rigenerate né guardate a occhio (a
-differenza di `tests/real/test_golden_islands.py`). Fixture: gli stessi
+differenza di `tests/real/test_golden_outlines.py`). Fixture: gli stessi
 disegni reali: ogni disegno tracciato che si legge con `outlines()`
 (tests/drawings.py, D158).
 """
@@ -25,7 +25,7 @@ from topo.core.primitives.segments import DEFAULT_TOLERANCE, CircleSeg, LineSeg
 from topo import to_shapely
 
 MAX_GAP = 0.5
-SOURCES = drawings_for("island")
+SOURCES = drawings_for("outlines")
 # lo stesso contorno può dare un poligono diverso di tanto così: la freccia
 # della discretizzazione più la griglia dei nodi dell'unione di facce (D106)
 BOUNDS_TOLERANCE = DEFAULT_TOLERANCE + GRAPH_EPSILON

@@ -23,10 +23,10 @@ def _drawing(order):
 
 
 @pytest.mark.parametrize("order", ["abc", "cab", "bca"])
-@pytest.mark.parametrize("read", ["heal", "island"])
+@pytest.mark.parametrize("read", ["faces", "outlines"])
 def test_copie_congruenti_in_ordine_di_posizione(order, read):
     doc = _drawing(order)
-    result = topo.heal(doc).faces() if read == "heal" else topo.heal(doc, max_gap=0.1).outlines()
+    result = topo.heal(doc).faces() if read == "faces" else topo.heal(doc, max_gap=0.1).outlines()
     corners = [(round(c.bbox[0], 6), round(c.bbox[1], 6)) for c in result.clusters]
     assert result.clusters[0].outer.area == pytest.approx(3200.0)
     assert corners[1:] == sorted(corners[1:])

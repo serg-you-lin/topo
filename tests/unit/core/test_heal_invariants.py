@@ -2,7 +2,7 @@
 
 """
 Invarianti di `heal()` che devono valere sempre, per qualunque disegno — come
-quelle di `outlines()` (test_island_invariants.py): non confrontano contro un
+quelle di `outlines()` (test_outlines_invariants.py): non confrontano contro un
 valore congelato, o sono vere o il motore ha un difetto. Non si rigenerano
 mai. Fixture: ogni disegno tracciato che si legge con `heal()` (tests/drawings.py,
 D158), letto come lo legge `tests/real/test_golden.py`; i golden di heal,
@@ -60,7 +60,7 @@ SHAPE_BAND = 2 * DEFAULT_TOLERANCE
 
 
 def _sources() -> list:
-    return drawings_for("heal")
+    return drawings_for("faces")
 
 
 def _config(dxf: Path) -> dict:

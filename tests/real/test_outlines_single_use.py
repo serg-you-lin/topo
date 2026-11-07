@@ -1,5 +1,5 @@
 """
-tests/real/test_island_single_use.py
+tests/real/test_outlines_single_use.py
 ------------------------------------
 Un pezzo della rete piana ha un solo destino: se il contorno esterno lo usa,
 non è anche una sporgenza (D146). Prima il giro scelto per D100 poteva usare
@@ -23,7 +23,7 @@ FILES = [f"anch_{i:02d}_noframe.dxf" for i in range(1, 9)]
 MAX_GAP = 0.5
 
 
-class TestIslandSingleUse(unittest.TestCase):
+class TestOutlinesSingleUse(unittest.TestCase):
 
     def test_outer_edges_are_not_spurs(self):
         for name in FILES:

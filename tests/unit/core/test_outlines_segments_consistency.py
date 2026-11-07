@@ -1,4 +1,4 @@
-# tests/unit/core/test_island_segments_consistency.py
+# tests/unit/core/test_outlines_segments_consistency.py
 
 """
 Per ogni contorno letto da `outlines()`, il poligono (`to_shapely`, la forma geometrica finita,
@@ -7,7 +7,7 @@ scrive) devono descrivere la stessa forma: sono due rappresentazioni dello
 stesso contorno, non due letture indipendenti. Trovato il 12 ottobre: su
 `regr_04.dxf`, un contorno esterno di vista isometrica (l'unione di più facce,
 D100) aveva `.segments` scollegati (26 giunzioni rotte su 84) che coprivano un
-terzo dell'area vera — invisibile sia a `test_golden_islands.py` (confronta
+terzo dell'area vera — invisibile sia a `test_golden_outlines.py` (confronta
 solo bbox+conteggio) sia a SVG/view_model (leggono solo il poligono).
 Non è un golden: non confronta contro un valore congelato, è un'invariante
 sempre vera per definizione — non va mai rigenerato, va solo fatto passare.
@@ -24,7 +24,7 @@ from topo.core.primitives.polygon_builder import build_polygon
 from topo.core.primitives.segments import DEFAULT_TOLERANCE
 from topo import to_shapely
 
-SOURCE_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "golden_islands"
+SOURCE_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "golden_outlines"
 MAX_GAP = 0.5
 # di quanto può spostarsi il bordo della stessa forma fra le due letture: la
 # freccia della discretizzazione più la griglia dei nodi dell'unione di facce
@@ -32,7 +32,7 @@ MAX_GAP = 0.5
 OUTLINE_BAND = DEFAULT_TOLERANCE + GRAPH_EPSILON
 
 
-class TestIslandSegmentsConsistency(unittest.TestCase):
+class TestOutlinesSegmentsConsistency(unittest.TestCase):
 
     def _assert_same_shape(self, contour, where):
         poly = to_shapely(contour)
@@ -57,7 +57,7 @@ def _make_test(dxf: Path):
 
 
 for _dxf in sorted(SOURCE_DIR.glob("*.dxf")):
-    setattr(TestIslandSegmentsConsistency, f"test_{_dxf.stem}", _make_test(_dxf))
+    setattr(TestOutlinesSegmentsConsistency, f"test_{_dxf.stem}", _make_test(_dxf))
 
 
 if __name__ == "__main__":

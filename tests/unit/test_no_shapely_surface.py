@@ -4,7 +4,7 @@ tests/unit/test_no_shapely_surface.py
 Guardiano di D166 e D169: nessun tipo shapely o numpy nella superficie
 pubblica di topo.
 Due controlli: le firme e i campi dichiarati di ogni nome pubblico, e gli
-oggetti veri che escono da `heal`, `island`, `topo.experimental` e `topo.geometry`,
+oggetti veri che escono da `faces()`, `outlines()`, `topo.experimental` e `topo.geometry`,
 percorsi campo per campo e proprietà per proprietà. Solo `to_shapely` lo
 restituisce: è la conversione esplicita.
 """
@@ -119,9 +119,9 @@ def _plate():
     return topo.load_segments(segments)
 
 
-def test_heal_e_island_non_portano_shapely():
+def test_faces_e_outlines_non_portano_shapely():
     doc = _plate()
-    for name, result in (("heal", topo.heal(doc).faces()), ("island", topo.heal(doc, max_gap=0.5).outlines())):
+    for name, result in (("faces", topo.heal(doc).faces()), ("outlines", topo.heal(doc, max_gap=0.5).outlines())):
         assert result.clusters
         assert _shapely_in(result, name) == []
 
@@ -130,7 +130,7 @@ def test_un_disegno_vero_non_porta_shapely():
     doc = topo_dxf.load_dxf(str(DATA / "golden" / "example_4_polylines.dxf"))
     result = topo.heal(doc).faces()
     assert result.clusters
-    assert _shapely_in(result, "heal") == []
+    assert _shapely_in(result, "faces") == []
     assert _shapely_in(topo.split(result), "split") == []
 
 
