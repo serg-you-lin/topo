@@ -1,0 +1,251 @@
+"""
+test_healer.py
+--------------
+Unit test per topo.heal().
+
+Verifica esclusivamente il Result — clusters, inners, holes, trash.
+NON verifica effetti sul msp (layer, colori, LWPOLYLINE scritte) → test_writeback.py
+
+Prima di lanciare, genera i DXF di esempio:
+    python tests/tools/generate_examples.py
+
+Poi lancia:
+    python -m pytest tests/engine/readings/test_healer.py -v
+"""
+
+import math
+import unittest
+import ezdxf
+
+
+import topo
+import topo_dxf
+from topo_dxf.layers import LAYER_OUTER, LAYER_INNER
+from tests.paths import DATA
+
+EXAMPLES_DIR = DATA
+
+
+def load(name):
+    return EXAMPLES_DIR / name
+
+
+def load_msp(name):
+    return ezdxf.readfile(str(EXAMPLES_DIR / name)).modelspace()
+
+# ---------------------------------------------------------------------------
+# Rettangolo 4 LINE
+# ---------------------------------------------------------------------------
+
+class TestHealerRectLines(unittest.TestCase):
+
+    def setUp(self):
+        doc = topo_dxf.load_dxf(load("rect_lines.dxf"))
+        self.result = topo.heal(doc).faces()
+
+    def test_001_finds_one_part(self):
+        self.assertEqual(self.result.cluster_count, 1)
+
+    def test_002_no_errors(self):
+        self.assertEqual(len(self.result.errors), 0)
+
+    def test_003_is_valid(self):
+        self.assertTrue(self.result.is_valid)
+
+    def test_004_correct_area(self):
+        self.assertAlmostEqual(self.result.clusters[0].area, 5000, delta=50)
+
+    def test_005_no_holes(self):
+        self.assertEqual(len(self.result.clusters[0].inners), 0)
+
+    # helper riutilizzabile
+    def assert_entity(self, entity, expected_layer, expected_color):
+        self.assertEqual(entity.layer, expected_layer)
+        self.assertEqual(entity.color, expected_color)
+
+
+    
+
+
+# ---------------------------------------------------------------------------
+# Rettangolo con foro (LINE)
+# ---------------------------------------------------------------------------
+
+class TestHealerRectWithHole(unittest.TestCase):
+
+    def setUp(self):
+        doc = topo_dxf.load_dxf(load("rect_with_hole_lines.dxf"))
+        self.result = topo.heal(doc).faces()
+
+    def test_001_finds_one_part(self):
+        self.assertEqual(self.result.cluster_count, 1)
+
+    def test_002_has_hole(self):
+        self.assertGreaterEqual(len(self.result.clusters[0].inners), 1)
+
+    def test_003_outer_area(self):
+        self.assertAlmostEqual(self.result.clusters[0].outer.area, 20000, delta=200)
+
+
+# ---------------------------------------------------------------------------
+# File già pulito (LWPOLYLINE)
+# ---------------------------------------------------------------------------
+
+class TestHealerCleanFile(unittest.TestCase):
+
+    def test_001_does_not_crash(self):
+        doc = topo_dxf.load_dxf(load("pline_with_hole.dxf"))
+        result = topo.heal(doc).faces()
+        self.assertIsNotNone(result)
+
+    def test_002_finds_one_part(self):
+        doc = topo_dxf.load_dxf(load("pline_with_hole.dxf"))
+        result = topo.heal(doc).faces()
+        self.assertEqual(result.cluster_count, 1)
+
+    def test_003_has_one_inner(self):
+        doc = topo_dxf.load_dxf(load("pline_with_hole.dxf"))
+        result = topo.heal(doc).faces()
+        self.assertEqual(len(result.clusters[0].inners), 1)
+
+
+# ---------------------------------------------------------------------------
+# CIRCLE outer (flangia tonda)
+# ---------------------------------------------------------------------------
+
+class TestHealerCircleOuter(unittest.TestCase):
+
+    def setUp(self):
+        doc = topo_dxf.load_dxf(load("circle_outer_with_hole.dxf"))
+        self.result = topo.heal(doc).faces()
+
+    def test_001_finds_one_part(self):
+        self.assertEqual(self.result.cluster_count, 1)
+
+    def test_002_inner_classified(self):
+        self.assertGreaterEqual(len(self.result.clusters[0].features("holes")) + len(self.result.clusters[0].inners), 1)
+
+
+# ---------------------------------------------------------------------------
+# CIRCLE piccolo → contorno interno (un foro è una lettura di processo:
+# snapbend, MAP.md D88)
+# ---------------------------------------------------------------------------
+
+class TestHealerCircleHole(unittest.TestCase):
+
+    def setUp(self):
+        doc = topo_dxf.load_dxf(load("rect_with_circle_hole.dxf"))
+        self.result = topo.heal(doc).faces()
+
+    def test_001_finds_one_part(self):
+        self.assertEqual(self.result.cluster_count, 1)
+
+    def test_002_circle_is_an_inner(self):
+        self.assertEqual(len(self.result.clusters[0].inners), 1)
+        self.assertEqual(self.result.clusters[0].detected, None)
+
+
+# ---------------------------------------------------------------------------
+# CIRCLE grande → INNER (resta contorno interno anche dopo detect)
+# ---------------------------------------------------------------------------
+
+class TestHealerCircleInner(unittest.TestCase):
+
+    def setUp(self):
+        doc = topo_dxf.load_dxf(load("rect_with_circle_inner.dxf"))
+        self.result = topo.heal(doc).faces()
+
+    def test_001_inner_present_and_role(self):
+        from topo.model.role import ContourRole
+        inners = self.result.clusters[0].inners
+        self.assertEqual(len(inners), 1)
+        self.assertEqual(inners[0].role, ContourRole.INNER)
+        self.assertEqual(len(self.result.clusters[0].features("holes")), 0)
+
+
+# ---------------------------------------------------------------------------
+# Coppia concentrica → countersink
+# heal() vede entrambi i CIRCLE come inners; detect_flat(features="holes") li
+# riconosce come countersink (piccolo → Hole, anello grande assorbito).
+# ---------------------------------------------------------------------------
+
+class TestHealerCountersink(unittest.TestCase):
+
+    def setUp(self):
+        doc = topo_dxf.load_dxf(load("rect_with_countersink.dxf"))
+        self.result = topo.heal(doc).faces()
+
+    def test_001_finds_one_part(self):
+        self.assertEqual(self.result.cluster_count, 1)
+
+    def test_002_sees_both_circles_as_inners(self):
+        # heal() non distingue countersink — li vede entrambi come inners
+        self.assertEqual(len(self.result.clusters[0].features("holes")), 0)
+        self.assertGreaterEqual(len(self.result.clusters[0].inners), 2)
+
+    def test_003_area_per_parita(self):
+        # Ø30 vuoto (depth 1), Ø10 isola dentro di lui (depth 2, D89): l'area
+        # vera è 200·100 − π·15² + π·5², non outer meno l'unione. Scarto dal
+        # poligono entro tol × perimetro dei due cerchi (G5)
+        c = self.result.clusters[0]
+        self.assertEqual(sorted(i.depth for i in c.inners), [1, 2])
+        exact = 200 * 100 - math.pi * 15 ** 2 + math.pi * 5 ** 2
+        self.assertAlmostEqual(c.area, exact, delta=0.01 * 2 * math.pi * (15 + 5))
+
+
+# ---------------------------------------------------------------------------
+# LWPOLYLINE outer + loop LINE interno
+# ---------------------------------------------------------------------------
+
+class TestHealerInnerLoopInsideLwpolyline(unittest.TestCase):
+
+    def setUp(self):
+        doc = topo_dxf.load_dxf(load("rect_with_inner_mark.dxf"))
+        self.result = topo.heal(doc).faces()
+
+    def test_001_finds_one_part(self):
+        self.assertEqual(self.result.cluster_count, 1)
+
+    def test_002_inner_loop_classified_as_inner(self):
+        self.assertEqual(len(self.result.clusters[0].inners), 1)
+
+
+# ---------------------------------------------------------------------------
+# Deduplicazione entità duplicate
+# ---------------------------------------------------------------------------
+
+class TestHealerDeduplication(unittest.TestCase):
+
+    def setUp(self):
+        doc = topo_dxf.load_dxf(load("rect_lines_duplicated.dxf"), explode_inserts=True)
+        self.result = topo.heal(doc).faces()
+
+    def test_001_finds_one_part(self):
+        self.assertEqual(self.result.cluster_count, 1)
+
+    def test_002_no_errors(self):
+        self.assertEqual(len(self.result.errors), 0)
+
+    def test_003_correct_area(self):
+        self.assertAlmostEqual(self.result.clusters[0].area, 5000, delta=50)
+
+
+# ---------------------------------------------------------------------------
+# Validate input (Document)
+# ---------------------------------------------------------------------------
+
+class TestValidateInput(unittest.TestCase):
+
+    def test_001_detects_open_lines(self):
+        check = topo.validate_document(topo_dxf.load_dxf(load("rect_lines.dxf")))
+        self.assertGreater(len(check.warnings), 0)
+        self.assertTrue(check.is_valid)
+
+    def test_002_clean_file_no_errors(self):
+        check = topo.validate_document(topo_dxf.load_dxf(load("pline_with_hole.dxf")))
+        self.assertEqual(len(check.errors), 0)
+        self.assertTrue(check.is_valid)
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

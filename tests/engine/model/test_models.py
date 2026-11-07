@@ -1,0 +1,267 @@
+
+"""
+Test Suite per dxf_forge.models
+
+Test puri sui modelli dati — non richiedono file DXF.
+
+Lancia:
+    python -m unittest tests/test_models.py -v
+"""
+
+import unittest
+
+
+from shapely.geometry import Polygon, LineString, Point
+
+from topo.model import (
+    Contour,
+    Cluster,
+    Result,
+    Edge,
+)
+from topo.model import DetectedFeatures
+import topo
+
+from topo.model.role import ContourRole
+from topo.core.primitives.segments import LineSeg
+
+# ---------------------------------------------------------------------------
+# Fake entity minimale — isola i test da ezdxf
+# ---------------------------------------------------------------------------
+
+def _ring(polygon):
+    return topo.geometry.polygon(polygon.exterior.coords)
+
+
+class _Void:
+    """Un elemento dell'overlay che un consumatore dichiara vuoto del pezzo (D90)."""
+    is_void = True
+    role = "my_void"
+
+    def __init__(self, segments):
+        self.segments = segments
+
+
+class _FakeEntity:
+    """Entità ezdxf minimale per test che richiedono un riferimento entity."""
+    pass
+
+
+# ---------------------------------------------------------------------------
+# Test Contour
+# ---------------------------------------------------------------------------
+
+class TestForgeContour(unittest.TestCase):
+
+    def test_001_area(self):
+        """Area calcolata correttamente."""
+        poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
+        contour = Contour(segments=_ring(poly), role="outer")
+        print(f"\n[Contour] area={contour.area}")
+        self.assertEqual(contour.area, 100.0)
+
+    def test_002_bbox(self):
+        """Bbox calcolato correttamente."""
+        poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
+        contour = Contour(segments=_ring(poly), role="outer")
+        print(f"[Contour] bbox={contour.bbox}")
+        self.assertEqual(contour.bbox, (0, 0, 10, 10))
+
+    def test_003_role_unknown_preserved(self):
+        """role UNKNOWN è un valore valido e viene preservato."""
+        poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
+        contour = Contour(role=ContourRole.UNKNOWN, segments=_ring(poly))
+        self.assertEqual(contour.role, ContourRole.UNKNOWN)
+
+    def test_004_role_inner(self):
+        """role inner assegnato correttamente."""
+        poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
+        contour = Contour(segments=_ring(poly), role="inner")
+        self.assertEqual(contour.role, "inner")
+
+    def test_005_role_preserved(self):
+        """Role preservato correttamente."""
+        poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
+        contour = Contour(segments=_ring(poly), role="outer")
+        self.assertEqual(contour.role, "outer")
+
+
+# ---------------------------------------------------------------------------
+# Test Edge
+# ---------------------------------------------------------------------------
+
+class TestEdge(unittest.TestCase):
+    """
+    Dopo il refactoring Edge è dati puri: role + start/end + segment
+    (primitiva nativa) + style. Nessun source_ref, layer o geometry.
+    """
+
+    def _seg(self, start=(0.0, 0.0), end=(100.0, 0.0)):
+        return LineSeg(start=start, end=end)
+
+    def test_001_construction(self):
+        """Edge costruito correttamente con campi minimi."""
+        seg = self._seg()
+        edge = Edge(
+            role=ContourRole.OUTER,
+            start=(0.0, 0.0),
+            end=(100.0, 0.0),
+            segment=seg,
+        )
+        print(f"\n[Edge] start={edge.start} end={edge.end} role={edge.role}")
+        self.assertEqual(edge.start, (0.0, 0.0))
+        self.assertEqual(edge.end, (100.0, 0.0))
+        self.assertEqual(edge.role, ContourRole.OUTER)
+
+    def test_002_segment_reference_preserved(self):
+        """La primitiva geometrica passata non viene sostituita."""
+        seg = self._seg()
+        edge = Edge(role=ContourRole.UNKNOWN, start=(0, 0), end=(1, 1), segment=seg)
+        self.assertIs(edge.segment, seg)
+
+    def test_005_role_preserved(self):
+        """role cached sull'Edge — assegnato dall'adapter, mai dal layer DXF."""
+        edge = Edge(role="bending", start=(0, 0), end=(1, 0),
+                    segment=self._seg((0, 0), (1, 0)))
+        self.assertEqual(edge.role, "bending")
+
+    def test_006_start_end_are_tuples(self):
+        """start e end sono tuple (x, y)."""
+        edge = Edge(role=ContourRole.UNKNOWN, start=(5.0, 10.0), end=(15.0, 20.0),
+                    segment=self._seg((5.0, 10.0), (15.0, 20.0)))
+        self.assertEqual(len(edge.start), 2)
+        self.assertEqual(len(edge.end), 2)
+
+
+# ---------------------------------------------------------------------------
+# Test Cluster
+# ---------------------------------------------------------------------------
+
+class TestForgeCluster(unittest.TestCase):
+
+    def _make_outer(self, coords=None):
+        if coords is None:
+            coords = [(0,0), (100,0), (100,100), (0,100)]
+        return Contour(role=ContourRole.OUTER, segments=_ring(Polygon(coords)))
+
+    def test_001_no_holes_area(self):
+        """Area corretta senza fori."""
+        cluster = Cluster(outer=self._make_outer(), label="test")
+        print(f"\n[Cluster] area={cluster.area}, holes={len(cluster.features('holes'))}")
+        self.assertEqual(cluster.area, 10000.0)
+
+    def test_002_no_holes_count(self):
+        """Lista fori vuota di default."""
+        cluster = Cluster(outer=self._make_outer(), label="test")
+        self.assertEqual(len(cluster.features("holes")), 0)
+
+    def test_003_with_hole_net_area(self):
+        """Area netta = outer - un vuoto dell'overlay (is_void, D90)."""
+        import math
+        outer = self._make_outer()
+        cluster = Cluster(outer=outer, detected=DetectedFeatures())
+        cluster.detected.attach("holes", [_Void(topo.geometry.circle(5.0, center=(50, 50)))])
+        expected = 10000.0 - math.pi * 25.0
+        print(f"\n[Cluster with hole] area={cluster.area:.4f} expected≈{expected:.4f}")
+        self.assertAlmostEqual(cluster.area, expected, delta=0.01)
+
+    def test_004_to_shapely_with_void(self):
+        """to_shapely toglie dal materiale il vuoto dell'overlay."""
+        outer = self._make_outer()
+        cluster = Cluster(outer=outer, detected=DetectedFeatures())
+        cluster.detected.attach("holes", [_Void(topo.geometry.circle(5.0, center=(50, 50)))])
+        result_poly = topo.to_shapely(cluster)
+        print(f"[Cluster] interiors={len(list(result_poly.interiors))}")
+        self.assertEqual(len(list(result_poly.interiors)), 1)
+
+    def test_005_bbox(self):
+        """Bbox corrisponde all'outer."""
+        cluster = Cluster(outer=self._make_outer())
+        print(f"[Cluster] bbox={cluster.bbox}")
+        self.assertEqual(cluster.bbox, (0, 0, 100, 100))
+
+    def test_006_bending_lines_default_empty(self):
+        """bending_lines è lista vuota di default."""
+        cluster = Cluster(outer=self._make_outer())
+        self.assertIsInstance(cluster.features("bending_lines"), list)
+        self.assertEqual(len(cluster.features("bending_lines")), 0)
+
+    def test_007_engrave_lines_default_empty(self):
+        """engrave_lines è lista vuota di default."""
+        cluster = Cluster(outer=self._make_outer())
+        self.assertIsInstance(cluster.features("engrave_lines"), list)
+        self.assertEqual(len(cluster.features("engrave_lines")), 0)
+
+    def test_008_custom_default_empty(self):
+        """custom è dict vuoto di default."""
+        cluster = Cluster(outer=self._make_outer())
+        self.assertIsInstance(cluster.custom, dict)
+        self.assertEqual(len(cluster.custom), 0)
+
+    def test_009_inners_independent(self):
+        """Due Cluster non condividono la stessa lista inners."""
+        p1 = Cluster(outer=self._make_outer())
+        p2 = Cluster(outer=self._make_outer())
+        inner_poly = Polygon([(10,10), (20,10), (20,20), (10,20)])
+        p1.inners.append(Contour(role=ContourRole.INNER, segments=_ring(inner_poly)))
+        print(f"[Cluster] p1.inners={len(p1.inners)} p2.inners={len(p2.inners)}")
+        self.assertEqual(len(p2.inners), 0)
+
+
+# ---------------------------------------------------------------------------
+# Test Result
+# ---------------------------------------------------------------------------
+
+class TestForgeResult(unittest.TestCase):
+
+    def _make_result(self):
+        outer_poly = Polygon([(0,0), (50,0), (50,50), (0,50)])
+        outer = Contour(role=ContourRole.OUTER, segments=_ring(outer_poly))
+        cluster  = Cluster(outer=outer, label="pezzo_1", source_file="test.dxf")
+        return Result(clusters=[cluster], source_file="test.dxf")
+
+    def test_001_part_count(self):
+        """cluster_count corretto."""
+        result = self._make_result()
+        print(f"\n[Result] cluster_count={result.cluster_count}")
+        self.assertEqual(result.cluster_count, 1)
+
+    def test_002_is_valid_default(self):
+        """is_valid è True di default."""
+        result = self._make_result()
+        self.assertTrue(result.is_valid)
+
+    def test_003_has_issues_false(self):
+        """has_issues è False senza warning né errori."""
+        result = self._make_result()
+        self.assertFalse(result.has_issues)
+
+    def test_004_has_issues_true(self):
+        """has_issues è True se ci sono warning."""
+        result = self._make_result()
+        result.warnings.append("qualcosa non va")
+        print(f"[Result] has_issues={result.has_issues}")
+        self.assertTrue(result.has_issues)
+
+    def test_005_to_dict_keys(self):
+        """to_dict ha le chiavi giuste."""
+        result = self._make_result()
+        d = result.to_dict()
+        print(f"[Result] keys={list(d.keys())}")
+        self.assertIn("cluster_count", d)
+        self.assertIn("clusters", d)
+        self.assertIn("is_valid", d)
+        self.assertIn("source_file", d)
+
+    def test_006_to_dict_values(self):
+        """to_dict ha i valori corretti."""
+        result = self._make_result()
+        d = result.to_dict()
+        print(f"[Result] cluster label={d['clusters'][0]['label']}")
+        self.assertEqual(d["cluster_count"], 1)
+        self.assertEqual(d["clusters"][0]["label"], "pezzo_1")
+        self.assertTrue(d["is_valid"])
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
