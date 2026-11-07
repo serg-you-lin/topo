@@ -368,7 +368,9 @@ novembre, ramo `no-join-ends` fuso in `main`.
       ognuno visto rosso su un difetto finto: `TestOverlapNoClose` (0 pezzi, 4 loose,
       D132), `test_edge_cases` (almeno una parte), `TestChordsKeepTheOuter` salta senza
       corde (82 disegni). Suite: 3:56, 2439 passati, 201 saltati. Restano, da decidere:
-      - gemelli: 151 disegni, 138 geometrie; `drawings.py` deduplica per byte (~6 s);
+      - gemelli (151 disegni, 138 geometrie): non si fa. Contarli per geometria vuol
+        dire `load_dxf` di 151 file alla raccolta, 4 s misurati, contro ~6 s
+        risparmiati; restano contati per byte;
       - per `--full`: `test_outlines_single_use` (11 s), fedeltà "confronto non vuoto" (6,5 s);
       - `test_golden_split` su 7 padri ripete i confronti di `test_golden_faces`, non guarda i figli.
       Poi piano A, poi B.
