@@ -30,7 +30,7 @@ from ..primitives.polygon_builder import curve_polygon, with_polygon
 from ..primitives.segments import segment_endpoints
 from ..topology.edge import Edge
 from ..geometry.integrals import ring_area
-from ..geometry.rings import ring_contains
+from ..geometry.rings import ring_bbox, ring_contains
 from ..geometry.shape import merge_runs
 from ..topology.noding import GRAPH_EPSILON, edge_geometry, split_at_crossings
 from ..topology.outer_face import OuterFace, outer_face
@@ -140,8 +140,12 @@ def read_outline(edges: List[Edge], tolerance: float, max_gap: float) -> Outline
 def _read_groups(edges: List[Edge], tolerance: float, gap: float) -> List[OutlineReading]:
     """Edge già riparati: i gruppi a contatto entro `gap`, letti, e annidati."""
     readings = [_read_group(g.edges, tolerance) for g in touching_groups(edges, gap)]
-    outers = [(j, r.outer.segments, ring_area(r.outer.segments))
+    # il riquadro esatto di ogni ospite, allargato di GRAPH_EPSILON (ben oltre
+    # il bordo di ring_contains e l'errore della spline): un punto fuori non
+    # sta né dentro né sul bordo, e si salta l'avvolgimento sulle curve vere
+    outers = [(j, r.outer.segments, ring_area(r.outer.segments), ring_bbox(r.outer.segments))
               for j, r in enumerate(readings) if r.outer is not None]
+    e = GRAPH_EPSILON
     for i, r in enumerate(readings):
         # due gruppi distano più della soglia sulle curve vere (D200): un
         # punto del pezzo sta dentro un ospite solo se ci sta tutto il pezzo
@@ -149,8 +153,9 @@ def _read_groups(edges: List[Edge], tolerance: float, gap: float) -> List[Outlin
             point, area = segment_endpoints(r.outer.segments[0])[0], ring_area(r.outer.segments)
         else:
             point, area = r.edges[0].start, 0.0
-        hosts = [(j, big_area) for j, ring, big_area in outers
-                 if j != i and big_area > area and ring_contains(ring, point)]
+        hosts = [(j, big_area) for j, ring, big_area, (x0, y0, x1, y1) in outers
+                 if j != i and big_area > area and x0 - e <= point[0] <= x1 + e and y0 - e <= point[1] <= y1 + e
+                 and ring_contains(ring, point)]
         if hosts:
             r.nested_in = max(hosts, key=lambda h: h[1])[0]
     return readings
