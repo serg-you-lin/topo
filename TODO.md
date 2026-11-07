@@ -342,6 +342,11 @@ novembre, ramo `no-join-ends` fuso in `main`.
 - [ ] **Tempo della suite**: 3:23 dopo D181, sopra il tetto di 2.5–3 min.
       Misura del 2 novembre: 4:07 a `fc9997e` (prima di D202 C), 4:08 dopo.
       Restano `test_fidelity` sulle spline e le letture di `island()`.
+      Misura del 7 novembre a `43cf58a` (seriale, `--durations=0`): 4:35, 3242 test.
+      Le letture di `island()` valgono ~159 s su 272: `test_fidelity` _island 81 s
+      (31 test), `test_island_invariants` 65 s (`TestScrambled` 47), `test_island_single_use`
+      13 s. `test_heal_invariants` 57 s (1496 test). I 17 file con `ezdxf`: 7,5 s in tutto,
+      quindi il punto 1 qui sotto non accorcia la suite. Il disegno più caro: anch_02 (38 s + 18 il noframe).
       **Si riparte da qui** (deciso il 1 novembre): riordino dei test.
       1. Ogni test che apre un DXF con `ezdxf` o lavora sul modelspace e prova
          una lettura, non il formato, passa a geometria costruita con i
