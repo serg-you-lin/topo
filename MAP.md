@@ -437,6 +437,15 @@ tests left the suite (~15 s). It is in git history if a caller ever needs it.
 A minor, not a micro: the public surface changed after 0.26.0 (`heal()` returns a `Network`, read
 with `.faces()`/`.outlines()`; a jump within tolerance becomes a new `LineSeg` with a warning).
 `to_text` leaves `topo.experimental` (D213).
+### D215 — reopening D143: "deterministic" means same bytes → same result; the same geometry under a motion is not promised (Federico, 7 November).
+Every yes/no rule on a measured number has an edge, and the rounding of a rotation (~1e-14 mm)
+can push a value across it; no tolerance, digit count or language removes the edge. Explained
+for any reader in `docs/LIMITS.md` (`LIMITS_IT.md`). What can shrink is how many edges there are (D216).
+### D216 — reopening D113: no node grid; two ends are one node by distance (Federico, 7 November).
+A grid puts an edge every 0.001 mm; distance has one per threshold. Measured 6-7 November on a
+copy with the grid off (4 lines): moved drawings changing contour count 123→21 of 3000 generated,
+635→360 of 3998 harsh, 46→29 of 3551 real DXFs; jumps 4→0; same time. Done: `node_point`, no `decimals`
+(experimental `split_at_crossings`/`refit_tessellations` lose it, D175); G6e's chord case closes.
 
 ## Open questions
 

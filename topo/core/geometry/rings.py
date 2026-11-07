@@ -19,7 +19,7 @@ from .measure import Reach, segment_length
 Point = Tuple[float, float]
 Bounds = Tuple[float, float, float, float]
 
-ON_BOUNDARY = 1e-6   # mm: un punto più vicino di così al bordo ci sta sopra (griglia dei nodi, D113)
+ON_BOUNDARY = 1e-6   # mm: un punto più vicino di così al bordo ci sta sopra (FLOAT_NOISE, D183)
 
 
 def ring_jumps(segments: Sequence) -> Iterator[Tuple[Point, Point]]:

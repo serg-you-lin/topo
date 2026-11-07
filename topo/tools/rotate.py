@@ -39,7 +39,7 @@ from typing import List, Optional, Tuple
 
 from shapely.affinity import rotate as _shapely_rotate
 
-from ..core.geometry.measure import longest_segment, chord_angle_deg, round_point
+from ..core.geometry.measure import longest_segment, chord_angle_deg, node_point
 from ..core.primitives.segments import segment_endpoints
 from ..core.primitives.polygon_builder import curve_polygon, with_polygon
 from ..model.cluster import Cluster
@@ -186,8 +186,8 @@ def rotate_document(
 ) -> Document:
     """
     Nuovo `Document` con ogni `edge.segment` ruotato di `angle_rad`
-    (radianti, CCW) attorno a `origin`, coi nodi sulla stessa griglia del
-    caricamento (`round_point`, `NODE_DECIMALS`).
+    (radianti, CCW) attorno a `origin`, coi nodi sui punti veri
+    ruotati (`node_point`, D216).
 
     Primitiva pre-heal: utile quando l'angolo è già noto da altrove (non
     serve misurarlo su questo stesso documento) e si vuole ruotare prima di
@@ -201,7 +201,7 @@ def rotate_document(
     for edge in doc.edges:
         seg = edge.segment.rotated(angle_rad, origin=origin)
         start, end = segment_endpoints(seg)
-        new_edges.append(replace(edge, segment=seg, start=round_point(start), end=round_point(end)))
+        new_edges.append(replace(edge, segment=seg, start=node_point(start), end=node_point(end)))
 
     new_warnings = list(doc.warnings)
     if doc.texts:

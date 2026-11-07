@@ -9,6 +9,7 @@ risultato di heal().
 import math
 import sys
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 project_root = Path(__file__).resolve().parents[3]
@@ -414,9 +415,14 @@ class TestCloseNearFullArcs(unittest.TestCase):
         # i due capi cadono nello stesso nodo, ma a quel nodo arrivano due lati
         arc = _arc(1.5, 0.01)
         a, b = arc._point_at(arc.start_angle), arc._point_at(arc.end_angle)
-        doc = topo.load_segments([LineSeg((20, 0.3), a), arc, LineSeg(b, (20, -0.3))], tolerance=0.1)
-        self.assertEqual(doc.edges[1].start, doc.edges[1].end, "premessa: capi fusi")
-        _, n = topo.experimental.close_near_full_arcs(list(doc.edges), 0.1)
+        # senza griglia (D216) i capi a 0,00026 mm restano due punti: il nodo
+        # unico lo dà un'unione di nodi, qui scritta a mano
+        node = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+        edges = [Edge.of(LineSeg((20, 0.3), a), ContourRole.UNKNOWN), Edge.of(arc, ContourRole.UNKNOWN),
+                 Edge.of(LineSeg(b, (20, -0.3)), ContourRole.UNKNOWN)]
+        edges = [replace(edges[0], end=node), replace(edges[1], start=node, end=node),
+                 replace(edges[2], start=node)]
+        _, n = topo.experimental.close_near_full_arcs(edges, 0.1)
         self.assertEqual(n, 0)
 
 

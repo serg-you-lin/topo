@@ -21,7 +21,7 @@ from typing import Optional, Tuple, Union
 from ..primitives.segments import (
     LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints, segment_is_closed,
 )
-from ..geometry.measure import round_point
+from ..geometry.measure import node_point
 from ...model.style import EdgeStyle
 
 Segment = Union[LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg]
@@ -63,8 +63,8 @@ class Edge:
     @classmethod
     def of(cls, segment: Segment, role: str, *, style: Optional[EdgeStyle] = None) -> "Edge":
         """
-        L'Edge di `segment`: gli estremi sulla griglia dei nodi di topo (D113),
-        che un adapter non deve conoscere. Una curva chiusa (cerchio, spline o
+        L'Edge di `segment`: gli estremi sono i punti veri del segmento, il
+        nodo per distanza lo decide heal (D216). Una curva chiusa (cerchio, spline o
         ellisse con gli estremi entro la tolleranza) ha un nodo solo: è un loop
         degenere, che il grafo riconosce da sé. Una linea o un arco cortissimi
         restano due nodi — sono lati, non loop.
@@ -72,9 +72,9 @@ class Edge:
         È il modo in cui un adapter costruisce un Edge (MAP.md D125).
         """
         start, end = segment_endpoints(segment)
-        start = round_point(start)
+        start = node_point(start)
         if isinstance(segment, (CircleSeg, BSplineSeg, EllipseSeg)) and segment_is_closed(segment):
             end = start
         else:
-            end = round_point(end)
+            end = node_point(end)
         return cls(role=role, start=start, end=end, segment=segment, style=style or EdgeStyle())

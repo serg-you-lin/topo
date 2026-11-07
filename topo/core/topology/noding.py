@@ -22,7 +22,7 @@ del gruppo ricevono la stessa tupla, e il grafo non rigiudica nulla.
 `tolerance` non allarga l'identità di nodo: su tutta la rete percola (D101).
 
 Rette, archi e cerchi si misurano in forma chiusa; spline ed ellissi sulla
-loro discretizzazione alla griglia dei nodi (D113), e si tagliano esatte
+loro discretizzazione a `_FINE`, e si tagliano esatte
 (`sub_segment`); una spline che non si taglia (periodica) resta intera.
 
 Puro: solo Edge e primitive, nessun formato.
@@ -48,7 +48,7 @@ from ..primitives.segments import (
     segment_endpoints, segment_is_closed,
 )
 
-from ..geometry.measure import FLOAT_NOISE, NODE_DECIMALS, within_diameter   # tagli ed estremi sulla stessa griglia di tutto topo (D113)
+from ..geometry.measure import FLOAT_NOISE, node_point, within_diameter
 from .graph import cluster_points, connected_groups
 
 GRAPH_EPSILON = 0.01   # mm — due nodi così vicini sono uno solo per il grafo (heal, ripiego D100)
@@ -63,9 +63,9 @@ def _is_loop(seg) -> bool:
     entro DEFAULT_TOLERANCE. Una retta o un arco mai: un tratto corto è un
     tratto, con due capi da nodare (D56), non un anello (G6e)."""
     return isinstance(seg, CircleSeg) or (not isinstance(seg, _EXACT) and segment_is_closed(seg))
-# mm — spline ed ellissi si misurano su questa discretizzazione: la griglia
-# dei nodi, sotto la quale due punti non si distinguono comunque (D113)
-_FINE = 10.0 ** -NODE_DECIMALS
+# mm — spline ed ellissi si misurano su questa discretizzazione (il valore
+# della vecchia griglia dei nodi, D113, tenuto quando la griglia è uscita, D216)
+_FINE = 1e-3
 
 
 @dataclass
@@ -112,16 +112,13 @@ class NodedEdges:
 # API pubblica
 # ---------------------------------------------------------------------------
 
-def renode(edges: List[Edge], decimals: int = NODE_DECIMALS) -> List[Edge]:
-    """Nodi di ogni Edge ricalcolati dal punto reale del segmento a
-    `decimals`: un contatto a T si riconosce solo se estremi e tagli stanno
-    sulla stessa griglia. Gli edge chiusi restano come sono.
-    Due capi reali entro FLOAT_NOISE sono lo stesso punto (D183) e si
-    arrotondano una volta: due copie a 1 ulp di un vertice non cadono in due
-    celle (G6e)."""
+def renode(edges: List[Edge]) -> List[Edge]:
+    """Nodi di ogni Edge ricalcolati dal punto reale del segmento. Gli edge
+    chiusi restano come sono. Due capi reali entro FLOAT_NOISE sono lo stesso
+    punto (D183): un nodo solo, non due copie a 1 ulp (G6e)."""
     ends = [p for e in edges if not _is_loop(e.segment) for p in segment_endpoints(e.segment)]
     same = cluster_points(ends, FLOAT_NOISE)
-    return [e if _is_loop(e.segment) else _with_nodes(e, e.segment, decimals, same)
+    return [e if _is_loop(e.segment) else _with_nodes(e, e.segment, same)
             for e in edges]
 
 
@@ -161,7 +158,7 @@ def decide_nodes(edges: List[Edge], epsilon: float = GRAPH_EPSILON) -> Tuple[Lis
 
 
 def split_at_crossings(edges: List[Edge], tolerance: float,
-                       decimals: int = NODE_DECIMALS, cut_crossings: bool = True) -> NodedEdges:
+                       cut_crossings: bool = True) -> NodedEdges:
     """
     Spezza ogni edge nei suoi contatti con gli altri (incroci, T, estremi
     vicini, tangenze mancate entro GRAPH_EPSILON; gli incontri di una coppia
@@ -181,7 +178,7 @@ def split_at_crossings(edges: List[Edge], tolerance: float,
     for i, j in _near_pairs(edges, tolerance):
         net.meet(i, j)
     net.merge_along_edges()
-    nodes = net.nodes(decimals)
+    nodes = net.nodes()
 
     noded = NodedEdges(planar=cut_crossings)
     skip = frozenset() if cut_crossings else frozenset(net.crossing_roots())
@@ -566,11 +563,11 @@ class _Contacts:
                         if self.anchor[k] == tail_group:
                             self.anchor[k] = self.anchor[head]
 
-    def nodes(self, decimals: int) -> Dict[int, tuple]:
+    def nodes(self) -> Dict[int, tuple]:
         """{radice: tupla del nodo}: l'estremo d'ingresso del gruppo, se ne ha
         uno solo; la media dei suoi estremi distinti, se ne ha più d'uno (fra
         due capi nessuno vale più dell'altro, G6e); altrimenti la media dei
-        punti di contatto. Le medie stanno sulla griglia dei nodi."""
+        punti di contatto."""
         ends: Dict[int, list] = defaultdict(list)
         points: Dict[int, list] = defaultdict(list)
         for k, (i, _, pt, kind) in enumerate(self.stops):
@@ -583,8 +580,8 @@ class _Contacts:
                 out[root] = distinct.pop()
             else:
                 pts = list(distinct) or points[root]
-                out[root] = (round(math.fsum(p[0] for p in pts) / len(pts), decimals),
-                             round(math.fsum(p[1] for p in pts) / len(pts), decimals))
+                out[root] = (math.fsum(p[0] for p in pts) / len(pts),
+                             math.fsum(p[1] for p in pts) / len(pts))
         return out
 
     def _span_to_crossings(self, i: int) -> Tuple[float, float]:
@@ -768,9 +765,8 @@ def _on_arc(seg, pt) -> bool:
 # Nodi
 # ---------------------------------------------------------------------------
 
-def _with_nodes(edge, seg, decimals, same=None):
+def _with_nodes(edge, seg, same=None):
     s, e = segment_endpoints(seg)
     if same is not None:
         s, e = same.get(s, s), same.get(e, e)
-    r = lambda pt: (round(pt[0], decimals), round(pt[1], decimals))
-    return replace(edge, start=r(s), end=r(e), segment=seg)
+    return replace(edge, start=node_point(s), end=node_point(e), segment=seg)

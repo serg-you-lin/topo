@@ -15,7 +15,7 @@ from dataclasses import replace
 from typing import Callable, List, Optional, Tuple
 
 
-from ..geometry.measure import round_point
+from ..geometry.measure import node_point
 from ..primitives.segments import ArcSeg, CircleSeg, BSplineSeg, segment_endpoints
 from ..topology.edge import Edge
 from ..topology.graph import build_node_graph
@@ -57,7 +57,7 @@ def close_near_full_arcs(edges: List[Edge], tolerance: float,
     for edge in edges:
         seg = edge.segment
         if isinstance(seg, ArcSeg) and _is_near_full_arc(edge, graph, tolerance, max_missing_angle):
-            node = round_point(segment_endpoints(CircleSeg(center=seg.center, radius=seg.radius))[0])
+            node = node_point(segment_endpoints(CircleSeg(center=seg.center, radius=seg.radius))[0])
             edge = replace(edge, start=node, end=node,
                            segment=CircleSeg(center=seg.center, radius=seg.radius))
             closed += 1

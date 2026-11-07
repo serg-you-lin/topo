@@ -5,7 +5,7 @@ import unittest
 from topo.core.readings.islands import spatial_islands
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, CircleSeg, segment_endpoints
-from topo.core.geometry.measure import round_point
+from topo.core.geometry.measure import node_point
 from topo.core.topology.noding import edge_geometry
 
 
@@ -88,7 +88,7 @@ class TestGapOnTrueCurvesUnderMotion(unittest.TestCase):
         edges = []
         for seg in map(move, segments):
             start, end = segment_endpoints(seg)
-            edges.append(Edge(role="unknown", start=round_point(start), end=round_point(end), segment=seg))
+            edges.append(Edge(role="unknown", start=node_point(start), end=node_point(end), segment=seg))
         return edges
 
     def test_la_distanza_vera_decide_a_ogni_moto(self):

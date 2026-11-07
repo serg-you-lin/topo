@@ -44,7 +44,7 @@ from collections import Counter
 from dataclasses import dataclass, replace
 from typing import Any, Callable, Iterable, List, Tuple
 
-from ..geometry.measure import FLOAT_NOISE, within_diameter
+from ..geometry.measure import FLOAT_NOISE, node_point, within_diameter
 from ..primitives.segments import LineSeg, ArcSeg, CircleSeg, Point, segment_endpoints
 from ..primitives.fitting import simplify_points
 from ..topology.graph import build_node_graph, connected_groups
@@ -474,7 +474,6 @@ def refit_tessellations(
     max_segment: float = 0.1,
     min_run: int = 10,
     tolerance: float = 0.02,
-    node_decimals: int = 3,
 ) -> List[Edge]:
     """
     Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di
@@ -507,11 +506,9 @@ def refit_tessellations(
         first, last = path[0], path[-1]
         start_node = first[0].end if first[1] else first[0].start
         end_node = last[0].start if last[1] else last[0].end
-        # una giunzione è un nodo solo: arrotondata una volta, dalla fine del
-        # pezzo che arriva; l'inizio del successivo (a 1 ulp) non si arrotonda
-        # da sé, o un bordo di cella fra le due copie stacca la catena (G6e)
-        grid = lambda p: (round(p[0], node_decimals), round(p[1], node_decimals))
-        nodes = [grid(segment_endpoints(prims[0])[0])] + [grid(segment_endpoints(p)[1]) for p in prims]
+        # una giunzione è un nodo solo, la fine del pezzo che arriva; l'inizio
+        # del successivo (a 1 ulp) non conta, o le due copie staccano la catena (G6e)
+        nodes = [node_point(segment_endpoints(prims[0])[0])] + [node_point(segment_endpoints(p)[1]) for p in prims]
         if closed:
             nodes[-1] = nodes[0]
         else:

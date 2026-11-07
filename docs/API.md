@@ -190,7 +190,7 @@ non importano `topo.core`/`tools`/`io`/`rules` (D129). Quello che gli serve:
 | nome | a cosa serve |
 |---|---|
 | `topo.primitives.LineSeg` … `EllipseSeg` | la geometria letta dalla sorgente, nativa (mai discretizzata dall'adapter) |
-| `topo.model.Edge.of(segment, role, *, style=None) -> Edge` | l'`Edge` di un segmento: estremi sulla griglia dei nodi di topo (D113), che l'adapter non deve conoscere; un cerchio, una spline o un'ellisse chiusi hanno un nodo solo |
+| `topo.model.Edge.of(segment, role, *, style=None) -> Edge` | l'`Edge` di un segmento: estremi sui punti veri del segmento (nessuna griglia, D216); un cerchio, una spline o un'ellisse chiusi hanno un nodo solo |
 | `topo.model.EdgeStyle(*, linetype="", linetype_desc="", dash=None, color=None)` | l'aspetto effettivo dell'entità sorgente, senza parole di un formato (D126): `dash` sono segni con segno (`> 0` tratto, `0` punto, `< 0` vuoto; `()` continuo, `None` non noto — un dash-array `[3, 1]` è `(3, -1)`), `color` è `(r, g, b)`. L'adapter risolve l'ereditarietà (uno stile "del layer") prima di consegnarlo |
 | `topo.model.RoleRule`, `topo.model.resolve_role(rules, name, style) -> str` | il ruolo di un'entità dalle regole del chiamante: la prima che matcha, altrimenti `unknown` |
 | `topo.model.Document`, `topo.model.DEFAULT_NODE_TOLERANCE` | il risultato dell'adapter e la tolleranza di default che `heal()` chiuderà |
@@ -462,10 +462,10 @@ per ruolo, poi leggere le viste) — stessi pezzi, nessun criterio duplicato.
 topo.experimental.read_outlines(edges, tolerance, max_gap) -> list[OutlineReading]
 topo.experimental.read_outline(edges, tolerance, max_gap) -> OutlineReading
 topo.experimental.spatial_islands(edges, gap_tolerance) -> list[Island]
-topo.experimental.split_at_crossings(edges, tolerance, decimals=3, cut_crossings=True) -> NodedEdges
+topo.experimental.split_at_crossings(edges, tolerance, cut_crossings=True) -> NodedEdges
 topo.experimental.outer_face(edges, epsilon=0.0) -> OuterFace | None
 topo.experimental.refit_tessellations(edges, max_segment=0.1, min_run=10,
-                          tolerance=0.02, node_decimals=3) -> list[Edge]
+                          tolerance=0.02) -> list[Edge]
 ```
 
 | funzione | prende → ritorna | cosa fa |

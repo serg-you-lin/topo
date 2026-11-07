@@ -23,16 +23,14 @@ Utility geometriche interne:
 
 Identità dei nodi
 -----------------
-Ogni endpoint arriva già arrotondato dall'adapter (`round_point` alla
-tolleranza). L'arrotondamento è una quantizzazione su griglia fissa: due
-punti fisicamente coincidenti ma a cavallo del confine di una cella finiscono
-in nodi diversi e spezzano un contorno che invece è chiuso.
+Ogni endpoint è il punto vero (`node_point`, nessuna griglia: D216): due
+nodi sono lo stesso solo se le tuple sono uguali.
 
-`build_node_graph(edges, epsilon)` con `epsilon > 0` sostituisce la
-quantizzazione con un vero clustering: raggruppa gli endpoint entro `epsilon`
+`build_node_graph(edges, epsilon)` con `epsilon > 0` aggiunge un vero
+clustering: raggruppa gli endpoint entro `epsilon`
 (componenti connesse via union-find) e assegna a ciascun cluster un unico nodo
 canonico. `epsilon = 0.0` (default) mantiene il comportamento storico —
-uguaglianza esatta della tupla arrotondata — così i test e i chiamanti
+uguaglianza esatta della tupla — così i test e i chiamanti
 esistenti non cambiano.
 
 Cautela: il clustering è transitivo. Con `epsilon` grande e nodi reali vicini
@@ -46,7 +44,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field, replace
 from typing import Dict, Iterable, List, Optional, Tuple
 
-from ..geometry.measure import round_point
+from ..geometry.measure import node_point
 from ..primitives.segments import ArcSeg, CircleSeg, segment_endpoints
 from .edge import Edge
 
@@ -372,8 +370,8 @@ def _edge_coords(edge: Edge, reversed_flag: bool) -> list:
 def _first_coord(edge: Edge):
     pts = edge.segment.discretize() if edge.segment else [edge.start, edge.end]
     if pts:
-        return round_point(pts[0])
-    return round_point(edge.start)
+        return node_point(pts[0])
+    return node_point(edge.start)
 
 
 def _arrival_direction(edge: Edge, rev: bool):

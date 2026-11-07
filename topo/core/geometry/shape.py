@@ -392,7 +392,7 @@ def merge_runs(segments: list, styles: list):
     return out_s, out_st
 
 
-_MERGE_EPS = 1e-3   # mm — la griglia dei nodi (NODE_DECIMALS)
+_MERGE_EPS = 1e-3   # mm — il passo della vecchia griglia dei nodi (D113, D216)
 
 
 def _continues(prev, prev_style, seg, style) -> bool:

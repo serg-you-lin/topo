@@ -19,13 +19,13 @@ Point = Tuple[float, float]
 # Arrotondamento
 # ---------------------------------------------------------------------------
 
-NODE_DECIMALS = 3   # griglia unica dei nodi, per ogni lettura e ogni tolleranza (MAP.md D113)
 FLOAT_NOISE = 1e-6  # mm — rumore dei double, mai una tolleranza: sopra quello di un moto (~1e-11),
-                    # sotto la griglia dei nodi; "entro la tolleranza" la comprende (D183)
+                    # sotto ogni soglia di contatto; "entro la tolleranza" la comprende (D183)
 
 
-def round_point(pt, decimals: int = NODE_DECIMALS) -> Tuple:
-    return (round(float(pt[0]), decimals), round(float(pt[1]), decimals))
+def node_point(pt) -> Tuple:
+    """Il nodo di un punto: il punto vero, in float; nessuna griglia (D216)."""
+    return (float(pt[0]), float(pt[1]))
 
 
 def noise_runs(items: list, together) -> list:
