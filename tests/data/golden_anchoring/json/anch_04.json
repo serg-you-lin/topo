@@ -17,18 +17,7 @@
         66.61,
         469.94
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            113.07,
-            447.34
-          ],
-          "length": 105.0,
-          "width": 50.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -37,18 +26,7 @@
         82.61,
         534.62
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            113.07,
-            447.34
-          ],
-          "length": 105.0,
-          "width": 50.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -57,18 +35,7 @@
         91.39,
         454.71
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            93.89,
-            457.44
-          ],
-          "length": 6.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -77,18 +44,7 @@
         112.61,
         515.42
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            93.89,
-            457.44
-          ],
-          "length": 6.0,
-          "width": 3.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -97,18 +53,7 @@
         132.61,
         366.88
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            113.07,
-            447.34
-          ],
-          "length": 105.0,
-          "width": 50.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -126,18 +71,7 @@
         154.72,
         394.44
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            113.07,
-            447.34
-          ],
-          "length": 105.0,
-          "width": 50.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -155,7 +89,18 @@
         198.31,
         454.19
       ],
-      "anchored": []
+      "anchored": [
+        {
+          "in": "loose",
+          "shape": "stadium",
+          "center": [
+            239.59,
+            457.44
+          ],
+          "length": 9.0,
+          "width": 6.5
+        }
+      ]
     },
     {
       "measure_is_angle": false,
@@ -175,14 +120,14 @@
       ],
       "anchored": [
         {
-          "in": "inners",
-          "shape": "other",
+          "in": "loose",
+          "shape": "circle",
           "center": [
-            235.67,
+            233.34,
             287.8
           ],
           "length": 11.0,
-          "width": 5.5
+          "width": 11.0
         }
       ]
     },
@@ -195,7 +140,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "circle",
           "center": [
             270.84,
@@ -205,7 +150,7 @@
           "width": 60.0
         },
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "circle",
           "center": [
             270.84,
@@ -232,18 +177,7 @@
         270.84,
         449.44
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            272.12,
-            442.63
-          ],
-          "length": 108.0,
-          "width": 104.993
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -263,7 +197,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "circle",
           "center": [
             270.84,
@@ -299,18 +233,7 @@
         308.34,
         287.8
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            274.57,
-            304.38
-          ],
-          "length": 108.0,
-          "width": 50.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -337,18 +260,7 @@
         328.84,
         224.85
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            274.57,
-            304.38
-          ],
-          "length": 108.0,
-          "width": 50.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -357,18 +269,7 @@
         351.45,
         324.3
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            274.57,
-            304.38
-          ],
-          "length": 108.0,
-          "width": 50.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -379,7 +280,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "circle",
           "center": [
             270.84,
@@ -387,6 +288,16 @@
           ],
           "length": 60.0,
           "width": 60.0
+        },
+        {
+          "in": "loose",
+          "shape": "stadium",
+          "center": [
+            239.59,
+            457.44
+          ],
+          "length": 9.0,
+          "width": 6.5
         }
       ]
     },
@@ -399,7 +310,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "circle",
           "center": [
             270.84,

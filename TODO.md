@@ -377,6 +377,7 @@ mai rigenerando alla cieca.
 ## Dopo la 1.0 (1.x, additivo — non toccare finché il cancello è aperto)
 
 Difetti trovati il 6 novembre (fatti, nessuna analisi):
+- Agganci dei testi persi con D161 (golden di `golden_anchoring/` rigenerati il 7 novembre, Federico li accetta senza giudicarli): testi rimasti senza aggancio anch_02 3, anch_03 1, anch_04 10, anch_05 7, anch_07 1; tipico un richiamo "M6 n°16 fori" che era legato a una figurina 6×3 (inner di `faces()` di prima) e oggi a niente. Da guardare con snapdraw.
 - `tests/integration/test_non_structural_role.py`, stesso disegno, righe
   senza ruolo (`unknown`) a 0,5: `faces()` 0 cluster, `is_valid` False,
   435 curve in `loose` su 475 edge. Con `is_structural=lambda r: True` e

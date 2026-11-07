@@ -8,18 +8,7 @@
         33.23,
         480.09
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            125.37,
-            442.55
-          ],
-          "length": 140.0,
-          "width": 125.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -30,7 +19,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             125.37,
@@ -48,18 +37,7 @@
         60.37,
         500.09
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            125.37,
-            442.55
-          ],
-          "length": 140.0,
-          "width": 125.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -79,7 +57,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             125.37,
@@ -97,18 +75,7 @@
         75.37,
         536.12
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            125.37,
-            442.55
-          ],
-          "length": 140.0,
-          "width": 125.0
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -137,7 +104,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "stadium",
           "center": [
             175.37,
@@ -157,7 +124,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "stadium",
           "center": [
             175.37,
@@ -186,7 +153,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "stadium",
           "center": [
             175.37,
@@ -206,7 +173,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "stadium",
           "center": [
             175.37,
@@ -224,18 +191,7 @@
         252.43,
         386.09
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            316.66,
-            443.1
-          ],
-          "length": 137.357,
-          "width": 45.56
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -262,18 +218,7 @@
         330.43,
         525.09
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            316.66,
-            443.1
-          ],
-          "length": 137.357,
-          "width": 45.56
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -282,18 +227,7 @@
         350.43,
         505.09
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            316.66,
-            443.1
-          ],
-          "length": 137.357,
-          "width": 45.56
-        }
-      ]
+      "anchored": []
     },
     {
       "measure_is_angle": false,
@@ -302,18 +236,7 @@
         370.43,
         380.09
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "other",
-          "center": [
-            316.66,
-            443.1
-          ],
-          "length": 137.357,
-          "width": 45.56
-        }
-      ]
+      "anchored": []
     }
   ]
 }
