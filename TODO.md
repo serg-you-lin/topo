@@ -52,7 +52,7 @@ spline ed ellissi no) → contatore 48 → 28, nessuno nuovo. Rossi/aperti:
 area 1011,35 → 1011,29: accettare o lasciare aperto); D208 citata nel codice
 ma non scritta in MAP; `join_ends` non scritto in MAP; suite 4:27 (budget 3);
 regr_01 `outlines()` 0,0237 → 0,0903 (contatto linea–arco quasi tangente);
-`sbagli_tratteggio_stretto.dxf` tolto dalla suite (Federico, 7 novembre): ci gira `tratteggio_stretto_piccolo.dxf` (`tests/generate_hatch_small.py`), suite 11:49 → 4:33.
+`sbagli_tratteggio_stretto.dxf` tolto dalla suite (Federico, 7 novembre): ci gira `tratteggio_stretto_piccolo.dxf` (`tests/tools/generate_hatch_small.py`), suite 11:49 → 4:33.
 
 **Ramo `no-join-ends` (6 novembre)**: `join_ends` tolto (revert di
 `eabf73c`), saldatura dei tratti corti tolta da `normalize`. Ogni salto entro
@@ -99,7 +99,7 @@ Aperti, con i fatti:
   Forza bruta (~3 ore) di notte: `bash notte.sh` nel banco, `topo_base` (`4e729d1`)
   contro `topo_new` (`a9e2d61`), uscite in `notte/`. I numeri di prima qui sotto
   sono col controllo vecchio: si confronta solo con le due copie di `notte/`.
-  Prossima chat (Federico, 7 novembre): il riordino dei test, voce "Tempo della suite" nel cancello (suite 4:36, budget 3).
+  Riordino dei test fatto (D222); si continua dalla voce "Tempo della suite" nel cancello (suite 3:56, budget 3).
 - Una curva sola che incrocia se stessa non si taglia nell'incrocio
   (`split_at_crossings` taglia solo fra edge diversi): spline di grado 1 a forma
   di quadrato 100×100 con un ricciolo sotto → `outlines()` 9900 (l'anello intero,
@@ -317,7 +317,7 @@ novembre, ramo `no-join-ends` fuso in `main`.
       stretto dà 12 in tutte e due le letture. DXF in `_debug/2026-11-06_topo_g16-tratteggio`.
       **Chiuso il 6 novembre**: il rosso→verde del meccanismo è
       `TestPartOfACurveOnTheContour` (`test_noding.py`, rosso su `main`); la
-      promessa di D210 è `tests/integration/test_non_structural_role.py`
+      promessa di D210 è `tests/engine/readings/test_non_structural_role.py`
       (righe con ruolo non strutturale che tagliano gli angoli: pezzo e area
       uguali a quelli senza righe, righe in `loose`; rosso se le righe restano
       nella rete). Riconoscere un tratteggio è del consumer (snapdraw): il
@@ -334,7 +334,7 @@ novembre, ramo `no-join-ends` fuso in `main`.
 - [ ] **G10** Rewrite della history (`git filter-repo` + `--message-callback`,
       un solo force-push) contro le liste di D76–D78. `audit_names --strict`
       dà 5 sospetti (2 novembre, dopo l'accorciamento di MAP e TODO): un codice
-      tipo disegno in `tests/unit/core/test_normalizer.py:351`, nei commit non
+      tipo disegno in `tests/engine/base/test_normalizer.py:351`, nei commit non
       ancora pushati; gli altri (`BLE001`, `SLEP009`) sono falsi positivi
       probabili. Da descrivere a parole e togliere dai commit prima di
       qualunque push. Nei commit vecchi restano anche i blocchi-logo definiti
@@ -349,15 +349,20 @@ novembre, ramo `no-join-ends` fuso in `main`.
       (31 test), `test_outlines_invariants` 65 s (`TestScrambled` 47), `test_outlines_single_use`
       13 s. `test_heal_invariants` 57 s (1496 test). I 17 file con `ezdxf`: 7,5 s in tutto,
       quindi il punto 1 qui sotto non accorcia la suite. Il disegno più caro: anch_02 (38 s + 18 il noframe).
-      **Si riparte da qui** (deciso il 1 novembre): riordino dei test.
+      Misura del 7 novembre dopo `bfe161f`: 3:56, 2521 passati, 119 saltati.
+      Riordino fatto (D222): stessi 2639 test raccolti, stessa suite. Da qui:
+      `tests/shapes.py` (i 27 disegni dei generatori costruiti con topo, impronta
+      `geometry_key` uguale al file prima di toglierlo), poi i punti 1 e 3.
+      Spazzatura tracciata: `tests/python` (vuoto) e `tests/data/mixed_pipeline/*.dwl*`
+      (file di blocco AutoCAD, di solito portano utente e PC: non aperti, audit pre-1.0).
       1. Ogni test che apre un DXF con `ezdxf` o lavora sul modelspace e prova
          una lettura, non il formato, passa a geometria costruita con i
          numeri (`load_segments`, primitive, `topo.geometry`). Primo visto:
-         `tests/integration/test_gap.py`; `load_msp` in `test_healer.py:36` è
+         `tests/engine/readings/test_gap.py`; `load_msp` in `test_healer.py:36` è
          morto. Altri dei 17 file con `import ezdxf`: uno per uno.
       2. I test che provano un adapter vanno in `tests/adapters/dxf/` e
          `tests/adapters/pdf/`, con un `conftest.py` che fa
-         `pytest.importorskip`. Da decidere: `tests/real/` sotto
+         `pytest.importorskip`. Da decidere: `tests/golden/` sotto
          `adapters/dxf/` o lì con lo stesso skip.
       3. Dopo l'1: via i generatori di fixture (`generate_examples`,
          `generate_gap_examples`, `generate_rotation_fixture`,
@@ -382,7 +387,7 @@ mai rigenerando alla cieca.
 
 Difetti trovati il 6 novembre (fatti, nessuna analisi):
 - Agganci dei testi persi con D161 (golden di `golden_anchoring/` rigenerati il 7 novembre, Federico li accetta senza giudicarli): testi rimasti senza aggancio anch_02 3, anch_03 1, anch_04 10, anch_05 7, anch_07 1; tipico un richiamo "M6 n°16 fori" che era legato a una figurina 6×3 (inner di `faces()` di prima) e oggi a niente. Da guardare con snapdraw.
-- `tests/integration/test_non_structural_role.py`, stesso disegno, righe
+- `tests/engine/readings/test_non_structural_role.py`, stesso disegno, righe
   senza ruolo (`unknown`) a 0,5: `faces()` 0 cluster, `is_valid` False,
   435 curve in `loose` su 475 edge. Con `is_structural=lambda r: True` e
   ruolo `x`: 0 cluster, `loose` vuoto, warning "508 edge non di contorno

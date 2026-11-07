@@ -14,7 +14,8 @@ import subprocess
 from functools import lru_cache
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+from tests.paths import PROJECT_ROOT
+
 OUTLINE_DIRS = ("tests/data/golden_outlines/", "tests/data/golden_anchoring/")
 
 

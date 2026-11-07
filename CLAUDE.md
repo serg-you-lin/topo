@@ -38,7 +38,7 @@ python scripts/gen_index.py            # regenerate after adding/moving code
 python scripts/gen_index.py --check    # exit 1 if stale or the dependency rule is broken
 ```
 
-`tests/unit/test_index.py` runs the check in the suite. The rule is in
+`tests/package/test_index.py` runs the check in the suite. The rule is in
 `pyproject.toml` (`[tool.gen_index.layers]`); the script is the same file as
 snapbend's `tests/gen_index.py` — change it in one, copy to the other.
 

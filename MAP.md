@@ -184,7 +184,7 @@ leave. The sheet-metal consumer is `snapbend`.
 Topo keeps the open overlay and renderers read `role` + geometry, never a
 collection name; `is_void` subtracts.
 ### D91 — `concentric_groups` and `arcs_around` are geometric facts; thresholds and a shared `Hole` model are the consumers'.
-### D92 — `gen_index.py` is one file in every project, its rule in `pyproject.toml`, enforced by `tests/unit/test_index.py`.
+### D92 — `gen_index.py` is one file in every project, its rule in `pyproject.toml`, enforced by `tests/package/test_index.py`.
 ### D93 — line facts in `core/geometry/lines.py` (`are_collinear`, `bridged_runs`, `splits_contour`); reaches and "is a bend" stay the consumer's.
 ### D94 — axis-aligned facts in `core/geometry/axis.py`; consumers keep their numbers.
 ### D95 — one package, `core/geometry/`, public as `topo.geometry`; facts are frozen dataclasses computed on demand, never cached on the model.
@@ -462,6 +462,10 @@ the tip, D101); anchoring goldens accepted without judging (22 texts lost their 
 The name says the job (edges that touch within a distance); it stays public, the step of the compose-your-own recipe
 (`experimental` carries no promise, D175). Tests, data and scripts name the readings `faces`/`outlines`
 (`golden_outlines/`, golden key `clusters`, values unchanged); D202's rename finished.
+### D222 — Tests are filed by what they prove (Federico, 7 November): `engine/`, `promises/`, `golden/`, `adapters/dxf/`, `package/`, `tools/`.
+`engine/` mirrors the package (primitives, geometry, topology, base, readings, model, tools, io); `promises/` holds the
+invariants on every drawing, `golden/` the comparisons, `adapters/dxf/` what proves the format, `package/` the guards on
+the whole package. unit/integration/real sorted by size and no longer held. Paths come from `tests/paths.py`, never `__file__`.
 
 ## Open questions
 

@@ -34,8 +34,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(_paths.ROOT))
 
-HEAL_TOLERANCE = 0.5     # come tests/unit/core/test_heal_invariants.py
-MAX_GAP = 0.5            # come tests/unit/core/test_outlines_invariants.py
+HEAL_TOLERANCE = 0.5     # come tests/promises/test_heal_invariants.py
+MAX_GAP = 0.5            # come tests/promises/test_outlines_invariants.py
 TIMEOUT = 300            # secondi per disegno, tutte e due le letture
 
 

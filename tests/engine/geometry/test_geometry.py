@@ -1,0 +1,511 @@
+"""
+test_geometry.py
+----------------
+Test unitari per le funzioni pure di topo.core.geometry.
+
+Copre:
+  - are_collinear         : verifica collinearità di due tratti (topo/core/lines.py, D93)
+  - group_collinear_lines : raggruppa tratti collineari
+  - dash_line             : tratteggio di un segmento, capi ancorati e vuoti uguali
+"""
+
+import unittest
+import math
+
+
+from shapely.geometry import LineString
+
+from topo.core.primitives.segments import ArcSeg, LineSeg
+from topo.core.geometry.lines import are_collinear, group_collinear_lines, dash_line
+from topo.core.geometry.measure import (
+    track_points, track_length, segment_length, longest_segment,
+    chord_angle_deg, length_inside,
+)
+from topo.core.geometry.points import (
+    drop_duplicate_points, fit_circle_kasa, douglas_peucker, turn_corners, circle_through,
+    approximate_bspline, even_spacing,
+)
+from topo.core.primitives.segments import BSplineSeg
+from topo.core.primitives.segments import CircleSeg
+
+
+# ---------------------------------------------------------------------------
+# Helper
+# ---------------------------------------------------------------------------
+
+def make_arc(cx, cy, radius, start_angle, end_angle):
+    """Crea un ArcSeg con angoli in gradi."""
+    return ArcSeg(
+        center=(cx, cy),
+        radius=radius,
+        start_angle=math.radians(start_angle),
+        end_angle=math.radians(end_angle),
+        ccw=True
+    )
+
+
+def make_line(x1, y1, x2, y2) -> LineSeg:
+    """Un tratto di topo."""
+    return LineSeg((x1, y1), (x2, y2))
+
+
+# ---------------------------------------------------------------------------
+# are_collinear
+# ---------------------------------------------------------------------------
+
+class TestAreCollinear(unittest.TestCase):
+
+    def test_001_stessa_linea_orizzontale(self):
+        a = make_line(0, 10, 45, 10)
+        b = make_line(125, 10, 170, 10)
+        self.assertTrue(are_collinear(a, b))
+
+    def test_002_stessa_linea_verticale(self):
+        a = make_line(50, 0, 50, 30)
+        b = make_line(50, 80, 50, 120)
+        self.assertTrue(are_collinear(a, b))
+
+    def test_003_parallele_non_collineari(self):
+        a = make_line(0, 10, 100, 10)
+        b = make_line(0, 20, 100, 20)
+        self.assertFalse(are_collinear(a, b))
+
+    def test_004_perpendicolari(self):
+        a = make_line(0, 0, 100, 0)
+        b = make_line(50, -50, 50, 50)
+        self.assertFalse(are_collinear(a, b))
+
+    def test_005_stessa_retta_obliqua(self):
+        a = make_line(0, 0, 10, 10)
+        b = make_line(20, 20, 30, 30)
+        self.assertTrue(are_collinear(a, b))
+
+    def test_006_direzioni_opposte_stessa_retta(self):
+        a = make_line(0, 5, 45, 5)
+        b = make_line(170, 5, 125, 5)
+        self.assertTrue(are_collinear(a, b))
+
+    def test_007_entro_tolleranza(self):
+        a = make_line(0, 10.00, 100, 10.00)
+        b = make_line(0, 10.05, 100, 10.05)
+        self.assertTrue(are_collinear(a, b, tolerance=0.1))
+
+    def test_008_fuori_tolleranza(self):
+        a = make_line(0, 10.00, 100, 10.00)
+        b = make_line(0, 10.20, 100, 10.20)
+        self.assertFalse(are_collinear(a, b, tolerance=0.1))
+
+    def test_009_linea_degenere(self):
+        a = make_line(0, 0, 0, 0)
+        b = make_line(10, 10, 10, 10)
+        self.assertFalse(are_collinear(a, b))
+
+
+# ---------------------------------------------------------------------------
+# group_collinear_lines
+# ---------------------------------------------------------------------------
+
+class TestGroupCollinearLines(unittest.TestCase):
+
+    def test_001_caso_reale_tre_pieghe(self):
+        lines = [
+            make_line(125.0, -39.628, 170.0, -39.628),
+            make_line(0.0,   -39.628,  45.0, -39.628),
+            make_line(125.0,  21.114, 130.2,  21.114),
+            make_line(164.8,  21.114, 170.0,  21.114),
+            make_line(0.0,    21.114,   5.2,  21.114),
+            make_line(39.8,   21.114,  45.0,  21.114),
+        ]
+
+        groups = group_collinear_lines(lines)
+        self.assertEqual(len(groups), 2)
+
+    def test_002_gruppi_con_dimensione_corretta(self):
+        lines = [
+            make_line(125.0, -39.628, 170.0, -39.628),
+            make_line(0.0,   -39.628,  45.0, -39.628),
+            make_line(125.0,  21.114, 130.2,  21.114),
+            make_line(164.8,  21.114, 170.0,  21.114),
+            make_line(0.0,    21.114,   5.2,  21.114),
+            make_line(39.8,   21.114,  45.0,  21.114),
+        ]
+
+        groups = group_collinear_lines(lines)
+        sizes = sorted(len(g) for g in groups)
+        self.assertEqual(sizes, [2, 4])
+
+    def test_003_segmento_singolo(self):
+        lines = [make_line(0, 0, 100, 0)]
+        groups = group_collinear_lines(lines)
+
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(len(groups[0]), 1)
+
+    def test_004_lista_vuota(self):
+        groups = group_collinear_lines([])
+        self.assertEqual(groups, [])
+
+    def test_005_tre_segmenti_stessa_retta(self):
+        lines = [
+            make_line(0, 0, 10, 0),
+            make_line(20, 0, 30, 0),
+            make_line(40, 0, 50, 0),
+        ]
+
+        groups = group_collinear_lines(lines)
+
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(len(groups[0]), 3)
+
+    def test_006_parallele_separate(self):
+        lines = [
+            make_line(0, 0, 100, 0),
+            make_line(0, 10, 100, 10),
+            make_line(0, 20, 100, 20),
+        ]
+
+        groups = group_collinear_lines(lines)
+
+        self.assertEqual(len(groups), 3)
+
+    def test_007_linee_oblique_collineari(self):
+        lines = [
+            make_line(0, 0, 10, 10),
+            make_line(20, 20, 30, 30),
+            make_line(40, 40, 50, 50),
+        ]
+
+        groups = group_collinear_lines(lines)
+
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(len(groups[0]), 3)
+
+    def test_008_linee_miste(self):
+        lines = [
+            make_line(0, 0, 10, 0),    # orizzontale y=0
+            make_line(20, 0, 30, 0),   # orizzontale y=0
+            make_line(0, 10, 10, 10),  # orizzontale y=10
+            make_line(0, 0, 0, 10),    # verticale x=0
+        ]
+
+        groups = group_collinear_lines(lines)
+
+        self.assertEqual(len(groups), 3)
+        sizes = sorted(len(g) for g in groups)
+        self.assertEqual(sizes, [1, 1, 2])
+
+
+# ---------------------------------------------------------------------------
+# track_points / track_length
+# ---------------------------------------------------------------------------
+
+class TestTrackHelpers(unittest.TestCase):
+
+    def test_001_single_line_two_points(self):
+        seg = LineSeg(start=(0, 0), end=(10, 0))
+        pts = track_points([seg])
+        self.assertEqual(pts, [(0, 0), (10, 0)])
+        self.assertAlmostEqual(track_length(pts), 10.0)
+
+    def test_002_chain_dedups_shared_vertex(self):
+        a = LineSeg(start=(0, 0), end=(10, 0))
+        b = LineSeg(start=(10, 0), end=(10, 5))
+        pts = track_points([a, b])
+        self.assertEqual(pts, [(0, 0), (10, 0), (10, 5)])
+        self.assertAlmostEqual(track_length(pts), 15.0)
+
+    def test_003_arc_is_discretized(self):
+        arc = make_arc(0, 0, 5, 0, 90)
+        pts = track_points([arc])
+        self.assertGreater(len(pts), 2)
+
+    def test_004_empty(self):
+        self.assertEqual(track_points([]), [])
+        self.assertEqual(track_length([]), 0.0)
+
+
+# ---------------------------------------------------------------------------
+# drop_duplicate_points / fit_circle_kasa (D38), Douglas-Peucker, spigoli per
+# svolta, cerchio per tre punti, spline approssimante (D141)
+# ---------------------------------------------------------------------------
+
+class TestPointSequenceMath(unittest.TestCase):
+
+    def test_004_drop_duplicate_points(self):
+        pts = [(0, 0), (0, 0), (1, 0), (1, 0.0000001), (2, 0)]
+        cleaned = drop_duplicate_points(pts, tolerance=1e-3)
+        self.assertEqual(cleaned, [(0, 0), (1, 0), (2, 0)])
+
+    def test_005_fit_circle_kasa_exact_circle(self):
+        n = 12
+        pts = [
+            (10 * math.cos(2 * math.pi * i / n), 10 * math.sin(2 * math.pi * i / n))
+            for i in range(n)
+        ]
+        fit = fit_circle_kasa(pts)
+        self.assertIsNotNone(fit)
+        center, radius, max_residual = fit
+        self.assertAlmostEqual(center[0], 0.0, places=3)
+        self.assertAlmostEqual(center[1], 0.0, places=3)
+        self.assertAlmostEqual(radius, 10.0, places=3)
+        self.assertAlmostEqual(max_residual, 0.0, places=3)
+
+    def test_006_fit_circle_kasa_too_few_points(self):
+        self.assertIsNone(fit_circle_kasa([(0, 0), (1, 1)]))
+
+    def test_008_douglas_peucker_keeps_the_corner(self):
+        pts = [(x / 10, 0.0) for x in range(11)] + [(1.0, y / 10) for y in range(1, 11)]
+        self.assertEqual(douglas_peucker(pts, 0.01), [0, 10, 20])
+
+    def test_008b_douglas_peucker_does_not_depend_on_the_frame(self):
+        # G6e: una S antisimmetrica ha due punti alla stessa distanza dalla
+        # corda; `d > best` teneva il primo, e la rotazione decideva quale
+        # (4 risultati diversi in 200 angoli). Al pari merito si taglia in tutti
+        from tests.invariants import rigid
+        pts = [(x * 0.05, 0.3 * math.sin(x * 0.05 * math.pi)) for x in range(81)]
+        at_rest = douglas_peucker(pts, 0.02)
+        self.assertGreater(len(at_rest), 2)
+        for angle in (0.031, 0.062, 0.093, 0.7, 2.294, math.pi / 2):
+            with self.subTest(angle=angle):
+                _, point = rigid(angle, 0.0, 0.0)
+                self.assertEqual(douglas_peucker([point(p) for p in pts], 0.02), at_rest)
+
+    def test_008c_simplify_points_does_not_depend_on_the_frame(self):
+        # la stessa S fino alle primitive: la sequenza retta/arco/spline non
+        # cambia con la rotazione né lontano dall'origine
+        from tests.invariants import rigid
+        from topo.core.primitives.fitting import simplify_points
+        pts = [(x * 0.05, 0.3 * math.sin(x * 0.05 * math.pi)) for x in range(81)]
+        kinds = lambda ps: [type(q).__name__ for q in simplify_points(ps, tolerance=0.02, scale=0.1, closed=False)]
+        at_rest = kinds(pts)
+        for motion in ((0.7, 0.0, 0.0), (2.294, 0.0, 0.0), (0.031, 3e6, -2.5e6), (0.7, 3e6, -2.5e6)):
+            with self.subTest(motion=motion):
+                _, point = rigid(*motion)
+                self.assertEqual(kinds([point(q) for q in pts]), at_rest)
+
+    def test_008d_collinear_points_stay_a_line_under_motion(self):
+        # G6e, `points.py:282`: tre punti allineati danno un cerchio dal rumore
+        # (enorme, la corda stessa); retta e quasi-retta restano una retta
+        from tests.invariants import rigid
+        from topo.core.primitives.fitting import simplify_points
+        for name, pts in (("retta", [(x * 0.05, 0.0) for x in range(81)]),
+                          ("quasi retta", [(x * 0.05, 0.015 * math.sin(x * 0.05 * math.pi)) for x in range(81)])):
+            for motion in ((0.0, 0.0, 0.0), (0.7, 0.0, 0.0), (0.031, 3e6, -2.5e6), (2.294, 3e6, -2.5e6)):
+                with self.subTest(case=name, motion=motion):
+                    _, point = rigid(*motion)
+                    prims = simplify_points([point(q) for q in pts], tolerance=0.02, scale=0.1, closed=False)
+                    self.assertEqual([type(q).__name__ for q in prims], ["LineSeg"])
+
+    def test_009_a_right_angle_rounded_by_sampling_is_still_a_corner(self):
+        # quadrato 10x10 con gli spigoli smussati su 2 campioni: nessun angolo
+        # interno fra vicini sta sotto 90°, la svolta su scala 2 sì
+        pts = []
+        for (ax, ay), (bx, by) in [((0, 0), (10, 0)), ((10, 0), (10, 10)), ((10, 10), (0, 10)), ((0, 10), (0, 0))]:
+            pts += [(ax + (bx - ax) * t / 20, ay + (by - ay) * t / 20) for t in range(1, 20)]
+        corners = turn_corners(pts, closed=True, turn_deg=35, scale=2.0, tolerance=0.1)
+        self.assertEqual(len(corners), 4)
+
+    def test_009b_a_symmetric_cut_corner_does_not_depend_on_the_frame(self):
+        # G6e: quadrato 10x10 con ogni vertice tagliato da due campioni a 0.3,
+        # uno per lato. I due svoltano uguale; "fra due spigoli più vicini di
+        # `scale` quello che svolta di più" lo decideva l'ultimo bit
+        # (14 insiemi di spigoli in 200 rotazioni, lati dritti fatti spline)
+        from tests.invariants import rigid
+        from topo.core.primitives.fitting import simplify_points
+        square = [(0, 0), (10, 0), (10, 10), (0, 10)]
+        pts = []
+        for i in range(4):
+            a, b, c = square[i], square[(i + 1) % 4], square[(i + 2) % 4]
+            d_in = ((b[0] - a[0]) / 10, (b[1] - a[1]) / 10)
+            d_out = ((c[0] - b[0]) / 10, (c[1] - b[1]) / 10)
+            pts += [(a[0] + d_in[0] * t * 0.5, a[1] + d_in[1] * t * 0.5) for t in range(1, 20)]
+            pts += [(b[0] - d_in[0] * 0.3, b[1] - d_in[1] * 0.3), (b[0] + d_out[0] * 0.3, b[1] + d_out[1] * 0.3)]
+        corners = lambda ps: turn_corners(ps, closed=True, turn_deg=35, scale=2.0, tolerance=0.1)
+        kinds = lambda ps: [type(q).__name__ for q in simplify_points(ps, tolerance=0.1, scale=2.0, closed=True)]
+        at_rest = corners(pts), kinds(pts)
+        self.assertEqual(len(at_rest[0]), 4)
+        for angle in (0.031, 0.093, 0.155, 0.7, 2.294, 3.007):
+            with self.subTest(angle=angle):
+                _, point = rigid(angle, 0.0, 0.0)
+                moved = [point(q) for q in pts]
+                self.assertEqual((corners(moved), kinds(moved)), at_rest)
+        # l'anello chiuso comincia dove capita: gli spigoli (come punti) no
+        at_rest_points = {pts[k] for k in at_rest[0]}
+        for start in (1, 19, 20, 41, len(pts) - 1):
+            with self.subTest(start=start):
+                ring = pts[start:] + pts[:start]
+                self.assertEqual({ring[k] for k in corners(ring)}, at_rest_points)
+                self.assertEqual(sorted(kinds(ring)), sorted(at_rest[1]))
+
+    def test_010_a_circle_has_no_corner(self):
+        pts = [(10 * math.cos(2 * math.pi * i / 100), 10 * math.sin(2 * math.pi * i / 100)) for i in range(100)]
+        self.assertEqual(turn_corners(pts, closed=True, turn_deg=35, scale=2.0, tolerance=0.01), [])
+
+    def test_011_circle_through_three_points(self):
+        center, radius = circle_through((10, 0), (0, 10), (-10, 0))
+        self.assertAlmostEqual(center[0], 0.0)
+        self.assertAlmostEqual(center[1], 0.0)
+        self.assertAlmostEqual(radius, 10.0)
+        self.assertIsNone(circle_through((0, 0), (1, 1), (2, 2)))
+
+    def test_012_approximate_bspline_ends_exact_and_within_tolerance(self):
+        # mezza circonferenza con rumore di 0.05: la spline passa per gli
+        # estremi, sta entro 0.1 da ogni punto e usa molti meno controlli
+        pts = [(10 * math.cos(a) + 0.05 * math.sin(37 * a), 10 * math.sin(a))
+               for a in (i * math.pi / 200 for i in range(201))]
+        control, knots = approximate_bspline(pts, 3, 0.1)
+        self.assertLess(len(control), 30)
+        self.assertEqual(control[0], pts[0])
+        self.assertEqual(control[-1], pts[-1])
+        curve = LineString(BSplineSeg(degree=3, control_points=control, knots=knots).discretize(tolerance=1e-4))
+        from shapely.geometry import Point as SPoint
+        self.assertLessEqual(max(curve.distance(SPoint(p)) for p in pts), 0.1)
+
+    def test_013_even_spacing_fills_long_gaps(self):
+        pts = [(0, 0), (1, 0), (2, 0), (10, 0)]
+        out = even_spacing(pts, closed=False)
+        self.assertEqual(out[0], (0, 0))
+        self.assertEqual(out[-1], (10, 0))
+        self.assertTrue(all(b[0] - a[0] <= 1.0 + 1e-9 for a, b in zip(out, out[1:])))
+
+
+# ---------------------------------------------------------------------------
+# segment_length / longest_segment / chord_angle_deg
+# ---------------------------------------------------------------------------
+# Nate dalla discussione "funzioni geometriche" (TODO.md): dato un elenco di
+# segmenti nativi, qual è il più lungo e che angolo ha — usate da
+# topo.tools.rotate per allineare il lato OUTER più lungo di un disegno.
+
+class TestLengthInside(unittest.TestCase):
+
+    def test_linea_tagliata_dal_rettangolo(self):
+        # 20 mm di linea, ne entrano 8 nel rettangolo
+        seg = LineSeg(start=(-12, 5), end=(8, 5))
+        self.assertAlmostEqual(length_inside(seg, (0, 0, 10, 10)), 8.0, places=9)
+
+    def test_linea_fuori(self):
+        self.assertEqual(length_inside(LineSeg(start=(20, 0), end=(30, 0)), (0, 0, 10, 10)), 0.0)
+
+    def test_cerchio_tutto_dentro(self):
+        seg = CircleSeg(center=(5, 5), radius=2)
+        self.assertAlmostEqual(length_inside(seg, (0, 0, 10, 10)), segment_length(seg), places=1)
+
+
+class TestSegmentLength(unittest.TestCase):
+
+    def test_001_line_length_is_euclidean(self):
+        seg = LineSeg(start=(0, 0), end=(3, 4))
+        self.assertAlmostEqual(segment_length(seg), 5.0, places=9)
+
+    def test_002_arc_length_is_radius_times_sweep(self):
+        seg = make_arc(0, 0, 10, 0, 90)  # quarto di cerchio
+        self.assertAlmostEqual(segment_length(seg), 10 * math.pi / 2, places=6)
+
+    def test_003_circle_length_is_circumference(self):
+        seg = CircleSeg(center=(0, 0), radius=2)
+        self.assertAlmostEqual(segment_length(seg), 2 * math.pi * 2, places=6)
+
+
+class TestLongestSegment(unittest.TestCase):
+
+    def test_001_picks_longest_among_mixed_types(self):
+        short_line = LineSeg(start=(0, 0), end=(1, 0))
+        long_line  = LineSeg(start=(0, 0), end=(100, 0))
+        arc        = make_arc(0, 0, 5, 0, 90)
+        seg, length = longest_segment([short_line, arc, long_line])
+        self.assertIs(seg, long_line)
+        self.assertAlmostEqual(length, 100.0, places=9)
+
+    def test_002_empty_list_returns_none(self):
+        seg, length = longest_segment([])
+        self.assertIsNone(seg)
+        self.assertEqual(length, 0.0)
+
+
+class TestChordAngleDeg(unittest.TestCase):
+
+    def test_001_horizontal_is_zero(self):
+        self.assertAlmostEqual(chord_angle_deg((0, 0), (10, 0)), 0.0, places=9)
+
+    def test_002_vertical_is_90(self):
+        self.assertAlmostEqual(chord_angle_deg((0, 0), (0, 10)), 90.0, places=9)
+
+    def test_003_direction_does_not_matter_mod_180(self):
+        # una linea non ha un verso proprio: a->b e b->a sono lo stesso angolo
+        forward  = chord_angle_deg((0, 0), (10, 10))
+        backward = chord_angle_deg((10, 10), (0, 0))
+        self.assertAlmostEqual(forward, backward, places=9)
+        self.assertAlmostEqual(forward, 45.0, places=9)
+
+
+class TestInterpolateBspline(unittest.TestCase):
+    """La B-spline di fit è matematica di topo, non di una libreria di formato."""
+
+    def _check_passes_through(self, pts, degree):
+        from topo.core.geometry.points import interpolate_bspline
+        from topo.core.primitives.segments import BSplineSeg
+        ctrl, knots = interpolate_bspline(pts, degree)
+        self.assertEqual(len(ctrl), len(pts))
+        self.assertEqual(len(knots), len(pts) + degree + 1)
+        curve = BSplineSeg(degree=degree, control_points=ctrl, knots=knots)
+        from shapely.geometry import Point
+        dense = LineString(curve.discretize(tolerance=0.001))
+        for p in pts:
+            # ogni punto di fit sta sulla curva
+            self.assertLess(dense.distance(Point(p)), 0.002)
+
+    def test_grado_dispari_passa_per_i_punti(self):
+        pts = [(10 * math.cos(i * 0.3), 6 * math.sin(i * 0.3)) for i in range(12)]
+        self._check_passes_through(pts, 3)
+
+    def test_grado_pari_passa_per_i_punti(self):
+        pts = [(i * 2.0, math.sin(i) * 3) for i in range(9)]
+        self._check_passes_through(pts, 2)
+
+    def test_troppo_pochi_punti(self):
+        from topo.core.geometry.points import interpolate_bspline
+        with self.assertRaises(ValueError):
+            interpolate_bspline([(0, 0), (1, 1), (2, 0)], 3)
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
+
+class TestDashLine(unittest.TestCase):
+    """Tratteggio di un segmento: capi ancorati, vuoti uguali, segmento intero se coperto."""
+
+    def _lengths(self, dashes):
+        return [round(math.dist(a, b), 9) for a, b in dashes]
+
+    def test_head_tail_and_middle_with_equal_gaps(self):
+        # 100 lungo, tratti 10: due capi + 2 centrali = 40 coperti, 3 vuoti da 20
+        dashes = dash_line((0, 0), (100, 0), head=10, tail=10, middle=10, n_middle=2)
+        self.assertEqual([(round(a[0], 9), round(b[0], 9)) for a, b in dashes],
+                         [(0, 10), (30, 40), (60, 70), (90, 100)])
+
+    def test_only_head_and_tail(self):
+        dashes = dash_line((0, 0), (100, 0), head=15, tail=5)
+        self.assertEqual(self._lengths(dashes), [15, 5])
+        self.assertEqual(dashes[0][0], (0, 0))
+        self.assertEqual(dashes[-1][1], (100.0, 0.0))
+
+    def test_follows_the_direction_of_a_slanted_segment(self):
+        dashes = dash_line((10, 10), (10 + 60, 10 + 80), head=10, tail=10, middle=10, n_middle=1)
+        self.assertEqual(self._lengths(dashes), [10, 10, 10])
+        for a, b in dashes:
+            self.assertAlmostEqual((b[1] - a[1]) / (b[0] - a[0]), 80 / 60)
+
+    def test_covered_segment_stays_whole(self):
+        self.assertEqual(dash_line((0, 0), (30, 0), head=10, tail=10, middle=10, n_middle=1),
+                         [((0, 0), (30, 0))])
+        self.assertEqual(dash_line((0, 0), (30, 0), head=20, tail=20), [((0, 0), (30, 0))])
+
+    def test_zero_length_dash_is_dropped(self):
+        dashes = dash_line((0, 0), (100, 0), head=0, tail=10, middle=10, n_middle=1)
+        self.assertEqual(self._lengths(dashes), [10, 10])
+
+    def test_negative_length_raises(self):
+        with self.assertRaises(ValueError):
+            dash_line((0, 0), (100, 0), head=-1, tail=10)
+        with self.assertRaises(ValueError):
+            dash_line((0, 0), (100, 0), head=1, tail=1, middle=1, n_middle=-1)
