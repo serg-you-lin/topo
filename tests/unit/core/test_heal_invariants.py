@@ -76,12 +76,15 @@ def _tolerance(dxf: Path) -> float:
     return _config(dxf).get("tolerance", DEFAULT_HEAL_TOLERANCE)
 
 
-@lru_cache(maxsize=None)
 def _read(dxf: Path, tol: Optional[float] = None):
     """(documento, risultato di heal) come in test_golden, alla tolleranza del
-    disegno o a `tol`."""
+    disegno o a `tol`: la tolleranza del disegno data per nome è la stessa lettura."""
+    return _read_at(dxf, _tolerance(dxf) if tol is None else tol)
+
+
+@lru_cache(maxsize=None)
+def _read_at(dxf: Path, tol: float):
     rules = topo.name_rules({**GLOBAL_NAME_ROLES, **_config(dxf).get("name_roles", {})})
-    tol = _tolerance(dxf) if tol is None else tol
     doc = topo_dxf.load_dxf(str(dxf), upgrade=True, explode_inserts=True, flatten_z=True,
                          tolerance=tol, role_rules=rules)
     return doc, topo.heal(doc, tolerance=tol).faces()
