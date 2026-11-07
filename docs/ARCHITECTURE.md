@@ -93,7 +93,7 @@ topo/
 │   ├── readings/     LE LETTURE: network.py (la riparazione e `Network`),
 │   │                 heal.py (`heal()`), faces.py (`faces()`), outline.py
 │   │                 (`outlines()`) e i passi propri (heal_steps.py,
-│   │                 islands.py, outer_scan.py) — ogni lettura sceglie solo
+│   │                 touching.py, outer_scan.py) — ogni lettura sceglie solo
 │   │                 come cerca il contorno
 │   ├── geometry/     LA GEOMETRIA, `topo.geometry` (D95): fatti con nomi geometrici
 │   │                 — shape (forma, cerchi concentrici, archi attorno), lines
@@ -272,7 +272,7 @@ rete è quella di `heal()`:
 1. **da parte** gli `Edge` con ruolo deciso e non strutturale, già fatto da
    `heal()` (D30): è così che un consumatore toglie cornice, cartiglio, cerchi
    di ingrandimento; vanno in `loose` col loro ruolo (D203)
-2. **gruppi**: gli edge che si toccano entro `max_gap` (`spatial_islands`):
+2. **gruppi**: gli edge che si toccano entro `max_gap` (`touching_groups`, interno):
    nessuna nozione di chiusura, quindi nessuna ambiguità di grafo. Nessuna
    distanza fra le viste: quella dipendeva da come è impaginato il disegno,
    che topo non conosce (D99)

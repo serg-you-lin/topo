@@ -37,7 +37,7 @@ from ..topology.outer_face import OuterFace, outer_face
 from ..base.hierarchy import assign_cluster_refs, sort_clusters
 from ..base.curves import loose_curves
 from ..topology.non_contour_edges import non_contour_pieces
-from .islands import spatial_islands
+from .touching import touching_groups
 from .network import repair_edges
 from .heal_steps import close_contour_jumps
 
@@ -116,7 +116,7 @@ def read_network_outlines(net: Network) -> Result:
 def read_outlines(edges: List[Edge], tolerance: float, max_gap: float) -> List[OutlineReading]:
     """
     Gli edge riparati come heal() (`network.repair_edges`), poi i pezzi a
-    contatto (`spatial_islands` a `max_gap`) letti uno per uno, e
+    contatto (`touching_groups` a `max_gap`) letti uno per uno, e
     l'annidamento: un pezzo che sta dentro il contorno di un altro — col suo
     contorno, o senza contorno con tutti i suoi edge — porta in `nested_in`
     l'indice del più esterno che lo contiene.
@@ -139,7 +139,7 @@ def read_outline(edges: List[Edge], tolerance: float, max_gap: float) -> Outline
 
 def _read_groups(edges: List[Edge], tolerance: float, gap: float) -> List[OutlineReading]:
     """Edge già riparati: i gruppi a contatto entro `gap`, letti, e annidati."""
-    readings = [_read_group(isl.edges, tolerance) for isl in spatial_islands(edges, gap)]
+    readings = [_read_group(g.edges, tolerance) for g in touching_groups(edges, gap)]
     outers = [(j, r.outer.segments, ring_area(r.outer.segments))
               for j, r in enumerate(readings) if r.outer is not None]
     for i, r in enumerate(readings):

@@ -1,19 +1,19 @@
 """
-topo/core/readings/islands.py
------------------------------
-Partizione spaziale degli Edge in isole: due edge stanno nella stessa isola
-se la distanza vera fra i loro segmenti è al massimo `gap_tolerance` (a
-catena). Nessuna nozione di nodo, grafo o chiusura — solo vicinanza, quindi
-non eredita l'ambiguità della connettività che rompe il grafo sulle viste
+topo/core/readings/touching.py
+------------------------------
+Raggruppa gli Edge che si toccano: due edge stanno nello stesso gruppo se la
+distanza vera fra i loro segmenti è al massimo `gap_tolerance` (a catena).
+Nessuna nozione di nodo, grafo o chiusura — solo vicinanza, quindi non
+eredita l'ambiguità della connettività che rompe il grafo sulle viste
 proiettate.
 
 Distanza vera, non fra bbox: la bbox di una diagonale lunga (vista
 isometrica) copre un rettangolo vuoto che tocca le viste accanto.
 
-Un'isola è una vista o un pezzo candidato: quale delle due lo decide il
+Un gruppo è una vista o un pezzo candidato: quale delle due lo decide il
 chiamante. Anche `gap_tolerance` è del chiamante: dipende da come è
 impaginato il disegno, non dalla geometria. Un foro lontano dai lati resta
-un'isola a sé: che stia DENTRO un'altra lo dice solo il contorno esterno,
+un gruppo a sé: che stia DENTRO un altro lo dice solo il contorno esterno,
 non la vicinanza.
 
 Puro: solo Edge e primitive, nessun formato.
@@ -39,7 +39,7 @@ BBox = Tuple[float, float, float, float]   # xmin, ymin, xmax, ymax
 
 
 @dataclass
-class Island:
+class TouchingGroup:
     """Gruppo di Edge vicini, con la bbox che li contiene tutti."""
     edges:  List[Edge]   = field(default_factory=list)   # ordine di input
     bbox:   BBox         = (0.0, 0.0, 0.0, 0.0)
@@ -57,10 +57,10 @@ class Island:
 # API pubblica
 # ---------------------------------------------------------------------------
 
-def spatial_islands(edges: Iterable[Edge], gap_tolerance: float) -> List[Island]:
+def touching_groups(edges: Iterable[Edge], gap_tolerance: float) -> List[TouchingGroup]:
     """
     Union-find sulle coppie di Edge a distanza vera <= gap_tolerance
-    (`_near_pairs`). Isole ordinate per area di bbox, decrescente.
+    (`_near_pairs`). Gruppi ordinati per area di bbox, decrescente.
     """
     edges = list(edges)
     if not edges:
@@ -69,16 +69,16 @@ def spatial_islands(edges: Iterable[Edge], gap_tolerance: float) -> List[Island]
     geoms = [edge_geometry(e) for e in edges]
     groups = connected_groups(len(edges), _near_pairs(edges, geoms, gap_tolerance))
 
-    islands = []
+    groups_out = []
     for members in groups:
         bounds = [geoms[i].bounds for i in members]
-        islands.append(Island(
+        groups_out.append(TouchingGroup(
             edges=[edges[i] for i in members],
             bbox=(min(b[0] for b in bounds), min(b[1] for b in bounds),
                   max(b[2] for b in bounds), max(b[3] for b in bounds)),
         ))
-    islands.sort(key=lambda isl: isl.width * isl.height, reverse=True)
-    return islands
+    groups_out.sort(key=lambda g: g.width * g.height, reverse=True)
+    return groups_out
 
 
 def _near_pairs(edges: List[Edge], geoms: list, gap_tolerance: float) -> List[Tuple[int, int]]:
