@@ -150,7 +150,7 @@ Aperti, con i fatti:
     `34102bc`); su una spline non si può prolungare, lì un segmento nuovo.
     Il contorno è un triangolino di tre lineette e due segmenti di heal.
 
-Fuori da questo piano: G7, G8, G9, G10, G14 (non toccati).
+Fuori da questo piano: G8, G9, G10, G14 (non toccati).
 
 ## Fuori dal cancello: MAP e TODO corte (Federico, 1 novembre) — fatto il 2 novembre
 
@@ -238,7 +238,7 @@ da quel giorno ogni commit su `main` lo tiene a 0. Entra solo ciò che rompe un
 nome pubblico, o rende vere e provate le invarianti di D143 sui fixture del
 repo, più i documenti (D144) e la history pulita; il resto è 1.x (D158, D174).
 
-**Chiusi:** G1 (campi di `Result`, D150), G2 (→ 1.x, D149), G3 (fedeltà a due
+**Chiusi:** G1 (campi di `Result`, D150), G7 (D220), G2 (→ 1.x, D149), G3 (fedeltà a due
 vie, D152), G4 (discretizzazione, D145/D153/D154), G5 (misure, D156), G6 (4
 dubbi D103, D157), G6b (ogni pezzo una volta, D163), G6c (contatto deciso una
 volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
@@ -322,14 +322,9 @@ novembre, ramo `no-join-ends` fuso in `main`.
       uguali a quelli senza righe, righe in `loose`; rosso se le righe restano
       nella rete). Riconoscere un tratteggio è del consumer (snapdraw): il
       file `stretto` resta non tracciato, per il suo test.
-- [ ] **G7** Zero `expectedFailure` e zero difetti noti: golden di island
-      rifatti da zero sui `_noframe` (dopo che Federico ha guardato i DXF);
-      inner che si incrociano
-      su anch_03/regr_02 e 10 disegni di `golden_anchoring/`
-      (`KNOWN["inners cross"]`: cicli accettati che non sono facce, D107);
-      roundtrip di anch_03/regr_02/anch_03_noframe (`KNOWN["roundtrip"]`).
-      Da verificare: lo snapshot di `test_golden_islands.py` confronta la
-      forma di ogni inner, non solo bbox e conteggio.
+- [x] **G7** Zero `expectedFailure` e zero difetti noti (7 novembre, D220):
+      golden di island e di aggancio rigenerati, liste dei noti vuote,
+      suite senza rossi attesi. Golden dei `_noframe` non fatti (Federico).
 - [ ] **G8** README / README_IT / `description` di pyproject / prima riga di
       CLAUDE.md: motore di geometria 2D, i disegni tecnici sono un caso.
 - [ ] **G9** `docs/API.md` e `docs/ARCHITECTURE.md` in inglese; docstring dei

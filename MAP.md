@@ -455,6 +455,9 @@ one arc stays open by 3°, as a lone arc would (a thread is a ~270° arc and mus
 `renode` left closed curves' nodes as given: an Edge whose end was re-evaluated 1e-13 from its start (`rotate_document`,
 a hand-built Edge) stayed open, and a closed spline crossing itself went whole to `loose` in `outlines()`. D216/D187:
 the node comes from the geometry, once, for every reading.
+### D220 — G7 closed (Federico, 7 November): every golden is current, no test is an expected failure.
+Island goldens regenerated after review beside the original (inners 0 by D161; a circle crossed by a V keeps
+the tip, D101); anchoring goldens accepted without judging (22 texts lost their anchor, TODO). No `_noframe` goldens.
 
 ## Open questions
 
