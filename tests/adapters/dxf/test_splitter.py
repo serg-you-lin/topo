@@ -530,8 +530,9 @@ class TestIntegrationContours(unittest.TestCase):
 
     def test_005_regressione_lwpolyline_chiusa_tutti_gli_esempi(self):
         """
-        Regressione: per ogni file in examples/, ogni LWPOLYLINE strutturale
-        nei figli è closed=True. File non splittabili ignorati silenziosamente.
+        Regressione: per ogni file in tests/data/, ogni LWPOLYLINE strutturale
+        nei figli è closed=True, sui layer senza SPLINE/ELLIPSE: un contorno
+        misto si scrive in pezzi aperti che chiudono insieme (`write_segments`).
         """
         from topo_dxf.layers import LAYER_OUTER, LAYER_INNER
         structural = {LAYER_OUTER, LAYER_INNER}
@@ -539,21 +540,18 @@ class TestIntegrationContours(unittest.TestCase):
             if src.stem.endswith("_healed"):
                 continue
             out_dir = tempfile.mkdtemp()
-            try:
-                doc = ezdxf.readfile(str(src))
-                _split_to_files(topo_dxf.document_from_msp(doc.modelspace()),
-                                     output_folder=out_dir, label=src.stem)
+            with self.subTest(src=src.name):
+                _split_to_files(topo_dxf.load_dxf(str(src)), output_folder=out_dir, label=src.stem)
                 for child in Path(out_dir).glob("*.dxf"):
-                    child_doc = ezdxf.readfile(str(child))
-                    for e in child_doc.modelspace().query("LWPOLYLINE"):
-                        if e.dxf.layer in structural:
+                    msp = ezdxf.readfile(str(child)).modelspace()
+                    mixed = {e.dxf.layer for e in msp.query("SPLINE ELLIPSE")}
+                    for e in msp.query("LWPOLYLINE"):
+                        if e.dxf.layer in structural - mixed:
                             self.assertTrue(
                                 e.closed,
                                 f"{child.name}: LWPOLYLINE su {e.dxf.layer} "
                                 f"non chiusa (sorgente: {src.name})"
                             )
-            except Exception:
-                pass
 
 
 class TestIntegrationLayers(unittest.TestCase):
