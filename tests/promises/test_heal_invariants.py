@@ -248,22 +248,25 @@ class TestChordsKeepTheOuter(unittest.TestCase):
     """Una corda fra due vertici di un outer, dentro il materiale, divide il
     pezzo in due facce ma non ne cambia il bordo: rifatto heal sull'outer più
     le corde, esce lo stesso outer e le corde vanno nel trash. È il caso di
-    una linea di piega senza ruolo (MAP.md D111)."""
+    una linea di piega senza ruolo (MAP.md D111). Salta i disegni senza corde."""
 
 
 def _make_chords_test(dxf: Path):
     def test(self):
         _, result = _read(dxf)
         tol = _tolerance(dxf)
-        broken = []
+        broken, tried = [], 0
         for ci, cluster in enumerate(result.clusters):
             chords = _chords(cluster, tol)
             if not chords:
                 continue
+            tried += 1
             again = topo.heal(topo.load_segments(list(cluster.outer.segments) + chords, tolerance=tol),
                                tolerance=tol).faces()
             if again.cluster_count != 1 or _shape_differences([to_shapely(cluster.outer)], _outers(again)):
                 broken.append(f"cluster[{ci}] (+{len(chords)} corde): {again.cluster_count} cluster")
+        if not tried:
+            self.skipTest("nessuna corda fra due vertici di un outer")
         check = lambda: self.assertEqual(broken, [], f"{dxf.stem}: le corde cambiano l'outer")
         if drawing_key(dxf) in KNOWN_CHORDS:
             known_defect(self, drawing_key(dxf), KNOWN_CHORDS[drawing_key(dxf)], check)

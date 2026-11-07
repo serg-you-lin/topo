@@ -94,17 +94,18 @@ class TestOverlapClose(unittest.TestCase):
 
 
 class TestOverlapNoClose(unittest.TestCase):
-    """tolerance < overlap → comportamento invariato."""
+    """tolerance < overlap → i lati si incrociano senza un nodo: faces() non
+    li ripara (D132), nessuna parte, e niente va perso (D137)."""
 
     def setUp(self):
         doc = load("rect_overlap.dxf")
         self.result = topo.heal(doc,
                                  tolerance=0.05).faces()
 
-    def test_001_one_part_or_warning(self):
-        if self.result.cluster_count == 1:
-            area = self.result.clusters[0].area
-            self.assertAlmostEqual(area, AREA, delta=DELTA)
+    def test_001_no_parts_nothing_lost(self):
+        self.assertEqual(self.result.cluster_count, 0)
+        self.assertEqual(len(self.result.loose), 4)
+        self.assertTrue(self.result.errors)
 
 
 # ---------------------------------------------------------------------------

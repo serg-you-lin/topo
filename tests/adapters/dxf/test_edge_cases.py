@@ -1,6 +1,6 @@
 """
 tests/adapters/dxf/test_edge_cases.py
----------------------------------
+-------------------------------------
 Test Suite per casi edge su DXF reali.
 """
 
@@ -41,12 +41,7 @@ def _make_test(dxf_path):
         doc_out = topo_dxf.to_dxf(result, topo_doc)
         topo.inject(result)
 
-        self.assertIsNotNone(result)
-
-        if result.cluster_count == 0:
-            self.assertTrue(result.has_issues)
-            return
-
+        # ogni disegno di edge_cases/ ha almeno una parte
         self.assertGreater(result.cluster_count, 0)
 
         healed_vertices = _extract_pline_vertices(doc_out.modelspace())
