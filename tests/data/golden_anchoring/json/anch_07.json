@@ -10,13 +10,13 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             155.71,
             185.51
           ],
-          "length": 183.733,
+          "length": 183.75,
           "width": 26.875
         }
       ]
@@ -30,7 +30,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "circle",
           "center": [
             73.0,
@@ -50,13 +50,13 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             155.71,
             185.51
           ],
-          "length": 183.733,
+          "length": 183.75,
           "width": 26.875
         }
       ]
@@ -88,7 +88,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "circle",
           "center": [
             178.5,
@@ -108,7 +108,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "circle",
           "center": [
             235.5,
@@ -128,13 +128,13 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             155.71,
             185.51
           ],
-          "length": 183.733,
+          "length": 183.75,
           "width": 26.875
         }
       ]
@@ -155,18 +155,7 @@
         302.3,
         203.87
       ],
-      "anchored": [
-        {
-          "in": "inners",
-          "shape": "rectangle",
-          "center": [
-            299.8,
-            180.96
-          ],
-          "length": 26.875,
-          "width": 5.0
-        }
-      ]
+      "anchored": []
     }
   ]
 }

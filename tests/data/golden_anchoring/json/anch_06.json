@@ -46,7 +46,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "stadium",
           "center": [
             67.69,
@@ -66,7 +66,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "stadium",
           "center": [
             67.69,
@@ -86,14 +86,14 @@
       ],
       "anchored": [
         {
-          "in": "inners",
-          "shape": "other",
+          "in": "loose",
+          "shape": "circle",
           "center": [
-            93.81,
-            180.94
+            93.69,
+            180.81
           ],
-          "length": 4.998,
-          "width": 4.558
+          "length": 4.13,
+          "width": 4.13
         }
       ]
     },
@@ -106,7 +106,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             91.94,
@@ -126,7 +126,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "circle",
           "center": [
             135.69,
@@ -146,7 +146,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             91.94,
@@ -166,7 +166,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             91.94,
@@ -186,7 +186,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "circle",
           "center": [
             147.69,
@@ -206,7 +206,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             91.94,
@@ -226,7 +226,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             91.94,
@@ -246,7 +246,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             91.94,
@@ -266,7 +266,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             91.94,
@@ -295,7 +295,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "rectangle",
           "center": [
             208.77,
@@ -315,7 +315,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             326.99,
@@ -335,7 +335,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             326.99,
@@ -355,7 +355,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             326.99,
@@ -375,7 +375,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             326.99,
@@ -395,7 +395,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             326.99,
@@ -415,7 +415,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             326.99,
@@ -435,7 +435,7 @@
       ],
       "anchored": [
         {
-          "in": "inners",
+          "in": "loose",
           "shape": "other",
           "center": [
             326.99,
