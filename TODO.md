@@ -351,16 +351,18 @@ novembre, ramo `no-join-ends` fuso in `main`.
       quindi il punto 1 qui sotto non accorcia la suite. Il disegno più caro: anch_02 (38 s + 18 il noframe).
       Misura del 7 novembre dopo `bfe161f`: 3:56, 2521 passati, 119 saltati.
       Riordino fatto (D222): stessi 2639 test raccolti, stessa suite.
-      Fatto il punto 3 (D223): via i 4 generatori ezdxf e 8 copie identiche che
-      nessun test leggeva per nome. `tests/shapes.py` lasciato: i file restano
-      comunque per i test dell'adapter. Da qui: il punto 1.
+      Fatto il punto 3 (D223): via i 4 generatori ezdxf e le 13 copie identiche
+      che nessun test leggeva per nome (tutta `gap/`). `tests/shapes.py` lasciato:
+      i file restano comunque per i test dell'adapter.
+      Fatto il punto 1: `test_gap` e le letture da file di `test_splitter` con
+      `load_dxf` (stessa geometria misurata), `test_inspect` con `load_segments`,
+      via `load_msp` e due import morti. Suite dopo: 3:56, 2521 passati, come prima.
+      Lasciati apposta su `document_from_msp(readfile)`: `test_edge_cases` e il giro
+      su tutti i file di `test_splitter` (closed): con `load_dxf` cambia l'ingresso di
+      7 disegni (doppioni tolti, blocchi esplosi). Da qui: piano A, poi B.
       Spazzatura tracciata: `tests/python` (vuoto) e `tests/data/mixed_pipeline/*.dwl*`
       (file di blocco AutoCAD, di solito portano utente e PC: non aperti, audit pre-1.0).
-      1. Ogni test che apre un DXF con `ezdxf` o lavora sul modelspace e prova
-         una lettura, non il formato, passa a geometria costruita con i
-         numeri (`load_segments`, primitive, `topo.geometry`). Primo visto:
-         `tests/engine/readings/test_gap.py`; `load_msp` in `test_healer.py:36` è
-         morto. Altri dei 17 file con `import ezdxf`: uno per uno.
+      1. Fatto (sopra).
       2. I test che provano un adapter vanno in `tests/adapters/dxf/` e
          `tests/adapters/pdf/`, con un `conftest.py` che fa
          `pytest.importorskip`. Da decidere: `tests/golden/` sotto
