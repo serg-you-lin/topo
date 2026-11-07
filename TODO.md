@@ -357,9 +357,10 @@ novembre, ramo `no-join-ends` fuso in `main`.
       Fatto il punto 1: `test_gap` e le letture da file di `test_splitter` con
       `load_dxf` (stessa geometria misurata), `test_inspect` con `load_segments`,
       via `load_msp` e due import morti. Suite dopo: 3:56, 2521 passati, come prima.
-      Lasciati apposta su `document_from_msp(readfile)`: `test_edge_cases` e il giro
-      su tutti i file di `test_splitter` (closed): con `load_dxf` cambia l'ingresso di
-      7 disegni (doppioni tolti, blocchi esplosi). Da qui: piano A, poi B.
+      Poi anche `test_edge_cases` e il giro di `test_splitter` su tutti i file con
+      `load_dxf`; quel giro era sempre verde (`except Exception: pass` prendeva anche
+      l'assert): ora controlla, e i contorni misti (pezzi aperti, `write_segments`)
+      sono esclusi. Da qui: piano A, poi B.
       Spazzatura tracciata: `tests/python` (vuoto) e `tests/data/mixed_pipeline/*.dwl*`
       (file di blocco AutoCAD, di solito portano utente e PC: non aperti, audit pre-1.0).
       1. Fatto (sopra).
