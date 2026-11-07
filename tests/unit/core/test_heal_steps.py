@@ -411,6 +411,25 @@ class TestCloseNearFullArcs(unittest.TestCase):
         _, n = topo.experimental.close_near_full_arcs(list(doc.edges), 1.0)
         self.assertEqual(n, 0)
 
+    def _close_all(self, segs, tolerance):
+        doc = topo.load_segments(segs, tolerance=0.01)
+        edges, n = topo.experimental.close_near_full_arcs(list(doc.edges), tolerance)
+        return [type(e.segment).__name__ for e in edges], n
+
+    def test_008_due_archi_coi_buchi_sotto_i_2_gradi_sono_un_cerchio(self):
+        # D218: ogni buco (1,72°, corda 0,15) è entro tolleranza e sotto i 2°
+        arcs = [ArcSeg((0, 0), 5, 0.015, math.pi - 0.015), ArcSeg((0, 0), 5, math.pi + 0.015, 2 * math.pi - 0.015)]
+        self.assertEqual(self._close_all(arcs, 0.5), (["CircleSeg"], 1))
+
+    def test_009_un_buco_oltre_i_2_gradi_non_fa_il_cerchio(self):
+        h = lambda deg: math.radians(deg) / 2
+        arcs = [ArcSeg((0, 0), 5, h(1), math.pi - h(3)), ArcSeg((0, 0), 5, math.pi + h(3), 2 * math.pi - h(1))]
+        self.assertEqual(self._close_all(arcs, 0.5), (["ArcSeg", "ArcSeg"], 0))
+
+    def test_010_due_archi_oltre_tolleranza_non_fanno_il_cerchio(self):
+        arcs = [ArcSeg((0, 0), 5, 0.015, math.pi - 0.015), ArcSeg((0, 0), 5, math.pi + 0.015, 2 * math.pi - 0.015)]
+        self.assertEqual(self._close_all(arcs, 0.1), (["ArcSeg", "ArcSeg"], 0))
+
     def test_007_punta_di_spigolo_coi_capi_fusi_non_si_chiude(self):
         # i due capi cadono nello stesso nodo, ma a quel nodo arrivano due lati
         arc = _arc(1.5, 0.01)
