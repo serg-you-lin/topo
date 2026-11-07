@@ -338,7 +338,9 @@ novembre, ramo `no-join-ends` fuso in `main`.
       ancora pushati; gli altri (`BLE001`, `SLEP009`) sono falsi positivi
       probabili. Da descrivere a parole e togliere dai commit prima di
       qualunque push. Nei commit vecchi restano anche i blocchi-logo definiti
-      e mai usati di `anch_01…06` (D97).
+      e mai usati di `anch_01…06` (D97), e i 258 file `tests/**/*healed*`
+      (uscite di `11_batch_heal.py`, fuori da git dal 7 novembre, sul disco
+      restano): fra quelli di `output_polylines/` alcuni nomi sembrano codici pezzo.
 - [ ] **Tempo della suite**: 3:23 dopo D181, sopra il tetto di 2.5–3 min.
       Misura del 2 novembre: 4:07 a `fc9997e` (prima di D202 C), 4:08 dopo.
       Restano `test_fidelity` sulle spline e le letture di `outlines()`.
