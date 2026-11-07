@@ -131,8 +131,8 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
         if count:
             net.warnings.append(f"{count} {what} prima della ricerca loop.")
     if clean.full_arcs:
-        net.warnings.append(f"{clean.full_arcs} archi quasi completi (gap entro tolleranza, mancano al "
-                            f"più {math.degrees(NEAR_FULL_ARC_MISSING):.0f}°) chiusi in cerchio.")
+        net.warnings.append(f"{clean.full_arcs} archi sullo stesso cerchio chiusi o uniti sui buchi (entro "
+                            f"tolleranza e al più {math.degrees(NEAR_FULL_ARC_MISSING):.0f}°).")
     if clean.ambiguous:
         first = ", ".join(f"({p[0]:.2f}, {p[1]:.2f})" for p in clean.ambiguous[:4])
         net.warnings.append(f"{len(clean.ambiguous)} estremi liberi con due compagni alla stessa distanza "
