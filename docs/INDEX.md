@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`86` modules · `525` module-level functions · `63` classes · `16492` lines of code.
+`86` modules · `525` module-level functions · `63` classes · `16494` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -1264,7 +1264,7 @@ _topo/core/topology/rim.py_
 
 ### `topo/` (root)
 
-#### `topo/experimental.py` — 64 lines
+#### `topo/experimental.py` — 66 lines
 
 _topo/experimental.py_
 
@@ -1769,7 +1769,7 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/core/topology/non_contour_edges.py` | `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.core.topology.noding` · `topo.core.topology.outer_face` |
 | `topo/core/topology/outer_face.py` | `topo.core.geometry.integrals` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.core.topology.loop_finder` · `topo.core.topology.noding` · `topo.core.topology.rim` |
 | `topo/core/topology/rim.py` | `topo.core.geometry.measure` · `topo.core.primitives.segments` · `topo.core.primitives.trim` · `topo.core.topology.edge` · `topo.core.topology.noding` |
-| `topo/experimental.py` | `topo.core.base.cleanup` · `topo.core.base.curves` · `topo.core.base.normalizer` · `topo.core.base.prepare` · `topo.core.primitives.fitting` · `topo.core.readings.heal_steps` · `topo.core.readings.outline` · `topo.core.topology.noding` · `topo.core.topology.non_contour_edges` · `topo.core.topology.outer_face` · `topo.io.exporter` · `topo.io.svg` · `topo.io.view_model` · `topo.tools.rotate` · `topo.tools.strips` |
+| `topo/experimental.py` | `topo.core.base.cleanup` · `topo.core.base.curves` · `topo.core.base.normalizer` · `topo.core.base.prepare` · `topo.core.primitives.fitting` · `topo.core.readings.heal_steps` · `topo.core.readings.outline` · `topo.core.readings.touching` · `topo.core.topology.noding` · `topo.core.topology.non_contour_edges` · `topo.core.topology.outer_face` · `topo.io.exporter` · `topo.io.svg` · `topo.io.view_model` · `topo.tools.rotate` · `topo.tools.strips` |
 | `topo/inspect.py` | `topo.core.geometry.measure` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.core.topology.graph` |
 | `topo/io/exporter.py` | `topo.core.geometry.rings` · `topo.core.primitives.polygon_builder` · `topo.model` · `topo.rules.metadata_schema` |
 | `topo/io/shapes.py` | `topo.core.geometry.measure` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.model` |

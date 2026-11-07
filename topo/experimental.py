@@ -21,7 +21,8 @@ in una minor; qui resta come alias con avviso per due minor.
 Si scrive per intero, `topo.experimental.<nome>`: chi legge lo script vede
 che quel nome non ha la promessa (D119).
 """
-# rete piana, faccia esterna, tassellature (D58)
+# gruppi per contatto, rete piana, faccia esterna, tassellature (D58)
+from .core.readings.touching import touching_groups, TouchingGroup
 from .core.topology.noding import split_at_crossings, NodedEdges
 from .core.topology.outer_face import outer_face, OuterFace, face_loops
 from .core.base.normalizer import refit_tessellations
@@ -44,6 +45,7 @@ from .tools.strips import (
 )
 
 __all__ = [
+    "touching_groups", "TouchingGroup",
     "split_at_crossings", "NodedEdges",
     "outer_face", "OuterFace", "face_loops",
     "prepare", "Prepared", "normalize", "Normalized", "non_contour_pieces",

@@ -458,9 +458,9 @@ the node comes from the geometry, once, for every reading.
 ### D220 — G7 closed (Federico, 7 November): every golden is current, no expected failure; known defects stay as 1.0 limits in TODO.
 Island goldens regenerated after review beside the original (inners 0 by D161; a circle crossed by a V keeps
 the tip, D101); anchoring goldens accepted without judging (22 texts lost their anchor, TODO). No `_noframe` goldens.
-### D221 — "island" means one thing: the depth-2 region (Federico, 7 November). `spatial_islands`/`Island` leave `experimental`.
-They become the internal `touching_groups`/`TouchingGroup` (`core/readings/touching.py`): no consumer called them, and a public name
-is frozen after 1.0 while adding one back later is a minor. Tests, data and scripts name the readings `faces`/`outlines`
+### D221 — "island" means one thing: the depth-2 region (Federico, 7 November). `spatial_islands`/`Island` → `experimental.touching_groups`/`TouchingGroup`.
+The name says the job (edges that touch within a distance); it stays public, the step of the compose-your-own recipe
+(`experimental` carries no promise, D175). Tests, data and scripts name the readings `faces`/`outlines`
 (`golden_outlines/`, golden key `clusters`, values unchanged); D202's rename finished.
 
 ## Open questions

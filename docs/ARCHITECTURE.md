@@ -272,7 +272,7 @@ rete è quella di `heal()`:
 1. **da parte** gli `Edge` con ruolo deciso e non strutturale, già fatto da
    `heal()` (D30): è così che un consumatore toglie cornice, cartiglio, cerchi
    di ingrandimento; vanno in `loose` col loro ruolo (D203)
-2. **gruppi**: gli edge che si toccano entro `max_gap` (`touching_groups`, interno):
+2. **gruppi**: gli edge che si toccano entro `max_gap` (`touching_groups`):
    nessuna nozione di chiusura, quindi nessuna ambiguità di grafo. Nessuna
    distanza fra le viste: quella dipendeva da come è impaginato il disegno,
    che topo non conosce (D99)
