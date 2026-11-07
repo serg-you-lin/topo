@@ -99,7 +99,7 @@ Aperti, con i fatti:
   Forza bruta (~3 ore) di notte: `bash notte.sh` nel banco, `topo_base` (`4e729d1`)
   contro `topo_new` (`a9e2d61`), uscite in `notte/`. I numeri di prima qui sotto
   sono col controllo vecchio: si confronta solo con le due copie di `notte/`.
-  Prossima chat: il discorso dei test aperto con quel disegno.
+  Prossima chat (Federico, 7 novembre): il riordino dei test, voce "Tempo della suite" nel cancello (suite 4:36, budget 3).
 - Una curva sola che incrocia se stessa non si taglia nell'incrocio
   (`split_at_crossings` taglia solo fra edge diversi): spline di grado 1 a forma
   di quadrato 100×100 con un ricciolo sotto → `outlines()` 9900 (l'anello intero,
