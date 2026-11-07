@@ -126,7 +126,7 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
     # seconda dell'ultimo bit (D183)
     clean = normalize(prepared.edges, reach(gap), keep_junctions=True)
     for count, what in ((clean.merged_lines, "segmenti collineari sovrapposti fusi"),
-                        (clean.merged_arcs, "archi co-circolari sovrapposti fusi"),
+                        (clean.merged_arcs, "archi o cerchi co-circolari sovrapposti fusi"),
                         (clean.welded + prepared.welded, "LineSeg degeneri (sub-tolleranza) saldati")):
         if count:
             net.warnings.append(f"{count} {what} prima della ricerca loop.")

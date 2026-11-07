@@ -446,6 +446,8 @@ A grid puts an edge every 0.001 mm; distance has one per threshold. Measured 6-7
 copy with the grid off (4 lines): moved drawings changing contour count 123→21 of 3000 generated,
 635→360 of 3998 harsh, 46→29 of 3551 real DXFs; jumps 4→0; same time. Done: `node_point`, no `decimals`
 (experimental `split_at_crossings`/`refit_tessellations` lose it, D175); G6e's chord case closes.
+### D217 — a circle written twice is one circle: `merge_cocircular_overlaps` takes `CircleSeg` as a full turn (D52).
+Before, two equal circles were two holes with no warning; an arc over a circle now vanishes into it.
 
 ## Open questions
 

@@ -75,6 +75,31 @@ Aperti, con i fatti:
   `db780b7` ritirato (Federico, 6 novembre): out once 17 → 0, suite verde;
   `df67722` ritirato: drw_0016 verde, suite verde (il salto di anch_01_noframe
   lo chiude `384aebc`). Restano drw_0017 (salto + scrambled), sweep #8, #79 (oltre 300 s).
+- **Forza bruta 6-7 novembre** (banco e rapporto in
+  `_debug/2026-11-06_topo_node-distance`, `RAPPORTO.md`; generatore `fuzz/gen.py`,
+  controlli `fuzz/check.py` e `fuzz/sweep2.py`, lanciatore `fuzz/drive.py`). Da fare
+  in una chat nuova (Federico, 7 novembre): tutte le fix qui sotto, poi di nuovo la
+  forza bruta sulle stesse passate, codice vecchio contro nuovo.
+  1. ~~Togliere la griglia dei nodi (D216)~~ fatto. I 2 rossi: `test_007` aveva
+     la premessa fatta dalla griglia (ora il nodo unico è scritto a mano);
+     `TestChordContactUnderMotion` era il difetto noto G6e, ora chiuso (5 moti, una
+     risposta). I 4 DXF veri: 2 "guastati" (non giudicabili), 1 a ~5e9 mm (senza
+     griglia l'area cambia meno: 0,0003% contro 0,1%), 1 è il difetto qui sotto.
+     Difetto trovato (c'è anche con la griglia): due spline chiuse, una passa a
+     0,003 mm dal nodo dell'altra; `outlines()` al posto ne manda una intera in
+     loose a pezzi, ruotato 90° manda in loose l'altra. Un DXF vero fuori dal repo;
+     caso minimo da costruire.
+  2. ~~Cerchio scritto due volte~~ fatto (D217).
+  3. Foro piccolo in archi con un buco sotto la tolleranza non si chiude. Misurato
+     7 novembre: non è la fusione dei due archi (un arco solo fa lo stesso) ma la
+     regola "i due capi dello stesso edge non sono mai un gap" (`gap_solver.py`,
+     `compute_gap_fixes`), che lascia solo i 2° di D112. Caso minimo: r 5, corda 0,3
+     (3,4°), tolleranza 0,5 → 0 fori. Riaprire D112: decisione di Federico.
+  Numeri prima delle fix (attuale / senza griglia): 3000 inventati, risposta sbagliata
+  790 / 767 (fori in più: quasi sempre con un doppione nel disegno; fori mancanti: quasi
+  sempre con un cerchio spezzato + un buco; 8 senza nessuno dei due; compatibile con 2 e
+  3, non dimostrato). Mosso → conti diversi 123 / 21 (cause dei 21: non cercate).
+  Mosso → aree diverse 876 / 862. 3551 DXF veri: mosso 46 / 29, salti 4 / 0.
 - Precisioni (Federico, 2 novembre, chiese di uniformarle; D196 le tenne
   separate): in `core/` + `sanitize` ~40 soglie di coincidenza su 9 valori
   (1e-2 … 1e-12). Misurato sui 18 rossi: solo `NODE_DECIMALS` 6 → drw_0016 e

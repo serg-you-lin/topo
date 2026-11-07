@@ -344,6 +344,30 @@ class TestMergeCocircularOverlaps(unittest.TestCase):
     def test_lista_vuota(self):
         self.assertEqual(merge_cocircular_overlaps([]), [])
 
+    def test_cerchio_scritto_due_volte_e_un_cerchio(self):
+        # forza bruta 7 novembre: due CircleSeg uguali erano due fori sovrapposti
+        edges = [Edge.of(CircleSeg((0.0, 0.0), 5.0), "unknown") for _ in range(2)]
+        out = merge_cocircular_overlaps(edges)
+        self.assertEqual(len(out), 1)
+        self.assertIsInstance(out[0].segment, CircleSeg)
+
+    def test_arco_sopra_un_cerchio_sparisce_nel_cerchio(self):
+        edges = [Edge.of(CircleSeg((0.0, 0.0), 10.0), "unknown"), _arc((0.0, 0.0), 10.0, -30.0, 30.0)]
+        out = merge_cocircular_overlaps(edges)
+        self.assertEqual(len(out), 1)
+        self.assertIsInstance(out[0].segment, CircleSeg)
+
+    def test_heal_cerchio_doppio_un_foro_solo(self):
+        import topo
+        square = [LineSeg((0, 0), (200, 0)), LineSeg((200, 0), (200, 100)),
+                  LineSeg((200, 100), (0, 100)), LineSeg((0, 100), (0, 0))]
+        result = topo.heal(topo.load_segments(square + [CircleSeg((50, 50), 5)] * 2)).faces()
+        self.assertEqual([len(c.inners) for c in result.clusters], [1])
+
+    def test_cerchi_concentrici_restano_due(self):
+        edges = [Edge.of(CircleSeg((0.0, 0.0), 5.0), "unknown"), Edge.of(CircleSeg((0.0, 0.0), 6.0), "unknown")]
+        self.assertEqual(len(merge_cocircular_overlaps(edges)), 2)
+
 
 class TestWeldUnderMotion(unittest.TestCase):
 
