@@ -29,7 +29,7 @@ from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 from shapely import STRtree
 from shapely.geometry import Point
 
-from ..geometry.measure import FLOAT_NOISE, round_point
+from ..geometry.measure import FLOAT_NOISE, node_point
 from ..geometry.intersections import (_distance, _line_intersection, _circle_line_intersections, _circle_circle_intersections, _closest_to)
 from ..geometry.intersections import intersections
 from ..geometry.regions import nearest_point
@@ -453,7 +453,7 @@ def apply_gap_fixes(edges: List[Edge], fixes: List[GapFix]) -> List[Edge]:
             new_seg = _moved_segment(base.segment, fix.role, fix.new_pt)
             if new_seg is None:
                 continue
-            node = round_point(fix.new_pt)
+            node = node_point(fix.new_pt)
             replacements[id(fix.ref)] = Edge(
                 role=base.role,
                 start=node if fix.role == "start" else base.start,
@@ -463,8 +463,8 @@ def apply_gap_fixes(edges: List[Edge], fixes: List[GapFix]) -> List[Edge]:
         elif isinstance(fix, AddSegment):
             a = (float(fix.pt_a[0]), float(fix.pt_a[1]))
             b = (float(fix.pt_b[0]), float(fix.pt_b[1]))
-            node_a = fix.node_a if fix.node_a is not None else round_point(a)
-            node_b = fix.node_b if fix.node_b is not None else round_point(b)
+            node_a = fix.node_a if fix.node_a is not None else node_point(a)
+            node_b = fix.node_b if fix.node_b is not None else node_point(b)
             if node_a == node_b:
                 continue
             added.append(Edge(

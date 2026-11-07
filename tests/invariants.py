@@ -24,7 +24,7 @@ from shapely import STRtree, prepare
 from shapely.geometry import LineString, Point
 from shapely.ops import unary_union
 
-from topo.core.geometry.measure import FLOAT_NOISE, round_point
+from topo.core.geometry.measure import FLOAT_NOISE, node_point
 from topo.core.geometry.rings import ring_jumps
 from topo.core.primitives.segments import (DEFAULT_TOLERANCE, segment_endpoints,
                                            _rotate_point, _translate_point)
@@ -56,7 +56,7 @@ def moved(doc: Document, move) -> Document:
     for edge in doc.edges:
         seg = move(edge.segment)
         start, end = segment_endpoints(seg)
-        edges.append(replace(edge, segment=seg, start=round_point(start), end=round_point(end)))
+        edges.append(replace(edge, segment=seg, start=node_point(start), end=node_point(end)))
     return replace(doc, edges=edges)
 
 

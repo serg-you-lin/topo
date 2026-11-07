@@ -6,7 +6,7 @@ from shapely.ops import polygonize, unary_union
 from topo.core.topology.outer_face import _network, outer_face
 from topo.core.topology.noding import split_at_crossings
 from topo.core.topology.edge import Edge
-from topo.core.geometry.measure import round_point
+from topo.core.geometry.measure import node_point
 from topo.core.primitives.segments import BSplineSeg, LineSeg, CircleSeg, segment_endpoints
 from topo import to_shapely
 
@@ -72,7 +72,7 @@ class TestContattiPerDistanza(unittest.TestCase):
         edges = []
         for seg in [move(base)] + [move(s) for s in sides]:
             start, end = segment_endpoints(seg)
-            edges.append(Edge(role="unknown", start=round_point(start), end=round_point(end), segment=seg))
+            edges.append(Edge(role="unknown", start=node_point(start), end=node_point(end), segment=seg))
         return _face(edges)
 
     def test_spostato_di_frazioni_di_cella(self):
@@ -95,16 +95,16 @@ class TestContattiPerDistanza(unittest.TestCase):
         r, d = 1.0, 1.0 / math.sin(math.radians(20)) + 0.004 / math.sin(math.radians(20))
         apex = (d, 0.0)
         ends = [(d - 6 * math.cos(math.radians(a)), -6 * math.sin(math.radians(a))) for a in (20, -20)]
-        ends = [round_point(p) for p in ends]
+        ends = [node_point(p) for p in ends]
         circle = Edge(role="unknown", start=(r, 0.0), end=(r, 0.0), segment=CircleSeg(center=(0.0, 0.0), radius=r))
-        edges = [_line(ends[0], round_point(apex)), _line(round_point(apex), ends[1]), circle]
+        edges = [_line(ends[0], node_point(apex)), _line(node_point(apex), ends[1]), circle]
         for angle in (0.0, 0.7):
             with self.subTest(angle=angle):
                 moved = []
                 for e in edges:
                     seg = e.segment.rotated(angle)
                     start, end = segment_endpoints(seg)
-                    moved.append(Edge(role="unknown", start=round_point(start), end=round_point(end), segment=seg))
+                    moved.append(Edge(role="unknown", start=node_point(start), end=node_point(end), segment=seg))
                 pieces = split_at_crossings(moved, tolerance=0.05).pieces
                 area = unary_union(list(polygonize(_network(pieces, 0.01)))).area
                 self.assertGreater(area, math.pi * r * r + 0.5)
@@ -207,8 +207,8 @@ class TestUnionGridUnderMotion(unittest.TestCase):
         import shapely
         from topo.core.topology.graph import build_node_graph
         from topo.core.topology.outer_face import UNION_GRID, _on_nodes
-        edges = [Edge(role="unknown", start=round_point(segment_endpoints(s)[0]),
-                      end=round_point(segment_endpoints(s)[1]), segment=s)
+        edges = [Edge(role="unknown", start=node_point(segment_endpoints(s)[0]),
+                      end=node_point(segment_endpoints(s)[1]), segment=s)
                  for s in self.CIRCLES]
         lines = _on_nodes(edges, build_node_graph(edges, sliver=0.01))
         on_grid = len(shapely.unary_union(lines, grid_size=UNION_GRID).geoms)
@@ -238,10 +238,8 @@ class TestChordContactUnderMotion(unittest.TestCase):
     sulle discretizzazioni coi capi sulle tuple. F1 ha un morso ad arco con
     freccia appena sotto 0.01; lo spigolo del triangolo F2 sta 0.0100003
     dall'arco vero, sopra `GRAPH_EPSILON`: il noding non li tocca, ma al posto
-    la tupla dello spigolo passa oltre la corda e l'unione salda F1 e F2.
-    Ruotato di 0.7 la griglia angolare (D145) sposta la corda e F2 resta in
-    loose. Difetto noto: l'unione non si toglie finché la camminata sbaglia
-    l'ordine dei rami a un nodo (TODO, `_leaving_angle`)."""
+    la tupla dello spigolo passava oltre la corda e l'unione saldava F1 e F2
+    solo con la griglia dei nodi; senza (D216) F2 resta in loose a ogni moto."""
 
     N = 64
     MOTIONS = [(0.0, 0.0, 0.0), (0.0, 3e-7, 0.0), (math.pi / 2, 0.0, 0.0), (0.0, 2.5e6, -1.5e6), (0.7, 0.0, 0.0)]
@@ -262,16 +260,11 @@ class TestChordContactUnderMotion(unittest.TestCase):
 
     def test_il_contatto_sulla_corda_non_dipende_dal_moto(self):
         import topo
-        from tests.invariants import known_defect, rigid
+        from tests.invariants import rigid
         readings = []
         for motion in self.MOTIONS:
             segment, _ = rigid(*motion)
             result = topo.heal(topo.load_segments([segment(s) for s in self._segments()]), max_gap=0.0).outlines()
             readings.append((len(result.clusters), len(result.loose),
                              round(to_shapely(result.clusters[0].outer).area, 1)))
-        # valore al posto: senza moto l'unione salda F1 e F2 (il difetto c'è davvero)
-        self.assertEqual(readings[0], (1, 0, 46.2))
-
-        def check():
-            self.assertEqual(len(set(readings)), 1, readings)
-        known_defect(self, "case_chord, la tupla oltre la corda", "G6e 1.x (MAP D199)", check)
+        self.assertEqual(set(readings), {(1, 1, 44.2)}, readings)

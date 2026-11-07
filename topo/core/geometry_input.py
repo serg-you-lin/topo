@@ -8,8 +8,8 @@ sviluppo di cono/cilindro calcolato altrove) o un ricostruttore di geometria da
 punti (es. un contorno da computer vision già vettorializzato).
 
 Chi chiama non importa NESSUN tipo interno di topo: le entità sono dict Python
-puri. La traduzione in Edge (arrotondamento nodi, ruolo semantico) è identica
-a quella di ogni adapter (`Edge.of`, la griglia dei nodi di topo) — cambia
+puri. La traduzione in Edge (nodi, ruolo semantico) è identica
+a quella di ogni adapter (`Edge.of`) — cambia
 solo la sorgente da tradurre. Non è un formato, quindi non sta tra gli
 adapter: è un ingresso di topo (MAP.md D123, D125).
 

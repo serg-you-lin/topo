@@ -350,10 +350,8 @@ esterno che restituisce codice / materiale / spessore, e a metterli in
 ### La tolleranza
 
 `tolerance` (default 0.05, i golden usano 0.5) è il gap più largo che topo può
-chiudere. **Non** arrotonda i nodi: ogni endpoint va su una griglia unica
-(`NODE_DECIMALS` = 3 decimali, MAP.md D113), la stessa per ogni lettura
-e per qualunque tolleranza, così due capi diventano lo stesso nodo solo se
-coincidono davvero. Serve in due modi:
+chiudere. **Non** arrotonda i nodi: un endpoint è il suo punto vero, senza
+griglia (MAP.md D216); due capi diventano lo stesso nodo per distanza. Serve in due modi:
 
 1. **chiusura gap**: un estremo libero si chiude entro `tolerance` su un
    altro estremo o dove la sua curva, proseguita, incontra la rete (D189)
