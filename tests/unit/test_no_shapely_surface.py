@@ -127,7 +127,7 @@ def test_faces_e_outlines_non_portano_shapely():
 
 
 def test_un_disegno_vero_non_porta_shapely():
-    doc = topo_dxf.load_dxf(str(DATA / "golden" / "example_4_polylines.dxf"))
+    doc = topo_dxf.load_dxf(str(DATA / "golden_faces" / "example_4_polylines.dxf"))
     result = topo.heal(doc).faces()
     assert result.clusters
     assert _shapely_in(result, "faces") == []

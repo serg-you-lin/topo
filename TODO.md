@@ -268,7 +268,7 @@ novembre, ramo `no-join-ends` fuso in `main`.
       `sbagli_tratteggio_largo` con G15 giusto in `faces()` (12) e
       `outlines()` (10), senza G15 sbagliato in tutte e due. Lo stretto non
       ancora giudicato. Restano 2, 4, 5.
-      `largo` in `tests/data/golden/` con golden `faces()` (passa con G15,
+      `largo` in `tests/data/golden_faces/` con golden `faces()` (passa con G15,
       senza fallisce: area +1607 mm²). Per il 2: `outlines()` non chiama
       `validate_result`. Salti testa-coda misurati a 0,5 con G15 (81 file
       golden_outlines/anchoring, 162 letture): 72 a zero, 45 > 1e-6, 9 > 0,01

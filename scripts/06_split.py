@@ -20,7 +20,7 @@ import topo_dxf
 from topo import to_shapely
 
 # --- CONFIG ----------------------------------------------------------------
-INPUT     = r"tests/data/golden/example_4_polylines.dxf"   # 4 parti
+INPUT     = r"tests/data/golden_faces/example_4_polylines.dxf"   # 4 parti
 TOLERANCE = 0.5
 OUTDIR    = "pipeline_output/split_demo"
 MIN_AREA  = 50.0

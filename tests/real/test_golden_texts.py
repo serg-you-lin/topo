@@ -2,7 +2,7 @@
 test_golden_texts.py
 --------------------
 Regressione sulla lettura dei testi: confronta `topo_dxf.load_dxf(...).texts`
-(`Text`, D138) con i golden in tests/data/golden/texts/.
+(`Text`, D138) con i golden in tests/data/golden_faces/texts/.
 
 Golden generati da tests/generate_golden_texts.py — da rigenerare solo
 dopo aver verificato a mano che la lettura è giusta, mai per far passare un
@@ -27,8 +27,8 @@ import topo_dxf
 from topo.tools.anchor import anchor_texts
 
 EXAMPLES_DIR = project_root / "tests" / "data"
-GOLDEN_DIR = EXAMPLES_DIR / "golden" / "texts"
-_SOURCE_DIRS = [EXAMPLES_DIR, EXAMPLES_DIR / "golden"]
+GOLDEN_DIR = EXAMPLES_DIR / "golden_faces" / "texts"
+_SOURCE_DIRS = [EXAMPLES_DIR, EXAMPLES_DIR / "golden_faces"]
 
 
 def _find_source(name: str):

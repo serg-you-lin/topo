@@ -1,12 +1,12 @@
 """
-tests/real/test_golden.py
+tests/real/test_golden_faces.py
 -------------------------
 Test di regressione geometrica contro i golden file: solo heal(), nessuna
 lettura di processo — un foro è un contorno interno, una piega un edge non
 strutturale (MAP.md D88). Fori, pieghe e incisioni: test_golden_process.py.
 
-DXF sorgente: tests/data/golden/
-Golden JSON:  tests/data/golden/json/
+DXF sorgente: tests/data/golden_faces/
+Golden JSON:  tests/data/golden_faces/json/
 """
 
 import unittest
@@ -26,7 +26,7 @@ from topo import to_shapely
 
 
 EXAMPLES_DIR = project_root / "tests" / "data"
-GOLDEN_DXF_DIR = EXAMPLES_DIR / "golden"
+GOLDEN_DXF_DIR = EXAMPLES_DIR / "golden_faces"
 GOLDEN_JSON_DIR = GOLDEN_DXF_DIR / "json"
 
 DEFAULT_TOLERANCE = 0.5
@@ -35,9 +35,9 @@ TOL_AREA = 0.1
 TOL_PERIMETER = 0.5
 TOL_SHAPE = 1.0
 
-# Solo per TestGoldenWriteBack: write-back DXF -> reload introduce rumore di
+# Solo per TestGoldenFacesWriteBack: write-back DXF -> reload introduce rumore di
 # arrotondamento sub-mm indipendente da topo (v. MAP.md D52, bisect a
-# ac68da1). TOL_AREA/TOL_SHAPE restano stretti per TestGolden (output live
+# ac68da1). TOL_AREA/TOL_SHAPE restano stretti per TestGoldenFaces (output live
 # vs golden salvato) -- qui il confronto e' output vs se stesso dopo un giro
 # di scrittura/rilettura, un rumore diverso e piu' permissivo per natura.
 TOL_AREA_ROUNDTRIP = 20.0
@@ -237,13 +237,13 @@ def _make_test(path):
     return test
 
 
-class TestGolden(unittest.TestCase):
+class TestGoldenFaces(unittest.TestCase):
     pass
 
 
 for golden in _load_golden_files():
     setattr(
-        TestGolden,
+        TestGoldenFaces,
         f"test_{golden.stem}",
         _make_test(golden),
     )
@@ -253,11 +253,11 @@ def _make_roundtrip_test(path):
     """
     Round-trip dell'exporter: heal → to_dxf → reload → heal.
 
-    Le asserzioni di TestGolden si fermano al modello in memoria e NON
+    Le asserzioni di TestGoldenFaces si fermano al modello in memoria e NON
     vedono mai la geometria scritta da to_dxf(): un bug dell'exporter
     (es. archi materializzati invertiti, contorni persi) passa inosservato.
     Qui la geometria SCRITTA viene ricaricata e ri-processata: deve
-    riprodurre lo stesso modello che TestGolden ha già validato contro il
+    riprodurre lo stesso modello che TestGoldenFaces ha già validato contro il
     golden. Confrontiamo quindi rt_result con result, non con il JSON —
     così il match delle parti è indipendente dall'ordine.
     """
@@ -335,19 +335,19 @@ def _make_roundtrip_test(path):
     return test
 
 
-class TestGoldenWriteBack(unittest.TestCase):
+class TestGoldenFacesWriteBack(unittest.TestCase):
     pass
 
 
 for golden in _load_golden_files():
     setattr(
-        TestGoldenWriteBack,
+        TestGoldenFacesWriteBack,
         f"test_roundtrip_{golden.stem}",
         _make_roundtrip_test(golden),
     )
 
 
-class TestGoldenSetup(unittest.TestCase):
+class TestGoldenFacesSetup(unittest.TestCase):
 
     def test_directory_exists(self):
         self.assertTrue(GOLDEN_JSON_DIR.exists())

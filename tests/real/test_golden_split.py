@@ -5,7 +5,7 @@ tests/real/test_golden_split.py
 -------------------------------
 Test di regressione geometrica per i file prodotti dallo splitting.
 
-Per ogni golden in tests/data/golden_multipli/golden/:
+Per ogni golden in tests/data/golden_split/golden/:
   1. Riprocessa il DXF padre (heal → split) in una cartella temporanea —
      nessuna lettura di processo: un foro è un contorno interno (MAP.md D88).
   2. Confronta area, perimetri, geometria WKT e layer di ogni parte contro il
@@ -47,7 +47,7 @@ from topo_dxf.layers import role_to_dxf_layer
 from topo import to_shapely
 
 
-MULTIPLI_DIR = project_root / "tests" / "data" / "golden_multipli"
+MULTIPLI_DIR = project_root / "tests" / "data" / "golden_split"
 GOLDEN_DIR   = MULTIPLI_DIR / "golden"
 
 TOL_AREA      = 0.1
@@ -343,7 +343,7 @@ for _golden_path in _load_golden_files():
 class TestGoldenSplitSetup(unittest.TestCase):
 
     def test_001_golden_dir_exists(self):
-        """La cartella multipli_golden/golden/ esiste."""
+        """La cartella golden_split/golden/ esiste."""
         self.assertTrue(
             GOLDEN_DIR.exists(),
             f"Cartella golden non trovata: {GOLDEN_DIR}\n"
@@ -351,7 +351,7 @@ class TestGoldenSplitSetup(unittest.TestCase):
         )
 
     def test_002_golden_not_empty(self):
-        """La cartella multipli_golden/golden/ contiene almeno 1 golden file."""
+        """La cartella golden_split/golden/ contiene almeno 1 golden file."""
         files = list(GOLDEN_DIR.glob("*.json")) if GOLDEN_DIR.exists() else []
         self.assertGreater(
             len(files), 0,

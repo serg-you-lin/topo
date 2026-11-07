@@ -11,11 +11,11 @@ from topo.adapters.dxf.layers import ROLE_TO_LAYER, LAYER_INNER
 ROOT = Path(__file__).resolve().parent
 EXAMPLES = ROOT / "tests" / "examples"
 
-GOLDEN_DXF_DIR = EXAMPLES / "golden"
+GOLDEN_DXF_DIR = EXAMPLES / "golden_faces"
 GOLDEN_JSON_DIR = GOLDEN_DXF_DIR / "json"
 GOLDEN_CFG_DIR = EXAMPLES / "config"
 
-SPLIT_PARENT_DIR = EXAMPLES / "golden_multipli"
+SPLIT_PARENT_DIR = EXAMPLES / "golden_split"
 SPLIT_GOLDEN_DIR = SPLIT_PARENT_DIR / "golden"
 SPLIT_CFG_DIR = SPLIT_PARENT_DIR / "config"
 
