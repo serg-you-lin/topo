@@ -122,7 +122,7 @@ class TestOverlapFromANodeUnderMotion(unittest.TestCase):
     tracciamento: la sovrapposizione è tolta prima delle facce, e la 218
     scatta solo sull'edge d'arrivo (36 volte su 36), mai su un altro."""
 
-    def test_heal_e_island_non_dipendono_dal_moto(self):
+    def test_faces_e_outlines_non_dipendono_dal_moto(self):
         import topo
         from tests.invariants import rigid
         from topo.core.primitives.segments import LineSeg
@@ -130,8 +130,8 @@ class TestOverlapFromANodeUnderMotion(unittest.TestCase):
         segs = [LineSeg(start=(0.0, 0.0), end=(10.0, 0.0)), LineSeg(start=(0.0, 0.0), end=(20.0, 0.0)),
                 LineSeg(start=(20.0, 0.0), end=(10.0, 10.0)), LineSeg(start=(10.0, 10.0), end=(0.0, 0.0)),
                 LineSeg(start=(10.0, 0.0), end=(10.0, 10.0))]
-        readings = {"heal": lambda d: topo.heal(d, tolerance=0.05).faces(),
-                    "island": lambda d: topo.heal(d, tolerance=0.05, max_gap=0.5).outlines()}
+        readings = {"faces": lambda d: topo.heal(d, tolerance=0.05).faces(),
+                    "outlines": lambda d: topo.heal(d, tolerance=0.05, max_gap=0.5).outlines()}
 
         def reading(read, motion):
             segment, _ = rigid(*motion)

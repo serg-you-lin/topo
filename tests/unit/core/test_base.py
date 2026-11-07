@@ -41,7 +41,7 @@ class TestDecideNodes(unittest.TestCase):
 
 class TestSameBaseForEveryReading(unittest.TestCase):
 
-    def test_heal_e_island_leggono_lo_stesso_contorno_a_ogni_moto(self):
+    def test_faces_e_outlines_leggono_lo_stesso_contorno_a_ogni_moto(self):
         doc = topo.load_segments(_square_with_split_corner())
         band = 2 * DEFAULT_TOLERANCE
         for name, move, back, _ in [("al posto", lambda s: s, lambda p: p, None)] + MOTIONS:

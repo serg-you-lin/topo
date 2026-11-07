@@ -18,7 +18,7 @@ risultato scritto in DXF e riletto si sovrappone al sorgente.
    oltre FLOAT_NOISE, in nessuna lettura: un salto entro la tolleranza lo
    chiude il motore con un segmento nuovo.
 
-Ogni disegno con la sua lettura (D152): quelli di `golden_islands/` e
+Ogni disegno con la sua lettura (D152): quelli di `golden_outlines/` e
 `golden_anchoring/` sono fogli di viste e si leggono con `outlines()`, gli
 altri con `heal()`. Le copie identiche si misurano una volta.
 """
@@ -42,7 +42,7 @@ from tests.drawings import case_name, tracked_drawings
 from tests.invariants import contour_jumps
 from tests.readings import outline_reading
 
-MAX_GAP = 0.5            # quello di snapdraw, come test_golden_islands
+MAX_GAP = 0.5            # quello di snapdraw, come test_golden_outlines
 SAMPLE_TOL = 0.01        # passo della discretizzazione su cui si misura
 COEFF_EPS = 1e-9         # "identico" in virgola mobile
 DUPLICATE_EPS = 0.05     # due curve così vicine sono un doppione da fondere
@@ -152,7 +152,7 @@ def _cut_in_pieces(coeffs, source_edges, written) -> bool:
 
 def _round_trip(rel: str, reading: str):
     path = project_root / rel
-    if reading == "island":
+    if reading == "outlines":
         doc, result = outline_reading(path, MAX_GAP)
         bound = MAX_GAP
     else:

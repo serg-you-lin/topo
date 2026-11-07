@@ -110,8 +110,8 @@ class TestCuspUnderMotion(unittest.TestCase):
     esatto), e su una punta larga 1e-9 il segno di cross è geometria, non
     rumore. Non prova che la risposta a larghezza zero sia giusta: un taglio
     verso dentro esce convesso (in coda nell'inventario G6e). Non prova la
-    riga dentro le letture: `point_on_contour` non è chiamata da `heal` né da
-    `island`."""
+    riga dentro le letture: `point_on_contour` non è chiamata da `faces()` né da
+    `outlines()`."""
 
     MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
                (0.7, 3.1, -2.2), (2.4, -0.37, 0.61), (math.pi / 2, 0.0, 0.0)]
@@ -335,7 +335,7 @@ class TestTouchingRingsUnderMotion(unittest.TestCase):
     (rosso). Non c'è un pari merito da provare: due pezzi tenuti non partono
     nello stesso verso, perché con la regione dalla stessa parte quello che
     curva di più sta dentro l'altro anello ed è già tolto. Non prova le letture:
-    `contour_union` non la chiamano né `heal` né `island`."""
+    `contour_union` non la chiamano né `faces()` né `outlines()`."""
 
     MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
                (0.7, 3.1, -2.2), (2.4, -0.37, 0.61), (math.pi / 2, 0.0, 0.0)]

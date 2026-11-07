@@ -1403,7 +1403,7 @@ Prodotto da `Network.faces()` o `Network.outlines()`, arricchito da un consumato
 | `clusters` | `list[Cluster]` | un elemento per contorno esterno chiuso |
 | `is_valid` | `bool` | **controllalo prima di `split` o di scrivere (`topo_dxf.to_dxf`)** |
 | `warnings` / `errors` | `list[str]` | diagnostica |
-| `loose` | `list[OpenCurve \| ClosedCurve]` | ogni curva che non è contorno di nessun cluster: catene che non chiudono niente, tracce aperte, curve chiuse con un ruolo non strutturale (D137). `curve.cluster_ref` = indice del cluster il cui contorno esterno la contiene tutta, bordo e buchi compresi (una linea da lato a lato, una croce dentro un foro); `None` altrimenti. Con `island()` anche l'isola che la curva tocca (D99). Un consumatore la sposta in `cluster.detected` con `result.promote` |
+| `loose` | `list[OpenCurve \| ClosedCurve]` | ogni curva che non è contorno di nessun cluster: catene che non chiudono niente, tracce aperte, curve chiuse con un ruolo non strutturale (D137). `curve.cluster_ref` = indice del cluster il cui contorno esterno la contiene tutta, bordo e buchi compresi (una linea da lato a lato, una croce dentro un foro); `None` altrimenti. Con `outlines()` anche il gruppo che la curva tocca (D99). Un consumatore la sposta in `cluster.detected` con `result.promote` |
 | `texts` | `list[Text]` | copiati dalla `Network` (dal `Document`) |
 | `cluster_count` | property | `len(clusters)` |
 

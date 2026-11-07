@@ -168,7 +168,7 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
         # Una traccia interna che parte da uno spigolo dell'outer, collineare
         # col lato che arriva lì: in (0,0) finisce anche il lato verticale, è
         # un nodo vero. Fonderli lo cancellerebbe (MAP.md D110). Senza
-        # `keep_junctions` (island, che noda da sé) si fondono come prima.
+        # `keep_junctions` (`outlines()`, che noda da sé) si fondono come prima.
         edges = [
             _line((-40.0, 0.0), (0.0, 0.0)),
             _line((0.0, 0.0), (200.0, 0.0)),

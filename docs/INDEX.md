@@ -1084,7 +1084,7 @@ _topo/core/primitives/trim.py_
 
 #### `topo/core/readings/__init__.py` — 1 lines
 
-_topo/core/readings — le letture (heal, island): ognuna sceglie solo come cerca il contorno (D188)._
+_topo/core/readings — le letture (faces, outlines): ognuna sceglie solo come cerca il contorno (D188)._
 
 No module-level function or class.
 
