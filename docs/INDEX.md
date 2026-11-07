@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`86` modules · `525` module-level functions · `63` classes · `16494` lines of code.
+`86` modules · `525` module-level functions · `63` classes · `16499` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -102,7 +102,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `ClosedCurve` | class | `topo/model/curve.py:49` | Curva chiusa: una lista di segmenti che chiude un giro. I suoi fatti |
 | `_closes` | func | `topo/core/geometry/shape.py:110` | I segmenti, in fila, fanno un anello: ognuno parte dove finisce il |
 | `_closest_to` | func | `topo/core/geometry/intersections.py:92` | Il candidato più vicino a `ref`; a pari merito entro FLOAT_NOISE quello più |
-| `_cluster` | func | `topo/core/readings/outline.py:184` |  |
+| `_cluster` | func | `topo/core/readings/outline.py:189` |  |
 | `_cluster` | func | `topo/io/shapes.py:58` | Pari-dispari sulla gerarchia: ogni contorno a depth pari è un guscio, |
 | `Cluster` | class | `topo/model/cluster.py:15` |  |
 | `cluster_passes_min_area` | func | `topo/tools/split.py:95` | True se la parte supera la soglia di area minima (min_area <= 0 = nessun filtro). |
@@ -123,7 +123,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_Contacts` | class | `topo/core/topology/noding.py:327` | Le fermate dei contatti su ogni edge e i nodi che formano (union-find). |
 | `_continuation` | func | `topo/core/base/gap_solver.py:262` | La curva dell'estremo `ep` proseguita oltre il suo capo per `reach`: una |
 | `_continues` | func | `topo/core/geometry/shape.py:398` | `seg` prosegue `prev` sulla stessa curva, nello stesso verso? |
-| `_contour` | func | `topo/core/readings/outline.py:190` | Il poligono resta quello dei pezzi della rete piana; i segmenti sono |
+| `_contour` | func | `topo/core/readings/outline.py:195` | Il poligono resta quello dei pezzi della rete piana; i segmenti sono |
 | `Contour` | class | `topo/model/contour.py:36` |  |
 | `_contour_entry` | func | `topo/io/view_model.py:55` |  |
 | `contour_minus` | func | `topo/core/geometry/regions.py:362` | L'anello `contour` meno la regione chiusa `region` (tutti e due anelli di |
@@ -422,7 +422,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_reach` | func | `topo/core/geometry/strips.py:145` | Dove la semiretta da `start` verso `direction` incontra `ring`, dal più vicino. |
 | `_read_dwg` | func | `topo_dxf/loader.py:148` | Legge un file DWG usando ezdxf.addons.odafc (wrapper di ODA File Converter). |
 | `read_faces` | func | `topo/core/readings/faces.py:32` | Un Cluster per contorno esterno chiuso della rete, con gli inners per |
-| `_read_group` | func | `topo/core/readings/outline.py:159` | Un gruppo di edge già riparati: la rete piana con gli incroci tagliati |
+| `_read_group` | func | `topo/core/readings/outline.py:164` | Un gruppo di edge già riparati: la rete piana con gli incroci tagliati |
 | `_read_groups` | func | `topo/core/readings/outline.py:140` | Edge già riparati: i gruppi a contatto entro `gap`, letti, e annidati. |
 | `read_metadata_from_dxf` | func | `topo_dxf/xdata.py:55` | Legge i metadati TOPO XDATA dall'entità OuterContour. |
 | `read_network_outlines` | func | `topo/core/readings/outline.py:64` | Un Cluster per ogni contorno esterno che non sta dentro un altro, col solo |
@@ -617,7 +617,7 @@ Same name defined at module level in different modules. Not automatically a bug 
 |---|---|
 | `_assign` | `topo/tools/anchor.py:165` · `topo/tools/split.py:100` |
 | `_chain` | `topo/core/base/normalizer.py:240` · `topo/core/geometry/regions.py:324` |
-| `_cluster` | `topo/core/readings/outline.py:184` · `topo/io/shapes.py:58` |
+| `_cluster` | `topo/core/readings/outline.py:189` · `topo/io/shapes.py:58` |
 | `_color_rgb` | `topo/model/role_rule.py:124` · `topo_dxf/adapter.py:63` |
 | `_ends` | `topo/core/geometry/lines.py:28` · `topo/core/geometry/regions.py:115` |
 | `_joined` | `topo/core/geometry/shape.py:417` · `topo_dxf/exporter.py:114` |
@@ -1140,7 +1140,7 @@ _topo/core/readings/outer_scan.py_
 - `_intersections(piece, a: int, level: float) -> List[Point]` — L147 — Punti del pezzo con coordinata `a` == level.
 - `_scan_axis(pieces: list, axis: str, hits: Dict[int, List[OuterHit]]) -> int` — L181
 
-#### `topo/core/readings/outline.py` — 197 lines
+#### `topo/core/readings/outline.py` — 202 lines
 
 _topo/core/readings/outline.py_
 
@@ -1149,9 +1149,9 @@ _topo/core/readings/outline.py_
 - `read_outlines(edges: List[Edge], tolerance: float, max_gap: float) -> List[OutlineReading]` — L116 — Gli edge riparati come heal() (`network.repair_edges`), poi i pezzi a
 - `read_outline(edges: List[Edge], tolerance: float, max_gap: float) -> OutlineReading` — L127 — Un gruppo: gli edge riparati come heal() (`network.repair_edges`), la
 - `_read_groups(edges: List[Edge], tolerance: float, gap: float) -> List[OutlineReading]` — L140 — Edge già riparati: i gruppi a contatto entro `gap`, letti, e annidati.
-- `_read_group(edges: List[Edge], tolerance: float) -> OutlineReading` — L159 — Un gruppo di edge già riparati: la rete piana con gli incroci tagliati
-- `_cluster(reading: OutlineReading, source_file: str, label: str) -> Cluster` — L184
-- `_contour(segments, styles, polygon, role, parent) -> Contour` — L190 — Il poligono resta quello dei pezzi della rete piana; i segmenti sono
+- `_read_group(edges: List[Edge], tolerance: float) -> OutlineReading` — L164 — Un gruppo di edge già riparati: la rete piana con gli incroci tagliati
+- `_cluster(reading: OutlineReading, source_file: str, label: str) -> Cluster` — L189
+- `_contour(segments, styles, polygon, role, parent) -> Contour` — L195 — Il poligono resta quello dei pezzi della rete piana; i segmenti sono
 
 #### `topo/core/readings/touching.py` — 104 lines
 
