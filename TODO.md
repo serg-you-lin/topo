@@ -52,7 +52,7 @@ spline ed ellissi no) → contatore 48 → 28, nessuno nuovo. Rossi/aperti:
 area 1011,35 → 1011,29: accettare o lasciare aperto); D208 citata nel codice
 ma non scritta in MAP; `join_ends` non scritto in MAP; suite 4:27 (budget 3);
 regr_01 `outlines()` 0,0237 → 0,0903 (contatto linea–arco quasi tangente);
-`sbagli_tratteggio_stretto.dxf` di nuovo in `tests/data` (Federico, 7 novembre: va in topo).
+`sbagli_tratteggio_stretto.dxf` tolto dalla suite (Federico, 7 novembre): ci gira `tratteggio_stretto_piccolo.dxf` (`tests/generate_hatch_small.py`), suite 11:49 → 4:33.
 
 **Ramo `no-join-ends` (6 novembre)**: `join_ends` tolto (revert di
 `eabf73c`), saldatura dei tratti corti tolta da `normalize`. Ogni salto entro
