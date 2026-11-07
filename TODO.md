@@ -106,6 +106,10 @@ Aperti, con i fatti:
   area con segno), le stesse rette 10100 + il lobo in loose. DXF vero fuori dal
   repo (banco della forza bruta, seme 3339): spline 8 (3 lobi), 9 (6 lobi),
   silhouette di 8+9+10 ~13944, `outlines()` 10735 e la 8 in loose a pezzi.
+- Due curve chiuse semplici, il nodo dell'una sul bordo dell'altra (spline di
+  grado 1, cerchi a 24 lati r 50 in (0,0) e r 40 in (90,0)): `outlines()` dà solo
+  la prima (7764,6) e l'altra in loose; il nodo 7e-5 dentro → un contorno da
+  12733,9. Nel disegno del seme 3339 il nodo della spline 8 sta a 6,6e-5 dalla 10.
   Numeri prima delle fix (attuale / senza griglia): 3000 inventati, risposta sbagliata
   790 / 767 (fori in più: quasi sempre con un doppione nel disegno; fori mancanti: quasi
   sempre con un cerchio spezzato + un buco; 8 senza nessuno dei due; compatibile con 2 e
