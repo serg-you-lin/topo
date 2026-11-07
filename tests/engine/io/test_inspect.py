@@ -9,26 +9,20 @@ import io
 import unittest
 from contextlib import redirect_stdout
 
-import ezdxf
-
 import topo
 import topo_dxf
+from topo import geometry
+from topo.model.document import Document
 
 
-def _square_msp(side: float = 100.0):
-    doc = ezdxf.new("R2010")
-    msp = doc.modelspace()
-    pts = [(0, 0), (side, 0), (side, side), (0, side), (0, 0)]
-    for a, b in zip(pts, pts[1:]):
-        msp.add_line(a, b)
-    return doc, msp
+def _square(side: float = 100.0) -> Document:
+    return topo.load_segments(geometry.rectangle(side, side), tolerance=0.5)
 
 
 class TestInspectLevels(unittest.TestCase):
 
     def test_level2_document(self):
-        _, msp = _square_msp()
-        doc = topo_dxf.document_from_msp(msp, tolerance=0.5)
+        doc = _square()
         buf = io.StringIO()
         with redirect_stdout(buf):
             topo.inspect_document(doc)
@@ -38,8 +32,7 @@ class TestInspectLevels(unittest.TestCase):
         self.assertIn("grafo nodi", out)
 
     def test_level3_result(self):
-        _, msp = _square_msp()
-        doc = topo_dxf.document_from_msp(msp, tolerance=0.5)
+        doc = _square()
         result = topo.heal(doc, tolerance=0.5).faces()
         buf = io.StringIO()
         with redirect_stdout(buf):

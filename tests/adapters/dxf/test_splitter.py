@@ -364,9 +364,8 @@ class TestIntegrationPipeline(unittest.TestCase):
 
     def _run(self, dxf_name, label, **kwargs):
         out_dir = tempfile.mkdtemp()
-        doc = ezdxf.readfile(str(EXAMPLES_DIR / dxf_name))
         result = _split_to_files(
-            topo_dxf.document_from_msp(doc.modelspace()),
+            topo_dxf.load_dxf(str(EXAMPLES_DIR / dxf_name)),
             output_folder=out_dir, label=label, **kwargs
         )
         return result, out_dir
@@ -419,9 +418,8 @@ class TestIntegrationPipeline(unittest.TestCase):
     def test_006_namer_custom_propagato(self):
         """Un namer custom passato a split_to_files() viene usato."""
         out_dir = tempfile.mkdtemp()
-        doc = ezdxf.readfile(str(EXAMPLES_DIR / "two_parts.dxf"))
         namer = lambda i, cluster: f"custom_{i + 1:02d}"
-        _split_to_files(topo_dxf.document_from_msp(doc.modelspace()), output_folder=out_dir,
+        _split_to_files(topo_dxf.load_dxf(str(EXAMPLES_DIR / "two_parts.dxf")), output_folder=out_dir,
                              label="two_parts", namer=namer)
         names = {f.stem for f in Path(out_dir).glob("*.dxf")}
         self.assertIn("custom_01", names,
@@ -446,9 +444,7 @@ class TestIntegrationContours(unittest.TestCase):
 
     def _children(self, dxf_name, label, **kwargs):
         out_dir = tempfile.mkdtemp()
-        doc = ezdxf.readfile(str(EXAMPLES_DIR / dxf_name))
-        print([ (e.dxftype(), e.dxf.layer) for e in doc.modelspace() ])
-        _split_to_files(topo_dxf.document_from_msp(doc.modelspace()), output_folder=out_dir,
+        _split_to_files(topo_dxf.load_dxf(str(EXAMPLES_DIR / dxf_name)), output_folder=out_dir,
                              label=label, **kwargs)
         return _read_children(out_dir)
 
@@ -568,8 +564,7 @@ class TestIntegrationLayers(unittest.TestCase):
 
     def setUp(self):
         self.out_dir = tempfile.mkdtemp()
-        doc = ezdxf.readfile(str(EXAMPLES_DIR / "two_parts.dxf"))
-        _split_to_files(topo_dxf.document_from_msp(doc.modelspace()),
+        _split_to_files(topo_dxf.load_dxf(str(EXAMPLES_DIR / "two_parts.dxf")),
                              output_folder=self.out_dir, label="test")
         self.files = list(Path(self.out_dir).glob("*.dxf"))
         self.assertTrue(len(self.files) > 0,

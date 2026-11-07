@@ -12,7 +12,6 @@ tipo sviluppo di cono (arc + line, con conversione gradi→radianti).
 import math
 import unittest
 
-import ezdxf
 
 import topo
 import topo_dxf

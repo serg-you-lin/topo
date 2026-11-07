@@ -12,7 +12,6 @@ Poi lancia:
 
 import math
 import unittest
-import ezdxf
 
 
 import topo
@@ -26,9 +25,6 @@ EXAMPLES_DIR = DATA
 def load(name):
     return EXAMPLES_DIR / name
 
-
-def load_msp(name):
-    return ezdxf.readfile(str(EXAMPLES_DIR / name)).modelspace()
 
 # ---------------------------------------------------------------------------
 # Rettangolo 4 LINE
