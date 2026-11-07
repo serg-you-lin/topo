@@ -93,11 +93,12 @@ Aperti, con i fatti:
   3. ~~Foro in archi~~ fatto (D218). La voce di prima era sbagliata: r 5 con buco 0,3
      sono 3,4°, sopra i 2° di D112, e restare aperto è giusto. Il difetto vero: due
      archi con buchi sotto i 2° si chiudevano con segmenti, non col cerchio.
-  Prima di confrontare: il controllo della forza bruta contava "foro mancante" anche
-  un cerchio spezzato oltre i 2° (giusto per D112); quanti siano: non misurato.
-  Va corretto il controllo e ricontati i numeri di prima.
-  Forza bruta (~3 ore): di notte (Federico, 7 novembre), dopo aver corretto il
-  controllo su D112/D218; codice vecchio = `4e729d1`, nuovo = `8326039` o dopo.
+  Il controllo della forza bruta contava "foro mancante" anche un cerchio spezzato
+  oltre i 2° (giusto per D112): corretto il 7 novembre (`fuzz/check.py`,
+  `open_by_d112`; il vecchio in `check_prima_D112.py`); su 30 semi 5 → 3 rossi.
+  Forza bruta (~3 ore) di notte: `bash notte.sh` nel banco, `topo_base` (`4e729d1`)
+  contro `topo_new` (`a9e2d61`), uscite in `notte/`. I numeri di prima qui sotto
+  sono col controllo vecchio: si confronta solo con le due copie di `notte/`.
   Prossima chat: il difetto delle due spline chiuse (voce 1 qui sopra), poi il
   discorso dei test aperto con quel disegno.
   Numeri prima delle fix (attuale / senza griglia): 3000 inventati, risposta sbagliata
