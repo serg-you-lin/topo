@@ -322,7 +322,9 @@ novembre, ramo `no-join-ends` fuso in `main`.
       uguali a quelli senza righe, righe in `loose`; rosso se le righe restano
       nella rete). Riconoscere un tratteggio è del consumer (snapdraw): il
       file `stretto` resta non tracciato, per il suo test.
-- [x] **G7** Zero `expectedFailure` e zero difetti noti (7 novembre, D220):
+- [x] **G7** Zero `expectedFailure` (7 novembre, D220). Difetti noti ne restano
+      (curva che incrocia sé stessa, curva chiusa che tocca col nodo, agganci persi):
+      sono limiti della 1.0, scritti qui sotto, non test rossi.
       golden di island e di aggancio rigenerati, liste dei noti vuote,
       suite senza rossi attesi. Golden dei `_noframe` non fatti (Federico).
 - [ ] **G8** README / README_IT / `description` di pyproject / prima riga di
