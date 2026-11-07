@@ -448,9 +448,9 @@ copy with the grid off (4 lines): moved drawings changing contour count 123→21
 (experimental `split_at_crossings`/`refit_tessellations` lose it, D175); G6e's chord case closes.
 ### D217 — a circle written twice is one circle: `merge_cocircular_overlaps` takes `CircleSeg` as a full turn (D52).
 Before, two equal circles were two holes with no warning; an arc over a circle now vanishes into it.
-### D218 — free arcs on one circle are one circle when every hole is within tolerance and ≤ 2° (Federico, 7 November).
-D112's rule judged one arc only: two arcs with two 1.72° holes were closed with two segments. Each hole is judged
-on its own; one arc open by 3.4° stays open (a thread is a ~270° arc and must stay one, snapbend).
+### D218 — free arcs on one circle join across every hole within tolerance and ≤ 2°; all holes closed is a circle (Federico, 7 November).
+D112's rule judged one arc only: two arcs with 1.72° holes got two segments; with holes of 1° and 3° the 1° joins and
+one arc stays open by 3°, as a lone arc would (a thread is a ~270° arc and must stay open, snapbend).
 
 ## Open questions
 

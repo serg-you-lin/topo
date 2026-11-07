@@ -421,10 +421,15 @@ class TestCloseNearFullArcs(unittest.TestCase):
         arcs = [ArcSeg((0, 0), 5, 0.015, math.pi - 0.015), ArcSeg((0, 0), 5, math.pi + 0.015, 2 * math.pi - 0.015)]
         self.assertEqual(self._close_all(arcs, 0.5), (["CircleSeg"], 1))
 
-    def test_009_un_buco_oltre_i_2_gradi_non_fa_il_cerchio(self):
+    def test_009_buco_da_1_si_unisce_quello_da_3_resta_aperto(self):
+        # D218: il buco da 1° si chiude, gli archi sono uno solo aperto di 3°
         h = lambda deg: math.radians(deg) / 2
         arcs = [ArcSeg((0, 0), 5, h(1), math.pi - h(3)), ArcSeg((0, 0), 5, math.pi + h(3), 2 * math.pi - h(1))]
-        self.assertEqual(self._close_all(arcs, 0.5), (["ArcSeg", "ArcSeg"], 0))
+        doc = topo.load_segments(arcs, tolerance=0.01)
+        edges, n = topo.experimental.close_near_full_arcs(list(doc.edges), 0.5)
+        self.assertEqual((len(edges), n), (1, 1))
+        self.assertAlmostEqual(math.degrees(2 * math.pi - edges[0].segment._sweep()), 3.0)
+        self.assertNotEqual(edges[0].start, edges[0].end)
 
     def test_010_due_archi_oltre_tolleranza_non_fanno_il_cerchio(self):
         arcs = [ArcSeg((0, 0), 5, 0.015, math.pi - 0.015), ArcSeg((0, 0), 5, math.pi + 0.015, 2 * math.pi - 0.015)]

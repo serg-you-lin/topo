@@ -47,30 +47,79 @@ NEAR_FULL_ARC_MISSING = math.radians(2.0)   # angolo mancante oltre il quale un 
 def close_near_full_arcs(edges: List[Edge], tolerance: float,
                          max_missing_angle: float = NEAR_FULL_ARC_MISSING) -> Tuple[List[Edge], int]:
     """
-    Gli ArcSeg coi due capi liberi sullo stesso cerchio (`_same_circle`, D184)
-    diventano un CircleSeg solo se ogni buco fra un arco e il seguente è entro
-    `tolerance` E il suo angolo entro `max_missing_angle` (MAP.md D112, D218):
-    la tolleranza dice se il buco è un gap, l'angolo se l'arco è un cerchio.
-    Un arco solo ha un buco solo; due archi due buchi, ognuno giudicato da sé.
-    `tolerance=math.inf` lascia solo l'angolo. Ritorna (edge, n_cerchi_fatti).
+    Gli ArcSeg coi due capi liberi sullo stesso cerchio (`_same_circle`, D184):
+    un buco fra un arco e il seguente entro `tolerance` E col suo angolo entro
+    `max_missing_angle` si chiude (MAP.md D112, D218) — la tolleranza dice se è
+    un gap, l'angolo se l'arco prosegue. Chiusi tutti i buchi è un CircleSeg;
+    altrimenti gli archi uniti sono un ArcSeg solo, aperto sui buchi rimasti
+    (un capo e l'altro dello stesso arco non sono mai un gap). Un arco solo ha
+    un buco solo. `tolerance=math.inf` lascia solo l'angolo.
+    Ritorna (edge, n_edge_rifatti).
     """
     graph = build_node_graph(edges)
     free = [k for k, e in enumerate(edges) if isinstance(e.segment, ArcSeg) and _both_ends_free(e, graph)]
-    pairs = [(a, b) for i, a in enumerate(free) for b in free[i + 1:]
-             if _same_circle(edges[a].segment, edges[b].segment)]
+    pairs = [(m, n) for m in range(len(free)) for n in range(m + 1, len(free))
+             if _same_circle(edges[free[m]].segment, edges[free[n]].segment)]
     replaced, drop = {}, set()
-    for members in connected_groups(len(free), [(free.index(a), free.index(b)) for a, b in pairs]):
-        group = [free[m] for m in members]
-        if not _closes_circle([edges[k] for k in group], tolerance, max_missing_angle):
-            continue
-        first = min(group)
-        seg = edges[first].segment
-        circle = CircleSeg(center=seg.center, radius=seg.radius)
-        node = node_point(segment_endpoints(circle)[0])
-        replaced[first] = replace(edges[first], start=node, end=node, segment=circle)
-        drop.update(k for k in group if k != first)
+    for members in connected_groups(len(free), pairs):
+        for chain in _joined_runs([free[m] for m in members], edges, tolerance, max_missing_angle):
+            members_k = [span[0] for span in chain if span is not None]
+            first = min(members_k)
+            replaced[first] = _joined_edge(edges[first], chain)
+            drop.update(k for k in members_k if k != first)
     out = [replaced.get(k, e) for k, e in enumerate(edges) if k not in drop]
     return out, len(replaced)
+
+
+def _joined_runs(group: List[int], edges: List[Edge], tolerance: float, max_missing_angle: float) -> list:
+    """Le catene da rifare: [(indice, span)] per catena, in giro sul cerchio;
+    span = (lo, sweep, lo_node, hi_node). Un giro intero è una catena con
+    `None` in coda; una catena di un arco solo che non chiude il giro non si
+    rifà. Archi che si sovrappongono non si giudicano (li fonde
+    `merge_cocircular_overlaps`)."""
+    spans = []
+    for k in group:
+        e, seg = edges[k], edges[k].segment
+        start, end = segment_endpoints(seg)
+        lo, lo_pt, hi_pt, lo_node, hi_node = ((seg.start_angle, start, end, e.start, e.end) if seg.ccw
+                                              else (seg.end_angle, end, start, e.end, e.start))
+        spans.append((k, (lo % (2 * math.pi), seg._sweep(), lo_pt, hi_pt, lo_node, hi_node)))
+    spans.sort(key=lambda s: s[1][0])
+    if math.fsum(s[1][1] for s in spans) > 2 * math.pi:
+        return []
+    joins = []
+    for a, (_, (lo, sweep, _, hi_pt, _, _)) in enumerate(spans):
+        nxt_lo, _, nxt_pt, _, _, _ = spans[(a + 1) % len(spans)][1]
+        missing = (nxt_lo - (lo + sweep)) % (2 * math.pi)
+        joins.append(missing <= max_missing_angle and math.dist(hi_pt, nxt_pt) <= tolerance)
+    if all(joins):
+        return [spans + [None]]
+    # si parte dopo un buco che resta aperto: ogni catena è un tratto continuo
+    start = joins.index(False) + 1
+    order = spans[start:] + spans[:start]
+    opened = joins[start:] + joins[:start]
+    runs, cur = [], []
+    for span, joined in zip(order, opened):
+        cur.append(span)
+        if not joined:
+            runs.append(cur)
+            cur = []
+    return [r for r in runs if len(r) > 1]
+
+
+def _joined_edge(edge: Edge, chain: list) -> Edge:
+    """L'edge di una catena: un CircleSeg se chiude il giro (`None` in coda),
+    altrimenti l'ArcSeg ccw dal primo capo all'ultimo, coi loro nodi."""
+    seg = edge.segment
+    if chain[-1] is None:
+        circle = CircleSeg(center=seg.center, radius=seg.radius)
+        node = node_point(segment_endpoints(circle)[0])
+        return replace(edge, start=node, end=node, segment=circle)
+    lo, _, _, _, lo_node, _ = chain[0][1]
+    last_lo, last_sweep, _, _, _, hi_node = chain[-1][1]
+    hi = lo + ((last_lo + last_sweep - lo) % (2 * math.pi))
+    arc = ArcSeg(center=seg.center, radius=seg.radius, start_angle=lo, end_angle=hi, ccw=True)
+    return replace(edge, start=lo_node, end=hi_node, segment=arc)
 
 
 def _both_ends_free(edge: Edge, graph) -> bool:
@@ -80,25 +129,6 @@ def _both_ends_free(edge: Edge, graph) -> bool:
     if edge.start == edge.end:
         return graph.degree(edge.start) == 0
     return graph.degree(edge.start) == 1 and graph.degree(edge.end) == 1
-
-
-def _closes_circle(arcs: List[Edge], tolerance: float, max_missing_angle: float) -> bool:
-    """Gli archi, in giro sul cerchio, lasciano solo buchi entro `tolerance` e
-    `max_missing_angle`, ognuno; due archi che si sovrappongono non chiudono
-    (li fonde `merge_cocircular_overlaps`, non questa regola)."""
-    spans = []
-    for e in arcs:
-        seg = e.segment
-        start, end = segment_endpoints(seg)
-        lo, lo_pt, hi_pt = ((seg.start_angle, start, end) if seg.ccw else (seg.end_angle, end, start))
-        spans.append((lo % (2 * math.pi), seg._sweep(), lo_pt, hi_pt))
-    spans.sort(key=lambda s: s[0])
-    for k, (lo, sweep, _, hi_pt) in enumerate(spans):
-        nxt_lo, _, nxt_pt, _ = spans[(k + 1) % len(spans)]
-        missing = (nxt_lo - (lo + sweep)) % (2 * math.pi)
-        if missing > max_missing_angle or math.dist(hi_pt, nxt_pt) > tolerance:
-            return False
-    return math.fsum(s[1] for s in spans) <= 2 * math.pi
 
 
 def close_free_gaps(edges: List[Edge], tolerance: float) -> List[Edge]:
