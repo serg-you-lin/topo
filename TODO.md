@@ -52,7 +52,7 @@ spline ed ellissi no) → contatore 48 → 28, nessuno nuovo. Rossi/aperti:
 area 1011,35 → 1011,29: accettare o lasciare aperto); D208 citata nel codice
 ma non scritta in MAP; `join_ends` non scritto in MAP; suite 4:27 (budget 3);
 regr_01 `outlines()` 0,0237 → 0,0903 (contatto linea–arco quasi tangente);
-`sbagli_tratteggio_stretto.dxf` non tracciato; nessun push.
+`sbagli_tratteggio_stretto.dxf` di nuovo in `tests/data` (Federico, 7 novembre: va in topo).
 
 **Ramo `no-join-ends` (6 novembre)**: `join_ends` tolto (revert di
 `eabf73c`), saldatura dei tratti corti tolta da `normalize`. Ogni salto entro
@@ -96,6 +96,10 @@ Aperti, con i fatti:
   Prima di confrontare: il controllo della forza bruta contava "foro mancante" anche
   un cerchio spezzato oltre i 2° (giusto per D112); quanti siano: non misurato.
   Va corretto il controllo e ricontati i numeri di prima.
+  Forza bruta (~3 ore): di notte (Federico, 7 novembre), dopo aver corretto il
+  controllo su D112/D218; codice vecchio = `4e729d1`, nuovo = `8326039` o dopo.
+  Prossima chat: il difetto delle due spline chiuse (voce 1 qui sopra), poi il
+  discorso dei test aperto con quel disegno.
   Numeri prima delle fix (attuale / senza griglia): 3000 inventati, risposta sbagliata
   790 / 767 (fori in più: quasi sempre con un doppione nel disegno; fori mancanti: quasi
   sempre con un cerchio spezzato + un buco; 8 senza nessuno dei due; compatibile con 2 e
