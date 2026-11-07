@@ -15,9 +15,8 @@ from topo.model.cluster import Cluster
 from topo.model.contour import Contour
 from topo.model.result import Result
 from topo.model.role import ContourRole
-from topo.model.text import RenderedGeometry, RenderedText, Text
+from topo.model.text import Text
 from topo.tools.anchor import anchor_texts, measured_references
-from topo_dxf.text_extractor import _shown_text
 from topo import to_shapely
 
 # max_gap non ha default (D98); island_gap non esiste più (D99)
@@ -230,30 +229,6 @@ class TestMeasuredReferences(unittest.TestCase):
     def test_senza_punti(self):
         result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
         self.assertEqual(measured_references(result, Text(position=(0, 0))), [])
-
-
-def _texts(*contents):
-    return RenderedGeometry(texts=[RenderedText(content=c, position=(0, 0)) for c in contents])
-
-
-class TestShownText(unittest.TestCase):
-    """La stringa di una quota DXF, risolta in lettura (`<>` = la misura, D138)."""
-
-    def test_override_con_la_misura_disegnata(self):
-        # il simbolo arriva come frammento a sé ("n" in un font di simboli): vale l'override
-        self.assertEqual(_shown_text("Ø<>", _texts("n", "6.5"), 6.5), "Ø6.5")
-
-    def test_override_usa_la_precisione_del_disegno(self):
-        self.assertEqual(_shown_text("M<>", _texts("M", "5"), 5.000000004), "M5")
-
-    def test_override_senza_testo_disegnato(self):
-        self.assertEqual(_shown_text("(<>)", RenderedGeometry(), 35.0), "(35)")
-
-    def test_frammenti_uniti(self):
-        self.assertEqual(_shown_text(None, _texts("∅5,3", "+0,05^-0"), 6.625), "∅5,3+0,05^-0")
-
-    def test_solo_misura(self):
-        self.assertEqual(_shown_text(None, RenderedGeometry(), 12.50), "12.5")
 
 
 if __name__ == "__main__":

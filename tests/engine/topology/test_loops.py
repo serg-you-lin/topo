@@ -19,7 +19,6 @@ from shapely.geometry import LinearRing, Polygon, LineString
 
 # Setup del path per import dal progetto
 
-from topo.core.topology.graph import Graph, build_node_graph
 from topo.core.topology.outer_face import face_loops
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, ArcSeg
@@ -220,7 +219,6 @@ def _loop_to_polygon(loop) -> Polygon:
 class TestFaceLoopsRect(unittest.TestCase):
     def setUp(self):
         edges = _make_rect_edges(ccw=True)
-        graph = build_node_graph(edges)
         self.loops = face_loops(edges)
 
     def test_finds_one_loop(self):
@@ -251,7 +249,6 @@ class TestFaceLoopsRect(unittest.TestCase):
 class TestLoopOrientationCCW(unittest.TestCase):
     def setUp(self):
         edges = _make_rect_edges(ccw=True)
-        graph = build_node_graph(edges)
         loops = face_loops(edges)
         self.poly = _loop_to_polygon(loops[0])
 
@@ -270,7 +267,6 @@ class TestLoopOrientationCCW(unittest.TestCase):
 class TestLoopOrientationCW(unittest.TestCase):
     def setUp(self):
         edges = _make_rect_edges(ccw=False)
-        graph = build_node_graph(edges)
         loops = face_loops(edges)
         self.poly = _loop_to_polygon(loops[0])
 
@@ -293,7 +289,6 @@ class TestLoopOrientationCW(unittest.TestCase):
 class TestLoopWithArcs(unittest.TestCase):
     def setUp(self):
         edges = _make_arc_rect_edges()
-        graph = build_node_graph(edges)
         self.loops = face_loops(edges)
         self.polygons = [_loop_to_polygon(l) for l in self.loops]
         self.valid_polys = [p for p in self.polygons

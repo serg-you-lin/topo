@@ -190,6 +190,22 @@ class TestWritebackTrash(unittest.TestCase):
         self.assertIn("<svg", topo.experimental.to_svg(result))
 
 
+class TestWritebackSourceLayerNotKept(unittest.TestCase):
+    """Il layer sorgente "MARK" di la_104 non è un contorno: la sua geometria
+    resta nel modello come loose, e il DXF scritto non ha quel layer."""
+
+    def setUp(self):
+        doc = topo_dxf.load_dxf(EXAMPLES_DIR / "la_104.DXF", tolerance=0.2)
+        self.result = topo.heal(doc, tolerance=0.2).faces()
+        self.msp = topo_dxf.to_dxf(self.result, doc).modelspace()
+
+    def test_001_mark_goes_to_trash_without_detect(self):
+        self.assertEqual(sum(1 for e in self.msp if e.dxf.layer == "MARK"), 0)
+
+    def test_002_trash_has_entities(self):
+        self.assertGreater(len(self.result.loose), 0)
+
+
 # ---------------------------------------------------------------------------
 # Cluster E — linetype della sorgente sempre ripristinato in output. Le linee
 # tratteggiate non devono uscire continue. Il colore invece non si tocca mai:

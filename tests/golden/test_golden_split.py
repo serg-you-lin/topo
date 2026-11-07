@@ -113,22 +113,6 @@ def _load_config(dxf_path: Path) -> dict:
     return {}
 
 
-def _run_pipeline_and_get_child(parent_path: Path, tolerance: float, child_stem: str) -> Path | None:
-    """
-    Esegue la pipeline completa sul padre in una cartella temporanea e
-    restituisce il Path del figlio con lo stem cercato (o None se non trovato).
-
-    La cartella temporanea è gestita dal chiamante tramite il context manager
-    che viene passato indirettamente: qui creiamo una tmp locale perché il
-    test deve poter leggere il file figlio prima che la cartella venga rimossa.
-    Usiamo quindi una tmp che sopravvive per tutta la durata del test method.
-    """
-    raise NotImplementedError(
-        "_run_pipeline_and_get_child non deve essere chiamata direttamente: "
-        "usa _SplitContext come context manager nel test."
-    )
-
-
 def _get_parent_split_cache(parent_path: Path, tolerance: float) -> dict:
     cache_key = (parent_path.resolve(), float(tolerance))
     cached = _PARENT_PIPELINE_CACHE.get(cache_key)

@@ -1,5 +1,5 @@
 """
-tests/promises/test_edge_cases.py
+tests/adapters/dxf/test_edge_cases.py
 ---------------------------------
 Test Suite per casi edge su DXF reali.
 """
