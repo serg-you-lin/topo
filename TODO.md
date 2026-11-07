@@ -350,9 +350,10 @@ novembre, ramo `no-join-ends` fuso in `main`.
       13 s. `test_heal_invariants` 57 s (1496 test). I 17 file con `ezdxf`: 7,5 s in tutto,
       quindi il punto 1 qui sotto non accorcia la suite. Il disegno più caro: anch_02 (38 s + 18 il noframe).
       Misura del 7 novembre dopo `bfe161f`: 3:56, 2521 passati, 119 saltati.
-      Riordino fatto (D222): stessi 2639 test raccolti, stessa suite. Da qui:
-      `tests/shapes.py` (i 27 disegni dei generatori costruiti con topo, impronta
-      `geometry_key` uguale al file prima di toglierlo), poi i punti 1 e 3.
+      Riordino fatto (D222): stessi 2639 test raccolti, stessa suite.
+      Fatto il punto 3 (D223): via i 4 generatori ezdxf e 8 copie identiche che
+      nessun test leggeva per nome. `tests/shapes.py` lasciato: i file restano
+      comunque per i test dell'adapter. Da qui: il punto 1.
       Spazzatura tracciata: `tests/python` (vuoto) e `tests/data/mixed_pipeline/*.dwl*`
       (file di blocco AutoCAD, di solito portano utente e PC: non aperti, audit pre-1.0).
       1. Ogni test che apre un DXF con `ezdxf` o lavora sul modelspace e prova
@@ -364,11 +365,7 @@ novembre, ramo `no-join-ends` fuso in `main`.
          `tests/adapters/pdf/`, con un `conftest.py` che fa
          `pytest.importorskip`. Da decidere: `tests/golden/` sotto
          `adapters/dxf/` o lì con lo stesso skip.
-      3. Dopo l'1: via i generatori di fixture (`generate_examples`,
-         `generate_gap_examples`, `generate_rotation_fixture`,
-         `generate_two_flanges`) e i .dxf che nessun test legge più; restano
-         i .dxf piccoli che provano l'adapter in lettura. I `generate_golden*.py`
-         restano (regola 9), al più in `tests/tools/`.
+      3. Fatto (D223). `generate_hatch_small` resta per il piano A.
       Nel cancello (D160, D212); misurare il tempo prima e dopo.
 - [ ] **Generatore di disegni credibili** (30 ottobre): compone forme vere
       (contorni con raccordi, cerchi e asole dentro, archi tangenti, spline,

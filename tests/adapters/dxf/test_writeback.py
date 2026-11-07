@@ -11,9 +11,6 @@ Il vecchio comportamento "sposta le entità sul msp / entità su layer Trash /
 keep_trash" non esiste più — i test relativi sono stati riscritti per
 ispezionare il modello (`result.loose`) o l'output di to_dxf().
 
-Prima di lanciare, genera i DXF di esempio:
-    python tests/tools/generate_examples.py
-
 Poi lancia:
     python -m pytest tests/adapters/dxf/test_writeback.py -v
 """

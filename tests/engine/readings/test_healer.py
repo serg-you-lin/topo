@@ -6,9 +6,6 @@ Unit test per topo.heal().
 Verifica esclusivamente il Result — clusters, inners, holes, trash.
 NON verifica effetti sul msp (layer, colori, LWPOLYLINE scritte) → test_writeback.py
 
-Prima di lanciare, genera i DXF di esempio:
-    python tests/tools/generate_examples.py
-
 Poi lancia:
     python -m pytest tests/engine/readings/test_healer.py -v
 """

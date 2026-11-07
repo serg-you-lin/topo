@@ -16,7 +16,7 @@ non ancora in __all__/docs, vedi MAP.md D46):
                                   includere anche i loop interni) — helper di
                                   introspezione, resta su topo.tools.rotate
 
-Fixture: `try_for_rotation.dxf` (tests/tools/generate_rotation_fixture.py) — un
+Fixture: `tests/data/try_for_rotation.dxf` — un
 rettangolo alto e stretto (100x400, outer verticale) con una linea interna
 diagonale come una bending line ma non parallela a un lato: dimostra che il
 filtro prende il lato OUTER più lungo, non una traccia interna qualunque.

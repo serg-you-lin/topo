@@ -467,6 +467,11 @@ The name says the job (edges that touch within a distance); it stays public, the
 invariants on every drawing, `golden/` the comparisons, `adapters/dxf/` what proves the format, `package/` the guards on
 the whole package. unit/integration/real sorted by size and no longer held. Paths come from `tests/paths.py`, never `__file__`.
 
+### D223 — The tracked DXF is the fixture; ezdxf generators go (Federico, 7 November).
+The adapter tests (writeback, split) need a real source file, so building the same drawings with topo would not remove
+one: the files stay, the 4 generators written with ezdxf go (rule 2; they live in git history). Byte-identical copies
+nobody reads by name go too: the invariants already read each content once.
+
 ## Open questions
 
 - **Name of the role `outer`** in the outlines reading: unresolved; it stays
