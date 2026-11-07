@@ -85,10 +85,10 @@ Aperti, con i fatti:
      `TestChordContactUnderMotion` era il difetto noto G6e, ora chiuso (5 moti, una
      risposta). I 4 DXF veri: 2 "guastati" (non giudicabili), 1 a ~5e9 mm (senza
      griglia l'area cambia meno: 0,0003% contro 0,1%), 1 è il difetto qui sotto.
-     Difetto trovato (c'è anche con la griglia): due spline chiuse, una passa a
-     0,003 mm dal nodo dell'altra; `outlines()` al posto ne manda una intera in
-     loose a pezzi, ruotato 90° manda in loose l'altra. Un DXF vero fuori dal repo;
-     caso minimo da costruire.
+     ~~Difetto delle due spline chiuse~~ fatto (D219). La diagnosi di prima era
+     sbagliata: basta una spline chiusa che incrocia se stessa, con `end` scritto a
+     1e-13 da `start` (`moved()` dei test, `rotate_document`): `renode` lasciava i
+     nodi delle curve chiuse come scritti → `outlines()` la mandava intera in loose.
   2. ~~Cerchio scritto due volte~~ fatto (D217).
   3. ~~Foro in archi~~ fatto (D218). La voce di prima era sbagliata: r 5 con buco 0,3
      sono 3,4°, sopra i 2° di D112, e restare aperto è giusto. Il difetto vero: due
@@ -99,8 +99,13 @@ Aperti, con i fatti:
   Forza bruta (~3 ore) di notte: `bash notte.sh` nel banco, `topo_base` (`4e729d1`)
   contro `topo_new` (`a9e2d61`), uscite in `notte/`. I numeri di prima qui sotto
   sono col controllo vecchio: si confronta solo con le due copie di `notte/`.
-  Prossima chat: il difetto delle due spline chiuse (voce 1 qui sopra), poi il
-  discorso dei test aperto con quel disegno.
+  Prossima chat: il discorso dei test aperto con quel disegno.
+- Una curva sola che incrocia se stessa non si taglia nell'incrocio
+  (`split_at_crossings` taglia solo fra edge diversi): spline di grado 1 a forma
+  di quadrato 100×100 con un ricciolo sotto → `outlines()` 9900 (l'anello intero,
+  area con segno), le stesse rette 10100 + il lobo in loose. DXF vero fuori dal
+  repo (banco della forza bruta, seme 3339): spline 8 (3 lobi), 9 (6 lobi),
+  silhouette di 8+9+10 ~13944, `outlines()` 10735 e la 8 in loose a pezzi.
   Numeri prima delle fix (attuale / senza griglia): 3000 inventati, risposta sbagliata
   790 / 767 (fori in più: quasi sempre con un doppione nel disegno; fori mancanti: quasi
   sempre con un cerchio spezzato + un buco; 8 senza nessuno dei due; compatibile con 2 e

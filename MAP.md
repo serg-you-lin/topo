@@ -451,6 +451,10 @@ Before, two equal circles were two holes with no warning; an arc over a circle n
 ### D218 — free arcs on one circle join across every hole within tolerance and ≤ 2°; all holes closed is a circle (Federico, 7 November).
 D112's rule judged one arc only: two arcs with 1.72° holes got two segments; with holes of 1° and 3° the 1° joins and
 one arc stays open by 3°, as a lone arc would (a thread is a ~270° arc and must stay open, snapbend).
+### D219 — a closed curve has one node, its start, however its Edge was written: `renode` sets it, as `Edge.of` does.
+`renode` left closed curves' nodes as given: an Edge whose end was re-evaluated 1e-13 from its start (`rotate_document`,
+a hand-built Edge) stayed open, and a closed spline crossing itself went whole to `loose` in `outlines()`. D216/D187:
+the node comes from the geometry, once, for every reading.
 
 ## Open questions
 
