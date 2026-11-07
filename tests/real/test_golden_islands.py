@@ -74,7 +74,7 @@ def _make_test(dxf: Path, golden: Path):
 # golden fermi apposta: D102/D103 li hanno spostati; i dubbi su D103 sono
 # chiusi (D157) e si rigenerano tutti insieme in G7,
 # guardando prima i DXF; allora questa lista si svuota
-KNOWN_STALE = {"anch_03", "anch_06", "anch_07", "regr_01", "regr_02", "regr_04", "regr_05"}
+KNOWN_STALE = {"anch_06", "anch_07", "regr_01", "regr_02", "regr_04", "regr_05"}
 
 for _dxf in sorted(SOURCE_DIR.glob("*.dxf")):
     _golden = GOLDEN_DIR / f"{_dxf.stem}.json"
