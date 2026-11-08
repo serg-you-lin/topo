@@ -51,7 +51,7 @@ def validate_document(doc: Document) -> Result:
     # quello che l'adapter ha detto sul file grezzo: validate_document() è
     # l'unico punto da guardare prima di heal()
     result.warnings.extend(doc.warnings)
-    result.notes.extend(getattr(doc, "notes", []))
+    result.notes.extend(doc.notes)
 
     if not edges:
         result.errors.append(Diagnostic(
