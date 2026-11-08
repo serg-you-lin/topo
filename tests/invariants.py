@@ -281,10 +281,11 @@ def contour_jumps(result) -> list:
 # ---------------------------------------------------------------------------
 
 DIAGNOSTIC_CODES = {
-    "warning": {"set-aside", "near-copy", "open-arc", "near-gap", "tie", "crossing"},
+    "warning": {"set-aside", "near-copy", "open-arc", "near-gap", "tie", "crossing",
+                "zero-length", "self-intersecting", "inner-outside"},
     "note": {"merged-lines", "merged-arcs", "welded", "arc-joined", "open-spline", "non-contour",
              "no-loop", "free-end", "joining-edge", "gap-closed"},
-    "error": {"empty", "no-closed-outer"},
+    "error": {"empty", "no-closed-outer", "open-contour", "no-area"},
 }
 
 

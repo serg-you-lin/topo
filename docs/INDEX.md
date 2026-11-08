@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`84` modules · `534` module-level functions · `65` classes · `16431` lines of code.
+`84` modules · `534` module-level functions · `65` classes · `16389` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -599,8 +599,8 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_unit` | func | `topo/core/geometry/shape.py:259` |  |
 | `_unit` | func | `topo/core/geometry/strips.py:104` |  |
 | `_upgrade_to_r2010` | func | `topo_dxf/loader.py:180` | Converte un documento DXF legacy in R2010. |
-| `validate_document` | func | `topo/rules/validator.py:33` | Valida l'input prima di heal(). |
-| `validate_result` | func | `topo/rules/validator.py:120` | Valida i Cluster dentro un Result già popolato da heal(). |
+| `validate_document` | func | `topo/rules/validator.py:33` | Check a `Document` before `heal()`, without changing it. |
+| `validate_result` | func | `topo/rules/validator.py:82` | Check the clusters of a `Result` a reading produced. **Mutates** `result`: |
 | `_void_area` | func | `topo/model/cluster.py:114` | Area di un vuoto dell'overlay, esatta sui suoi `segments` (D165). |
 | `_warn_non_roundtrip_types` | func | `topo_dxf/loader.py:86` | Avvisa sui tipi di entità che to_dxf() non riscrive (HATCH, IMAGE, …). |
 | `weld_degenerate_linesegs` | func | `topo/core/base/normalizer.py:509` | Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale |
@@ -1466,12 +1466,12 @@ No module-level function or class.
 
 ### `topo/rules/`
 
-#### `topo/rules/validator.py` — 169 lines
+#### `topo/rules/validator.py` — 127 lines
 
 _rules/validator.py_
 
-- `validate_document(doc: Document) -> Result` — L33 — Valida l'input prima di heal().
-- `validate_result(result: Result) -> None` — L120 — Valida i Cluster dentro un Result già popolato da heal().
+- `validate_document(doc: Document) -> Result` — L33 — Check a `Document` before `heal()`, without changing it.
+- `validate_result(result: Result) -> None` — L82 — Check the clusters of a `Result` a reading produced. **Mutates** `result`:
 
 ### `topo/tools/`
 
@@ -1801,7 +1801,7 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/model/style.py` | `topo.model.role` |
 | `topo/model/text.py` | `topo.model.role` |
 | `topo/primitives.py` | `topo.core.primitives.segments` · `topo.core.primitives.trim` |
-| `topo/rules/validator.py` | `topo.core.geometry.measure` · `topo.core.geometry.rings` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.core.topology.graph` · `topo.model` · `topo.model.document` |
+| `topo/rules/validator.py` | `topo.core.geometry.measure` · `topo.core.geometry.rings` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.model` · `topo.model.diagnostic` · `topo.model.document` |
 | `topo/tools/__init__.py` | `topo.tools.anchor` |
 | `topo/tools/anchor.py` | `topo.core.primitives.polygon_builder` · `topo.model.curve` · `topo.model.result` · `topo.model.role` · `topo.model.text` |
 | `topo/tools/non_contour.py` | `topo.core.readings.heal_steps` · `topo.core.topology.edge` · `topo.model.document` |
