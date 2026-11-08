@@ -70,7 +70,7 @@ def ring_bbox(segments: Sequence) -> Bounds:
     ed ellissi dove la curva li tocca, non sulle corde. I salti stanno fra
     estremi di segmenti, già dentro."""
     if not segments:
-        raise ValueError("ring_bbox(): giro vuoto")
+        raise ValueError("ring_bbox(): empty ring")
     xs, ys = [], []
     for segment in segments:
         reach = Reach(segment)
@@ -144,7 +144,7 @@ def _winding(segments: Sequence, point: Point, tolerance: float):
     """Numero di avvolgimento del giro attorno a `point`; None se `point` sta
     sul bordo entro `tolerance`."""
     if not segments:
-        raise ValueError("ring_contains(): giro vuoto")
+        raise ValueError("ring_contains(): empty ring")
     turn = 0.0
     for segment in segments:
         swept = _swept(segment, point, tolerance)
@@ -221,7 +221,7 @@ def _swept(segment, point: Point, tolerance: float):
         if pts is None:
             return None
         return sum(_chord_angle(point, a, b) for a, b in zip(pts, pts[1:]))
-    raise TypeError(f"primitiva non supportata: {type(segment).__name__}")
+    raise TypeError(f"unsupported primitive: {type(segment).__name__}")
 
 
 def _chord_angle(point: Point, a: Point, b: Point) -> float:

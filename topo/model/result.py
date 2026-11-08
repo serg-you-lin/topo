@@ -72,16 +72,16 @@ class Result:
         """
         group = [curves] if isinstance(curves, (OpenCurve, ClosedCurve)) else list(curves)
         if not group:
-            raise ValueError("promote(): nessuna curva")
+            raise ValueError("promote(): no curve")
         if item is None and len(group) > 1:
-            raise ValueError("promote(): più curve sono un solo item, e item manca")
+            raise ValueError("promote(): several curves make one item, and item is missing")
         at = {id(c): k for k, c in enumerate(self.loose)}
         if len({id(c) for c in group}) < len(group):
-            raise ValueError("promote(): una curva è data due volte")
+            raise ValueError("promote(): a curve is given twice")
         if any(id(c) not in at for c in group):
-            raise ValueError("promote(): una curva non è in result.loose")
+            raise ValueError("promote(): a curve is not in result.loose")
         if not any(c is cluster for c in self.clusters):
-            raise ValueError("promote(): il cluster non è in result.clusters")
+            raise ValueError("promote(): the cluster is not in result.clusters")
         if cluster.detected is None:
             cluster.detected = DetectedFeatures()
         cluster.detected.add(name, group[0] if item is None else item)

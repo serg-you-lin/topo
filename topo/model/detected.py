@@ -67,8 +67,8 @@ class DetectedFeatures:
             return store[name]
         except KeyError:
             raise AttributeError(
-                f"{name!r} non è stato attaccato a questo DetectedFeatures "
-                f"(nomi presenti: {list(store)})"
+                f"{name!r} is not attached to this DetectedFeatures "
+                f"(names present: {list(store)})"
             )
 
     def __repr__(self) -> str:

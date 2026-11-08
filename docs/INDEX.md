@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`84` modules · `536` module-level functions · `65` classes · `16417` lines of code.
+`84` modules · `536` module-level functions · `65` classes · `16414` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -163,7 +163,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_dimension_text` | func | `topo_dxf/text_extractor.py:541` | Testo visualizzato della quota, quando l'immagine non è espandibile. |
 | `_dimension_text_of` | func | `topo_dxf/text_extractor.py:193` |  |
 | `_distance` | func | `topo/core/geometry/intersections.py:40` |  |
-| `Document` | class | `topo/model/document.py:41` | Documento di dominio prodotto da load_dxf() / load_svg() / load_pdf(). |
+| `Document` | class | `topo/model/document.py:39` | Documento di dominio prodotto da load_dxf() / load_svg() / load_pdf(). |
 | `document_from_msp` | func | `topo_dxf/loader.py:355` | Costruisce un Document da un modelspace ezdxf già aperto. |
 | `douglas_peucker` | func | `topo/core/geometry/points.py:179` | Indici dei vertici che Douglas-Peucker tiene sulla polilinea aperta |
 | `drop_duplicate_points` | func | `topo/core/geometry/points.py:34` | Rimuove punti consecutivi coincidenti entro `tolerance`. |
@@ -1121,7 +1121,7 @@ _topo/core/readings/faces.py_
 - `_loose_ends_notes(ends: list, pieces: list, non_contour_ids: set) -> list` — L121 — Quello che resta aperto anche quando qualcosa si chiude (D111): gli
 - `_crossing_warnings(points: list) -> list` — L141 — Lati di contorno che si attraversano senza un nodo (D132): il disegno è
 
-#### `topo/core/readings/heal.py` — 46 lines
+#### `topo/core/readings/heal.py` — 45 lines
 
 _topo/core/readings/heal.py_
 
@@ -1408,11 +1408,11 @@ _topo/model/diagnostic.py_
   - methods: `at`
 - `_rebuild(code, message, points, notes, help, param, value, level='warning') -> Diagnostic` — L89
 
-#### `topo/model/document.py` — 61 lines
+#### `topo/model/document.py` — 59 lines
 
 _model/document.py_
 
-- **class** `Document` — L41 — Documento di dominio prodotto da load_dxf() / load_svg() / load_pdf().
+- **class** `Document` — L39 — Documento di dominio prodotto da load_dxf() / load_svg() / load_pdf().
   - methods: `node_tolerance`
 
 #### `topo/model/result.py` — 111 lines

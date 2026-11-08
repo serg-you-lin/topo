@@ -24,7 +24,7 @@ def _real(x) -> float:
     posizione, la primitiva la rifiuta come una curva di misura nulla (D154, D190)."""
     x = float(x)
     if not math.isfinite(x):
-        raise ValueError(f"Valore non finito: {x}")
+        raise ValueError(f"not a finite number: {x}")
     return x
 
 
@@ -136,7 +136,7 @@ def _check_factor(factor: float) -> float:
     rotazione di π più una scala, e va chiesto così."""
     factor = float(factor)
     if not (factor > 0 and math.isfinite(factor)):
-        raise ValueError(f"fattore di scala positivo e finito, non {factor}")
+        raise ValueError(f"the scale factor must be positive and finite, got {factor}")
     return factor
 
 
@@ -234,7 +234,7 @@ class ArcSeg:
         self.start_angle, self.end_angle = _real(self.start_angle), _real(self.end_angle)
         # raggio 0 è un punto, non una curva: come CircleSeg (D154)
         if not self.radius > 0:
-            raise ValueError(f"Raggio deve essere positivo: {self.radius}")
+            raise ValueError(f"the radius must be positive, got {self.radius}")
 
     def _sweep(self) -> float:
         """Angolo spazzato in radianti, sempre positivo."""
@@ -324,13 +324,13 @@ class ArcSeg:
         adapter passano qui senza conoscere la geometria interna.
         """
         if abs(bulge) < 1e-9:
-            raise ValueError("bulge nullo: usa LineSeg, non ArcSeg")
+            raise ValueError("zero bulge: use LineSeg, not ArcSeg")
 
         ccw = bulge > 0
         half_chord = math.hypot(end[0] - start[0], end[1] - start[1]) / 2.0
         if not half_chord > 0:
             # corda nulla: raggio 0, con numpy un arco NaN invece di un errore (D154)
-            raise ValueError("corda nulla: un punto, non un arco")
+            raise ValueError("zero chord: a point, not an arc")
         sweep = 4.0 * math.atan(abs(bulge))          # angolo spazzato totale
         radius = half_chord / math.sin(sweep / 2.0)
 
@@ -688,7 +688,7 @@ class CircleSeg:
     def __post_init__(self):
         self.center, self.radius = _plain(self.center), _real(self.radius)
         if not self.radius > 0:
-            raise ValueError(f"Raggio deve essere positivo: {self.radius}")
+            raise ValueError(f"the radius must be positive, got {self.radius}")
 
     def reversed(self) -> "CircleSeg":
         """Un cerchio è simmetrico: invertirlo lo lascia identico."""
@@ -770,7 +770,7 @@ class EllipseSeg:
         self.start_param, self.end_param = _real(self.start_param), _real(self.end_param)
         # asse nullo o ratio 0 è un punto o un segmento, non un'ellisse (D154)
         if not (math.hypot(*self.major_axis) > 0 and self.ratio > 0):
-            raise ValueError(f"Ellisse degenere: asse {self.major_axis}, ratio {self.ratio}")
+            raise ValueError(f"degenerate ellipse: axis {self.major_axis}, ratio {self.ratio}")
 
     def _sweep(self) -> float:
         """Angolo (parametro) spazzato in radianti, sempre positivo."""

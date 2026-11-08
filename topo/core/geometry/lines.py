@@ -173,7 +173,7 @@ def dash_line(start: Point, end: Point, head: float, tail: float,
     non resta nessun vuoto da lasciare. Lunghezze negative → ValueError.
     """
     if min(head, tail, middle) < 0 or n_middle < 0:
-        raise ValueError("dash_line: lunghezze e numero di tratti devono essere ≥ 0")
+        raise ValueError("dash_line(): lengths and number of dashes must be >= 0")
     length = math.dist(start, end)
     covered = head + tail + n_middle * middle
     if covered >= length:

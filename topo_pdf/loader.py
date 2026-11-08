@@ -35,7 +35,7 @@ def load_pdf(path: str, snap_tolerance: float = 0.15) -> list:
     """
     # 1. Verifica preliminare dell'esistenza del file
     if not os.path.isfile(path):
-        raise FileNotFoundError(f"[pdf/loader] File PDF non trovato: {path}")
+        raise FileNotFoundError(f"PDF file not found: {path}")
 
     all_edges = []
 
@@ -82,4 +82,4 @@ def load_pdf(path: str, snap_tolerance: float = 0.15) -> list:
         return all_edges
 
     except Exception as ex:
-        raise RuntimeError(f"[pdf/loader] Errore critico durante il caricamento del PDF: {ex}")
+        raise RuntimeError(f"the PDF could not be loaded: {ex}")

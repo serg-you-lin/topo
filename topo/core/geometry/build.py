@@ -30,7 +30,7 @@ def polygon(points: Sequence[Point]) -> List[LineSeg]:
     if len(pts) > 1 and pts[0] == pts[-1]:
         pts = pts[:-1]
     if len(pts) < 3:
-        raise ValueError(f"polygon(): servono almeno 3 punti distinti, ne ho {len(pts)}")
+        raise ValueError(f"polygon(): needs at least 3 distinct points, got {len(pts)}")
     return [LineSeg(start=pts[i], end=pts[(i + 1) % len(pts)]) for i in range(len(pts))]
 
 
@@ -43,7 +43,7 @@ def rectangle(length: float, width: float, *, center: Point = (0.0, 0.0), angle:
 def regular_polygon(sides: int, radius: float, *, center: Point = (0.0, 0.0), angle: float = 0.0) -> List[LineSeg]:
     """Poligono regolare di `sides` lati inscritto nel cerchio di raggio `radius`; il primo vertice a `angle` gradi."""
     if sides < 3:
-        raise ValueError(f"regular_polygon(): servono almeno 3 lati, non {sides}")
+        raise ValueError(f"regular_polygon(): needs at least 3 sides, got {sides}")
     step = 2 * math.pi / sides
     return polygon(_place([(radius * math.cos(k * step), radius * math.sin(k * step)) for k in range(sides)],
                           center, angle))
@@ -60,7 +60,7 @@ def ellipse(length: float, width: float, *, center: Point = (0.0, 0.0), angle: f
     `angle` gradi. `length` >= `width` > 0.
     """
     if not length >= width > 0:
-        raise ValueError(f"ellipse(): serve length >= width > 0, non {length} x {width}")
+        raise ValueError(f"ellipse(): needs length >= width > 0, got {length} x {width}")
     a = math.radians(angle)
     major = (length / 2 * math.cos(a), length / 2 * math.sin(a))
     return [EllipseSeg(center=tuple(center), major_axis=major, ratio=width / length,
@@ -74,7 +74,7 @@ def stadium(length: float, width: float, *, center: Point = (0.0, 0.0), angle: f
     `length` > `width`.
     """
     if length <= width:
-        raise ValueError(f"stadium(): la lunghezza ({length}) deve superare la larghezza ({width})")
+        raise ValueError(f"stadium(): length ({length}) must exceed width ({width})")
     r, half = width / 2, (length - width) / 2
     a = math.radians(angle)
     (p1, p2, p3, p4) = _place([(-half, -r), (half, -r), (half, r), (-half, r)], center, angle)

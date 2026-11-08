@@ -132,7 +132,7 @@ def _piece(seg, s0: float, s1: float):
                       end_angle=start + sign * s1, ccw=ccw)
     piece = sub_segment(seg, _at(seg, s0), _at(seg, s1), _at(seg, (s0 + s1) / 2))
     if piece is None:
-        raise ValueError(f"{type(seg).__name__} non si taglia esatto")
+        raise ValueError(f"{type(seg).__name__} cannot be cut exactly")
     return piece
 
 
@@ -199,7 +199,7 @@ def _reversed(ring: Sequence) -> list:
 def _polygon(ring: Sequence):
     polygon = build_polygon([_full_arc(s) for s in ring], _POLYGON_TOLERANCE)
     if polygon is None:
-        raise ValueError("i segmenti non chiudono un poligono valido")
+        raise ValueError("the segments do not close a valid polygon")
     return polygon
 
 
@@ -288,7 +288,7 @@ def nearest_point(segments: Sequence, point: Point) -> Point:
         if best is None or math.dist(q, point) < math.dist(best, point):
             best = q
     if best is None:
-        raise ValueError("nearest_point(): `segments` è vuoto")
+        raise ValueError("nearest_point(): `segments` is empty")
     return best
 
 
@@ -303,7 +303,7 @@ def cut_by(segment, region: Sequence, *, keep: str = "outside") -> list:
     lungo il bordo della regione → ValueError: né dentro né fuori.
     """
     if keep not in ("outside", "inside"):
-        raise ValueError(f"keep: 'outside' o 'inside', non {keep!r}")
+        raise ValueError(f"keep must be 'outside' or 'inside', got {keep!r}")
     polygon = _polygon(region)
     points = [p for r in region for p in intersections(segment, r)]
     want = -1 if keep == "outside" else 1
@@ -311,7 +311,7 @@ def cut_by(segment, region: Sequence, *, keep: str = "outside") -> list:
     for piece in _split(segment, points):
         side = _piece_side(polygon, piece)
         if side == 0:
-            raise ValueError("un pezzo corre lungo il bordo della regione")
+            raise ValueError("a piece runs along the border of the region")
         if side == want:
             out.append(piece)
     return out
@@ -338,7 +338,7 @@ def _chain(pieces: list, inside_left: Optional[bool] = None) -> List[list]:
             tail = _ends(ring[-1])[1]
             nexts = [i for i, p in enumerate(left) if math.dist(_ends(p)[0], tail) <= _JOIN]
             if not nexts:
-                raise ValueError("i pezzi non si chiudono in un anello")
+                raise ValueError("the pieces do not close into a ring")
             k = nexts[0]
             if inside_left is not None and len(nexts) > 1:
                 # angolo dalla direzione da cui si arriva, girata, a quella in
@@ -394,14 +394,14 @@ def contour_minus(contour: Sequence, region: Sequence) -> List[list]:
         for piece in _split(c, points):
             side = _piece_side(region_polygon, piece)
             if side == 0:
-                raise ValueError("il contorno corre lungo il bordo della regione")
+                raise ValueError("the contour runs along the border of the region")
             if side == -1:
                 kept.append(piece)
     for r in region:
         for piece in _split(r, points):
             side = _piece_side(contour_polygon, piece)
             if side == 0:
-                raise ValueError("la regione corre lungo il bordo del contorno")
+                raise ValueError("the region runs along the border of the contour")
             if side == 1:
                 kept.append(piece.reversed() if same else piece)
     return _chain(kept)
@@ -472,7 +472,7 @@ def contour_union(contour: Sequence, other: Sequence) -> List[list]:
         if side == 0:
             k, same = _twin(piece, on_border)
             if k is None:
-                raise ValueError("il contorno corre lungo l'altro senza coincidere")
+                raise ValueError("the contour runs along the other without coinciding")
             on_border.pop(k)
             if same:             # sovrapposti: l'interno è dalla stessa parte
                 kept.append(piece)
@@ -480,7 +480,7 @@ def contour_union(contour: Sequence, other: Sequence) -> List[list]:
         if side == -1:
             kept.append(piece)
     if on_border:
-        raise ValueError("l'altro contorno corre lungo il primo senza coincidere")
+        raise ValueError("the other contour runs along the first without coinciding")
     kept += [piece for piece, side in other_pieces if side == -1]
     rings = [merge_runs(ring, [None] * len(ring))[0] for ring in _chain(kept, inside_left=ccw)]
     return sorted(rings, key=lambda ring: -abs(_signed_area(ring)))

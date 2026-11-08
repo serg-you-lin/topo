@@ -59,7 +59,7 @@ def split(
     """
     if not result.is_valid:
         raise ValueError(
-            "split(): il Result non è valido, nessun output generato. "
+            "split(): the Result is not valid, no output. "
             + " ".join(result.errors)
         )
 

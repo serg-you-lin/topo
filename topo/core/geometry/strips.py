@@ -104,7 +104,7 @@ class Strip:
 def _unit(v: Point) -> Point:
     n = math.hypot(*v)
     if n < 1e-12:
-        raise ValueError("direzione nulla")
+        raise ValueError("zero direction")
     return (v[0] / n, v[1] / n)
 
 
@@ -174,7 +174,7 @@ def strip_between(a: Sequence, b: Sequence, at: Point, width: float,
     (`topo.tools.strips.facing_boundaries`).
     """
     if width <= 0:
-        raise ValueError(f"width deve essere > 0, non {width}")
+        raise ValueError(f"width must be > 0, got {width}")
     a, b = list(a), list(b)
     length = 4 * _size(a, b) + 4 * width
     on_a, on_b = nearest_point(a, at), nearest_point(b, at)
@@ -192,7 +192,7 @@ def strip_between(a: Sequence, b: Sequence, at: Point, width: float,
                        end=(near[0] + o[0] + direction[0] * length, near[1] + o[1] + direction[1] * length))
         found = _hits(ring, line)
         if not found:
-            raise ValueError(f"un fianco della striscia larga {width} non incontra {which}")
+            raise ValueError(f"a side of the strip {width} wide does not meet {which}")
         return nearest_point(ring, min(found, key=lambda p: math.dist(p, near)))
 
     start_cuts = (cut(start_ring, start, 1.0, "il contorno di partenza"),
@@ -214,20 +214,20 @@ def _refuse_crossings(strip: Strip, a: Sequence, b: Sequence, obstacles: Sequenc
                       placed: Sequence[Strip]) -> None:
     for side in strip.sides:
         if math.dist(side.start, side.end) <= _TOUCH:
-            raise ValueError("la striscia ha un fianco di lunghezza nulla: i due contorni si toccano lì")
+            raise ValueError("a side of the strip has zero length: the two contours touch there")
         ends = (side.start, side.end)
         for name, ring in [("di nuovo un suo contorno", a), ("di nuovo un suo contorno", b),
                            *(("un altro contorno", r) for r in obstacles),
                            *(("un'altra striscia", s.outline) for s in placed)]:
             if any(min(math.dist(p, e) for e in ends) > _TOUCH for p in _hits(ring, side)):
-                raise ValueError(f"la striscia attraversa {name}")
+                raise ValueError(f"the strip crosses {name}")
     quad = Polygon([s.start for s in strip.outline])
     for ring in obstacles:
         if quad.contains(LineString(_ring_points(ring)).interpolate(0)):
-            raise ValueError("un altro contorno sta dentro la striscia")
+            raise ValueError("another contour lies inside the strip")
     for other in placed:
         if quad.intersects(Polygon([s.start for s in other.outline])):
-            raise ValueError("la striscia si sovrappone a un'altra striscia")
+            raise ValueError("the strip overlaps another strip")
 
 
 # ---------------------------------------------------------------------------
@@ -248,7 +248,7 @@ def open_ring(ring: Sequence, covered: Sequence[Tuple[Point, Point, Point]]) -> 
     cuts = [nearest_point(ring, p) for c in covered for p in c[:2]]
     for c, p in zip([p for c in covered for p in c[:2]], cuts):
         if math.dist(c, p) > _TOUCH:
-            raise ValueError("un capo di un tratto coperto non sta sull'anello")
+            raise ValueError("an end of a covered stretch is not on the ring")
     pieces = [piece for seg in ring for piece in _split(seg, cuts)]
 
     def at_cut(p: Point) -> bool:
@@ -256,7 +256,7 @@ def open_ring(ring: Sequence, covered: Sequence[Tuple[Point, Point, Point]]) -> 
 
     first = next((k for k, piece in enumerate(pieces) if at_cut(_ends(piece)[0])), None)
     if first is None:
-        raise ValueError("i tratti coperti non tagliano l'anello")
+        raise ValueError("the covered stretches do not cut the ring")
     pieces = pieces[first:] + pieces[:first]
     chains: List[list] = []
     for piece in pieces:
@@ -279,7 +279,7 @@ def open_ring(ring: Sequence, covered: Sequence[Tuple[Point, Point, Point]]) -> 
         else:
             dropped[under] += 1
     if any(n != 1 for n in dropped):
-        raise ValueError("due tratti coperti si sovrappongono sull'anello")
+        raise ValueError("two covered stretches overlap on the ring")
     return kept
 
 

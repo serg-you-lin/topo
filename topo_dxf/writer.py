@@ -89,7 +89,7 @@ def to_dxf(
     """
     if not result.is_valid and not allow_invalid:
         raise ValueError(
-            "to_dxf(): il Result non è valido, nessun output generato. "
+            "to_dxf(): the Result is not valid, no output. "
             + " ".join(result.errors)
         )
     doc_out = ezdxf.new(dxfversion="R2010")
@@ -372,8 +372,8 @@ def _apply_role_style(doc, layer, role, style: RoleStyle) -> None:
         linetype = ensure_linetype(doc, name, dxf_pattern(style.dash))
         if linetype is None:
             raise ValueError(
-                f"RoleStyle per {role_str(role)!r}: linetype {name!r} sconosciuto "
-                "(né nel documento né tra gli standard) e senza tratto"
+                f"RoleStyle for {role_str(role)!r}: linetype {name!r} unknown "
+                "(neither in the document nor among the standard ones) and no dash given"
             )
         layer.dxf.linetype = linetype
     if style.lineweight is not None:

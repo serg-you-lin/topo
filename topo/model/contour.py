@@ -52,11 +52,11 @@ class Contour(ClosedCurve):
         for k, seg in enumerate(segs):
             end, start = segment_endpoints(seg)[1], segment_endpoints(segs[(k + 1) % len(segs)])[0]
             if math.dist(end, start) > tolerance:
-                raise ValueError(f"from_segments: il segmento {k} finisce a {end}, "
-                                 f"il successivo parte da {start}: non è un anello")
+                raise ValueError(f"from_segments(): segment {k} ends at {end}, "
+                                 f"the next starts at {start}: not a ring")
         polygon = build_polygon(segs, tolerance)
         if polygon is None:
-            raise ValueError("from_segments: i segmenti non racchiudono un poligono valido")
+            raise ValueError("from_segments(): the segments do not enclose a valid polygon")
         return with_polygon(cls(role=role, segments=segs, depth=depth, parent=parent), polygon)
 
     def to_dict(self) -> dict:

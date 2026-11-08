@@ -22,7 +22,7 @@ try:
     import ezdxf  # noqa: F401
 except ImportError as exc:  # pragma: no cover - dipende dall'ambiente
     raise ImportError(
-        "topo_dxf ha bisogno di ezdxf: pip install g-topo[dxf]"
+        "topo_dxf needs ezdxf: pip install g-topo[dxf]"
     ) from exc
 
 from .loader import load_dxf, document_from_msp

@@ -91,7 +91,7 @@ def interpolate_bspline(points: List[Point], degree: int = 3) -> Tuple[List[Poin
     n = len(points) - 1
     p = degree
     if n < p:
-        raise ValueError(f"Servono almeno {p + 1} punti per una spline di grado {p}")
+        raise ValueError(f"a spline of degree {p} needs at least {p + 1} points")
 
     dists = [math.dist(points[i], points[i + 1]) for i in range(n)]
     total = sum(dists)

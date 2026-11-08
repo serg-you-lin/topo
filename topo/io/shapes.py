@@ -40,7 +40,7 @@ def to_shapely(item, *, tolerance: Optional[float] = None):
         return _cluster(item, tolerance)
     segments = getattr(item, "segments", None)
     if not segments:
-        raise TypeError(f"to_shapely(): {type(item).__name__} non porta `segments`")
+        raise TypeError(f"to_shapely(): {type(item).__name__} has no `segments`")
     if isinstance(item, OpenCurve):
         return LineString(track_points(segments, tolerance=tolerance or DEFAULT_TOLERANCE))
     return _ring(item, tolerance)
@@ -51,7 +51,7 @@ def _ring(item, tolerance: Optional[float]) -> Polygon:
     if polygon is None:
         polygon = build_polygon(list(item.segments), tolerance or DEFAULT_TOLERANCE)
     if polygon is None:
-        raise ValueError("to_shapely(): i segmenti non racchiudono un poligono valido")
+        raise ValueError("to_shapely(): the segments do not enclose a valid polygon")
     return polygon
 
 
