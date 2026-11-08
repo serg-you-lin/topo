@@ -11,20 +11,33 @@ per qualunque programma che decide sì o no su un numero misurato (MAP.md D215).
 
 Per riparare un disegno topo deve decidere, di continuo, sì o no:
 
-- questo buco è abbastanza piccolo da chiuderlo? (buco ≤ tolleranza)
+- questo salto è abbastanza piccolo da chiuderlo? (salto ≤ tolleranza)
 - questi due capi sono lo stesso punto? (distanza ≤ una soglia)
 - questo arco è quasi un cerchio intero? (angolo mancante ≤ 2°)
 
 Ogni regola così ha un confine: un numero appena sotto dice sì, uno appena
-sopra dice no. Con tolleranza 0,5 mm, un buco di 0,49999999999999 mm si chiude.
+sopra dice no. Con il confine a 0,5 mm, un salto di 0,49999999999999 mm si chiude
+e uno di 0,50000000000001 mm no.
 
 ## 2. Muovere un disegno cambia i suoi numeri di un niente
 
-Il computer tiene una coordinata con circa 16 cifre significative. Quando il
-disegno viene ruotato ogni coordinata si ricalcola e l'ultima cifra viene un
-poco diversa: su un pezzo a circa 1000 mm dall'origine l'errore è circa
-0,00000000000001 mm. Lo stesso buco, rimisurato dopo la rotazione, può fare
-0,50000000000001 mm. Adesso non si chiude. Il disegno è lo stesso; la risposta no.
+Il computer tiene una coordinata con circa 16 cifre significative. 0,5 lo scrive
+esatto; ma un salto non si legge, si calcola dalle coordinate (coseni, seni,
+radici), e ogni passo arrotonda al numero più vicino che il computer sa scrivere:
+a volte un pelo sopra, a volte un pelo sotto. Su un pezzo a circa 1000 mm
+dall'origine l'errore è di circa 0,00000000000008 mm.
+
+Un salto di 0,5 mm a 1000 mm dall'origine, ruotato e rimisurato:
+
+| rotazione | il salto misura | con il confine a 0,5 |
+|---|---|---|
+| nessuna | 0,5 | si chiude |
+| 20° | 0,49999999999992 | si chiude |
+| 45° | 0,50000000000008 | non si chiude |
+
+Il disegno è lo stesso; la risposta no. (topo mette il confine un milionesimo di
+mm più in là, a 0,500001, e i tre qui sopra si chiudono tutti; ma un salto che
+misura proprio 0,500001 ha lo stesso problema: vedi la sezione 3.)
 
 ## 3. Spostare il confine non serve
 
