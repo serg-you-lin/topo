@@ -20,7 +20,7 @@ import topo_dxf
 from topo import to_shapely
 
 # --- CONFIG ----------------------------------------------------------------
-INPUT     = r"tests/data/Linee_piegatura.dxf"
+INPUT     = r"tests/data/golden_faces/Linee_piegatura.dxf"
 TOLERANCE = 0.5
 # -------------------------------------------------------------------------
 

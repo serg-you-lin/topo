@@ -42,7 +42,7 @@ import topo
 import topo_dxf
 from topo_dxf.layers import role_to_dxf_layer
 from topo import to_shapely
-from tests.paths import DATA
+from tests.paths import DATA, drawing
 
 
 MULTIPLI_DIR = DATA / "golden_split"
@@ -193,7 +193,7 @@ def _make_split_test(golden_path: Path):
         golden      = json.loads(golden_path.read_text(encoding="utf-8"))
         child_name = golden.get("source_file", f"{golden['parent_file']}__part{golden['part_index']}")
         parent_name = golden["parent_file"]
-        parent_path = MULTIPLI_DIR / parent_name
+        parent_path = drawing(parent_name)
 
         if not parent_path.exists():
             self.skipTest(f"DXF padre non trovato: {parent_path}")

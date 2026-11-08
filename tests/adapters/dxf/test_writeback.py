@@ -24,14 +24,14 @@ import topo
 import topo_dxf
 from topo_dxf.parser import DxfEntityDispatcher
 from topo_dxf.layers import LAYER_OUTER, LAYER_INNER
-from tests.paths import DATA
+from tests.paths import DATA, drawing
 
 EXAMPLES_DIR = DATA
 
 
 def _pipeline(name, *, name_roles=None):
     """heal → to_dxf. Ritorna (result, msp_out)."""
-    doc = topo_dxf.load_dxf(EXAMPLES_DIR / name, role_rules=topo.name_rules(name_roles or {}))
+    doc = topo_dxf.load_dxf(drawing(name), role_rules=topo.name_rules(name_roles or {}))
     result = topo.heal(doc).faces()
     doc_out = topo_dxf.to_dxf(result, doc)
     return result, doc_out.modelspace()
@@ -148,7 +148,7 @@ class TestWritebackTrash(unittest.TestCase):
         self.assertEqual(len(trash), len(result.loose))
 
     def test_003_include_trash_false_omits_trash(self):
-        doc = topo_dxf.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf")
+        doc = topo_dxf.load_dxf(drawing("rect_with_trash.dxf"))
         result = topo.heal(doc).faces()
         msp = topo_dxf.to_dxf(result, doc, include_loose=False).modelspace()
         trash = [e for e in msp
@@ -172,7 +172,7 @@ class TestWritebackTrash(unittest.TestCase):
         # arco/arco di ~0.26 mm > 0.05) → heal() invalida il risultato. Di
         # default to_dxf() lo scrive lo stesso (tutto in trash, D83); con
         # allow_invalid=False si rifiuta, come vuole chi consegna a una macchina.
-        doc = topo_dxf.load_dxf(EXAMPLES_DIR / "arc_open.dxf")
+        doc = topo_dxf.load_dxf(drawing("arc_open.dxf"))
         result = topo.heal(doc).faces()
         self.assertFalse(result.is_valid)
         self.assertEqual(result.cluster_count, 0)
@@ -195,7 +195,7 @@ class TestWritebackSourceLayerNotKept(unittest.TestCase):
     resta nel modello come loose, e il DXF scritto non ha quel layer."""
 
     def setUp(self):
-        doc = topo_dxf.load_dxf(EXAMPLES_DIR / "la_104.DXF", tolerance=0.2)
+        doc = topo_dxf.load_dxf(drawing("la_104.DXF"), tolerance=0.2)
         self.result = topo.heal(doc, tolerance=0.2).faces()
         self.msp = topo_dxf.to_dxf(self.result, doc).modelspace()
 
@@ -217,7 +217,7 @@ class TestWritebackStyle(unittest.TestCase):
 
     def _multifeature(self):
         name = "Multifeature.dxf"
-        if not (EXAMPLES_DIR / name).exists():
+        if not (drawing(name)).exists():
             self.skipTest(name)
         return _pipeline(name, name_roles={"MARK": "engrave"})
 
@@ -309,7 +309,7 @@ class TestWritebackTexts(unittest.TestCase):
     def test_005_text_with_role_goes_on_its_role_layer(self):
         # Il layer d'origine non resta nel modello (D128): un testo che il
         # chiamante vuole distinto gli dà un ruolo, e va sul layer del ruolo.
-        doc = topo_dxf.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf",
+        doc = topo_dxf.load_dxf(drawing("rect_with_trash.dxf"),
                             role_rules=topo.name_rules({"TESTO": "note"}))
         result = topo.heal(doc).faces()
         msp = topo_dxf.to_dxf(result, doc).modelspace()
@@ -318,7 +318,7 @@ class TestWritebackTexts(unittest.TestCase):
         self.assertEqual(texts[0].dxf.layer, "note")
 
     def test_006_text_layer_custom_routes_there(self):
-        doc = topo_dxf.load_dxf(EXAMPLES_DIR / "rect_with_trash.dxf")
+        doc = topo_dxf.load_dxf(drawing("rect_with_trash.dxf"))
         result = topo.heal(doc).faces()
         msp = topo_dxf.to_dxf(result, doc, text_layer=TRASH_LAYER).modelspace()
         texts = list(msp.query("TEXT"))
@@ -329,9 +329,9 @@ class TestWritebackTexts(unittest.TestCase):
         # ezdxf le cancellava) + 4 LEADER (frecce di sezione, senza repr point).
         # Devono arrivare tutte in output.
         name = "Multifeature.dxf"
-        if not (EXAMPLES_DIR / name).exists():
+        if not (drawing(name)).exists():
             self.skipTest(name)
-        doc = topo_dxf.load_dxf(EXAMPLES_DIR / name)
+        doc = topo_dxf.load_dxf(drawing(name))
         kinds = Counter(a.source_kind for a in doc.texts)
         self.assertEqual(kinds["DIMENSION"], 16)
         self.assertEqual(kinds["LEADER"], 4)
@@ -368,7 +368,7 @@ class TestWritebackInsertExplodedByDefault(unittest.TestCase):
     def test_001_block_geometry_survives_without_flag(self):
         # scritta.dxf è un solo INSERT che avvolge 93 LINE + 23 SPLINE (lettere).
         # Senza esplodere, load_dxf scartava tutto. Ora è il default.
-        doc = topo_dxf.load_dxf(EXAMPLES_DIR / "scritta.dxf")
+        doc = topo_dxf.load_dxf(drawing("scritta.dxf"))
         self.assertGreater(len(doc.edges), 50)
         result = topo.heal(doc).faces()
         self.assertEqual(result.cluster_count, 1)
@@ -414,7 +414,7 @@ class TestWritebackArcRoundTrip(unittest.TestCase):
 
     def test_outer_area_matches_model(self):
         for name in self.ARC_EXAMPLES:
-            path = EXAMPLES_DIR / name
+            path = drawing(name)
             if not path.exists():
                 continue
             with self.subTest(example=name):
