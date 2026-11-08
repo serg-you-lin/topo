@@ -331,11 +331,8 @@ novembre, ramo `no-join-ends` fuso in `main`.
       CLAUDE.md: motore di geometria 2D, i disegni tecnici sono un caso.
 - [ ] **G9** `docs/API.md` e `docs/ARCHITECTURE.md` in inglese; docstring dei
       nomi pubblici in inglese, con un controllo nella suite.
-      Con G9, nella stessa passata (D233): ogni avviso e errore di topo in inglese e
-      `Diagnostic` (oggi 3 su ~39), senza parole DXF nel motore (`network.py`,
-      `faces.py`, `validator.py`: "Modelspace", "LINE/ARC", "SPLINE"); e i nomi
-      vecchi (`dxf_forge` in `test_splitter.py`, `test_models.py`, `test_loops.py`,
-      `ARCHITECTURE.md:415`).
+      Con G9, nella stessa passata: i nomi vecchi (`dxf_forge` in
+      `test_splitter.py`, `test_models.py`, `test_loops.py`, `ARCHITECTURE.md:415`).
       Da decidere con Federico nella stessa passata: `cluster.detected` /
       `DetectedFeatures` non rilevano niente (è lo strato aperto di un consumatore,
       D44): nome neutro (es. `overlay`/`Overlay`). `DetectedFeature` (Protocol con
