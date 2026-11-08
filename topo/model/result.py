@@ -16,6 +16,8 @@ class Result:
     chiamante: i pezzi trovati + info di validazione.
 
     Campi:
+        warnings  : consigli sul disegno; notes : cosa topo ha fatto da sé;
+                    errors : niente da leggere — tutti `Diagnostic` (D233).
         source_format, reading, tolerance, max_gap : da che cosa arriva la
                     geometria e come è stata letta, copiati dalla rete (D231).
         texts     : i testi della sorgente (list[Text], D138), copiati
@@ -39,6 +41,7 @@ class Result:
     max_gap:             float                  = 0.0
     is_valid:            bool                   = True
     warnings:            List[str]              = field(default_factory=list)
+    notes:               List[str]              = field(default_factory=list)
     errors:              List[str]              = field(default_factory=list)
     loose:               List[OpenCurve | ClosedCurve] = field(default_factory=list)
     texts:               List[Text]             = field(default_factory=list)
@@ -100,6 +103,7 @@ class Result:
             "max_gap":       self.max_gap,
             "is_valid":      self.is_valid,
             "warnings":      [str(w) for w in self.warnings],
+            "notes":         [str(n) for n in self.notes],
             "errors":        [str(e) for e in self.errors],
             "loose_count":   len(self.loose),
             "text_count":    len(self.texts),

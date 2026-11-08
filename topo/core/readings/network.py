@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Callable, List, Optional
 from ...model.document import Document
 from ...model.text import Text
 from ...model.role import is_structural_role
-from ...model.diagnostic import Diagnostic
+from ...model.diagnostic import Diagnostic, plural as _plural
 from ..base.cleanup import NEAR_FULL_ARC_MISSING, dangling_splines, near_free_gaps, open_near_full_arcs
 from ..base.normalizer import near_copies
 from ..base.prepare import normalize, prepare
@@ -48,12 +48,14 @@ class Network:
     max_gap:     the widest gap closed (at least `tolerance`).
     source_file, label: copied onto every Result and Cluster read from here.
     source_format: the document's (D231), copied onto every Result.
-    warnings, errors, is_valid: what the repair did; with errors no reading
-                 finds anything.
+    warnings:    advice about the drawing (`Diagnostic`, D233); every reading copies it.
+    notes:       what the repair did by itself (`Diagnostic`, level `note`).
+    errors, is_valid: with errors no reading finds anything.
     """
     edges:       List[Edge] = field(default_factory=list)   # riparati, nodi decisi
     set_aside:   List[Edge] = field(default_factory=list)   # ruoli non strutturali (D30)
     warnings:    List[str] = field(default_factory=list)
+    notes:       List[str] = field(default_factory=list)
     errors:      List[str] = field(default_factory=list)
     tolerance:   float = 0.0
     max_gap:     float = 0.0
@@ -117,15 +119,15 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
                   source_format=doc.source_format,
                   _structural=is_structural or is_structural_role, _texts=list(doc.texts))
     if not doc.edges:
-        net.errors.append("Modelspace vuoto: nessuna geometria trovata.")
+        net.errors.append(Diagnostic("empty", "the document has no edges", level="error"))
         return net
     prepared = prepare(doc.edges, net._structural)
     net.set_aside = prepared.labeled
     if not prepared.edges and not prepared.labeled:
-        net.errors.append("Nessuna geometria trovata.")
+        net.errors.append(Diagnostic("empty", "the document has no edge left to read", level="error"))
         return net
     if prepared.labeled and is_structural is None:
-        net.warnings.append(_LABELED_WITHOUT_PREDICATE.format(n=len(prepared.labeled)))
+        net.warnings.append(_set_aside_warning(prepared.labeled))
     # una retta quasi sopra un'altra: topo la legge com'è, il chiamante decide (D226, D227)
     copies = near_copies(prepared.edges, tol)
     if copies:
@@ -134,18 +136,27 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
     # un gap largo quanto la soglia si chiude a ogni riferimento, non a
     # seconda dell'ultimo bit (D183)
     clean = normalize(prepared.edges, reach(gap), keep_junctions=True)
-    for count, what in ((clean.merged_lines, "segmenti collineari sovrapposti fusi"),
-                        (clean.merged_arcs, "archi o cerchi co-circolari sovrapposti fusi"),
-                        (clean.welded + prepared.welded, "LineSeg degeneri (sub-tolleranza) saldati")):
+    for count, code, what in (
+            (clean.merged_lines, "merged-lines", ("overlapping collinear segment", "overlapping collinear segments")),
+            (clean.merged_arcs, "merged-arcs", ("overlapping arc or circle on one circle",
+                                                "overlapping arcs or circles on one circle")),
+            (clean.welded + prepared.welded, "welded", ("line segment shorter than 0.05 welded into its node",
+                                                        "line segments shorter than 0.05 welded into their nodes"))):
         if count:
-            net.warnings.append(f"{count} {what} prima della ricerca loop.")
+            net.notes.append(Diagnostic(code, f"{count} {what[count > 1]} merged" if code != "welded"
+                                        else f"{count} {what[count > 1]}", level="note"))
     if clean.full_arcs:
-        net.warnings.append(f"{clean.full_arcs} archi sullo stesso cerchio chiusi o uniti sui buchi (entro "
-                            f"tolleranza e al più {math.degrees(NEAR_FULL_ARC_MISSING):.0f}°).")
+        net.notes.append(Diagnostic(
+            "arc-joined", f"{_plural(clean.full_arcs, 'arc', 'arcs')} on one circle joined across their holes",
+            notes=[f"holes within tolerance and at most {math.degrees(NEAR_FULL_ARC_MISSING):.0f}° (D218)"],
+            level="note"))
     if clean.ambiguous:
-        first = ", ".join(f"({p[0]:.2f}, {p[1]:.2f})" for p in clean.ambiguous[:4])
-        net.warnings.append(f"{len(clean.ambiguous)} estremi liberi con due compagni alla stessa distanza "
-                            f"(figura simmetrica): nessun gap chiuso lì, decide il disegno ({first}).")
+        net.warnings.append(Diagnostic(
+            "tie", f"{_plural(len(clean.ambiguous), 'free end', 'free ends')} with two partners at the same "
+                   f"distance, left open",
+            points=clean.ambiguous,
+            notes=["a symmetric figure: no rule in the geometry picks one partner (D185)"],
+            help="no threshold fixes it: remove one of the two partners from the drawing"))
     net.edges = _no_degenerate(clean.edges)
     # quello che si è quasi chiuso, uno per tipo, coi punti dal più vicino (D227)
     arcs = open_near_full_arcs(net.edges, reach(gap))
@@ -154,12 +165,11 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
     gaps = near_free_gaps(net.edges, reach(gap), reach(_NEAR_GAP_REACH * gap))
     if gaps:
         net.warnings.append(_near_gap_warning(gaps, gap))
-    if dangling_splines(net.edges):
-        net.warnings.append(
-            "SPLINE con endpoint non connesso trovata — "
-            "gap tra SPLINE e altre entità gestito con una linea di congiunzione. "
-            "Verificare manualmente la correttezza del file."
-        )
+    dangling = dangling_splines(net.edges)
+    if dangling:
+        net.notes.append(Diagnostic(
+            "open-spline", f"{_plural(len(dangling), 'open spline', 'open splines')} with an end that reaches "
+                           f"no other edge", points=[e.start for e in dangling], level="note"))
     return net
 
 
@@ -190,10 +200,6 @@ _NEAR_GAP_REACH = 2.0   # un gap fino al doppio della soglia "c'è quasi"; oltre
 def _span(values, fmt: str) -> str:
     lo, hi = min(values), max(values)
     return format(lo, fmt) if lo == hi else f"{format(lo, fmt)} to {format(hi, fmt)}"
-
-
-def _plural(n: int, one: str, many: str) -> str:
-    return f"{n} {one if n == 1 else many}"
 
 
 def _near_copy_warning(pairs: list) -> Diagnostic:
@@ -232,11 +238,11 @@ def _near_gap_warning(gaps: list, gap: float) -> Diagnostic:
         param="max_gap", value=longest)
 
 
-_LABELED_WITHOUT_PREDICATE = (
-    "{n} edge con un ruolo diverso da "
-    "outer/inner/unknown, trattati come non strutturali di "
-    "default (heal() chiamato senza is_structural=...): un "
-    "ruolo come 'hole' non viene riconosciuto come contorno "
-    "di pezzo e finisce in `loose`. Passa a heal() un "
-    "is_structural che lo riconosca."
-)
+def _set_aside_warning(labeled: List[Edge]) -> Diagnostic:
+    roles = sorted({e.role for e in labeled})
+    return Diagnostic(
+        "set-aside", f"{_plural(len(labeled), 'edge', 'edges')} with a role other than outer/inner/unknown "
+                     f"set aside, in loose",
+        points=[e.start for e in labeled],
+        notes=[f"roles: {', '.join(roles)}; without is_structural only outer/inner/unknown make contours"],
+        help="topo.heal(doc, is_structural=...) with a predicate that accepts the roles that are contours")

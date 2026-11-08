@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 from ..geometry.measure import reach as threshold
 from ...model.curve import ClosedCurve
+from ...model.diagnostic import Diagnostic, plural as _plural
 from ...model.result import Result
 from ..base.curves import loops_to_curves, loose_curves
 from ..topology.outer_face import face_loops
@@ -40,6 +41,7 @@ def read_faces(net: Network) -> Result:
                     tolerance=net.tolerance, max_gap=net.max_gap)
     result.texts = list(net._texts)
     result.warnings += net.warnings
+    result.notes += net.notes
     if not net.is_valid:
         result.errors += net.errors
         result.is_valid = False
@@ -52,10 +54,12 @@ def read_faces(net: Network) -> Result:
     non_contour = non_contour_pieces(noded, tol)
     excluded = {id(noded.parent_of(p)) for p in noded.pieces if id(p) in non_contour}
     if excluded:
-        result.warnings.append(
-            f"{len(excluded)} edge non di contorno "
-            f"esclusi dal grafo (catene fra due nodi di branching, non sul bordo esterno)."
-        )
+        starts = [noded.parent_of(p).start for p in noded.pieces if id(p) in non_contour]
+        result.notes.append(Diagnostic(
+            "non-contour", f"{_plural(len(excluded), 'edge', 'edges')} read as no contour",
+            points=list(dict.fromkeys(starts)),
+            notes=["chains between two branching nodes that the outer boundary does not run once (D111, D131)"],
+            level="note"))
     loops = [noded.whole(loop) for loop in face_loops([p for p in noded.pieces if id(p) not in non_contour])]
     # un giro che non diventa un contorno (senza area, D151) non prende niente:
     # i suoi edge vanno in loose interi, come quelli che nessun giro tocca
@@ -67,11 +71,10 @@ def read_faces(net: Network) -> Result:
             used |= {id(e) for e, _ in loop}
     kept = closed
     if kept:
-        result.warnings += _loose_ends_warnings(net.free_ends, noded.pieces, non_contour)
+        result.notes += _loose_ends_notes(net.free_ends, noded.pieces, non_contour)
         result.warnings += _crossing_warnings(noded.crossings)
     else:
-        result.warnings.append("LINE/ARC non formano giri chiusi — "
-                               "potrebbero essere marcature o geometria aperta.")
+        result.notes.append(Diagnostic("no-loop", "the edges close no loop", level="note"))
     # in loose ciò che nessun giro prende: l'edge intero se nessun suo pezzo
     # è contorno, altrimenti i suoi pezzi rimasti
     pieces_of: dict = {}
@@ -85,7 +88,7 @@ def read_faces(net: Network) -> Result:
         rest += [p for p in pieces if id(p) not in used] if any(id(p) in used for p in pieces) else [edge]
     curves = closed + loose_curves(rest)
     if not curves:
-        result.errors.append("Nessuna geometria chiusa trovata dopo healing.")
+        result.errors.append(Diagnostic("no-closed-outer", "nothing closes after the repair", level="error"))
         result.is_valid = False
         return result
 
@@ -98,10 +101,10 @@ def read_faces(net: Network) -> Result:
         # La geometria non compone nessun contorno esterno chiuso: il
         # risultato non è un pezzo, è un file non lavorabile. `loose` resta
         # per la diagnostica, ma to_dxf() si rifiuta di scrivere solo quella.
-        result.errors.append(
-            "Nessun contorno esterno chiuso: nessuna parte generabile dal file. "
-            "Gli endpoint liberi non si congiungono entro la tolleranza richiesta."
-        )
+        result.errors.append(Diagnostic(
+            "no-closed-outer", "no closed outer contour, so no part",
+            points=[p for p, _ in net.free_ends],
+            notes=["the free ends meet nothing within max_gap"], level="error"))
         result.is_valid = False
         return result
 
@@ -115,32 +118,32 @@ def read_faces(net: Network) -> Result:
 # Helper
 # ---------------------------------------------------------------------------
 
-def _loose_ends_warnings(ends: list, pieces: list, non_contour_ids: set) -> list[str]:
+def _loose_ends_notes(ends: list, pieces: list, non_contour_ids: set) -> list:
     """Quello che resta aperto anche quando qualcosa si chiude (D111): gli
     estremi liberi della rete, e gli edge che uniscono due forme altrimenti
     staccate."""
-    warnings = []
+    notes = []
     if ends:
-        first = ", ".join(f"({p[0]:.1f}, {p[1]:.1f}) a {d:.2f} mm dal nodo più vicino" for p, d in ends[:4])
-        warnings.append(f"{len(ends)} estremi liberi non chiudono niente e restano in loose "
-                        f"(i più vicini a un nodo: {first}).")
+        notes.append(Diagnostic(
+            "free-end", f"{_plural(len(ends), 'free end', 'free ends')} that close nothing, in loose",
+            points=[p for p, _ in ends],
+            notes=[f"{min(d for _, d in ends):.3g} to {max(d for _, d in ends):.3g} from the nearest node"],
+            level="note"))
     joining = find_joining_edges(pieces, non_contour_ids)
     if joining:
-        first = ", ".join(f"({e.start[0]:.1f}, {e.start[1]:.1f})→({e.end[0]:.1f}, {e.end[1]:.1f})"
-                          for e in joining[:4])
-        warnings.append(f"{len(joining)} edge uniscono due forme altrimenti staccate: esclusi dal "
-                        f"contorno, ogni forma è letta per conto suo ({first}).")
-    return warnings
+        notes.append(Diagnostic(
+            "joining-edge", f"{_plural(len(joining), 'edge joins', 'edges join')} two shapes otherwise apart: "
+                            f"no contour, each shape read by itself",
+            points=[e.start for e in joining], level="note"))
+    return notes
 
 
-def _crossing_warnings(points: list) -> list[str]:
+def _crossing_warnings(points: list) -> list:
     """Lati di contorno che si attraversano senza un nodo (D132): il disegno è
     rotto lì; la rete piana li noda per leggere le facce, e heal() lo dice."""
     if not points:
         return []
-    first = ", ".join(f"({p[0]:.2f}, {p[1]:.2f})" for p in points[:4])
-    return [f"{len(points)} incroci fra lati di contorno senza un nodo in comune ({first}): "
-            f"lati accavallati nel disegno. Da correggere nel disegno: spezzare i lati "
-            f"nell'incrocio, o accorciarli fino a farli toccare."]
-
-
+    return [Diagnostic(
+        "crossing", f"{_plural(len(points), 'crossing', 'crossings')} between contour sides with no shared node",
+        points=points, notes=["the sides overlap in the drawing"],
+        help="in the drawing, split the sides at the crossing or shorten them until they touch")]

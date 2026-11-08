@@ -150,8 +150,8 @@ class TestLooseEnds(unittest.TestCase):
     def test_003_heal_li_dice(self):
         result = topo.heal(Document(edges=self.edges, source_meta={"tolerance": 0.05})).faces()
         self.assertEqual(result.cluster_count, 2)
-        self.assertTrue(any("estremi liberi" in w for w in result.warnings))
-        self.assertTrue(any("uniscono due forme" in w for w in result.warnings))
+        self.assertIn("free-end", [n.code for n in result.notes])
+        self.assertIn("joining-edge", [n.code for n in result.notes])
 
     def test_004_pezzo_pulito_nessun_warning(self):
         result = topo.heal(Document(edges=_square(0, 0, 10), source_meta={"tolerance": 0.05})).faces()
@@ -259,7 +259,7 @@ class TestTiedGapPartners(unittest.TestCase):
                   LineSeg(start=(x - 0.1, y + 5.6), end=(x - 0.1, y + 0.6))]
         doc = topo.load_segments(pieces, tolerance=0.5)
         _same_at_every_motion(self, doc)
-        self.assertIn("stessa distanza", " ".join(topo.heal(doc, tolerance=0.5).faces().warnings))
+        self.assertIn("tie", [w.code for w in topo.heal(doc, tolerance=0.5).faces().warnings])
 
 
 class TestGapOntoCurve(unittest.TestCase):

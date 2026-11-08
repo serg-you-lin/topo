@@ -519,5 +519,7 @@ A JSON read alone must say where the geometry came from and how it was read; the
 ### D232 — `split` drops nothing by default (`min_area=0.0`) and works on both readings (Federico, 8 November).
 A smallest size is a process threshold: 50 mm² is scrap on a sheet and a real part on a watch drawing.
 ### D233 — every warning is an English `Diagnostic` in topo's words (no `LINE`, `SPLINE`, modelspace in the engine): done with G9 and the rename of the old names (Federico, 8 November).
+Three levels: `warnings` advise on the drawing, `notes` say what topo did by itself (not shown every time, never
+hidden: D206), `errors` mean nothing to read. Codes closed, listed in LLM.md, held by `tests/invariants.DIAGNOSTIC_CODES`.
 ### D234 — D124 stays: one repo, the adapter tests in `tests/adapters/`, the engine tests read the tracked DXF (D223) (Federico, 8 November).
 Splitting topo_dxf out means two releases kept in step and 158 drawings converted to a format-free fixture, for no measured gain.

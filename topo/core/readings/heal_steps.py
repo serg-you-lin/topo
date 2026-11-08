@@ -21,6 +21,7 @@ from ..topology.graph import build_node_graph
 from ..topology.non_contour_edges import non_contour_pieces
 from ..topology.noding import split_at_crossings
 from ...model.cluster import Cluster
+from ...model.diagnostic import Diagnostic
 from ...model.role import ContourRole, is_structural_role
 from ..base.hierarchy import HierarchyBuilder
 from ..geometry.measure import FLOAT_NOISE
@@ -122,9 +123,9 @@ def close_contour_jumps(result, tolerance: float) -> None:
     fra un segmento e il successivo diventa una retta nuova fra i due capi,
     con lo stile del segmento prima. Nessuna curva si sposta; il poligono
     contava già il salto come la sua corda. **Muta** `result` e lo dice in
-    `warnings`.
+    `notes`.
     """
-    count, widest = 0, 0.0
+    starts, widest = [], 0.0
     for cluster in result.clusters:
         for contour in [cluster.outer] + list(cluster.inners):
             bridges = ring_bridges(contour.segments, tolerance, FLOAT_NOISE)
@@ -133,10 +134,12 @@ def close_contour_jumps(result, tolerance: float) -> None:
                 if len(contour.styles) > k:
                     contour.styles.insert(k + 1, contour.styles[k])
                 widest = max(widest, math.dist(line.start, line.end))
-            count += len(bridges)
-    if count:
-        result.warnings.append(
-            f"{count} salti nei contorni (fino a {widest:.3g} mm) chiusi con un segmento nuovo.")
+                starts.append(line.start)
+    if starts:
+        result.notes.append(Diagnostic(
+            "gap-closed", f"{len(starts)} {'jump' if len(starts) == 1 else 'jumps'} in the contours closed "
+                          f"with a new straight segment",
+            points=starts, notes=[f"up to {widest:.3g} wide (D206, D209)"], level="note"))
 
 
 # ---------------------------------------------------------------------------

@@ -30,7 +30,7 @@ from topo.model.document import Document
 
 from tests.drawings import case_name, drawing_key, drawings_for
 from tests.invariants import (
-    MOTIONS, along_contours, uncovered, known_defect, contours, moved, orders, shape_differences,
+    MOTIONS, along_contours, uncovered, known_defect, contours, message_problems, moved, orders, shape_differences,
 )
 from topo import to_shapely
 from tests.paths import DATA
@@ -107,6 +107,19 @@ def _register(cls, make, known: frozenset = frozenset()):
 
 
 # ---------------------------------------------------------------------------
+
+class TestMessagesAreDiagnostics(unittest.TestCase):
+    """Ogni messaggio di faces() è un Diagnostic del suo canale, con un codice noto (D233)."""
+
+
+def _make_messages_test(dxf: Path):
+    def test(self):
+        self.assertEqual(message_problems(_read(dxf)[1]), [])
+    return test
+
+
+_register(TestMessagesAreDiagnostics, _make_messages_test)
+
 
 class TestPolygonValidity(unittest.TestCase):
     """Ogni outer e ogni inner è una forma semplice di area positiva."""
