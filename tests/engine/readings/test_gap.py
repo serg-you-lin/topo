@@ -13,7 +13,7 @@ import math
 
 import topo
 import topo_dxf
-from tests.paths import DATA
+from tests.paths import DATA, drawing
 
 EXAMPLES_DIR = DATA
 
@@ -24,7 +24,7 @@ DELTA = 1.0         # tolleranza area mm²
 
 
 def load(name):
-    return topo_dxf.load_dxf(str(EXAMPLES_DIR / name))
+    return topo_dxf.load_dxf(str(drawing(name)))
 
 
 # ---------------------------------------------------------------------------

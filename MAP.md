@@ -504,3 +504,7 @@ reader's. Goal, 1.x: one new form that links to the edges of the network, indepe
   `ContourRole.OUTER` (renaming touches `heal`, golden and layers).
 - `inspect_dxf` wants an entity-type filter (`types`): queued.
   face 1 mm wide read as outer or inner by frame.
+
+### D229 — one name, one copy (Federico, 8 November): a drawing lives in one folder of `tests/data/`, found by `tests.paths.drawing(name)`.
+A copy in two places is edited in one while a test reads the other. Byte-identical copies went (42 files, 36 names);
+`tests/package/test_one_copy.py` fails on a new double. Names still double with different content are a shrink-only list there.

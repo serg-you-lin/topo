@@ -19,7 +19,7 @@ from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import ArcSeg, LineSeg, CircleSeg, BSplineSeg
 from topo import to_shapely
-from tests.paths import DATA
+from tests.paths import DATA, drawing
 
 EXAMPLES = DATA
 
@@ -629,7 +629,7 @@ class TestComposition(unittest.TestCase):
     def test_001_stessi_cluster_di_heal(self):
         for name in ("rect_with_circle_hole.dxf", "flangia con fori.DXF", "two_parts.dxf"):
             with self.subTest(name=name):
-                doc = topo_dxf.load_dxf(str(EXAMPLES / name))
+                doc = topo_dxf.load_dxf(str(drawing(name)))
                 expected = topo.heal(doc).faces().clusters
                 got = self._compose(doc, doc.source_meta.get("tolerance", 0.05))
                 self.assertEqual([to_shapely(c.outer).wkt for c in got],

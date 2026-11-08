@@ -413,6 +413,7 @@ mai rigenerando alla cieca.
 
 Difetti trovati il 6 novembre (fatti, nessuna analisi):
 - Agganci dei testi persi con D161 (golden di `golden_anchoring/` rigenerati il 7 novembre, Federico li accetta senza giudicarli): testi rimasti senza aggancio anch_02 3, anch_03 1, anch_04 10, anch_05 7, anch_07 1; tipico un richiamo "M6 n°16 fori" che era legato a una figurina 6×3 (inner di `faces()` di prima) e oggi a niente. Da guardare con snapdraw.
+- D229: 18 nomi ancora doppi con contenuti diversi (`SAME_NAME_DIFFERENT_CONTENT` in `tests/package/test_one_copy.py`): `anch_01..08` in `golden_anchoring/` e `golden_outlines/` sono disegni diversi con lo stesso nome; gli altri 10 hanno una copia nella radice letta dai test unitari e una in `golden_faces/` letta dai golden. Per ognuno: quale contenuto resta, o un nome nuovo.
 - Obiettivo dichiarato di D228: `target`/`references` sugli edge della rete, uguali per ogni lettura (oggi `anchor_elements`, sperimentale, non vede le curve aperte). Una forma nuova sola, poi promossa. I golden di aggancio sono fuori dalla suite, in `_archive/golden_anchoring/` (test + `json/`, i DXF restano in `tests/data/golden_anchoring/`): vanno bene come base dei golden futuri.
 - `tests/engine/readings/test_non_structural_role.py`, stesso disegno, righe
   senza ruolo (`unknown`) a 0,5: `faces()` 0 cluster, `is_valid` False,

@@ -20,7 +20,7 @@ import topo
 import topo_dxf
 
 # --- CONFIG ----------------------------------------------------------------
-INPUT     = r"tests/data/Linee_piegatura.dxf"
+INPUT     = r"tests/data/golden_faces/Linee_piegatura.dxf"
 TOLERANCE = 0.5
 NAME_ROLES = {"Piega": "bending", "MARK": "engrave"}   # {nome: ruolo}, maiuscole ignorate
 # -------------------------------------------------------------------------

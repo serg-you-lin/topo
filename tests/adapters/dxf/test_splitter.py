@@ -56,7 +56,7 @@ from topo_dxf.layers import (
     LAYER_OUTER, LAYER_INNER, TRASH_LAYER,
     ALL_LAYERS,
 )
-from tests.paths import DATA
+from tests.paths import DATA, drawing
 EXAMPLES_DIR = DATA
 
 
@@ -365,7 +365,7 @@ class TestIntegrationPipeline(unittest.TestCase):
     def _run(self, dxf_name, label, **kwargs):
         out_dir = tempfile.mkdtemp()
         result = _split_to_files(
-            topo_dxf.load_dxf(str(EXAMPLES_DIR / dxf_name)),
+            topo_dxf.load_dxf(str(drawing(dxf_name))),
             output_folder=out_dir, label=label, **kwargs
         )
         return result, out_dir
@@ -419,7 +419,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         """Un namer custom passato a split_to_files() viene usato."""
         out_dir = tempfile.mkdtemp()
         namer = lambda i, cluster: f"custom_{i + 1:02d}"
-        _split_to_files(topo_dxf.load_dxf(str(EXAMPLES_DIR / "two_parts.dxf")), output_folder=out_dir,
+        _split_to_files(topo_dxf.load_dxf(str(drawing("two_parts.dxf"))), output_folder=out_dir,
                              label="two_parts", namer=namer)
         names = {f.stem for f in Path(out_dir).glob("*.dxf")}
         self.assertIn("custom_01", names,
@@ -444,7 +444,7 @@ class TestIntegrationContours(unittest.TestCase):
 
     def _children(self, dxf_name, label, **kwargs):
         out_dir = tempfile.mkdtemp()
-        _split_to_files(topo_dxf.load_dxf(str(EXAMPLES_DIR / dxf_name)), output_folder=out_dir,
+        _split_to_files(topo_dxf.load_dxf(str(drawing(dxf_name))), output_folder=out_dir,
                              label=label, **kwargs)
         return _read_children(out_dir)
 
@@ -509,7 +509,7 @@ class TestIntegrationContours(unittest.TestCase):
     def test_006_spline_parametri_preservati(self):
         """Le SPLINE scritte nei figli preservano i parametri chiave della sorgente."""
         from topo_dxf.layers import LAYER_OUTER
-        src_doc = ezdxf.readfile(str(EXAMPLES_DIR / "intricato_doppio.dxf"))
+        src_doc = ezdxf.readfile(str(drawing("intricato_doppio.dxf")))
         src_splines = list(src_doc.modelspace().query("SPLINE"))
         self.assertGreater(len(src_splines), 0, "La fixture sorgente non contiene SPLINE")
 
@@ -536,7 +536,9 @@ class TestIntegrationContours(unittest.TestCase):
         """
         from topo_dxf.layers import LAYER_OUTER, LAYER_INNER
         structural = {LAYER_OUTER, LAYER_INNER}
-        for src in Path(EXAMPLES_DIR).glob("*.dxf"):
+        # i disegni che stavano nella radice stanno ora in golden_faces/ (un nome, una copia)
+        sources = {p.name: p for d in (EXAMPLES_DIR / "golden_faces", EXAMPLES_DIR) for p in Path(d).glob("*.dxf")}
+        for src in sorted(sources.values()):
             if src.stem.endswith("_healed"):
                 continue
             out_dir = tempfile.mkdtemp()
@@ -562,7 +564,7 @@ class TestIntegrationLayers(unittest.TestCase):
 
     def setUp(self):
         self.out_dir = tempfile.mkdtemp()
-        _split_to_files(topo_dxf.load_dxf(str(EXAMPLES_DIR / "two_parts.dxf")),
+        _split_to_files(topo_dxf.load_dxf(str(drawing("two_parts.dxf"))),
                              output_folder=self.out_dir, label="test")
         self.files = list(Path(self.out_dir).glob("*.dxf"))
         self.assertTrue(len(self.files) > 0,
