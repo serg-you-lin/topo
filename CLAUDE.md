@@ -27,7 +27,7 @@ docstrings/comments, see Conventions).
 | **writing geometry** (a measure, a fact between contours, lines, rectangles) | it goes in `topo/core/geometry/` and its public facts in `topo.geometry` (`__init__.py` is the map) — never as a private helper in a reading or in a consumer (D93-D95) |
 | why is it built this way | `docs/ARCHITECTURE.md` |
 | why was X decided | `MAP.md` — decision log `D1…Dn`. Grep for the topic. **A closed decision is not re-decided**; to reopen it, say "reopening D##" out loud |
-| what's missing / planned | `TODO.md`, `ROADMAP.md` |
+| what's missing / planned | `TODO.md` |
 | running something end to end | `scripts/NN_*.py` (first line `import _paths`), listed in `SCRIPTS.md` |
 | tests, fixtures, goldens | `tests/`, plus the `python-testing-style` skill |
 

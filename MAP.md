@@ -14,7 +14,7 @@ so — "reopening D##". A new decision takes the next `D##` and one entry here.
 - **How it's built inside** → `docs/ARCHITECTURE.md`
 - **What exists in the code** → `docs/INDEX.md` (generated, `scripts/gen_index.py`, D72)
 - **Where to start a session** → `CLAUDE.md` (routing + non-negotiables, D72)
-- **What is open** → `TODO.md`, `ROADMAP.md`; the 1.0 gate is D148/D193
+- **What is open** → `TODO.md`; the 1.0 gate is D148/D193
 
 `scripts/check_map_shrink.py` checks this file against the full text: every
 `D##` keeps one entry, none defined twice, no reference left dangling.
