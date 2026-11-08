@@ -18,7 +18,8 @@ import topo
 import topo_dxf
 
 from tests.drawings import case_name, drawing_key, drawings_for
-from tests.invariants import along_contours, uncovered, known_defect, contours, scrambled, shape_differences, unscrambled
+from tests.invariants import (along_contours, uncovered, known_defect, contours, message_problems, scrambled,
+                              shape_differences, unscrambled)
 from tests.readings import geometry_key, outline_reading, outline_scrambled
 from topo.core.topology.noding import GRAPH_EPSILON
 from topo.core.primitives.segments import DEFAULT_TOLERANCE, CircleSeg, LineSeg
@@ -95,6 +96,20 @@ def _make_validity_test(dxf: Path):
 
 for _dxf in SOURCES:
     setattr(TestPolygonValidity, case_name(_dxf), _make_validity_test(_dxf))
+
+
+class TestMessagesAreDiagnostics(unittest.TestCase):
+    """Ogni messaggio di outlines() è un Diagnostic del suo canale, con un codice noto (D233)."""
+
+
+def _make_messages_test(dxf: Path):
+    def test(self):
+        self.assertEqual(message_problems(outline_reading(dxf, MAX_GAP)[1]), [])
+    return test
+
+
+for _dxf in SOURCES:
+    setattr(TestMessagesAreDiagnostics, case_name(_dxf), _make_messages_test(_dxf))
 
 
 class TestRoundtripStable(unittest.TestCase):

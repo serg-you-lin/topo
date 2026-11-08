@@ -272,3 +272,31 @@ def contour_jumps(result) -> list:
                 if gap > FLOAT_NOISE:
                     found.append((ci, name, gap, end))
     return found
+
+
+# ---------------------------------------------------------------------------
+# Messaggi (D233): ogni avviso, nota ed errore di una lettura è un Diagnostic
+# del suo livello, con un codice di questa lista. Un codice nuovo si aggiunge
+# qui e in docs/LLM.md, mai per strada.
+# ---------------------------------------------------------------------------
+
+DIAGNOSTIC_CODES = {
+    "warning": {"set-aside", "near-copy", "open-arc", "near-gap", "tie", "crossing"},
+    "note": {"merged-lines", "merged-arcs", "welded", "arc-joined", "open-spline", "non-contour",
+             "no-loop", "free-end", "joining-edge", "gap-closed"},
+    "error": {"empty", "no-closed-outer"},
+}
+
+
+def message_problems(result) -> list:
+    """I messaggi di `result` che non rispettano D233: non un Diagnostic, nel
+    canale sbagliato, o con un codice fuori lista."""
+    from topo.model.diagnostic import Diagnostic
+    problems = []
+    for channel, level in ((result.warnings, "warning"), (result.notes, "note"), (result.errors, "error")):
+        for m in channel:
+            if not isinstance(m, Diagnostic):
+                problems.append(f"{level}: not a Diagnostic: {m[:80]!r}")
+            elif m.level != level or m.code not in DIAGNOSTIC_CODES[level]:
+                problems.append(f"{level}: {m.level}[{m.code}] out of place")
+    return problems

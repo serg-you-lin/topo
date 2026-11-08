@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from ...model.cluster import Cluster
 from ...model.contour import Contour
+from ...model.diagnostic import Diagnostic
 from ...model.result import Result
 from ...model.role import ContourRole
 from ..primitives.polygon_builder import curve_polygon, with_polygon
@@ -74,6 +75,7 @@ def read_network_outlines(net: Network) -> Result:
     result = Result(source_file=net.source_file, source_format=net.source_format, reading="outlines",
                     tolerance=net.tolerance, max_gap=net.max_gap, texts=list(net._texts))
     result.warnings += net.warnings
+    result.notes += net.notes
     if not net.is_valid:
         result.errors += net.errors
         result.is_valid = False
@@ -106,7 +108,8 @@ def read_network_outlines(net: Network) -> Result:
     assign_cluster_refs(free, result.clusters, tol)
     if not result.clusters:
         result.is_valid = False
-        result.errors.append("Nessun gruppo con un contorno esterno chiuso.")
+        result.errors.append(Diagnostic("no-closed-outer", "no group of edges has a closed outer contour",
+                                        level="error"))
         return result
     close_contour_jumps(result, tol)
     from ...rules.validator import validate_result

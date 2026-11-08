@@ -58,7 +58,7 @@ class TestB_BridgeSplitsParts(unittest.TestCase):
                        + _lines((110, 50), (166, 50)))
         self.assertEqual(result.cluster_count, 2)
         self.assertEqual(len(result.loose), 1)
-        self.assertTrue(any("uniscono due forme" in w for w in result.warnings), result.warnings)
+        self.assertIn("joining-edge", [n.code for n in result.notes], result.notes)
 
 
 class TestC_GrazedChordIsChord(unittest.TestCase):
@@ -85,9 +85,10 @@ class TestD_CrossingSidesAreReported(unittest.TestCase):
 
     def test_warning_con_il_punto(self):
         result = _heal(_lines(*self.NOTCH, closed=True))
-        crossing = [w for w in result.warnings if "incroci fra lati di contorno" in w]
+        crossing = [w for w in result.warnings if w.code == "crossing"]
         self.assertEqual(len(crossing), 1, result.warnings)
-        self.assertIn("(28.05, 0.48)", crossing[0])
+        self.assertAlmostEqual(crossing[0].at[0], 28.048, places=2)
+        self.assertAlmostEqual(crossing[0].at[1], 0.484, places=2)
 
     def test_incrocio_vero_trovato(self):
         doc = topo.load_segments(_lines(*self.NOTCH, closed=True))
