@@ -85,7 +85,7 @@ def link(facing: Facing, a: "Contour", b: "Contour", at: Point, width: float,
     """
     ids = [id(c) for c in facing.boundaries]
     if a is b or id(a) not in ids or id(b) not in ids:
-        raise ValueError("link(): `a` e `b` devono essere due bordi distinti di `facing`")
+        raise ValueError("link(): `a` and `b` must be two distinct boundaries of `facing`")
     others = [c.segments for c in facing.boundaries if c is not a and c is not b]
     strip = strip_between(a.segments, b.segments, at, width, obstacles=others,
                           placed=[p.strip for p in placed])

@@ -112,12 +112,12 @@ class TestLink(unittest.TestCase):
 
     def test_003_refused_across_a_third_boundary(self):
         _, facing, left, _ = _window_with_two_discs()
-        with self.assertRaisesRegex(ValueError, "attraversa"):
+        with self.assertRaisesRegex(ValueError, "crosses"):
             link(facing, facing.region, left, (180, 60), 4.0)   # dalla destra, passa attraverso l'altro disco
 
     def test_004_refused_when_too_wide(self):
         _, facing, left, right = _window_with_two_discs()
-        with self.assertRaisesRegex(ValueError, "non incontra"):
+        with self.assertRaisesRegex(ValueError, "does not meet"):
             link(facing, left, right, (80, 60), 30.0)
 
     def test_005_refused_over_a_placed_strip(self):

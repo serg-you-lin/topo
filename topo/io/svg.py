@@ -91,7 +91,7 @@ def to_svg(
     """
     if not result.is_valid and not allow_invalid:
         raise ValueError(
-            "to_svg(): il Result non è valido, nessun output generato. "
+            "to_svg(): the Result is not valid, no output. "
             + " ".join(result.errors)
         )
     cam = units == "mm"

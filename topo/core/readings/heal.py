@@ -39,8 +39,7 @@ def heal(doc: Document, *, tolerance: Optional[float] = None,
     """
     if not isinstance(doc, Document):
         raise TypeError(
-            "topo.heal() richiede un Document da topo_dxf.load_dxf(); "
-            f"ricevuto {type(doc).__name__}"
+            f"topo.heal() takes a Document, got {type(doc).__name__}"
         )
     return build_network(doc, tolerance=tolerance, max_gap=max_gap, is_structural=is_structural,
                          source_file=source_file or doc.source_path, label=label)

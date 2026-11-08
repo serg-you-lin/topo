@@ -108,8 +108,8 @@ class GeometryReader:
                 edges.append(self._ellipse_edge(entity, role))
             else:
                 raise ValueError(
-                    f"load_geometry(): tipo non supportato all'indice {i}: "
-                    f"{entity.get('type')!r} — validi: {sorted(_SUPPORTED_TYPES)}"
+                    f"load_geometry(): unsupported type at index {i}: "
+                    f"{entity.get('type')!r}; valid: {sorted(_SUPPORTED_TYPES)}"
                 )
         return edges
 

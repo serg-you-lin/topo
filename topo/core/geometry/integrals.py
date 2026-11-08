@@ -69,7 +69,7 @@ def segment_moments(segment) -> Moments:
         return _trig_moments(segment.center, (mx, my), minor, t0, t0 + sign * segment._sweep())
     if isinstance(segment, BSplineSeg):
         return _spline_moments(segment)
-    raise TypeError(f"primitiva non supportata: {type(segment).__name__}")
+    raise TypeError(f"unsupported primitive: {type(segment).__name__}")
 
 
 def ring_moments(segments: Sequence) -> Moments:
@@ -99,7 +99,7 @@ def ring_centroid(segments: Sequence) -> Point:
     """
     m = ring_moments(segments)
     if m.area == 0.0:
-        raise ValueError("il giro non racchiude area: baricentro indefinito")
+        raise ValueError("the ring encloses no area: no centroid")
     return (m.mx / m.area, m.my / m.area)
 
 
@@ -184,7 +184,7 @@ def _cos_sin_integral(i: int, j: int, t0: float, t1: float) -> float:
         return (c0 ** 3 - c1 ** 3) / 3.0
     if (i, j) == (1, 2):
         return (s1 ** 3 - s0 ** 3) / 3.0
-    raise ValueError(f"grado non previsto: cos^{i} sin^{j}")
+    raise ValueError(f"unexpected degree: cos^{i} sin^{j}")
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +201,7 @@ def _spline_moments(seg: BSplineSeg) -> Moments:
     p = seg.degree
     knots = seg.knots
     if p < 1 or len(knots) != len(seg.control_points) + p + 1:
-        raise ValueError("spline malformata: nodi e punti di controllo non concordano")
+        raise ValueError("malformed spline: knots and control points do not agree")
     weights = seg.weights or [1.0] * len(seg.control_points)
     hom = [(x * w, y * w, w) for (x, y), w in zip(seg.control_points, weights)]
     der = _derivative_points(hom, knots, p)

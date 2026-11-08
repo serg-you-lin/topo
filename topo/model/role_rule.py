@@ -63,7 +63,7 @@ class RoleRule:
     def __post_init__(self):
         if (self.name is None and self.name_contains is None
                 and self.dashed is None and self.dash is None and self.color is None):
-            raise ValueError(f"RoleRule({self.role!r}) senza condizioni: matcherebbe tutto")
+            raise ValueError(f"RoleRule({self.role!r}) has no condition: it would match everything")
         self.role = normalize_role(self.role)
         if self.name is not None:
             self.name = self.name.lower()
@@ -72,8 +72,8 @@ class RoleRule:
         if self.dash is not None:
             self.dash = self.dash.lower()
             if self.dash not in VALID_DASH_KINDS:
-                raise ValueError(f"RoleRule({self.role!r}): dash {self.dash!r} non valido, "
-                                 f"attesi {sorted(VALID_DASH_KINDS)}")
+                raise ValueError(f"RoleRule({self.role!r}): dash {self.dash!r} is not valid, "
+                                 f"expected one of {sorted(VALID_DASH_KINDS)}")
         if self.color is not None:
             self.color = _color_rgb(self.color)
 
@@ -133,5 +133,5 @@ def _color_rgb(value: Union[RGB, str]) -> RGB:
             pass
     if key in _COLOR_NAMES:
         return _COLOR_NAMES[key]
-    raise ValueError(f"colore non riconosciuto: {value!r} — attesi (r, g, b), "
-                     f"'#rrggbb' o uno di {sorted(_COLOR_NAMES)}")
+    raise ValueError(f"unknown colour: {value!r}; expected (r, g, b), "
+                     f"'#rrggbb' or one of {sorted(_COLOR_NAMES)}")

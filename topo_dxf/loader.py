@@ -35,13 +35,13 @@ ODA_PATH = os.environ.get("ODA_PATH")
 
 # Guida rapida alle variabili d'ambiente per SO — rimando nei messaggi d'errore.
 _ENV_VAR_HELP = (
-    "Come impostare ODA_PATH:\n"
+    "How to set ODA_PATH:\n"
     "  Windows (permanente): setx ODA_PATH \"C:\\Program Files\\ODA\\"
-    "ODAFileConverter X.Y.Z\\ODAFileConverter.exe\"  (riapri il terminale)\n"
-    "  Windows (sessione)  : $env:ODA_PATH = \"...\\ODAFileConverter.exe\"  (PowerShell)\n"
+    "ODAFileConverter X.Y.Z\\ODAFileConverter.exe\"  (open a new terminal)\n"
+    "  Windows (session)   : $env:ODA_PATH = \"...\\ODAFileConverter.exe\"  (PowerShell)\n"
     "  Linux / macOS       : export ODA_PATH=\"/opt/ODAFileConverter/ODAFileConverter\" "
-    "in ~/.bashrc o ~/.zshrc\n"
-    "  In alternativa metti l'eseguibile ODAFileConverter nel PATH di sistema."
+    "in ~/.bashrc or ~/.zshrc\n"
+    "  Or put the ODAFileConverter executable on the system PATH."
 )
 
 DWG_VERSIONS = {
@@ -130,13 +130,13 @@ def _configure_odafc(sink: list = None, verbose: bool = False) -> None:
         return  # odafc lo troverà da solo
 
     raise EnvironmentError(
-        "Impossibile aprire il DWG: ODA File Converter non trovato.\n"
-        "`topo` (come ezdxf) converte i DWG tramite ODA File Converter.\n\n"
-        f"1. Scaricalo (gratuito) da: {ODA_DOWNLOAD_URL}\n"
+        "Cannot open the DWG: ODA File Converter not found.\n"
+        "topo (like ezdxf) converts DWG files through ODA File Converter.\n\n"
+        f"1. Download it (free) from: {ODA_DOWNLOAD_URL}\n"
         f"2. {_ENV_VAR_HELP}\n\n"
-        "Nota: se hai già ODA installato ma in una cartella con la versione nel "
-        "nome (es. 'ODAFileConverter X.Y.Z'), ODA_PATH deve puntare al full "
-        "path dell'eseguibile, non alla cartella."
+        "Note: if ODA is installed in a folder named after its version "
+        "(e.g. 'ODAFileConverter X.Y.Z'), ODA_PATH must be the full path of "
+        "the executable, not of the folder."
     )
 
 
@@ -162,9 +162,9 @@ def _read_dwg(path: str, sink: list = None, verbose: bool = False, notes: list =
         doc = odafc.readfile(path)
     except Exception as ex:
         raise RuntimeError(
-            f"Conversione DWG fallita ({type(ex).__name__}: {ex}).\n"
-            f"Se il messaggio parla di 'ODAFileConverter not installed', "
-            f"scaricalo da {ODA_DOWNLOAD_URL} e imposta ODA_PATH.\n{_ENV_VAR_HELP}"
+            f"DWG conversion failed ({type(ex).__name__}: {ex}).\n"
+            f"If the message says 'ODAFileConverter not installed', "
+            f"download it from {ODA_DOWNLOAD_URL} and set ODA_PATH.\n{_ENV_VAR_HELP}"
         )
 
     return doc

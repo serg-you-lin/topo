@@ -207,7 +207,7 @@ class Reach:
             return min(values), max(values)
         if isinstance(segment, BSplineSeg):
             return self._spline(dot)
-        raise TypeError(f"Primitiva non supportata: {type(segment).__name__}")
+        raise TypeError(f"unsupported primitive: {type(segment).__name__}")
 
     def _spline(self, dot) -> Tuple[float, float]:
         """
