@@ -192,11 +192,13 @@ class TestForgeCluster(unittest.TestCase):
         self.assertIsInstance(cluster.features("engrave_lines"), list)
         self.assertEqual(len(cluster.features("engrave_lines")), 0)
 
-    def test_008_custom_default_empty(self):
-        """custom è dict vuoto di default."""
+    def test_008_to_dict_geometry_only(self):
+        """to_dict dà i fatti geometrici, nessuna coordinata né campo di processo (D230)."""
         cluster = Cluster(outer=self._make_outer())
-        self.assertIsInstance(cluster.custom, dict)
-        self.assertEqual(len(cluster.custom), 0)
+        d = cluster.to_dict()
+        self.assertEqual(set(d), {"label", "area", "outer_perimeter", "inner_perimeter",
+                                  "inner_count", "bbox", "detected"})
+        self.assertEqual(d["detected"], {})
 
     def test_009_inners_independent(self):
         """Due Cluster non condividono la stessa lista inners."""
@@ -248,8 +250,9 @@ class TestForgeResult(unittest.TestCase):
         result = self._make_result()
         d = result.to_dict()
         print(f"[Result] keys={list(d.keys())}")
-        self.assertIn("cluster_count", d)
         self.assertIn("clusters", d)
+        self.assertIn("source_format", d)
+        self.assertIn("reading", d)
         self.assertIn("is_valid", d)
         self.assertIn("source_file", d)
 
@@ -258,7 +261,7 @@ class TestForgeResult(unittest.TestCase):
         result = self._make_result()
         d = result.to_dict()
         print(f"[Result] cluster label={d['clusters'][0]['label']}")
-        self.assertEqual(d["cluster_count"], 1)
+        self.assertEqual(len(d["clusters"]), 1)
         self.assertEqual(d["clusters"][0]["label"], "pezzo_1")
         self.assertTrue(d["is_valid"])
 

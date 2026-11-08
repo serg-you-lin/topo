@@ -15,7 +15,7 @@ in una minor; qui resta come alias con avviso per due minor.
   diventare un `Result` (D58);
 - `merge_near_copies` / `near_copies`: le rette quasi una sopra l'altra,
   fuse con la soglia del chiamante, dove vuole lui (D226);
-- `simplify_points` (D33, D141), `rotate_*` (D46), `to_nester_input` (D18),
+- `simplify_points` (D33, D141), `rotate_*` (D46),
   `to_view_model` / `to_svg` / `save_svg` (D133);
 - `anchor_elements` / `pointer_target` / `measured_references`: su quale
   elemento cade una quota o una freccia (D228; obiettivo: sugli edge grezzi);
@@ -41,7 +41,6 @@ from .core.base.curves import loops_to_curves, loose_curves
 from .core.readings.outline import read_outlines, read_outline, OutlineReading
 from .core.primitives.fitting import simplify_points
 from .tools.rotate import rotate_result, rotate_cluster, rotate_document, rotate_to_longest
-from .io.exporter import to_nester_input
 from .io.view_model import to_view_model
 from .io.svg import to_svg, save_svg
 from .tools.anchor import anchor_elements, pointer_target, measured_references
@@ -66,7 +65,6 @@ __all__ = [
     "read_outlines", "read_outline", "OutlineReading",
     "simplify_points",
     "rotate_result", "rotate_cluster", "rotate_document", "rotate_to_longest",
-    "to_nester_input",
     "to_view_model", "to_svg", "save_svg",
     "anchor_elements", "pointer_target", "measured_references",
     "facing_boundaries", "Facing", "gap", "Gap", "link", "Link", "Strip",

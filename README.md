@@ -5,7 +5,7 @@
 `topo` turns a messy 2D drawing into a clean, lossless model — healed closed
 contours, their containment hierarchy, the drawing's texts, and an open
 overlay where detected features are attached — then renders it to DXF (one
-document, or one per part), JSON/XML, SVG, a view model for a UI, or (experimental) a compact text reading for
+document, or one per part), JSON, SVG, a view model for a UI, or (experimental) a compact text reading for
 a language model. The model is the product; a CAD format is
 only a door in or out of it. **topo itself knows no file format**: geometry and
 roles, never layers. The doors are adapters, sibling packages in the same
@@ -42,7 +42,7 @@ One distribution (`g-topo`), three importable packages:
 | package    | what                                   | extra   | brings  |
 |------------|----------------------------------------|---------|---------|
 | `topo`     | the engine: model, heal (faces / outlines), split, SVG/JSON/text | —       | `shapely`, `numpy` |
-| `topo_dxf` | DXF/DWG reader and writer, XDATA, `inspect_dxf` | `[dxf]` | `ezdxf` |
+| `topo_dxf` | DXF/DWG reader and writer, `inspect_dxf` | `[dxf]` | `ezdxf` |
 | `topo_pdf` | PDF reader (experimental)              | `[pdf]` | `PyMuPDF` |
 
 `topo` never imports an adapter, and an adapter only topo's public names — a
@@ -195,8 +195,7 @@ topo.load_segments(segs)  ──►  Document   the adapter is the only code tha
    topo_dxf.to_dxf(result, doc)  ──►  ezdxf Drawing    render — a whole Result or one part
    to_svg(result)                ──►  SVG string       render — for a UI / report (`topo.experimental`, outside the 1.0 stable API, D133)
    to_view_model(result)         ──►  dict (full geometry) for an external renderer (outside the 1.0 stable API)
-   save_json / save_xml                                export the model (metadata)
-   inject(result, ...)                                 optional enrichment from texts
+   save_json                                           the model's facts as JSON
 ```
 
 The model is the product. `to_dxf` never re-reads the source file — every renderer

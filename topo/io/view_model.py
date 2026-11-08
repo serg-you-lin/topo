@@ -5,8 +5,7 @@ io/view_model.py
 **orientato al rendering**: coordinate di OGNI feature (outer, inner, overlay
 di un consumatore, curve sciolte) + ruolo + colore, pronto da disegnare.
 
-È il pendant di `to_json` (che dà solo metadati, zero geometria) e la versione
-completa di `to_nester_input` (che dà solo outer + inner). Lo consumano `to_svg`
+È il pendant di `to_json` (che dà solo i fatti, zero coordinate). Lo consumano `to_svg`
 e qualunque front-end esterno (una dashboard JS che renderizza con SVG/Canvas).
 
 Tutta la geometria è **discretizzata a polilinee** (liste di punti `[x, y]`):
@@ -169,7 +168,6 @@ def to_view_model(
             # l'overlay di un consumatore, per nome (MAP.md D44, D90)
             "features": _features(cluster, tolerance, role_styles),
             "summary": cluster.summary,
-            "custom":  cluster.custom,
         })
 
     vm = {

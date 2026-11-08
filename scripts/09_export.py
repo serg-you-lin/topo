@@ -1,16 +1,11 @@
 """
-09_export.py — metadati fuori da topo
-======================================
+09_export.py — il Result come JSON, solo geometria (D230)
+==========================================================
 
 API topo usate:
-    to_json           Result -> str  (metadati per parte, NIENTE coordinate)
-    save_json          idem, scritto su file
-    save_xml           stessi campi, in XML
-    to_nester_input    list[dict] con le COORDINATE (per un nesting tool)
-
-json/xml seguono lo schema in topo/rules/metadata_schema.py — una sola fonte
-per i nomi dei campi. to_nester_input NON usa lo schema: il nester vuole
-coordinate, non nomi.
+    to_json      Result -> str  (fatti per parte, NIENTE coordinate)
+    save_json    idem, scritto su file
+    extra=       i campi del chiamante per ogni cluster (qui un esempio)
 
     python 09_export.py
 """
@@ -24,28 +19,19 @@ import topo_dxf
 # --- CONFIG ----------------------------------------------------------------
 INPUT     = r"tests/data/Multifeature.dxf"
 TOLERANCE = 0.5
-NAME_ROLES = {"Filettati": "threaded_hole", "Svasati": "countersink",
-             "Piega": "bending", "MARK": "engrave"}
 OUTDIR = "pipeline_output"
 # -------------------------------------------------------------------------
 
 os.makedirs(OUTDIR, exist_ok=True)
 base = os.path.splitext(os.path.basename(INPUT))[0]
 
-doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE, role_rules=topo.name_rules(NAME_ROLES))
-result = topo.heal(doc, label=base, source_file=base).faces()
+doc = topo_dxf.load_dxf(INPUT, tolerance=TOLERANCE)
+result = topo.heal(doc, label=base).faces()
 
 # JSON su stdout
 print(topo.to_json(result, indent=2)[:600], "...\n")
 
-# JSON + XML su file
-topo.save_json(result, os.path.join(OUTDIR, f"{base}.json"))
-topo.save_xml(result,  os.path.join(OUTDIR, f"{base}.xml"))
-print(f"scritti {base}.json e {base}.xml in {OUTDIR}/")
-
-# input per un nester: coordinate, non nomi
-nester = topo.experimental.to_nester_input(result)
-p0 = nester[0]
-print(f"\nnester_input[0]: label={p0['label']}  area={p0['area']:.0f}  "
-      f"outer_coords={len(p0['outer_coords'])} punti  "
-      f"holes={len(p0['holes_coords'])}")
+# JSON su file, con un campo del chiamante: topo non sa cosa sia
+topo.save_json(result, os.path.join(OUTDIR, f"{base}.json"),
+               extra=lambda cluster: {"part_code": cluster.label.upper()})
+print(f"scritto {base}.json in {OUTDIR}/")

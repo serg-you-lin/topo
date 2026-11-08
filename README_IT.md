@@ -5,7 +5,7 @@
 `topo` prende un disegno 2D disordinato e ne ricava un modello pulito e senza
 perdite — contorni chiusi ricuciti, la loro gerarchia di contenimento, le
 testi del disegno, e un overlay aperto dove si attaccano le feature
-rilevate — poi lo riscrive in DXF (un documento, o uno per pezzo), JSON/XML, SVG,
+rilevate — poi lo riscrive in DXF (un documento, o uno per pezzo), JSON, SVG,
 un view model per una UI, o (sperimentale) una lettura testuale compatta per un
 modello linguistico. Il prodotto è il
 modello; un formato CAD è solo una porta di entrata o di uscita. **topo stesso
@@ -44,7 +44,7 @@ Una distribuzione (`g-topo`), tre pacchetti importabili:
 | pacchetto  | cosa                                   | extra   | porta   |
 |------------|----------------------------------------|---------|---------|
 | `topo`     | il motore: modello, heal (faces / outlines), split, SVG/JSON/testo | —       | `shapely`, `numpy` |
-| `topo_dxf` | lettore e scrittore DXF/DWG, XDATA, `inspect_dxf` | `[dxf]` | `ezdxf` |
+| `topo_dxf` | lettore e scrittore DXF/DWG, `inspect_dxf` | `[dxf]` | `ezdxf` |
 | `topo_pdf` | lettore PDF (sperimentale)             | `[pdf]` | `PyMuPDF` |
 
 `topo` non importa mai un adapter, e un adapter solo i nomi pubblici di topo —
@@ -200,8 +200,7 @@ topo.load_segments(segs)  ──►  Document   l'adapter è l'unico codice che 
    topo_dxf.to_dxf(result, doc)  ──►  ezdxf Drawing    render — un Result intero o un pezzo
    to_svg(result)                ──►  stringa SVG      render — per una UI / un report (`topo.experimental`, fuori dall'API stabile 1.0, D133)
    to_view_model(result)         ──►  dict (geometria completa) per un renderer esterno (fuori dall'API stabile 1.0)
-   save_json / save_xml                                export del modello (metadati)
-   inject(result, ...)                                 arricchimento opzionale dai testi
+   save_json                                           i fatti del modello in JSON
 ```
 
 Il prodotto è il modello. `to_dxf` non rilegge mai il file sorgente — ogni renderer

@@ -47,6 +47,7 @@ class Network:
     tolerance:   the node tolerance used (from the document when not given).
     max_gap:     the widest gap closed (at least `tolerance`).
     source_file, label: copied onto every Result and Cluster read from here.
+    source_format: the document's (D231), copied onto every Result.
     warnings, errors, is_valid: what the repair did; with errors no reading
                  finds anything.
     """
@@ -58,6 +59,7 @@ class Network:
     max_gap:     float = 0.0
     source_file: str = ""
     label:       str = ""
+    source_format: str = ""
     _structural: Callable[[str], bool] = field(default=is_structural_role, repr=False)
     _texts:      List[Text] = field(default_factory=list, repr=False)   # del Document, per ogni Result
 
@@ -112,6 +114,7 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
     tol = doc.node_tolerance(override=tolerance)
     gap = tol if max_gap is None else max(tol, max_gap)
     net = Network(tolerance=tol, max_gap=gap, source_file=source_file, label=label,
+                  source_format=doc.source_format,
                   _structural=is_structural or is_structural_role, _texts=list(doc.texts))
     if not doc.edges:
         net.errors.append("Modelspace vuoto: nessuna geometria trovata.")

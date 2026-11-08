@@ -7,7 +7,7 @@ from dataclasses import KW_ONLY, dataclass, field
 from typing import Any, List, Optional
 
 from topo.core.geometry.integrals import ring_area
-from topo.core.primitives.polygon_builder import curve_polygon
+from topo.core.geometry.rings import ring_perimeter
 from topo.model.contour import Contour
 
 
@@ -18,7 +18,6 @@ class Cluster:
     inners:        List[Contour]                      = field(default_factory=list)
     label:         str                                     = ""
     source_file:   str                                     = ""
-    custom:        dict                                    = field(default_factory=dict)
     # Overlay di un consumatore (snapbend, snapdraw, un tool custom), di
     # norma un `model.detected.DetectedFeatures` (D44, D90). `None` finché
     # nessuno ci ha scritto: distingue "non
@@ -91,20 +90,24 @@ class Cluster:
         return {f"{name}_count": len(items) for name, items in self.detected.items()}
 
     def to_dict(self) -> dict:
+        """
+        I fatti geometrici della parte, senza coordinate (D230): `label`,
+        `area` (D89), perimetri esatti sulle primitive (D165), numero di
+        contorni interni, `bbox`, e quanti elementi ha ogni collezione di
+        `detected`. Unità del disegno, nessun arrotondamento.
+        """
+        outer_perimeter = ring_perimeter(self.outer.segments)
+        inner_perimeter = sum(ring_perimeter(i.segments) for i in self.inners)
+        minx, miny, maxx, maxy = self.bbox
         return {
-            "label":                self.label,
-            "source_file":          self.source_file,
-            "area":                 round(self.area, 4),
-            "inner_contours_count": len(self.inners),
-            "bbox": {
-                "minx": round(self.bbox[0], 4),
-                "miny": round(self.bbox[1], 4),
-                "maxx": round(self.bbox[2], 4),
-                "maxy": round(self.bbox[3], 4),
-            },
-            "outer":  _ring_coords(self.outer),
-            "inners": [_ring_coords(i) for i in self.inners],
-            "custom": self.custom,
+            "label":           self.label,
+            "area":            self.area,
+            "outer_perimeter": outer_perimeter,
+            "inner_perimeter": inner_perimeter,
+            "inner_count":     len(self.inners),
+            "bbox":            {"minx": minx, "miny": miny, "maxx": maxx, "maxy": maxy},
+            "detected":        {} if self.detected is None
+                               else {name: len(items) for name, items in self.detected.items()},
         }
 
 
@@ -112,8 +115,3 @@ def _void_area(item) -> float:
     """Area di un vuoto dell'overlay, esatta sui suoi `segments` (D165)."""
     return ring_area(item.segments)
 
-
-def _ring_coords(contour) -> list:
-    """I vertici del poligono della lettura, giro chiuso (il primo ripetuto
-    in fondo): liste di numeri, nessun tipo shapely (D166)."""
-    return list(curve_polygon(contour).exterior.coords)

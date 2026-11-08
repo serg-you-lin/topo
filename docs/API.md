@@ -40,9 +40,9 @@ Una funzione che modifica il suo argomento ritorna `None`.
 
 1. [Geometria in ingresso](#1-geometria-in-ingresso) — `load_segments`, `load_geometry`, `RoleRule`, `name_rules`, scrivere un adapter
 2. [Validazione](#2-validazione) — `validate_document`, `validate_result`
-3. [Elaborazione](#3-elaborazione) — `heal` → `Network` (`faces()` / `outlines()`) e i loro mattoni (core), `split`, `anchor_texts` / `inject` (tools)
-4. [Export](#4-export) — `save_json`, `to_json`, `save_xml`, `to_shapely`; sperimentali `to_view_model`, `to_svg`, `save_svg`
-5. [Metadati](#5-metadati) — `build_metadata`
+3. [Elaborazione](#3-elaborazione) — `heal` → `Network` (`faces()` / `outlines()`) e i loro mattoni (core), `split`, `anchor_texts` (tools)
+4. [Export](#4-export) — `save_json`, `to_json`, `to_shapely`; sperimentali `to_view_model`, `to_svg`, `save_svg`
+5. [Tolti prima della 1.0](#5-tolti-prima-della-10-d230) — metadati, `inject`, `custom`
 6. [Ispezione / debug](#6-ispezione--debug) — `inspect_document`, `inspect_result`
 7. [Tipi di dominio](#7-tipi-di-dominio)
 8. [Il flusso completo, in ordine](#8-il-flusso-completo-in-ordine)
@@ -259,7 +259,7 @@ costruisci un `Result` per altre vie.
 `heal` ripara il disegno una volta e restituisce una `Network`; `faces()` e
 `outlines()` ne sono le due letture (`topo/core/`), una dall'interno e una
 dall'esterno — il chiamante sceglie quella adatta al disegno (D202);
-`split`, `anchor_texts` / `inject` sono stadi opzionali su un
+`split`, `anchor_texts` sono stadi opzionali su un
 `Result` (`topo/tools/`, il caller sceglie quali e in che ordine). Scrivere
 in un formato è di un adapter: `topo_dxf.to_dxf` (§9); `to_svg`/`to_view_model`
 sono in §4, sperimentali. Fori, pieghe, incisioni sono
@@ -1073,85 +1073,38 @@ legge la stringa.
 
 ---
 
-### `inject`
-
-```python
-topo.inject(
-    result: Result,
-    *, data_injector=None,
-    snap_distance: float = 0.0,
-) -> None
-```
-
-Arricchimento **opzionale** dai testi. **Muta** `result.clusters[i].custom` (e
-`result.warnings` se il `data_injector` fallisce) e ritorna `None` (D176). Fa **una cosa**: se passi `data_injector` —
-`callable(cluster, list[str]) -> dict` — gli passa i testi di
-`result.texts` che ricadono dentro l'outer di ogni parte e mette il dict
-restituito in `cluster.custom` (codice pezzo, materiale, spessore, …). Senza
-`data_injector`, `inject()` non fa nulla.
-
-`snap_distance` > 0: un testo fuori da ogni parte va alla parte **più vicina**
-(una sola) se dista al massimo `snap_distance` dal suo contorno esterno — il
-callout scritto appena fuori dal pezzo. Stessa regola di `anchor_texts`
-(MAP.md D82). Un testo contenuto non viene mai spostato dallo snap.
-
-I **conteggi delle feature** NON si fanno qui: `cluster.summary` dà il
-conteggio grezzo per nome dell'overlay (sempre disponibile), il dettaglio per
-tipo è del consumatore che le ha lette (MAP.md D44, D88). Per metterlo
-nell'export passa `extra_metadata` (vedi sotto).
-
-```python
-def leggi_cartiglio(cluster, testi):
-    return {"material": next((t for t in testi if t.startswith("S")), "S275JR")}
-
-topo.inject(result, data_injector=leggi_cartiglio, snap_distance=5.0)
-```
-
----
-
 ## 4. Export
-
-Tutti leggono lo schema da `topo/rules/metadata_schema.py` — **una sola fonte**
-per i nomi dei campi. Per adattarti al tuo CAM passa uno schema tuo come
-`schema=` (§5).
 
 ### `save_json` / `to_json`
 
 ```python
-topo.save_json(
-    result: Result, path, *, indent=2,
-    extra_metadata: Callable[[Cluster], dict] = None,
-    schema: dict = None,
-) -> None   # scrive su file
-topo.to_json(
-    result: Result, *, indent=2,
-    extra_metadata: Callable[[Cluster], dict] = None,
-    schema: dict = None,
-) -> str    # ritorna la stringa
+topo.save_json(result: Result, path, *, indent=2,
+               extra: Callable[[Cluster], dict] = None) -> None   # scrive su file
+topo.to_json(result: Result, *, indent=2,
+             extra: Callable[[Cluster], dict] = None) -> str      # ritorna la stringa
 ```
 
-Metadati per parte secondo schema — **niente coordinate**. `extra_metadata`
-(D44), se passata, viene chiamata una volta per cluster e i campi che
-ritorna finiscono nell'output **fuori dallo schema** — passarla è già la
-scelta esplicita del chiamante, stesso idioma di `data_injector`. Serve per
-una detection tua (fori per tipo, una `FlangeViewHint`) che topo non può
-conoscere. `schema`, se passato, sostituisce lo schema dei metadati per questa
-chiamata sola (vedi §5). Struttura:
+`result.to_dict()` in JSON, **solo geometria** (D230, D231): da dove arriva
+(`source_format`, detto dall'adapter), come è stato letto (`reading`,
+`tolerance`, `max_gap`), se è valido, gli avvisi, e i fatti di ogni parte.
+Niente coordinate (le curve esatte le porta `topo_dxf.to_dxf`), niente di un
+processo, unità del disegno. `extra(cluster) -> dict`, chiamata una volta per
+cluster, aggiunge i campi del chiamante (materiale, codice pezzo, quello che
+topo non può sapere); una chiave che topo scrive già → `ValueError`, mai una
+sostituzione. Struttura:
 
 ```json
 {
-  "source_file": "batch.dxf",
-  "is_valid": true,
-  "cluster_count": 3,
-  "warnings": [], "errors": [],
+  "source_file": "batch.dxf", "source_format": "dxf", "reading": "faces",
+  "tolerance": 0.05, "max_gap": 0.05,
+  "is_valid": true, "warnings": [], "errors": [],
+  "loose_count": 2, "text_count": 4,
   "clusters": [
     {
-      "label": "P-1", "source_file": "batch.dxf",
-      "quantity": 1, "material": "S275JR", "thickness_mm": 0.0,
-      "area_mm2": 12345.67, "inner_contours_count": 1,
-      "outer_perimeter_mm": 480.0, "inner_perimeter_mm": 60.0,
-      "total_perimeter_mm": 540.0,
-      "bbox": {"minx": 0, "miny": 0, "maxx": 200, "maxy": 100}
+      "label": "P-1", "area": 12345.67,
+      "outer_perimeter": 480.0, "inner_perimeter": 60.0, "inner_count": 1,
+      "bbox": {"minx": 0, "miny": 0, "maxx": 200, "maxy": 100},
+      "detected": {"holes": 3}
     }
   ]
 }
@@ -1185,19 +1138,6 @@ shapely è una dipendenza di topo, ma il contratto di topo non lo promette
 dipendenze. Le domande su un contorno (area, bbox, baricentro, `contains`,
 una corda che lo divide) non passano da qui: sono fatti del contorno.
 
-### `save_xml`
-
-```python
-topo.save_xml(
-    result: Result, path,
-    *, extra_metadata: Callable[[Cluster], dict] = None,
-    schema: dict = None,
-) -> None
-```
-
-Stessi campi di `save_json` (`extra_metadata` e `schema` inclusi), in XML
-(`<topo><clusters><cluster>…`).
-
 > **Il viewer** — `to_view_model`, `to_svg`, `save_svg` — è **fuori dalla
 > 1.0 stabile** (MAP.md D133): sta in `topo.experimental` (D176) e verrà
 > rifatto (TODO, "Rifare il viewer"). Le firme qui sotto valgono oggi, senza
@@ -1218,11 +1158,6 @@ topo.experimental.to_view_model(
 *ogni* feature + ruolo + colore hex. È il pendant geometrico di `to_json` (che dà
 solo metadati). Lo consuma `to_svg` e lo consumerebbe un front-end esterno
 (dashboard JS che disegna con SVG/Canvas).
-
-> `topo.experimental.to_nester_input(result) -> list[dict]` esiste ancora
-> (`label`, `bbox`, `outer_coords`, `holes_coords` per parte) ma è
-> **sperimentale** — scritto per un nester mai realizzato (MAP.md D18, D176). Per serializzare
-> la geometria usa `to_view_model`.
 
 Tutta la geometria è **discretizzata a polilinee** (`points: [[x, y], …]`):
 archi, cerchi, spline appiattiti. L'overlay sta sotto `features`, per nome
@@ -1284,25 +1219,19 @@ topo.experimental.save_svg(result, "pezzo.svg")
 
 ---
 
-## 5. Metadati
+## 5. Tolti prima della 1.0 (D230)
 
-### `build_metadata`
+Il JSON di topo è solo geometria. Non esistono più:
 
-```python
-topo.build_metadata(cluster: Cluster, *, schema: dict = None, extra: dict = None) -> dict
-```
-
-I metadati di un cluster secondo lo schema (`metadata_schema.py`, o quello
-passato come `schema`): la fonte unica che usano `save_json`, `save_xml` e,
-come XDATA in un DXF, `topo_dxf.write_metadata_to_dxf` (§9). `extra` aggiunge
-campi del chiamante. Non muta niente.
-
-**Uno schema tuo** si passa per chiamata, come `schema=` a `build_metadata`,
-`save_json`, `to_json`, `save_xml` e `topo_dxf.write_metadata_to_dxf`: niente
-schema globale, due chiamanti nello stesso processo non si pestano i piedi
-(`set_schema` è tolto, D176). Struttura:
-`{chiave_interna: (nome_output, default, sorgente)}` con `sorgente` ∈
-`{"cluster", "custom", "calculated"}`.
+| tolto | al suo posto |
+|---|---|
+| `build_metadata(cluster)` | `cluster.to_dict()` |
+| `save_xml`, `to_json(schema=)`, `topo/rules/metadata_schema.py` | `to_json`; rinominare i campi o scrivere XML è del consumatore |
+| `to_json(extra_metadata=)` | `to_json(extra=)` |
+| `inject(result, data_injector=)` | `anchor_texts(result)`, poi i testi con `text.cluster_ref == i` passati alla funzione del consumatore |
+| `Cluster.custom` | `cluster.detected` (l'overlay, D44), o le strutture del consumatore |
+| `experimental.to_nester_input` | `to_view_model`, o le primitive di `cluster.outer.segments` |
+| `topo_dxf.write_metadata_to_dxf` / `read_metadata_from_dxf` | nessuno: gli XDATA davano un DXF sbagliato |
 
 ---
 
@@ -1351,7 +1280,7 @@ garanzie. Gli adapter sono pacchetti a parte (§9, §10):
   segmento con ruolo e stile), `EdgeStyle`, i testi, le feature
   rilevate e i ruoli: `ContourRole`, `role_str`, `normalize_role`,
   `is_structural_role`. I quattro più usati stanno anche in `topo.<Nome>`.
-- **`topo.experimental`** — quello che si usa senza promessa di stabilità (D175 C, D176): i passi di `heal()` e i mattoni di `outlines()` (§3), il viewer (§4), `rotate_*`, `simplify_points`, `to_nester_input`.
+- **`topo.experimental`** — quello che si usa senza promessa di stabilità (D175 C, D176): i passi di `heal()` e i mattoni di `outlines()` (§3), il viewer (§4), `rotate_*`, `simplify_points`.
 
 ```python
 import topo
@@ -1414,7 +1343,7 @@ ruolo, come un edge; senza ruolo, su `text_layer`.
 
 ### `Result`
 
-Prodotto da `Network.faces()` o `Network.outlines()`, arricchito da un consumatore / `inject()`.
+Prodotto da `Network.faces()` o `Network.outlines()`, arricchito da un consumatore.
 
 | campo | tipo | contenuto |
 |---|---|---|
@@ -1470,13 +1399,13 @@ result.promote([hole, seat], view, "features", item=my_counterbore)
 | `outer` | `Contour` | profilo esterno (ha `segments`, `role`, `area`, `bbox`) |
 | `inners` | `list[Contour]` | contorni chiusi dentro l'outer, senza lettura (un cerchio non è un foro, D15) |
 | `label` | `str` | etichetta, base del nome file |
-| `custom` | `dict` | dati aggiunti da un `data_injector` esterno (materiale, spessore, codice) |
 | `detected` | `Optional[DetectedFeatures]` | overlay di un consumatore — `None` finché nessuno ci ha scritto (D44, D90) |
 | `features(name)` | metodo | collezione `name` da `detected` — `[]` se `detected` è `None` o `name` non è stato scritto |
 | `summary` | property | conteggio **grezzo**, sempre disponibile: `{nome}_count: len(items)` per ogni collezione in `detected` — `{}` se `detected` è `None` |
 | `overlay_voids` | property | gli elementi dell'overlay con `is_void = True` e i `segments` di un giro chiuso: vuoti del pezzo letti da un consumatore (D90) |
 | `area` | property | outer − vuoti dell'overlay − inner a depth dispari + inner a depth pari (D89, D90) |
 | `bbox` | property | `(minx, miny, maxx, maxy)` |
+| `to_dict()` | metodo | i fatti che scrive `to_json`: `label`, `area`, perimetri, `inner_count`, `bbox`, `detected` (D230) |
 
 Un consumatore attacca la sua detection così (`topo.DetectedFeatures`):
 `cluster.detected = cluster.detected or DetectedFeatures();
@@ -1593,17 +1522,14 @@ result = topo.heal(doc, label="P-1024").faces()
 if not result.is_valid:
     raise SystemExit(result.errors)
 
-# 6. arricchimento CAM (opzionale — solo se hai un data_injector per i testi)
-result = topo.inject(result, data_injector=leggi_cartiglio, snap_distance=5.0)
-
-# 7a. render — un documento con tutte le parti
+# 6a. render — un documento con tutte le parti
 topo_dxf.to_dxf(result, doc).saveas("pezzo_healed.dxf")
 
-# 7b. oppure render — un file per parte
+# 6b. oppure render — un file per parte
 for part in topo.split(result):
     topo_dxf.to_dxf(part, doc).saveas(f"output/{part.clusters[0].label}.dxf")
 
-# 8. metadati
+# 7. i fatti in JSON
 topo.save_json(result, "pezzo.json")
 ```
 
@@ -1830,31 +1756,6 @@ fermarti al `Document`. `role_rules` come in
 ```python
 topo_dxf.inspect_file("pezzo.dxf", role_rules=topo.name_rules({"Piega": "bending"}))
 topo_dxf.inspect_file("pezzo.dxf", role_rules=[topo.RoleRule("bending", dashed=True)])
-```
-
-### `write_metadata_to_dxf` / `read_metadata_from_dxf`
-
-```python
-topo_dxf.write_metadata_to_dxf(doc, cluster: Cluster, *, extra: dict = None, schema: dict = None) -> None
-topo_dxf.read_metadata_from_dxf(doc) -> dict
-```
-
-Scrive / rilegge i metadati (stessi campi di `save_json`, `extra` incluso —
-un dict diretto qui, non una callback, perché opera già su un singolo
-cluster; sotto c'è `topo.build_metadata`) come XDATA `TOPO` sull'entità del
-layer `OuterContour`. `doc` è un
-`Drawing` `ezdxf` (tipicamente quello restituito da `to_dxf`). `read_`
-ritorna `{}` se non trova niente. `schema` come in `save_json`.
-
-**Solleva** `ValueError` se `doc` non ha un'entità su `OuterContour` (D176:
-prima stampava un avviso e non scriveva niente).
-
-```python
-doc_out = topo_dxf.to_dxf(result, doc)
-topo_dxf.write_metadata_to_dxf(doc_out, result.clusters[0])
-doc_out.saveas("out.dxf")
-# più tardi:
-meta = topo_dxf.read_metadata_from_dxf(ezdxf.readfile("out.dxf"))
 ```
 
 ### I layer di default

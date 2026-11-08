@@ -36,7 +36,8 @@ def read_faces(net: Network) -> Result:
     label, source_file = net.label, net.source_file
     reach = threshold(tol)
 
-    result = Result(source_file=source_file)
+    result = Result(source_file=source_file, source_format=net.source_format, reading="faces",
+                    tolerance=net.tolerance, max_gap=net.max_gap)
     result.texts = list(net._texts)
     result.warnings += net.warnings
     if not net.is_valid:

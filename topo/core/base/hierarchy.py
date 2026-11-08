@@ -209,7 +209,6 @@ class HierarchyBuilder:
                 inners=inners,
                 label=self.label,
                 source_file=self.source_file,
-                custom={},
             )
             clusters.append(cluster)
 

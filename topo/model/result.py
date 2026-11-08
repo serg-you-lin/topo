@@ -12,12 +12,12 @@ from .text import Text
 @dataclass
 class Result:
     """
-    Risultato completo di una sessione topo su un file DXF.
-
-    Contiene tutti i pezzi trovati + info di validazione.
-    È quello che topo.heal() restituisce al chiamante.
+    Ciò che una lettura (`Network.faces()`, `Network.outlines()`) dà al
+    chiamante: i pezzi trovati + info di validazione.
 
     Campi:
+        source_format, reading, tolerance, max_gap : da che cosa arriva la
+                    geometria e come è stata letta, copiati dalla rete (D231).
         texts     : i testi della sorgente (list[Text], D138), copiati
                     qui da heal() dal Document. Sono dati di dominio
                     indipendenti dal formato: ogni renderer (to_dxf, un
@@ -33,6 +33,10 @@ class Result:
     clusters:               List[Cluster]        = field(default_factory=list)
     _: KW_ONLY
     source_file:         str                    = ""
+    source_format:       str                    = ""
+    reading:             str                    = ""
+    tolerance:           float                  = 0.0
+    max_gap:             float                  = 0.0
     is_valid:            bool                   = True
     warnings:            List[str]              = field(default_factory=list)
     errors:              List[str]              = field(default_factory=list)
@@ -82,12 +86,22 @@ class Result:
             del self.loose[k]
 
     def to_dict(self) -> dict:
-        """Esporta tutto come dizionario — pronto per JSON."""
+        """
+        Il `Result` come dati semplici, solo geometria (D230, D231): da dove
+        arriva, come è stato letto, se è valido, gli avvisi, e i fatti di ogni
+        cluster (`Cluster.to_dict`). Nessuna coordinata: le curve esatte le
+        porta il DXF. È la sola fonte di `topo.to_json`.
+        """
         return {
-            "source_file": self.source_file,
-            "is_valid":    self.is_valid,
-            "cluster_count":  self.cluster_count,
-            "warnings":    self.warnings,
-            "errors":      self.errors,
-            "clusters":       [p.to_dict() for p in self.clusters],
+            "source_file":   self.source_file,
+            "source_format": self.source_format,
+            "reading":       self.reading,
+            "tolerance":     self.tolerance,
+            "max_gap":       self.max_gap,
+            "is_valid":      self.is_valid,
+            "warnings":      [str(w) for w in self.warnings],
+            "errors":        [str(e) for e in self.errors],
+            "loose_count":   len(self.loose),
+            "text_count":    len(self.texts),
+            "clusters":      [c.to_dict() for c in self.clusters],
         }

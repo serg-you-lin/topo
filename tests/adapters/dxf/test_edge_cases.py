@@ -39,7 +39,6 @@ def _make_test(dxf_path):
         topo_doc = topo_dxf.load_dxf(str(dxf_path))
         result = topo.heal(topo_doc).faces()
         doc_out = topo_dxf.to_dxf(result, topo_doc)
-        topo.inject(result)
 
         # ogni disegno di edge_cases/ ha almeno una parte
         self.assertGreater(result.cluster_count, 0)
