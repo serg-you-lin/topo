@@ -331,6 +331,11 @@ novembre, ramo `no-join-ends` fuso in `main`.
       CLAUDE.md: motore di geometria 2D, i disegni tecnici sono un caso.
 - [ ] **G9** `docs/API.md` e `docs/ARCHITECTURE.md` in inglese; docstring dei
       nomi pubblici in inglese, con un controllo nella suite.
+      Con G9, nella stessa passata (D233): ogni avviso e errore di topo in inglese e
+      `Diagnostic` (oggi 3 su ~39), senza parole DXF nel motore (`network.py`,
+      `faces.py`, `validator.py`: "Modelspace", "LINE/ARC", "SPLINE"); e i nomi
+      vecchi (`dxf_forge` in `test_splitter.py`, `test_models.py`, `test_loops.py`,
+      `ARCHITECTURE.md:415`).
 - [ ] **Pulizia del repo prima della 1.0** (Federico, 8 novembre): TODO.md, MAP.md
       e il resto pieni di log di sessione (misure, cose fatte, riordini) lasciati da
       Claude; restano solo le cose da fare e le decisioni, i log vanno fuori dal repo.
@@ -629,6 +634,12 @@ Aperte:
   `base/` e `readings/` (D188).
 
 ## Fili da ragionare con Federico
+
+- **`Text.source_kind`** (`"MTEXT"`, `"DIMENSION"`, …) è un fatto del formato nel
+  modello, tenuto da D138 per riscrivere il testo fedele. Federico non decide ora.
+- **snapbend dopo D230**: `snapbend/flat/detect.py` scrive `cluster.custom` e i
+  suoi test chiamano `topo.inject`; con D230 non esistono più. Va adattato in una
+  sessione aperta in snapbend.
 
 - **Datum** (origine e assi da cui si misura un pezzo): il sistema di
   riferimento attaccato a un contorno è di topo; quale datum scegliere è del

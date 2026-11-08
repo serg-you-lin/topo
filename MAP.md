@@ -508,3 +508,16 @@ reader's. Goal, 1.x: one new form that links to the edges of the network, indepe
 ### D229 — one name, one copy (Federico, 8 November): a drawing lives in one folder of `tests/data/`, found by `tests.paths.drawing(name)`.
 A copy in two places is edited in one while a test reads the other. Byte-identical copies went (42 files, 36 names);
 `tests/package/test_one_copy.py` fails on a new double. Names still double with different content are a shrink-only list there.
+
+### D230 — topo's JSON is geometry only (Federico, 8 November): `Result.to_dict()` is its one source, `to_json`/`save_json(extra=)` add a consumer's fields per cluster.
+Material, thickness and quantity are a process's, renaming fields for a CAM is the consumer's, and units are not topo's (the
+drawing's units, no `_mm`). Out: `metadata_schema`, `schema=`, `build_metadata`, `save_xml`, `inject`, `Cluster.custom`,
+`to_nester_input`, `topo_dxf.write/read_metadata_*` (XDATA gives a bad DXF, Federico). One extension slot: `cluster.detected`;
+an `extra` key topo already writes raises `ValueError`, so a consumer's field never silently replaces a geometric one.
+### D231 — the source format travels: `Document.source_format` (the adapter says `dxf`, `pdf`, `geometry`, …) reaches every `Result` with `tolerance`, `max_gap` and `reading`.
+A JSON read alone must say where the geometry came from and how it was read; the value is the adapter's, an open string.
+### D232 — `split` drops nothing by default (`min_area=0.0`) and works on both readings (Federico, 8 November).
+A smallest size is a process threshold: 50 mm² is scrap on a sheet and a real part on a watch drawing.
+### D233 — every warning is an English `Diagnostic` in topo's words (no `LINE`, `SPLINE`, modelspace in the engine): done with G9 and the rename of the old names (Federico, 8 November).
+### D234 — D124 stays: one repo, the adapter tests in `tests/adapters/`, the engine tests read the tracked DXF (D223) (Federico, 8 November).
+Splitting topo_dxf out means two releases kept in step and 158 drawings converted to a format-free fixture, for no measured gain.
