@@ -478,9 +478,9 @@ are one promise end to end and are not split by layer. A test moves when its sub
 dimension string inside the anchoring tests), and a move that would mean rewriting the test is not a move.
 
 ### D225 — A near-copy of a line within `tolerance` closes a thin face, and that is the right reading (Federico, 8 November).
-Two parallel lines 0.18 mm apart at tolerance 0.5: their ends join, the ring is closed, `faces()` gives it as an inner
-(`outlines()` does not). They are two lines, not one (D184); merging near-copies is the consumer's call before `heal`.
-A check that counts this red is wrong, not topo. Documented in LLM.md; no change to the code.
+Two parallel lines 0.18 mm apart at tolerance 0.5 are two distinct curves: nothing in the geometry says one is a
+mistake. The tolerance joins their ends, not the lines; once joined the thin ring is a closed face and `faces()` gives it
+(`outlines()` does not). "This line is a stray copy" is a reading of intent: the consumer's, before `heal`. Not D184's authority.
 
 ## Open questions
 
