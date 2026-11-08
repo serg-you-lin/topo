@@ -361,6 +361,7 @@ clusters are decided by outer contours and containment, not by spacing.
   - `crossing`: contour sides crossing with no shared node; fix the drawing.
   - `self-intersecting` / `inner-outside` (from `validate_result`): an outer polygon that crosses itself, an inner not wholly inside its outer.
   - `zero-length` (from `validate_document`): edges whose two ends are one point; `heal()` drops them.
+  - `dropped-part` (from `split` with a `min_area`) → `topo.split(result)` keeps every part; `not-rotated` (from `rotate_*`): texts and `cluster.detected` stay where they were.
   - notes: `merged-lines`, `merged-arcs`, `welded`, `arc-joined`, `open-spline`, `non-contour`, `no-loop`, `free-end`, `joining-edge`, `gap-closed` (a jump closed with a new segment, D206). Errors: `empty`, `no-closed-outer`, `open-contour`, `no-area`. The list is closed: a new code is a decision.
 - `outlines()` puts closed loops inside an outer in `loose` (as `ClosedCurve`, D161, D162) without saying hole or face; `faces()` puts them in `inners`, same silence (D15).
 
