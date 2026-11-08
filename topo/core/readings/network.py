@@ -19,7 +19,9 @@ from typing import TYPE_CHECKING, Callable, List, Optional
 from ...model.document import Document
 from ...model.text import Text
 from ...model.role import is_structural_role
-from ..base.cleanup import NEAR_FULL_ARC_MISSING, dangling_splines
+from ...model.diagnostic import Diagnostic
+from ..base.cleanup import NEAR_FULL_ARC_MISSING, dangling_splines, near_free_gaps, open_near_full_arcs
+from ..base.normalizer import near_copies
 from ..base.prepare import normalize, prepare
 from ..geometry.measure import reach
 from ..primitives.segments import segment_is_closed
@@ -121,6 +123,10 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
         return net
     if prepared.labeled and is_structural is None:
         net.warnings.append(_LABELED_WITHOUT_PREDICATE.format(n=len(prepared.labeled)))
+    # una retta quasi sopra un'altra: topo la legge com'è, il chiamante decide (D226, D227)
+    copies = near_copies(prepared.edges, tol)
+    if copies:
+        net.warnings.append(_near_copy_warning(copies))
 
     # un gap largo quanto la soglia si chiude a ogni riferimento, non a
     # seconda dell'ultimo bit (D183)
@@ -138,6 +144,13 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
         net.warnings.append(f"{len(clean.ambiguous)} estremi liberi con due compagni alla stessa distanza "
                             f"(figura simmetrica): nessun gap chiuso lì, decide il disegno ({first}).")
     net.edges = _no_degenerate(clean.edges)
+    # quello che si è quasi chiuso, uno per tipo, coi punti dal più vicino (D227)
+    arcs = open_near_full_arcs(net.edges, reach(gap))
+    if arcs:
+        net.warnings.append(_open_arc_warning(arcs))
+    gaps = near_free_gaps(net.edges, reach(gap), reach(_NEAR_GAP_REACH * gap))
+    if gaps:
+        net.warnings.append(_near_gap_warning(gaps, gap))
     if dangling_splines(net.edges):
         net.warnings.append(
             "SPLINE con endpoint non connesso trovata — "
@@ -157,6 +170,63 @@ def repair_edges(edges: List[Edge], tolerance: float, max_gap: float) -> List[Ed
 def _no_degenerate(edges: List[Edge]) -> List[Edge]:
     """Un tratto ridotto a un punto non è una curva (un cerchio sì)."""
     return [e for e in edges if e.start != e.end or segment_is_closed(e.segment)]
+
+
+def _ceil_2(x: float) -> float:
+    """`x` arrotondato per eccesso a due cifre significative: la soglia
+    suggerita deve bastare, non quasi bastare."""
+    if x <= 0:
+        return x
+    step = 10 ** (math.floor(math.log10(x)) - 1)
+    return math.ceil(x / step - 1e-9) * step
+
+
+_NEAR_GAP_REACH = 2.0   # un gap fino al doppio della soglia "c'è quasi"; oltre è geometria (D227)
+
+
+def _span(values, fmt: str) -> str:
+    lo, hi = min(values), max(values)
+    return format(lo, fmt) if lo == hi else f"{format(lo, fmt)} to {format(hi, fmt)}"
+
+
+def _plural(n: int, one: str, many: str) -> str:
+    return f"{n} {one if n == 1 else many}"
+
+
+def _near_copy_warning(pairs: list) -> Diagnostic:
+    offset = max(p.offset for p in pairs)
+    return Diagnostic(
+        "near-copy", f"{_plural(len(pairs), 'line', 'lines')} nearly on top of a longer one, not merged",
+        points=[p.at for p in pairs],
+        notes=[f"{_span([p.offset for p in pairs], '.2g')} mm apart; not one line for D184 "
+               f"(parallel within 1e-7, ends within 1e-3 mm), so topo reads both"],
+        help=f"doc.edges = topo.experimental.merge_near_copies(doc.edges, distance={_ceil_2(offset):g}) "
+             f"before heal() keeps the longer of each pair",
+        param="distance", value=offset)
+
+
+def _open_arc_warning(arcs: list) -> Diagnostic:
+    arcs = sorted(arcs, key=lambda a: a[1])
+    deg = math.degrees(arcs[-1][1])
+    return Diagnostic(
+        "open-arc", f"{_plural(len(arcs), 'arc', 'arcs')} nearly a full circle, left open",
+        points=[e.segment.center for e, _, _ in arcs],
+        notes=[f"{_span([math.degrees(m) for _, m, _ in arcs], '.2f')}° missing "
+               f"({_span([c for _, _, c in arcs], '.3f')} mm), over the "
+               f"{math.degrees(NEAR_FULL_ARC_MISSING):.0f}° that close an arc (D218)"],
+        help=f"doc.edges, _ = topo.experimental.close_near_full_arcs(doc.edges, tolerance, "
+             f"max_missing_angle=math.radians({_ceil_2(deg):g})) before heal() closes them",
+        param="max_missing_angle", value=arcs[-1][1])
+
+
+def _near_gap_warning(gaps: list, gap: float) -> Diagnostic:
+    longest = max(d for _, _, d in gaps)
+    return Diagnostic(
+        "near-gap", f"{_plural(len(gaps), 'gap', 'gaps')} just over the gap limit, left open",
+        points=[a for a, _, _ in gaps],
+        notes=[f"{_span([d for _, _, d in gaps], '.4f')} mm, limit {gap:g} mm (max_gap, default the tolerance)"],
+        help=f"topo.heal(doc, ..., max_gap={_ceil_2(longest):g}) closes them all, and every other gap up to that",
+        param="max_gap", value=longest)
 
 
 _LABELED_WITHOUT_PREDICATE = (

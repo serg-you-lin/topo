@@ -223,6 +223,37 @@ def compute_gap_fixes(endpoints: List[GapEndpoint], tolerance: float,
     return fixes
 
 
+def near_gaps(endpoints: List[GapEndpoint], tolerance: float, reach_to: float,
+              edges: Sequence[Edge] = ()) -> List[Tuple[Point2D, Point2D, float]]:
+    """
+    I gap che `compute_gap_fixes` chiuderebbe con `reach_to` e non con
+    `tolerance`: per ogni estremo libero il compagno più vicino della stessa
+    regola (un altro estremo, o l'incontro della sua curva proseguita), se sta
+    oltre `tolerance` ed entro `reach_to`. Ritorna (estremo, compagno,
+    distanza), una volta per coppia, dai più corti — ciò che l'avviso dice al
+    chiamante (D227). Un estremo a pari merito non ha compagno (D185).
+    """
+    candidates = _candidates(endpoints, reach_to, edges)
+    ambiguous = _ambiguous_from(candidates, endpoints)
+    best: dict = {}
+    for d, key, i, target in candidates:
+        if i not in ambiguous and (i not in best or (d, key) < best[i][:2]):
+            best[i] = (d, key, target)
+    seen, out = set(), []
+    for i, (d, _, target) in sorted(best.items(), key=lambda kv: kv[1][:2]):
+        if d <= tolerance:
+            continue
+        if target[0] == "end":
+            pair = frozenset((i, target[1]))
+            if pair in seen:
+                continue
+            seen.add(pair)
+            out.append((endpoints[i].pt, endpoints[target[1]].pt, d))
+        else:
+            out.append((endpoints[i].pt, target[2], d))
+    return out
+
+
 def _candidates(endpoints: List[GapEndpoint], tolerance: float, edges: Sequence[Edge]) -> list:
     """(distanza, chiave d'ordine, i, bersaglio) per ogni estremo `i`: ("end", j) un
     altro estremo libero; ("curve", edge, incontro, nodo) dove la curva di `i`,

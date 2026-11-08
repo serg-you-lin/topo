@@ -263,5 +263,30 @@ class TestForgeResult(unittest.TestCase):
         self.assertTrue(d["is_valid"])
 
 
+class TestDiagnostic(unittest.TestCase):
+    """D227: un avviso è una str nel formato Rust, coi campi per chi programma."""
+
+    def _d(self):
+        from topo.model import Diagnostic
+        return Diagnostic("open-arc", "arc left open", points=[(1, 2)], notes=["5.68° missing"],
+                          help="close_near_full_arcs(...)", param="max_missing_angle", value=0.099)
+
+    def test_il_testo_e_quello_di_rust(self):
+        self.assertEqual(self._d(), "warning[open-arc]: arc left open\n  --> (1.000, 2.000)\n"
+                                    "  = note: 5.68° missing\n  = help: close_near_full_arcs(...)")
+
+    def test_uno_per_tipo_il_testo_mostra_tre_punti_points_tutti(self):
+        from topo.model import Diagnostic
+        d = Diagnostic("near-gap", "5 gaps", points=[(k, 0) for k in range(5)])
+        self.assertEqual((len(d.points), d.at, str(d).count("-->")), (5, (0.0, 0.0), 3))
+        self.assertIn("... and 2 more in .points", d)
+
+    def test_copia_e_pickle_tengono_i_campi(self):
+        import copy
+        import pickle
+        for d in (copy.deepcopy(self._d()), pickle.loads(pickle.dumps(self._d()))):
+            self.assertEqual((d, d.code, d.at, d.param, d.value), (self._d(), "open-arc", (1.0, 2.0), "max_missing_angle", 0.099))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

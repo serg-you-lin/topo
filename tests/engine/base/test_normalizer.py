@@ -2,7 +2,10 @@
 
 import math
 import unittest
-from topo.core.base.normalizer import (merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs)
+import topo
+from topo import to_shapely
+from topo.core.base.normalizer import (merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
+                                       merge_near_copies)
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, ArcSeg, CircleSeg
 
@@ -251,6 +254,49 @@ class TestSameCarrierUnderMotion(unittest.TestCase):
                     seg, first = merged[0].segment, edges[0].segment
                     self.assertGreater((seg.end[0] - seg.start[0]) * (first.end[0] - first.start[0])
                                        + (seg.end[1] - seg.start[1]) * (first.end[1] - first.start[1]), 0)
+
+
+class TestMergeNearCopies(unittest.TestCase):
+    """D226: la retta quasi sopra un'altra, fusa solo da chi la chiama."""
+
+    _PIECES = [LineSeg(start=(100, 0), end=(0.099, -0.0001)), LineSeg(start=(0, 0), end=(0, 50)),
+               LineSeg(start=(0, 50), end=(100, 50)), LineSeg(start=(100, 50), end=(100, 0)),
+               LineSeg(start=(0, 0), end=(0.0005, 17.7))]
+
+    def test_resta_la_piu_lunga(self):
+        long, copy = _line((0, 0), (0, 50)), _line((0, 0), (0.0005, 17.7))
+        self.assertEqual(merge_near_copies([copy, long], distance=0.001), [long])
+
+    def test_a_pari_lunghezza_la_mediana(self):
+        out = merge_near_copies([_line((0, 0), (50, 0)), _line((50, 0.004), (0, 0.002))], distance=0.01)
+        self.assertEqual(len(out), 1)
+        seg = out[0].segment
+        self.assertEqual((seg.start, seg.end), ((0.0, 0.001), (50.0, 0.002)))
+
+    def test_la_copia_va_con_la_retta_piu_vicina(self):
+        # seme 1468: un tratto corto a 0.006 da una retta e a 0.41 da un'altra
+        # (le due rette lunghe si coprono solo in parte: non sono copia l'una dell'altra)
+        near, far, copy = _line((0, 0), (3, 0)), _line((2, 0.41), (5, 0.41)), _line((2.2, 0.006), (2.5, 0.006))
+        out = merge_near_copies([far, near, copy], distance=0.5)
+        self.assertEqual(out, [far, near])
+
+    def test_oltre_la_distanza_restano_due(self):
+        edges = [_line((0, 0), (0, 50)), _line((0, 0), (0.05, 17.7))]
+        self.assertEqual(merge_near_copies(edges, distance=0.01), edges)
+
+    def test_il_rovinato_si_chiude_solo_se_il_chiamante_fonde(self):
+        # forza bruta, seme 1775: il lato in basso si ferma a 0.099
+        # dall'angolo; una copia del lato sinistro parte dall'angolo e lo tiene
+        # occupato, così il gap non si chiude. heal() lo dice, non lo fonde
+        doc = topo.load_segments(self._PIECES)
+        net = topo.heal(doc, tolerance=0.5)
+        [d] = [w for w in net.warnings if isinstance(w, topo.Diagnostic)]
+        self.assertEqual((d.code, d.param, round(d.value, 4)), ("near-copy", "distance", 0.0005))
+        self.assertIn("distance=0.0005)", d.help)
+        self.assertEqual(net.faces().cluster_count, 0)
+        doc.edges = merge_near_copies(doc.edges, distance=0.0005)
+        result = topo.heal(doc, tolerance=0.5).faces()
+        self.assertEqual([round(to_shapely(c.outer).area) for c in result.clusters], [5000])
 
 
 class TestMergeCocircularOverlaps(unittest.TestCase):

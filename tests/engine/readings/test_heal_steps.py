@@ -446,6 +446,46 @@ class TestCloseNearFullArcs(unittest.TestCase):
         _, n = topo.experimental.close_near_full_arcs(edges, 0.1)
         self.assertEqual(n, 0)
 
+    # forza bruta, seme 1468: un cerchio r 1.95 in due archi uniti in un capo,
+    # buco di 5.68° (corda 0.19) dall'altra parte
+    _SPLIT = [ArcSeg((0, 0), 1.95, math.radians(31.64), math.radians(259.9)),
+              ArcSeg((0, 0), 1.95, math.radians(265.58), math.radians(391.64))]
+
+    def test_011_due_archi_uniti_in_un_capo_si_chiudono_da_soli(self):
+        # D227: chi la chiama da sé non deve fondere prima gli archi che si toccano
+        edges, n = topo.experimental.close_near_full_arcs(list(topo.load_segments(self._SPLIT).edges), 0.5,
+                                                          max_missing_angle=math.radians(6))
+        self.assertEqual(([type(e.segment).__name__ for e in edges], n), (["CircleSeg"], 1))
+
+    def test_012_heal_dice_quanti_gradi_mancano_e_l_help_lo_chiude(self):
+        doc = topo.load_segments(self._SPLIT)
+        [d] = [w for w in topo.heal(doc, tolerance=0.5).warnings if isinstance(w, topo.Diagnostic)]
+        self.assertEqual((d.code, d.param, d.at), ("open-arc", "max_missing_angle", (0.0, 0.0)))
+        self.assertAlmostEqual(math.degrees(d.value), 5.68, places=2)
+        self.assertIn("math.radians(5.7)", d.help)
+        doc.edges, _ = topo.experimental.close_near_full_arcs(doc.edges, 0.5, max_missing_angle=math.radians(5.7))
+        net = topo.heal(doc, tolerance=0.5)
+        self.assertFalse([w for w in net.warnings if isinstance(w, topo.Diagnostic)])
+        self.assertEqual(sum(len(c.inners) for c in net.faces().clusters) + net.faces().cluster_count, 1)
+
+    def test_014_un_gap_poco_oltre_il_limite_avvisa_e_l_help_lo_chiude(self):
+        # D227: un rettangolo aperto di 0.055 con tolleranza 0.05
+        sides = [LineSeg((0.055, 0), (10, 0)), LineSeg((10, 0), (10, 5)), LineSeg((10, 5), (0, 5)), LineSeg((0, 5), (0, 0))]
+        doc = topo.load_segments(sides)
+        net = topo.heal(doc, tolerance=0.05)
+        [d] = [w for w in net.warnings if isinstance(w, topo.Diagnostic)]
+        self.assertEqual((d.code, d.param, round(d.value, 4)), ("near-gap", "max_gap", 0.055))
+        self.assertEqual(net.faces().cluster_count, 0)
+        self.assertIn("max_gap=0.055)", d.help)
+        net = topo.heal(doc, tolerance=0.05, max_gap=0.055)
+        self.assertEqual((net.faces().cluster_count, [w for w in net.warnings if isinstance(w, topo.Diagnostic)]), (1, []))
+
+    def test_013_un_filetto_piccolo_non_avvisa(self):
+        # D227: a un filetto mancano ~90°; r 0.3, corda 0.42 entro 0.5, aperto di proposito
+        thread = ArcSeg((0, 0), 0.3, 0.0, math.radians(270))
+        net = topo.heal(topo.load_segments([thread]), tolerance=0.5)
+        self.assertFalse([w for w in net.warnings if isinstance(w, topo.Diagnostic)])
+
 
 class TestSingleNodeGrid(unittest.TestCase):
     """D113: la tolleranza chiude i gap, non arrotonda i nodi. Lecca-lecca:
