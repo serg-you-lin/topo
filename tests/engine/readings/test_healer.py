@@ -223,10 +223,21 @@ class TestHealerDeduplication(unittest.TestCase):
 
 class TestValidateInput(unittest.TestCase):
 
-    def test_001_detects_open_lines(self):
+    def test_001_linee_aperte_nessuna_previsione(self):
+        # rette che heal() chiuderà: nessun fatto da dire sull'input, e una
+        # previsione su heal() validate_document non la fa più (D233)
         check = topo.validate_document(topo_dxf.load_dxf(load("rect_lines.dxf")))
-        self.assertGreater(len(check.warnings), 0)
+        self.assertEqual(check.warnings, [])
         self.assertTrue(check.is_valid)
+
+    def test_001b_tratto_nullo_e_documento_vuoto(self):
+        g = topo.geometry
+        doc = topo.load_segments(g.rectangle(10, 10) + [topo.primitives.LineSeg(start=(3, 3), end=(3, 3))])
+        check = topo.validate_document(doc)
+        self.assertEqual([(w.code, w.at) for w in check.warnings], [("zero-length", (3.0, 3.0))])
+        empty = topo.validate_document(topo.load_segments([]))
+        self.assertEqual([e.code for e in empty.errors], ["empty"])
+        self.assertFalse(empty.is_valid)
 
     def test_002_clean_file_no_errors(self):
         check = topo.validate_document(topo_dxf.load_dxf(load("pline_with_hole.dxf")))
