@@ -917,7 +917,7 @@ della polilinea. Un solo tratto dritto è `len(track_points(segments)) == 2`
 topo.split(
     result: Result,
     *, namer=None,
-    min_area=50.0,               # topo.DEFAULT_MIN_CLUSTER_AREA, mm²
+    min_area=0.0,                # nessuno scarto (D232)
 ) -> list[Result]
 ```
 
@@ -937,7 +937,7 @@ parte va in DXF, SVG o testo allo stesso modo.
 | parametro | significato |
 |---|---|
 | `namer` | `callable(i, cluster) -> str` — dà il `label` del cluster della parte, così il nome di un file resta ricavabile (`f"{cluster.label}.dxf"`). Senza, `f"{label}_P{i+1}"`. |
-| `min_area` | le parti con area sotto soglia (mm²) sono scartate con un avviso in `result.warnings` e in quelli di ogni parte; `<= 0` nessun filtro. |
+| `min_area` | per default `0.0`, nessuno scarto (D232): una soglia di dimensione è di un processo. Con un valore, le parti con area sotto (unità del disegno al quadrato) sono scartate con un avviso in `result.warnings` e in quelli di ogni parte. |
 
 **Muta** solo `result.warnings` (gli avvisi di scarto: anche se le scarta tutte, lo scarto si legge). Il cluster di ogni parte è una copia col suo `label`; l'originale non cambia (D176).
 **Ritorna** le parti nell'ordine dei cluster tenuti.

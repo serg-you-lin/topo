@@ -21,13 +21,10 @@ from ..core.geometry.measure import track_points
 from ..core.primitives.polygon_builder import curve_polygon
 from ..model import Cluster, Result
 
-DEFAULT_MIN_CLUSTER_AREA = 50.0  # mm²
-
-
 def split(
     result: Result,
     *, namer: Optional[Callable[[int, Cluster], str]] = None,
-    min_area: float = DEFAULT_MIN_CLUSTER_AREA,
+    min_area: float = 0.0,
 ) -> List[Result]:
     """
     Un `Result` per parte, nell'ordine delle parti tenute.
@@ -49,8 +46,8 @@ def split(
     `namer(i, cluster)` — se passato — dà il `label` del cluster della
     parte, così il nome di un file resta ricavabile a valle
     (`f"{cluster.label}.dxf"`); senza, la parte i-esima è
-    `f"{label}_P{i + 1}"`. Una parte sotto `min_area` mm² (`<= 0`: nessun
-    filtro) è scartata con un avviso in `result.warnings` e in quelli di
+    `f"{label}_P{i + 1}"`. Per default non scarta niente (D232): una parte
+    sotto `min_area` (unità del disegno al quadrato; `<= 0`: nessun filtro) è scartata con un avviso in `result.warnings` e in quelli di
     ogni parte: anche se le scarta tutte, lo scarto si legge.
 
     **Muta** solo `result.warnings` (D176): il cluster di una parte è una
@@ -71,7 +68,7 @@ def split(
 
     kept = [i for i, c in enumerate(result.clusters) if cluster_passes_min_area(c, min_area)]
     result.warnings.extend(
-        f"Part {i} scartato: area {c.outer.area:.2f} mm² sotto soglia {min_area} mm²"
+        f"Part {i} dropped: area {c.outer.area:.2f} under min_area {min_area}"
         for i, c in enumerate(result.clusters) if i not in kept
     )
     parts: List[Result] = []
