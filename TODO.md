@@ -391,7 +391,9 @@ novembre, ramo `no-join-ends` fuso in `main`.
       `_debug/2026-11-06_topo_node-distance`. La faccia sottile D225 nel controllo
       "guastato" è corretta nel banco (`damaged_d225`); il giro nuovo scrive in `notte2/`.
       Da decidere: il foro che una quasi-copia lascia aperto (D226, avvisato, es. seme 1775)
-      il controllo "risposta" lo conta ancora rosso.
+      il controllo "risposta" lo conta ancora rosso. Giro dell'8 novembre in `notte2/`
+      (numeri in `RAPPORTO.md`): da guardare il file vero 3581, nuovo rosso in faces
+      mosso (isole 3 → 4).
       Spazzatura tracciata: `tests/data/mixed_pipeline/*.dwl*`
       (file di blocco AutoCAD, di solito portano utente e PC: non aperti, audit pre-1.0).
       1. Fatto (sopra).
