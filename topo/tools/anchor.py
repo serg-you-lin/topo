@@ -6,7 +6,7 @@ riguarda (MAP.md D43, D138). Pura ricostruzione geometrica, zero giudizio,
 niente a che fare col significato del disegno.
 
 Fase separata e opzionale — NON viene chiamata da heal(): il chiamante la
-attiva quando gli serve (es. prima di split() o di inject(), per sapere quale
+attiva quando gli serve (es. prima di split(), per sapere quale
 testo va con quale pezzo).
 
 ``anchor_texts`` popola ``Text.cluster_ref`` (indice della parte

@@ -71,7 +71,8 @@ def read_network_outlines(net: Network) -> Result:
     disegno l'unico contorno esterno è la cornice: toglierla è del chiamante.
     """
     tol = net.tolerance
-    result = Result(source_file=net.source_file, texts=list(net._texts))
+    result = Result(source_file=net.source_file, source_format=net.source_format, reading="outlines",
+                    tolerance=net.tolerance, max_gap=net.max_gap, texts=list(net._texts))
     result.warnings += net.warnings
     if not net.is_valid:
         result.errors += net.errors

@@ -199,8 +199,5 @@ def _sub_part(i: int, cluster, coords: bool) -> None:
                 fields = item.to_dict() if callable(getattr(item, "to_dict", None)) else {}
                 print(f"    - role={_role(getattr(item, 'role', '?'))} {fields}")
 
-    if cluster.custom:
-        print(f"  custom : {cluster.custom}")
-
     if coords:
         print(f"  outer coords: {[tuple(round(c, 1) for c in pt) for pt in o.points()]}")

@@ -28,7 +28,7 @@ una spline in quanto entità di CAD — lavora su primitive geometriche pure.
 ```
                                   ┌──────────────┐
   DXF / DWG ── topo_dxf ─────────►│              ├── topo_dxf ──► DXF (to_dxf)
-  PDF ──────── topo_pdf (sperim.)►│    Result    ├──────────────► JSON / XML (save_json, save_xml)
+  PDF ──────── topo_pdf (sperim.)►│    Result    ├──────────────► JSON (to_json, save_json)
   geometria ── load_segments ────►│  il modello  ├──────────────► view model (to_view_model)
                                   │              ├──────────────► SVG (to_svg, save_svg)
                                   └──────┬───────┘
@@ -118,7 +118,6 @@ topo/
 │
 ├── tools/        STADI opzionali su un Document/Result (il caller sceglie quali e in che ordine)
 │   ├── anchor.py         anchor_texts()         — àncora i testi ai cluster (anchor_elements sperimentale, D228)
-│   ├── inject.py         inject()                — testi del cluster → data_injector esterno
 │   ├── non_contour.py    non_contour_candidates() — stesso criterio non-contorno
 │   │                     di heal() (D49), esposto per decidere `edge.role`
 │   │                     PRIMA di heal() (D55) — lavora su Document
@@ -129,9 +128,9 @@ topo/
 ├── io/           RENDERER del modello senza dipendenze di formato
 │   ├── svg.py        to_svg(), save_svg()  (fuori dalla 1.0 stabile, D133)
 │   ├── view_model.py to_view_model()  (fuori dalla 1.0 stabile, D133)
-│   └── exporter.py   build_metadata / save_json / save_xml
+│   └── exporter.py   to_json / save_json (solo geometria, D230)
 │
-├── rules/        REGOLE di dominio                     (schema, validazione)
+├── rules/        REGOLE di dominio                     (validazione)
 ├── inspect.py    ispezione: inspect_document, inspect_result (il livello del
 │                 file è dell'adapter: topo_dxf.inspect_dxf)
 └── experimental.py  tutto ciò che si usa senza promessa di stabilità: passi di
@@ -330,18 +329,14 @@ suo ruolo, o su quello di default dell'adapter (vedi la tabella nel README e
   loro immagine `rendered` se ce l'hanno): in un file per parte, quelli che
   `split` ha dato alla parte
 
-### 6. export / inject
+### 6. export JSON
 
-`save_json` / `save_xml` scrivono i metadati per parte secondo lo schema
-(`rules/metadata_schema.py`), fondendo tre livelli (D44): `cluster.summary`
-(conteggio grezzo, generico, sempre disponibile — `{nome}_count` per ogni
-collezione attaccata a `cluster.detected`), `cluster.custom`, ed
-`extra`/`extra_metadata` — un
-dizionario o una callback esplicita del chiamante (stesso idioma di
-`data_injector`) per una detection propria che topo non può conoscere.
-`inject` serve solo a passare i testi dentro l'outer a un `data_injector`
-esterno che restituisce codice / materiale / spessore, e a metterli in
-`cluster.custom`.
+`to_json` / `save_json` scrivono `Result.to_dict()`: da dove arriva la
+geometria (`source_format`), come è stata letta (`reading`, `tolerance`,
+`max_gap`), gli avvisi, e per ogni parte i fatti esatti sulle primitive (area,
+perimetri, bbox, conteggi di `detected`). Niente coordinate, niente di un
+processo (D230, D231): materiale, spessore o un codice pezzo li aggiunge il
+consumatore con `extra(cluster)`, che non può sostituire un campo di topo.
 
 ---
 

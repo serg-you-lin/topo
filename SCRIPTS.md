@@ -33,9 +33,7 @@ OUTDIR = r"pipeline_output"                   # scritto in <repo>/pipeline_outpu
 | 05 | `05_to_dxf.py` | `topo_dxf.to_dxf` | render del modello in un DXF nuovo; `filter_cluster`, `include_trash` |
 | 06 | `06_split.py` | `split` + `topo_dxf.to_dxf` | un `Result` per parte (puro, senza formato), poi un DXF ciascuno; `namer`, `exclude_types` |
 | 07 | `07_split_to_files.py` | `heal` → `split` → `to_dxf` | pipeline multi-pezzo completa su disco |
-| 08 | `08_inject.py` | `inject` | arricchimento CAM dai testi del disegno (`result.texts`, niente ezdxf) |
-| 09 | `09_export.py` | `to_json`, `save_json`, `save_xml`, `to_nester_input` | metadati fuori da topo |
-| 10 | `10_metadata_xdata.py` | `topo_dxf.write_metadata_to_dxf`, `topo_dxf.read_metadata_from_dxf`, `schema=` | metadati DENTRO il DXF (XDATA) + schema custom |
+| 09 | `09_export.py` | `to_json`, `save_json(extra=)` | i fatti del Result in JSON, solo geometria (D230) |
 | 11 | `11_batch_heal.py` | `topo_dxf.load_dxf` + `heal` + `topo_dxf.to_dxf` | heal di tutti i DXF di una cartella → `X_healed.dxf` + `.json` a fianco |
 | 12 | `12_to_svg.py` | `to_view_model`, `to_svg`, `save_svg` | JSON per un renderer esterno + SVG del modello |
 | 14 | `14_style_classification.py` | `RoleRule`, `name_rules`, `load_dxf(role_rules=...)` | assegnare il ruolo da nome, tratteggio, colore o una combinazione (D63) |

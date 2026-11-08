@@ -199,6 +199,7 @@ def load_geometry(
     return Document(
         edges=edges,
         source_path=source_path or "<load_geometry>",
+        source_format="geometry",
         source_meta={"tolerance": tolerance},
     )
 
@@ -228,5 +229,6 @@ def load_segments(
     return Document(
         edges=edges,
         source_path=source_path or "<load_segments>",
+        source_format="geometry",
         source_meta={"tolerance": tolerance},
     )

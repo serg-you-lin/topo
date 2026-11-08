@@ -1,256 +1,54 @@
 """
-exporter.py
------------
-Esporta un Result in formati consumabili dall'esterno.
-Punto di uscita unico per i metadati senza formato di disegno: JSON, XML,
-nester. Gli stessi metadati come XDATA DXF li scrive `topo_dxf` (D129).
-
-I nomi e i campi dei metadati sono gestiti ESCLUSIVAMENTE da metadata_schema.py.
-Per aggiungere, rinominare o rimuovere un campo — modificare solo metadata_schema.py.
+topo/io/exporter.py
+-------------------
+Il `Result` come JSON, solo geometria (D230). La sola fonte dei campi è
+`Result.to_dict()`; qui si aggiungono i campi di un consumatore e si scrive.
 """
 
 import json
-import xml.etree.ElementTree as ET
 from typing import Callable, Optional
-from xml.dom import minidom
-from ..core.geometry.rings import ring_perimeter
-from ..core.primitives.polygon_builder import curve_polygon
-from ..model import Result, Cluster
-from ..rules.metadata_schema import METADATA_FIELDS
+
+from ..model import Cluster, Result
 
 
-# ---------------------------------------------------------------------------
-# Unica fonte di verità per i metadati
-# ---------------------------------------------------------------------------
+def _with_extra(result: Result, extra: Optional[Callable[[Cluster], dict]]) -> dict:
+    """`result.to_dict()` con i campi di `extra(cluster)` uniti a ogni cluster;
+    una chiave che topo scrive già è un errore, mai una sostituzione (D230)."""
+    data = result.to_dict()
+    if extra is None:
+        return data
+    for cluster, fields in zip(result.clusters, data["clusters"]):
+        added = extra(cluster) or {}
+        clash = sorted(set(added) & set(fields))
+        if clash:
+            raise ValueError(
+                f"extra() returned keys topo already writes for cluster {cluster.label!r}: {clash}"
+            )
+        fields.update(added)
+    return data
 
-def build_metadata(cluster: Cluster, *, schema: Optional[dict] = None, extra: Optional[dict] = None) -> dict:
+
+def to_json(result: Result, *, indent: int = 2,
+            extra: Optional[Callable[[Cluster], dict]] = None) -> str:
     """
-    Costruisce il dict dei metadati per un Cluster
-    applicando lo schema definito in metadata_schema.py.
+    The result as a JSON string, geometry only (D230, D231).
 
-    Legge la sorgente da ogni campo dello schema:
-        "cluster"       → attributo diretto di Cluster (label, source_file)
-        "custom"     → cluster.custom (material, thickness, quantity, ecc.)
-        "calculated" → calcolato da Shapely (area, perimetri, bbox)
+    Top level: `source_file`, `source_format`, `reading`, `tolerance`,
+    `max_gap`, `is_valid`, `warnings`, `errors`, `loose_count`, `text_count`,
+    `clusters`. Each cluster: `label`, `area`, `outer_perimeter`,
+    `inner_perimeter`, `inner_count`, `bbox`, `detected` (items per
+    collection). Drawing units, exact on the primitives, no coordinates
+    (`topo_dxf.to_dxf` carries the curves).
 
-    Args:
-        cluster:   Cluster da cui estrarre i dati
-        schema: schema opzionale — se None usa METADATA_FIELDS da metadata_schema.py
-        extra:  campi extra del chiamante (es. una detection custom, "quante
-                flange in su" — topo non può conoscerla). Uniti a `meta` a
-                fine funzione, **fuori dallo schema**: passarli è già la scelta
-                esplicita del chiamante, non serve un secondo cancello
-                (branch refactor/detect-overlay, MAP.md D44).
+    `extra(cluster) -> dict` adds a consumer's fields (material, a part code,
+    anything topo cannot know) to each cluster. A key topo already writes
+    raises `ValueError`.
     """
-    if schema is None:
-        schema = METADATA_FIELDS
-
-    d = cluster.to_dict()
-    # cluster.summary (conteggio grezzo dell'overlay, generico) sotto
-    # cluster.custom (ciò che un consumatore o inject() ci ha scritto): il più
-    # specifico vince (MAP.md D44, D90).
-    custom = {
-        **cluster.summary,
-        **(d.get("custom", {}) or {}),
-    }
-
-    outer_perimeter = 0.0
-    inner_perimeter = 0.0
-    try:
-        # perimetro esatto sulle primitive (D166), non sulle corde del poligono
-        outer_perimeter = round(ring_perimeter(cluster.outer.segments), 4)
-        inner_perimeter = round(
-            sum(ring_perimeter(i.segments) for i in cluster.inners), 4
-        )
-    except Exception:
-        pass
-
-    calculated = {
-        "area"            : d.get("area"),
-        "inner_contours_count" : d.get("inner_contours_count"),
-        "bbox"            : d.get("bbox"),
-        "outer_perimeter" : outer_perimeter,
-        "inner_perimeter" : inner_perimeter,
-        "total_perimeter" : round(outer_perimeter + inner_perimeter, 4),
-    }
-
-    cluster_fields = {
-        "label"       : d.get("label", ""),
-        "source_file" : d.get("source_file", ""),
-    }
-
-    meta = {}
-    for topo_key, (output_name, default, source) in schema.items():
-        if source == "calculated":
-            value = calculated.get(topo_key)
-        elif source == "custom":
-            value = custom.get(topo_key)
-        elif source == "cluster":
-            value = cluster_fields.get(topo_key)
-        else:
-            value = None
-
-        if value is not None:
-            meta[output_name] = value
-        elif default is not None:
-            meta[output_name] = default
-
-    if extra:
-        meta.update(extra)
-
-    return meta
+    return json.dumps(_with_extra(result, extra), indent=indent, ensure_ascii=False)
 
 
-# ---------------------------------------------------------------------------
-# Export JSON
-# ---------------------------------------------------------------------------
-
-def save_json(
-    result: Result, path: str, *, indent: int = 2,
-    extra_metadata: Optional[Callable[[Cluster], dict]] = None,
-    schema: Optional[dict] = None,
-):
-    """
-    Salva i metadati in JSON secondo lo schema di metadata_schema.py.
-    Le coordinate non vengono incluse.
-
-    `extra_metadata(cluster) -> dict`, se passato, aggiunge campi extra del
-    chiamante nell'output di ogni cluster — stesso idioma di
-    `data_injector`: callback esplicita, mai auto-discovery. Serve
-    a un consumatore con una detection propria (es. una `FlangeViewHint` sua)
-    che topo non può conoscere (MAP.md D44).
-
-    `schema` sostituisce lo schema di metadata_schema.py per questa chiamata
-    sola (D176: niente schema globale).
-    """
-    output = {
-        "source_file" : result.source_file,
-        "is_valid"    : result.is_valid,
-        "cluster_count"  : result.cluster_count,
-        "warnings"    : result.warnings,
-        "errors"      : result.errors,
-        "clusters"       : [
-            build_metadata(cluster, schema=schema, extra=extra_metadata(cluster) if extra_metadata else None)
-            for cluster in result.clusters
-        ],
-    }
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(output, f, indent=indent, ensure_ascii=False)
-    print(f"[topo] JSON salvato in {path}")
-
-
-def to_json(
-    result: Result, *, indent: int = 2,
-    extra_metadata: Optional[Callable[[Cluster], dict]] = None,
-    schema: Optional[dict] = None,
-) -> str:
-    """Restituisce i metadati come stringa JSON secondo schema. Vedi `save_json` per `extra_metadata` e `schema`."""
-    output = {
-        "source_file" : result.source_file,
-        "is_valid"    : result.is_valid,
-        "cluster_count"  : result.cluster_count,
-        "warnings"    : result.warnings,
-        "errors"      : result.errors,
-        "clusters"       : [
-            build_metadata(cluster, schema=schema, extra=extra_metadata(cluster) if extra_metadata else None)
-            for cluster in result.clusters
-        ],
-    }
-    return json.dumps(output, indent=indent, ensure_ascii=False)
-
-
-# ---------------------------------------------------------------------------
-# Export XML
-# ---------------------------------------------------------------------------
-
-def save_xml(
-    result: Result, path: str, *,
-    extra_metadata: Optional[Callable[[Cluster], dict]] = None,
-    schema: Optional[dict] = None,
-):
-    """
-    Salva i metadati in XML secondo lo schema di metadata_schema.py.
-    Vedi `save_json` per `extra_metadata` e `schema`.
-    Struttura:
-        <topo>
-            <source_file>...</source_file>
-            <is_valid>true</is_valid>
-            <clusters>
-                <cluster>
-                    <label>...</label>
-                    <area_mm2>...</area_mm2>
-                    <bbox>
-                        <minx>...</minx>
-                        ...
-                    </bbox>
-                </cluster>
-            </clusters>
-        </topo>
-    """
-    root = ET.Element("topo")
-
-    ET.SubElement(root, "source_file").text = result.source_file
-    ET.SubElement(root, "is_valid").text    = str(result.is_valid).lower()
-    ET.SubElement(root, "cluster_count").text  = str(result.cluster_count)
-
-    if result.warnings:
-        warnings_el = ET.SubElement(root, "warnings")
-        for w in result.warnings:
-            ET.SubElement(warnings_el, "warning").text = w
-
-    if result.errors:
-        errors_el = ET.SubElement(root, "errors")
-        for e in result.errors:
-            ET.SubElement(errors_el, "error").text = e
-
-    clusters_el = ET.SubElement(root, "clusters")
-    for cluster in result.clusters:
-        meta = build_metadata(cluster, schema=schema, extra=extra_metadata(cluster) if extra_metadata else None)
-        cluster_el = ET.SubElement(clusters_el, "cluster")
-        _dict_to_xml(meta, cluster_el)
-
-    xml_str = minidom.parseString(
-        ET.tostring(root, encoding='unicode')
-    ).toprettyxml(indent="  ")
-
-    lines = xml_str.splitlines()
-    if lines[0].startswith("<?xml"):
-        xml_str = "\n".join(lines[1:])
-
-    with open(path, 'w', encoding='utf-8') as f:
-        f.write('<?xml version="1.0" encoding="utf-8"?>\n')
-        f.write(xml_str)
-
-    print(f"[topo] XML salvato in {path}")
-
-
-def _dict_to_xml(d: dict, parent: ET.Element):
-    """Converte ricorsivamente un dict in sotto-elementi XML."""
-    for key, value in d.items():
-        child = ET.SubElement(parent, str(key))
-        if isinstance(value, dict):
-            _dict_to_xml(value, child)
-        else:
-            child.text = str(value)
-
-
-# ---------------------------------------------------------------------------
-# Export nester (coordinate grezze — non usa schema)
-# ---------------------------------------------------------------------------
-
-def to_nester_input(result: Result) -> list:
-    """
-    Produce l'input per il nester: coordinate grezze + metadati base.
-    Non usa metadata_schema — il nester ha bisogno delle coordinate, non dei nomi.
-    """
-    clusters = []
-    for cluster in result.clusters:
-        clusters.append({
-            "label"       : cluster.label,
-            "source_file" : cluster.source_file,
-            "area"        : cluster.area,
-            "bbox"        : cluster.bbox,
-            "outer_coords": list(curve_polygon(cluster.outer).exterior.coords),
-            "holes_coords": [list(curve_polygon(h).exterior.coords) for h in cluster.inners],
-        })
-    return clusters
+def save_json(result: Result, path: str, *, indent: int = 2,
+              extra: Optional[Callable[[Cluster], dict]] = None) -> None:
+    """Write `to_json(result, indent=indent, extra=extra)` to `path` (UTF-8)."""
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(to_json(result, indent=indent, extra=extra))

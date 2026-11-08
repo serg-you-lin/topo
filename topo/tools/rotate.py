@@ -16,7 +16,7 @@ angoli su una singola parte, senza pagare il costo di un `heal()` ad ogni
 tentativo.
 
 Cosa NON viene ruotato, di proposito, non per svista:
-- `cluster.detected`/`cluster.custom` — overlay a schema libero (D44), topo
+- `cluster.detected` — overlay a schema libero (D44), topo
   non sa cosa contengono; se hai già fatto `detect_flat()`, quei dati (bending
   line, fori tipizzati, ...) restano nelle coordinate vecchie dopo una
   rotazione. Fai `detect_flat()` DOPO aver ruotato, non prima.
@@ -119,7 +119,7 @@ def rotate_cluster(cluster: Cluster, angle_rad: float, origin: Point = (0.0, 0.0
     CCW) attorno a `origin` — segmenti nativi (`.rotated()`) e poligono
     (`shapely.affinity.rotate`) in un colpo solo, nessun `heal()`.
 
-    `cluster.detected`/`cluster.custom` NON sono toccati — vedi il modulo.
+    `cluster.detected` NON è toccato — vedi il modulo.
     L'albero `depth`/`parent` fra outer e inner è preservato (i nuovi
     `Contour` puntano ai NUOVI oggetti ruotati, non a quelli vecchi).
 

@@ -11,6 +11,8 @@ non viene più toccato fino a write().
     texts       : i testi della sorgente (D138) — dati puri, input per write()
     source_meta : header rilevanti del file sorgente ($INSUNITS, $MEASUREMENT, …)
     source_path : percorso del file aperto
+    source_format: da che cosa arriva la geometria, detto dall'adapter
+                  (`dxf`, `dwg`, `pdf`, `geometry`, …; stringa aperta, D231)
     warnings    : diagnostica raccolta da load_dxf() sul file grezzo — audit,
                   INSERT non esplosi, entità con Z != 0 riportate sul piano,
                   duplicati rimossi. topo.validate_document(doc) le rilancia.
@@ -46,6 +48,7 @@ class Document:
     texts:       List[Text]           = field(default_factory=list)
     source_meta: Dict[str, Any]      = field(default_factory=dict)
     source_path: str                 = ""
+    source_format: str               = ""
     warnings:    List[str]           = field(default_factory=list)
 
     def node_tolerance(self, *, override: Optional[float] = None) -> float:

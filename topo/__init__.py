@@ -23,7 +23,6 @@ Workflow consigliato (file singolo):
     result = network.faces()                  # o network.outlines() per un foglio di viste
     # fori, pieghe, incisioni: lettura di processo, in snapbend (MAP.md D88)
 
-    topo.inject(result)
     topo_dxf.to_dxf(result, doc).saveas("pezzo_healed.dxf")
     topo.save_json(result, "pezzo.json")
 
@@ -39,17 +38,11 @@ Document dalla geometria.
 from .core.geometry_input import load_geometry, load_segments
 from .core.readings.heal import heal
 from .core.readings.network import Network
-from .tools.inject       import inject
 from .tools.anchor       import anchor_texts
 # Un Result per parte, senza formato: ogni exporter ne scrive una (D124, D129)
 from .tools.split        import split, DEFAULT_MIN_CLUSTER_AREA
 from .rules.validator     import validate_document, validate_result
-from .io.exporter         import (
-    to_json,
-    save_json,
-    save_xml,
-    build_metadata,
-)
+from .io.exporter         import to_json, save_json
 # Conversione esplicita a shapely per overlay, buffer, WKT: il modello non
 # espone tipi shapely (MAP.md D166).
 from .io.shapes           import to_shapely
@@ -111,7 +104,6 @@ __all__ = [
     "Network",
     "split",
     "DEFAULT_MIN_CLUSTER_AREA",
-    "inject",
     "anchor_texts",
     "geometry",
     "experimental",
@@ -120,10 +112,7 @@ __all__ = [
     # Export
     "to_json",
     "save_json",
-    "save_xml",
     "to_shapely",
-    # Metadati (gli stessi come XDATA DXF: topo_dxf.write_metadata_to_dxf)
-    "build_metadata",
     # Utilità
     # Ispezione / debug (Document → Result; il file grezzo: topo_dxf.inspect_dxf)
     "inspect_document",

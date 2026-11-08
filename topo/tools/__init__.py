@@ -6,13 +6,11 @@ Stadi opzionali e componibili su un ``Result`` già prodotto da
 sceglie quali eseguire e in che ordine.
 
 - ``anchor_texts`` — àncora ogni testo al cluster che lo contiene
-- ``inject``       — passa i testi di un cluster a un data_injector esterno
 
 È il pattern che un interprete di disegno (progetto separato) generalizza e
 orchestra dall'alto.
 """
 
 from .anchor import anchor_texts
-from .inject import inject
 
-__all__ = ["anchor_texts", "inject"]
+__all__ = ["anchor_texts"]

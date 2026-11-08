@@ -341,6 +341,7 @@ def load_dxf(
         texts=texts,
         source_meta=meta,
         source_path=str(path),
+        source_format="dwg" if str(path).lower().endswith(".dwg") else "dxf",
         warnings=warnings,
     )
 
@@ -374,7 +375,7 @@ def document_from_msp(
     }
     return Document(
         edges=edges, texts=texts,
-        source_meta=meta, source_path=source_path,
+        source_meta=meta, source_path=source_path, source_format="dxf",
         warnings=list(adapter.warnings),
     )
 

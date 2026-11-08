@@ -27,7 +27,6 @@ except ImportError as exc:  # pragma: no cover - dipende dall'ambiente
 
 from .loader import load_dxf, document_from_msp
 from .writer import to_dxf
-from .xdata import write_metadata_to_dxf, read_metadata_from_dxf
 from .inspect import inspect_dxf, inspect_file
 from .layers import (
     DEFAULT_LAYERS,
@@ -44,8 +43,6 @@ __all__ = [
     "load_dxf",
     "document_from_msp",
     "to_dxf",
-    "write_metadata_to_dxf",
-    "read_metadata_from_dxf",
     "inspect_dxf",
     "inspect_file",
     "DEFAULT_LAYERS",
