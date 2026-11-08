@@ -477,6 +477,11 @@ D222 files by what a test proves: `test_role_palette` (one palette in DXF and SV
 are one promise end to end and are not split by layer. A test moves when its subject is another one (e.g. the DXF
 dimension string inside the anchoring tests), and a move that would mean rewriting the test is not a move.
 
+### D225 — A near-copy of a line within `tolerance` closes a thin face, and that is the right reading (Federico, 8 November).
+Two parallel lines 0.18 mm apart at tolerance 0.5: their ends join, the ring is closed, `faces()` gives it as an inner
+(`outlines()` does not). They are two lines, not one (D184); merging near-copies is the consumer's call before `heal`.
+A check that counts this red is wrong, not topo. Documented in LLM.md; no change to the code.
+
 ## Open questions
 
 - **Name of the role `outer`** in the outlines reading: unresolved; it stays

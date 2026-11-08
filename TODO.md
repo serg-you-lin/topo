@@ -384,7 +384,9 @@ novembre, ramo `no-join-ends` fuso in `main`.
       fedeltà sui fogli > 500 bordi solo con `--full`, mai scritto).
       Da guardare: i rossi nuovi della forza bruta col codice di oggi (4 file veri,
       36 + 94 semi inventati); numeri in `RAPPORTO.md` del banco
-      `_debug/2026-11-06_topo_node-distance`.
+      `_debug/2026-11-06_topo_node-distance`. Il controllo "guastato" del banco conta
+      rossa la faccia sottile di una copia entro tolleranza (`offset_dup`), che è giusta
+      (D225): da correggere nel banco prima di rileggere i suoi numeri.
       Spazzatura tracciata: `tests/data/mixed_pipeline/*.dwl*`
       (file di blocco AutoCAD, di solito portano utente e PC: non aperti, audit pre-1.0).
       1. Fatto (sopra).
