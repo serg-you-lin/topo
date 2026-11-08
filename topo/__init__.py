@@ -40,7 +40,7 @@ from .core.geometry_input import load_geometry, load_segments
 from .core.readings.heal import heal
 from .core.readings.network import Network
 from .tools.inject       import inject
-from .tools.anchor       import anchor_texts, measured_references, pointer_target
+from .tools.anchor       import anchor_texts
 # Un Result per parte, senza formato: ogni exporter ne scrive una (D124, D129)
 from .tools.split        import split, DEFAULT_MIN_CLUSTER_AREA
 from .rules.validator     import validate_document, validate_result
@@ -113,8 +113,6 @@ __all__ = [
     "DEFAULT_MIN_CLUSTER_AREA",
     "inject",
     "anchor_texts",
-    "pointer_target",
-    "measured_references",
     "geometry",
     "experimental",
     "primitives",

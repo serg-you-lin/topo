@@ -1008,23 +1008,39 @@ topo_dxf.to_dxf(result, doc, role_styles={
 ### `anchor_texts`
 
 ```python
-topo.anchor_texts(result: Result, *, snap_distance=0.0,
-                  pointer_distance=0.5) -> None
+topo.anchor_texts(result: Result, *, snap_distance=0.0) -> None
 ```
 
-Collega i testi alla geometria. Per ogni testo `cluster_ref` = indice del
+Collega ogni testo alla parte che lo contiene: `cluster_ref` = indice del
 cluster il cui contorno esterno ne contiene la posizione (con
-`snap_distance` > 0, anche il più vicino entro quella distanza). Per ogni
-testo con `pointer` anche `target` — vedi `pointer_target`; per ogni testo
-con `measured_points` `references` — vedi `measured_references`.
+`snap_distance` > 0, anche il più vicino entro quella distanza, D82). Su quale
+elemento cade una quota o una freccia è `topo.experimental.anchor_elements`
+(D228).
 
 **Muta** i testi di `result` e ritorna `None` (D176).
 
-### `pointer_target`
+#### Su quale elemento cade un testo — sperimentale (D228)
+
+Stanno in `topo.experimental`: i candidati dipendono dalla lettura (contorni
+e pezzi chiusi di `loose`, mai una curva aperta), così su un foglio di viste
+letto con `outlines()` la maggior parte delle quote non si lega a niente; e
+cosa mette in relazione una quota (datum, foro rispetto a bordo) è di chi
+legge il disegno. Obiettivo 1.x: il legame sugli edge della rete, uguale per
+ogni lettura.
 
 ```python
-topo.pointer_target(result: Result, text: Text, *,
-                    distance=0.5) -> Any | None
+topo.experimental.anchor_elements(result: Result, *, distance=0.5) -> None
+```
+
+Per ogni testo con `pointer` imposta `target` (`pointer_target`), per ogni
+testo con `measured_points` `references` (`measured_references`). **Muta** i
+testi di `result` e ritorna `None`.
+
+##### `pointer_target`
+
+```python
+topo.experimental.pointer_target(result: Result, text: Text, *,
+                                 distance=0.5) -> Any | None
 ```
 
 L'elemento su cui cade la punta (`pointer[0]`) di `text`: l'oggetto stesso —
@@ -1040,11 +1056,11 @@ altrimenti `None` (freccia fuori dal pezzo). Non legge la stringa.
 
 **Non muta** niente.
 
-### `measured_references`
+##### `measured_references`
 
 ```python
-topo.measured_references(result: Result, text: Text, *,
-                         distance=0.5) -> list
+topo.experimental.measured_references(result: Result, text: Text, *,
+                                      distance=0.5) -> list
 ```
 
 Gli elementi su cui cadono i `measured_points` di `text`, gli oggetti stessi
@@ -1378,11 +1394,11 @@ dice già: il formato resta in `source_kind`.
 | `cluster_ref` | indice del cluster che lo contiene (da `anchor_texts`) |
 | `source_kind` | il tipo di entità nel formato sorgente (`"TEXT"`, `"MTEXT"`, `"DIMENSION"`, `"LEADER"`, `"MULTILEADER"` in un DXF) |
 | `pointer` | una polilinea che parte dalla punta (`pointer[0]`): dove il testo indica |
-| `target` | l'elemento su cui cade la punta, l'oggetto stesso (da `anchor_texts`, D177); fuori da `repr` e da `==` |
+| `target` | l'elemento su cui cade la punta, l'oggetto stesso (da `topo.experimental.anchor_elements`, D177); fuori da `repr` e da `==` |
 | `measured_points` | i punti sulla geometria fra cui è stato misurato il numero: due capi; due punti opposti di un cerchio; un punto di un arco |
 | `measure` | il numero che la sorgente dice di aver misurato; `None` se non lo dice (un PDF) |
 | `measure_is_angle` | `measure` è un angolo, non una lunghezza |
-| `references` | gli elementi su cui cadono i `measured_points`, gli oggetti stessi (da `anchor_texts`, D177); fuori da `repr` e da `==` |
+| `references` | gli elementi su cui cadono i `measured_points`, gli oggetti stessi (da `topo.experimental.anchor_elements`, D177); fuori da `repr` e da `==` |
 | `rendered` | l'immagine che la sorgente disegna attorno alla stringa (linee, frecce, altri testi): `to_dxf` riscrive quella invece della sola stringa |
 
 `role` dice cosa è il testo per chi lo usa (`"title_block"`, `"part_code"`,

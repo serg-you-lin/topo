@@ -17,6 +17,8 @@ in una minor; qui resta come alias con avviso per due minor.
   fuse con la soglia del chiamante, dove vuole lui (D226);
 - `simplify_points` (D33, D141), `rotate_*` (D46), `to_nester_input` (D18),
   `to_view_model` / `to_svg` / `save_svg` (D133);
+- `anchor_elements` / `pointer_target` / `measured_references`: su quale
+  elemento cade una quota o una freccia (D228; obiettivo: sugli edge grezzi);
 - le strisce fra bordi affacciati: `facing_boundaries`, `gap`, `link`,
   `unconnected_regions`, `open_boundaries` (D134, D142).
 
@@ -42,6 +44,7 @@ from .tools.rotate import rotate_result, rotate_cluster, rotate_document, rotate
 from .io.exporter import to_nester_input
 from .io.view_model import to_view_model
 from .io.svg import to_svg, save_svg
+from .tools.anchor import anchor_elements, pointer_target, measured_references
 from .tools.strips import (
     facing_boundaries, Facing, gap, Gap, link, Link, Strip,
     unconnected_regions, open_boundaries, Opened,
@@ -65,6 +68,7 @@ __all__ = [
     "rotate_result", "rotate_cluster", "rotate_document", "rotate_to_longest",
     "to_nester_input",
     "to_view_model", "to_svg", "save_svg",
+    "anchor_elements", "pointer_target", "measured_references",
     "facing_boundaries", "Facing", "gap", "Gap", "link", "Link", "Strip",
     "unconnected_regions", "open_boundaries", "Opened",
 ]
