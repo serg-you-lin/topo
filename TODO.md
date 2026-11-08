@@ -678,7 +678,6 @@ Aperte:
 
 ## Aperti minori
 
-- `_tmp_polylines_check.py` e `_tmp_topology_audit.py` nella radice del repo sono tracciati da git (visti il 7 novembre nella rinomina dei golden): da guardare se servono, altrimenti via.
 
 - `contour_minus` rifiuta i bordi che corrono uno sull'altro (`ValueError`):
   da gestire se un caso vero lo chiede (D118).
