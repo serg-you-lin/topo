@@ -7,7 +7,7 @@ API topo usate:
              topo_dxf.to_dxf ne scrive uno.
 
 Per salvare davvero: itera il risultato e chiama .saveas() (vedi 07).
-Le parti sotto min_area (mm²) vengono scartate.
+Le parti sotto min_area (unità del disegno²), se la passi, vengono scartate.
 
     python 06_split.py
 """

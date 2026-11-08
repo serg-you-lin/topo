@@ -50,7 +50,6 @@ import ezdxf
 
 import topo
 import topo_dxf
-from topo import DEFAULT_MIN_CLUSTER_AREA
 from topo_dxf.text_extractor import TEXT_TYPES
 from topo_dxf.layers import (
     LAYER_OUTER, LAYER_INNER, TRASH_LAYER,
@@ -101,7 +100,7 @@ def _read_children(out_dir: str) -> dict[str, object]:
 
 
 
-def _split_files(result, source_doc, out_dir, *, min_area=DEFAULT_MIN_CLUSTER_AREA,
+def _split_files(result, source_doc, out_dir, *, min_area=0.0,
                  namer=None, **write_kwargs):
     """topo.split() puro, poi to_dxf + saveas per parte (D129): le opzioni di
     scrittura (`include_texts`, `exclude_types`, ...) vanno a to_dxf."""
@@ -115,7 +114,7 @@ def _split_files(result, source_doc, out_dir, *, min_area=DEFAULT_MIN_CLUSTER_AR
 
 
 def _split_to_files(doc, output_folder, label="", source_file="", tolerance=None,
-                    namer=None, min_area=DEFAULT_MIN_CLUSTER_AREA, is_structural=None,
+                    namer=None, min_area=0.0, is_structural=None,
                     **write_kwargs):
     """heal → split → to_dxf + saveas per parte: la ricetta che era
     `topo_dxf.split_to_files`, tolta dalla superficie (D176) e tenuta qui

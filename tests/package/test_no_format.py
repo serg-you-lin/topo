@@ -98,7 +98,7 @@ class TestSplitIsModel(unittest.TestCase):
     def test_min_area_drops_with_warning(self):
         parts = topo.split(self.result, min_area=20000)
         self.assertEqual(parts, [])
-        self.assertTrue(any("sotto soglia" in w for w in self.result.warnings))
+        self.assertTrue(any("under min_area" in w for w in self.result.warnings))
 
     def test_each_part_writes_to_dxf(self):
         for part in topo.split(self.result):

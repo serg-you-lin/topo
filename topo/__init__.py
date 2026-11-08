@@ -40,7 +40,7 @@ from .core.readings.heal import heal
 from .core.readings.network import Network
 from .tools.anchor       import anchor_texts
 # Un Result per parte, senza formato: ogni exporter ne scrive una (D124, D129)
-from .tools.split        import split, DEFAULT_MIN_CLUSTER_AREA
+from .tools.split        import split
 from .rules.validator     import validate_document, validate_result
 from .io.exporter         import to_json, save_json
 # Conversione esplicita a shapely per overlay, buffer, WKT: il modello non
@@ -103,7 +103,6 @@ __all__ = [
     "heal",
     "Network",
     "split",
-    "DEFAULT_MIN_CLUSTER_AREA",
     "anchor_texts",
     "geometry",
     "experimental",
