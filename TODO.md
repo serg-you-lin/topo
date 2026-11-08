@@ -394,6 +394,13 @@ novembre, ramo `no-join-ends` fuso in `main`.
       il controllo "risposta" lo conta ancora rosso. Giro dell'8 novembre in `notte2/`
       (numeri in `RAPPORTO.md`): da guardare il file vero 3581, nuovo rosso in faces
       mosso (isole 3 → 4).
+      `near_copies` (`topo/core/base/normalizer.py:449`) prende per copia ogni retta più
+      corta coi due capi entro `distance` da una più lunga, senza chiedere parallele né
+      sovrapposte: nel seme 215 (nessuna copia fra i guasti) 545 coppie, tutte sotto 1 mm,
+      354 a più di 5°. L'help di `near-copy` propone la più grande (> 0,1 mm in 303 su 346) e
+      fondendo apre i contorni. Rapporto e DXF in `_debug/2026-11-08_topo_forza-bruta-gruppi`.
+      Da decidere col banco: "mosso" col bordo entro la tolleranza (D143) invece dell'area
+      a 1e-5; 26 rossi veri con un guasto solo (DXF A-E).
       Spazzatura tracciata: `tests/data/mixed_pipeline/*.dwl*`
       (file di blocco AutoCAD, di solito portano utente e PC: non aperti, audit pre-1.0).
       1. Fatto (sopra).
