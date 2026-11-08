@@ -40,8 +40,6 @@ DATA = {
     'topo.split': ('result',),
     'topo.inject': ('result',),
     'topo.anchor_texts': ('result',),
-    'topo.pointer_target': ('result', 'text'),
-    'topo.measured_references': ('result', 'text'),
     'topo.to_json': ('result',),
     'topo.save_json': ('result', 'path'),
     'topo.save_xml': ('result', 'path'),

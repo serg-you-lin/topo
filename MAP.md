@@ -492,6 +492,12 @@ at a time. The `help` value is computed from the case and rounded up, never a gu
 One Diagnostic per kind (Federico): the text shows three places, `points` holds all. `near-gap`: a free end whose
 partner, by the gap rule itself, is beyond `max_gap` and within twice it; past that it is geometry, not a missed gap.
 
+### D228 — linking a text to the elements it touches is experimental; the declared goal is the link on the raw edges (Federico, 8 November).
+`anchor_texts` sets only `cluster_ref` (containment, D82). `target`/`references` come from `topo.experimental.anchor_elements`
+(with `pointer_target`, `measured_references`): their candidates depend on the reading (with `outlines()` on view sheets 63%
+of the dimensions link nothing, open curves are never candidates), and what a dimension relates (datum, hole to edge) is the
+reader's. Goal, 1.x: one new form that links to the edges of the network, independent of the reading; nothing in between.
+
 ## Open questions
 
 - **Name of the role `outer`** in the outlines reading: unresolved; it stays

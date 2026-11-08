@@ -379,7 +379,7 @@ novembre, ramo `no-join-ends` fuso in `main`.
       Piano A, si riparte da qui: Federico toglie a mano le viste 3D (le spline) da
       `golden_anchoring/anch_02`, `anch_03` e i loro `_noframe` (~32 s dei 79 dei fogli
       pesanti). Gli agganci non sono mai sulle viste 3D, quindi il golden di ancoraggio
-      deve passare invariato: se cambia si guarda prima di rigenerare. Le viste 3D restano
+      archiviato (`_archive/golden_anchoring/`, D228) deve dare lo stesso risultato. Le viste 3D restano
       in `golden_outlines/`. Poi rimisurare e decidere `--full` (piano B: `TestScrambled` e
       fedeltà sui fogli > 500 bordi solo con `--full`, mai scritto).
       Da guardare: i rossi nuovi della forza bruta col codice di oggi (4 file veri,
@@ -413,6 +413,7 @@ mai rigenerando alla cieca.
 
 Difetti trovati il 6 novembre (fatti, nessuna analisi):
 - Agganci dei testi persi con D161 (golden di `golden_anchoring/` rigenerati il 7 novembre, Federico li accetta senza giudicarli): testi rimasti senza aggancio anch_02 3, anch_03 1, anch_04 10, anch_05 7, anch_07 1; tipico un richiamo "M6 n°16 fori" che era legato a una figurina 6×3 (inner di `faces()` di prima) e oggi a niente. Da guardare con snapdraw.
+- Obiettivo dichiarato di D228: `target`/`references` sugli edge della rete, uguali per ogni lettura (oggi `anchor_elements`, sperimentale, non vede le curve aperte). Una forma nuova sola, poi promossa. I golden di aggancio sono fuori dalla suite, in `_archive/golden_anchoring/` (test + `json/`, i DXF restano in `tests/data/golden_anchoring/`): vanno bene come base dei golden futuri.
 - `tests/engine/readings/test_non_structural_role.py`, stesso disegno, righe
   senza ruolo (`unknown`) a 0,5: `faces()` 0 cluster, `is_valid` False,
   435 curve in `loose` su 475 edge. Con `is_structural=lambda r: True` e

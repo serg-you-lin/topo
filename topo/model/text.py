@@ -11,9 +11,10 @@ lo dice già: il formato resta in `source_kind`, per riscriverlo fedele.
 Divisione dei compiti:
     - adapter → read/write formato ↔ modello, solo conoscenza di formato (dove
       sta il testo, come si appiattisce il blocco di una quota DXF).
-    - ``anchor_texts()`` → collega il testo alla geometria: ``cluster_ref``
-      (indice della parte che lo contiene), ``target`` (l'elemento su cui cade
-      la punta di ``pointer``), ``references`` (gli elementi fra cui misura).
+    - ``anchor_texts()`` → ``cluster_ref`` (indice della parte che lo
+      contiene); ``topo.experimental.anchor_elements()`` (D228) → ``target``
+      (l'elemento su cui cade la punta di ``pointer``), ``references`` (gli
+      elementi fra cui misura).
     - agente → legge e modifica questi oggetti; un writer li riemette.
 
 ``cluster_ref`` è l'indice in ``result.clusters``, non un ``id()`` — così resta

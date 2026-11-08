@@ -117,7 +117,7 @@ topo/
 │                      (D47, "roles out of core")
 │
 ├── tools/        STADI opzionali su un Document/Result (il caller sceglie quali e in che ordine)
-│   ├── anchor.py         anchor_texts()         — àncora i testi ai cluster
+│   ├── anchor.py         anchor_texts()         — àncora i testi ai cluster (anchor_elements sperimentale, D228)
 │   ├── inject.py         inject()                — testi del cluster → data_injector esterno
 │   ├── non_contour.py    non_contour_candidates() — stesso criterio non-contorno
 │   │                     di heal() (D49), esposto per decidere `edge.role`

@@ -9,10 +9,12 @@ Fase separata e opzionale — NON viene chiamata da heal(): il chiamante la
 attiva quando gli serve (es. prima di split() o di inject(), per sapere quale
 testo va con quale pezzo).
 
-Popola ``Text.cluster_ref`` (indice della parte contenitrice), ``Text.target``
-(l'elemento su cui cade la punta di ``pointer``, D66) e ``Text.references``
-(gli elementi su cui cadono i ``measured_points``, D69). ``target`` e
-``references`` sono gli oggetti stessi, non percorsi nel risultato (D177).
+``anchor_texts`` popola ``Text.cluster_ref`` (indice della parte
+contenitrice). ``anchor_elements`` — sperimentale, ``topo.experimental``
+(D228) — popola ``Text.target`` (l'elemento su cui cade la punta di
+``pointer``, D66) e ``Text.references`` (gli elementi su cui cadono i
+``measured_points``, D69): gli oggetti stessi, non percorsi nel risultato
+(D177).
 """
 
 from __future__ import annotations
@@ -30,42 +32,51 @@ from ..model.text import Text
 POINTER_TARGET_DISTANCE = 0.5   # mm — la punta di una freccia sta sulla linea che indica
 
 
-def anchor_texts(result: Result, *, snap_distance: float = 0.0,
-                 pointer_distance: float = POINTER_TARGET_DISTANCE) -> None:
+def anchor_texts(result: Result, *, snap_distance: float = 0.0) -> None:
     """
-    Assegna ``cluster_ref`` a ogni testo di ``result.texts``.
+    Set ``cluster_ref`` on every text of ``result.texts``.
 
-    ``cluster_ref`` è l'indice in ``result.clusters`` della parte il cui contorno
-    esterno contiene la posizione del testo. I testi fuori da ogni parte (es.
-    il cartiglio) restano con ``cluster_ref = None``.
+    ``cluster_ref`` is the index in ``result.clusters`` of the part whose
+    outer contour covers the text's position; a text outside every part (a
+    title block) keeps ``None``. With ``snap_distance`` > 0 a text covered by
+    no part goes to the nearest one within that distance of its outer (D82).
 
-    ``snap_distance`` > 0: un testo non contenuto da nessuna parte viene
-    comunque assegnato alla parte più vicina se dista meno di ``snap_distance``
-    dal suo contorno — utile per i testi che il CAD posiziona appena fuori dal
-    pezzo. Con il default 0.0 vale solo il contenimento stretto.
+    Which element a dimension or a pointer lands on is
+    ``topo.experimental.anchor_elements`` (D228).
 
-    Per ogni testo con ``pointer`` calcola anche ``target`` (vedi
-    `pointer_target`), per ogni testo con ``measured_points`` ``references``
-    (vedi `measured_references`).
-
-    **Muta** i testi di ``result`` e ritorna ``None`` (D176).
+    **Mutates** the texts of ``result`` and returns ``None`` (D176).
     """
-    refs = [
+    refs = _outer_polygons(result)
+    if not refs:
+        return
+    for text in result.texts:
+        text.cluster_ref = _assign(text.position, refs, snap_distance)
+
+
+def anchor_elements(result: Result, *, distance: float = POINTER_TARGET_DISTANCE) -> None:
+    """
+    Sperimentale (D228): per ogni testo con ``pointer`` imposta ``target``
+    (`pointer_target`), per ogni testo con ``measured_points`` ``references``
+    (`measured_references`). Gli altri testi restano come sono.
+
+    **Muta** i testi di ``result`` e ritorna ``None``.
+    """
+    for text in result.texts:
+        if text.pointer:
+            text.target = pointer_target(result, text, distance=distance)
+        if text.measured_points:
+            text.references = measured_references(result, text, distance=distance)
+
+
+def _outer_polygons(result: Result) -> list:
+    """(indice, poligono dell'outer) per ogni parte che ne ha uno."""
+    return [
         (i, poly)
         for i, p in enumerate(result.clusters)
         if p.outer is not None
         for poly in [curve_polygon(p.outer)]
         if poly is not None and not poly.is_empty
     ]
-    if not refs:
-        return
-
-    for text in result.texts:
-        text.cluster_ref = _assign(text.position, refs, snap_distance)
-        if text.pointer:
-            text.target = pointer_target(result, text, distance=pointer_distance)
-        if text.measured_points:
-            text.references = measured_references(result, text, distance=pointer_distance)
 
 
 def pointer_target(result: Result, text: Text, *,

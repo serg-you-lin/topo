@@ -2,8 +2,9 @@
 tests/engine/tools/test_anchor_texts.py
 -------------------------------
 `anchor_texts()`: assegna `cluster_ref` (indice della parte contenitrice)
-ai testi del modello, `target` a chi ha un `pointer`, `references` a chi ha
-dei `measured_points` (D138). Fase separata e opzionale (topo/tools/).
+ai testi del modello. `topo.experimental.anchor_elements()` (D228): `target`
+a chi ha un `pointer`, `references` a chi ha dei `measured_points` (D138).
+Fasi separate e opzionali (topo/tools/).
 """
 
 import unittest
@@ -16,7 +17,7 @@ from topo.model.contour import Contour
 from topo.model.result import Result
 from topo.model.role import ContourRole
 from topo.model.text import Text
-from topo.tools.anchor import anchor_texts, measured_references
+from topo.tools.anchor import anchor_texts
 from topo import to_shapely
 
 # max_gap non ha default (D98); island_gap non esiste più (D99)
@@ -100,7 +101,7 @@ class TestPointerTarget(unittest.TestCase):
     def _outlines(self, *leaders):
         result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
         result.texts = list(leaders)
-        anchor_texts(result)
+        topo.experimental.anchor_elements(result)
         return result
 
     def _hole_at(self, result, center):
@@ -141,7 +142,7 @@ class TestPointerTarget(unittest.TestCase):
         cluster.detected = DetectedFeatures()
         cluster.detected.attach("my_circles", [small])
         result.texts = [_leader((24, 25), (40, 60))]
-        anchor_texts(result)
+        topo.experimental.anchor_elements(result)
         self.assertIs(result.texts[0].target, small)
         self.assertAlmostEqual(to_shapely(small).centroid.x, 20, places=1)
 
@@ -154,7 +155,7 @@ class TestTargetIsTheObject(unittest.TestCase):
         result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
         result.texts = [_leader((24, 25), (40, 60)),
                         Text(position=(40, 40), measured_points=[(60, 25), (80, 25)])]
-        anchor_texts(result)
+        topo.experimental.anchor_elements(result)
         return result
 
     def test_promote_non_sposta_il_target(self):
@@ -198,7 +199,7 @@ class TestMeasuredReferences(unittest.TestCase):
     def _result(self, *dims):
         result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
         result.texts = list(dims)
-        anchor_texts(result)
+        topo.experimental.anchor_elements(result)
         return result
 
     def test_diametro_sul_foro(self):
@@ -228,7 +229,7 @@ class TestMeasuredReferences(unittest.TestCase):
 
     def test_senza_punti(self):
         result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
-        self.assertEqual(measured_references(result, Text(position=(0, 0))), [])
+        self.assertEqual(topo.experimental.measured_references(result, Text(position=(0, 0))), [])
 
 
 if __name__ == "__main__":
