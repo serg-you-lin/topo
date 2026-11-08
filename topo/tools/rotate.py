@@ -44,6 +44,7 @@ from ..core.primitives.segments import segment_endpoints
 from ..core.primitives.polygon_builder import curve_polygon, with_polygon
 from ..model.cluster import Cluster
 from ..model.contour import Contour
+from ..model.diagnostic import Diagnostic, plural
 from ..model.document import Document
 from ..model.curve import ClosedCurve, OpenCurve
 from ..model.result import Result
@@ -163,13 +164,12 @@ def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) 
 
     new_warnings = list(result.warnings)
     if result.texts:
-        new_warnings.append(
-            f"rotate_result(): {len(result.texts)} testi non ruotati (non ancora supportato)"
-        )
+        new_warnings.append(_texts_not_rotated("rotate_result", result.texts))
     if any(c.detected is not None for c in result.clusters):
-        new_warnings.append(
-            "rotate_result(): detected features non ruotate — rifai la detection DOPO la rotazione"
-        )
+        new_warnings.append(Diagnostic(
+            "not-rotated", "rotate_result(): cluster.detected is not rotated",
+            notes=["topo does not know what a consumer stored there"],
+            help="run the consumer's reading again after the rotation"))
 
     return replace(
         result,
@@ -205,11 +205,15 @@ def rotate_document(
 
     new_warnings = list(doc.warnings)
     if doc.texts:
-        new_warnings.append(
-            f"rotate_document(): {len(doc.texts)} testi non ruotati (non ancora supportato)"
-        )
+        new_warnings.append(_texts_not_rotated("rotate_document", doc.texts))
 
     return replace(doc, edges=new_edges, warnings=new_warnings)
+
+
+def _texts_not_rotated(where: str, texts) -> Diagnostic:
+    return Diagnostic(
+        "not-rotated", f"{where}(): {plural(len(texts), 'text', 'texts')} not rotated (not supported yet)",
+        points=[t.position for t in texts])
 
 
 # ---------------------------------------------------------------------------

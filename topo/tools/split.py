@@ -20,6 +20,7 @@ from shapely.geometry import Point
 from ..core.geometry.measure import track_points
 from ..core.primitives.polygon_builder import curve_polygon
 from ..model import Cluster, Result
+from ..model.diagnostic import Diagnostic, plural
 
 def split(
     result: Result,
@@ -67,10 +68,13 @@ def split(
     texts_of = _assign(result.texts, outers, lambda a: a.position, covering=True)
 
     kept = [i for i, c in enumerate(result.clusters) if cluster_passes_min_area(c, min_area)]
-    result.warnings.extend(
-        f"Part {i} dropped: area {c.outer.area:.2f} under min_area {min_area}"
-        for i, c in enumerate(result.clusters) if i not in kept
-    )
+    dropped = [c for i, c in enumerate(result.clusters) if i not in kept]
+    if dropped:
+        result.warnings.append(Diagnostic(
+            "dropped-part", f"{plural(len(dropped), 'part', 'parts')} dropped, area under min_area {min_area:g}",
+            points=[c.outer.segments[0].start for c in dropped],
+            notes=[f"smallest {min(c.outer.area for c in dropped):.4g}, largest {max(c.outer.area for c in dropped):.4g}"],
+            help="topo.split(result) keeps every part (min_area=0.0, the default)"))
     parts: List[Result] = []
     for i in kept:
         cluster = result.clusters[i]
