@@ -16,17 +16,28 @@ To repair a drawing topo has to decide, again and again, yes or no:
 - is this arc almost a full circle? (missing angle ≤ 2°)
 
 Every rule like this has an edge: a number just below it says yes, a number
-just above it says no. Take a tolerance of 0.5 mm and a gap of
-0.49999999999999 mm: it closes.
+just above it says no. With the edge at 0.5 mm, a gap of 0.49999999999999 mm
+closes and one of 0.50000000000001 mm does not.
 
 ## 2. Moving a drawing changes its numbers by a tiny amount
 
-A computer keeps a coordinate with about 16 significant digits. When the
-drawing is rotated, every coordinate is recomputed and the last digit comes out
-slightly different: on a part around 1000 mm from the origin the error is about
-0.00000000000001 mm. The same gap, measured again after the rotation, can be
-0.50000000000001 mm. Now it does not close. The drawing is the same; the answer
-is not.
+A computer keeps a coordinate with about 16 significant digits. It writes 0.5
+exactly; but a gap is not read, it is computed from the coordinates (cosines,
+sines, square roots), and every step rounds to the nearest number the computer
+can write: sometimes a hair above, sometimes a hair below. On a part around
+1000 mm from the origin the error is about 0.00000000000008 mm.
+
+A gap of 0.5 mm, 1000 mm from the origin, rotated and measured again:
+
+| rotation | the gap measures | with the edge at 0.5 |
+|---|---|---|
+| none | 0.5 | closes |
+| 20° | 0.49999999999992 | closes |
+| 45° | 0.50000000000008 | does not close |
+
+The drawing is the same; the answer is not. (topo puts the edge a millionth of a
+mm further, at 0.500001, so all three above close; but a gap that measures
+exactly 0.500001 has the same problem: see section 3.)
 
 ## 3. Moving the edge does not help
 
