@@ -31,11 +31,16 @@ refit_tessellations      — una catena di tanti LineSeg corti è una curva scri
                              a punti: rifittata come arco/cerchio/spline
                              (fitting.simplify_points).
 
+merge_near_copies        — una retta quasi sopra un'altra entro una soglia del
+                             chiamante: mai dentro una lettura, `heal()` ne
+                             avvisa soltanto (`near_copies`, D226).
+
 Funzioni pubbliche:
     merge_collinear_overlaps  — dato un iterabile di Edge, i gruppi LineSeg da fondere
     merge_cocircular_overlaps — dato un iterabile di Edge, i gruppi ArcSeg da fondere
     weld_degenerate_linesegs  — dato un iterabile di Edge, i LineSeg degeneri da saldare
     refit_tessellations       — dato un iterabile di Edge, le catene tassellate rifittate
+    merge_near_copies         — dato un iterabile di Edge e una distanza, le quasi-copie fuse
 """
 
 from __future__ import annotations
@@ -408,6 +413,90 @@ def _merged_arc(lo: _Span, hi: _Span):
         return point, point, circle
     arc = ArcSeg(center=center, radius=radius, start_angle=lo.lo, end_angle=hi.hi, ccw=True)
     return lo.lo_node, hi.hi_node, arc
+
+
+# ---------------------------------------------------------------------------
+# merge_near_copies
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class NearCopy:
+    """Una retta quasi sopra un'altra (D226): `copy` sta tutta entro `offset`
+    dal segmento `kept`, la più lunga (a pari lunghezza, la prima in ordine)."""
+    kept: Edge
+    copy: Edge
+    offset: float
+
+    @property
+    def at(self) -> Point:
+        """Il punto medio della copia: dove guardare."""
+        a, b = self.copy.segment.start, self.copy.segment.end
+        return ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+
+
+def _off_segment(p, seg: LineSeg) -> float:
+    """Distanza di `p` dal segmento (non dalla retta infinita)."""
+    (ax, ay), (bx, by) = seg.start[:2], seg.end[:2]
+    dx, dy = bx - ax, by - ay
+    t = max(0.0, min(1.0, ((p[0] - ax) * dx + (p[1] - ay) * dy) / (dx * dx + dy * dy)))
+    return math.hypot(p[0] - ax - t * dx, p[1] - ay - t * dy)
+
+
+def _line_length(e: Edge) -> float:
+    return math.dist(e.segment.start[:2], e.segment.end[:2])
+
+
+def near_copies(edges: Iterable[Edge], distance: float) -> List[NearCopy]:
+    """
+    Le coppie di LineSeg con lo stesso ruolo in cui la più corta sta tutta
+    entro `distance` dalla più lunga: un segmento è convesso, quindi bastano i
+    due capi della corta. Le coppie che sono già la stessa retta (`_same_line`,
+    D184) le fonde `merge_collinear_overlaps` e qui non compaiono; nemmeno le
+    sovrapposte solo in parte (un capo della corta fuori dalla lunga). Ogni
+    copia una volta sola, con la retta più vicina; le più vicine prima.
+    """
+    lines = [e for e in edges if isinstance(e.segment, LineSeg) and e.start != e.end]
+    nearest = {}
+    for i, j in _near_pairs(lines, distance):
+        a, b = lines[i], lines[j]
+        if a.role != b.role or _same_line(a.segment, b.segment):
+            continue
+        kept, copy = (b, a) if _line_length(b) > _line_length(a) + FLOAT_NOISE else (a, b)
+        offset = max(_off_segment(p, kept.segment) for p in (copy.segment.start, copy.segment.end))
+        # una copia è copia della retta più vicina, non di ogni retta entro la soglia
+        if offset <= distance and (id(copy) not in nearest or offset < nearest[id(copy)].offset):
+            nearest[id(copy)] = NearCopy(kept, copy, offset)
+    return sorted(nearest.values(), key=lambda p: p.offset)
+
+
+def merge_near_copies(edges: Iterable[Edge], *, distance: float) -> List[Edge]:
+    """
+    Le rette quasi una sopra l'altra entro `distance` (`near_copies`)
+    diventano una (D226): resta la più lunga; a pari lunghezza (entro
+    `FLOAT_NOISE`) la mediana, coi capi a metà fra i capi vicini e il ruolo e
+    lo stile della prima in ordine. topo non la chiama mai da sé: `heal()`
+    avvisa delle coppie entro la sua tolleranza, il chiamante decide se e
+    dove fonderle. Il resto passa nell'ordine di input.
+    """
+    edges = list(edges)
+    dropped, median = set(), {}
+    for pair in near_copies(edges, distance):
+        if id(pair.kept) in dropped or id(pair.copy) in dropped:
+            continue
+        dropped.add(id(pair.copy))
+        if abs(_line_length(pair.kept) - _line_length(pair.copy)) <= FLOAT_NOISE:
+            median.setdefault(id(pair.kept), _median_line(pair.kept, pair.copy))
+    return [median.get(id(e), e) for e in edges if id(e) not in dropped]
+
+
+def _median_line(a: Edge, b: Edge) -> Edge:
+    """La retta a metà fra due copie di pari lunghezza: ogni capo di `a` col
+    capo di `b` più vicino."""
+    (p, q), (r, s) = (a.segment.start[:2], a.segment.end[:2]), (b.segment.start[:2], b.segment.end[:2])
+    if math.dist(p, r) + math.dist(q, s) > math.dist(p, s) + math.dist(q, r):
+        r, s = s, r
+    seg = LineSeg(start=((p[0] + r[0]) / 2, (p[1] + r[1]) / 2), end=((q[0] + s[0]) / 2, (q[1] + s[1]) / 2))
+    return Edge.of(seg, a.role, style=a.style)
 
 
 # ---------------------------------------------------------------------------

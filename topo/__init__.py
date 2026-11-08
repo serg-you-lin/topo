@@ -57,6 +57,8 @@ from .model         import (
     Result, Cluster, Contour, Document,
     Text,
     DetectedFeature, DetectedFeatures,
+    # un avviso come in Rust: testo + campi, con la soglia che lo corregge (D227)
+    Diagnostic,
 )
 # Un consumatore che marca la geometria prima di heal() (snapdraw: cornice /
 # cartiglio) setta `edge.role` sugli Edge di `doc.edges` con uno slug ripulito
@@ -136,6 +138,7 @@ __all__ = [
     "Text",
     "DetectedFeature",
     "DetectedFeatures",
+    "Diagnostic",
     # Ruoli — aggancio per un consumatore che marca la geometria pre-heal
     "normalize_role",
     "is_structural_role",

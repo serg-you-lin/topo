@@ -19,6 +19,7 @@ from .style import EdgeStyle, RoleStyle, DEFAULT_ROLE_STYLES, CONSUMER_ROLE_STYL
 from .detected import DetectedFeature, DetectedFeatures, feature_closed
 from .role import ContourRole, role_str, normalize_role, is_structural_role, feature_role
 from .role_rule import RoleRule, resolve_role, name_rules
+from .diagnostic import Diagnostic
 
 __all__ = [
     "Document",
@@ -48,6 +49,7 @@ __all__ = [
     "RoleRule",
     "resolve_role",
     "name_rules",
+    "Diagnostic",
     "Edge",
 ]
 

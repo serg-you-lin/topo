@@ -481,6 +481,16 @@ dimension string inside the anchoring tests), and a move that would mean rewriti
 Two parallel lines 0.18 mm apart at tolerance 0.5 are two distinct curves: nothing in the geometry says one is a
 mistake. The tolerance joins their ends, not the lines; once joined the thin ring is a closed face and `faces()` gives it
 (`outlines()` does not). "This line is a stray copy" is a reading of intent: the consumer's, before `heal`. Not D184's authority.
+### D226 — reopening D211: the near-copy merge takes curves and gives curves; the caller calls it wherever they want (Federico, 8 November).
+Before `heal()` it closes contours a near-copy keeps open, which on a result it cannot. topo never applies it and never takes
+a flag for it. `heal()` warns of each pair of lines nearly on one another but outside D184's thresholds: where, which, how much.
+### D227 — a warning is a `topo.Diagnostic`: what, where, why topo left it, and the call with the smallest threshold that fixes it (Federico, 8 November).
+Rust-style, for humans and LLMs alike. It subclasses `str`, so every `warnings` list stays a list of strings and
+nothing breaks; `code`/`at`/`param`/`value` let a program act without parsing. New warnings use it, old ones move one
+at a time. The `help` value is computed from the case and rounded up, never a guess. A warning says what nearly closed:
+`open-arc` only while at most 8° are missing (Federico), so a thread (~90° open) never warns, whatever its radius.
+One Diagnostic per kind (Federico): the text shows three places, `points` holds all. `near-gap`: a free end whose
+partner, by the gap rule itself, is beyond `max_gap` and within twice it; past that it is geometry, not a missed gap.
 
 ## Open questions
 

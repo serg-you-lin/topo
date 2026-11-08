@@ -20,8 +20,8 @@ from ..primitives.segments import ArcSeg, CircleSeg, BSplineSeg, segment_endpoin
 from ..topology.edge import Edge
 from ..topology.graph import build_node_graph, connected_groups
 from ...model.role import ContourRole, is_structural_role
-from .normalizer import _same_circle
-from .gap_solver import free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, ambiguous_gap_ends
+from .normalizer import _same_circle, merge_cocircular_overlaps
+from .gap_solver import free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, ambiguous_gap_ends, near_gaps
 
 
 def split_labeled(edges: List[Edge],
@@ -42,6 +42,7 @@ def split_labeled(edges: List[Edge],
 
 
 NEAR_FULL_ARC_MISSING = math.radians(2.0)   # angolo mancante oltre il quale un arco non è un cerchio (D112)
+NEAR_FULL_ARC_HINT = math.radians(8.0)      # fin qui heal() avvisa che manca poco; un filetto (~90°) mai (D227)
 
 
 def close_near_full_arcs(edges: List[Edge], tolerance: float,
@@ -53,9 +54,13 @@ def close_near_full_arcs(edges: List[Edge], tolerance: float,
     un gap, l'angolo se l'arco prosegue. Chiusi tutti i buchi è un CircleSeg;
     altrimenti gli archi uniti sono un ArcSeg solo, aperto sui buchi rimasti
     (un capo e l'altro dello stesso arco non sono mai un gap). Un arco solo ha
-    un buco solo. `tolerance=math.inf` lascia solo l'angolo.
+    un buco solo. `tolerance=math.inf` lascia solo l'angolo. Prima fonde gli
+    archi dello stesso cerchio che si toccano (`merge_cocircular_overlaps`):
+    due archi uniti in un capo hanno un capo legato ciascuno, e chi la chiama
+    da sé non deve saperlo (D227).
     Ritorna (edge, n_edge_rifatti).
     """
+    edges = merge_cocircular_overlaps(edges)
     graph = build_node_graph(edges)
     free = [k for k, e in enumerate(edges) if isinstance(e.segment, ArcSeg) and _both_ends_free(e, graph)]
     pairs = [(m, n) for m in range(len(free)) for n in range(m + 1, len(free))
@@ -69,6 +74,27 @@ def close_near_full_arcs(edges: List[Edge], tolerance: float,
             drop.update(k for k in members_k if k != first)
     out = [replaced.get(k, e) for k, e in enumerate(edges) if k not in drop]
     return out, len(replaced)
+
+
+def open_near_full_arcs(edges: List[Edge], tolerance: float,
+                        max_missing_angle: float = NEAR_FULL_ARC_MISSING) -> List[Tuple[Edge, float, float]]:
+    """
+    Gli ArcSeg coi due capi liberi che `close_near_full_arcs` lascia aperti
+    solo per l'angolo: la corda del buco sta in `tolerance`, l'angolo mancante
+    supera `max_missing_angle` ma non `NEAR_FULL_ARC_HINT` — oltre, l'arco è
+    aperto di proposito (un filetto). Ritorna (edge, angolo mancante, corda) —
+    ciò che l'avviso dice al chiamante (D227).
+    """
+    graph = build_node_graph(edges)
+    found = []
+    for e in edges:
+        if not isinstance(e.segment, ArcSeg) or not _both_ends_free(e, graph):
+            continue
+        start, end = segment_endpoints(e.segment)
+        missing, chord = 2 * math.pi - e.segment._sweep(), math.dist(start, end)
+        if max_missing_angle < missing <= NEAR_FULL_ARC_HINT and chord <= tolerance:
+            found.append((e, missing, chord))
+    return found
 
 
 def _joined_runs(group: List[int], edges: List[Edge], tolerance: float, max_missing_angle: float) -> list:
@@ -144,6 +170,12 @@ def close_free_gaps(edges: List[Edge], tolerance: float) -> List[Edge]:
     if not fixes:
         return list(edges)
     return apply_gap_fixes(edges, fixes)
+
+
+def near_free_gaps(edges: List[Edge], tolerance: float, reach_to: float) -> list:
+    """I gap fra estremi liberi che `close_free_gaps` chiuderebbe entro
+    `reach_to` ma non entro `tolerance`: (estremo, compagno, distanza) (D227)."""
+    return near_gaps(free_endpoints_from_edges(edges, build_node_graph(edges)), tolerance, reach_to, edges)
 
 
 def ambiguous_free_ends(edges: List[Edge], tolerance: float) -> List[Tuple[float, float]]:

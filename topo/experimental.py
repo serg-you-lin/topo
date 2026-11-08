@@ -13,6 +13,8 @@ in una minor; qui resta come alias con avviso per due minor.
   contorno dentro un altro;
 - `read_outlines` / `read_outline` / `OutlineReading`: `outlines()` prima di
   diventare un `Result` (D58);
+- `merge_near_copies` / `near_copies`: le rette quasi una sopra l'altra,
+  fuse con la soglia del chiamante, dove vuole lui (D226);
 - `simplify_points` (D33, D141), `rotate_*` (D46), `to_nester_input` (D18),
   `to_view_model` / `to_svg` / `save_svg` (D133);
 - le strisce fra bordi affacciati: `facing_boundaries`, `gap`, `link`,
@@ -29,7 +31,8 @@ from .core.base.normalizer import refit_tessellations
 # le basi di ogni lettura (D187, D189) e i passi di heal() (D62)
 from .core.base.prepare import prepare, Prepared, normalize, Normalized
 from .core.topology.non_contour_edges import non_contour_pieces
-from .core.base.normalizer import (merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs)
+from .core.base.normalizer import (merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
+                                   merge_near_copies, near_copies, NearCopy)
 from .core.base.cleanup import (split_labeled, close_free_gaps, dangling_splines, close_near_full_arcs, NEAR_FULL_ARC_MISSING)
 from .core.readings.heal_steps import (find_non_contour_edges, find_joining_edges, free_ends, structural_loops, build_hierarchy)
 from .core.base.curves import loops_to_curves, loose_curves
@@ -51,6 +54,7 @@ __all__ = [
     "prepare", "Prepared", "normalize", "Normalized", "non_contour_pieces",
     "refit_tessellations",
     "merge_collinear_overlaps", "merge_cocircular_overlaps", "weld_degenerate_linesegs",
+    "merge_near_copies", "near_copies", "NearCopy",
     "split_labeled", "close_free_gaps", "dangling_splines",
     "find_non_contour_edges", "find_joining_edges", "free_ends",
     "close_near_full_arcs", "NEAR_FULL_ARC_MISSING",

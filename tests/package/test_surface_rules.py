@@ -58,6 +58,7 @@ DATA = {
     'topo.Document': ('edges',),
     'topo.Text': ('position', 'text'),
     'topo.DetectedFeatures': ('_store',),
+    'topo.Diagnostic': ('code', 'message'),
     'topo.DetectedFeatures.attach': ('name', 'items'),
     'topo.DetectedFeatures.add': ('name', 'item'),
     'topo.DetectedFeatures.get': ('name', 'default'),
