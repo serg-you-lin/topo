@@ -376,11 +376,9 @@ novembre, ramo `no-join-ends` fuso in `main`.
         risparmiati; restano contati per byte;
       - per `--full`: `test_outlines_single_use` (11 s), fedeltà "confronto non vuoto" (6,5 s);
       - `test_golden_split` su 7 padri ripete i confronti di `test_golden_faces`, non guarda i figli.
-      Piano A, si riparte da qui: Federico toglie a mano le viste 3D (le spline) da
-      `golden_anchoring/anch_02`, `anch_03` e i loro `_noframe` (~32 s dei 79 dei fogli
-      pesanti). Gli agganci non sono mai sulle viste 3D, quindi il golden di ancoraggio
-      archiviato (`_archive/golden_anchoring/`, D228) deve dare lo stesso risultato. Le viste 3D restano
-      in `golden_outlines/`. Poi rimisurare e decidere `--full` (piano B: `TestScrambled` e
+      Piano A fatto: viste 3D tolte da `golden_anchoring/` anch_02, 03, 07, 08 e `_noframe`
+      (anch_01 è una vista vera, resta); agganci del golden archiviato uguali. Le viste 3D
+      restano in `golden_outlines/`. Da decidere `--full` (piano B: `TestScrambled` e
       fedeltà sui fogli > 500 bordi solo con `--full`, mai scritto).
       Da guardare: i rossi nuovi della forza bruta col codice di oggi (4 file veri,
       36 + 94 semi inventati); numeri in `RAPPORTO.md` del banco
