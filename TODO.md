@@ -379,8 +379,11 @@ novembre, ramo `no-join-ends` fuso in `main`.
       deve passare invariato: se cambia si guarda prima di rigenerare. Le viste 3D restano
       in `golden_outlines/`. Poi rimisurare e decidere `--full` (piano B: `TestScrambled` e
       fedeltà sui fogli > 500 bordi solo con `--full`, mai scritto).
-      Forza bruta della notte (`bash notte.sh` nel banco): mai lanciata; prima aggiornare
-      `topo_new` (fermo a `a9e2d61`, gli mancano D219 e `82bacc7`).
+      Forza bruta della notte fatta (7 novembre, 1 h 26, `notte/` nel banco): `topo_base`
+      `4e729d1` contro `topo_new` `8808a1d`. Semi con un rosso: normali 1275 → 1037,
+      cattivi 2667 → 2562, file veri 1483 → 1389; salti in faces sui veri 4 → 0.
+      Rossi nuovi su semi prima verdi o di altro tipo: 36 normali, 94 cattivi, 4 veri
+      (422, 1596, 2617, 2621): non guardati.
       Spazzatura tracciata: `tests/data/mixed_pipeline/*.dwl*`
       (file di blocco AutoCAD, di solito portano utente e PC: non aperti, audit pre-1.0).
       1. Fatto (sopra).
