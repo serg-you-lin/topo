@@ -24,7 +24,7 @@ from .sanitize import sanitize, _explode_inserts, _explode_hatches, deduplicate
 from .adapter import DxfAdapter
 from .text_extractor import DxfTextExtractor
 from .layers import SKIP_LAYERS
-from topo.model import DEFAULT_NODE_TOLERANCE, Document, RoleRule
+from topo.model import DEFAULT_NODE_TOLERANCE, Diagnostic, Document, RoleRule
 
 # Percorso dell'eseguibile ODA File Converter. `topo` NON legge i DWG da solo:
 # il supporto DWG di ezdxf È l'addon `odafc`, che è un wrapper attorno a ODA
@@ -89,15 +89,13 @@ def _warn_non_roundtrip_types(msp, sink: list, verbose: bool = False) -> None:
         e.dxftype() for e in msp if e.dxftype() not in _ROUNDTRIP_TYPES
     })
     if lost:
-        _emit(
-            sink,
-            f"tipi non riportati in output da to_dxf(): {', '.join(lost)}",
-            verbose,
-        )
+        _emit(sink, Diagnostic(
+            "dxf-not-modeled", f"entity types topo does not model, not written back by to_dxf(): {', '.join(lost)}",
+            notes=["their geometry is not in the Document"]), verbose)
 
 
 def _emit(sink: list, msg: str, verbose: bool = False) -> None:
-    """Aggiunge `msg` al canale warnings; lo stampa solo se verbose."""
+    """Aggiunge `msg` (un `Diagnostic`) al canale `sink`; lo stampa solo se verbose."""
     if sink is not None:
         sink.append(msg)
     if verbose:
@@ -124,12 +122,9 @@ def _configure_odafc(sink: list = None, verbose: bool = False) -> None:
         if os.path.isfile(ODA_PATH):
             ezdxf.options.set("odafc-addon", opt_key, ODA_PATH)
             return
-        _emit(
-            sink,
-            f"ODA_PATH è settato ma non punta a un file esistente: {ODA_PATH!r} "
-            f"— provo a cercare ODAFileConverter nel PATH.",
-            verbose,
-        )
+        _emit(sink, Diagnostic(
+            "dxf-oda-path", f"ODA_PATH is set but is not a file: {ODA_PATH!r}; looking for ODAFileConverter on PATH",
+            help="point ODA_PATH at the ODAFileConverter executable"), verbose)
 
     if shutil.which("ODAFileConverter"):
         return  # odafc lo troverà da solo
@@ -145,7 +140,7 @@ def _configure_odafc(sink: list = None, verbose: bool = False) -> None:
     )
 
 
-def _read_dwg(path: str, sink: list = None, verbose: bool = False):
+def _read_dwg(path: str, sink: list = None, verbose: bool = False, notes: list = None):
     """
     Legge un file DWG usando ezdxf.addons.odafc (wrapper di ODA File Converter).
 
@@ -158,7 +153,8 @@ def _read_dwg(path: str, sink: list = None, verbose: bool = False):
     with open(path, 'rb') as f:
         version_code = f.read(6).decode('ascii', errors='ignore')
     version_name = DWG_VERSIONS.get(version_code, version_code)
-    _emit(sink, f"DWG rilevato: {version_name} ({version_code}), convertito via odafc", verbose)
+    _emit(notes, Diagnostic("dxf-dwg-converted", f"DWG {version_name} ({version_code}) converted through odafc",
+                            level="note"), verbose)
 
     _configure_odafc(sink=sink, verbose=verbose)
 
@@ -177,7 +173,7 @@ def _read_dwg(path: str, sink: list = None, verbose: bool = False):
 # Upgrade R12 → R2010
 # ---------------------------------------------------------------------------
 
-def _upgrade_to_r2010(doc, sink: list = None, verbose: bool = False) -> object:
+def _upgrade_to_r2010(doc, sink: list = None, verbose: bool = False, notes: list = None) -> object:
     """
     Converte un documento DXF legacy in R2010.
     Esplode INSERT e POLYLINE in place, poi copia tutto nel nuovo doc.
@@ -186,7 +182,9 @@ def _upgrade_to_r2010(doc, sink: list = None, verbose: bool = False) -> object:
     if doc.dxfversion >= 'AC1015':
         return doc
 
-    _emit(sink, f"file legacy {doc.dxfversion}: upgrade a R2010", verbose)
+    _emit(notes, Diagnostic("dxf-upgraded", f"legacy file {doc.dxfversion} upgraded to R2010", level="note"),
+          verbose)
+    failed = []
 
     new_doc = ezdxf.new('R2010')
     new_msp = new_doc.modelspace()
@@ -196,13 +194,16 @@ def _upgrade_to_r2010(doc, sink: list = None, verbose: bool = False) -> object:
         try:
             entity.explode()
         except Exception as ex:
-            _emit(sink, f"upgrade: explode INSERT fallito — {ex}", verbose)
+            failed.append(f"INSERT: {ex}")
 
     for entity in list(old_msp.query('POLYLINE')):
         try:
             entity.explode()
         except Exception as ex:
-            _emit(sink, f"upgrade: explode POLYLINE fallito — {ex}", verbose)
+            failed.append(f"POLYLINE: {ex}")
+    if failed:
+        _emit(sink, Diagnostic("dxf-explode-failed", f"{len(failed)} entities could not be exploded in the upgrade",
+                               notes=failed[:5]), verbose)
 
     for entity in old_msp:
         # Le entità devono essere copiate nel nuovo documento: non è lecito
@@ -262,20 +263,22 @@ def load_dxf(
 
     Returns:
         Document (edges + texts + source_meta + warnings) — pronto
-        per heal(). La diagnostica sul file grezzo (audit, INSERT non esplosi,
-        Z != 0 riportate sul piano, duplicati rimossi) finisce in
-        `doc.warnings`; con verbose=True viene anche stampata.
-        `topo.validate_document(doc)` rilancia queste warnings.
+        per heal(). Quello che va guardato sul file grezzo (audit, INSERT
+        non esplosi, tipi non modellati) finisce in `doc.warnings`, quello che
+        l'adapter ha fatto da sé (INSERT esplosi, duplicati tolti, Z sul
+        piano) in `doc.notes`, tutti `Diagnostic` (D233); con verbose=True
+        anche stampati. `topo.validate_document(doc)` li rilancia.
     """
     warnings: list = []
+    notes: list = []
 
     if str(path).lower().endswith('.dwg'):
-        doc = _read_dwg(path, sink=warnings, verbose=verbose)
+        doc = _read_dwg(path, sink=warnings, verbose=verbose, notes=notes)
     else:
         doc = ezdxf.readfile(path)
 
     if upgrade or doc.dxfversion < 'AC1015':
-        doc = _upgrade_to_r2010(doc, sink=warnings, verbose=verbose)
+        doc = _upgrade_to_r2010(doc, sink=warnings, verbose=verbose, notes=notes)
 
     # I testi vanno estratti PRIMA di doc.audit(): l'auditor di ezdxf
     # cancella le DIMENSION che referenziano un blocco geometria non definito
@@ -286,9 +289,9 @@ def load_dxf(
 
     auditor = doc.audit()
     if auditor.errors:
-        _emit(warnings, f"audit: {len(auditor.errors)} problemi rilevati dal reader ezdxf", verbose)
-        for err in auditor.errors[:5]:
-            _emit(warnings, f"audit — {err}", verbose)
+        _emit(warnings, Diagnostic(
+            "dxf-audit", f"{len(auditor.errors)} problems found by the ezdxf audit",
+            notes=[str(err) for err in auditor.errors[:5]]), verbose)
 
     msp = doc.modelspace()
 
@@ -297,26 +300,28 @@ def load_dxf(
         if explode_inserts:
             n = _explode_inserts(msp, sink=warnings)
             if n:
-                _emit(warnings, f"{n} INSERT esplosi in entità primitive", verbose)
+                _emit(notes, Diagnostic("dxf-inserts-exploded", f"{n} INSERT exploded into their entities",
+                                        level="note"), verbose)
         else:
-            _emit(
-                warnings,
-                f"{len(inserts_found)} INSERT non esplosi ignorati — "
-                "usa explode_inserts=True in load_dxf() per includerli",
-                verbose,
-            )
+            _emit(warnings, Diagnostic(
+                "dxf-inserts-ignored", f"{len(inserts_found)} INSERT not exploded, their geometry ignored",
+                points=[tuple(i.dxf.insert)[:2] for i in inserts_found],
+                help="topo_dxf.load_dxf(path, explode_inserts=True) reads them"), verbose)
 
     n = _explode_hatches(msp, sink=warnings)
     if n:
-        _emit(warnings, f"{n} HATCH esplosi nelle righe del pattern", verbose)
+        _emit(notes, Diagnostic("dxf-hatches-exploded", f"{n} HATCH exploded into their pattern lines (D205)",
+                                level="note"), verbose)
 
     removed = deduplicate(msp)
     if removed > 0:
-        _emit(warnings, f"{removed} entità duplicate rimosse dal modelspace", verbose)
+        _emit(notes, Diagnostic("dxf-duplicates-removed", f"{removed} duplicate entities removed", level="note"),
+              verbose)
 
     flattened = sanitize(msp, flatten_z_flag=flatten_z, verbose=verbose)
     if flattened:
-        _emit(warnings, f"{flattened} entità con Z != 0 riportate sul piano", verbose)
+        _emit(notes, Diagnostic("dxf-flattened", f"{flattened} entities with Z != 0 brought onto the plane",
+                                level="note"), verbose)
 
     adapter = DxfAdapter(msp, role_rules=role_rules, skip_layers=skip_layers)
     edges = adapter.to_edges()
@@ -343,6 +348,7 @@ def load_dxf(
         source_path=str(path),
         source_format="dwg" if str(path).lower().endswith(".dwg") else "dxf",
         warnings=warnings,
+        notes=notes,
     )
 
 

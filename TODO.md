@@ -336,6 +336,10 @@ novembre, ramo `no-join-ends` fuso in `main`.
       `faces.py`, `validator.py`: "Modelspace", "LINE/ARC", "SPLINE"); e i nomi
       vecchi (`dxf_forge` in `test_splitter.py`, `test_models.py`, `test_loops.py`,
       `ARCHITECTURE.md:415`).
+      Da decidere con Federico nella stessa passata: `cluster.detected` /
+      `DetectedFeatures` non rilevano niente (è lo strato aperto di un consumatore,
+      D44): nome neutro (es. `overlay`/`Overlay`). `DetectedFeature` (Protocol con
+      `source`/`confidence`) non lo usa nessuno, né topo né snapbend né snapdraw: via.
 - [ ] **Pulizia del repo prima della 1.0** (Federico, 8 novembre): TODO.md, MAP.md
       e il resto pieni di log di sessione (misure, cose fatte, riordini) lasciati da
       Claude; restano solo le cose da fare e le decisioni, i log vanno fuori dal repo.

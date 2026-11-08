@@ -147,6 +147,8 @@ topo.save_json(result, "out.json")
 import error names the extra. Layer names and colours are the caller's
 (`layers=`, `role_styles=`); the rest is the adapter's default.
 
+`load_dxf` speaks in `topo.Diagnostic` too (D233): `doc.warnings` = `dxf-audit`, `dxf-inserts-ignored` (→ `explode_inserts=True`), `dxf-not-modeled`, `dxf-no-curve`, `dxf-explode-failed`, `dxf-oda-path`; `doc.notes` = `dxf-dwg-converted`, `dxf-upgraded`, `dxf-inserts-exploded`, `dxf-hatches-exploded`, `dxf-duplicates-removed`, `dxf-flattened`. `topo.validate_document(doc)` hands both on.
+
 | name | signature (defaults trimmed) | does |
 |---|---|---|
 | `topo_dxf.load_dxf` | `(path, *, upgrade=False, explode_inserts=True, flatten_z=True, verbose=False, tolerance=0.05, role_rules=(), skip_layers=SKIP_LAYERS) -> Document` | reads DXF/DWG via ezdxf (once), audits, upgrades legacy, explodes INSERTs, translates to pure `Edge`/`Annotation`. `role_rules` assign `Edge.role` at load — in order, first match wins, none → `unknown` — and `Annotation.role` from the rules on the name only (D127; the source layer itself is not kept, D128); unknown roles become consumer role slugs, not errors. `skip_layers`: exact names, any case, or a function `name -> bool` (substring, regex, anything: D176); default `("Trash", "Annotation")` — the writer's own layers, so a file topo wrote reads back clean; `()` reads everything (D129). DWG needs ODA File Converter (`ODA_PATH` env var). |
@@ -184,7 +186,7 @@ side = topo.primitives.LineSeg(start=(0, 0), end=(100, 0))
 class Hole(topo.model.ClosedCurve): ...
 ```
 
-**`Document`** (from `load_dxf`/`document_from_msp`/`load_geometry`): `edges: list[Edge]`, `texts: list[Text]`, `source_meta: dict`, `source_path: str`, `source_format: str` (what the geometry came from, set by the adapter: `dxf`, `dwg`, `pdf`, `geometry`, …; D231), `warnings: list[str]`.
+**`Document`** (from `load_dxf`/`document_from_msp`/`load_geometry`): `edges: list[Edge]`, `texts: list[Text]`, `source_meta: dict`, `source_path: str`, `source_format: str` (what the geometry came from, set by the adapter: `dxf`, `dwg`, `pdf`, `geometry`, …; D231), `warnings`/`notes: list[Diagnostic]` (what to look at in the source / what the adapter did, D233).
 
 **`Result`** (from `Network.faces()`/`outlines()`, enriched by a consumer): `clusters: list[Cluster]` (largest exact outer area first; equal areas — congruent copies — by bbox corner `(xmin, ymin)`, same in `faces()` and `outlines()`), `source_file`, `source_format` (the `Document`'s, D231), `reading` (`"faces"`/`"outlines"`), `tolerance`, `max_gap`, `is_valid: bool` (**check before handing output to a machine**), `warnings`/`notes`/`errors: list[Diagnostic]` (D233), `loose: list[OpenCurve | ClosedCurve]` (every curve that is no cluster's contour — chains that close nothing, open traces, closed curves with a non-structural role; each with `cluster_ref` = index of the cluster whose outer contour contains it entirely, boundary and holes included, else `None`, D137 — move one into `cluster.detected` with `result.promote`), `texts: list[Text]`, `cluster_count` (property). Every arc of the drawing is in a contour's or a loose curve's `segments` (an open arc, e.g. a thread crest, is in `loose`). `.to_dict()` for JSON.
 

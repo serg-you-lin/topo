@@ -1,7 +1,7 @@
 """
 model/document.py
 -----------------
-Il Document — output di topo_dxf.load_dxf() e unico input di topo.heal().
+Il Document — output di topo_dxf.load_dxf() 'e unico input di topo.heal().
 
 load_dxf() non restituisce un modelspace ezdxf: restituisce questo oggetto di
 dominio. Dopo load_dxf() il riferimento al documento ezdxf sorgente sparisce e
@@ -13,6 +13,8 @@ non viene più toccato fino a write().
     source_path : percorso del file aperto
     source_format: da che cosa arriva la geometria, detto dall'adapter
                   (`dxf`, `dwg`, `pdf`, `geometry`, …; stringa aperta, D231)
+    notes       : cosa l'adapter ha fatto da sé sul file (INSERT esplosi,
+                  duplicati tolti, Z riportate sul piano), `Diagnostic` (D233)
     warnings    : diagnostica raccolta da load_dxf() sul file grezzo — audit,
                   INSERT non esplosi, entità con Z != 0 riportate sul piano,
                   duplicati rimossi. topo.validate_document(doc) le rilancia.
@@ -50,6 +52,7 @@ class Document:
     source_path: str                 = ""
     source_format: str               = ""
     warnings:    List[str]           = field(default_factory=list)
+    notes:       List[str]           = field(default_factory=list)
 
     def node_tolerance(self, *, override: Optional[float] = None) -> float:
         """La tolleranza dei nodi: `override` se dato, altrimenti quella del load."""

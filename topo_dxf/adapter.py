@@ -16,7 +16,7 @@ from ezdxf.colors import aci2rgb, int2rgb
 
 # Solo nomi pubblici di topo: l'adapter è un consumer come un altro (MAP.md D125)
 from topo.primitives import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg
-from topo.model import Edge, EdgeStyle, RoleRule, resolve_role
+from topo.model import Diagnostic, Edge, EdgeStyle, RoleRule, resolve_role
 
 from .parser import DxfEntityDispatcher
 
@@ -325,7 +325,9 @@ class DxfAdapter:
 
             edges.append(Edge.of(prim, role, style=style))
 
-        for dtype, n in sorted(degenerate.items()):
-            self.warnings.append(f"{n} {dtype} senza una curva ignorati (raggio o asse nullo, o una "
-                                 f"coordinata non finita): un punto o nessuna posizione")
+        if degenerate:
+            self.warnings.append(Diagnostic(
+                "dxf-no-curve", f"{sum(degenerate.values())} entities with no curve left out",
+                notes=[f"{n} {dtype}" for dtype, n in sorted(degenerate.items())]
+                      + ["zero radius or axis, or a coordinate that is not finite: a point or no position"]))
         return edges

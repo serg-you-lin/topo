@@ -12,6 +12,7 @@ Funzioni pubbliche:
 """
 
 from ezdxf import upright as _upright
+from topo.model import Diagnostic
 
 _FLATTENABLE_TYPES = frozenset({'LINE', 'ARC', 'CIRCLE', 'LWPOLYLINE', 'ELLIPSE'})
 
@@ -115,15 +116,13 @@ def _explode_inserts(msp, sink: list = None) -> int:
     if not inserts:
         return 0
 
+    failed = []
     for insert in inserts:
         try:
             insert.explode()
         except Exception as ex:
-            msg = f"esplosione INSERT fallita: {ex}"
-            if sink is not None:
-                sink.append(msg)
-            else:
-                print(f"  [WARN] {msg}")
+            failed.append(str(ex))
+    _explode_failed(sink, "INSERT", failed)
 
     return len(inserts)
 
@@ -137,6 +136,7 @@ def _explode_hatches(msp, sink: list = None) -> int:
     from ezdxf.render.hatching import hatch_entity
 
     hatches = [h for h in msp.query("HATCH") if not h.dxf.solid_fill]
+    failed = []
     for hatch in hatches:
         attribs = {
             k: hatch.dxf.get(k)
@@ -148,17 +148,26 @@ def _explode_hatches(msp, sink: list = None) -> int:
             # righe devono essere quelle del file, uguali a ogni lettura
             segments = list(hatch_entity(hatch, jiggle_origin=False))
         except Exception as ex:
-            msg = f"esplosione HATCH fallita: {ex}"
-            if sink is not None:
-                sink.append(msg)
-            else:
-                print(f"  [WARN] {msg}")
+            failed.append(str(ex))
             continue
         for start, end in segments:
             msp.add_line(start, end, dxfattribs=attribs)
         msp.delete_entity(hatch)
-
+    _explode_failed(sink, "HATCH", failed)
     return len(hatches)
+
+
+def _explode_failed(sink, dxftype: str, failed: list) -> None:
+    """Un `Diagnostic` per tipo con tutte le esplosioni fallite (D233); senza
+    `sink` lo stampa."""
+    if not failed:
+        return
+    msg = Diagnostic("dxf-explode-failed", f"{len(failed)} {dxftype} could not be exploded, left out",
+                     notes=failed[:5])
+    if sink is not None:
+        sink.append(msg)
+    else:
+        print(msg)
 
 
 """
