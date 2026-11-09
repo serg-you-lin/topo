@@ -41,7 +41,7 @@ OUTDIR = r"pipeline_output"                   # written to <repo>/pipeline_outpu
 | 17 | `17_rotate_to_longest_outer.py` | `rotate_to_longest` (outside `__all__`, D46), `tools.rotate.longest_structural_segment` | rotate an already healed `Result` so the longest side of the outer is horizontal |
 | 18 | `18_outer_scan.py` | `core.readings.outer_scan.outer_candidate_edges` (not exported) | outer-boundary candidates by ray casting — the idea the island reading grew from, no longer used by `outlines()` |
 | 20 | `20_outlines.py` | `heal(...).outlines()`, `experimental.read_outlines` | the contour reading (`outlines()`) on every drawing in `tests/examples/islands`, one DXF layer per decision |
-| 21 | `21_sweep_invariants.py` | `heal` (`faces()`, `outlines()`), `tests/invariants.py` | the suite's invariants on a folder of drawings the repo does not have (same content skipped), each drawing in a separate process with a time limit; report written outside the repo |
+| 21 | `21_sweep_invariants.py` | `heal` (`faces()`, `outlines()`), `tests/invariants.py` | the suite's invariants on a folder of drawings the repo does not have (a drawing whose content the repo already holds is skipped), each drawing in a separate process with a time limit; report written outside the repo |
 
 `11_batch_heal.py` accepts a folder as an argument (`python
 scripts/11_batch_heal.py path/`) and `--tol`; with no arguments it processes
