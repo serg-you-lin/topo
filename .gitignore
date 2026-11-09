@@ -71,6 +71,9 @@ tests/examples/**/outputs/
 **/*golden*.json
 pipeline_output/
 
+# Code index: generated locally by scripts/gen_index.py, a developer tool, not docs.
+docs/INDEX.md
+
 # tests/data/ is the tracked root the suite reads: the drawings that passed
 # `scripts/audit_names.py` and `anonymize scan`, plus their goldens and
 # configs. It comes last, so it wins over every rule above — which is the
