@@ -232,43 +232,56 @@ file grezzo (`docs/API.md`).
   sperimentale: può sbagliare su un caso su cui non è stata misurata, e può
   cambiare in una minor. Leggila, giudicala, non applicarla alla cieca.
 
-**Difetti noti dell'healing**, da sistemare nella 1.x — quelli che puoi incontrare oggi:
+**Difetti noti dell'healing** — un risultato sbagliato che puoi incontrare oggi,
+da sistemare nella 1.x. Ognuno è stato riprodotto sul codice attuale.
 
-- *Avviso di quasi-copia su spigoli veri.* Una retta corta con i due capi entro
-  `tolerance` da una più lunga viene segnalata come quasi-copia anche quando le
-  due si incontrano in uno spigolo vero (45–90°); il suo consiglio propone allora
-  una fusione che aprirebbe il contorno. La geometria in sé è letta giusta.
 - *Curva che incrocia se stessa.* Una curva sola che incrocia se stessa non
-  viene tagliata nel suo incrocio: `outlines()` legge l'anello intero come un
-  contorno (un quadrato con un ricciolo dà l'area con segno dell'anello, non il
-  quadrato più un lobo in `loose`).
+  viene tagliata nel suo incrocio: tutte e due le letture danno l'anello intero
+  come un contorno (un quadrato con un ricciolo dà l'area con segno
+  dell'anello, non il quadrato più un lobo in `loose`). Oggi nessun messaggio
+  lo dice.
 - *Un nodo su un'altra curva chiusa.* Due curve chiuse semplici dove un vertice
   dell'una sta esattamente sul bordo dell'altra: `outlines()` dà la prima e
-  mette la seconda in `loose`.
+  mette la seconda in `loose`. Oggi nessun messaggio lo dice.
 - *Un cerchio disegnato a tante rette corte con una piccola apertura.* Viene
   rifatto in una curva aperta sola, i cui due capi non sono mai trattati come un
-  gap, quindi resta in `loose` (circa 20 su 750 casi a caso, apertura
-  0,02–0,03 con `tolerance` 0,1).
-- *Un capo che sporge di pochi millesimi.* Dove una curva supera un'altra di
-  ~0,003, l'incontro viene chiuso da una retta corta nuova (nota `gap-closed`)
-  invece di accorciare il capo fino all'altra curva.
-- *Un tratto cortissimo* con i due capi sullo stesso nodo viene saldato via
-  (nota `welded`).
-- *Fusione dentro `outlines()`.* Fonde ancora i pezzi quasi allineati o
-  concentrici (entro 1e-3); le letture smetteranno di fondere quando esisterà
-  una funzione pubblica di fusione.
-- *Due curve chiuse quasi coincidenti* (lo stesso cerchio disegnato due volte,
-  a 0,05 con `tolerance` 0,1) escono come due cluster e il risultato resta
-  valido; lo dice l'avviso `crossing`. Se due contorni chiusi che si incrociano
-  debbano rendere il risultato non valido non è ancora deciso.
+  gap, quindi resta in `loose` invece di chiudersi (circa il 6% di questi
+  anelli in un campione a caso); lo dice la nota `open-spline`.
 - *Edge esclusi dal grafo.* Con un `is_structural` su misura che accetta ogni
   ruolo, `faces()` può non consegnare da nessuna parte gli edge messi da parte
   come non di contorno (nessun cluster, niente in `loose`) — un'eccezione a
-  *completo* qui sopra. `outlines()` li consegna.
-- *Tempo.* I disegni fatti di lunghe catene di tratti cortissimi costano circa
-  il doppio da ricucire; la discretizzazione delle spline è il costo singolo più
-  grande di `outlines()`; due fogli grandi di viste misurati oltre 300 s.
-- *Testi legati alla geometria* (`topo.experimental`) mancano alcuni legami che
+  *completo* qui sopra. L'avviso `non-contour` li conta; `outlines()` li
+  consegna.
+- *Consiglio di quasi-copia su spigoli veri.* Una retta corta con i due capi
+  entro `tolerance` da una più lunga viene segnalata come quasi-copia anche dove
+  le due si incontrano in uno spigolo vero (45–90°), e il consiglio propone una
+  fusione che aprirebbe il contorno. La geometria è letta giusta; sbaglia solo
+  il consiglio.
+
+**Comportamenti voluti**, da sapere:
+
+- *I pezzi minuscoli si saldano.* Un gruppo di tratti entro 0,05 viene saldato
+  su un nodo solo (nota `welded`): un pezzo più corto di così non si distingue
+  da un nodo.
+- *Un salto si chiude, non si sposta.* Dove una curva supera un'altra di pochi
+  millesimi, la lettura aggiunge un tratto dritto corto fra i due capi (nota
+  `gap-closed`) invece di spostare una delle due curve: le curve del disegno
+  restano come sono disegnate. Accorciare il capo lungo se stesso fino all'altra
+  curva, come a un incrocio, è previsto nella 1.x.
+- *`outlines()` unisce i pezzi che continuano uno nell'altro* (allineati o
+  sullo stesso cerchio, entro 1e-3) in una curva sola; `faces()` tiene ogni
+  pezzo come è disegnato. Tutte e due restano entro `tolerance` dalla sorgente.
+- *Due curve chiuse che si incrociano* (lo stesso cerchio disegnato due volte,
+  a 0,05) sono due cluster e il risultato resta valido, con l'avviso
+  `crossing`. Se dei contorni che si incrociano debbano rendere il risultato
+  non valido non è ancora deciso.
+
+**Costi e parti sperimentali**
+
+- I disegni fatti di lunghe catene di tratti cortissimi costano circa il doppio
+  da ricucire; la discretizzazione delle spline è il costo singolo più grande
+  di `outlines()`; due fogli grandi di viste misurati oltre 300 s.
+- I testi legati alla geometria (`topo.experimental`) mancano alcuni legami che
   un lettore traccerebbe.
 
 ---
