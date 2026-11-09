@@ -26,6 +26,8 @@ from .parser import DxfEntityDispatcher
 # ---------------------------------------------------------------------------
 
 _SUPPORTED_TYPES = frozenset({'LINE', 'ARC', 'SPLINE', 'ELLIPSE'})
+# ogni tipo che to_edges trasforma in curve
+_CURVE_TYPES = _SUPPORTED_TYPES | {'CIRCLE', 'LWPOLYLINE', 'POLYLINE'}
 
 # Linetype "di sistema": non hanno una entry propria nella tabella o non
 # portano un pattern (BYLAYER/BYBLOCK ereditano; CONTINUOUS è sempre presente
@@ -258,11 +260,19 @@ class DxfAdapter:
 
     def to_edges(self) -> List[Edge]:
         """Traduce entità DXF in Edge."""
+        # una curva su un layer saltato non sparisce in silenzio: si conta per
+        # layer e diventa un avviso (D137, D242)
+        skipped = Counter()
+
         def _is_excluded(entity) -> bool:
             if id(entity) in self.exclude_ids:
                 return True
             layer = entity.dxf.layer if entity.dxf.hasattr("layer") else ""
-            return self.skip_layer(layer)
+            if not self.skip_layer(layer):
+                return False
+            if entity.dxftype() in _CURVE_TYPES:
+                skipped[layer] += 1
+            return True
 
         edges = []
         seen_segment_keys = set()
@@ -330,4 +340,9 @@ class DxfAdapter:
                 "dxf-no-curve", f"{sum(degenerate.values())} entities with no curve left out",
                 notes=[f"{n} {dtype}" for dtype, n in sorted(degenerate.items())]
                       + ["zero radius or axis, or a coordinate that is not finite: a point or no position"]))
+        if skipped:
+            self.warnings.append(Diagnostic(
+                "dxf-layer-skipped", f"{sum(skipped.values())} curves on skipped layers left out",
+                notes=[f"{n} on layer {layer!r}" for layer, n in sorted(skipped.items())],
+                help="topo_dxf.load_dxf(path, skip_layers=()) reads every layer"))
         return edges
