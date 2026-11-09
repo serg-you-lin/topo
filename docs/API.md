@@ -520,7 +520,8 @@ names: "circle", never "hole". The basic measures (length of a
 segment, open traces, strokes on axes, intervals) have been public since
 D122; what remains in the submodules of `topo.core.geometry` (node rounding,
 point sequences, `circular_geometry`, …) is internal, with no
-guarantees. The list with `file:line` is in `docs/INDEX.md`.
+guarantees. `python scripts/gen_index.py` writes the list with `file:line`
+to `docs/INDEX.md` (generated locally, not in git).
 
 ### `contour_shape`
 
