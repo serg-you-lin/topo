@@ -23,7 +23,8 @@ from typing import Callable, List, Optional
 
 from ..topology.edge import Edge
 from ..topology.noding import decide_nodes
-from .normalizer import (merge_cocircular_overlaps, merge_collinear_overlaps, refit_tessellations)
+from .normalizer import (merge_cocircular_overlaps, merge_collinear_overlaps, refit_circle_rings,
+                         refit_tessellations)
 from .cleanup import (ambiguous_free_ends, close_free_gaps, close_near_full_arcs, split_labeled)
 
 
@@ -84,5 +85,6 @@ def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normali
     # sul tratto del gap, e quel tratto resta doppio nella rete (G15)
     merged = merge_collinear_overlaps(closed, keep_junctions=keep_junctions)
     out.merged_lines += len(closed) - len(merged)
-    out.edges = merged
+    # solo ora l'anello di un foro scritto a punti è chiuso: diventa il suo cerchio (D236)
+    out.edges = refit_circle_rings(merged)
     return out
