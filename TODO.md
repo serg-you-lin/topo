@@ -379,10 +379,14 @@ Aperte:
 
 ## Aperti minori
 
-- Da misurare (segnalato, non verificato): il consiglio di un Diagnostic su
-  2 file dice "max_gap=0.1 closes them all", ma con quel valore il risultato
-  resta non valido; su 4 file l'unico errore resta `no-closed-outer`. Servono i
-  file per riprodurlo; il consiglio è sperimentale (D240) ma non deve essere falso.
+- Il consiglio di `near-gap` può essere falso (D240: sperimentale, ma non deve
+  mentire). Misurato con `faces()` e la tolleranza di default:
+  - `tests/data/golden_faces/rect_gap.dxf` e `rect_overlap.dxf`: dice
+    "max_gap=0.1 closes them all", ma un angolo ha un buco di 0.141; con 0.1 il
+    risultato resta non valido (`no-loop`).
+  - `golden_faces/spline_line_gap.dxf`, `arc_arc_gap.dxf`, `arc_open.dxf` e
+    `spline_line_gap_qcad.dxf`: buchi di 0.2–0.245, nessun consiglio, solo
+    `no-closed-outer`; con `max_gap=0.5` si chiudono tutti.
 - `import topo_pdf` dà l'avviso di PyMuPDF "The `fitz` API is deprecated".
 - `contour_minus` rifiuta i bordi che corrono uno sull'altro (`ValueError`):
   da gestire se un caso vero lo chiede (D118).
