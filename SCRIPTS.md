@@ -12,7 +12,7 @@ Gli input di default puntano a `tests/examples/`. Gli output vanno in
 `pipeline_output/` (ignorato da git).
 
 **Percorsi — un solo modo.** La prima riga di ogni script è `import _paths`
-(vedi `scripts/_paths.py`): fa `os.chdir()` alla radice del repo, quindi da
+(vedi `scripts/_paths.py`): fa `os.chdir()` alla radice del repo (non fa parte del package), quindi da
 riga di comando, dal pulsante Run di VS Code o da un terminale aperto in
 un'altra cartella il comportamento è identico. Nel blocco `CONFIG` si scrive il
 percorso grezzo e basta:
@@ -49,51 +49,3 @@ scripts/11_batch_heal.py path/`) e `--tol`; senza argomenti processa
 
 I tipi di dominio (`Result`, `Cluster`, `Contour`, `Document`,
 `Text`) sono mostrati inline dentro gli script.
-
-## Strumenti di manutenzione
-
-Non fanno parte della palestra dell'API: non chiamano `topo`, guardano il repo.
-
-- `scripts/gen_index.py` — rigenera `docs/INDEX.md` (ogni nome di modulo con
-  `file:line`) e con `--check` esce 1 se è stale; verifica anche la regola di
-  dipendenza (`core`/`model` non importano `adapters`/`tools`/`io`, D44).
-- `scripts/audit_names.py` — cerca nei file tracciati i nomi che identificano un
-  cliente: nome del file, prosa e codice, **contenuto dei disegni** (percorsi di
-  salvataggio, nomi di layer, testi del cartiglio), e i nomi di sole cifre.
-  `--strict` esce 1 al primo sospetto, `--from-disk` cerca anche i nomi dei
-  disegni che stanno solo su questa macchina (D73, D75, D76).
-- `scripts/check_map_shrink.py` — controlla l'accorciamento di MAP.md contro la
-  versione intera in git (`--ref`, default `67fda38`): ogni D## ha ancora una
-  voce, nessuna voce doppia, nessun rimando D## appeso in md/py; con
-  `--archive` verifica che l'archivio abbia ogni titolo. Esce 1 sugli errori.
-- `python -m topo.tools.anonymize` — non è in `scripts/` ma si usa da riga di
-  comando come loro: `scan` elenca tutto quello che è scritto dentro un disegno
-  (testi, nomi di layer/blocco/stile, percorsi, variabili d'intestazione, XDATA),
-  `clean` sostituisce una mappa in quelle sole stringhe e topo verifica che la
-  geometria non si sia mossa. È il passaggio che rende pubblicabile un disegno
-  cliente (D77); la mappa resta locale.
-- `scripts/audit_fixtures.py` — i disegni che la suite usa e che non sono in
-  git: un golden senza il suo padre fa `skipTest`, quindi su un clone pulito
-  girano meno test di quanti se ne vedono passare. `--list` dà la lista da
-  passare a `git add -f`; mettere un disegno in git resta una decisione da
-  prendere, non un passo automatico (D76).
-- `scripts/release_check.py` — topo è *1.0-ready*? (D148). Esce 0 solo se
-  passano tutti: suite senza failed/error/xfailed/xpassed, `gen_index --check`,
-  `audit_names --strict` sui file e sulla history, `audit_fixtures --strict`,
-  docstring inglesi sui
-  nomi pubblici; per ogni controllo che non passa stampa cosa manca e il punto
-  del cancello in `TODO.md`. `--no-suite` salta pytest (~90 s).
-
-## Fuori serie
-
-- Lo script di produzione per lo split dei file cliente (ex `scripts/13_…`) è
-  passato in snapbend (alla radice, non versionato), ancora su API
-  pre-refactor (usa path assoluti propri, non `_paths`).
-  Da portare alla nuova API in una sessione dedicata e collaudare con
-  l'overlay-check in SigmaNest. Non versionato.
-- `_archive/old_scripts/` — la vecchia serie numerata (API morte), tenuta come
-  riferimento storico. Solo locale, non versionato.
-- `dev_tools/` — prototipi (grafo, dashboard, split verify). Base di partenza per
-  la futura repo dashboard (MAP.md D16). Solo locale, non versionato.
-- `scripts/_paths.py` — `import _paths` come prima riga di ogni script della
-  serie: `chdir` alla radice del repo. Non fa parte del package.
