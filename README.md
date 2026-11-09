@@ -245,18 +245,20 @@ own for the raw file (`docs/API.md`).
   one open curve whose two ends are never treated as a gap, so it stays in
   `loose` (about 20 in 750 random cases, opening 0.02–0.03 at `tolerance` 0.1).
 - *An end that overshoots by a few thousandths.* Where one curve passes another
-  by ~0.003, the meeting is closed by a new short line, with a warning, instead
-  of trimming the end onto the other curve.
-- *A very short piece* (< 0.01) with both ends on one node is welded away, with
-  a warning.
+  by ~0.003, the meeting is closed by a new short line (note `gap-closed`)
+  instead of trimming the end onto the other curve.
+- *A very short piece* with both ends on one node is welded away (note `welded`).
 - *Merging inside `outlines()`.* It still merges nearly collinear or concentric
   pieces (within 1e-3); the readings will stop merging once a public merge
   function exists.
 - *Two nearly coincident closed curves* (the same circle drawn twice, 0.05
-  apart at `tolerance` 0.1) come out as two clusters, valid, with no warning.
+  apart at `tolerance` 0.1) come out as two clusters and the result stays valid;
+  the `crossing` warning says so. Whether crossing closed contours should make a
+  result invalid is not decided yet.
 - *Edges excluded from the graph.* With a custom `is_structural` that accepts
-  every role, edges set aside as non-contour can end up in no output at all —
-  an exception to *complete* above.
+  every role, `faces()` can deliver edges set aside as non-contour nowhere at
+  all (no cluster, nothing in `loose`) — an exception to *complete* above.
+  `outlines()` delivers them.
 - *Time.* Drawings made of long chains of very short strokes cost about twice
   as much to heal; spline discretization is the largest single cost of
   `outlines()`; two large sheets of views measured over 300 s.

@@ -250,18 +250,21 @@ file grezzo (`docs/API.md`).
   gap, quindi resta in `loose` (circa 20 su 750 casi a caso, apertura
   0,02–0,03 con `tolerance` 0,1).
 - *Un capo che sporge di pochi millesimi.* Dove una curva supera un'altra di
-  ~0,003, l'incontro viene chiuso da una retta corta nuova, con un avviso,
+  ~0,003, l'incontro viene chiuso da una retta corta nuova (nota `gap-closed`)
   invece di accorciare il capo fino all'altra curva.
-- *Un tratto cortissimo* (< 0,01) con i due capi sullo stesso nodo viene
-  saldato via, con un avviso.
+- *Un tratto cortissimo* con i due capi sullo stesso nodo viene saldato via
+  (nota `welded`).
 - *Fusione dentro `outlines()`.* Fonde ancora i pezzi quasi allineati o
   concentrici (entro 1e-3); le letture smetteranno di fondere quando esisterà
   una funzione pubblica di fusione.
 - *Due curve chiuse quasi coincidenti* (lo stesso cerchio disegnato due volte,
-  a 0,05 con `tolerance` 0,1) escono come due cluster, validi, senza avviso.
+  a 0,05 con `tolerance` 0,1) escono come due cluster e il risultato resta
+  valido; lo dice l'avviso `crossing`. Se due contorni chiusi che si incrociano
+  debbano rendere il risultato non valido non è ancora deciso.
 - *Edge esclusi dal grafo.* Con un `is_structural` su misura che accetta ogni
-  ruolo, gli edge messi da parte come non di contorno possono non finire in
-  nessuna uscita — un'eccezione a *completo* qui sopra.
+  ruolo, `faces()` può non consegnare da nessuna parte gli edge messi da parte
+  come non di contorno (nessun cluster, niente in `loose`) — un'eccezione a
+  *completo* qui sopra. `outlines()` li consegna.
 - *Tempo.* I disegni fatti di lunghe catene di tratti cortissimi costano circa
   il doppio da ricucire; la discretizzazione delle spline è il costo singolo più
   grande di `outlines()`; due fogli grandi di viste misurati oltre 300 s.
