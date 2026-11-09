@@ -239,10 +239,10 @@ da sistemare nella 1.x. Ognuno è stato riprodotto sul codice attuale.
   viene tagliata nel suo incrocio: tutte e due le letture danno l'anello intero
   come un contorno (un quadrato con un ricciolo dà l'area con segno
   dell'anello, non il quadrato più un lobo in `loose`). Oggi nessun messaggio
-  lo dice.
+  lo dice l'avviso `self-crossing`.
 - *Un nodo su un'altra curva chiusa.* Due curve chiuse semplici dove un vertice
   dell'una sta esattamente sul bordo dell'altra: `outlines()` dà la prima e
-  mette la seconda in `loose`. Oggi nessun messaggio lo dice.
+  mette la seconda in `loose`; lo dice l'avviso `closed-touch`.
 - *Un cerchio disegnato a tante rette corte con una piccola apertura.* Viene
   rifatto in una curva aperta sola, i cui due capi non sono mai trattati come un
   gap, quindi resta in `loose` invece di chiudersi (circa il 6% di questi
