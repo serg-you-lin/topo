@@ -6,8 +6,8 @@ sui segmenti del modello. Zero accesso a source_ref, entity_ids, msp sorgente.
 
 `to_dxf(result, ...)` → un Drawing con tutto quello che il Result contiene.
 Un file per parte: `topo.split(result)` dà un Result per parte, e ognuno
-passa da `to_dxf` (D124, D129); `recipes.split_to_files()` è quel ciclo, più
-il salvataggio su disco.
+passa da `to_dxf` (D124, D129); il ciclo è del chiamante (`split_to_files`
+rimosso, D176).
 """
 
 from __future__ import annotations
