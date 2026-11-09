@@ -246,87 +246,15 @@ volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
 (nessun tipo shapely nella superficie, D166–D168), G15 (contorni chiusi
 esatti, D206/D209), G16 (tratteggio per ruolo, D210) — tutti e due il 6
 novembre, ramo `no-join-ends` fuso in `main`.
+Da G7 resta un filo fuori dal cancello: i golden dei `_noframe` (Federico).
 
 **Aperti**
-- [x] **G15** Un contorno consegnato si chiude entro tolleranza (3 novembre).
-      Rende vera la regola 6 di CLAUDE.md (`is_valid` prima di una macchina);
-      allarga D143 con la chiusura. Caso: `heal(doc, tolerance=0.5)` su
-      `regr_02`, `anch_03`, `anch_03_noframe`: uno spigolo a 90° con
-      un'obliqua a 45° sopra, interrotta di 0,41 mm sullo spigolo.
-      `close_free_gaps` chiude il buco, il pezzo di chiusura taglia lo
-      spigolo e nella rete compare due volte (`split_at_crossings`).
-      Misurato su 25 DXF (`golden_outlines/`, `golden_anchoring/`): salto di
-      0,411 mm in `faces()` su tutti e tre, in `outlines()` su `regr_02` e
-      `anch_03_noframe`; `is_valid` True ovunque. A 0,05 (tolleranza del file)
-      nessun buco. `validate_result` non controlla la chiusura.
-      Sottopassi: 2 controllo di chiusura in `validate_result`; 3 meccanismo
-      in `readings/network.py` (non il solo regr_02); 4 golden, se cambiano;
-      5 decisione in MAP.md.
-      Fatto il 3 (`78b460c`): `normalize` fonde i collineari due volte, prima
-      (doppioni del disegno) e dopo `close_free_gaps` (le due metà allungate
-      sul gap si sovrappongono). Federico (2 novembre, DXF in `_debug`):
-      `sbagli_tratteggio_largo` con G15 giusto in `faces()` (12) e
-      `outlines()` (10), senza G15 sbagliato in tutte e due. Lo stretto non
-      ancora giudicato. Restano 2, 4, 5.
-      `largo` in `tests/data/golden_faces/` con golden `faces()` (passa con G15,
-      senza fallisce: area +1607 mm²). Per il 2: `outlines()` non chiama
-      `validate_result`. Salti testa-coda misurati a 0,5 con G15 (81 file
-      golden_outlines/anchoring, 162 letture): 72 a zero, 45 > 1e-6, 9 > 0,01
-      (max 0,062 `regr_01` faces; 0,05 su regr_03, anch_01, anch_01_noframe),
-      il salto G15 era 0,411. Deciso D206: chiuso esatto, ogni salto è un
-      bug del motore → le 48 letture con salto > 1e-9 vanno corrette.
-      Storia (stessi 81 file, faces+outlines a 0,5; letture con salto > 1e-9):
-      0.23.0 `66829cb` 32 (max 0,05) · prima di D189 `6c0cca6` 36 (max 0,064)
-      · D189 `f477804` 47 (9 a 0,41–0,42, tolti da G15) · oggi 48 (max 0,062).
-      Dal 25 ottobre: 31 rotte allora e oggi, 1 guarita, 17 nuove.
-      **Chiuso il 6 novembre**: `test_fidelity` (218 test, 162 letture)
-      pretende 0 salti e passa; un salto entro tolleranza lo chiude una retta
-      nuova con un warning (D209). Suite intera verde (3046, 0 falliti).
 - [ ] **G14** Superficie allineata alle API di una libreria matura (D174,
       D175). Fatti: la regola (D175), la passata sui nomi (D176, D177), la
       regola 1 come test (D178). Restano: la regola 8 (con G9) e il test di
       rimozione delle deprecazioni (vuoto finché non ce n'è una). Consumer da
       adeguare con le tabelle vecchio → nuovo di D176/D177: snapbend,
       snapdraw, smoother, pippo — dalle loro sessioni.
-- [x] **G16** Un tratteggio dentro un pezzo non sporca il contorno (2 novembre).
-      `tests/data/sbagli_tratteggio.dxf` (non tracciato; 12 linee + un `HATCH`
-      ANSI31 che `topo_dxf` non legge), con il tratteggio esploso in 2622 righe
-      a 45° (0,125 mm) e un restringimento di 0,3 mm nel contorno. A tolleranza
-      0,5: `faces()` ha un contorno di **1136** segmenti (dovrebbero essere 12),
-      `outlines()` di 14–15; a 0,05 sono 12 tutti e due. Nato con D189
-      (`f477804`): `6c0cca6`, il commit prima, dava `heal()` a 12 segmenti e 0
-      inner; da `f477804` 1136 (anche `ca3cac5`, prima di D202). Dipende dalla modifica
-      di G15 (misurato a 0,5, HEAD `be2d3b8` con/senza la seconda fusione):
-      stretto `faces()` 1136 seg + 0/1 inner, `outlines()` 15/14; largo
-      `faces()` 12/9, `outlines()` 10/9. Più indietro (`b7ca910`) era un'altra cosa: 70 cluster. I 1136 sono i 12 lati veri, nella forma giusta, spezzati in ogni punto
-      in cui una riga di tratteggio li tocca (681 orizzontali, 451 verticali,
-      4 altri, nessuno a 45°): la rete piana ha 7885 pezzi, il contorno non li
-      rifonde. Resta da guardare lo stretto (`outlines()` dà 14–15 segmenti; quanti
-      debbano essere lo stabilisce Federico). Federico:
-      né `faces()` né `outlines()` vanno bene così.
-      Causa: i 1136 sono i lati spezzati dai contatti del tratteggio, mai
-      rifusi → `faces()` rifonde i collineari. `largo`: con G15 giusto per
-      Federico (vedi G15), non fa più parte di G16.
-      Ramo `no-join-ends` (6 novembre): la causa vera era `NodedEdges.whole`,
-      che ricomponeva un lato solo se il giro lo percorreva tutto; agli angoli
-      una riga di tratteggio lascia fuori la punta, e il lato restava a pezzi.
-      Ora i pezzi di fila tornano un tratto solo della curva (`_joined_run`):
-      stretto `faces()` 1136 → 14, `outlines()` 15 (12 lati + righe di
-      tratteggio sugli angoli). Federico (6 novembre): il tratteggio lo toglie
-      il consumer prima di `heal()`, con un ruolo non strutturale; così
-      stretto dà 12 in tutte e due le letture. DXF in `_debug/2026-11-06_topo_g16-tratteggio`.
-      **Chiuso il 6 novembre**: il rosso→verde del meccanismo è
-      `TestPartOfACurveOnTheContour` (`test_noding.py`, rosso su `main`); la
-      promessa di D210 è `tests/engine/readings/test_non_structural_role.py`
-      (righe con ruolo non strutturale che tagliano gli angoli: pezzo e area
-      uguali a quelli senza righe, righe in `loose`; rosso se le righe restano
-      nella rete). Riconoscere un tratteggio è del consumer (snapdraw): il
-      file `stretto` resta non tracciato, per il suo test.
-- [x] **G7** Zero `expectedFailure` (7 novembre, D220). Difetti noti ne restano
-      (curva che incrocia sé stessa, curva chiusa che tocca col nodo, agganci persi):
-      sono limiti della 1.0, scritti qui sotto, non test rossi.
-      golden di outlines e di aggancio rigenerati, liste dei noti vuote,
-      suite senza rossi attesi. Golden dei `_noframe` non fatti (Federico).
 - [ ] **G8** README / README_IT / `description` di pyproject / prima riga di
       CLAUDE.md: motore di geometria 2D, i disegni tecnici sono un caso.
       Oggi tutti e quattro dicono "for technical drawings and CAD geometry":
