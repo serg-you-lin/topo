@@ -26,6 +26,11 @@ own vocabulary on top through one open overlay (`cluster.overlay`).
 
 > Status: **alpha**. Used in production, but the API still moves. See `MAP.md` for the current design decisions.
 
+> **Writing code against topo with an AI assistant?** Give it
+> [`docs/LLM.md`](docs/LLM.md) too: every public name with its signature, in few
+> tokens. This README is the overview; names outside the stable API live in
+> `topo.experimental` and are always written with that prefix.
+
 ---
 
 ## Install
@@ -111,9 +116,11 @@ another is a cluster with only its `outer` (what lies inside goes to `loose`). T
 distance between views. `max_gap` (default `tolerance`) is the widest gap closed — see
 `docs/API.md` (`Network.outlines`).
 
-The readings are recipes over public steps. `heal()`'s steps (`split_labeled`,
-`close_free_gaps`, `face_loops`, `build_hierarchy`, ...) are exported one by one,
-so a consumer can compose its own order — see `docs/API.md` (the steps of `heal()`).
+The readings are recipes over public steps. `heal()`'s steps are exported one by
+one in `topo.experimental` (`topo.experimental.split_labeled`,
+`topo.experimental.close_free_gaps`, `topo.experimental.face_loops`,
+`topo.experimental.build_hierarchy`, ...), so a consumer can compose its own
+order — see `docs/API.md` (the steps of `heal()`).
 
 ## Drawing with topo
 
@@ -181,7 +188,7 @@ topo_dxf.load_dxf(path)   ──►  Document   (edges + texts + source_meta)
 topo.load_segments(segs)  ──►  Document   the adapter is the only code that reads a format
                           │
                           ▼
-     heal(doc)  ──►  Network     the drawing repaired once: nodes, doubles, gaps
+topo.heal(doc)  ──►  Network     the drawing repaired once: nodes, doubles, gaps
                           │
                           ▼   .faces() / .outlines()
                        Result      topology: loops found,
@@ -190,15 +197,31 @@ topo.load_segments(segs)  ──►  Document   the adapter is the only code tha
   (a consumer's reading)               e.g. snapbend: hole type, bend lines, engraving,
                           │            attached to cluster.overlay
                           ▼
-   split(result)                 ──►  list[Result]     one per part, no format
-   topo_dxf.to_dxf(result, doc)  ──►  ezdxf Drawing    render — a whole Result or one part
-   to_svg(result)                ──►  SVG string       render — for a UI / report (`topo.experimental`, outside the 1.0 stable API, D133)
-   to_view_model(result)         ──►  dict (full geometry) for an external renderer (outside the 1.0 stable API)
-   save_json                                           the model's facts as JSON
+   topo.split(result)                       ──►  list[Result] one per part, no format
+   topo_dxf.to_dxf(result, doc)             ──►  ezdxf Drawing  render — a whole Result or one part
+   topo.experimental.to_svg(result)         ──►  SVG string   render — for a UI / report (outside the 1.0 stable API, D133)
+   topo.experimental.to_view_model(result)  ──►  dict (full geometry) for an external renderer (outside the 1.0 stable API)
+   topo.save_json(result, path)                  the model's facts as JSON
 ```
 
 The model is the product. `to_dxf` never re-reads the source file — every renderer
 (DXF, SVG, the view model) draws from the same model, so they all show the same picture.
+
+## What a `Result` holds
+
+```
+Result      clusters: list[Cluster]   loose: list (curves that are no cluster's contour)
+            texts   is_valid   errors   warnings   notes
+            reading ("faces" / "outlines")   tolerance   max_gap
+            source_file   source_format   cluster_count
+Cluster     outer: Contour   inners: list[Contour]   label   overlay (a consumer's reading)
+            area   bbox
+Contour     segments (LineSeg / ArcSeg / CircleSeg / EllipseSeg / BSplineSeg)   role
+            area   bbox   centroid   points   depth   parent   contains(...)
+```
+
+Shapes are asked of the geometry, not stored: `topo.geometry.contour_shape(contour)`.
+Full cards in `docs/API.md` (`Result`, `Cluster`, `Contour`).
 
 ---
 
@@ -276,13 +299,13 @@ right and you need to see where in the chain it breaks.
 
 ## Documentation
 
+- **[`docs/LLM.md`](docs/LLM.md)** — a dense, token-minimal reference for an AI
+  agent writing code against topo: same ground as `API.md`. Give this one to an LLM.
 - **[`docs/API.md`](docs/API.md)** — every public function: signature, what it
-  takes, returns, mutates, when it raises. With copyable examples (in Italian).
+  takes, returns, mutates, when it raises. With copyable examples.
 - **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — how it is built and why:
   the layers, the flow, "the model is the product".
 - **`MAP.md`** — the design decisions, in chronological order.
-- **[`docs/LLM.md`](docs/LLM.md)** — a dense, token-minimal reference for an AI
-  agent writing code against topo: same ground as `API.md`.
 - **`SCRIPTS.md`** — the numbered scripts in `scripts/`, one per stage of the pipeline.
 
 ---
