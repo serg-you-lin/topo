@@ -12,6 +12,7 @@ Puro: solo Edge, primitive e modello, nessun formato.
 from __future__ import annotations
 
 import math
+import numbers
 from dataclasses import dataclass, field
 from functools import cached_property
 from typing import TYPE_CHECKING, Callable, List, Optional
@@ -105,6 +106,15 @@ class Network:
         return read_network_outlines(self)
 
 
+def _check_length(name: str, value, *, zero_ok: bool) -> None:
+    """Una soglia in mm (D245) deve essere un numero finito, positivo (o zero se `zero_ok`)."""
+    if isinstance(value, bool) or not isinstance(value, numbers.Real):
+        raise TypeError(f"{name} must be a number in mm, got {type(value).__name__}")
+    if not math.isfinite(value) or value < 0 or (value == 0 and not zero_ok):
+        bound = "zero or more" if zero_ok else "greater than zero"
+        raise ValueError(f"{name} must be a finite number of mm, {bound}; got {value}")
+
+
 def build_network(doc: Document, *, tolerance: Optional[float] = None,
                   max_gap: Optional[float] = None,
                   is_structural: Optional[Callable[[str], bool]] = None,
@@ -115,6 +125,9 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
     `max_gap` (default `tolerance`), tratti degeneri tolti.
     """
     tol = doc.node_tolerance(override=tolerance)
+    _check_length("tolerance", tol, zero_ok=False)
+    if max_gap is not None:
+        _check_length("max_gap", max_gap, zero_ok=True)
     gap = tol if max_gap is None else max(tol, max_gap)
     net = Network(tolerance=tol, max_gap=gap, source_file=source_file, label=label,
                   source_format=doc.source_format,

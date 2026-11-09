@@ -291,7 +291,9 @@ assigns the roles to the `Edge`s.
 **Returns** a `Network`. An empty drawing does not raise: `net.errors` is
 populated and `net.is_valid` is `False`.
 
-**Raises** `TypeError` if you do not pass a `Document`.
+**Raises** `TypeError` if you do not pass a `Document`, or if `tolerance`/`max_gap`
+is not a number; `ValueError` if `tolerance` (given, or the loader's) is not a finite
+number greater than zero, or `max_gap` is negative or not finite.
 
 ```python
 net = topo.heal(doc, tolerance=0.5, label="P-1024")
