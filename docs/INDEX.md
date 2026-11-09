@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`84` modules · `536` module-level functions · `65` classes · `16414` lines of code.
+`84` modules · `537` module-level functions · `65` classes · `16428` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -78,7 +78,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_ceil_2` | func | `topo/core/readings/network.py:188` | `x` arrotondato per eccesso a due cifre significative: la soglia |
 | `_chain` | func | `topo/core/base/normalizer.py:245` | Ordina per `lo` e incatena gli span che si toccano o si sovrappongono: |
 | `_chain` | func | `topo/core/geometry/regions.py:324` | Pezzi orientati incatenati testa-coda in anelli chiusi. Con |
-| `chain_runs` | func | `topo/core/base/normalizer.py:618` | Catene massimali: percorsi fra nodi di grado != 2, o anelli. |
+| `chain_runs` | func | `topo/core/base/normalizer.py:632` | Catene massimali: percorsi fra nodi di grado != 2, o anelli. |
 | `_check_factor` | func | `topo/core/primitives/segments.py:134` | Il fattore di una scala: positivo e finito. Uno negativo è una |
 | `_chord_angle` | func | `topo/core/geometry/rings.py:227` | Angolo con segno, in (−π, π], da a a b visti da `point`. |
 | `chord_angle_deg` | func | `topo/core/geometry/measure.py:138` | Angolo (gradi, 0-180°) della corda da `a` a `b`. Modulo 180 perché una |
@@ -287,7 +287,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_line_distance` | func | `topo/core/geometry/rings.py:274` |  |
 | `_line_fit` | func | `topo/core/primitives/fitting.py:148` | Retta ai minimi quadrati sui punti: (punto, direzione unitaria). |
 | `_line_intersection` | func | `topo/core/geometry/intersections.py:23` | Intersezione tra retta (p1,p2) e retta (p3,p4). None se parallele. |
-| `_line_length` | func | `topo/core/base/normalizer.py:445` |  |
+| `_line_length` | func | `topo/core/base/normalizer.py:454` |  |
 | `_line_moments` | func | `topo/core/geometry/integrals.py:110` |  |
 | `_line_spans` | func | `topo/core/base/normalizer.py:194` | Span lungo la retta comune: `t` è la proiezione sulla direzione del |
 | `_line_turn` | func | `topo/core/primitives/fitting.py:172` | Di quanti gradi svolta chi passa dalla linea `a` alla linea `b`. |
@@ -314,14 +314,14 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `map_sanitized_item_to_edge` | func | `topo_pdf/graph_adapter.py:12` |  |
 | `_measured_points` | func | `topo_dxf/text_extractor.py:302` | I punti sulla geometria fra cui la quota misura, dai def-point: |
 | `measured_references` | func | `topo/tools/anchor.py:111` | Gli elementi su cui cadono i ``measured_points`` di ``text`` (gli oggetti |
-| `_median_line` | func | `topo/core/base/normalizer.py:492` | La retta a metà fra due copie di pari lunghezza: ogni capo di `a` col |
+| `_median_line` | func | `topo/core/base/normalizer.py:506` | La retta a metà fra due copie di pari lunghezza: ogni capo di `a` col |
 | `_meet` | func | `topo/core/geometry/intersections.py:147` |  |
 | `_meet_or_bridge` | func | `topo/core/base/gap_solver.py:405` | Se le due geometrie si incontrano in `ix`, porta lì entrambi gli estremi; |
 | `_meetings` | func | `topo/core/topology/noding.py:679` | Dove `a` e `b` si incrociano o si toccano: in forma chiusa fra rette, |
 | `merge_cocircular_overlaps` | func | `topo/core/base/normalizer.py:357` | `merge_collinear_overlaps` per gli ArcSeg e i CircleSeg (un giro intero): |
 | `merge_collinear_overlaps` | func | `topo/core/base/normalizer.py:101` | Fonde gruppi di LineSeg collineari (stessa retta infinita, `_same_line`) |
 | `merge_intervals` | func | `topo/core/geometry/axis.py:34` | Unisce gli intervalli che si sovrappongono o distano al più `tolerance`, in ordine. |
-| `merge_near_copies` | func | `topo/core/base/normalizer.py:472` | Le rette quasi una sopra l'altra entro `distance` (`near_copies`) |
+| `merge_near_copies` | func | `topo/core/base/normalizer.py:486` | Le rette quasi una sopra l'altra entro `distance` (`near_copies`) |
 | `_merge_on_carrier` | func | `topo/core/base/normalizer.py:265` | Raggruppa per supporto gli edge di `segment_type` con ruolo UNKNOWN — |
 | `merge_runs` | func | `topo/core/geometry/shape.py:366` | Segmenti consecutivi di un giro chiuso sulla stessa circonferenza (o |
 | `_merge_texts` | func | `topo_dxf/loader.py:68` | Aggiunge a `base` i testi di `extra` non già presenti (per firma). |
@@ -336,7 +336,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_moved_segment` | func | `topo/core/base/gap_solver.py:448` | Nuovo segmento con l'endpoint `role` spostato su `new_pt`. None se non gestito. |
 | `MoveEndpoint` | class | `topo/core/base/gap_solver.py:76` | Istruzione: sposta l'endpoint role di ref al punto new_pt. |
 | `name_rules` | func | `topo/model/role_rule.py:115` | Scorciatoia: {nome: ruolo} → una RoleRule(name=...) per voce. |
-| `near_copies` | func | `topo/core/base/normalizer.py:449` | Le coppie di LineSeg con lo stesso ruolo in cui la più corta sta tutta |
+| `near_copies` | func | `topo/core/base/normalizer.py:458` | Le coppie di LineSeg con lo stesso ruolo in cui la più corta sta tutta |
 | `_near_copy_warning` | func | `topo/core/readings/network.py:205` |  |
 | `near_free_gaps` | func | `topo/core/base/cleanup.py:175` | I gap fra estremi liberi che `close_free_gaps` chiuderebbe entro |
 | `_near_gap_warning` | func | `topo/core/readings/network.py:231` |  |
@@ -394,6 +394,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `OuterFace` | class | `topo/core/topology/outer_face.py:45` | Il contorno esterno trovato, e cosa il percorso ha scartato. |
 | `OuterHit` | class | `topo/core/readings/outer_scan.py:42` | Un raggio per cui l'Edge è stato l'estremo. |
 | `OutlineReading` | class | `topo/core/readings/outline.py:50` | Cosa outlines() ha deciso su un gruppo, pezzo per pezzo. |
+| `_over` | func | `topo/core/base/normalizer.py:445` | La proiezione di `p` sulla retta di `seg` cade dentro `seg` (a meno di FLOAT_NOISE). |
 | `_p` | func | `topo/inspect.py:41` | Formatta un punto (x, y) con nd decimali. |
 | `_palette_dict` | func | `topo/io/view_model.py:190` | role (stringa) → colore hex, per la legenda di un renderer: i tre ruoli |
 | `_param` | func | `topo/core/geometry/regions.py:67` |  |
@@ -447,7 +448,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_rectangle` | func | `topo/core/geometry/shape.py:202` |  |
 | `refine_gap` | func | `topo/core/geometry/strips.py:63` | La coppia più vicina fra le primitive `a` e `b` (anelli o pezzi |
 | `_refine_segment` | func | `topo/core/primitives/segments.py:406` | Suddivide `[t0, t1]` finché il punto medio (valutato con `evaluate(t)`) |
-| `refit_tessellations` | func | `topo/core/base/normalizer.py:566` | Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di |
+| `refit_tessellations` | func | `topo/core/base/normalizer.py:580` | Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di |
 | `_refuse_crossings` | func | `topo/core/geometry/strips.py:213` |  |
 | `_region_of` | func | `topo/tools/strips.py:95` | La regione piena a cui appartiene un bordo: lui se è pieno, la regione che contiene il vuoto se è vuoto. |
 | `regular_polygon` | func | `topo/core/geometry/build.py:43` | Poligono regolare di `sides` lati inscritto nel cerchio di raggio `radius`; il primo vertice a `angle` gradi. |
@@ -605,7 +606,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `validate_result` | func | `topo/rules/validator.py:82` | Check the clusters of a `Result` a reading produced. **Mutates** `result`: |
 | `_void_area` | func | `topo/model/cluster.py:114` | Area di un vuoto dell'overlay, esatta sui suoi `segments` (D165). |
 | `_warn_non_roundtrip_types` | func | `topo_dxf/loader.py:86` | Avvisa sui tipi di entità che to_dxf() non riscrive (HATCH, IMAGE, …). |
-| `weld_degenerate_linesegs` | func | `topo/core/base/normalizer.py:509` | Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale |
+| `weld_degenerate_linesegs` | func | `topo/core/base/normalizer.py:523` | Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale |
 | `_width_factor` | func | `topo_dxf/text_extractor.py:163` | Stretch orizzontale effettivo del testo (1.0 = nessuno). |
 | `_winding` | func | `topo/core/geometry/rings.py:143` | Numero di avvolgimento del giro attorno a `point`; None se `point` sta |
 | `_with_extra` | func | `topo/io/exporter.py:14` | `result.to_dict()` con i campi di `extra(cluster)` uniti a ogni cluster; |
@@ -742,7 +743,7 @@ _topo/core/base/gap_solver.py_
   - methods: `__init__`, `build`, `_build_parts`, `_collect_loose`
 - `assign_cluster_refs(curves: list, clusters: list, tolerance: float) -> None` — L229 — Scrive su ogni curva di `curves` (`result.loose`) `cluster_ref`: l'indice
 
-#### `topo/core/base/normalizer.py` — 646 lines
+#### `topo/core/base/normalizer.py` — 660 lines
 
 _topo/core/base/normalizer.py_
 
@@ -763,13 +764,14 @@ _topo/core/base/normalizer.py_
 - **class** `NearCopy` — L423 — Una retta quasi sopra un'altra (D226): `copy` sta tutta entro `offset`
   - methods: `at`
 - `_off_segment(p, seg: LineSeg) -> float` — L437 — Distanza di `p` dal segmento (non dalla retta infinita).
-- `_line_length(e: Edge) -> float` — L445
-- `near_copies(edges: Iterable[Edge], distance: float) -> List[NearCopy]` — L449 — Le coppie di LineSeg con lo stesso ruolo in cui la più corta sta tutta
-- `merge_near_copies(edges: Iterable[Edge], *, distance: float) -> List[Edge]` — L472 — Le rette quasi una sopra l'altra entro `distance` (`near_copies`)
-- `_median_line(a: Edge, b: Edge) -> Edge` — L492 — La retta a metà fra due copie di pari lunghezza: ogni capo di `a` col
-- `weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]` — L509 — Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale
-- `refit_tessellations(edges: Iterable[Edge], max_segment: float=0.1, min_run: int=10, tolerance: float=0.02) -> List[Edge]` — L566 — Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di
-- `chain_runs(short_edges: List[Edge]) -> list` — L618 — Catene massimali: percorsi fra nodi di grado != 2, o anelli.
+- `_over(p, seg: LineSeg) -> bool` — L445 — La proiezione di `p` sulla retta di `seg` cade dentro `seg` (a meno di FLOAT_NOISE).
+- `_line_length(e: Edge) -> float` — L454
+- `near_copies(edges: Iterable[Edge], distance: float) -> List[NearCopy]` — L458 — Le coppie di LineSeg con lo stesso ruolo in cui la più corta sta tutta
+- `merge_near_copies(edges: Iterable[Edge], *, distance: float) -> List[Edge]` — L486 — Le rette quasi una sopra l'altra entro `distance` (`near_copies`)
+- `_median_line(a: Edge, b: Edge) -> Edge` — L506 — La retta a metà fra due copie di pari lunghezza: ogni capo di `a` col
+- `weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]` — L523 — Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale
+- `refit_tessellations(edges: Iterable[Edge], max_segment: float=0.1, min_run: int=10, tolerance: float=0.02) -> List[Edge]` — L580 — Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di
+- `chain_runs(short_edges: List[Edge]) -> list` — L632 — Catene massimali: percorsi fra nodi di grado != 2, o anelli.
 
 #### `topo/core/base/prepare.py` — 88 lines
 

@@ -280,6 +280,15 @@ class TestMergeNearCopies(unittest.TestCase):
         out = merge_near_copies([far, near, copy], distance=0.5)
         self.assertEqual(out, [far, near])
 
+    def test_il_pezzo_che_continua_non_e_una_copia(self):
+        # D235, forza bruta (seme 834): il pezzo dopo il capo, in fila o d'angolo, ha i due capi
+        # entro la distanza dalla lunga ma non le sta sopra: resta, e heal() non avvisa
+        long = _line((0, 0), (10, 0))
+        for nxt in (_line((10, 0), (10.3, 0.001)), _line((10, 0), (10.2, 0.3))):
+            self.assertEqual(merge_near_copies([long, nxt], distance=0.5), [long, nxt])
+        net = topo.heal(topo.load_segments([long.segment, LineSeg(start=(10, 0), end=(10.2, 0.3))]), tolerance=0.5)
+        self.assertNotIn("near-copy", [w.code for w in net.warnings if isinstance(w, topo.Diagnostic)])
+
     def test_oltre_la_distanza_restano_due(self):
         edges = [_line((0, 0), (0, 50)), _line((0, 0), (0.05, 17.7))]
         self.assertEqual(merge_near_copies(edges, distance=0.01), edges)
