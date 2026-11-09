@@ -37,6 +37,9 @@ pip install -e ".[dxf]"     # + topo_dxf: DXF and DWG files in, DXF out
 pip install -e ".[pdf]"     # + topo_pdf: PDF in (experimental)
 ```
 
+The commands above install from a clone of the repository. From a built wheel, name the file:
+`pip install "g_topo-<version>-py3-none-any.whl[dxf]"`. g-topo is not on PyPI.
+
 One distribution (`g-topo`), three importable packages:
 
 | package    | what                                                          |

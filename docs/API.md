@@ -46,7 +46,7 @@ A function that modifies its argument returns `None`.
 6. [Inspection / debug](#6-inspection--debug) — `inspect_document`, `inspect_result`
 7. [Domain types](#7-domain-types)
 8. [The complete flow, in order](#8-the-complete-flow-in-order)
-9. [`topo_dxf` — the DXF adapter](#9-topo_dxf--the-dxf-adapter) — `load_dxf`, `document_from_msp`, `to_dxf`, XDATA, `inspect_dxf` / `inspect_file`, the default layers
+9. [`topo_dxf` — the DXF adapter](#9-topo_dxf--the-dxf-adapter) — `load_dxf`, `document_from_msp`, `to_dxf`, `inspect_dxf` / `inspect_file`, the default layers
 10. [`topo_pdf` — the PDF adapter](#10-topo_pdf--the-pdf-adapter) — `load_pdf` (experimental)
 
 ---
@@ -225,9 +225,9 @@ Validates the **input** before `heal()`. Modifies nothing. Returns a
 - **`is_valid = False`** — the file cannot be processed: no geometry, all
   segments degenerate. A NaN/inf coordinate does not reach the document: the
   primitive rejects it and the loader reports it in `doc.warnings` (D190).
-- **warning** — processable but to keep an eye on: `LINE`/`ARC` still outside a
-  closed contour, endpoints that do not touch even at the declared tolerance,
-  zero-length segments. It also includes the loader's `doc.warnings`.
+- **warning** — processable but to keep an eye on: zero-length edges
+  (`zero-length`, `heal()` drops them). It also includes the loader's
+  `doc.warnings`. Open ends and gaps are not checked here: `heal()` reports them.
 
 **Raises** `TypeError` if you do not pass a `Document`.
 
@@ -1151,6 +1151,7 @@ topo.experimental.to_view_model(
     tolerance=0.05,
     include_loose=True,
     include_texts=True,
+    role_styles=None,
 ) -> dict
 ```
 
