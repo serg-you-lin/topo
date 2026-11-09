@@ -1,38 +1,38 @@
 """
 topo
 ----
-Motore deterministico di geometria 2D per disegni tecnici: geometria e ruoli,
-nessun formato di file (MAP.md D123). DXF e PDF entrano ed escono dagli
-adapter, pacchetti fratelli nella stessa distribuzione: `topo_dxf`
-(`pip install g-topo[dxf]`) e `topo_pdf` (`g-topo[pdf]`) — D124, D129.
+Deterministic 2D-geometry engine for technical drawings: geometry and roles,
+no file format (MAP.md D123). DXF and PDF come in and go out through the
+adapters, sibling packages in the same distribution: `topo_dxf`
+(`pip install g-topo[dxf]`) and `topo_pdf` (`g-topo[pdf]`) - D124, D129.
 
-API pubblica — tutto quello che serve è qui.
-Non devi importare i moduli interni direttamente.
+Public API - everything you need is here.
+You do not have to import the internal modules directly.
 
-Workflow consigliato (file singolo):
+Recommended workflow (single file):
     import topo, topo_dxf
 
     rules = [
         topo.RoleRule("construction", name_contains="constr", dashed=True),
     ]
-    doc = topo_dxf.load_dxf("pezzo.dxf", role_rules=rules)
-    # regole in ordine, vince la prima che matcha (D63);
-    # topo.name_rules({"Costruzione": "construction"}) per le sole regole sul nome
+    doc = topo_dxf.load_dxf("part.dxf", role_rules=rules)
+    # rules in order, the first one that matches wins (D63);
+    # topo.name_rules({"Construction": "construction"}) for name-only rules
 
-    network = topo.heal(doc, label="pezzo")   # la riparazione, una volta (D202)
-    result = network.faces()                  # o network.outlines() per un foglio di viste
-    # fori, pieghe, incisioni: lettura di processo, in snapbend (MAP.md D88)
+    network = topo.heal(doc, label="part")    # the repair, once (D202)
+    result = network.faces()                  # or network.outlines() for a sheet of views
+    # holes, bends, engravings: a process reading, in snapbend (MAP.md D88)
 
-    topo_dxf.to_dxf(result, doc).saveas("pezzo_healed.dxf")
-    topo.save_json(result, "pezzo.json")
+    topo_dxf.to_dxf(result, doc).saveas("part_healed.dxf")
+    topo.save_json(result, "part.json")
 
-Un Result per parte, per ogni formato:
-    parts = topo.split(result)                      # puro, senza formato
+One Result per part, for every format:
+    parts = topo.split(result)                      # pure, no format
     for part in parts:
         topo_dxf.to_dxf(part, doc).saveas(f"{part.clusters[0].label}.dxf")
 
-Senza file: `topo.load_geometry` / `topo.load_segments` costruiscono un
-Document dalla geometria.
+Without a file: `topo.load_geometry` / `topo.load_segments` build a
+Document from geometry.
 """
 
 from .core.geometry_input import load_geometry, load_segments

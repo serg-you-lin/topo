@@ -1,21 +1,21 @@
 """
 topo_dxf/__init__.py
 --------------------
-L'adapter DXF di topo: un consumer di topo come un altro, nello stesso repo e
-nella stessa distribuzione (`pip install g-topo[dxf]`), che usa solo i nomi
-pubblici di topo (MAP.md D123, D124, D129). topo non sa che esiste.
+topo's DXF adapter: a consumer of topo like any other, in the same repo and
+the same distribution (`pip install g-topo[dxf]`), using only topo's public
+names (MAP.md D123, D124, D129). topo does not know it exists.
 
     import topo, topo_dxf
 
-    doc    = topo_dxf.load_dxf("pezzo.dxf")          # DXF/DWG → Document
+    doc    = topo_dxf.load_dxf("part.dxf")           # DXF/DWG -> Document
     result = topo.heal(doc).faces()
-    topo_dxf.to_dxf(result, doc).saveas("out.dxf")   # Result → Drawing
+    topo_dxf.to_dxf(result, doc).saveas("out.dxf")   # Result -> Drawing
 
-    for part in topo.split(result):                  # un Result per parte
+    for part in topo.split(result):                  # one Result per part
         topo_dxf.to_dxf(part, doc).saveas(f"{part.clusters[0].label}.dxf")
 
-I layer e i colori sono scelte del chiamante (`layers=`, `role_styles=`);
-quello che non dice è il default di questo adapter (`layers.py`).
+Layers and colors are the caller's choice (`layers=`, `role_styles=`);
+what the caller leaves unsaid is this adapter's default (`layers.py`).
 """
 
 try:
