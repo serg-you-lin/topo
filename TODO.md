@@ -401,6 +401,8 @@ novembre, ramo `no-join-ends` fuso in `main`.
       fondendo apre i contorni. Rapporto e DXF in `_debug/2026-11-08_topo_forza-bruta-gruppi`.
       Da decidere col banco: "mosso" col bordo entro la tolleranza (D143) invece dell'area
       a 1e-5; 26 rossi veri con un guasto solo (DXF A-E).
+      Federico, 9 novembre: i rossi del banco restano rossi, fuori dal cancello 1.0. Nel
+      cancello solo l'avviso `near-copy` (sopra): correggerlo o toglierlo prima della 1.0.
       Spazzatura tracciata: `tests/data/mixed_pipeline/*.dwl*`
       (file di blocco AutoCAD, di solito portano utente e PC: non aperti, audit pre-1.0).
       1. Fatto (sopra).
