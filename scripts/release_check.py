@@ -41,6 +41,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 
 
 @dataclass
@@ -90,6 +91,13 @@ def check_script(name: str, gate: str, *args: str) -> Check:
     proc = _run(*args)
     ok = proc.returncode == 0
     return Check(name, gate, ok, [] if ok else _tail(proc.stdout + proc.stderr))
+
+
+def check_indice() -> Check:
+    # docs/INDEX.md non è in git: su un clone nuovo lo si genera prima del --check
+    if not Path("docs/INDEX.md").exists():
+        _run("scripts/gen_index.py")
+    return check_script("indice", "-", "scripts/gen_index.py", "--check")
 
 
 def check_history() -> Check:
@@ -185,7 +193,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.no_suite:
         checks.append(check_suite())
     checks += [
-        check_script("indice", "-", "scripts/gen_index.py", "--check"),
+        check_indice(),
         check_script("nomi", "-", "scripts/audit_names.py", "--strict"),
         check_history(),
         check_script("fixture", "-", "scripts/audit_fixtures.py", "--strict"),
