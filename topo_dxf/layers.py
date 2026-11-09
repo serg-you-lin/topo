@@ -32,10 +32,9 @@ LAYER_INNER      = "InnerContour"
 LAYER_ANNOTATION = "Annotation"
 TRASH_LAYER      = "Trash"
 
-# I layer che il writer usa per ciò che non è geometria di parte: rileggendo
-# un file già passato da topo (round-trip, ri-heal) il lettore li salta,
-# senza doverlo chiedere al chiamante — `load_dxf(skip_layers=...)`, `()`
-# per leggere tutto (D129)
+# I layer che il writer usa per ciò che non è geometria di parte: chi rilegge
+# un file già passato da topo (round-trip, ri-heal) e non li vuole li passa a
+# `load_dxf(skip_layers=SKIP_LAYERS)`; di default si legge tutto (D243)
 SKIP_LAYERS: tuple[str, ...] = (TRASH_LAYER, LAYER_ANNOTATION)
 
 

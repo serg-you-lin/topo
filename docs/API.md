@@ -1559,7 +1559,7 @@ topo_dxf.load_dxf(
     verbose=False,
     tolerance=0.05,
     role_rules=(),
-    skip_layers=SKIP_LAYERS,          # ("Trash", "Annotation"), or a function name -> bool
+    skip_layers=(),                   # layer names, or a function name -> bool
 ) -> Document
 ```
 
@@ -1576,7 +1576,7 @@ function the source `ezdxf` document disappears.
 | `flatten_z` | brings entities with Z ≠ 0 back onto the plane. |
 | `tolerance` | rounding tolerance of the topological nodes. It is saved in `source_meta` and read again by `heal()` if you do not pass it again. |
 | `role_rules` | list of `RoleRule` — they assign the **role** to the `Edge`s already during translation. Evaluated in order, the first that matches wins, none → `unknown`. The name evaluated by `name`/`name_contains` is the layer; `dashed` and `color` look at the **effective** look (a `ByLayer` entity is resolved to the linetype/colour of its layer). The layer does not leave the adapter: the `Edge` carries only the role (MAP.md D63). See **`RoleRule`** below. |
-| `skip_layers` | the layers whose geometry is skipped. A sequence matches by **exact name** (case ignored); a function `name -> bool` decides by itself, with the name as it is in the file: part of the name, a regex, an algorithm of your own (`skip_layers=lambda n: "quote" in n.lower()`, D176). By default `topo_dxf.SKIP_LAYERS`, the layers the writer uses for `loose` and texts: a file written by topo reads back clean, and `Trash_old` is read. `()` reads everything (D129). The curves skipped are counted per layer in one `dxf-layer-skipped` warning in `doc.warnings` (D242). |
+| `skip_layers` | the layers whose geometry is skipped. A sequence matches by **exact name** (case ignored); a function `name -> bool` decides by itself, with the name as it is in the file: part of the name, a regex, an algorithm of your own (`skip_layers=lambda n: "quote" in n.lower()`, D176). By default `()`: every layer is read (D243). To read back a file written by topo without its `loose` and text layers, pass `skip_layers=topo_dxf.SKIP_LAYERS` (`Trash_old` is still read). The curves skipped are counted per layer in one `dxf-layer-skipped` warning in `doc.warnings` (D242). |
 
 **Returns** a `Document`. The diagnostics on the raw file (audit, unexploded
 INSERTs, Z≠0, duplicates removed, types that cannot be re-materialised in output) end up
@@ -1659,7 +1659,7 @@ topo_dxf.document_from_msp(
     *, tolerance=0.05,
     role_rules=(),
     source_path="",
-    skip_layers=SKIP_LAYERS,
+    skip_layers=(),
 ) -> Document
 ```
 
@@ -1777,7 +1777,7 @@ caller does not pass `layers=`:
 | `topo_dxf.TRASH_LAYER` | `"Trash"` | role `unknown` |
 | `topo_dxf.LAYER_ANNOTATION` | `"Annotation"` | texts and dimensions without a role |
 | `topo_dxf.DEFAULT_LAYERS` | `{role: layer}` | the three engine roles |
-| `topo_dxf.SKIP_LAYERS` | `("Trash", "Annotation")` | the ones `load_dxf` skips when reading back |
+| `topo_dxf.SKIP_LAYERS` | `("Trash", "Annotation")` | the writer's `loose` and text layers: pass them as `skip_layers` to read a topo file back without them (D243) |
 
 ```python
 topo_dxf.role_to_dxf_layer(role, element=None, *, layers: LayerMap = None) -> str

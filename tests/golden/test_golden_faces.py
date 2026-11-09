@@ -289,6 +289,7 @@ def _make_roundtrip_test(path):
         rt_result = _pipeline(
             topo_dxf.document_from_msp(
                 doc_out.modelspace(), tolerance=tol, role_rules=topo.name_rules(ROUNDTRIP_NAME_ROLES),
+                skip_layers=topo_dxf.SKIP_LAYERS,  # rilegge l'uscita di topo senza loose e testi (D243)
             )
         )
 
