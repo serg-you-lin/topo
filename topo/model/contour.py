@@ -24,7 +24,7 @@ racchiuda un'area.
 from __future__ import annotations
 
 import math
-from dataclasses import KW_ONLY, dataclass
+from dataclasses import KW_ONLY, dataclass, field
 from typing import Optional, Sequence
 
 from topo.core.primitives.polygon_builder import build_polygon, with_polygon
@@ -41,7 +41,7 @@ class Contour(ClosedCurve):
     """
     _: KW_ONLY
     depth:  int                        = 0
-    parent: Optional["Contour"]   = None
+    parent: Optional["Contour"]   = field(default=None, repr=False)   # il genitore si stampa dove sta, non dentro ogni figlio
 
     @classmethod
     def from_segments(cls, segments: Sequence, role: str, *, depth: int = 0,

@@ -85,6 +85,14 @@ class TestForgeContour(unittest.TestCase):
         contour = Contour(segments=_ring(poly), role="outer")
         self.assertEqual(contour.role, "outer")
 
+    def test_006_repr_senza_il_genitore(self):
+        """Il genitore si stampa dove sta: dentro il figlio la stampa crescerebbe a ogni livello."""
+        outer = Contour(segments=_ring(Polygon([(0,0), (10,0), (10,10), (0,10)])), role="outer")
+        inner = Contour(segments=_ring(Polygon([(2,2), (4,2), (4,4), (2,4)])), role="inner",
+                        depth=1, parent=outer)
+        self.assertNotIn("parent", repr(inner))
+        self.assertIs(inner.parent, outer)
+
 
 # ---------------------------------------------------------------------------
 # Test Edge
