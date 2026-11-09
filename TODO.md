@@ -339,6 +339,9 @@ Aperte:
 
 ## Fili da ragionare con Federico
 
+- **Riferimenti D## nel codice e nelle docstring pubbliche** (D239): 484 nel codice,
+  58 in 22 docstring pubbliche, che `help()` mostra. Federico ne parla col forum;
+  fino ad allora restano.
 - **`Text.source_kind`** (`"MTEXT"`, `"DIMENSION"`, …) è un fatto del formato nel
   modello, tenuto da D138 per riscrivere il testo fedele. Federico non decide ora.
 - **snapbend dopo D230**: `snapbend/flat/detect.py` scrive `cluster.custom` e i

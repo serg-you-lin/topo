@@ -536,3 +536,6 @@ heal() reads both lines and changes nothing; only the help can mislead, by calli
 A 1.x fix narrows where it fires; code, message and fields stay.
 ### D238 — `cluster.detected` → `cluster.overlay`, `DetectedFeatures` → `Overlay`, JSON key `overlay`; `DetectedFeature` removed (Federico, 9 November).
 topo detects nothing: the layer is where a consumer writes its own reading (D44, D90). Clean break before 1.0 (0.28.0); the Protocol had no user. Consumers adapt in their own sessions.
+### D239 — for 1.0 the source stays the working notebook: internal comments and docstrings Italian, D## references kept (Federico, 9 November).
+Only what a user reads (README, docs/, public docstrings) is the public face (D144). Translating 84 internal files or dropping 484 D## gives a user nothing for 1.0.
+Whether D## belong in the code at all is an open thread: Federico discusses it with the forum first; until then nothing is removed.
