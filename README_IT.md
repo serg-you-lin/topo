@@ -238,8 +238,8 @@ da sistemare nella 1.x. Ognuno è stato riprodotto sul codice attuale.
 - *Curva che incrocia se stessa.* Una curva sola che incrocia se stessa non
   viene tagliata nel suo incrocio: tutte e due le letture danno l'anello intero
   come un contorno (un quadrato con un ricciolo dà l'area con segno
-  dell'anello, non il quadrato più un lobo in `loose`). Oggi nessun messaggio
-  lo dice l'avviso `self-crossing`.
+  dell'anello, non il quadrato più un lobo in `loose`). Lo dice
+  l'avviso `self-crossing`.
 - *Un nodo su un'altra curva chiusa.* Due curve chiuse semplici dove un vertice
   dell'una sta esattamente sul bordo dell'altra: `outlines()` dà la prima e
   mette la seconda in `loose`; lo dice l'avviso `closed-touch`.
