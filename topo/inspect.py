@@ -56,8 +56,8 @@ def _role(r) -> str:
 
 def inspect_document(doc, *, graph: bool = True, limit: Optional[int] = 60) -> None:
     """
-    Stampa un Document prodotto da un adapter (`topo_dxf.load_dxf`, …) o da
-    `topo.load_geometry`: cosa ha estratto e tradotto. Per partire da un
+    Prints a Document produced by an adapter (`topo_dxf.load_dxf`, …) or by
+    `topo.load_geometry`: what it extracted and translated. To start from a
     file: `topo_dxf.inspect_file`.
     """
 
@@ -141,9 +141,9 @@ def _describe_segment(seg) -> str:
 
 def inspect_result(result, *, coords: bool = False) -> None:
     """
-    Stampa un Result dopo heal(): il prodotto vero di topo.
+    Prints a Result after heal(): topo's real product.
 
-    coords : se True stampa anche le coordinate dei contorni
+    coords : if True also prints the contours' coordinates
     """
     _h("LIVELLO 3 — Result (il modello)")
 

@@ -13,6 +13,11 @@ from topo.model.contour import Contour
 
 @dataclass
 class Cluster:
+    """
+    A part: one outer contour (`outer`), its inner contours (`inners`), a
+    `label` and the `source_file` it comes from. `overlay` is the open
+    overlay of a consumer's reading, `None` until a consumer writes to it.
+    """
     outer:         Contour
     _: KW_ONLY
     inners:        List[Contour]                      = field(default_factory=list)

@@ -229,45 +229,47 @@ def load_dxf(
     skip_layers: Union[Sequence[str], Callable[[str], bool]] = SKIP_LAYERS,
 ) -> Document:
     """
-    Apre un documento DXF o DWG e lo traduce in un Document.
+    Opens a DXF or DWG document and translates it into a Document.
 
-    Sequenza:
-        1. se DWG → conversione via odafc (ODA File Converter)
+    Sequence:
+        1. if DWG → conversion via odafc (ODA File Converter)
         2. readfile
-        3. audit (stampa solo se ci sono errori)
-        4. upgrade R2010 se necessario o richiesto
-        5. explode INSERT se richiesto
+        3. audit (prints only if there are errors)
+        4. upgrade to R2010 if needed or requested
+        5. explode INSERTs if requested
         6. sanitize (normalize_ocs + flatten_z)
-        7. traduzione: DxfAdapter.to_edges() + DxfTextExtractor.extract()
+        7. translation: DxfAdapter.to_edges() + DxfTextExtractor.extract()
 
     Args:
-        path:            percorso del file .dxf o .dwg
-        upgrade:         se True, forza upgrade a R2010
-        explode_inserts: se True (default), esplode gli INSERT in entità
-                         primitive. Passa False solo se vuoi ignorare i blocchi
-                         di proposito: un INSERT non esploso viene scartato e la
-                         sua geometria sparisce dall'output.
-        flatten_z:       se True (default), riporta sul piano le entità con Z != 0
-        verbose:         se True, stampa dettaglio entità in sanitize
-        tolerance:       tolleranza di arrotondamento dei nodi topologici;
-                         viene ripresa da heal() se non specificata lì
-        role_rules:      regole del chiamante che assegnano il ruolo agli
-                         Edge in fase di traduzione (RoleRule, D63); il nome
-                         valutato da `name`/`name_contains` è il layer
-        skip_layers:     layer la cui geometria si salta (D176): nomi esatti,
-                         senza distinguere maiuscole, oppure una funzione
-                         `nome -> bool` (una parte del nome, una regex,
-                         quello che serve). Di default `SKIP_LAYERS`, quelli
-                         che il writer usa per `loose` e testi, così un file
-                         scritto da topo si rilegge pulito; `()` legge tutto
+        path:            path of the .dxf or .dwg file
+        upgrade:         if True, forces an upgrade to R2010
+        explode_inserts: if True (default), explodes INSERTs into primitive
+                         entities. Pass False only to ignore blocks on
+                         purpose: an unexploded INSERT is discarded and its
+                         geometry disappears from the output.
+        flatten_z:       if True (default), brings entities with Z != 0 onto
+                         the plane
+        verbose:         if True, prints entity detail in sanitize
+        tolerance:       rounding tolerance of the topological nodes;
+                         taken up by heal() if not specified there
+        role_rules:      caller's rules that assign the role to Edges at
+                         translation time (RoleRule, D63); the name
+                         evaluated by `name`/`name_contains` is the layer
+        skip_layers:     layers whose geometry is skipped (D176): exact
+                         names, case-insensitive, or a function
+                         `name -> bool` (part of the name, a regex,
+                         whatever is needed). By default `SKIP_LAYERS`, the
+                         ones the writer uses for `loose` and texts, so a
+                         file written by topo reads back clean; `()` reads
+                         everything
 
     Returns:
-        Document (edges + texts + source_meta + warnings) — pronto
-        per heal(). Quello che va guardato sul file grezzo (audit, INSERT
-        non esplosi, tipi non modellati) finisce in `doc.warnings`, quello che
-        l'adapter ha fatto da sé (INSERT esplosi, duplicati tolti, Z sul
-        piano) in `doc.notes`, tutti `Diagnostic` (D233); con verbose=True
-        anche stampati. `topo.validate_document(doc)` li rilancia.
+        Document (edges + texts + source_meta + warnings) — ready for
+        heal(). What should be looked at on the raw file (audit, unexploded
+        INSERTs, unmodeled types) ends up in `doc.warnings`, what the adapter
+        did on its own (exploded INSERTs, duplicates removed, Z flattened) in
+        `doc.notes`, all `Diagnostic` (D233); with verbose=True also
+        printed. `topo.validate_document(doc)` re-raises them.
     """
     warnings: list = []
     notes: list = []
@@ -361,13 +363,13 @@ def document_from_msp(
     skip_layers: Union[Sequence[str], Callable[[str], bool]] = SKIP_LAYERS,
 ) -> Document:
     """
-    Costruisce un Document da un modelspace ezdxf già aperto.
+    Builds a Document from an already-open ezdxf modelspace.
 
-    Utile quando il msp non viene da un file (test, geometria generata a mano)
-    o è già stato preparato altrove. Non fa audit/upgrade/sanitize: si assume
-    che il msp sia già pronto.
+    Useful when the msp does not come from a file (tests, hand-generated
+    geometry) or has already been prepared elsewhere. It does no
+    audit/upgrade/sanitize: the msp is assumed to be ready.
 
-    `role_rules`, `skip_layers`: vedi `load_dxf()`.
+    `role_rules`, `skip_layers`: see `load_dxf()`.
     """
     adapter = DxfAdapter(msp, role_rules=role_rules, skip_layers=skip_layers)
     edges = adapter.to_edges()

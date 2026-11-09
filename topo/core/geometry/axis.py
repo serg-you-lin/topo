@@ -32,7 +32,7 @@ SIDE_COVERAGE = 0.85       # frazione minima di un lato coperta dai tratti
 # ---------------------------------------------------------------------------
 
 def merge_intervals(intervals: Iterable[Interval], *, tolerance: float = 0.0) -> List[Interval]:
-    """Unisce gli intervalli che si sovrappongono o distano al più `tolerance`, in ordine."""
+    """Merges the intervals that overlap or are at most `tolerance` apart, in order."""
     merged: List[Interval] = []
     for a, b in sorted(intervals):
         if merged and a <= merged[-1][1] + tolerance:
@@ -70,11 +70,11 @@ def cluster_values(values: Iterable[float], tolerance: float = CLUSTER_TOLERANCE
 @dataclass(frozen=True)
 class AxisLine:
     """
-    Un tratto orizzontale o verticale.
+    A horizontal or vertical stroke.
 
-    item: il tratto ricevuto
-    lo, hi: l'intervallo che copre lungo il suo asse (x per un orizzontale)
-    at: la coordinata costante (y per un orizzontale), media dei due capi
+    item: the stroke received
+    lo, hi: the interval it covers along its axis (x for a horizontal one)
+    at: the constant coordinate (y for a horizontal one), mean of the two ends
     """
     item: object
     lo: float
@@ -83,7 +83,7 @@ class AxisLine:
 
 
 def axis_lines(items: Iterable, *, eps: float = AXIS_EPS) -> Tuple[List[AxisLine], List[AxisLine]]:
-    """(orizzontali, verticali): i tratti che si scostano dall'asse al più di `eps`; gli altri non compaiono."""
+    """(horizontals, verticals): the strokes that deviate from the axis by at most `eps`; the others do not appear."""
     horiz: List[AxisLine] = []
     vert: List[AxisLine] = []
     for item in items:
@@ -147,11 +147,11 @@ def covered_rectangles(items: Sequence, *, min_side: float, eps: float = AXIS_EP
                        cluster_tolerance: float = CLUSTER_TOLERANCE,
                        coverage: float = SIDE_COVERAGE) -> List[CoveredRectangle]:
     """
-    I rettangoli allineati agli assi con ogni lato coperto almeno per
-    `coverage` da tratti, costruiti sulle coordinate dei tratti lunghi almeno
-    `min_side`. Due coordinate entro `cluster_tolerance` sono la stessa; un
-    tratto sta su un lato entro `2 * eps`. Senza `polygonize`: un bordo pieno
-    di tacche resta un rettangolo.
+    The axis-aligned rectangles with every side covered at least by
+    `coverage` of strokes, built on the coordinates of the strokes at least
+    `min_side` long. Two coordinates within `cluster_tolerance` are the same;
+    a stroke lies on a side within `2 * eps`. Without `polygonize`: a border
+    full of notches stays a rectangle.
     """
     items = list(items)
     if len(items) < 4:
@@ -198,9 +198,9 @@ def spanning_lines(bounds: Bounds, items: Iterable, *, coverage: float = SIDE_CO
                    eps: float = AXIS_EPS,
                    cluster_tolerance: float = CLUSTER_TOLERANCE) -> Tuple[List[float], List[float]]:
     """
-    (ys, xs): le coordinate delle linee strettamente interne a `bounds` (bordo
-    escluso, entro `2 * eps`) che lo attraversano per almeno `coverage` della
-    larghezza (le orizzontali) o dell'altezza (le verticali), ordinate.
+    (ys, xs): the coordinates of the lines strictly inside `bounds` (border
+    excluded, within `2 * eps`) that cross it for at least `coverage` of the
+    width (the horizontal ones) or of the height (the vertical ones), sorted.
     """
     horiz, vert = axis_lines(items, eps=eps)
     xmin, ymin, xmax, ymax = bounds
@@ -217,7 +217,7 @@ def spanning_lines(bounds: Bounds, items: Iterable, *, coverage: float = SIDE_CO
 # ---------------------------------------------------------------------------
 
 def items_inside(bounds: Bounds, items: Iterable, *, margin: float = 0.0) -> list:
-    """I tratti con entrambi i capi dentro `bounds` allargato di `margin`, nell'ordine dato."""
+    """The strokes with both ends inside `bounds` enlarged by `margin`, in the given order."""
     minx, miny, maxx, maxy = bounds[0] - margin, bounds[1] - margin, bounds[2] + margin, bounds[3] + margin
 
     def inside(pt) -> bool:
@@ -227,16 +227,18 @@ def items_inside(bounds: Bounds, items: Iterable, *, margin: float = 0.0) -> lis
 
 
 def sides_on_border(bounds: Bounds, border: Bounds, *, tolerance: float) -> List[str]:
-    """I lati di `bounds` ("left", "bottom", "right", "top") che stanno sul
-    lato omologo di `border`, entro `tolerance`."""
+    """
+    The sides of `bounds` ("left", "bottom", "right", "top") that lie on the
+    homologous side of `border`, within `tolerance`.
+    """
     names = ("left", "bottom", "right", "top")
     return [n for n, a, b in zip(names, bounds, border) if abs(a - b) <= tolerance]
 
 
 def axis_aligned_share(segments: Iterable, *, angle_tolerance: float) -> Optional[float]:
     """
-    Frazione della lunghezza dei `LineSeg` di `segments` orizzontale o
-    verticale entro `angle_tolerance` gradi; None se non ci sono `LineSeg`.
+    Fraction of the length of the `LineSeg` in `segments` that is horizontal
+    or vertical within `angle_tolerance` degrees; None if there are no `LineSeg`.
     """
     axis = total = 0.0
     for seg in segments:

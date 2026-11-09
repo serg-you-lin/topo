@@ -62,10 +62,10 @@ def num_segments_for_bulge(bulge: float) -> int:
 
 def track_points(segments, *, tolerance: Optional[float] = None) -> List[Point]:
     """
-    Vertici di una traccia aperta come catena di segmenti nativi.
+    Vertices of an open trace as a chain of native segments.
 
-    Concatena `seg.discretize()` di ogni segmento, deduplicando il vertice
-    condiviso alla giunzione fra un segmento e il successivo.
+    Concatenates the `seg.discretize()` of each segment, deduplicating the
+    vertex shared at the junction between one segment and the next.
     """
     pts: List[Point] = []
     for seg in segments or []:
@@ -80,7 +80,7 @@ def track_points(segments, *, tolerance: Optional[float] = None) -> List[Point]:
 
 
 def track_length(pts) -> float:
-    """Lunghezza totale di una polilinea (somma delle corde)."""
+    """Total length of a polyline (sum of the chords)."""
     return sum(
         math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1])
         for i in range(len(pts) - 1)
@@ -95,11 +95,11 @@ def track_length(pts) -> float:
 
 def segment_length(segment) -> float:
     """
-    Lunghezza reale di una primitiva nativa singola (`LineSeg`/`ArcSeg`/
+    Real length of a single native primitive (`LineSeg`/`ArcSeg`/
     `BSplineSeg`/`CircleSeg`/`EllipseSeg`). `LineSeg`/`ArcSeg`/`CircleSeg`
-    hanno una formula chiusa; `BSplineSeg`/`EllipseSeg` (curvatura non
-    costante, nessuna formula chiusa comoda) riusano la stessa polilinea di
-    `discretize()`, sommata come `track_length`.
+    have a closed formula; `BSplineSeg`/`EllipseSeg` (non-constant curvature,
+    no convenient closed formula) reuse the same polyline as
+    `discretize()`, summed like `track_length`.
     """
     if isinstance(segment, LineSeg):
         return math.hypot(segment.end[0] - segment.start[0], segment.end[1] - segment.start[1])
@@ -112,9 +112,9 @@ def segment_length(segment) -> float:
 
 def length_inside(segment, bounds: Tuple[float, float, float, float]) -> float:
     """
-    Quanta parte di `segment` (qualunque primitiva nativa) sta dentro il
-    rettangolo `bounds` = (xmin, ymin, xmax, ymax), bordo compreso. Le curve
-    sulla polilinea di `discretize()`.
+    How much of `segment` (any native primitive) lies inside the rectangle
+    `bounds` = (xmin, ymin, xmax, ymax), border included. Curves are measured
+    on the `discretize()` polyline.
     """
     pts = segment.discretize()
     if len(pts) < 2:
@@ -137,10 +137,9 @@ def longest_segment(segments) -> Tuple[Optional[object], float]:
 
 def chord_angle_deg(a: Point, b: Point) -> float:
     """
-    Angolo (gradi, 0-180°) della corda da `a` a `b`. Modulo 180 perché una
-    linea non ha un verso proprio (`a->b` e `b->a` sono lo stesso
-    orientamento) — stesso calcolo già usato da `detect._detect_bending` per
-    l'angolo di una bending line, ora condiviso qui invece che duplicato.
+    Angle (degrees, 0-180°) of the chord from `a` to `b`. Modulo 180 because
+    a line has no direction of its own (`a->b` and `b->a` are the same
+    orientation).
     """
     return math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])) % 180
 

@@ -159,11 +159,11 @@ def _meet(a, b) -> List[Point]:
 
 def intersections(a, b) -> List[Point]:
     """
-    I punti dove due primitive si incontrano: incroci e tocchi, capi compresi.
-    Esatti fra rette, archi e cerchi (forma chiusa); su spline ed ellissi
-    entro `CURVE_TOLERANCE`, perché lì una forma chiusa non c'è. Due tratti
-    sovrapposti (stessa retta, stesso cerchio) non danno punti: il loro
-    incontro è un tratto, non un punto.
+    The points where two primitives meet: crossings and touches, ends
+    included. Exact between lines, arcs and circles (closed form); on splines
+    and ellipses within `CURVE_TOLERANCE`, because there is no closed form.
+    Two overlapping stretches (same line, same circle) give no points: their
+    meeting is a stretch, not a point.
     """
     out: List[Point] = []
     for pa in _exact_parts(a):

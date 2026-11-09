@@ -28,34 +28,35 @@ def split(
     min_area: float = 0.0,
 ) -> List[Result]:
     """
-    Un `Result` per parte, nell'ordine delle parti tenute.
+    One `Result` per part, in the order of the kept parts.
 
-    Ogni parte è un `Result` con un solo cluster, le curve sciolte e i
-    testi che le appartengono. Una curva va al cluster del suo
-    `cluster_ref` (D137); un testo alla parte che lo contiene. Quelli
-    che nessuna parte contiene vanno alla più vicina al suo contorno esterno
-    fra TUTTE le parti (anche quelle scartate da `min_area`). Niente viene
-    duplicato: ogni elemento sta in una parte sola, copiato con
-    `cluster_ref` riferito alla parte (0 se il suo cluster la contiene,
-    `None` altrimenti). Una curva promossa (`result.promote`) sta già nel suo
-    cluster. Gli altri campi del `Result` (sorgente, avvisi) sono copiati.
-    `Text.target`/`references` di un testo puntano agli elementi della sua
-    parte (le copie delle curve sciolte); un elemento di un'altra parte non
-    sta in quel `Result`: `target` diventa `None`, il riferimento esce da
+    Each part is a `Result` with a single cluster, the loose curves and the
+    texts that belong to it. A curve goes to the cluster of its
+    `cluster_ref` (D137); a text goes to the part that contains it. Those
+    that no part contains go to the part closest to its outer contour among
+    ALL the parts (including those discarded by `min_area`). Nothing is
+    duplicated: every element lives in one part only, copied with
+    `cluster_ref` referring to the part (0 if its cluster contains it,
+    `None` otherwise). A promoted curve (`result.promote`) is already in its
+    cluster. The other `Result` fields (source, warnings) are copied.
+    `Text.target`/`references` of a text point to the elements of its own
+    part (the copies of the loose curves); an element of another part is not
+    in that `Result`: `target` becomes `None`, the reference leaves
     `references` (D177).
 
-    `namer(i, cluster)` — se passato — dà il `label` del cluster della
-    parte, così il nome di un file resta ricavabile a valle
-    (`f"{cluster.label}.dxf"`); senza, la parte i-esima è
-    `f"{label}_P{i + 1}"`. Per default non scarta niente (D232): una parte
-    sotto `min_area` (unità del disegno al quadrato; `<= 0`: nessun filtro) è scartata con un avviso in `result.warnings` e in quelli di
-    ogni parte: anche se le scarta tutte, lo scarto si legge.
+    `namer(i, cluster)` — if given — returns the `label` of the part's
+    cluster, so a file name can be derived downstream
+    (`f"{cluster.label}.dxf"`); without it, the i-th part is
+    `f"{label}_P{i + 1}"`. By default it discards nothing (D232): a part
+    below `min_area` (drawing units squared; `<= 0`: no filter) is discarded
+    with a warning in `result.warnings` and in those of every part: even if
+    it discards them all, the discard can be read.
 
-    **Muta** solo `result.warnings` (D176): il cluster di una parte è una
-    copia col suo `label`, l'originale non cambia.
+    **Mutates** only `result.warnings` (D176): a part's cluster is a copy
+    with its own `label`, the original does not change.
 
-    Solleva `ValueError` se `result` non è valido: un file per parte non ha
-    senso senza parti (D83).
+    Raises `ValueError` if `result` is not valid: one file per part makes no
+    sense without parts (D83).
     """
     if not result.is_valid:
         raise ValueError(

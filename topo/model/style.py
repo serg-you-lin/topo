@@ -80,21 +80,21 @@ class EdgeStyle:
 @dataclass(frozen=True)
 class RoleStyle:
     """
-    Come il chiamante vuole disegnato un ruolo in uscita (D37, D128). Il
-    chiamante ne tiene un dizionario `{ruolo: RoleStyle}` e lo passa a ogni
-    exporter (`to_dxf`, `split`, `to_svg`, `to_view_model`): topo non ne
-    tiene nessuno, ogni exporter ha il suo default per i campi a `None`.
+    How the caller wants an output role drawn (D37, D128). The caller keeps
+    a `{role: RoleStyle}` dict and passes it to every exporter (`to_dxf`,
+    `split`, `to_svg`, `to_view_model`): topo keeps none, each exporter has
+    its own default for the fields left at `None`.
 
-    Stesso vocabolario di `EdgeStyle`, nessun formato. Dove finisce un ruolo
-    (un layer DXF, un gruppo SVG) non è qui: lo decide l'exporter, con i
-    suoi parametri (`to_dxf(layers=...)`).
+    Same vocabulary as `EdgeStyle`, no format. Where a role ends up (a DXF
+    layer, an SVG group) is not decided here: the exporter decides, with its
+    own parameters (`to_dxf(layers=...)`).
 
-    Campi (tutti opzionali):
+    Fields (all optional):
         color      : (r, g, b) 0–255
-        linetype   : nome del tipo di linea, per i formati che lo nominano;
-                     da solo vale un tipo standard del formato ("DASHED")
-        dash       : il tratto, segni con segno come in `EdgeStyle.dash`
-        lineweight : spessore in mm
+        linetype   : name of the line type, for formats that name them;
+                     alone it means a standard type of the format ("DASHED")
+        dash       : the stroke, signed marks as in `EdgeStyle.dash`
+        lineweight : thickness in mm
     """
     _: KW_ONLY
     color:      Optional[Tuple[int, int, int]] = None

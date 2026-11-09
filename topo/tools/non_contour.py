@@ -40,11 +40,12 @@ from ..core.readings.heal_steps import find_non_contour_edges
 
 def non_contour_candidates(doc: Document, *, tolerance: Optional[float] = None) -> List[Edge]:
     """
-    Edge di `doc.edges` che il criterio topologico di `heal()` escluderebbe dal
-    grafo dei contorni — candidati a "qualcos'altro", senza dire cosa.
+    Edges of `doc.edges` that `heal()`'s topological criterion would exclude
+    from the contour graph — candidates for "something else", without saying
+    what.
 
-    tolerance: se None ripresa da doc.source_meta['tolerance'] (stesso
-               fallback di heal()).
+    tolerance: if None, taken from doc.source_meta['tolerance'] (same
+               fallback as heal()).
     """
     edges = list(doc.edges)
     excluded_ids = find_non_contour_edges(edges, doc.node_tolerance(override=tolerance))

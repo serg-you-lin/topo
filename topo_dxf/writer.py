@@ -45,47 +45,48 @@ def to_dxf(
     exclude_types: Optional[Set[str]] = None,
 ) -> "ezdxf.document.Drawing":
     """
-    Crea un documento DXF nuovo (R2010) e vi materializza il Result.
+    Creates a new DXF document (R2010) and materializes the Result in it.
 
-    Itera i clusters del modello e scrive i segmenti puri di ogni contorno/hole.
-    Non legge entità DXF esistenti — se passato, `source_doc` serve solo per
-    riportare gli header ($INSUNITS, $MEASUREMENT). Testi e quote arrivano da
-    `result.texts` (il modello), non dalla sorgente.
+    Iterates the model's clusters and writes the pure segments of every
+    contour/hole. It reads no existing DXF entities — if passed, `source_doc`
+    is only used to carry over the headers ($INSUNITS, $MEASUREMENT). Texts
+    and dimensions come from `result.texts` (the model), not from the source.
 
-    Con `include_loose=True` (default) le entità che il pipeline non ha
-    classificato (`result.loose`) vengono materializzate sul layer
-    `Trash`: un operatore CAM deve poter vedere OGNI entità del disegno di
-    partenza, anche archi spuri, frammenti di profilo, centerline. Ometterle
-    silenziosamente è una regressione.
+    With `include_loose=True` (default) the entities the pipeline did not
+    classify (`result.loose`) are materialized on the `Trash` layer: a CAM
+    operator must be able to see EVERY entity of the starting drawing, even
+    spurious arcs, profile fragments, centerlines. Silently omitting them is
+    a regression.
 
-    Layer e aspetto sono del chiamante (D123, D128); quello che non dice è il
-    default dell'adapter (`topo_dxf/layers.py`):
-      - `layers` → `{ruolo: "Nome"}` o `{ruolo: funzione(elemento) -> nome}`:
-        con una funzione le entità di un ruolo si dividono su più layer
-        (l'elemento è il Contour, l'elemento di `cluster.overlay`, la
-        curva di `loose` o il Text che si sta scrivendo). Default: `OuterContour`,
-        `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo.
-      - `role_styles` → `{ruolo: RoleStyle}`: colore, tratto, spessore.
-        Agisce sul LAYER, non sull'entità: tutto ciò che si scrive è BYLAYER,
-        quindi vale per ogni entità del ruolo; su un layer condiviso da più
-        ruoli vince il primo scritto. Un campo a `None` resta il default.
-      - `text_layer` → il layer di testi e quote senza ruolo; uno con
-        un ruolo va sul layer del suo ruolo, come un edge (D127, D128).
-    Nessun testo viene scartato: quelli non coperti da alcuna parte
-    vengono comunque scritti (`topo.split()` li assegna alla parte più
-    vicina, come le curve sciolte).
+    Layer and appearance are the caller's (D123, D128); what it does not say
+    is the adapter's default (`topo_dxf/layers.py`):
+      - `layers` → `{role: "Name"}` or `{role: function(element) -> name}`:
+        with a function the entities of a role are split over several layers
+        (the element is the Contour, the element of `cluster.overlay`, the
+        curve of `loose` or the Text being written). Default: `OuterContour`,
+        `InnerContour`, `Trash` for `unknown`, the slug for every other role.
+      - `role_styles` → `{role: RoleStyle}`: color, stroke, thickness.
+        It acts on the LAYER, not on the entity: everything written is
+        BYLAYER, so it holds for every entity of the role; on a layer shared
+        by several roles the first one written wins. A field at `None` stays
+        the default.
+      - `text_layer` → the layer of texts and dimensions without a role; one
+        with a role goes on its role's layer, like an edge (D127, D128).
+    No text is discarded: those not covered by any part are written anyway
+    (`topo.split()` assigns them to the nearest part, like loose curves).
 
-    `filter_cluster(cluster)` sceglie quali cluster scrivere; `loose` e
-    testi si scrivono comunque tutti (per un file per parte, la parte
-    viene da `topo.split()`, che li ha già divisi). `exclude_types`
-    (`{"TEXT", "CIRCLE"}`) toglie dal documento le entità DXF di quei tipi.
+    `filter_cluster(cluster)` chooses which clusters to write; `loose` and
+    texts are all written anyway (for a file per part, the part comes from
+    `topo.split()`, which has already divided them). `exclude_types`
+    (`{"TEXT", "CIRCLE"}`) removes the DXF entities of those types from the
+    document.
 
-    Restituisce il documento ezdxf: sta al chiamante fare doc.saveas(...).
+    Returns the ezdxf document: the caller must do doc.saveas(...).
 
-    Un `result` non valido (es. nessun contorno esterno chiuso → zero parti)
-    viene scritto lo stesso, con quello che c'è (`loose`, testi): come
-    `to_svg`, serve a vedere cosa ha capito topo. `allow_invalid=False` →
-    `ValueError` invece: il chiamante che consegna a una macchina (D83).
+    An invalid `result` (e.g. no closed outer contour → zero parts) is
+    written anyway, with what there is (`loose`, texts): like `to_svg`, it
+    serves to see what topo understood. `allow_invalid=False` → `ValueError`
+    instead: the caller who delivers to a machine (D83).
     """
     if not result.is_valid and not allow_invalid:
         raise ValueError(

@@ -78,12 +78,12 @@ STRUCTURAL_ROLES = frozenset({
 
 def is_structural_role(role) -> bool:
     """
-    True se ``role`` è OUTER o INNER per il motore (vedi ``STRUCTURAL_ROLES``).
+    True if ``role`` is OUTER or INNER for the engine (see ``STRUCTURAL_ROLES``).
 
-    Predicato minimo del motore — non sa nulla di fori/pieghe/incisioni.
-    Test di appartenenza puro — accetta sia una costante ``ContourRole`` sia lo
-    slug stringa equivalente (``ContourRole`` eredita da ``str``). Nessun
-    reverse-lookup sull'enum (D27 regola A).
+    The engine's minimal predicate — it knows nothing about holes, bends or
+    engravings. A pure membership test — it accepts both a ``ContourRole``
+    constant and the equivalent string slug (``ContourRole`` inherits from
+    ``str``). No reverse lookup on the enum (D27 rule A).
     """
     return role in STRUCTURAL_ROLES
 
@@ -112,23 +112,23 @@ WORK_TYPE_TO_ROLE: Dict[str, ContourRole] = {
 
 def normalize_role(value) -> str:
     """
-    Ripulisce una stringa-ruolo che arriva dal chiamante (``RoleRule``,
-    ``load_geometry``) e la restituisce come slug sicuro.
+    Cleans a role string coming from the caller (``RoleRule``,
+    ``load_geometry``) and returns it as a safe slug.
 
-    È l'unico punto d'ingresso: da qui in poi ``feature.role`` è sempre o una
-    costante di ``ContourRole`` o uno slug ``[a-z0-9_-]`` corto, di cui il
-    resto di topo si fida senza ri-controllarlo.
+    It is the only entry point: from here on ``feature.role`` is always
+    either a ``ContourRole`` constant or a short ``[a-z0-9_-]`` slug, which
+    the rest of topo trusts without re-checking.
 
-    - non-stringa o vuota → ``"unknown"``
-    - minuscole, ``_``/``-`` esterni rimossi
-    - caratteri fuori da ``[a-z0-9_-]`` collassati in ``_``
-    - troncata a 64 caratteri
-    - se è un ruolo noto → la costante canonica di ``ContourRole``
-    - altrimenti → lo slug così com'è (ruolo di un consumatore)
+    - non-string or empty → ``"unknown"``
+    - lowercase, leading/trailing ``_``/``-`` removed
+    - characters outside ``[a-z0-9_-]`` collapsed into ``_``
+    - truncated to 64 characters
+    - if it is a known role → the canonical ``ContourRole`` constant
+    - otherwise → the slug as is (a consumer's role)
 
-    Non fare mai lookup dinamici sull'enum (``ContourRole[s]``, ``getattr``,
-    ``ContourRole(s)``): sollevano o raggiungono attributi di classe. Qui si
-    passa sempre per un dict.
+    Never do dynamic lookups on the enum (``ContourRole[s]``, ``getattr``,
+    ``ContourRole(s)``): they raise or reach class attributes. Here it always
+    goes through a dict.
     """
     if not isinstance(value, str):
         return ContourRole.UNKNOWN.value
