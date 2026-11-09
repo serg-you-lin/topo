@@ -28,7 +28,7 @@ Filosofia
   Se non esiste ancora, i test in TestUnitSplitFilters falliscono con TypeError —
   segnale chiaro per aggiungerlo.
 
-- ALL_LAYERS deve essere esportato da dxf_forge.rules.layers come:
+- ALL_LAYERS deve essere esportato da topo_dxf.rules.layers come:
       ALL_LAYERS = {LAYER_OUTER: 3, LAYER_INNER: 2, ...} (la palette di topo in ACI)
   Se manca, TestUnitSplitLayers.test_002 e TestIntegrationLayers.test_003
   falliscono con ImportError — segnale chiaro per aggiungerlo.
@@ -306,7 +306,7 @@ class TestUnitSplitLayers(unittest.TestCase):
     """
     Verifica layer e colori canonici nei documenti figli prodotti da split().
 
-    NOTA: ALL_LAYERS deve esistere in dxf_forge.rules.layers come:
+    NOTA: ALL_LAYERS deve esistere in topo_dxf.rules.layers come:
         ALL_LAYERS = {LAYER_OUTER: 3, LAYER_INNER: 2, ...} (la palette di topo in ACI)
     """
 

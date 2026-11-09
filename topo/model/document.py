@@ -38,10 +38,11 @@ DEFAULT_NODE_TOLERANCE = 0.05
 @dataclass
 class Document:
     """
-    Documento di dominio prodotto da load_dxf() / load_svg() / load_pdf().
+    Domain document produced by an adapter (`topo_dxf.load_dxf`, …) or by
+    `topo.load_geometry` / `topo.load_segments`.
 
-    Contratto: heal(), detect_flat() e write() lavorano solo su questo oggetto e sul
-    Result che ne deriva — mai su entità ezdxf.
+    Contract: `heal()` works only on this object and on the Result derived
+    from it — never on ezdxf entities.
     """
     edges:       List["Edge"]        = field(default_factory=list)
     _: KW_ONLY

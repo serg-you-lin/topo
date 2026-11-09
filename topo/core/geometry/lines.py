@@ -61,8 +61,8 @@ def are_collinear(a, b, tolerance: float = COLLINEAR_TOLERANCE,
 def group_collinear_lines(lines: list, *, tolerance: float = COLLINEAR_TOLERANCE,
                           angle_tolerance: float = COLLINEAR_ANGLE_TOLERANCE) -> list:
     """
-    Tratti raggruppati per retta: [[L1, L2], [L3], ...]. Ogni gruppo prende la
-    retta del suo primo tratto, nell'ordine dato.
+    Strokes grouped by line: [[L1, L2], [L3], ...]. Each group takes the line
+    of its first stroke, in the given order.
     """
     groups = []
     assigned = set()
@@ -102,10 +102,10 @@ def _ring(item) -> list:
 @dataclass(frozen=True)
 class CollinearRun:
     """
-    Tratti sulla stessa retta, in fila lungo di essa.
+    Strokes on the same line, in a row along it.
 
-    start, end: i capi esterni della fila
-    members:    indici dei tratti nell'input, nell'ordine lungo la retta
+    start, end: the outer ends of the run
+    members:    indices of the strokes in the input, in order along the line
     """
     start: Point
     end: Point
@@ -164,13 +164,14 @@ def _bridged(a: Point, b: Point, rings: list) -> bool:
 def dash_line(start: Point, end: Point, head: float, tail: float,
               *, middle: float = 0.0, n_middle: int = 0) -> list[Tuple[Point, Point]]:
     """
-    Il segmento `start`→`end` ridotto a tratti: uno lungo `head` che parte da
-    `start`, uno lungo `tail` che finisce in `end`, e `n_middle` tratti lunghi
-    `middle` fra i due, con tutti i vuoti uguali. Ogni tratto è `(start, end)`
-    nel verso del segmento; un tratto lungo zero non compare.
+    The segment `start`→`end` reduced to strokes: one of length `head`
+    starting at `start`, one of length `tail` ending at `end`, and `n_middle`
+    strokes of length `middle` between the two, with all gaps equal. Each
+    stroke is `(start, end)` in the segment's direction; a zero-length stroke
+    does not appear.
 
-    Se i tratti coprono tutto il segmento (o di più) il segmento torna intero:
-    non resta nessun vuoto da lasciare. Lunghezze negative → ValueError.
+    If the strokes cover the whole segment (or more) the segment comes back
+    whole: no gap is left to leave. Negative lengths → ValueError.
     """
     if min(head, tail, middle) < 0 or n_middle < 0:
         raise ValueError("dash_line(): lengths and number of dashes must be >= 0")

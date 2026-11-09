@@ -52,14 +52,18 @@ DEFAULT_LAYERS: dict[str, str] = {
 # di un ruolo possono dividersi su più layer (una piega "up" e una "down").
 LayerChoice = Union[str, Callable[[object], str]]
 LayerMap = Mapping[str, LayerChoice]
+LayerMap.__doc__ = """
+The type of the `layers` argument of `to_dxf`: a mapping `{role: layer name}`
+or `{role: function(element) -> layer name}`.
+"""
 
 
 def role_to_dxf_layer(role, element: object = None, *, layers: Optional[LayerMap] = None) -> str:
     """
-    Nome del layer DXF per `role`. La scelta del chiamante (`layers`, chiavi
-    già normalizzate a slug) vince: un nome, o la funzione chiamata con
-    `element`. Altrimenti il default: `OuterContour`/`InnerContour`/`Trash`
-    per i ruoli del motore, lo slug stesso per ogni altro ruolo (D31).
+    Name of the DXF layer for `role`. The caller's choice (`layers`, keys
+    already normalized to slugs) wins: a name, or the function called with
+    `element`. Otherwise the default: `OuterContour`/`InnerContour`/`Trash`
+    for the engine's roles, the slug itself for every other role (D31).
     """
     slug = _slug(role)
     choice = (layers or {}).get(slug)

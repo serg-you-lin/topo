@@ -164,15 +164,15 @@ def load_geometry(
     source_path: str = "",
 ) -> Document:
     """
-    Costruisce un Document da una lista di descrizioni geometriche pure —
-    stesso contratto di load_dxf, ma la sorgente non è un file: è geometria già
-    calcolata o ricostruita altrove (generatori parametrici, contorni
-    vettorializzati da immagine, ...).
+    Builds a Document from a list of pure geometric descriptions — same
+    contract as load_dxf, but the source is not a file: it is geometry already
+    computed or reconstructed elsewhere (parametric generators, contours
+    vectorized from an image, ...).
 
-    Vedi GeometryReader per lo schema di ogni "type" di entità supportato
+    See GeometryReader for the schema of each supported entity "type"
     (line / arc / circle / polygon / spline / ellipse).
 
-    Esempio — settore anulare di uno sviluppo di cono:
+    Example — annular sector of a cone development:
         doc = topo.load_geometry([
             {"type": "arc",  "center": (0,0), "radius": r_est,
              "start_angle": -a/2, "end_angle": a/2, "role": "outer"},
@@ -185,15 +185,15 @@ def load_geometry(
         topo_dxf.to_dxf(result)
 
     Args:
-        entities:    lista di dict geometrici (vedi GeometryReader)
-        tolerance:   tolleranza di arrotondamento dei nodi topologici — stesso
-                     significato di load_dxf(tolerance=...); passala identica
-                     a heal() se la personalizzi
-        source_path: etichetta libera per Document.source_path — non è un
-                     file, serve solo per diagnostica/tracciabilità
+        entities:    list of geometric dicts (see GeometryReader)
+        tolerance:   rounding tolerance of the topological nodes — same
+                     meaning as load_dxf(tolerance=...); pass the same value
+                     to heal() if you customize it
+        source_path: free label for Document.source_path — not a file, only
+                     used for diagnostics/traceability
 
     Returns:
-        Document (edges + source_meta), pronto per heal().
+        Document (edges + source_meta), ready for heal().
     """
     edges = GeometryReader(entities).to_edges()
     return Document(
@@ -211,10 +211,10 @@ def load_segments(
     source_path: str = "",
 ) -> Document:
     """
-    Un Document da segmenti di topo (`LineSeg`, `ArcSeg`, `CircleSeg`,
-    ...) o da liste di segmenti, come le restituiscono i costruttori di
+    A Document from topo segments (`LineSeg`, `ArcSeg`, `CircleSeg`, ...)
+    or from lists of segments, as returned by the constructors of
     `topo.geometry` (`rectangle`, `regular_polygon`, `polygon`, `circle`,
-    `stadium`). Tutti gli edge prendono `role`. Stessa tolleranza dei nodi di
+    `stadium`). Every edge takes `role`. Same node tolerance as
     `load_geometry` (D96).
 
         fg = topo.geometry

@@ -65,29 +65,29 @@ class RenderedGeometry:
 @dataclass
 class Text:
     """
-    Un testo della sorgente. ``position`` è il punto d'ancoraggio — dove un
-    writer posiziona la stringa e su cui gira il contenimento. ``text`` è la
-    stringa come si legge sul disegno.
+    A text of the source. ``position`` is the anchor point — where a writer
+    places the string and on which containment works. ``text`` is the string
+    as it reads on the drawing.
 
-    ``width_factor``: lo stretch orizzontale rispetto all'altezza (1.0 =
-    nessuno). Senza, chi riscrive il testo su uno stile generico perde la
-    condensazione dell'originale e il testo sborda dalla sua cella.
+    ``width_factor``: the horizontal stretch relative to the height (1.0 =
+    none). Without it, whoever rewrites the text on a generic style loses the
+    original's condensation and the text overflows its cell.
 
-    ``pointer``: una polilinea che parte dalla punta (``pointer[0]``) — dove
-    il testo indica. ``target`` è l'elemento su cui cade la punta.
+    ``pointer``: a polyline starting at the tip (``pointer[0]``) — where the
+    text points. ``target`` is the element the tip falls on.
 
-    ``measured_points``: i punti sulla geometria fra cui è stato misurato il
-    numero ``measure`` (due capi; due punti opposti di un cerchio; un punto
-    di un arco). ``measure_is_angle``: il numero è un angolo, non una
-    lunghezza. ``references``: gli elementi su cui cadono quei punti.
+    ``measured_points``: the points on the geometry between which the number
+    ``measure`` was measured (two ends; two opposite points of a circle; a
+    point of an arc). ``measure_is_angle``: the number is an angle, not a
+    length. ``references``: the elements the points fall on.
 
-    ``rendered``: l'immagine che la sorgente disegna attorno (vuota per un
-    testo semplice). ``source_kind``: il tipo di entità nel formato sorgente
-    ("TEXT", "MTEXT", "DIMENSION", "LEADER", "MULTILEADER" in un DXF).
+    ``rendered``: the image the source draws around it (empty for a plain
+    text). ``source_kind``: the entity type in the source format ("TEXT",
+    "MTEXT", "DIMENSION", "LEADER", "MULTILEADER" in a DXF).
 
-    ``role``: cosa è il testo per un consumer (``"title_block"``,
-    ``"part_code"``, ...), come per un edge: topo non lo legge e non lo
-    decide (D127); ``unknown`` se nessuno l'ha detto.
+    ``role``: what the text is for a consumer (``"title_block"``,
+    ``"part_code"``, ...), as for an edge: topo does not read it and does not
+    decide it (D127); ``unknown`` if nobody said.
     """
     position:         Point
     text:             str              = ""

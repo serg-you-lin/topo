@@ -25,7 +25,7 @@ def _place(points: Sequence[Point], center: Point, angle: float) -> List[Point]:
 
 
 def polygon(points: Sequence[Point]) -> List[LineSeg]:
-    """Il poligono per i `points` dati, chiuso: l'ultimo lato torna al primo punto. Almeno 3 punti."""
+    """The polygon through the given `points`, closed: the last side returns to the first point. At least 3 points."""
     pts = [tuple(p) for p in points]
     if len(pts) > 1 and pts[0] == pts[-1]:
         pts = pts[:-1]
@@ -35,13 +35,13 @@ def polygon(points: Sequence[Point]) -> List[LineSeg]:
 
 
 def rectangle(length: float, width: float, *, center: Point = (0.0, 0.0), angle: float = 0.0) -> List[LineSeg]:
-    """Rettangolo `length` × `width` centrato in `center`, lato lungo a `angle` gradi."""
+    """Rectangle of `length` × `width` centered at `center`, with the long side at `angle` degrees."""
     h, w = length / 2, width / 2
     return polygon(_place([(-h, -w), (h, -w), (h, w), (-h, w)], center, angle))
 
 
 def regular_polygon(sides: int, radius: float, *, center: Point = (0.0, 0.0), angle: float = 0.0) -> List[LineSeg]:
-    """Poligono regolare di `sides` lati inscritto nel cerchio di raggio `radius`; il primo vertice a `angle` gradi."""
+    """Regular polygon with `sides` sides inscribed in the circle of radius `radius`; first vertex at `angle` degrees."""
     if sides < 3:
         raise ValueError(f"regular_polygon(): needs at least 3 sides, got {sides}")
     step = 2 * math.pi / sides
@@ -50,14 +50,14 @@ def regular_polygon(sides: int, radius: float, *, center: Point = (0.0, 0.0), an
 
 
 def circle(radius: float, *, center: Point = (0.0, 0.0)) -> List[CircleSeg]:
-    """Il cerchio di raggio `radius` in `center`."""
+    """The circle of radius `radius` at `center`."""
     return [CircleSeg(center=tuple(center), radius=radius)]
 
 
 def ellipse(length: float, width: float, *, center: Point = (0.0, 0.0), angle: float = 0.0) -> List[EllipseSeg]:
     """
-    L'ellisse di assi `length` × `width` centrata in `center`, asse lungo a
-    `angle` gradi. `length` >= `width` > 0.
+    The ellipse with axes `length` × `width` centered at `center`, long axis
+    at `angle` degrees. `length` >= `width` > 0.
     """
     if not length >= width > 0:
         raise ValueError(f"ellipse(): needs length >= width > 0, got {length} x {width}")
@@ -69,8 +69,8 @@ def ellipse(length: float, width: float, *, center: Point = (0.0, 0.0), angle: f
 
 def stadium(length: float, width: float, *, center: Point = (0.0, 0.0), angle: float = 0.0) -> list:
     """
-    Stadio fuori tutto `length` × `width` (due semicerchi di raggio
-    `width / 2` uniti da due lati paralleli), asse lungo a `angle` gradi.
+    Stadium of overall `length` × `width` (two semicircles of radius
+    `width / 2` joined by two parallel sides), long axis at `angle` degrees.
     `length` > `width`.
     """
     if length <= width:

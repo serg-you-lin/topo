@@ -1,7 +1,7 @@
 """
 test_loops.py
 -------------
-Test per dxf_forge.core.topology.loops — LoopFinder e classify_loops.
+Test per topo_dxf.core.topology.loops — LoopFinder e classify_loops.
 
 I test verificano:
 - ricerca di loop chiusi (LoopFinder.find)

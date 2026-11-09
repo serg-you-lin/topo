@@ -34,6 +34,11 @@ from topo.model.curve import ClosedCurve
 
 @dataclass
 class Contour(ClosedCurve):
+    """
+    A closed contour: a closed curve with its depth in the containment
+    hierarchy (`depth`, 0 = outermost) and its parent contour (`parent`,
+    `None` for an outermost one).
+    """
     _: KW_ONLY
     depth:  int                        = 0
     parent: Optional["Contour"]   = None

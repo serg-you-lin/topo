@@ -245,7 +245,7 @@ volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
 3 residui in 1.x), G11 (`release_check.py`), G12 (area esatta, D165), G13
 (nessun tipo shapely nella superficie, D166–D168), G15 (contorni chiusi
 esatti, D206/D209), G16 (tratteggio per ruolo, D210) — tutti e due il 6
-novembre, ramo `no-join-ends` fuso in `main`.
+novembre, ramo `no-join-ends` fuso in `main`; G9 (docstring pubbliche in inglese).
 Da G7 resta un filo fuori dal cancello: i golden dei `_noframe` (Federico).
 
 **Aperti**
@@ -259,10 +259,6 @@ Da G7 resta un filo fuori dal cancello: i golden dei `_noframe` (Federico).
       CLAUDE.md: motore di geometria 2D, i disegni tecnici sono un caso.
       Oggi tutti e quattro dicono "for technical drawings and CAD geometry":
       Federico giudica se basta. Tolta dai README la lettura testuale (`to_text`, D213).
-- [ ] **G9** Docstring dei nomi pubblici in inglese: 61 rosse in
-      `release_check.py` (9 novembre). Fatti: `API.md`, `ARCHITECTURE.md`,
-      `overlay` (D238). Nella stessa passata: i nomi vecchi (`dxf_forge` in
-      `test_splitter.py`, `test_models.py`, `test_loops.py`).
 - [ ] **Pulizia del repo prima della 1.0** (Federico, 8 novembre): TODO.md, MAP.md
       e il resto pieni di log di sessione (misure, cose fatte, riordini) lasciati da
       Claude; restano solo le cose da fare e le decisioni, i log vanno fuori dal repo.

@@ -230,15 +230,16 @@ def _piece_side(polygon, piece) -> int:
 @dataclass(frozen=True)
 class ContourPoint:
     """
-    Dove cade un punto su un contorno.
+    Where a point falls on a contour.
 
-    kind:      "vertex" (due lati si incontrano con un angolo), "smooth" (si
-               incontrano proseguendo uno nell'altro: un raccordo), "edge"
-               (in mezzo a un lato)
-    segments:  indici in `segments`: due per un vertice (entrante, uscente),
-               uno per un punto in mezzo a un lato
-    turn_deg:  di quanto gira il contorno nel punto, 0 se non gira
-    concave:   True se l'interno occupa più di mezzo giro attorno al punto
+    kind:      "vertex" (two sides meet at an angle), "smooth" (they meet
+               continuing one into the other: a blend), "edge" (in the
+               middle of a side)
+    segments:  indices into `segments`: two for a vertex (incoming,
+               outgoing), one for a point in the middle of a side
+    turn_deg:  how much the contour turns at the point, 0 if it does not turn
+    concave:   True if the interior occupies more than half a turn around
+               the point
     """
     point:    Point
     kind:     str
@@ -250,11 +251,11 @@ class ContourPoint:
 def point_on_contour(segments: Sequence, point: Point, *, tolerance: float = DEFAULT_TOLERANCE,
                      angle_tolerance: float = TANGENT_TOLERANCE) -> Optional[ContourPoint]:
     """
-    Dove cade `point` sull'anello `segments` (testa-coda): su un vertice, su
-    un raccordo, in mezzo a un lato. None se dista più di `tolerance` dal
-    contorno. Un vertice è un raccordo se i due lati girano di meno di
-    `angle_tolerance` radianti; concavo o convesso lo dice il verso
-    dell'anello, non un test dentro/fuori.
+    Where `point` falls on the ring `segments` (head to tail): on a vertex,
+    on a blend, in the middle of a side. None if it is farther than
+    `tolerance` from the contour. A vertex is a blend if the two sides turn
+    by less than `angle_tolerance` radians; concave or convex is told by the
+    ring's direction, not by an inside/outside test.
     """
     segs = list(segments)
     n = len(segs)
@@ -277,10 +278,10 @@ def point_on_contour(segments: Sequence, point: Point, *, tolerance: float = DEF
 
 def nearest_point(segments: Sequence, point: Point) -> Point:
     """
-    Il punto delle primitive `segments` più vicino a `point`: anche a metà di
-    un lato, non solo su un vertice. Esatto su rette, archi e cerchi; su
-    spline ed ellissi entro `CURVE_TOLERANCE`. Per sapere dove cade sul
-    contorno (vertice, raccordo, lato) si passa a `point_on_contour`.
+    The point of the primitives `segments` nearest to `point`: also in the
+    middle of a side, not only on a vertex. Exact on lines, arcs and circles;
+    on splines and ellipses within `CURVE_TOLERANCE`. To know where it falls
+    on the contour (vertex, blend, side) pass it to `point_on_contour`.
     """
     best: Optional[Point] = None
     for seg in segments:
@@ -298,9 +299,10 @@ def nearest_point(segments: Sequence, point: Point) -> Point:
 
 def cut_by(segment, region: Sequence, *, keep: str = "outside") -> list:
     """
-    I pezzi di `segment` fuori (`keep="outside"`) o dentro (`keep="inside"`)
-    la regione chiusa `region`, nel verso di `segment`. Un pezzo che corre
-    lungo il bordo della regione → ValueError: né dentro né fuori.
+    The pieces of `segment` outside (`keep="outside"`) or inside
+    (`keep="inside"`) the closed region `region`, in the direction of
+    `segment`. A piece running along the region's border → ValueError:
+    neither inside nor outside.
     """
     if keep not in ("outside", "inside"):
         raise ValueError(f"keep must be 'outside' or 'inside', got {keep!r}")
@@ -361,15 +363,15 @@ def _chain(pieces: list, inside_left: Optional[bool] = None) -> List[list]:
 
 def contour_minus(contour: Sequence, region: Sequence) -> List[list]:
     """
-    L'anello `contour` meno la regione chiusa `region` (tutti e due anelli di
-    primitive testa-coda): gli anelli del bordo che resta. Ogni anello ha il
-    verso di `contour` se è un contorno esterno, quello opposto se è un foro
-    (la regione tutta dentro il contorno). Lista vuota se la regione copre
-    tutto il contorno.
+    The ring `contour` minus the closed region `region` (both rings of
+    head-to-tail primitives): the rings of the border that remains. Each ring
+    has the direction of `contour` if it is an outer contour, the opposite if
+    it is a hole (the region entirely inside the contour). Empty list if the
+    region covers the whole contour.
 
-    Tanti anelli quanti ne vengono: un taglio che stacca un pezzo ne dà due.
-    Quale tenere lo decide il chiamante. Bordi che corrono uno sull'altro →
-    ValueError: lì il risultato non è un punto di taglio ma un tratto in comune.
+    As many rings as come out: a cut that detaches a piece gives two. Which
+    to keep is the caller's decision. Borders running on top of each other →
+    ValueError: there the result is not a cut point but a shared stretch.
     """
     contour, region = list(contour), list(region)
     # il bordo della regione entra nel risultato al contrario del contorno:
@@ -438,17 +440,17 @@ def _same_curve(a, b) -> bool:
 
 def contour_union(contour: Sequence, other: Sequence) -> List[list]:
     """
-    L'unione degli anelli `contour` e `other` (primitive testa-coda): gli
-    anelli del bordo che ne viene, il più grande per primo. Un contorno
-    esterno ha il verso di `contour`, un foro (chiuso fra i due) quello
-    opposto; due contorni lontani restano due anelli.
+    The union of the rings `contour` and `other` (head-to-tail primitives):
+    the rings of the resulting border, the largest first. An outer contour
+    has the direction of `contour`, a hole (enclosed between the two) the
+    opposite; two distant contours stay two rings.
 
-    Un bordo in comune è il caso che conta: dove i due si affiancano il
-    tratto comune sparisce, dove si sovrappongono resta una volta. Il tratto
-    comune deve coincidere pezzo per pezzo (stessa retta, stesso cerchio,
-    stessa curva fra gli stessi capi); un bordo che corre lungo l'altro senza
-    coincidere → ValueError. Dove il bordo prosegue sulla stessa retta o
-    sullo stesso cerchio non c'è uno spigolo: i pezzi tornano uno solo.
+    A shared border is the case that matters: where the two sit side by side
+    the common stretch disappears, where they overlap it remains once. The
+    common stretch must coincide piece by piece (same line, same circle, same
+    curve between the same ends); a border running along the other without
+    coinciding → ValueError. Where the border continues on the same line or
+    the same circle there is no corner: the pieces become one again.
     """
     contour, other = list(contour), list(other)
     ccw = _signed_area(contour) > 0

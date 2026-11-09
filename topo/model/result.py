@@ -12,25 +12,25 @@ from .text import Text
 @dataclass
 class Result:
     """
-    Ciò che una lettura (`Network.faces()`, `Network.outlines()`) dà al
-    chiamante: i pezzi trovati + info di validazione.
+    What a reading (`Network.faces()`, `Network.outlines()`) hands to the
+    caller: the pieces found + validation info.
 
-    Campi:
-        warnings  : consigli sul disegno; notes : cosa topo ha fatto da sé;
-                    errors : niente da leggere — tutti `Diagnostic` (D233).
-        source_format, reading, tolerance, max_gap : da che cosa arriva la
-                    geometria e come è stata letta, copiati dalla rete (D231).
-        texts     : i testi della sorgente (list[Text], D138), copiati
-                    qui da heal() dal Document. Sono dati di dominio
-                    indipendenti dal formato: ogni renderer (to_dxf, un
-                    futuro to_svg/to_pdf) li disegna dal modello, senza
-                    rileggere la sorgente.
-        loose     : ogni curva che non è contorno di nessun cluster (MAP.md
-                    D137): catene che non chiudono niente, tracce aperte,
-                    curve chiuse con un ruolo non strutturale. Cosa sono lo
-                    decide il consumatore, che le sposta in `cluster.overlay`
-                    con `promote()`. `cluster_ref` dice quale cluster le
-                    contiene.
+    Fields:
+        warnings  : advice about the drawing; notes : what topo did on its
+                    own; errors : nothing to read — all `Diagnostic` (D233).
+        source_format, reading, tolerance, max_gap : where the geometry comes
+                    from and how it was read, copied from the network (D231).
+        texts     : the source's texts (list[Text], D138), copied here by
+                    heal() from the Document. They are format-independent
+                    domain data: every renderer (to_dxf, a future
+                    to_svg/to_pdf) draws them from the model, without
+                    re-reading the source.
+        loose     : every curve that is no cluster's contour (MAP.md
+                    D137): chains that close nothing, open traces, closed
+                    curves with a non-structural role. What they are is
+                    decided by the consumer, who moves them into
+                    `cluster.overlay` with `promote()`. `cluster_ref` says
+                    which cluster contains them.
     """
     clusters:               List[Cluster]        = field(default_factory=list)
     _: KW_ONLY

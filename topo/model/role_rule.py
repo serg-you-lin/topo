@@ -40,17 +40,17 @@ _COLOR_NAMES: Dict[str, RGB] = {
 @dataclass
 class RoleRule:
     """
-    Una regola: se TUTTE le condizioni date sono vere, la linea prende `role`.
-    Le condizioni lasciate a None non contano; almeno una è obbligatoria.
+    A rule: if ALL the given conditions are true, the line takes `role`.
+    Conditions left as None do not count; at least one is required.
 
-    Campi:
-        role          : ruolo assegnato (passa per normalize_role)
-        name          : nome del gruppo sorgente, uguale (maiuscole ignorate)
-        name_contains : sottostringa del nome del gruppo (maiuscole ignorate)
-        dashed        : True = solo tratteggiate, False = solo continue
-        dash          : forma del tratto, "continuous" / "uniform" / "chain"
-        color         : colore effettivo, (r, g, b), "#rrggbb" o un nome
-                        di base ("cyan", "red", ...)
+    Fields:
+        role          : the assigned role (goes through normalize_role)
+        name          : source group name, equal (case ignored)
+        name_contains : substring of the group name (case ignored)
+        dashed        : True = dashed only, False = continuous only
+        dash          : stroke shape, "continuous" / "uniform" / "chain"
+        color         : effective color, (r, g, b), "#rrggbb" or a basic
+                        name ("cyan", "red", ...)
     """
     role:          str
     _: KW_ONLY
@@ -113,7 +113,7 @@ def resolve_role(rules: Sequence[RoleRule], name: str, style: Optional[EdgeStyle
 
 
 def name_rules(mapping: Dict[str, str]) -> List[RoleRule]:
-    """Scorciatoia: {nome: ruolo} → una RoleRule(name=...) per voce."""
+    """Shortcut: a {name: role} dict becomes one RoleRule(name=...) for each entry."""
     return [RoleRule(role=role, name=name) for name, role in mapping.items()]
 
 

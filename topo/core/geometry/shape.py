@@ -29,8 +29,8 @@ Point = Tuple[float, float]
 
 class ShapeKind(str, Enum):
     """
-    Le sei forme di `contour_shape`, elenco chiuso e stabile (MAP.md D136).
-    Eredita da str: `kind == "circle"` funziona e il testo stampa il valore.
+    The six shapes of `contour_shape`, a closed and stable list (MAP.md D136).
+    Inherits from str: `kind == "circle"` works and the text prints the value.
     """
     CIRCLE = "circle"
     ELLIPSE = "ellipse"
@@ -60,14 +60,14 @@ ANGLE_TOLERANCE_DEG = 1.0
 @dataclass(frozen=True)
 class ContourShape:
     """
-    kind:   un `ShapeKind` (circle | ellipse | stadium | rectangle | polygon | other)
-    center: centro (cerchio, ellisse, stadio, rettangolo) o baricentro (il resto)
-    length: dimensione maggiore — cerchio: diametro; ellisse: asse maggiore;
-            stadio: fuori tutto
-    width:  dimensione minore — cerchio: diametro; ellisse: asse minore;
-            stadio: 2 × raggio
-    angle:  gradi [0, 180) dell'asse lungo; None per il cerchio
-    sides:  segmenti del contorno dopo la ricomposizione
+    kind:   a `ShapeKind` (circle | ellipse | stadium | rectangle | polygon | other)
+    center: center (circle, ellipse, stadium, rectangle) or centroid (the rest)
+    length: larger dimension — circle: diameter; ellipse: major axis;
+            stadium: overall length
+    width:  smaller dimension — circle: diameter; ellipse: minor axis;
+            stadium: 2 × radius
+    angle:  degrees [0, 180) of the long axis; None for the circle
+    sides:  contour segments after recomposition
     """
     kind: ShapeKind
     center: Point
@@ -90,11 +90,11 @@ class ContourShape:
 def contour_shape(item, *, tolerance: float = SHAPE_TOLERANCE,
                   angle_tolerance: float = ANGLE_TOLERANCE_DEG) -> Optional[ContourShape]:
     """
-    Forma di un contorno chiuso (`Contour`, o qualunque oggetto con
-    `.segments`, o la lista di segmenti). None se non ci sono segmenti o se,
-    in fila, non chiudono in anello (D162).
-    I segmenti consecutivi sulla stessa retta o circonferenza sono prima
-    ricomposti, così un lato spezzato da un nodo resta un lato.
+    Shape of a closed contour (`Contour`, or any object with `.segments`, or
+    the list of segments). None if there are no segments or if, in sequence,
+    they do not close into a ring (D162).
+    Consecutive segments on the same line or circle are first recomposed, so
+    a side split by a node stays one side.
     """
     segments = list(getattr(item, "segments", item) or [])
     if not segments or not _closes(segments, tolerance):
@@ -289,11 +289,11 @@ CONCENTRIC_TOLERANCE = 0.1   # distanza massima fra i centri, unità del disegno
 @dataclass(frozen=True)
 class ConcentricGroup:
     """
-    Contorni circolari con lo stesso centro, dal raggio minore al maggiore.
+    Circular contours with the same center, from smallest to largest radius.
 
-    center: centro del cerchio più piccolo (il riferimento del gruppo)
-    items:  i contorni, nell'ordine dei raggi
-    shapes: la `ContourShape` di ciascuno, nello stesso ordine
+    center: center of the smallest circle (the group's reference)
+    items:  the contours, in radius order
+    shapes: the `ContourShape` of each, in the same order
     """
     center: Point
     items: tuple
@@ -306,10 +306,10 @@ class ConcentricGroup:
 
 def concentric_groups(items, *, tolerance: float = CONCENTRIC_TOLERANCE) -> list[ConcentricGroup]:
     """
-    Partizione dei contorni circolari di `items` per centro: ogni cerchio sta
-    in un solo gruppo, anche da solo. Un cerchio entra, fra i gruppi il cui
-    centro dista al più `tolerance` dal suo, nel più vicino; i non circolari
-    non compaiono. Gruppi ordinati per centro (x, y), pari entro il rumore.
+    Partition of the circular contours of `items` by center: every circle is
+    in exactly one group, even alone. A circle joins, among the groups whose
+    center is at most `tolerance` from its own, the nearest one; non-circular
+    ones do not appear. Groups sorted by center (x, y), ties within noise.
     """
     circles = sorted(((k, item, shape) for k, item in enumerate(items)
                       if (shape := contour_shape(item)) is not None and shape.kind == CIRCLE),
@@ -337,11 +337,11 @@ def concentric_groups(items, *, tolerance: float = CONCENTRIC_TOLERANCE) -> list
 @dataclass(frozen=True)
 class ArcAround:
     """
-    Un arco concentrico a un cerchio e più grande di lui.
+    An arc concentric with a circle and larger than it.
 
-    arc:          l'`ArcSeg`
-    sweep:        angolo spazzato, in gradi
-    radius_ratio: raggio dell'arco / raggio del cerchio (> 1)
+    arc:          the `ArcSeg`
+    sweep:        swept angle, in degrees
+    radius_ratio: arc radius / circle radius (> 1)
     """
     arc: ArcSeg
     sweep: float
@@ -351,8 +351,8 @@ class ArcAround:
 def arcs_around(center: Point, radius: float, arcs,
                 *, tolerance: float = CONCENTRIC_TOLERANCE) -> list[ArcAround]:
     """
-    Gli archi di `arcs` col centro entro `tolerance` da `center` e raggio
-    maggiore di `radius`, dal più vicino al cerchio al più lontano.
+    The arcs of `arcs` with center within `tolerance` of `center` and radius
+    larger than `radius`, from the nearest to the circle to the farthest.
     """
     out = [ArcAround(a, math.degrees(a._sweep()), a.radius / radius) for a in arcs
            if isinstance(a, ArcSeg) and a.radius > radius and math.dist(a.center, center) <= tolerance]

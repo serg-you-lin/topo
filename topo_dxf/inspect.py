@@ -36,10 +36,10 @@ def _point(x, nd: int = 2) -> str:
 
 def inspect_dxf(path: str, *, entities: bool = True, limit: Optional[int] = 40) -> None:
     """
-    Apre un DXF/DWG con ezdxf e stampa cosa contiene, senza toccare topo.
+    Opens a DXF/DWG with ezdxf and prints what it contains, without touching topo.
 
-    entities : se True elenca ogni entità con i suoi attributi chiave
-    limit    : numero massimo di entità elencate (None = tutte)
+    entities : if True lists every entity with its key attributes
+    limit    : maximum number of entities listed (None = all)
     """
     _header(f"LIVELLO 1 — DXF grezzo\n{path}")
 
@@ -120,11 +120,11 @@ def inspect_file(
     coords: bool = False,
 ) -> None:
     """
-    Apre un file e stampa i tre livelli in fila:
-    DXF grezzo → Document → Result.
+    Opens a file and prints the three levels in a row:
+    raw DXF → Document → Result.
 
-    run_heal              : disattivalo per fermarti al Document.
-    role_rules            : come in load_dxf().
+    run_heal              : turn it off to stop at the Document.
+    role_rules            : as in load_dxf().
     """
     inspect_dxf(path, entities=entities)
 

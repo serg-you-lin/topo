@@ -24,8 +24,8 @@ from topo.core.geometry.rings import ring_closes
 @dataclass
 class Overlay:
     """
-    Contenitore aperto per nome: ogni consumatore scrive sotto il nome che
-    vuole, con lo stesso metodo.
+    Container open by name: each consumer writes under the name it wants,
+    with the same method.
     """
     _store: Dict[str, List[Any]] = field(default_factory=dict)
 
