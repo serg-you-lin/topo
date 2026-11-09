@@ -88,6 +88,8 @@ def read_faces(net: Network) -> Result:
         rest += [p for p in pieces if id(p) not in used] if any(id(p) in used for p in pieces) else [edge]
     curves = closed + loose_curves(rest)
     if not curves:
+        # nessun pezzo, ma gli edge messi da parte restano in loose (D137)
+        result.loose = loose_curves(labeled)
         result.errors.append(Diagnostic("no-closed-outer", "nothing closes after the repair", level="error"))
         result.is_valid = False
         return result

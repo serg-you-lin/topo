@@ -430,7 +430,6 @@ mai rigenerando alla cieca.
 ## Dopo la 1.0 (1.x, additivo — non toccare finché il cancello è aperto)
 
 Difetti trovati il 6 novembre (fatti, nessuna analisi):
-- `faces()` su soli bordi con ruolo non strutturale (rettangolo `role="centerline"`, 9 novembre): `is_valid=False`, 0 cluster, `loose` **vuoto**, mentre il warning `set-aside` dice "set aside, in loose". Tocca la regola 7 di CLAUDE.md: Federico decide se è del cancello.
 - `near-copy` (D237): l'help scatta anche su spigoli veri (167 coppie a 45-90° nella forza bruta, help giusto in 40). Idea di Federico, per un agente: alzare la soglia solo nello spicchio dei `points` dell'avviso; conta solo quando la lineetta serve a chiudere un esterno.
 - Agganci dei testi persi con D161 (golden di `golden_anchoring/` rigenerati il 7 novembre, Federico li accetta senza giudicarli): testi rimasti senza aggancio anch_02 3, anch_03 1, anch_04 10, anch_05 7, anch_07 1; tipico un richiamo "M6 n°16 fori" che era legato a una figurina 6×3 (inner di `faces()` di prima) e oggi a niente. Da guardare con snapdraw.
 - D229: 18 nomi ancora doppi con contenuti diversi (`SAME_NAME_DIFFERENT_CONTENT` in `tests/package/test_one_copy.py`): `anch_01..08` in `golden_anchoring/` e `golden_outlines/` sono disegni diversi con lo stesso nome; gli altri 10 hanno una copia nella radice letta dai test unitari e una in `golden_faces/` letta dai golden. Per ognuno: quale contenuto resta, o un nome nuovo.

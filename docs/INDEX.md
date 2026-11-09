@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`84` modules · `543` module-level functions · `64` classes · `16521` lines of code.
+`84` modules · `543` module-level functions · `64` classes · `16523` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -139,7 +139,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `covered_rectangles` | func | `topo/core/geometry/axis.py:146` | I rettangoli allineati agli assi con ogni lato coperto almeno per |
 | `CoveredRectangle` | class | `topo/core/geometry/axis.py:107` | An axis-aligned rectangle whose four sides are covered by strokes. |
 | `_crossing` | func | `topo/core/primitives/fitting.py:159` |  |
-| `_crossing_warnings` | func | `topo/core/readings/faces.py:141` | Lati di contorno che si attraversano senza un nodo (D132): il disegno è |
+| `_crossing_warnings` | func | `topo/core/readings/faces.py:143` | Lati di contorno che si attraversano senza un nodo (D132): il disegno è |
 | `_Curve` | class | `topo/core/topology/noding.py:218` | `seg` col parametro s = lunghezza d'arco dall'inizio, in [0, length] |
 | `Curve` | class | `topo/model/curve.py:39` | Radice della gerarchia. Porta solo identità semantica e traceability. |
 | `curve_polygon` | func | `topo/core/primitives/polygon_builder.py:68` | Il poligono shapely di `item` per le domande fra più curve (contenimento, |
@@ -306,7 +306,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `loop_to_closed_curve` | func | `topo/core/base/hierarchy.py:25` |  |
 | `loops_to_curves` | func | `topo/core/base/curves.py:27` | Un ClosedCurve per loop, col ruolo del primo edge. Un loop che non fa un |
 | `loose_curves` | func | `topo/core/base/curves.py:49` | Le curve di `loose` (D162): un pezzo che chiude da sé — un segmento |
-| `_loose_ends_notes` | func | `topo/core/readings/faces.py:121` | Quello che resta aperto anche quando qualcosa si chiude (D111): gli |
+| `_loose_ends_notes` | func | `topo/core/readings/faces.py:123` | Quello che resta aperto anche quando qualcosa si chiude (D111): gli |
 | `_loose_entry` | func | `topo/io/view_model.py:103` |  |
 | `_make_inner` | func | `topo/core/base/hierarchy.py:107` |  |
 | `_make_polygon` | func | `topo/core/primitives/polygon_builder.py:49` |  |
@@ -1127,13 +1127,13 @@ _topo/core/readings — le letture (faces, outlines): ognuna sceglie solo come c
 
 No module-level function or class.
 
-#### `topo/core/readings/faces.py` — 149 lines
+#### `topo/core/readings/faces.py` — 151 lines
 
 _topo/core/readings/faces.py_
 
 - `read_faces(net: Network) -> Result` — L33 — Un Cluster per contorno esterno chiuso della rete, con gli inners per
-- `_loose_ends_notes(ends: list, pieces: list, non_contour_ids: set) -> list` — L121 — Quello che resta aperto anche quando qualcosa si chiude (D111): gli
-- `_crossing_warnings(points: list) -> list` — L141 — Lati di contorno che si attraversano senza un nodo (D132): il disegno è
+- `_loose_ends_notes(ends: list, pieces: list, non_contour_ids: set) -> list` — L123 — Quello che resta aperto anche quando qualcosa si chiude (D111): gli
+- `_crossing_warnings(points: list) -> list` — L143 — Lati di contorno che si attraversano senza un nodo (D132): il disegno è
 
 #### `topo/core/readings/heal.py` — 45 lines
 

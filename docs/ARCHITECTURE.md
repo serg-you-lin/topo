@@ -411,9 +411,6 @@ Honesty about the state — details and reasons are in `MAP.md` (section
   `forge-pdf-adapter` worktree is resumed here (TODO, "PDF da riprendere").
 - **DWG** goes through ODA File Converter, an external executable: `topo_dxf`
   calls it via `ezdxf`'s `odafc` addon.
-- **`faces()` with only labeled edges** (all with a non-structural role):
-  no error, an invalid `Result` with no cluster and an **empty** `loose`,
-  although the `set-aside` warning says the edges went to `loose` (TODO).
 
 The whole history of the refactors already closed (bridge/shape removed, entity→primitive
 dispatcher unified, `Edge` moved from `adapters/` to

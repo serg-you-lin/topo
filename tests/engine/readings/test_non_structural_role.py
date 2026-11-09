@@ -71,5 +71,31 @@ class TestNonStructuralRoleLeavesThePart(unittest.TestCase):
                     self.assertEqual(len(result.loose), len(self.lines))
 
 
+class TestOnlyNonStructuralEdges(unittest.TestCase):
+    # nessun edge strutturale: nessun pezzo, ma gli edge messi da parte non
+    # spariscono — stanno in `loose` in tutte e due le letture, uguali
+
+    def test_gli_edge_messi_da_parte_restano_in_loose(self):
+        shapes = {
+            "anello": topo.geometry.rectangle(200, 100),
+            "righe": [LineSeg(start=(0, 0), end=(50, 0)),
+                      LineSeg(start=(0, 10), end=(50, 30))],
+        }
+        for name, segments in shapes.items():
+            network = topo.heal(topo.load_segments(segments, role="x"))
+            lengths = {}
+            for reading in ("faces", "outlines"):
+                with self.subTest(shape=name, reading=reading):
+                    result = getattr(network, reading)()
+                    self.assertFalse(result.is_valid)
+                    self.assertEqual(result.clusters, [])
+                    self.assertTrue(result.loose)
+                    lengths[reading] = sorted(
+                        round(sum(map(topo.geometry.segment_length, c.segments)), 9)
+                        for c in result.loose)
+            with self.subTest(shape=name):
+                self.assertEqual(lengths["faces"], lengths["outlines"])
+
+
 if __name__ == "__main__":
     unittest.main()
