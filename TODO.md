@@ -329,9 +329,11 @@ novembre, ramo `no-join-ends` fuso in `main`.
       suite senza rossi attesi. Golden dei `_noframe` non fatti (Federico).
 - [ ] **G8** README / README_IT / `description` di pyproject / prima riga di
       CLAUDE.md: motore di geometria 2D, i disegni tecnici sono un caso.
-- [ ] **G9** `docs/API.md` in inglese; docstring dei nomi pubblici in inglese
-      (61 rosse in `release_check.py`). Fatti: `ARCHITECTURE.md`, `overlay` (D238).
-      Nella stessa passata: i nomi vecchi (`dxf_forge` in
+      Oggi tutti e quattro dicono "for technical drawings and CAD geometry":
+      Federico giudica se basta. Tolta dai README la lettura testuale (`to_text`, D213).
+- [ ] **G9** Docstring dei nomi pubblici in inglese: 61 rosse in
+      `release_check.py` (9 novembre). Fatti: `API.md`, `ARCHITECTURE.md`,
+      `overlay` (D238). Nella stessa passata: i nomi vecchi (`dxf_forge` in
       `test_splitter.py`, `test_models.py`, `test_loops.py`).
 - [ ] **Pulizia del repo prima della 1.0** (Federico, 8 novembre): TODO.md, MAP.md
       e il resto pieni di log di sessione (misure, cose fatte, riordini) lasciati da
@@ -348,7 +350,8 @@ novembre, ramo `no-join-ends` fuso in `main`.
       e mai usati di `anch_01…06` (D97), e i 258 file `tests/**/*healed*`
       (uscite di `11_batch_heal.py`, fuori da git dal 7 novembre, sul disco
       restano): fra quelli di `output_polylines/` alcuni nomi sembrano codici pezzo.
-- [ ] **Tempo della suite**: 3:23 dopo D181, sopra il tetto di 2.5–3 min.
+- [ ] **Tempo della suite**: 3:22 il 9 novembre (seriale, 2601 passati, 201
+      saltati), sopra il tetto di 2.5–3 min.
       Misura del 2 novembre: 4:07 a `fc9997e` (prima di D202 C), 4:08 dopo.
       Restano `test_fidelity` sulle spline e le letture di `outlines()`.
       Misura del 7 novembre a `43cf58a` (seriale, `--durations=0`): 4:35, 3242 test.

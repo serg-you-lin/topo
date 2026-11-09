@@ -5,8 +5,7 @@
 `topo` turns a messy 2D drawing into a clean, lossless model — healed closed
 contours, their containment hierarchy, the drawing's texts, and an open
 overlay where a consumer attaches its own reading — then renders it to DXF (one
-document, or one per part), JSON, SVG, a view model for a UI, or (experimental) a compact text reading for
-a language model. The model is the product; a CAD format is
+document, or one per part), JSON, SVG, or a view model for a UI. The model is the product; a CAD format is
 only a door in or out of it. **topo itself knows no file format**: geometry and
 roles, never layers. The doors are adapters, sibling packages in the same
 distribution — `topo_dxf` (DXF, DWG via ODA) and `topo_pdf` (experimental) —
