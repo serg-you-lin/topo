@@ -34,7 +34,13 @@ rosso su un difetto vero prima di contare.
       Federico giudica se basta.
 - [ ] **Pulizia del repo** (Federico): TODO.md, MAP.md e il resto non devono
       avere log di sessione; restano solo cose da fare e decisioni. TODO.md è
-      fatto; resta MAP.md e il controllo del resto.
+      fatto; resta MAP.md e il controllo del resto. In `tests/data/` resta solo
+      ciò che un test usa: il resto si toglie.
+- [ ] **Stato "alpha" via al rilascio**: `README.md:23` e `README_IT.md:23`
+      ("alpha, l'API si muove ancora") diventano "stabile: i nomi pubblici non
+      si rompono, si deprecano" (D174, D175); in `pyproject.toml` il
+      classifier passa da `3 - Alpha` a `5 - Production/Stable`. Restano le
+      frasi su `topo.experimental` e `topo_pdf`, che sono vere.
 - [ ] **Licenza**: `LICENSE`, `pyproject.toml` e i due README dicono "All rights
       reserved", quindi nessuno può usare topo senza permesso scritto. Prima
       della 1.0 una licenza scelta da Federico.
