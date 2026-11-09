@@ -401,6 +401,9 @@ novembre, ramo `no-join-ends` fuso in `main`.
       fondendo apre i contorni. Rapporto e DXF in `_debug/2026-11-08_topo_forza-bruta-gruppi`.
       Da decidere col banco: "mosso" col bordo entro la tolleranza (D143) invece dell'area
       a 1e-5; 26 rossi veri con un guasto solo (DXF A-E).
+      `refit_tessellations` (D60): soglia fissa 0,1 mm sul lato. Seme 42 (dopo D235): un foro
+      r 0,492 in 70 linee (~0,044 mm) diventa 5 linee + 3 archi, uno r 1,424 in 71 linee
+      (~0,126 mm) resta linee; nessuno dei due torna `CircleSeg`. Visto da Federico. Fuori 1.0.
       Federico, 9 novembre: i rossi del banco restano rossi, fuori dal cancello 1.0. Nel
       cancello solo l'avviso `near-copy` (sopra): correggerlo o toglierlo prima della 1.0.
       Spazzatura tracciata: `tests/data/mixed_pipeline/*.dwl*`
