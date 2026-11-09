@@ -2,29 +2,23 @@
 
 **Motore di geometria 2D deterministico per il disegno tecnico e la geometria CAD.**
 
-`topo` prende un disegno 2D disordinato e ne ricava un modello pulito e senza
-perdite — contorni chiusi ricuciti, la loro gerarchia di contenimento, i
-testi del disegno, e un overlay aperto dove un consumatore attacca la
-sua lettura — poi lo riscrive in DXF (un documento, o uno per pezzo), JSON, SVG,
-o un view model per una UI. Il prodotto è il
-modello; un formato CAD è solo una porta di entrata o di uscita. **topo stesso
-non conosce alcun formato di file**: geometria e ruoli, mai layer. Le porte sono
-adapter, pacchetti fratelli nella stessa distribuzione — `topo_dxf` (DXF, DWG
-via ODA) e `topo_pdf` (sperimentale) — che usano solo i nomi pubblici di topo;
-tutto ciò che sta a valle lavora sul modello neutro rispetto al formato.
+`topo` prende geometria 2D rotta e ne ricava un modello pulito e senza perdite —
+contorni chiusi ricuciti, la loro gerarchia di contenimento, i testi del
+disegno, e un overlay aperto dove un consumatore attacca la sua lettura — e lo
+riscrive in uscita. Il prodotto è il modello. **topo non conosce alcun formato
+di file**: lavora su geometria e ruoli. I file entrano ed escono attraverso gli
+adapter, pacchetti fratelli nella stessa distribuzione.
 
-La parte che nessun altro strumento fa per te è l'**healing**: ricucire la
-geometria rotta — matasse di `LINE`/`ARC` da un export CAM, il DXF di un cliente,
-un vecchio file R12 — in contorni chiusi.
+La parte distintiva è l'**healing**: le curve che dovrebbero incontrarsi e non
+lo fanno — piccoli gap, doppioni, sporgenze, pezzi disegnati uno per uno —
+vengono ricucite in contorni chiusi, e niente viene scartato in silenzio.
 
-**Non è una libreria DXF** e **non è uno strumento per la lamiera**. La lamiera
-e la piastra sono il contesto in cui topo è nato, e il suo primo consumatore, non
-il suo confine: il motore non conosce materiale, processo né prodotto. Leggere la
-geometria come "un foro da forare" o "una piega" è interpretazione del
-consumatore (`snapbend` per la lamiera, `snapdraw` per la notazione del disegno):
-topo non ha letture di quel tipo dentro, così un consumatore di qualunque
-dominio ottiene la stessa geometria e ci mette sopra il suo vocabolario
-attraverso un overlay aperto (`cluster.overlay`).
+topo **non è uno strumento per la lamiera**. La lamiera e la piastra sono il
+contesto in cui è nato, e il suo primo consumatore, non il suo confine: il
+motore non conosce materiale, processo né prodotto. Leggere un contorno come "un
+foro da forare" o una linea come "una piega" è interpretazione del consumatore
+(`snapbend` per la lamiera, `snapdraw` per la notazione del disegno), scritta
+sopra attraverso un overlay aperto (`cluster.overlay`).
 
 > Stato: **alpha**. In produzione, ma l'API si muove ancora. Vedi `MAP.md` per le decisioni di design correnti.
 
@@ -38,114 +32,103 @@ attraverso un overlay aperto (`cluster.overlay`).
 ## Installazione
 
 ```bash
-pip install -e ".[dxf]"     # da un clone: topo + topo_dxf (DXF/DWG in entrata e in uscita)
 pip install -e .            # topo da solo: geometria in entrata, SVG / JSON / testo in uscita
-pip install -e ".[pdf]"     # + topo_pdf, input PDF sperimentale
+pip install -e ".[dxf]"     # + topo_dxf: file DXF e DWG in entrata, DXF in uscita
+pip install -e ".[pdf]"     # + topo_pdf: PDF in entrata (sperimentale)
 ```
 
 Una distribuzione (`g-topo`), tre pacchetti importabili:
 
-| pacchetto  | cosa                                   | extra   | porta   |
-|------------|----------------------------------------|---------|---------|
-| `topo`     | il motore: modello, heal (faces / outlines), split, SVG/JSON/testo | —       | `shapely`, `numpy` |
-| `topo_dxf` | lettore e scrittore DXF/DWG, `inspect_dxf` | `[dxf]` | `ezdxf` |
-| `topo_pdf` | lettore PDF (sperimentale)             | `[pdf]` | `PyMuPDF` |
+| pacchetto  | cosa                                                          |
+|------------|---------------------------------------------------------------|
+| `topo`     | il motore: modello, heal, le due letture, split, SVG / JSON / testo |
+| `topo_dxf` | adapter di file: legge DXF e DWG, scrive DXF. Per il DWG serve [ODA File Converter](https://www.opendesign.com/guestfiles/oda_file_converter) installato (gratuito, `ODA_PATH`) |
+| `topo_pdf` | adapter di file: legge PDF (sperimentale)                     |
 
-`topo` non importa mai un adapter, e un adapter solo i nomi pubblici di topo —
-un confine che fa rispettare il controllo dell'indice (`scripts/gen_index.py
---check`). Python ≥ 3.10.
+`topo` non importa mai un adapter, e un adapter usa solo i nomi pubblici di topo
+— un confine che il controllo dell'indice fa rispettare
+(`scripts/gen_index.py --check`). Cosa legge e scrive un adapter, e le sue
+opzioni, stanno in `docs/API.md` (§9, §10). Python ≥ 3.10.
 
 ---
 
-## Esempio — file singolo
+## Avvio rapido — geometria in mano
 
 ```python
-import topo, topo_dxf
+import topo
 
-doc    = topo_dxf.load_dxf("pezzo.dxf", tolerance=0.5)   # -> Document
-net    = topo.heal(doc)                                  # il disegno riparato una volta -> Network
-result = net.faces()                                     # topologia: contorni chiusi, outer/inner
-#   fori, pieghe, incisioni sono una lettura di processo sopra: snapbend.flat.detect_flat
+fg = topo.geometry
+doc = topo.load_segments(fg.rectangle(200, 100) + fg.circle(10))   # -> Document
+net = topo.heal(doc)                                              # riparato una volta -> Network
+result = net.faces()                                              # -> Result
 
-if not result.is_valid:                                  # nessun contorno esterno chiuso
-    print(result.errors)                                  # si disegna lo stesso, vedi "Limiti noti"
+if not result.is_valid:                          # nessun contorno esterno chiuso
+    print(result.errors)
 
-doc_out = topo_dxf.to_dxf(result, doc)                   # -> ezdxf Drawing
-doc_out.saveas("pezzo_healed.dxf")
-
-topo.save_json(result, "pezzo.json")                 # metadati
-cerchi = [c for cl in result.clusters for c in cl.inners
-          if topo.geometry.contour_shape(c).kind == "circle"]
-print(f"{result.cluster_count} cluster, {len(cerchi)} cerchi interni")
+cluster = result.clusters[0]                     # un pezzo: esterno 200×100, un cerchio interno
+print(cluster.outer.area, len(cluster.inners))
+topo.save_json(result, "part.json")              # i fatti del modello
+topo.experimental.save_svg(result, "part.svg")   # un'immagine
 ```
 
-## File multi-pezzo
+I builder restituiscono segmenti di topo: `polygon(points)`, `rectangle`,
+`regular_polygon`, `circle`, `ellipse`, `stadium` (con archi veri). Ogni altra
+forma a lati dritti è un `polygon`.
+
+## Da un file
 
 ```python
 import topo, topo_dxf
 
-doc    = topo_dxf.load_dxf("batch.dxf")
-result = topo.heal(doc, label="batch").faces()
+doc = topo_dxf.load_dxf("part.dxf", tolerance=0.5)   # .dxf o .dwg -> Document
+result = topo.heal(doc).faces()
+topo_dxf.to_dxf(result, doc).saveas("part_healed.dxf")
+```
 
+Dopo `load_dxf` tutto lavora sul `Document`, che non sa di formati; l'adapter è
+l'unico codice che conosce il file.
+
+## Più pezzi in un disegno
+
+```python
 for part in topo.split(result):                 # un Result per pezzo, senza formato
-    name = part.clusters[0].label               # batch_P1, batch_P2, ... (o namer=...)
-    topo_dxf.to_dxf(part, doc).saveas(f"output/{name}.dxf")
-    topo.experimental.save_svg(part, f"output/{name}.svg")   # lo stesso pezzo, un altro formato
-
-topo.save_json(result, "batch.json")
+    name = part.clusters[0].label               # _P1, _P2, ... (heal(doc, label="x") dà x_P1; oppure namer=)
+    topo.experimental.save_svg(part, f"output/{name}.svg")
 ```
 
-`split` è una decisione sul modello: quali pezzi (`min_area`), come si chiamano
-(`namer`), quali curve sciolte e quali testi viaggiano con ognuno (il pezzo
-che le contiene, o il più vicino). Ogni adapter scrive poi un pezzo nel suo formato.
+`split` è una decisione sul modello: quali pezzi (`min_area`), i loro nomi
+(`namer`), quali curve sciolte e testi viaggiano con ciascuno (il pezzo che li
+contiene, o il più vicino). Poi un adapter scrive ogni pezzo nel suo formato.
 
-## Un disegno di viste (più viste, isometrica)
+## Due letture di una rete ricucita
+
+`heal()` ripara la geometria una volta (nodi, doppioni, gap fino a `max_gap`) e
+restituisce un `Network`; una lettura di questo dà un `Result`.
+
+- `faces()` legge da dentro: quali giri si chiudono, quale sta dentro quale.
+  Per contorni piani separati.
+- `outlines()` legge da fuori: le curve che si toccano formano un gruppo, il
+  contorno esterno di ogni gruppo è la faccia esterna della sua rete planare, e
+  ogni contorno esterno non contenuto in un altro è un cluster con il solo
+  `outer` (quello che sta dentro va in `loose`). Per un disegno di più viste.
 
 ```python
-import topo, topo_dxf
-
-doc    = topo_dxf.load_dxf("tavola.dxf")   # cornice / cartiglio marcati per ruolo, o tolti
 result = topo.heal(doc, max_gap=0.5).outlines()
 for cluster in result.clusters:              # una vista (o un pezzo) per contorno
     print(cluster.outer.area)
 ```
 
-`heal()` ripara il disegno una volta (nodi, doppioni, gap fino a `max_gap`) e restituisce una
-`Network`; due letture danno un `Result`. `faces()` legge un disegno di sagome piane separate
-dall'interno (quali giri si chiudono, chi sta dentro chi). `outlines()` legge un disegno di viste
-dall'esterno: gli edge che si toccano fanno un gruppo, il contorno esterno di ogni gruppo è la
-faccia esterna della sua rete piana, e ogni contorno esterno che non sta dentro un altro è un
-cluster col solo `outer` (quello che sta dentro va in `loose`). Non c'è una distanza fra le
-viste. `max_gap` (default `tolerance`) è il gap più largo che si chiude — vedi `docs/API.md`
-(`Network.outlines`).
-
-Le letture sono ricette su passi pubblici. I passi di `heal()` sono esportati uno
-per uno in `topo.experimental` (`topo.experimental.split_labeled`,
+`max_gap` (default `tolerance`) è il gap più largo che viene chiuso. Le letture
+sono ricette su passi pubblici: i passi di `heal()` sono esportati uno per uno
+in `topo.experimental` (`topo.experimental.split_labeled`,
 `topo.experimental.close_free_gaps`, `topo.experimental.face_loops`,
 `topo.experimental.build_hierarchy`, ...), così un consumatore compone il suo
 ordine — vedi `docs/API.md` (i passi di `heal()`).
 
-## Disegnare con topo
-
-```python
-import topo, topo_dxf
-
-fg = topo.geometry
-doc = topo.load_segments(fg.rectangle(200, 100) + fg.rectangle(100, 50))
-result = topo.heal(doc).faces()        # un pezzo: outer 200×100, un inner 100×50
-topo.experimental.save_svg(result, "due_rettangoli.svg")   # senza adapter
-topo_dxf.to_dxf(result, doc).saveas("due_rettangoli.dxf")
-```
-
-I costruttori restituiscono segmenti di topo: `polygon(punti)`, `rectangle`,
-`regular_polygon`, `circle`, `ellipse`, `stadium` (con archi veri). Ogni altra forma a lati
-dritti è un `polygon`.
-
 ## Forme: cos'è un contorno, non a cosa serve
 
-topo dà nomi alla geometria, mai al suo uso. Un cerchio è un cerchio; se sia un
-foro da forare, una sede o il puntino di un logo lo legge un consumatore
-(snapbend per il pezzo, snapdraw per la notazione del disegno — D68, D91).
+topo dà nomi alla geometria, mai al suo uso. Un cerchio è un cerchio; a cosa
+serve lo legge il consumatore (D68, D91).
 
 ```python
 for cluster in result.clusters:
@@ -158,58 +141,43 @@ for cluster in result.clusters:
         if len(group.items) > 1:
             print("concentrici:", group.center, group.diameters)
 
-# archi concentrici a un cerchio e più grandi: angolo in gradi, rapporto dei raggi
+# archi concentrici a un cerchio e più grandi: ampiezza, rapporto dei raggi
 # (un arco aperto non chiude niente, quindi sta in result.loose)
 arcs = [s for c in result.loose for s in c.segments if isinstance(s, topo.primitives.ArcSeg)]
 for found in topo.geometry.arcs_around((10, 20), 2.5, arcs, tolerance=0.1):
     print(found.sweep, found.radius_ratio)
 ```
 
-Dentro non ci sono soglie di significato: "~270° e poco più grande" è come un
-disegno mostra un filetto, e quella regola sta nel consumatore.
-
-## Linee di piega / incisione che sai già riconoscere
-
-Se sai come la sorgente segna pieghe o incisioni — per nome, per tratteggio,
-per colore o una combinazione — dillo a `topo_dxf.load_dxf` con delle regole, così
-assegna il ruolo subito invece di indovinarlo. Le regole si valutano in
-ordine, vince la prima che matcha:
-
-```python
-doc = topo_dxf.load_dxf("pezzo.dxf", role_rules=[
-    *topo.name_rules({"Piega": "bending", "MARK": "engrave"}),
-    topo.RoleRule("construction", name_contains="constr", dashed=True),
-    topo.RoleRule("bending", dashed=True),
-])
-```
+Nessuna soglia di significato dentro: cosa vuol dire un arco di una certa
+ampiezza lo decide il consumatore.
 
 ---
 
 ## La pipeline
 
 ```
-topo_dxf.load_dxf(path)   ──►  Document   (edge + testi + source_meta)
-topo.load_segments(segs)  ──►  Document   l'adapter è l'unico codice che legge un formato
+un adapter (un file)      ──►  Document   (edge + testi)
+topo.load_segments(segs)  ──►  Document   geometria in mano
                           │
                           ▼
-topo.heal(doc)  ──►  Network     il disegno riparato una volta: nodi, doppioni, gap
+topo.heal(doc)  ──►  Network     riparato una volta: nodi, doppioni, gap
                           │
                           ▼   .faces() / .outlines()
-                       Result      topologia: giri trovati,
-                          │            albero di contenimento outer / inner
+                       Result      contorni chiusi, albero di contenimento outer / inner
+                          │
                           ▼
-  (la lettura di un consumatore)       es. snapbend: tipo di foro, linee di piega, incisioni,
-                          │            attaccate a cluster.overlay
+  (la lettura di un consumatore)  scritta in cluster.overlay
+                          │
                           ▼
    topo.split(result)                       ──►  list[Result] uno per pezzo, senza formato
-   topo_dxf.to_dxf(result, doc)             ──►  ezdxf Drawing  render — un Result intero o un pezzo
-   topo.experimental.to_svg(result)         ──►  stringa SVG  render — per una UI / un report (fuori dall'API stabile 1.0, D133)
-   topo.experimental.to_view_model(result)  ──►  dict (geometria completa) per un renderer esterno (fuori dall'API stabile 1.0)
    topo.save_json(result, path)                  i fatti del modello in JSON
+   topo.experimental.to_svg(result)         ──►  stringa SVG  per una UI / un report (fuori dall'API stabile 1.0, D133)
+   topo.experimental.to_view_model(result)  ──►  dict (geometria completa) per un renderer esterno (fuori dall'API stabile 1.0)
+   un adapter                               ──►  un file
 ```
 
-Il prodotto è il modello. `to_dxf` non rilegge mai il file sorgente — ogni renderer
-(DXF, SVG, view model) disegna dallo stesso modello, quindi mostrano tutti la stessa cosa.
+Ogni renderer disegna dallo stesso modello, mai dal file sorgente, quindi
+mostrano tutti la stessa cosa.
 
 ## Cosa contiene un `Result`
 
@@ -229,77 +197,76 @@ Schede complete in `docs/API.md` (`Result`, `Cluster`, `Contour`).
 
 ---
 
-## Layer del DXF in uscita
-
-topo non ha layer: l'adapter DXF scrive ogni ruolo sul layer che sceglie il
-chiamante (`topo_dxf.to_dxf(layers=..., role_styles=...)`, un nome o una funzione
-dell'elemento per ruolo). Quando il chiamante non dice niente, questi sono i
-suoi default:
-
-| Layer          | Significato                                 |
-|----------------|---------------------------------------------|
-| `OuterContour` | profilo esterno del pezzo                   |
-| `InnerContour` | contorno chiuso dentro l'outer              |
-| `Annotation`   | testi e quote della sorgente (non è un layer di taglio) |
-| *nome del ruolo* | geometria con il ruolo di un consumatore (`frame`, `hole`, `bending`, …): un layer col nome del ruolo, grigio — o nome e colore che passa il chiamante |
-| `Trash`        | tutto ciò che `topo` non ha saputo classificare — tenuto, mai buttato |
-
-Niente della sorgente si perde in silenzio: la geometria non classificata va in
-`Trash`, testi e quote in `Annotation`. I tipi di entità che `topo` non modella
-(`HATCH`, `IMAGE`, `TABLE`, …) li segnala `load_dxf` con un warning, non li butta.
-Rileggendo un file scritto da topo, `load_dxf` salta i layer `Trash` e
-`Annotation` (`skip_layers=topo_dxf.SKIP_LAYERS`; `()` per leggere tutto).
-
----
-
-## Ispezionare un file reale
-
-Tre livelli, come la pipeline:
+## Ispezione
 
 ```python
-import topo, topo_dxf
-
-topo_dxf.inspect_dxf("pezzo.dxf")   # 1 — entità DXF grezze: cosa c'è nel file
-topo.inspect_document(doc)          # 2 — edge, primitive, grafo dei nodi: cosa ha capito l'adapter
-topo.inspect_result(result)         # 3 — il modello: cluster, outer/inner, quello che un consumatore ha attaccato, curve sciolte
-
-topo_dxf.inspect_file("pezzo.dxf", role_rules=topo.name_rules({"Piega": "bending"}))   # tutti e tre, in fila
+topo.inspect_document(doc)          # cos'è l'ingresso: edge, primitive, grafo dei nodi
+topo.inspect_result(result)         # cosa ha fatto topo: cluster, outer/inner, overlay, curve sciolte
 ```
 
-Tutto stampa su stdout. Serve quando qualcosa su un file vero non esce giusto e
-devi vedere dove si rompe la catena.
+Tutto stampa su stdout. Serve quando qualcosa non torna e devi vedere in che
+punto della catena si rompe. Un adapter può aggiungere un livello suo per il
+file grezzo (`docs/API.md`).
 
 ---
 
-## Geometria in ingresso supportata
+## Cosa promette topo, e i suoi limiti
 
-- **Come contorni strutturali:** `LWPOLYLINE`, `POLYLINE`, `CIRCLE`, `SPLINE` chiusa, `ELLIPSE` chiusa
-- **Da ricostruire in contorni:** `LINE`, `ARC`, `SPLINE`/`ELLIPSE` aperte collegate ad altre entità
-- **Come testi:** `TEXT`, `MTEXT`, `DIMENSION`, `LEADER`, `MULTILEADER`
-- **Blocchi:** gli `INSERT` si esplodono al caricamento, di default
-- **Legacy:** i file R12/R13/R14 si aggiornano a R2010
-- **DWG:** né `topo` né `ezdxf` leggono il DWG direttamente — passa da
-  [ODA File Converter](https://www.opendesign.com/guestfiles/oda_file_converter)
-  (gratuito). Installalo e indica a `topo` l'eseguibile con la variabile
-  d'ambiente `ODA_PATH` (percorso completo dell'eseguibile), o metti
-  `ODAFileConverter` nel `PATH`. Vedi `docs/API.md` → *load_dxf → DWG* per i
-  singoli sistemi operativi.
+- **Fedele**: ogni contorno sta entro `tolerance` dalla geometria sorgente, nei due sensi.
+- **Completo**: ogni curva è contorno di un cluster o sta in `result.loose`;
+  niente viene scartato in silenzio.
+- **Deterministico**: lo stesso ingresso dà lo stesso risultato, a ogni
+  esecuzione. La stessa geometria spostata o ruotata *non* è promesso che dia lo
+  stesso risultato: una regola sì/no su un numero misurato ha un bordo, e
+  l'arrotondamento di una rotazione può spingere un valore oltre. Perché, per
+  qualunque lettore: [`docs/LIMITS_IT.md`](docs/LIMITS_IT.md).
+- Un gap più largo di `max_gap` non viene chiuso: le curve restano in `loose`.
+- Se non si forma nessun contorno esterno chiuso, `result.is_valid` è `False`.
+  I renderer disegnano comunque quello che c'è, così vedi cosa ha capito topo;
+  chi consegna a una macchina passa `allow_invalid=False` e riceve
+  `ValueError`. `topo.split` solleva sempre: un risultato per pezzo non ha senso
+  senza pezzi.
+- **I consigli sono sperimentali.** Un avviso è un `topo.Diagnostic`: cosa è
+  successo (`code`, `message`), dove (`points`) e perché (`notes`) sono stabili.
+  La chiamata che suggerisce per sistemarlo (`help`, `param`, `value`) è
+  sperimentale: può sbagliare su un caso su cui non è stata misurata, e può
+  cambiare in una minor. Leggila, giudicala, non applicarla alla cieca.
 
----
+**Difetti noti dell'healing**, da sistemare nella 1.x — quelli che puoi incontrare oggi:
 
-## Limiti noti
-
-- **Spline ed ellissi** escono native sui layer di taglio (`to_dxf`) ma
-  **discretizzate** in `to_svg` / `to_view_model` (polilinee: usa `to_dxf`
-  quando conta la curva esatta).
-- **`topo_pdf.load_pdf`** esiste ma è sperimentale — ritorna edge grezzi, non
-  un `Document`, quindi non si aggancia ancora a `heal()`.
-- **Gap arco/arco oltre la tolleranza** non si chiudono da soli — alza `tolerance`.
-- Se non si riesce a formare un contorno esterno chiuso, `result.is_valid` è
-  `False`. `to_dxf` / `to_svg` disegnano comunque quello che c'è (tutto su
-  `Trash`), così vedi cosa ha capito topo; chi manda l'output a una macchina
-  passa `allow_invalid=False` e riceve `ValueError`. `topo.split` solleva sempre:
-  un file per pezzo non ha senso senza pezzi.
+- *Avviso di quasi-copia su spigoli veri.* Una retta corta con i due capi entro
+  `tolerance` da una più lunga viene segnalata come quasi-copia anche quando le
+  due si incontrano in uno spigolo vero (45–90°); il suo consiglio propone allora
+  una fusione che aprirebbe il contorno. La geometria in sé è letta giusta.
+- *Curva che incrocia se stessa.* Una curva sola che incrocia se stessa non
+  viene tagliata nel suo incrocio: `outlines()` legge l'anello intero come un
+  contorno (un quadrato con un ricciolo dà l'area con segno dell'anello, non il
+  quadrato più un lobo in `loose`).
+- *Un nodo su un'altra curva chiusa.* Due curve chiuse semplici dove un vertice
+  dell'una sta esattamente sul bordo dell'altra: `outlines()` dà la prima e
+  mette la seconda in `loose`.
+- *Un cerchio disegnato a tante rette corte con una piccola apertura.* Viene
+  rifatto in una curva aperta sola, i cui due capi non sono mai trattati come un
+  gap, quindi resta in `loose` (circa 20 su 750 casi a caso, apertura
+  0,02–0,03 con `tolerance` 0,1).
+- *Un capo che sporge di pochi millesimi.* Dove una curva supera un'altra di
+  ~0,003, l'incontro viene chiuso da una retta corta nuova, con un avviso,
+  invece di accorciare il capo fino all'altra curva.
+- *Un tratto cortissimo* (< 0,01) con i due capi sullo stesso nodo viene
+  saldato via, con un avviso.
+- *Fusione dentro `outlines()`.* Fonde ancora i pezzi quasi allineati o
+  concentrici (entro 1e-3); le letture smetteranno di fondere quando esisterà
+  una funzione pubblica di fusione.
+- *Due curve chiuse quasi coincidenti* (lo stesso cerchio disegnato due volte,
+  a 0,05 con `tolerance` 0,1) escono come due cluster, validi, senza avviso.
+- *Edge esclusi dal grafo.* Con un `is_structural` su misura che accetta ogni
+  ruolo, gli edge messi da parte come non di contorno possono non finire in
+  nessuna uscita — un'eccezione a *completo* qui sopra.
+- *Tempo.* I disegni fatti di lunghe catene di tratti cortissimi costano circa
+  il doppio da ricucire; la discretizzazione delle spline è il costo singolo più
+  grande di `outlines()`; due fogli grandi di viste misurati oltre 300 s.
+- *Testi legati alla geometria* (`topo.experimental`) mancano alcuni legami che
+  un lettore traccerebbe.
 
 ---
 
@@ -309,9 +276,10 @@ devi vedere dove si rompe la catena.
   codice contro topo: stesso contenuto di `API.md`, meno token possibile. È quello
   da dare a un LLM.
 - **[`docs/API.md`](docs/API.md)** — ogni funzione pubblica: firma, cosa prende,
-  cosa ritorna, cosa muta, quando solleva. Con esempi copiabili.
+  cosa ritorna, cosa muta, quando solleva. Con esempi copiabili. Anche gli adapter.
 - **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — com'è fatto dentro e
   perché: gli strati, il flusso, "il prodotto è il modello".
+- **[`docs/LIMITS_IT.md`](docs/LIMITS_IT.md)** — cosa topo non può promettere, e perché.
 - **`MAP.md`** — le decisioni di design, in ordine cronologico.
 - **`SCRIPTS.md`** — gli script numerati in `scripts/`, uno per passo della pipeline.
 

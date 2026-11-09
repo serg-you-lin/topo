@@ -2,27 +2,23 @@
 
 **Deterministic 2D-geometry engine for technical drawings and CAD geometry.**
 
-`topo` turns a messy 2D drawing into a clean, lossless model — healed closed
-contours, their containment hierarchy, the drawing's texts, and an open
-overlay where a consumer attaches its own reading — then renders it to DXF (one
-document, or one per part), JSON, SVG, or a view model for a UI. The model is the product; a CAD format is
-only a door in or out of it. **topo itself knows no file format**: geometry and
-roles, never layers. The doors are adapters, sibling packages in the same
-distribution — `topo_dxf` (DXF, DWG via ODA) and `topo_pdf` (experimental) —
-that use topo's public names only; everything downstream works on the
-format-neutral model.
+`topo` turns broken 2D geometry into a clean, lossless model — healed closed
+contours, their containment hierarchy, the drawing's texts, and an open overlay
+where a consumer attaches its own reading — and renders it back out. The model
+is the product. **topo knows no file format**: it works on geometry and roles.
+Files come in and go out through adapters, sibling packages in the same
+distribution.
 
-The distinctive part is the **healing**: reconnecting broken geometry — `LINE`/`ARC`
-soup from a CAM export, a client's DXF, a legacy R12 file — into closed contours.
-No other tool does that for you.
+The distinctive part is the **healing**: curves that should meet but do not —
+small gaps, doubles, overshoots, pieces drawn one by one — are reconnected into
+closed contours, and nothing is silently dropped.
 
-It is **not a DXF library** and **not a sheet-metal tool**. Sheet and plate
-manufacturing is where topo grew up and still its first consumer, not its
-boundary: the engine knows no material, process or product. Reading geometry as
-"a hole to drill" or "a bend" is the consumer's interpretation (`snapbend` for
-sheet metal, `snapdraw` for drawing notation) — topo has no reading of that
-kind built in, so a consumer in any domain gets the same geometry and puts its
-own vocabulary on top through one open overlay (`cluster.overlay`).
+topo is **not a sheet-metal tool**. Sheet and plate manufacturing is where it
+grew up and still its first consumer, not its boundary: the engine knows no
+material, process or product. Reading a contour as "a hole to drill" or a line
+as "a bend" is a consumer's interpretation (`snapbend` for sheet metal,
+`snapdraw` for drawing notation), written on top through one open overlay
+(`cluster.overlay`).
 
 > Status: **alpha**. Used in production, but the API still moves. See `MAP.md` for the current design decisions.
 
@@ -36,112 +32,102 @@ own vocabulary on top through one open overlay (`cluster.overlay`).
 ## Install
 
 ```bash
-pip install -e ".[dxf]"     # from a clone: topo + topo_dxf (DXF/DWG in and out)
 pip install -e .            # topo alone: geometry in, SVG / JSON / text out
-pip install -e ".[pdf]"     # + topo_pdf, experimental PDF input
+pip install -e ".[dxf]"     # + topo_dxf: DXF and DWG files in, DXF out
+pip install -e ".[pdf]"     # + topo_pdf: PDF in (experimental)
 ```
 
 One distribution (`g-topo`), three importable packages:
 
-| package    | what                                   | extra   | brings  |
-|------------|----------------------------------------|---------|---------|
-| `topo`     | the engine: model, heal (faces / outlines), split, SVG/JSON/text | —       | `shapely`, `numpy` |
-| `topo_dxf` | DXF/DWG reader and writer, `inspect_dxf` | `[dxf]` | `ezdxf` |
-| `topo_pdf` | PDF reader (experimental)              | `[pdf]` | `PyMuPDF` |
+| package    | what                                                          |
+|------------|---------------------------------------------------------------|
+| `topo`     | the engine: model, heal, the two readings, split, SVG / JSON / text |
+| `topo_dxf` | file adapter: reads DXF and DWG, writes DXF. DWG needs the free [ODA File Converter](https://www.opendesign.com/guestfiles/oda_file_converter) installed (`ODA_PATH`) |
+| `topo_pdf` | file adapter: reads PDF (experimental)                        |
 
-`topo` never imports an adapter, and an adapter only topo's public names — a
-boundary the index check enforces (`scripts/gen_index.py --check`). Python ≥ 3.10.
+`topo` never imports an adapter, and an adapter uses only topo's public names —
+a boundary the index check enforces (`scripts/gen_index.py --check`). What an
+adapter reads and writes, and its options, are in `docs/API.md` (§9, §10).
+Python ≥ 3.10.
 
 ---
 
-## Quick start — one file
+## Quick start — geometry in hand
 
 ```python
-import topo, topo_dxf
-
-doc    = topo_dxf.load_dxf("part.dxf", tolerance=0.5)   # -> Document
-net    = topo.heal(doc)                                 # the drawing repaired once -> Network
-result = net.faces()                                    # topology: closed contours, outer/inner
-#   holes, bends, engraving are a process reading on top: snapbend.flat.detect_flat
-
-if not result.is_valid:                                 # no closed outer contour
-    print(result.errors)                                 # still renderable, see "Known limits"
-
-doc_out = topo_dxf.to_dxf(result, doc)                  # -> ezdxf Drawing
-doc_out.saveas("part_healed.dxf")
-
-topo.save_json(result, "part.json")                 # metadata
-circles = [c for cl in result.clusters for c in cl.inners
-           if topo.geometry.contour_shape(c).kind == "circle"]
-print(f"{result.cluster_count} cluster(s), {len(circles)} inner circles")
-```
-
-## Multi-part file
-
-```python
-import topo, topo_dxf
-
-doc    = topo_dxf.load_dxf("batch.dxf")
-result = topo.heal(doc, label="batch").faces()
-
-for part in topo.split(result):                 # one Result per part, no format
-    name = part.clusters[0].label               # batch_P1, batch_P2, ... (or namer=...)
-    topo_dxf.to_dxf(part, doc).saveas(f"output/{name}.dxf")
-    topo.experimental.save_svg(part, f"output/{name}.svg")   # the same part, another format
-
-topo.save_json(result, "batch.json")
-```
-
-`split` is a decision on the model: which parts (`min_area`), their names
-(`namer`), which loose curves and texts travel with each (the part that
-contains them, or the nearest). Each adapter then writes one part in its format.
-
-## A drawing of views (several views, isometric)
-
-```python
-import topo, topo_dxf
-
-doc    = topo_dxf.load_dxf("sheet.dxf")    # frame / title block marked by role, or removed
-result = topo.heal(doc, max_gap=0.5).outlines()
-for cluster in result.clusters:              # one view (or part) per outline
-    print(cluster.outer.area)
-```
-
-`heal()` repairs the drawing once (nodes, doubles, gaps up to `max_gap`) and returns a
-`Network`; two readings of it give a `Result`. `faces()` reads a drawing of separate flat
-outlines from the inside (which loops close, which is inside which). `outlines()` reads a
-drawing of views from the outside: the edges that touch form a group, the outer contour of
-each group is the outer face of its planar network, and every outer contour not inside
-another is a cluster with only its `outer` (what lies inside goes to `loose`). There is no
-distance between views. `max_gap` (default `tolerance`) is the widest gap closed — see
-`docs/API.md` (`Network.outlines`).
-
-The readings are recipes over public steps. `heal()`'s steps are exported one by
-one in `topo.experimental` (`topo.experimental.split_labeled`,
-`topo.experimental.close_free_gaps`, `topo.experimental.face_loops`,
-`topo.experimental.build_hierarchy`, ...), so a consumer can compose its own
-order — see `docs/API.md` (the steps of `heal()`).
-
-## Drawing with topo
-
-```python
-import topo, topo_dxf
+import topo
 
 fg = topo.geometry
-doc = topo.load_segments(fg.rectangle(200, 100) + fg.rectangle(100, 50))
-result = topo.heal(doc).faces()        # one part: outer 200×100, one inner 100×50
-topo.experimental.save_svg(result, "two_rectangles.svg")   # no adapter needed
-topo_dxf.to_dxf(result, doc).saveas("two_rectangles.dxf")
+doc = topo.load_segments(fg.rectangle(200, 100) + fg.circle(10))   # -> Document
+net = topo.heal(doc)                                              # repaired once -> Network
+result = net.faces()                                              # -> Result
+
+if not result.is_valid:                          # no closed outer contour
+    print(result.errors)
+
+cluster = result.clusters[0]                     # one part: outer 200×100, one inner circle
+print(cluster.outer.area, len(cluster.inners))
+topo.save_json(result, "part.json")              # the model's facts
+topo.experimental.save_svg(result, "part.svg")   # a picture of it
 ```
 
 Builders return topo segments: `polygon(points)`, `rectangle`, `regular_polygon`,
 `circle`, `ellipse`, `stadium` (with true arcs). Any other straight-sided shape is a `polygon`.
 
+## From a file
+
+```python
+import topo, topo_dxf
+
+doc = topo_dxf.load_dxf("part.dxf", tolerance=0.5)   # .dxf or .dwg -> Document
+result = topo.heal(doc).faces()
+topo_dxf.to_dxf(result, doc).saveas("part_healed.dxf")
+```
+
+After `load_dxf` everything works on the format-free `Document`; the adapter is
+the only code that knows the file.
+
+## Many parts in one drawing
+
+```python
+for part in topo.split(result):                 # one Result per part, no format
+    name = part.clusters[0].label               # _P1, _P2, ... (heal(doc, label="x") gives x_P1; or namer=)
+    topo.experimental.save_svg(part, f"output/{name}.svg")
+```
+
+`split` is a decision on the model: which parts (`min_area`), their names
+(`namer`), which loose curves and texts travel with each (the part that
+contains them, or the nearest). An adapter then writes each part in its format.
+
+## Two readings of one healed network
+
+`heal()` repairs the geometry once (nodes, doubles, gaps up to `max_gap`) and
+returns a `Network`; a reading of it gives a `Result`.
+
+- `faces()` reads from the inside: which loops close, which lies inside which.
+  For separate flat outlines.
+- `outlines()` reads from the outside: curves that touch form a group, the outer
+  contour of each group is the outer face of its planar network, and every outer
+  contour not inside another is a cluster with only its `outer` (what lies inside
+  goes to `loose`). For a drawing of several views.
+
+```python
+result = topo.heal(doc, max_gap=0.5).outlines()
+for cluster in result.clusters:              # one view (or part) per outline
+    print(cluster.outer.area)
+```
+
+`max_gap` (default `tolerance`) is the widest gap closed. The readings are
+recipes over public steps: `heal()`'s steps are exported one by one in
+`topo.experimental` (`topo.experimental.split_labeled`,
+`topo.experimental.close_free_gaps`, `topo.experimental.face_loops`,
+`topo.experimental.build_hierarchy`, ...), so a consumer can compose its own
+order — see `docs/API.md` (the steps of `heal()`).
+
 ## Shapes: what a contour is, not what it is for
 
-topo names geometry, never its use. A circle is a circle; whether it is a
-drilled hole, a seat or a logo dot is a consumer's reading (snapbend for the
-part, snapdraw for the drawing notation — D68, D91).
+topo names geometry, never its use. A circle is a circle; what it is for is a
+consumer's reading (D68, D91).
 
 ```python
 for cluster in result.clusters:
@@ -154,58 +140,43 @@ for cluster in result.clusters:
         if len(group.items) > 1:
             print("concentric:", group.center, group.diameters)
 
-# arcs concentric to a circle and larger: sweep in degrees, radius ratio
+# arcs concentric to a circle and larger: sweep, radius ratio
 # (an open arc closes nothing, so it is in result.loose)
 arcs = [s for c in result.loose for s in c.segments if isinstance(s, topo.primitives.ArcSeg)]
 for found in topo.geometry.arcs_around((10, 20), 2.5, arcs, tolerance=0.1):
     print(found.sweep, found.radius_ratio)
 ```
 
-No thresholds of meaning inside: "~270° and a bit larger" is how a drawing
-shows a thread, and that rule lives in the consumer.
-
-## Bend / engrave lines you already know how to recognize
-
-If you know how the source marks bend lines or engraving — by name, by dash,
-by colour, or a combination — tell `topo_dxf.load_dxf` with rules, so it assigns the
-role up front instead of guessing. Rules are checked in order, the first
-match wins:
-
-```python
-doc = topo_dxf.load_dxf("part.dxf", role_rules=[
-    *topo.name_rules({"Piega": "bending", "MARK": "engrave"}),
-    topo.RoleRule("construction", name_contains="constr", dashed=True),
-    topo.RoleRule("bending", dashed=True),
-])
-```
+No thresholds of meaning inside: what an arc of a given sweep means is decided
+by the consumer.
 
 ---
 
 ## The pipeline
 
 ```
-topo_dxf.load_dxf(path)   ──►  Document   (edges + texts + source_meta)
-topo.load_segments(segs)  ──►  Document   the adapter is the only code that reads a format
+an adapter (a file)       ──►  Document   (edges + texts)
+topo.load_segments(segs)  ──►  Document   geometry in hand
                           │
                           ▼
-topo.heal(doc)  ──►  Network     the drawing repaired once: nodes, doubles, gaps
+topo.heal(doc)  ──►  Network     repaired once: nodes, doubles, gaps
                           │
                           ▼   .faces() / .outlines()
-                       Result      topology: loops found,
-                          │            outer / inner containment tree
+                       Result      closed contours, outer / inner containment tree
+                          │
                           ▼
-  (a consumer's reading)               e.g. snapbend: hole type, bend lines, engraving,
-                          │            attached to cluster.overlay
+  (a consumer's reading)          written to cluster.overlay
+                          │
                           ▼
    topo.split(result)                       ──►  list[Result] one per part, no format
-   topo_dxf.to_dxf(result, doc)             ──►  ezdxf Drawing  render — a whole Result or one part
-   topo.experimental.to_svg(result)         ──►  SVG string   render — for a UI / report (outside the 1.0 stable API, D133)
-   topo.experimental.to_view_model(result)  ──►  dict (full geometry) for an external renderer (outside the 1.0 stable API)
    topo.save_json(result, path)                  the model's facts as JSON
+   topo.experimental.to_svg(result)         ──►  SVG string   for a UI / report (outside the 1.0 stable API, D133)
+   topo.experimental.to_view_model(result)  ──►  dict (full geometry) for an external renderer (outside the 1.0 stable API)
+   an adapter                               ──►  a file
 ```
 
-The model is the product. `to_dxf` never re-reads the source file — every renderer
-(DXF, SVG, the view model) draws from the same model, so they all show the same picture.
+Every renderer draws from the same model, never from the source file, so they
+all show the same picture.
 
 ## What a `Result` holds
 
@@ -225,75 +196,72 @@ Full cards in `docs/API.md` (`Result`, `Cluster`, `Contour`).
 
 ---
 
-## Output DXF layers
-
-topo has no layers: the DXF adapter writes each role to the layer the caller
-chooses (`topo_dxf.to_dxf(layers=..., role_styles=...)`, a name or a function
-of the element per role). When the caller says nothing, these are its defaults:
-
-| Layer          | Meaning                                    |
-|----------------|--------------------------------------------|
-| `OuterContour` | outer profile of the part                  |
-| `InnerContour` | closed contour inside the outer             |
-| `Annotation`   | source texts and dimensions (not a cut layer) |
-| *role name*    | geometry with a consumer's role (`frame`, `hole`, `bending`, …): a layer named by the role, gray — or the name and colour the caller passes |
-| `Trash`        | everything `topo` could not classify — kept, never dropped |
-
-Nothing from the source is silently lost: unclassified geometry goes to `Trash`,
-texts and dimensions to `Annotation`. Entity types `topo` does not model (`HATCH`,
-`IMAGE`, `TABLE`, …) are reported as a warning by `load_dxf`, not dropped in silence.
-Reading back a file topo wrote, `load_dxf` skips the `Trash` and `Annotation`
-layers (`skip_layers=topo_dxf.SKIP_LAYERS`; pass `()` to read everything).
-
----
-
-## Inspecting a real file
-
-Three levels, matching the pipeline:
+## Inspecting
 
 ```python
-import topo, topo_dxf
-
-topo_dxf.inspect_dxf("part.dxf")    # 1 — raw DXF entities: what's in the file
-topo.inspect_document(doc)          # 2 — edges, primitives, node graph: what the adapter understood
-topo.inspect_result(result)         # 3 — the model: clusters, outer/inner, whatever a consumer attached, loose curves
-
-topo_dxf.inspect_file("part.dxf", role_rules=topo.name_rules({"Piega": "bending"}))   # all three, in order
+topo.inspect_document(doc)          # what the input is: edges, primitives, node graph
+topo.inspect_result(result)         # what topo made: clusters, outer/inner, overlay, loose curves
 ```
 
-Everything prints to stdout. Use it when something on a real file doesn't come out
-right and you need to see where in the chain it breaks.
+Everything prints to stdout. Use it when something does not come out right and
+you need to see where in the chain it breaks. An adapter can add a level of its
+own for the raw file (`docs/API.md`).
 
 ---
 
-## Supported input geometry
+## What topo promises, and its limits
 
-- **As structural contours:** `LWPOLYLINE`, `POLYLINE`, `CIRCLE`, closed `SPLINE`, closed `ELLIPSE`
-- **To reconstruct into contours:** `LINE`, `ARC`, open `SPLINE`/`ELLIPSE` connected to other entities
-- **As texts:** `TEXT`, `MTEXT`, `DIMENSION`, `LEADER`, `MULTILEADER`
-- **Blocks:** `INSERT` is exploded on load by default
-- **Legacy:** R12/R13/R14 files are upgraded to R2010
-- **DWG:** neither `topo` nor `ezdxf` reads DWG natively — it goes through
-  [ODA File Converter](https://www.opendesign.com/guestfiles/oda_file_converter)
-  (free). Install it and point `topo` at the executable via the `ODA_PATH`
-  environment variable (full path to the `.exe`), or put `ODAFileConverter` on
-  your `PATH`. See `docs/API.md` → *load_dxf → DWG* for per-OS setup.
-
----
-
-## Known limits
-
-- **Splines and ellipses** are re-emitted natively on cut layers (`to_dxf`) but
-  **discretized** in `to_svg` / `to_view_model` (polylines: use `to_dxf` when
-  the exact curve matters).
-- **`topo_pdf.load_pdf`** exists but is experimental — it returns raw edges,
-  not a `Document`, so it does not plug into `heal()` yet.
-- **`arc/arc` gaps beyond tolerance** are not auto-closed — raise `tolerance`.
+- **Faithful**: every contour lies within `tolerance` of the source geometry, both ways.
+- **Complete**: every curve is a cluster's contour or in `result.loose`; nothing is
+  silently dropped.
+- **Deterministic**: the same input gives the same result, every run. The same
+  geometry moved or rotated is *not* promised to give the same result: a yes/no
+  rule on a measured number has an edge, and the rounding of a rotation can push
+  a value across it. Why, for any reader: [`docs/LIMITS.md`](docs/LIMITS.md).
+- A gap wider than `max_gap` is not closed: the curves stay in `loose`.
 - If no closed outer contour can be formed, `result.is_valid` is `False`.
-  `to_dxf` / `to_svg` still render what is there (everything on `Trash`), so
-  you can see what topo understood; a caller feeding a machine passes
-  `allow_invalid=False` and gets `ValueError` instead. `topo.split` always raises:
-  one file per part means nothing without parts.
+  Renderers still draw what is there, so you can see what topo understood; a
+  caller feeding a machine passes `allow_invalid=False` and gets `ValueError`
+  instead. `topo.split` always raises: one result per part means nothing without parts.
+- **Advice is experimental.** A warning is a `topo.Diagnostic`: what happened
+  (`code`, `message`), where (`points`) and why (`notes`) are stable. The call it
+  suggests to fix it (`help`, `param`, `value`) is experimental: it can be wrong
+  on a case it was not measured on, and it can change in a minor. Read it, judge
+  it, never apply it blindly.
+
+**Known defects of the healing**, to be fixed in 1.x — what you can meet today:
+
+- *Near-copy warning on real corners.* A short line with both ends within
+  `tolerance` of a longer one is reported as a near-copy even when the two meet
+  at a real corner (45–90°); its advice then suggests a merge that would open
+  the contour. The geometry itself is read right.
+- *Self-crossing curve.* One curve that crosses itself is not cut at its own
+  crossing: `outlines()` reads the whole ring as one contour (e.g. a square with
+  a curl gives the ring's signed area, not the square plus a lobe in `loose`).
+- *A node on another closed curve.* Two simple closed curves where a vertex of
+  one lies exactly on the other's boundary: `outlines()` gives the first and puts
+  the second in `loose`.
+- *A circle drawn as many short lines with a tiny opening.* It is refitted into
+  one open curve whose two ends are never treated as a gap, so it stays in
+  `loose` (about 20 in 750 random cases, opening 0.02–0.03 at `tolerance` 0.1).
+- *An end that overshoots by a few thousandths.* Where one curve passes another
+  by ~0.003, the meeting is closed by a new short line, with a warning, instead
+  of trimming the end onto the other curve.
+- *A very short piece* (< 0.01) with both ends on one node is welded away, with
+  a warning.
+- *Merging inside `outlines()`.* It still merges nearly collinear or concentric
+  pieces (within 1e-3); the readings will stop merging once a public merge
+  function exists.
+- *Two nearly coincident closed curves* (the same circle drawn twice, 0.05
+  apart at `tolerance` 0.1) come out as two clusters, valid, with no warning.
+- *Edges excluded from the graph.* With a custom `is_structural` that accepts
+  every role, edges set aside as non-contour can end up in no output at all —
+  an exception to *complete* above.
+- *Time.* Drawings made of long chains of very short strokes cost about twice
+  as much to heal; spline discretization is the largest single cost of
+  `outlines()`; two large sheets of views measured over 300 s.
+- *Texts linked to geometry* (`topo.experimental`) miss some links a reader
+  would draw.
 
 ---
 
@@ -302,9 +270,10 @@ right and you need to see where in the chain it breaks.
 - **[`docs/LLM.md`](docs/LLM.md)** — a dense, token-minimal reference for an AI
   agent writing code against topo: same ground as `API.md`. Give this one to an LLM.
 - **[`docs/API.md`](docs/API.md)** — every public function: signature, what it
-  takes, returns, mutates, when it raises. With copyable examples.
+  takes, returns, mutates, when it raises. With copyable examples. The adapters too.
 - **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — how it is built and why:
   the layers, the flow, "the model is the product".
+- **[`docs/LIMITS.md`](docs/LIMITS.md)** — what topo cannot promise, and why.
 - **`MAP.md`** — the design decisions, in chronological order.
 - **`SCRIPTS.md`** — the numbered scripts in `scripts/`, one per stage of the pipeline.
 
