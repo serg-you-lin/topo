@@ -523,3 +523,7 @@ Three levels: `warnings` advise on the drawing, `notes` say what topo did by its
 hidden: D206), `errors` mean nothing to read. Codes closed, listed in LLM.md, held by `tests/invariants.DIAGNOSTIC_CODES`.
 ### D234 — D124 stays: one repo, the adapter tests in `tests/adapters/`, the engine tests read the tracked DXF (D223) (Federico, 8 November).
 Splitting topo_dxf out means two releases kept in step and 158 drawings converted to a format-free fixture, for no measured gain.
+### D235 — a near-copy lies over the longer line: both its ends project inside it (Federico, 9 November).
+A piece past the longer line's end continues the contour; within `distance` of that end it was taken for a copy, and the
+`near-copy` help removed it and opened the contour (brute force: 67,844 pairs in 346 seeds, >90% such pieces). No angle
+limit: measured, 5° or 1° on top of this changes nothing (help right in 235 / 235 / 231 of 351).

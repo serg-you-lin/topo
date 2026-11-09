@@ -442,6 +442,15 @@ def _off_segment(p, seg: LineSeg) -> float:
     return math.hypot(p[0] - ax - t * dx, p[1] - ay - t * dy)
 
 
+def _over(p, seg: LineSeg) -> bool:
+    """La proiezione di `p` sulla retta di `seg` cade dentro `seg` (a meno di FLOAT_NOISE)."""
+    (ax, ay), (bx, by) = seg.start[:2], seg.end[:2]
+    dx, dy = bx - ax, by - ay
+    length = math.hypot(dx, dy)
+    along = ((p[0] - ax) * dx + (p[1] - ay) * dy) / length
+    return -FLOAT_NOISE <= along <= length + FLOAT_NOISE
+
+
 def _line_length(e: Edge) -> float:
     return math.dist(e.segment.start[:2], e.segment.end[:2])
 
@@ -449,8 +458,10 @@ def _line_length(e: Edge) -> float:
 def near_copies(edges: Iterable[Edge], distance: float) -> List[NearCopy]:
     """
     Le coppie di LineSeg con lo stesso ruolo in cui la più corta sta tutta
-    entro `distance` dalla più lunga: un segmento è convesso, quindi bastano i
-    due capi della corta. Le coppie che sono già la stessa retta (`_same_line`,
+    sopra la più lunga (i due capi si proiettano dentro di lei) ed entro
+    `distance` da lei: un segmento è convesso, quindi bastano i due capi della
+    corta. Il pezzo oltre il capo della lunga continua il contorno e non è una
+    copia (D235). Le coppie che sono già la stessa retta (`_same_line`,
     D184) le fonde `merge_collinear_overlaps` e qui non compaiono; nemmeno le
     sovrapposte solo in parte (un capo della corta fuori dalla lunga). Ogni
     copia una volta sola, con la retta più vicina; le più vicine prima.
@@ -462,6 +473,9 @@ def near_copies(edges: Iterable[Edge], distance: float) -> List[NearCopy]:
         if a.role != b.role or _same_line(a.segment, b.segment):
             continue
         kept, copy = (b, a) if _line_length(b) > _line_length(a) + FLOAT_NOISE else (a, b)
+        # sopra la lunga, non oltre il suo capo: il pezzo che continua il contorno non è una copia (D235)
+        if not all(_over(p, kept.segment) for p in (copy.segment.start, copy.segment.end)):
+            continue
         offset = max(_off_segment(p, kept.segment) for p in (copy.segment.start, copy.segment.end))
         # una copia è copia della retta più vicina, non di ogni retta entro la soglia
         if offset <= distance and (id(copy) not in nearest or offset < nearest[id(copy)].offset):
