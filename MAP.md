@@ -548,4 +548,7 @@ A wrong reading must not be silent: a spline crossing itself (points = the cross
 Facts on the network, so every reading copies them; the defects stay for 1.x. On the 630 repo drawings: 2 and 1 drawings.
 ### D242 — a curve on a skipped layer is counted, never dropped silently (Federico, 9 November).
 `load_dxf`/`document_from_msp` add one `dxf-layer-skipped` warning with the count per layer (D137).
-The default `skip_layers` itself (D129, D176) stays open in TODO.md.
+The default `skip_layers` itself: D243.
+### D243 — reopening D129: `load_dxf`/`document_from_msp` read every layer by default, `skip_layers=()` (Federico, 9 November).
+Skipping `Trash`/`Annotation` by name was a fact of how one file is named: a drawing topo never wrote lost geometry on
+layers that happen to carry those names. `SKIP_LAYERS` stays public; a caller reading back topo's own output passes it.

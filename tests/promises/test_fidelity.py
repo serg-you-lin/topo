@@ -162,8 +162,8 @@ def _round_trip(rel: str, reading: str):
         result = topo.heal(doc).faces()
         bound = doc.node_tolerance()
     drawing = topo_dxf.to_dxf(result, doc, include_texts=False)
-    # skip_layers=(): il layer di `loose` si rilegge, è parte del risultato
-    back = topo_dxf.document_from_msp(drawing.modelspace(), skip_layers=())
+    # il layer di `loose` si rilegge (default, D243): è parte del risultato
+    back = topo_dxf.document_from_msp(drawing.modelspace())
     return doc, result, back, bound
 
 

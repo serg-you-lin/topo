@@ -342,24 +342,23 @@ class TestWritebackTexts(unittest.TestCase):
         # direttrici delle quote lineari + frecce dei leader
         self.assertGreater(len(ann_geom), 20)
 
-    def test_008_annotation_layer_ignored_on_reload(self):
-        # La geometria che topo scrive sui layer Annotation e Trash non deve
-        # essere riletta come geometria di parte in un round-trip: è il
-        # default visibile `skip_layers=SKIP_LAYERS` (D129), per nome esatto
-        # senza maiuscole; `skip_layers=()` legge tutto.
+    def test_008_every_layer_read_by_default(self):
+        # Di default si legge ogni layer (D243); chi rilegge un file di topo
+        # salta i layer Annotation e Trash con `skip_layers=SKIP_LAYERS`, per
+        # nome esatto senza maiuscole.
         self.assertEqual(set(topo_dxf.SKIP_LAYERS), {LAYER_ANNOTATION, TRASH_LAYER})
         src = ezdxf.new("R2010")
         msp = src.modelspace()
         for i, layer in enumerate((LAYER_ANNOTATION, TRASH_LAYER.lower(), "Trash_old", "0")):
             msp.add_line((0, 10 * i), (50, 10 * i), dxfattribs={"layer": layer})
-        doc = topo_dxf.document_from_msp(msp)
+        doc = topo_dxf.document_from_msp(msp, skip_layers=topo_dxf.SKIP_LAYERS)
         self.assertEqual(len(doc.edges), 2)
         # niente sparisce in silenzio (D137, D242): un avviso conta le curve per layer
         skipped = [w for w in doc.warnings if w.code == "dxf-layer-skipped"]
         self.assertEqual(len(skipped), 1)
         self.assertIn("2 curves", skipped[0].message)
         self.assertEqual(len(skipped[0].notes), 2)
-        full = topo_dxf.document_from_msp(msp, skip_layers=())
+        full = topo_dxf.document_from_msp(msp)
         self.assertEqual(len(full.edges), 4)
         self.assertFalse([w for w in full.warnings if w.code == "dxf-layer-skipped"])
         # una funzione decide da sé (D176): qui una parte del nome

@@ -337,16 +337,6 @@ Aperte:
 
 ## Fili da ragionare con Federico
 
-- **`skip_layers` di default salta per nome di layer** (D129, D176, D242). Dal
-  D242 le curve saltate sono contate in un avviso `dxf-layer-skipped`, ma il
-  default resta un fatto di formato (regola 1 del CLAUDE.md): un disegno che topo
-  non ha mai scritto, con un layer che si chiama `Annotation` o `Trash`, perde
-  quella geometria al caricamento. Strade possibili: (a) default `()`, e chi
-  rilegge un file di topo passa `SKIP_LAYERS`; (b) il writer marca il file come
-  scritto da topo (una variabile d'intestazione propria, non XDATA: D230) e il
-  salto vale solo su quei file; (c) lasciare così, con l'avviso. Cambiare il
-  default dopo la 1.0 costa una deprecazione di due minor (D174): va deciso col
-  cancello aperto.
 - **`promote` con un `item` che non porta geometria perde le curve in uscita.**
   Misurato: un quadro con tre `loose`, due promosse con
   `promote([c1, c2], cluster, "slot", item=Slot())` (una dataclass senza

@@ -127,7 +127,9 @@ def _roundtrip(self, dxf: Path):
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp) / f"{dxf.stem}.dxf"
         exported.saveas(str(tmp_path))
-        after = topo.heal(topo_dxf.load_dxf(str(tmp_path)), max_gap=MAX_GAP).outlines()
+        # rilegge l'uscita di topo senza i suoi layer di loose e testi (D243)
+        after = topo.heal(topo_dxf.load_dxf(str(tmp_path), skip_layers=topo_dxf.SKIP_LAYERS),
+                          max_gap=MAX_GAP).outlines()
     snap_before, snap_after = _snapshot(before), _snapshot(after)
     self.assertEqual(len(snap_before), len(snap_after),
                      f"{dxf.stem}: il numero di isole cambia dopo export+reload")

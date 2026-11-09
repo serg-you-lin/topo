@@ -187,9 +187,8 @@ In order:
    geometry disappear)
 6. sanitize: OCS normalization, flattening of Z ≠ 0, deduplication
 7. translation: each entity → one or more `Edge`s; each text/dimension → one
-   `Text`. The layers the writer uses for `loose` and texts
-   (`SKIP_LAYERS`) are skipped, so a file that already went through topo is read back
-   clean (D129)
+   `Text`. Every layer is read; a caller reading back a file written by topo
+   can skip the writer's `loose` and text layers with `skip_layers=SKIP_LAYERS` (D243)
 
 After this function the source `ezdxf` object **disappears**. Everything else
 works on the `Document`.

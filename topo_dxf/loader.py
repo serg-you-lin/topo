@@ -23,7 +23,6 @@ from ezdxf.addons import odafc
 from .sanitize import sanitize, _explode_inserts, _explode_hatches, deduplicate
 from .adapter import DxfAdapter
 from .text_extractor import DxfTextExtractor
-from .layers import SKIP_LAYERS
 from topo.model import DEFAULT_NODE_TOLERANCE, Diagnostic, Document, RoleRule
 
 # Percorso dell'eseguibile ODA File Converter. `topo` NON legge i DWG da solo:
@@ -226,7 +225,7 @@ def load_dxf(
     verbose: bool = False,
     tolerance: float = DEFAULT_NODE_TOLERANCE,
     role_rules: Sequence[RoleRule] = (),
-    skip_layers: Union[Sequence[str], Callable[[str], bool]] = SKIP_LAYERS,
+    skip_layers: Union[Sequence[str], Callable[[str], bool]] = (),
 ) -> Document:
     """
     Opens a DXF or DWG document and translates it into a Document.
@@ -258,10 +257,10 @@ def load_dxf(
         skip_layers:     layers whose geometry is skipped (D176): exact
                          names, case-insensitive, or a function
                          `name -> bool` (part of the name, a regex,
-                         whatever is needed). By default `SKIP_LAYERS`, the
-                         ones the writer uses for `loose` and texts, so a
-                         file written by topo reads back clean; `()` reads
-                         everything. The curves skipped are counted per
+                         whatever is needed). By default `()`: every layer
+                         is read (D243). To read back a file written by
+                         topo without its `loose` and text layers, pass
+                         `SKIP_LAYERS`. The curves skipped are counted per
                          layer in a `dxf-layer-skipped` warning (D242)
 
     Returns:
@@ -361,7 +360,7 @@ def document_from_msp(
     tolerance: float = DEFAULT_NODE_TOLERANCE,
     role_rules: Sequence[RoleRule] = (),
     source_path: str = "",
-    skip_layers: Union[Sequence[str], Callable[[str], bool]] = SKIP_LAYERS,
+    skip_layers: Union[Sequence[str], Callable[[str], bool]] = (),
 ) -> Document:
     """
     Builds a Document from an already-open ezdxf modelspace.
