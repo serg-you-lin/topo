@@ -72,6 +72,34 @@ class TestTwoNumbers(unittest.TestCase):
         self.assertEqual(len(topo.heal(_doc(segs), tolerance=0.01, max_gap=0.5).faces().clusters), 1)
 
 
+class TestThresholdsChecked(unittest.TestCase):
+    """Le due soglie sono mm (D245): un valore che non lo è si ferma a `heal()`."""
+
+    def test_tolleranza_non_valida_rifiutata(self):
+        for bad in (-1.0, 0.0, float("nan"), float("inf")):
+            with self.subTest(tolerance=bad), self.assertRaises(ValueError):
+                topo.heal(_doc(_square()), tolerance=bad)
+
+    def test_tolleranza_del_loader_controllata_anche_lei(self):
+        doc = _doc(_square())
+        doc.source_meta["tolerance"] = -0.5
+        with self.assertRaises(ValueError):
+            topo.heal(doc)
+
+    def test_max_gap_non_valido_rifiutato(self):
+        for bad in (-0.1, float("nan"), float("inf")):
+            with self.subTest(max_gap=bad), self.assertRaises(ValueError):
+                topo.heal(_doc(_square()), max_gap=bad)
+
+    def test_max_gap_zero_accettato(self):
+        self.assertTrue(topo.heal(_doc(_square()), max_gap=0.0).faces().is_valid)
+
+    def test_soglia_non_numerica(self):
+        for kw in ({"tolerance": "0.1"}, {"max_gap": "0.1"}, {"tolerance": True}):
+            with self.subTest(**kw), self.assertRaises(TypeError):
+                topo.heal(_doc(_square()), **kw)
+
+
 class TestProvenance(unittest.TestCase):
 
     def test_source_file_di_default_dal_documento(self):

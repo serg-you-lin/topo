@@ -560,3 +560,6 @@ no public name.
 Of 158 DXF fixtures, 65 declare metres and are drawn in mm: the declared unit is not trustworthy. Docs and messages say mm,
 not "drawing units"; an inch drawing is converted by the caller (the default tolerance 0.05 would be 1.27 mm in inches).
 To be revisited when a real user needs another unit.
+### D246 — `heal()` refuses a threshold that is not a length in mm (Federico, 9 November).
+`tolerance` (given, or the loader's) finite and > 0, `max_gap` finite and ≥ 0 (0 is used: no gap closed); else `ValueError`,
+a non-number `TypeError`. Checked once in `build_network`, so every loader's value passes through it.
