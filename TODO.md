@@ -381,6 +381,9 @@ Aperte:
 
 ## Aperti minori
 
+- `topo.experimental.save_svg` stampa su stdout in italiano ("[topo] SVG salvato
+  in …"), contro D233.
+- `import topo_pdf` dà l'avviso di PyMuPDF "The `fitz` API is deprecated".
 - `contour_minus` rifiuta i bordi che corrono uno sull'altro (`ValueError`):
   da gestire se un caso vero lo chiede (D118).
 - `load_geometry`: gli angoli dell'arco sono ancora in gradi "per convenzione

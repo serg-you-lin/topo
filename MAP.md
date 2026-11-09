@@ -539,3 +539,7 @@ topo detects nothing: the layer is where a consumer writes its own reading (D44,
 ### D239 — for 1.0 the source stays the working notebook: internal comments and docstrings Italian, D## references kept (Federico, 9 November).
 Only what a user reads (README, docs/, public docstrings) is the public face (D144). Translating 84 internal files or dropping 484 D## gives a user nothing for 1.0.
 Whether D## belong in the code at all is an open thread: Federico discusses it with the forum first; until then nothing is removed.
+### D240 — a Diagnostic's advice is experimental; the README speaks no file format (Federico, 9 November).
+`code`, `message`, `points`, `notes`, `level` are stable; the suggested call (`help`, `param`, `value`) is experimental: it can be wrong where it was not measured (D237) and can change in a minor.
+Format words (entity types, layers, versions) live only in the adapters and their docs (API.md §9-10); the README names DXF/DWG once, as what `topo_dxf` reads.
+The README lists the healing's known defects from TODO, in plain geometry.

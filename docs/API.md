@@ -1582,6 +1582,14 @@ function the source `ezdxf` document disappears.
 INSERTs, Z≠0, duplicates removed, types that cannot be re-materialised in output) end up
 in `doc.warnings`; `topo.validate_document(doc)` raises them again.
 
+**What it reads.** Geometry: `LINE`, `ARC`, `CIRCLE`, `ELLIPSE`, `SPLINE`,
+`LWPOLYLINE`, `POLYLINE` — every one becomes `Edge`s, and `heal()` decides what
+closes. Texts: `TEXT`, `MTEXT`, `DIMENSION`, `LEADER`, `MULTILEADER`. Blocks:
+`INSERT` exploded (`explode_inserts`). A `HATCH` with a pattern becomes the lines
+of its pattern; a solid fill stays out. Files older than R2000 are upgraded to
+R2010 (a note says so). Every other entity type is not in the `Document` and is
+named in the `dxf-not-modeled` warning, never dropped in silence.
+
 **Raises** `FileNotFoundError`, `EnvironmentError` (DWG without `ODA_PATH`),
 `RuntimeError` (DWG conversion failed), or the read exceptions of `ezdxf`.
 
