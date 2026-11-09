@@ -261,7 +261,8 @@ def load_dxf(
                          whatever is needed). By default `SKIP_LAYERS`, the
                          ones the writer uses for `loose` and texts, so a
                          file written by topo reads back clean; `()` reads
-                         everything
+                         everything. The curves skipped are counted per
+                         layer in a `dxf-layer-skipped` warning (D242)
 
     Returns:
         Document (edges + texts + source_meta + warnings) — ready for

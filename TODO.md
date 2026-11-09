@@ -337,6 +337,26 @@ Aperte:
 
 ## Fili da ragionare con Federico
 
+- **`skip_layers` di default salta per nome di layer** (D129, D176, D242). Dal
+  D242 le curve saltate sono contate in un avviso `dxf-layer-skipped`, ma il
+  default resta un fatto di formato (regola 1 del CLAUDE.md): un disegno che topo
+  non ha mai scritto, con un layer che si chiama `Annotation` o `Trash`, perde
+  quella geometria al caricamento. Strade possibili: (a) default `()`, e chi
+  rilegge un file di topo passa `SKIP_LAYERS`; (b) il writer marca il file come
+  scritto da topo (una variabile d'intestazione propria, non XDATA: D230) e il
+  salto vale solo su quei file; (c) lasciare così, con l'avviso. Cambiare il
+  default dopo la 1.0 costa una deprecazione di due minor (D174): va deciso col
+  cancello aperto.
+- **`promote` con un `item` che non porta geometria perde le curve in uscita.**
+  Misurato: un quadro con tre `loose`, due promosse con
+  `promote([c1, c2], cluster, "slot", item=Slot())` (una dataclass senza
+  `contours`): `to_dxf` passa da 4 a 2 entità, e così ogni parte di `split`;
+  nessun avviso. Le curve escono da `loose` e l'item non le tiene. Contrasta D137
+  ("never dropped"). Strade: `promote` rifiuta (`ValueError`) un item senza
+  `contours` quando le curve sono più d'una; oppure `promote` tiene le curve in
+  un campo suo accanto all'item; oppure `to_dxf` avvisa per l'item senza
+  geometria.
+
 - **Riferimenti D## nel codice e nelle docstring pubbliche** (D239): 484 nel codice,
   58 in 22 docstring pubbliche, che `help()` mostra. Federico ne parla col forum;
   fino ad allora restano.
@@ -379,6 +399,10 @@ Aperte:
 
 ## Aperti minori
 
+- Da misurare (segnalato, non verificato): il consiglio di un Diagnostic su
+  2 file dice "max_gap=0.1 closes them all", ma con quel valore il risultato
+  resta non valido; su 4 file l'unico errore resta `no-closed-outer`. Servono i
+  file per riprodurlo; il consiglio è sperimentale (D240) ma non deve essere falso.
 - `topo.inspect_document` / `inspect_result` stampano in italiano ("per ruolo",
   "totali", "nodi di branching", `topo/inspect.py:66-110`), contro D233.
 - `import topo_pdf` dà l'avviso di PyMuPDF "The `fitz` API is deprecated".

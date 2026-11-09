@@ -352,8 +352,16 @@ class TestWritebackTexts(unittest.TestCase):
         msp = src.modelspace()
         for i, layer in enumerate((LAYER_ANNOTATION, TRASH_LAYER.lower(), "Trash_old", "0")):
             msp.add_line((0, 10 * i), (50, 10 * i), dxfattribs={"layer": layer})
-        self.assertEqual(len(topo_dxf.document_from_msp(msp).edges), 2)
-        self.assertEqual(len(topo_dxf.document_from_msp(msp, skip_layers=()).edges), 4)
+        doc = topo_dxf.document_from_msp(msp)
+        self.assertEqual(len(doc.edges), 2)
+        # niente sparisce in silenzio (D137, D242): un avviso conta le curve per layer
+        skipped = [w for w in doc.warnings if w.code == "dxf-layer-skipped"]
+        self.assertEqual(len(skipped), 1)
+        self.assertIn("2 curves", skipped[0].message)
+        self.assertEqual(len(skipped[0].notes), 2)
+        full = topo_dxf.document_from_msp(msp, skip_layers=())
+        self.assertEqual(len(full.edges), 4)
+        self.assertFalse([w for w in full.warnings if w.code == "dxf-layer-skipped"])
         # una funzione decide da sé (D176): qui una parte del nome
         skip = lambda name: "trash" in name.lower()
         self.assertEqual(len(topo_dxf.document_from_msp(msp, skip_layers=skip).edges), 2)

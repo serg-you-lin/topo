@@ -546,3 +546,6 @@ The README lists the healing's known defects from TODO, in plain geometry.
 ### D241 — reopening D148: `heal()` warns of two known defects, `self-crossing` and `closed-touch` (Federico, 9 November).
 A wrong reading must not be silent: a spline crossing itself (points = the crossings) and a closed curve's node on another closed curve.
 Facts on the network, so every reading copies them; the defects stay for 1.x. On the 630 repo drawings: 2 and 1 drawings.
+### D242 — a curve on a skipped layer is counted, never dropped silently (Federico, 9 November).
+`load_dxf`/`document_from_msp` add one `dxf-layer-skipped` warning with the count per layer (D137).
+The default `skip_layers` itself (D129, D176) stays open in TODO.md.
