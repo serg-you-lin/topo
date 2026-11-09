@@ -50,6 +50,7 @@ from dataclasses import dataclass, replace
 from typing import Any, Callable, Iterable, List, Tuple
 
 from ..geometry.measure import FLOAT_NOISE, node_point, within_diameter
+from ..geometry.points import fit_circle_kasa
 from ..primitives.segments import LineSeg, ArcSeg, CircleSeg, Point, segment_endpoints
 from ..primitives.fitting import simplify_points
 from ..topology.graph import build_node_graph, connected_groups
@@ -627,6 +628,110 @@ def refit_tessellations(
     if not replaced:
         return edges
     return [e for e in edges if id(e) not in replaced] + new_edges
+
+
+def refit_circle_rings(edges: Iterable[Edge], tolerance: float = 0.02) -> List[Edge]:
+    """
+    Un gruppo connesso di pezzi `role == UNKNOWN` (niente CircleSeg) il cui
+    nucleo (il gruppo senza i rami a capo libero) sta tutto entro `tolerance`
+    da un cerchio e gli fa il giro completo è quel cerchio: il nucleo diventa
+    un CircleSeg, a qualunque grandezza dei lati. Un ramo a capo libero, o un
+    pezzo isolato, che ci corre sopra va col cerchio; gli altri restano. Lo
+    scarto si misura sul pezzo intero (per una linea anche il punto più
+    vicino al centro), così un poligono vero resta (D236).
+    """
+    edges = list(edges)
+    node_edges: dict = {}
+    for k, e in enumerate(edges):
+        for p in (e.start, e.end):
+            node_edges.setdefault(p, []).append(k)
+    pairs = [(ks[0], k) for ks in node_edges.values() for k in ks[1:]]
+    loose = [e for e in edges if len(node_edges[e.start]) == 1 and len(node_edges[e.end]) == 1]
+    replaced, new_edges = set(), []
+    for group in connected_groups(len(edges), pairs):
+        core = _without_free_branches([edges[k] for k in group])
+        if not core or not all(
+                not isinstance(e.segment, CircleSeg) and e.role == ContourRole.UNKNOWN for e in core):
+            continue
+        pts = [p[:2] for e in core for p in ([e.segment.start, e.segment.end, _middle(e.segment)]
+                                             if isinstance(e.segment, LineSeg) else e.segment.discretize(tolerance=tolerance / 10))]
+        fit = fit_circle_kasa(pts)
+        if fit is None:
+            continue
+        segments = [e.segment for e in core]
+        near, far = _ring_band(segments, fit[0])
+        radius = (near + far) / 2   # il raggio a metà fra il punto più vicino e il più lontano
+        if radius <= tolerance or far - radius > tolerance or not _full_turn(segments, fit[0], tolerance / radius):
+            continue
+        circle = CircleSeg(center=fit[0], radius=radius)
+        node = node_point(segment_endpoints(circle)[0])
+        new_edges.append(replace(core[0], segment=circle, start=node, end=node))
+        # un ramo libero, o un pezzo isolato, che corre anch'esso sul cerchio è un tratto doppio del giro
+        on_ring = [e for e in [edges[k] for k in group] + loose
+                   if e.role == ContourRole.UNKNOWN and not isinstance(e.segment, CircleSeg)
+                   and math.dist(node_point(e.start), fit[0]) <= radius + tolerance
+                   and _within_band(e.segment, fit[0], radius, tolerance)]
+        replaced |= {id(e) for e in core} | {id(e) for e in on_ring}
+    if not replaced:
+        return edges
+    return [e for e in edges if id(e) not in replaced] + new_edges
+
+
+def _middle(s: LineSeg) -> Point:
+    """Il punto di mezzo della linea: col fit sui capi e sui mezzi il cerchio sta fra i due, non sui vertici."""
+    return ((s.start[0] + s.end[0]) / 2, (s.start[1] + s.end[1]) / 2)
+
+
+def _without_free_branches(group: List[Edge]) -> List[Edge]:
+    """Il gruppo senza i rami che finiscono in un capo libero (tolti uno alla volta finché ce ne sono)."""
+    core = [e for e in group if e.start != e.end or not isinstance(e.segment, LineSeg)]
+    while True:
+        degree = Counter(p for e in core for p in (e.start, e.end))
+        kept = [e for e in core if degree[e.start] > 1 and degree[e.end] > 1]
+        if len(kept) == len(core):
+            return core
+        core = kept
+
+
+def _full_turn(segments, center, slack: float) -> bool:
+    """I pezzi, visti dal centro, coprono tutto il giro: nessuno spicchio scoperto più largo di `slack` radianti."""
+    spans = []
+    for s in segments:
+        pts = [s.start, s.end] if isinstance(s, LineSeg) else s.discretize(tolerance=FLOAT_NOISE * 1000)
+        angles = [math.atan2(p[1] - center[1], p[0] - center[0]) % (2 * math.pi) for p in pts]
+        for u, v in zip(angles, angles[1:]):
+            lo, hi = min(u, v), max(u, v)
+            spans += [(lo, hi)] if hi - lo <= math.pi else [(hi, 2 * math.pi), (0.0, lo)]
+    reach = 0.0
+    for lo, hi in sorted(spans):
+        if lo > reach + slack:
+            return False
+        reach = max(reach, hi)
+    return reach >= 2 * math.pi - slack
+
+
+def _within_band(segment, center, radius: float, tolerance: float) -> bool:
+    """Il pezzo sta tutto entro `tolerance` dal cerchio."""
+    near, far = _ring_band([segment], center)
+    return radius - near <= tolerance and far - radius <= tolerance
+
+
+def _ring_band(segments, center) -> Tuple[float, float]:
+    """Distanza minima e massima dei pezzi dal centro: per una linea i capi e il suo punto più vicino, per
+    le altre curve i loro punti."""
+    near, far = math.inf, 0.0
+    for s in segments:
+        if isinstance(s, LineSeg):
+            (ax, ay), (bx, by) = s.start[:2], s.end[:2]
+            dx, dy = bx - ax, by - ay
+            length2 = dx * dx + dy * dy
+            t = max(0.0, min(1.0, ((center[0] - ax) * dx + (center[1] - ay) * dy) / length2)) if length2 else 0.0
+            near = min(near, math.dist(center, (ax + t * dx, ay + t * dy)))
+            far = max(far, math.dist(center, s.start[:2]), math.dist(center, s.end[:2]))
+        else:
+            ds = [math.dist(center, p[:2]) for p in s.discretize(tolerance=FLOAT_NOISE * 1000)]
+            near, far = min(near, *ds), max(far, *ds)
+    return near, far
 
 
 def chain_runs(short_edges: List[Edge]) -> list:

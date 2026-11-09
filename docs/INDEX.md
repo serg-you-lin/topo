@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`84` modules · `537` module-level functions · `65` classes · `16428` lines of code.
+`84` modules · `543` module-level functions · `65` classes · `16535` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -41,7 +41,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_apply_role_style` | func | `topo_dxf/writer.py:358` | Un `RoleStyle` (D37, D128) sul layer: colore in true color (l'ACI non ha |
 | `approximate_bspline` | func | `topo/core/geometry/points.py:347` | La B-spline di grado `degree` con meno punti di controllo che passa per il |
 | `_Arc` | class | `topo/core/readings/outer_scan.py:101` |  |
-| `_arc_chains` | func | `topo/core/base/normalizer.py:376` | Catene angolari di un gruppo sullo stesso cerchio. Se l'ultima catena |
+| `_arc_chains` | func | `topo/core/base/normalizer.py:377` | Catene angolari di un gruppo sullo stesso cerchio. Se l'ultima catena |
 | `_arc_distance` | func | `topo/core/geometry/rings.py:281` | Distanza esatta dall'arco t0 → t1 del cerchio (centro, r). |
 | `_arc_point` | func | `topo/core/readings/outer_scan.py:128` |  |
 | `arc_seg_to_bulge` | func | `topo_dxf/exporter.py:85` |  |
@@ -76,9 +76,9 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_build_tree` | func | `topo/core/base/hierarchy.py:94` |  |
 | `_candidates` | func | `topo/core/base/gap_solver.py:257` | (distanza, chiave d'ordine, i, bersaglio) per ogni estremo `i`: ("end", j) un |
 | `_ceil_2` | func | `topo/core/readings/network.py:188` | `x` arrotondato per eccesso a due cifre significative: la soglia |
-| `_chain` | func | `topo/core/base/normalizer.py:245` | Ordina per `lo` e incatena gli span che si toccano o si sovrappongono: |
+| `_chain` | func | `topo/core/base/normalizer.py:246` | Ordina per `lo` e incatena gli span che si toccano o si sovrappongono: |
 | `_chain` | func | `topo/core/geometry/regions.py:324` | Pezzi orientati incatenati testa-coda in anelli chiusi. Con |
-| `chain_runs` | func | `topo/core/base/normalizer.py:632` | Catene massimali: percorsi fra nodi di grado != 2, o anelli. |
+| `chain_runs` | func | `topo/core/base/normalizer.py:737` | Catene massimali: percorsi fra nodi di grado != 2, o anelli. |
 | `_check_factor` | func | `topo/core/primitives/segments.py:134` | Il fattore di una scala: positivo e finito. Uno negativo è una |
 | `_chord_angle` | func | `topo/core/geometry/rings.py:227` | Angolo con segno, in (−π, π], da a a b visti da `point`. |
 | `chord_angle_deg` | func | `topo/core/geometry/measure.py:138` | Angolo (gradi, 0-180°) della corda da `a` a `b`. Modulo 180 perché una |
@@ -226,6 +226,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `free_endpoints_from_edges` | func | `topo/core/base/gap_solver.py:416` | Estrae gli endpoint liberi (grado < 2 nel grafo) dagli Edge. |
 | `free_ends` | func | `topo/core/readings/heal_steps.py:76` | (estremo, distanza dal nodo più vicino) per ogni estremo che nessun altro |
 | `_full_arc` | func | `topo/core/geometry/regions.py:181` | Un cerchio come arco di 360°: un arco si inverte, un CircleSeg no (è |
+| `_full_turn` | func | `topo/core/base/normalizer.py:696` | I pezzi, visti dal centro, coprono tutto il giro: nessuno spicchio scoperto più largo di `slack` radianti. |
 | `Gap` | class | `topo/core/geometry/strips.py:40` | La distanza minima fra due contorni e i due punti, uno per contorno, dove cade. |
 | `gap` | func | `topo/core/geometry/strips.py:52` | La distanza minima fra gli anelli `a` e `b` e la coppia di punti più |
 | `gap` | func | `topo/tools/strips.py:64` | Fatto 2: distanza minima fra i bordi `a` e `b` e i due punti più vicini. |
@@ -287,9 +288,9 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_line_distance` | func | `topo/core/geometry/rings.py:274` |  |
 | `_line_fit` | func | `topo/core/primitives/fitting.py:148` | Retta ai minimi quadrati sui punti: (punto, direzione unitaria). |
 | `_line_intersection` | func | `topo/core/geometry/intersections.py:23` | Intersezione tra retta (p1,p2) e retta (p3,p4). None se parallele. |
-| `_line_length` | func | `topo/core/base/normalizer.py:454` |  |
+| `_line_length` | func | `topo/core/base/normalizer.py:455` |  |
 | `_line_moments` | func | `topo/core/geometry/integrals.py:110` |  |
-| `_line_spans` | func | `topo/core/base/normalizer.py:194` | Span lungo la retta comune: `t` è la proiezione sulla direzione del |
+| `_line_spans` | func | `topo/core/base/normalizer.py:195` | Span lungo la retta comune: `t` è la proiezione sulla direzione del |
 | `_line_turn` | func | `topo/core/primitives/fitting.py:172` | Di quanti gradi svolta chi passa dalla linea `a` alla linea `b`. |
 | `LineSeg` | class | `topo/core/primitives/segments.py:60` |  |
 | `Link` | class | `topo/tools/strips.py:70` | Una striscia (`strip`) fra i bordi `a` e `b` di un `Facing`. |
@@ -314,19 +315,20 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `map_sanitized_item_to_edge` | func | `topo_pdf/graph_adapter.py:12` |  |
 | `_measured_points` | func | `topo_dxf/text_extractor.py:302` | I punti sulla geometria fra cui la quota misura, dai def-point: |
 | `measured_references` | func | `topo/tools/anchor.py:111` | Gli elementi su cui cadono i ``measured_points`` di ``text`` (gli oggetti |
-| `_median_line` | func | `topo/core/base/normalizer.py:506` | La retta a metà fra due copie di pari lunghezza: ogni capo di `a` col |
+| `_median_line` | func | `topo/core/base/normalizer.py:507` | La retta a metà fra due copie di pari lunghezza: ogni capo di `a` col |
 | `_meet` | func | `topo/core/geometry/intersections.py:147` |  |
 | `_meet_or_bridge` | func | `topo/core/base/gap_solver.py:405` | Se le due geometrie si incontrano in `ix`, porta lì entrambi gli estremi; |
 | `_meetings` | func | `topo/core/topology/noding.py:679` | Dove `a` e `b` si incrociano o si toccano: in forma chiusa fra rette, |
-| `merge_cocircular_overlaps` | func | `topo/core/base/normalizer.py:357` | `merge_collinear_overlaps` per gli ArcSeg e i CircleSeg (un giro intero): |
-| `merge_collinear_overlaps` | func | `topo/core/base/normalizer.py:101` | Fonde gruppi di LineSeg collineari (stessa retta infinita, `_same_line`) |
+| `merge_cocircular_overlaps` | func | `topo/core/base/normalizer.py:358` | `merge_collinear_overlaps` per gli ArcSeg e i CircleSeg (un giro intero): |
+| `merge_collinear_overlaps` | func | `topo/core/base/normalizer.py:102` | Fonde gruppi di LineSeg collineari (stessa retta infinita, `_same_line`) |
 | `merge_intervals` | func | `topo/core/geometry/axis.py:34` | Unisce gli intervalli che si sovrappongono o distano al più `tolerance`, in ordine. |
-| `merge_near_copies` | func | `topo/core/base/normalizer.py:486` | Le rette quasi una sopra l'altra entro `distance` (`near_copies`) |
-| `_merge_on_carrier` | func | `topo/core/base/normalizer.py:265` | Raggruppa per supporto gli edge di `segment_type` con ruolo UNKNOWN — |
+| `merge_near_copies` | func | `topo/core/base/normalizer.py:487` | Le rette quasi una sopra l'altra entro `distance` (`near_copies`) |
+| `_merge_on_carrier` | func | `topo/core/base/normalizer.py:266` | Raggruppa per supporto gli edge di `segment_type` con ruolo UNKNOWN — |
 | `merge_runs` | func | `topo/core/geometry/shape.py:366` | Segmenti consecutivi di un giro chiuso sulla stessa circonferenza (o |
 | `_merge_texts` | func | `topo_dxf/loader.py:68` | Aggiunge a `base` i testi di `extra` non già presenti (per firma). |
-| `_merged_arc` | func | `topo/core/base/normalizer.py:405` | Il fuso di una catena cocircolare: un arco, o un cerchio se chiude il |
-| `_merged_line` | func | `topo/core/base/normalizer.py:218` | Il fuso di una catena collineare: nodi arrotondati, segmento a piena |
+| `_merged_arc` | func | `topo/core/base/normalizer.py:406` | Il fuso di una catena cocircolare: un arco, o un cerchio se chiude il |
+| `_merged_line` | func | `topo/core/base/normalizer.py:219` | Il fuso di una catena collineare: nodi arrotondati, segmento a piena |
+| `_middle` | func | `topo/core/base/normalizer.py:680` | Il punto di mezzo della linea: col fit sui capi e sui mezzi il cerchio sta fra i due, non sui vertici. |
 | `_middle` | func | `topo/core/geometry/regions.py:119` |  |
 | `_min_area_angle` | func | `topo/core/geometry/shape.py:244` | Angolo del rettangolo d'area minima attorno alle primitive, cercato a |
 | `_mirror_point` | func | `topo/core/primitives/segments.py:119` | `pt` specchiato sulla retta per `origin` inclinata di `angle` radianti |
@@ -336,14 +338,14 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_moved_segment` | func | `topo/core/base/gap_solver.py:448` | Nuovo segmento con l'endpoint `role` spostato su `new_pt`. None se non gestito. |
 | `MoveEndpoint` | class | `topo/core/base/gap_solver.py:76` | Istruzione: sposta l'endpoint role di ref al punto new_pt. |
 | `name_rules` | func | `topo/model/role_rule.py:115` | Scorciatoia: {nome: ruolo} → una RoleRule(name=...) per voce. |
-| `near_copies` | func | `topo/core/base/normalizer.py:458` | Le coppie di LineSeg con lo stesso ruolo in cui la più corta sta tutta |
+| `near_copies` | func | `topo/core/base/normalizer.py:459` | Le coppie di LineSeg con lo stesso ruolo in cui la più corta sta tutta |
 | `_near_copy_warning` | func | `topo/core/readings/network.py:205` |  |
 | `near_free_gaps` | func | `topo/core/base/cleanup.py:175` | I gap fra estremi liberi che `close_free_gaps` chiuderebbe entro |
 | `_near_gap_warning` | func | `topo/core/readings/network.py:231` |  |
 | `near_gaps` | func | `topo/core/base/gap_solver.py:226` | I gap che `compute_gap_fixes` chiuderebbe con `reach_to` e non con |
 | `_near_pairs` | func | `topo/core/readings/touching.py:84` | Le coppie di edge a distanza vera <= `gap_tolerance`. Le |
 | `_near_pairs` | func | `topo/core/topology/noding.py:315` | Le coppie (i < j) da giudicare. Il filtro misura sulle discretizzazioni |
-| `NearCopy` | class | `topo/core/base/normalizer.py:423` | Una retta quasi sopra un'altra (D226): `copy` sta tutta entro `offset` |
+| `NearCopy` | class | `topo/core/base/normalizer.py:424` | Una retta quasi sopra un'altra (D226): `copy` sta tutta entro `offset` |
 | `nearest_point` | func | `topo/core/geometry/regions.py:278` | Il punto delle primitive `segments` più vicino a `point`: anche a metà di |
 | `_nearest_within` | func | `topo/tools/anchor.py:185` | L'indice della parte più vicina a ``probe``, se entro ``snap_distance`` (> 0). |
 | `Network` | class | `topo/core/readings/network.py:37` | The repaired drawing, built once by `heal()` and read by `faces()` or |
@@ -357,14 +359,14 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `non_contour_pieces` | func | `topo/core/topology/non_contour_edges.py:93` | id dei pezzi della rete piana `noded` che non chiudono un contorno (D111, |
 | `NonContourEdgeDetector` | class | `topo/core/topology/non_contour_edges.py:45` |  |
 | `_normal_toward` | func | `topo/core/geometry/strips.py:127` | Normale all'anello `ring` nel suo punto `point`, dal lato dove sta |
-| `normalize` | func | `topo/core/base/prepare.py:59` | Le pulizie di ogni lettura: le stesse funzioni, nello stesso ordine, per |
+| `normalize` | func | `topo/core/base/prepare.py:60` | Le pulizie di ogni lettura: le stesse funzioni, nello stesso ordine, per |
 | `normalize_ocs` | func | `topo_dxf/sanitize.py:20` | Normalizza il vettore di estrusione di tutte le entità OCS nel modelspace. |
 | `normalize_role` | func | `topo/model/role.py:113` | Ripulisce una stringa-ruolo che arriva dal chiamante (``RoleRule``, |
-| `Normalized` | class | `topo/core/base/prepare.py:49` | Gli edge normalizzati e quanti ne ha toccati ogni passo. |
+| `Normalized` | class | `topo/core/base/prepare.py:50` | Gli edge normalizzati e quanti ne ha toccati ogni passo. |
 | `num_segments_for_bulge` | func | `topo/core/geometry/measure.py:48` | Numero di segmenti per discretizzare un arco dato il suo bulge. |
-| `_off_line` | func | `topo/core/base/normalizer.py:97` |  |
+| `_off_line` | func | `topo/core/base/normalizer.py:98` |  |
 | `off_rim` | func | `topo/core/topology/rim.py:65` | I tratti di `edge` che il bordo non ha preso: `taken` sono i capi (a, b) |
-| `_off_segment` | func | `topo/core/base/normalizer.py:437` | Distanza di `p` dal segmento (non dalla retta infinita). |
+| `_off_segment` | func | `topo/core/base/normalizer.py:438` | Distanza di `p` dal segmento (non dalla retta infinita). |
 | `offset_from_line` | func | `topo/core/geometry/points.py:171` | Distanza con segno di `p` dalla retta a->b (positiva a sinistra). |
 | `_on_arc` | func | `topo/core/geometry/intersections.py:139` |  |
 | `_on_arc` | func | `topo/core/readings/outer_scan.py:124` |  |
@@ -394,7 +396,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `OuterFace` | class | `topo/core/topology/outer_face.py:45` | Il contorno esterno trovato, e cosa il percorso ha scartato. |
 | `OuterHit` | class | `topo/core/readings/outer_scan.py:42` | Un raggio per cui l'Edge è stato l'estremo. |
 | `OutlineReading` | class | `topo/core/readings/outline.py:50` | Cosa outlines() ha deciso su un gruppo, pezzo per pezzo. |
-| `_over` | func | `topo/core/base/normalizer.py:445` | La proiezione di `p` sulla retta di `seg` cade dentro `seg` (a meno di FLOAT_NOISE). |
+| `_over` | func | `topo/core/base/normalizer.py:446` | La proiezione di `p` sulla retta di `seg` cade dentro `seg` (a meno di FLOAT_NOISE). |
 | `_p` | func | `topo/inspect.py:41` | Formatta un punto (x, y) con nd decimali. |
 | `_palette_dict` | func | `topo/io/view_model.py:190` | role (stringa) → colore hex, per la legenda di un renderer: i tre ruoli |
 | `_param` | func | `topo/core/geometry/regions.py:67` |  |
@@ -425,8 +427,8 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_polyline` | func | `topo/core/geometry/regions.py:52` |  |
 | `_polyline_distance` | func | `topo/core/geometry/rings.py:309` |  |
 | `_polyline_points` | func | `topo_dxf/text_extractor.py:517` |  |
-| `prepare` | func | `topo/core/base/prepare.py:38` | Ruoli non strutturali da parte, poi i nodi decisi una volta per tutte |
-| `Prepared` | class | `topo/core/base/prepare.py:31` | Gli edge pronti per una lettura, e quello che `prepare` ha messo da parte. |
+| `prepare` | func | `topo/core/base/prepare.py:39` | Ruoli non strutturali da parte, poi i nodi decisi una volta per tutte |
+| `Prepared` | class | `topo/core/base/prepare.py:32` | Gli edge pronti per una lettura, e quello che `prepare` ha messo da parte. |
 | `_probe_point` | func | `topo/tools/split.py:163` | Punto rappresentativo di una curva, per darla alla parte più vicina. |
 | `_radial` | func | `topo/core/topology/noding.py:749` | Il punto del cerchio più vicino a `pt`; None se `pt` è il centro. |
 | `_radius` | func | `topo/core/geometry/shape.py:135` | Raggio di un pezzo di cerchio; un'ellisse ad assi uguali è un cerchio, esattamente. |
@@ -448,7 +450,8 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_rectangle` | func | `topo/core/geometry/shape.py:202` |  |
 | `refine_gap` | func | `topo/core/geometry/strips.py:63` | La coppia più vicina fra le primitive `a` e `b` (anelli o pezzi |
 | `_refine_segment` | func | `topo/core/primitives/segments.py:406` | Suddivide `[t0, t1]` finché il punto medio (valutato con `evaluate(t)`) |
-| `refit_tessellations` | func | `topo/core/base/normalizer.py:580` | Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di |
+| `refit_circle_rings` | func | `topo/core/base/normalizer.py:633` | Un gruppo connesso di pezzi `role == UNKNOWN` (niente CircleSeg) il cui |
+| `refit_tessellations` | func | `topo/core/base/normalizer.py:581` | Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di |
 | `_refuse_crossings` | func | `topo/core/geometry/strips.py:213` |  |
 | `_region_of` | func | `topo/tools/strips.py:95` | La regione piena a cui appartiene un bordo: lui se è pieno, la regione che contiene il vuoto se è vuoto. |
 | `regular_polygon` | func | `topo/core/geometry/build.py:43` | Poligono regolare di `sides` lati inscritto nel cerchio di raggio `radius`; il primo vertice a `angle` gradi. |
@@ -468,6 +471,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_ring` | func | `topo/core/geometry/lines.py:98` |  |
 | `_ring` | func | `topo/io/shapes.py:49` |  |
 | `ring_area` | func | `topo/core/geometry/integrals.py:90` | Area esatta (senza segno) racchiusa da un giro chiuso di primitive. |
+| `_ring_band` | func | `topo/core/base/normalizer.py:719` | Distanza minima e massima dei pezzi dal centro: per una linea i capi e il suo punto più vicino, per |
 | `ring_bbox` | func | `topo/core/geometry/rings.py:68` | (xmin, ymin, xmax, ymax) esatto delle primitive: gli estremi di archi |
 | `ring_bridges` | func | `topo/core/geometry/rings.py:39` | (indice, segmento nuovo) per ogni salto oltre `noise` ed entro `tolerance`: |
 | `ring_centroid` | func | `topo/core/geometry/integrals.py:95` | Baricentro esatto dell'area racchiusa da un giro chiuso. Solleva |
@@ -495,9 +499,9 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `rotate_to_longest` | func | `topo/tools/rotate.py:235` | Ruota `result` (già sano, da un `heal()` già fatto dal chiamante) in modo |
 | `_round_points` | func | `topo/io/view_model.py:37` | Lista di punti (2D o 3D) → lista di [x, y] arrotondati. |
 | `_sagitta_step` | func | `topo/core/primitives/segments.py:176` | Angolo massimo di una corda che dista al più `tolerance` dall'arco di |
-| `_same_circle` | func | `topo/core/base/normalizer.py:352` | Stesso cerchio: centri e raggi entro `_SAME_OFFSET` — v. `_same_line`. |
+| `_same_circle` | func | `topo/core/base/normalizer.py:353` | Stesso cerchio: centri e raggi entro `_SAME_OFFSET` — v. `_same_line`. |
 | `_same_curve` | func | `topo/core/geometry/regions.py:430` | `a` e `b` sono la stessa spline o ellisse (anche girata): incrociate |
-| `_same_line` | func | `topo/core/base/normalizer.py:70` | `a` e `b` stanno sulla stessa retta infinita: direzioni parallele entro |
+| `_same_line` | func | `topo/core/base/normalizer.py:71` | `a` e `b` stanno sulla stessa retta infinita: direzioni parallele entro |
 | `sample_bezier_cubic` | func | `topo_pdf/geometry_adapter.py:37` | Campiona una curva di Bezier cubica in un set di punti lineari (poligonale). |
 | `sanitize` | func | `topo_dxf/sanitize.py:89` | Esegue tutti i sanitizer in sequenza sul modelspace ricevuto. |
 | `sanitize_pdf_geometries` | func | `topo_pdf/sanitize.py:12` | Prende gli item geometrici grezzi estratti dall'extractor, applica la conversione |
@@ -538,7 +542,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_solve_line_line` | func | `topo/core/base/gap_solver.py:107` |  |
 | `_solve_spline_any` | func | `topo/core/base/gap_solver.py:145` |  |
 | `sort_clusters` | func | `topo/core/base/hierarchy.py:77` | I cluster dal più grande: area esatta dell'outer, poi a pari area l'angolo |
-| `_Span` | class | `topo/core/base/normalizer.py:229` | Un edge come intervallo [lo, hi] sul suo supporto (posizione lungo la |
+| `_Span` | class | `topo/core/base/normalizer.py:230` | Un edge come intervallo [lo, hi] sul suo supporto (posizione lungo la |
 | `_span` | func | `topo/core/geometry/regions.py:56` |  |
 | `_span` | func | `topo/core/readings/network.py:200` |  |
 | `spanning_lines` | func | `topo/core/geometry/axis.py:197` | (ys, xs): le coordinate delle linee strettamente interne a `bounds` (bordo |
@@ -548,7 +552,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_split` | func | `topo/core/geometry/regions.py:139` | `seg` spezzato nei `points` che gli stanno sopra, nel suo verso. |
 | `split` | func | `topo/tools/split.py:25` | Un `Result` per parte, nell'ordine delle parti tenute. |
 | `split_at_crossings` | func | `topo/core/topology/noding.py:161` | Spezza ogni edge nei suoi contatti con gli altri (incroci, T, estremi |
-| `_split_at_junctions` | func | `topo/core/base/normalizer.py:324` | Spezza una catena dove due span consecutivi si toccano SOLO (nessuna |
+| `_split_at_junctions` | func | `topo/core/base/normalizer.py:325` | Spezza una catena dove due span consecutivi si toccano SOLO (nessuna |
 | `split_labeled` | func | `topo/core/base/cleanup.py:27` | Separa gli Edge con un ruolo già deciso e non strutturale (cornice, |
 | `_split_stretch` | func | `topo/core/primitives/fitting.py:66` | Un tratto senza spigoli: tutto entro `tolerance` dalla corda -> una linea; |
 | `splits_contour` | func | `topo/core/geometry/lines.py:82` | True if the chord `start`-`end`, extended by `reach` at both ends, cuts |
@@ -598,7 +602,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `turn_corners` | func | `topo/core/geometry/points.py:229` | Indici degli spigoli di una sequenza campionata: vertici Douglas-Peucker |
 | `_twin` | func | `topo/core/geometry/regions.py:414` | L'indice del pezzo di `pieces` che ricopre `piece` (stessi capi, stesso |
 | `unconnected_regions` | func | `topo/tools/strips.py:102` | Fatto 4: le regioni piene di `cluster` (contorni di profondità pari |
-| `_unit` | func | `topo/core/base/normalizer.py:91` |  |
+| `_unit` | func | `topo/core/base/normalizer.py:92` |  |
 | `_unit` | func | `topo/core/geometry/shape.py:259` |  |
 | `_unit` | func | `topo/core/geometry/strips.py:104` |  |
 | `_upgrade_to_r2010` | func | `topo_dxf/loader.py:176` | Converte un documento DXF legacy in R2010. |
@@ -606,15 +610,17 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `validate_result` | func | `topo/rules/validator.py:82` | Check the clusters of a `Result` a reading produced. **Mutates** `result`: |
 | `_void_area` | func | `topo/model/cluster.py:114` | Area di un vuoto dell'overlay, esatta sui suoi `segments` (D165). |
 | `_warn_non_roundtrip_types` | func | `topo_dxf/loader.py:86` | Avvisa sui tipi di entità che to_dxf() non riscrive (HATCH, IMAGE, …). |
-| `weld_degenerate_linesegs` | func | `topo/core/base/normalizer.py:523` | Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale |
+| `weld_degenerate_linesegs` | func | `topo/core/base/normalizer.py:524` | Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale |
 | `_width_factor` | func | `topo_dxf/text_extractor.py:163` | Stretch orizzontale effettivo del testo (1.0 = nessuno). |
 | `_winding` | func | `topo/core/geometry/rings.py:143` | Numero di avvolgimento del giro attorno a `point`; None se `point` sta |
 | `_with_extra` | func | `topo/io/exporter.py:14` | `result.to_dict()` con i campi di `extra(cluster)` uniti a ogni cluster; |
 | `_with_nodes` | func | `topo/core/topology/noding.py:769` |  |
 | `with_polygon` | func | `topo/core/primitives/polygon_builder.py:92` | `curve` col poligono che la lettura le ha costruito (fuso con la rete |
 | `_within` | func | `topo/core/primitives/fitting.py:51` | Tutti i punti entro `tolerance` dalla corda primo-ultimo. |
+| `_within_band` | func | `topo/core/base/normalizer.py:713` | Il pezzo sta tutto entro `tolerance` dal cerchio. |
 | `within_diameter` | func | `topo/core/geometry/measure.py:324` | True se ogni coppia di `points` dista al più `limit`: il diametro |
 | `_within_reach` | func | `topo/core/base/gap_solver.py:376` | Un incontro che sposta un estremo più di `reach` non chiude il gap: due |
+| `_without_free_branches` | func | `topo/core/base/normalizer.py:685` | Il gruppo senza i rami che finiscono in un capo libero (tolti uno alla volta finché ce ne sono). |
 | `_write_attached_features` | func | `topo_dxf/writer.py:257` | Ogni collezione di `cluster.detected` (D70, D90): topo non sa cosa siano. |
 | `_write_loose` | func | `topo_dxf/writer.py:234` | Materializza `result.loose`, tutte: in un file per parte le ha |
 | `write_native_segments` | func | `topo_dxf/exporter.py:301` | Materializza segmenti aperti come geometria NATIVA, una entità DXF per |
@@ -630,12 +636,13 @@ Same name defined at module level in different modules. Not automatically a bug 
 | name | defined in |
 |---|---|
 | `_assign` | `topo/tools/anchor.py:176` · `topo/tools/split.py:101` |
-| `_chain` | `topo/core/base/normalizer.py:245` · `topo/core/geometry/regions.py:324` |
+| `_chain` | `topo/core/base/normalizer.py:246` · `topo/core/geometry/regions.py:324` |
 | `_cluster` | `topo/core/readings/outline.py:193` · `topo/io/shapes.py:58` |
 | `_color_rgb` | `topo/model/role_rule.py:124` · `topo_dxf/adapter.py:63` |
 | `_ends` | `topo/core/geometry/lines.py:28` · `topo/core/geometry/regions.py:115` |
 | `_joined` | `topo/core/geometry/shape.py:417` · `topo_dxf/exporter.py:114` |
 | `_length` | `topo/core/geometry/regions.py:107` · `topo/core/geometry/shape.py:269` · `topo/core/primitives/fitting.py:168` |
+| `_middle` | `topo/core/base/normalizer.py:680` · `topo/core/geometry/regions.py:119` |
 | `_near_pairs` | `topo/core/readings/touching.py:84` · `topo/core/topology/noding.py:315` |
 | `_on_arc` | `topo/core/geometry/intersections.py:139` · `topo/core/readings/outer_scan.py:124` · `topo/core/topology/noding.py:757` |
 | `_on_line` | `topo/core/geometry/intersections.py:128` · `topo/core/primitives/trim.py:48` |
@@ -645,7 +652,7 @@ Same name defined at module level in different modules. Not automatically a bug 
 | `_ring` | `topo/core/geometry/lines.py:98` · `topo/io/shapes.py:49` |
 | `_size` | `topo/core/geometry/strips.py:152` · `topo/tools/anchor.py:171` |
 | `_span` | `topo/core/geometry/regions.py:56` · `topo/core/readings/network.py:200` |
-| `_unit` | `topo/core/base/normalizer.py:91` · `topo/core/geometry/shape.py:259` · `topo/core/geometry/strips.py:104` |
+| `_unit` | `topo/core/base/normalizer.py:92` · `topo/core/geometry/shape.py:259` · `topo/core/geometry/strips.py:104` |
 | `gap` | `topo/core/geometry/strips.py:52` · `topo/tools/strips.py:64` |
 
 ## Dependency rule
@@ -743,44 +750,50 @@ _topo/core/base/gap_solver.py_
   - methods: `__init__`, `build`, `_build_parts`, `_collect_loose`
 - `assign_cluster_refs(curves: list, clusters: list, tolerance: float) -> None` — L229 — Scrive su ogni curva di `curves` (`result.loose`) `cluster_ref`: l'indice
 
-#### `topo/core/base/normalizer.py` — 660 lines
+#### `topo/core/base/normalizer.py` — 765 lines
 
 _topo/core/base/normalizer.py_
 
-- `_same_line(a: LineSeg, b: LineSeg) -> bool` — L70 — `a` e `b` stanno sulla stessa retta infinita: direzioni parallele entro
-- `_unit(seg: LineSeg)` — L91
-- `_off_line(p, origin, u) -> float` — L97
-- `merge_collinear_overlaps(edges: Iterable[Edge], keep_junctions: bool=False) -> List[Edge]` — L101 — Fonde gruppi di LineSeg collineari (stessa retta infinita, `_same_line`)
-- `_line_spans(group: List[Edge]) -> List[_Span]` — L194 — Span lungo la retta comune: `t` è la proiezione sulla direzione del
-- `_merged_line(lo: _Span, hi: _Span)` — L218 — Il fuso di una catena collineare: nodi arrotondati, segmento a piena
-- **class** `_Span` — L229 — Un edge come intervallo [lo, hi] sul suo supporto (posizione lungo la
-- `_chain(spans: List[_Span]) -> List[List[_Span]]` — L245 — Ordina per `lo` e incatena gli span che si toccano o si sovrappongono:
-- `_merge_on_carrier(edges: Iterable[Edge], segment_type: type, same: Callable[[Any, Any], bool], chains_of: Callable[[List[Edge]], List[List[_Span]]], merged: Callable[[_Span, _Span], Tuple[Point, Point, Any]], keep_junctions: bool=False) -> List[Edge]` — L265 — Raggruppa per supporto gli edge di `segment_type` con ruolo UNKNOWN —
-- `_split_at_junctions(chain: List[_Span], junction: Callable[[Point], bool]) -> List[List[_Span]]` — L324 — Spezza una catena dove due span consecutivi si toccano SOLO (nessuna
-- `_same_circle(a, b) -> bool` — L352 — Stesso cerchio: centri e raggi entro `_SAME_OFFSET` — v. `_same_line`.
-- `merge_cocircular_overlaps(edges: Iterable[Edge]) -> List[Edge]` — L357 — `merge_collinear_overlaps` per gli ArcSeg e i CircleSeg (un giro intero):
-- `_arc_chains(group: List[Edge]) -> List[List[_Span]]` — L376 — Catene angolari di un gruppo sullo stesso cerchio. Se l'ultima catena
-- `_merged_arc(lo: _Span, hi: _Span)` — L405 — Il fuso di una catena cocircolare: un arco, o un cerchio se chiude il
-- **class** `NearCopy` — L423 — Una retta quasi sopra un'altra (D226): `copy` sta tutta entro `offset`
+- `_same_line(a: LineSeg, b: LineSeg) -> bool` — L71 — `a` e `b` stanno sulla stessa retta infinita: direzioni parallele entro
+- `_unit(seg: LineSeg)` — L92
+- `_off_line(p, origin, u) -> float` — L98
+- `merge_collinear_overlaps(edges: Iterable[Edge], keep_junctions: bool=False) -> List[Edge]` — L102 — Fonde gruppi di LineSeg collineari (stessa retta infinita, `_same_line`)
+- `_line_spans(group: List[Edge]) -> List[_Span]` — L195 — Span lungo la retta comune: `t` è la proiezione sulla direzione del
+- `_merged_line(lo: _Span, hi: _Span)` — L219 — Il fuso di una catena collineare: nodi arrotondati, segmento a piena
+- **class** `_Span` — L230 — Un edge come intervallo [lo, hi] sul suo supporto (posizione lungo la
+- `_chain(spans: List[_Span]) -> List[List[_Span]]` — L246 — Ordina per `lo` e incatena gli span che si toccano o si sovrappongono:
+- `_merge_on_carrier(edges: Iterable[Edge], segment_type: type, same: Callable[[Any, Any], bool], chains_of: Callable[[List[Edge]], List[List[_Span]]], merged: Callable[[_Span, _Span], Tuple[Point, Point, Any]], keep_junctions: bool=False) -> List[Edge]` — L266 — Raggruppa per supporto gli edge di `segment_type` con ruolo UNKNOWN —
+- `_split_at_junctions(chain: List[_Span], junction: Callable[[Point], bool]) -> List[List[_Span]]` — L325 — Spezza una catena dove due span consecutivi si toccano SOLO (nessuna
+- `_same_circle(a, b) -> bool` — L353 — Stesso cerchio: centri e raggi entro `_SAME_OFFSET` — v. `_same_line`.
+- `merge_cocircular_overlaps(edges: Iterable[Edge]) -> List[Edge]` — L358 — `merge_collinear_overlaps` per gli ArcSeg e i CircleSeg (un giro intero):
+- `_arc_chains(group: List[Edge]) -> List[List[_Span]]` — L377 — Catene angolari di un gruppo sullo stesso cerchio. Se l'ultima catena
+- `_merged_arc(lo: _Span, hi: _Span)` — L406 — Il fuso di una catena cocircolare: un arco, o un cerchio se chiude il
+- **class** `NearCopy` — L424 — Una retta quasi sopra un'altra (D226): `copy` sta tutta entro `offset`
   - methods: `at`
-- `_off_segment(p, seg: LineSeg) -> float` — L437 — Distanza di `p` dal segmento (non dalla retta infinita).
-- `_over(p, seg: LineSeg) -> bool` — L445 — La proiezione di `p` sulla retta di `seg` cade dentro `seg` (a meno di FLOAT_NOISE).
-- `_line_length(e: Edge) -> float` — L454
-- `near_copies(edges: Iterable[Edge], distance: float) -> List[NearCopy]` — L458 — Le coppie di LineSeg con lo stesso ruolo in cui la più corta sta tutta
-- `merge_near_copies(edges: Iterable[Edge], *, distance: float) -> List[Edge]` — L486 — Le rette quasi una sopra l'altra entro `distance` (`near_copies`)
-- `_median_line(a: Edge, b: Edge) -> Edge` — L506 — La retta a metà fra due copie di pari lunghezza: ogni capo di `a` col
-- `weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]` — L523 — Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale
-- `refit_tessellations(edges: Iterable[Edge], max_segment: float=0.1, min_run: int=10, tolerance: float=0.02) -> List[Edge]` — L580 — Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di
-- `chain_runs(short_edges: List[Edge]) -> list` — L632 — Catene massimali: percorsi fra nodi di grado != 2, o anelli.
+- `_off_segment(p, seg: LineSeg) -> float` — L438 — Distanza di `p` dal segmento (non dalla retta infinita).
+- `_over(p, seg: LineSeg) -> bool` — L446 — La proiezione di `p` sulla retta di `seg` cade dentro `seg` (a meno di FLOAT_NOISE).
+- `_line_length(e: Edge) -> float` — L455
+- `near_copies(edges: Iterable[Edge], distance: float) -> List[NearCopy]` — L459 — Le coppie di LineSeg con lo stesso ruolo in cui la più corta sta tutta
+- `merge_near_copies(edges: Iterable[Edge], *, distance: float) -> List[Edge]` — L487 — Le rette quasi una sopra l'altra entro `distance` (`near_copies`)
+- `_median_line(a: Edge, b: Edge) -> Edge` — L507 — La retta a metà fra due copie di pari lunghezza: ogni capo di `a` col
+- `weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]` — L524 — Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale
+- `refit_tessellations(edges: Iterable[Edge], max_segment: float=0.1, min_run: int=10, tolerance: float=0.02) -> List[Edge]` — L581 — Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di
+- `refit_circle_rings(edges: Iterable[Edge], tolerance: float=0.02) -> List[Edge]` — L633 — Un gruppo connesso di pezzi `role == UNKNOWN` (niente CircleSeg) il cui
+- `_middle(s: LineSeg) -> Point` — L680 — Il punto di mezzo della linea: col fit sui capi e sui mezzi il cerchio sta fra i due, non sui vertici.
+- `_without_free_branches(group: List[Edge]) -> List[Edge]` — L685 — Il gruppo senza i rami che finiscono in un capo libero (tolti uno alla volta finché ce ne sono).
+- `_full_turn(segments, center, slack: float) -> bool` — L696 — I pezzi, visti dal centro, coprono tutto il giro: nessuno spicchio scoperto più largo di `slack` radianti.
+- `_within_band(segment, center, radius: float, tolerance: float) -> bool` — L713 — Il pezzo sta tutto entro `tolerance` dal cerchio.
+- `_ring_band(segments, center) -> Tuple[float, float]` — L719 — Distanza minima e massima dei pezzi dal centro: per una linea i capi e il suo punto più vicino, per
+- `chain_runs(short_edges: List[Edge]) -> list` — L737 — Catene massimali: percorsi fra nodi di grado != 2, o anelli.
 
-#### `topo/core/base/prepare.py` — 88 lines
+#### `topo/core/base/prepare.py` — 90 lines
 
 _topo/core/base/prepare.py_
 
-- **class** `Prepared` — L31 — Gli edge pronti per una lettura, e quello che `prepare` ha messo da parte.
-- `prepare(edges: List[Edge], is_structural: Optional[Callable[[str], bool]]=None) -> Prepared` — L38 — Ruoli non strutturali da parte, poi i nodi decisi una volta per tutte
-- **class** `Normalized` — L49 — Gli edge normalizzati e quanti ne ha toccati ogni passo.
-- `normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normalized` — L59 — Le pulizie di ogni lettura: le stesse funzioni, nello stesso ordine, per
+- **class** `Prepared` — L32 — Gli edge pronti per una lettura, e quello che `prepare` ha messo da parte.
+- `prepare(edges: List[Edge], is_structural: Optional[Callable[[str], bool]]=None) -> Prepared` — L39 — Ruoli non strutturali da parte, poi i nodi decisi una volta per tutte
+- **class** `Normalized` — L50 — Gli edge normalizzati e quanti ne ha toccati ogni passo.
+- `normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normalized` — L60 — Le pulizie di ogni lettura: le stesse funzioni, nello stesso ordine, per
 
 #### `topo/core/geometry/__init__.py` — 58 lines
 
@@ -1757,7 +1770,7 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/core/base/curves.py` | `topo.core.base.hierarchy` · `topo.core.base.normalizer` · `topo.core.geometry.measure` · `topo.core.primitives` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.loop_finder` · `topo.model.curve` · `topo.model.role` |
 | `topo/core/base/gap_solver.py` | `topo.core.geometry.intersections` · `topo.core.geometry.measure` · `topo.core.geometry.regions` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.noding` · `topo.model.role` |
 | `topo/core/base/hierarchy.py` | `topo.core.geometry.integrals` · `topo.core.geometry.measure` · `topo.core.geometry.regions` · `topo.core.geometry.rings` · `topo.core.primitives.polygon_builder` · `topo.core.topology.loop_finder` · `topo.model.cluster` · `topo.model.contour` · `topo.model.curve` · `topo.model.role` |
-| `topo/core/base/normalizer.py` | `topo.core.geometry.measure` · `topo.core.primitives.fitting` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.core.topology.noding` · `topo.model.role` |
+| `topo/core/base/normalizer.py` | `topo.core.geometry.measure` · `topo.core.geometry.points` · `topo.core.primitives.fitting` · `topo.core.primitives.segments` · `topo.core.topology.edge` · `topo.core.topology.graph` · `topo.core.topology.noding` · `topo.model.role` |
 | `topo/core/base/prepare.py` | `topo.core.base.cleanup` · `topo.core.base.normalizer` · `topo.core.topology.edge` · `topo.core.topology.noding` |
 | `topo/core/geometry/__init__.py` | `topo.core.geometry.axis` · `topo.core.geometry.build` · `topo.core.geometry.intersections` · `topo.core.geometry.lines` · `topo.core.geometry.measure` · `topo.core.geometry.regions` · `topo.core.geometry.shape` |
 | `topo/core/geometry/axis.py` | `topo.core.primitives.segments` |

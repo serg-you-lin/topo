@@ -401,9 +401,10 @@ novembre, ramo `no-join-ends` fuso in `main`.
       fondendo apre i contorni. Rapporto e DXF in `_debug/2026-11-08_topo_forza-bruta-gruppi`.
       Da decidere col banco: "mosso" col bordo entro la tolleranza (D143) invece dell'area
       a 1e-5; 26 rossi veri con un guasto solo (DXF A-E).
-      `refit_tessellations` (D60): soglia fissa 0,1 mm sul lato. Seme 42 (dopo D235): un foro
-      r 0,492 in 70 linee (~0,044 mm) diventa 5 linee + 3 archi, uno r 1,424 in 71 linee
-      (~0,126 mm) resta linee; nessuno dei due torna `CircleSeg`. Visto da Federico. Fuori 1.0.
+      Un foro scritto a linee con un buco fra i capi (0,02-0,03 mm, `tolerance=0.1`) finisce in
+      `loose`, non è un contorno: `refit_tessellations` fa della catena aperta una spline sola
+      e "i due capi dello stesso edge non sono mai un gap" (`compute_gap_fixes`). Già prima di
+      D236; 20 su ~750 cerchi a caso (`_debug/2026-11-09_topo_fori-cerchi`).
       Federico, 9 novembre: i rossi del banco restano rossi, fuori dal cancello 1.0. Nel
       cancello solo l'avviso `near-copy` (sopra): correggerlo o toglierlo prima della 1.0.
       Spazzatura tracciata: `tests/data/mixed_pipeline/*.dwl*`

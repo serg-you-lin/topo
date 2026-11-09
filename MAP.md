@@ -527,3 +527,7 @@ Splitting topo_dxf out means two releases kept in step and 158 drawings converte
 A piece past the longer line's end continues the contour; within `distance` of that end it was taken for a copy, and the
 `near-copy` help removed it and opened the contour (brute force: 67,844 pairs in 346 seeds, >90% such pieces). No angle
 limit: measured, 5° or 1° on top of this changes nothing (help right in 235 / 235 / 231 of 351).
+### D236 — a ring within 0.02 mm of a circle all the way round is that circle, at any side length (Federico, 9 November).
+After the gaps close, a connected group's core (free branches set aside) within 0.02 mm of one circle all the way
+round becomes a `CircleSeg`, with free pieces lying on it; radius mid-band, lines measured at their nearest point, so a
+real polygon stays. D60's 0.1 mm side left 0.14 mm sides as lines and broke damaged holes into lines + arcs + splines.

@@ -520,3 +520,49 @@ class TestRefitJointsUnderMotion(unittest.TestCase):
                 ends = Counter(n for e in out for n in (e.start, e.end))
                 self.assertEqual(len(out), 3)
                 self.assertEqual(sorted(ends.values()), [1, 1, 2, 2])
+
+
+def _polygon(center, radius, sides, start=0.3):
+    pts = [(center[0] + radius * math.cos(start + 2 * math.pi * k / sides),
+            center[1] + radius * math.sin(start + 2 * math.pi * k / sides)) for k in range(sides)]
+    return [LineSeg(start=pts[k], end=pts[(k + 1) % sides]) for k in range(sides)]
+
+
+def _circles(segments):
+    faces = topo.heal(topo.load_segments(segments), tolerance=0.1).faces()
+    return [s for cl in faces.clusters for ct in [cl.outer, *cl.inners] for s in ct.segments if isinstance(s, CircleSeg)]
+
+
+class TestRefitCircleRings(unittest.TestCase):
+    """D236: un anello che sta tutto entro 0,02 mm da un cerchio e gli fa il giro è quel cerchio."""
+
+    def test_foro_a_lati_lunghi_diventa_cerchio(self):
+        # forza bruta (seme 42): r 1,424 in 71 lati da 0,14 mm, oltre il lato corto di D60
+        (c,) = _circles(_polygon((5, 5), 1.424, 64))
+        self.assertAlmostEqual(c.radius, 1.424, delta=0.002)
+
+    def test_foro_con_un_buco_e_un_pezzo_che_sporge(self):
+        ring = _polygon((5, 5), 1.0, 60)
+        a = ring[7]
+        ring[7] = LineSeg(start=a.start, end=(a.start[0] + 0.9 * (a.end[0] - a.start[0]), a.start[1] + 0.9 * (a.end[1] - a.start[1])))
+        ring.append(LineSeg(start=ring[20].start, end=(ring[20].start[0] + 0.05, ring[20].start[1])))
+        self.assertEqual(len(_circles(ring)), 1)
+
+    def test_pezzo_doppio_che_corre_sul_cerchio_va_col_cerchio(self):
+        # seme 42: un tratto doppio lungo il giro, lasciato da parte, spezzava il cerchio in arco + linea
+        ring = _polygon((5, 5), 1.0, 60)
+        a, b = ring[10].start, ring[10].end
+        for extra in (LineSeg(start=a, end=((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)),          # dal vertice, capo libero
+                      LineSeg(start=((2 * a[0] + b[0]) / 3, (2 * a[1] + b[1]) / 3), end=b)):  # parte a metà lato
+            faces = topo.heal(topo.load_segments(ring + [extra]), tolerance=0.1).faces()
+            self.assertEqual([[type(s) for s in ct.segments] for cl in faces.clusters for ct in [cl.outer, *cl.inners]],
+                             [[CircleSeg]])
+
+    def test_poligono_vero_resta(self):
+        # esagono di r 5: a metà lato si stacca di 0,67 mm dal cerchio
+        self.assertEqual(_circles(_polygon((0, 0), 5.0, 6)), [])
+
+    def test_mezzo_giro_non_diventa_cerchio(self):
+        half = _polygon((0, 0), 1.0, 60)[:30]
+        net = topo.heal(topo.load_segments(half + [LineSeg(start=half[-1].end, end=half[0].start)]), tolerance=0.1)
+        self.assertEqual([s for cl in net.faces().clusters for s in cl.outer.segments if isinstance(s, CircleSeg)], [])
