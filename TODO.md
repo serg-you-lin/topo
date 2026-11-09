@@ -379,8 +379,8 @@ Aperte:
 
 ## Aperti minori
 
-- `topo.experimental.save_svg` stampa su stdout in italiano ("[topo] SVG salvato
-  in …"), contro D233.
+- `topo.inspect_document` / `inspect_result` stampano in italiano ("per ruolo",
+  "totali", "nodi di branching", `topo/inspect.py:66-110`), contro D233.
 - `import topo_pdf` dà l'avviso di PyMuPDF "The `fitz` API is deprecated".
 - `contour_minus` rifiuta i bordi che corrono uno sull'altro (`ValueError`):
   da gestire se un caso vero lo chiede (D118).

@@ -174,7 +174,6 @@ def save_svg(result: Result, path: str, **kwargs) -> None:
     """Scrive `to_svg(result, **kwargs)` su file."""
     with open(path, "w", encoding="utf-8") as f:
         f.write(to_svg(result, **kwargs))
-    print(f"[topo] SVG salvato in {path}")
 
 
 def _scan_bbox(vm: dict) -> Optional[list]:
