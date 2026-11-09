@@ -27,9 +27,9 @@ class TestInspectLevels(unittest.TestCase):
         with redirect_stdout(buf):
             topo.inspect_document(doc)
         out = buf.getvalue()
-        self.assertIn("LIVELLO 2", out)
+        self.assertIn("LEVEL 2", out)
         self.assertIn("edge: 4", out)
-        self.assertIn("grafo nodi", out)
+        self.assertIn("node graph", out)
 
     def test_level3_result(self):
         doc = _square()
@@ -38,8 +38,8 @@ class TestInspectLevels(unittest.TestCase):
         with redirect_stdout(buf):
             topo.inspect_result(result)
         out = buf.getvalue()
-        self.assertIn("LIVELLO 3", out)
-        self.assertIn("PARTE 0", out)
+        self.assertIn("LEVEL 3", out)
+        self.assertIn("PART 0", out)
         self.assertIn("role=outer", out)
 
     def test_inspect_functions_exported(self):

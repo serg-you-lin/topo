@@ -383,8 +383,6 @@ Aperte:
   2 file dice "max_gap=0.1 closes them all", ma con quel valore il risultato
   resta non valido; su 4 file l'unico errore resta `no-closed-outer`. Servono i
   file per riprodurlo; il consiglio è sperimentale (D240) ma non deve essere falso.
-- `topo.inspect_document` / `inspect_result` stampano in italiano ("per ruolo",
-  "totali", "nodi di branching", `topo/inspect.py:66-110`), contro D233.
 - `import topo_pdf` dà l'avviso di PyMuPDF "The `fitz` API is deprecated".
 - `contour_minus` rifiuta i bordi che corrono uno sull'altro (`ValueError`):
   da gestire se un caso vero lo chiede (D118).

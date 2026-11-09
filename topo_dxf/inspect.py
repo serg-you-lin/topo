@@ -41,18 +41,18 @@ def inspect_dxf(path: str, *, entities: bool = True, limit: Optional[int] = 40) 
     entities : if True lists every entity with its key attributes
     limit    : maximum number of entities listed (None = all)
     """
-    _header(f"LIVELLO 1 — DXF grezzo\n{path}")
+    _header(f"LEVEL 1 — raw DXF\n{path}")
 
     doc = ezdxf.readfile(path)
     msp = doc.modelspace()
     ents = list(msp)
 
-    print(f"\nversione DXF : {doc.dxfversion}")
-    print(f"$INSUNITS    : {doc.header.get('$INSUNITS', 'n/d')}   "
-          f"$MEASUREMENT : {doc.header.get('$MEASUREMENT', 'n/d')}")
+    print(f"\nDXF version  : {doc.dxfversion}")
+    print(f"$INSUNITS    : {doc.header.get('$INSUNITS', 'n/a')}   "
+          f"$MEASUREMENT : {doc.header.get('$MEASUREMENT', 'n/a')}")
 
     counts = Counter(e.dxftype() for e in ents)
-    print(f"\nentità ({len(ents)} totali):")
+    print(f"\nentities ({len(ents)} in all):")
     for t, n in sorted(counts.items()):
         print(f"  {t:<14} {n}")
 
@@ -66,10 +66,10 @@ def inspect_dxf(path: str, *, entities: bool = True, limit: Optional[int] = 40) 
     if not entities:
         return
 
-    print(f"\ndettaglio entità{' (primi %d)' % limit if limit else ''}:")
+    print(f"\nentity detail{' (first %d)' % limit if limit else ''}:")
     for i, e in enumerate(ents):
         if limit is not None and i >= limit:
-            print(f"  ... e altre {len(ents) - limit}")
+            print(f"  ... and {len(ents) - limit} more")
             break
         print(f"  [{i}] {_describe_dxf_entity(e)}")
 
@@ -92,7 +92,7 @@ def _describe_dxf_entity(e) -> str:
             except Exception:
                 n = "?"
             closed = getattr(e, "is_closed", getattr(e, "closed", "?"))
-            return f"{tag}  vertici={n} chiusa={closed}"
+            return f"{tag}  vertices={n} closed={closed}"
         if t == "SPLINE":
             return f"{tag}  cp={len(e.control_points)} closed={getattr(e, 'closed', '?')}"
         if t in ("TEXT", "MTEXT"):
@@ -103,7 +103,7 @@ def _describe_dxf_entity(e) -> str:
         if t == "INSERT":
             return f"{tag}  block={e.dxf.name!r}"
     except Exception as ex:
-        return f"{tag}  <errore lettura: {ex}>"
+        return f"{tag}  <read error: {ex}>"
     return tag
 
 
