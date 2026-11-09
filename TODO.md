@@ -405,8 +405,8 @@ novembre, ramo `no-join-ends` fuso in `main`.
       `loose`, non è un contorno: `refit_tessellations` fa della catena aperta una spline sola
       e "i due capi dello stesso edge non sono mai un gap" (`compute_gap_fixes`). Già prima di
       D236; 20 su ~750 cerchi a caso (`_debug/2026-11-09_topo_fori-cerchi`).
-      Federico, 9 novembre: i rossi del banco restano rossi, fuori dal cancello 1.0. Nel
-      cancello solo l'avviso `near-copy` (sopra): correggerlo o toglierlo prima della 1.0.
+      Federico, 9 novembre: i rossi del banco restano rossi, fuori dal cancello 1.0; anche
+      l'avviso `near-copy` esce dal cancello e resta com'è (D237).
       Spazzatura tracciata: `tests/data/mixed_pipeline/*.dwl*`
       (file di blocco AutoCAD, di solito portano utente e PC: non aperti, audit pre-1.0).
       1. Fatto (sopra).
@@ -432,6 +432,7 @@ mai rigenerando alla cieca.
 ## Dopo la 1.0 (1.x, additivo — non toccare finché il cancello è aperto)
 
 Difetti trovati il 6 novembre (fatti, nessuna analisi):
+- `near-copy` (D237): l'help scatta anche su spigoli veri (167 coppie a 45-90° nella forza bruta, help giusto in 40). Idea di Federico, per un agente: alzare la soglia solo nello spicchio dei `points` dell'avviso; conta solo quando la lineetta serve a chiudere un esterno.
 - Agganci dei testi persi con D161 (golden di `golden_anchoring/` rigenerati il 7 novembre, Federico li accetta senza giudicarli): testi rimasti senza aggancio anch_02 3, anch_03 1, anch_04 10, anch_05 7, anch_07 1; tipico un richiamo "M6 n°16 fori" che era legato a una figurina 6×3 (inner di `faces()` di prima) e oggi a niente. Da guardare con snapdraw.
 - D229: 18 nomi ancora doppi con contenuti diversi (`SAME_NAME_DIFFERENT_CONTENT` in `tests/package/test_one_copy.py`): `anch_01..08` in `golden_anchoring/` e `golden_outlines/` sono disegni diversi con lo stesso nome; gli altri 10 hanno una copia nella radice letta dai test unitari e una in `golden_faces/` letta dai golden. Per ognuno: quale contenuto resta, o un nome nuovo.
 - Obiettivo dichiarato di D228: `target`/`references` sugli edge della rete, uguali per ogni lettura (oggi `anchor_elements`, sperimentale, non vede le curve aperte). Una forma nuova sola, poi promossa. I golden di aggancio sono fuori dalla suite, in `_archive/golden_anchoring/` (test + `json/`, i DXF restano in `tests/data/golden_anchoring/`): vanno bene come base dei golden futuri.

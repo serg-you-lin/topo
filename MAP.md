@@ -531,3 +531,6 @@ limit: measured, 5° or 1° on top of this changes nothing (help right in 235 / 
 After the gaps close, a connected group's core (free branches set aside) within 0.02 mm of one circle all the way
 round becomes a `CircleSeg`, with free pieces lying on it; radius mid-band, lines measured at their nearest point, so a
 real polygon stays. D60's 0.1 mm side left 0.14 mm sides as lines and broke damaged holes into lines + arcs + splines.
+### D237 — `near-copy` stays as it is for 1.0 (Federico, 9 November).
+heal() reads both lines and changes nothing; only the help can mislead, by calling the experimental merge on a real corner.
+A 1.x fix narrows where it fires; code, message and fields stay.
