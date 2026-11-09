@@ -5,7 +5,7 @@ from dataclasses import field
 from typing import Any, List, Optional, Sequence
 from .curve import ClosedCurve, OpenCurve
 from .cluster import Cluster
-from .detected import DetectedFeatures
+from .overlay import Overlay
 from .text import Text
 
 
@@ -28,7 +28,7 @@ class Result:
         loose     : ogni curva che non è contorno di nessun cluster (MAP.md
                     D137): catene che non chiudono niente, tracce aperte,
                     curve chiuse con un ruolo non strutturale. Cosa sono lo
-                    decide il consumatore, che le sposta in `cluster.detected`
+                    decide il consumatore, che le sposta in `cluster.overlay`
                     con `promote()`. `cluster_ref` dice quale cluster le
                     contiene.
     """
@@ -58,7 +58,7 @@ class Result:
                 cluster: Cluster, name: str, *, item: Optional[Any] = None) -> None:
         """
         Toglie `curves` (una curva o più) da `loose` e mette un solo `item`
-        nella collezione `name` di `cluster.detected`, creandolo se manca
+        nella collezione `name` di `cluster.overlay`, creandolo se manca
         (D137, D172, D173). `item` è l'oggetto che il chiamante ne ha fatto;
         con una curva sola può mancare e allora è la curva stessa.
 
@@ -82,9 +82,9 @@ class Result:
             raise ValueError("promote(): a curve is not in result.loose")
         if not any(c is cluster for c in self.clusters):
             raise ValueError("promote(): the cluster is not in result.clusters")
-        if cluster.detected is None:
-            cluster.detected = DetectedFeatures()
-        cluster.detected.add(name, group[0] if item is None else item)
+        if cluster.overlay is None:
+            cluster.overlay = Overlay()
+        cluster.overlay.add(name, group[0] if item is None else item)
         for k in sorted((at[id(c)] for c in group), reverse=True):
             del self.loose[k]
 

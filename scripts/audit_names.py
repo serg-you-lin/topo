@@ -161,6 +161,10 @@ ALLOWED: frozenset[str] = frozenset({
     "AISI304", "AISI316", "AISI316L",
     # codici flake8 nei commenti `# noqa: F401`
     "F401", "F403", "E501",
+    # codice ruff nei commenti `# noqa: BLE001`
+    "BLE001",
+    # numeri decimali scritti senza la parte intera (0,500001 in LIMITS_IT.md)
+    "500001", "50000001",
     # sigle che topo usa come esempio o nei suoi stessi test
     "P1024", "U0001",
     # nomi generati dal programma dentro un disegno, guardati uno per uno:

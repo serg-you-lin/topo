@@ -427,7 +427,7 @@ class TestMergeCocircularOverlaps(unittest.TestCase):
 class TestWeldUnderMotion(unittest.TestCase):
 
     def test_arco_a_corde_uguali_saldato_uguale_a_ogni_moto(self):
-        # G6e (J0118158): un raccordo scritto a corde da 0.04 fra due lati. Con
+        # G6e (da un disegno vero): un raccordo scritto a corde da 0.04 fra due lati. Con
         # le corde tutte uguali l'ordine di saldatura lo decideva l'ultimo bit,
         # e il tetto di 0.05 ne lasciava un'alternanza diversa a ogni moto.
         # Ora il gruppo si giudica intero: più largo di 0.05, nessuna (D186)

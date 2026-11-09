@@ -4,8 +4,8 @@
 
 `topo` prende un disegno 2D disordinato e ne ricava un modello pulito e senza
 perdite — contorni chiusi ricuciti, la loro gerarchia di contenimento, le
-testi del disegno, e un overlay aperto dove si attaccano le feature
-rilevate — poi lo riscrive in DXF (un documento, o uno per pezzo), JSON, SVG,
+testi del disegno, e un overlay aperto dove un consumatore attacca la
+sua lettura — poi lo riscrive in DXF (un documento, o uno per pezzo), JSON, SVG,
 un view model per una UI, o (sperimentale) una lettura testuale compatta per un
 modello linguistico. Il prodotto è il
 modello; un formato CAD è solo una porta di entrata o di uscita. **topo stesso
@@ -25,7 +25,7 @@ geometria come "un foro da forare" o "una piega" è interpretazione del
 consumatore (`snapbend` per la lamiera, `snapdraw` per la notazione del disegno):
 topo non ha letture di quel tipo dentro, così un consumatore di qualunque
 dominio ottiene la stessa geometria e ci mette sopra il suo vocabolario
-attraverso un overlay aperto (`cluster.detected`).
+attraverso un overlay aperto (`cluster.overlay`).
 
 > Stato: **alpha**. In produzione, ma l'API si muove ancora. Vedi `MAP.md` per le decisioni di design correnti.
 
@@ -194,7 +194,7 @@ topo.load_segments(segs)  ──►  Document   l'adapter è l'unico codice che 
                           │            albero di contenimento outer / inner
                           ▼
   (la lettura di un consumatore)       es. snapbend: tipo di foro, linee di piega, incisioni,
-                          │            attaccate a cluster.detected
+                          │            attaccate a cluster.overlay
                           ▼
    split(result)                 ──►  list[Result]     uno per pezzo, senza formato
    topo_dxf.to_dxf(result, doc)  ──►  ezdxf Drawing    render — un Result intero o un pezzo

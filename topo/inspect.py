@@ -192,8 +192,8 @@ def _sub_part(i: int, cluster, coords: bool) -> None:
         for inn in cluster.inners:
             print(f"    - role={_role(inn.role):<10} area={inn.area:.1f} segmenti={len(inn.segments)}")
 
-    if cluster.detected is not None:
-        for name, items in cluster.detected.items():
+    if cluster.overlay is not None:
+        for name, items in cluster.overlay.items():
             print(f"  {name}: {len(items)}")
             for item in items:
                 fields = item.to_dict() if callable(getattr(item, "to_dict", None)) else {}

@@ -3,7 +3,7 @@
 Deterministic 2D-geometry engine for technical drawings and CAD geometry.
 Input adapters (DXF today; PDF frozen/experimental; raw primitives) → a lossless
 domain model (healed closed contours, containment hierarchy, texts, an open
-overlay for detected features) → renderers (DXF / JSON / XML / SVG / view-model).
+overlay for a consumer's reading) → renderers (DXF / JSON / XML / SVG / view-model).
 
 It is **not** a DXF library, and **not** a sheet-metal tool. Sheet/plate
 manufacturing is where topo came from and still its first consumer, not its
@@ -58,7 +58,7 @@ snapbend's `tests/gen_index.py` — change it in one, copy to the other.
 4. **topo knows no process.** The `hole`/`bending`/`engrave` vocabulary and
    `detect_flat()` live in snapbend (`snapbend.flat`, D88). topo reads
    structure (what closes, what lies inside what, what is connected); meaning
-   (hole, bend, view, dimension) is a consumer's, written to `cluster.detected`
+   (hole, bend, view, dimension) is a consumer's, written to `cluster.overlay`
    and rendered by role (D90).
 5. **snapbend's `detect_flat()` assumes a flat part seen from its face** (cutting
    file / development). Never run it on `outlines()` output: it invents bends in isometrics

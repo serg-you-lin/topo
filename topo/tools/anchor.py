@@ -84,7 +84,7 @@ def pointer_target(result: Result, text: Text, *,
     """
     L'elemento su cui cade la punta (``pointer[0]``) di ``text``: un contorno
     di ``result.clusters`` (``outer`` o ``inners``), un oggetto di una
-    collezione di ``cluster.detected``, o un pezzo chiuso di ``result.loose``
+    collezione di ``cluster.overlay``, o un pezzo chiuso di ``result.loose``
     (D162). L'oggetto stesso, non una sua posizione (D177).
 
     Il bordo più vicino alla punta, se entro ``distance``; altrimenti il più
@@ -146,8 +146,8 @@ def _elements(result: Result) -> Iterator[Tuple[str, Any, Any, bool, bool]]:
         if outer is not None:
             yield f"clusters[{ci}].outer", cluster.outer, outer, True, True
         collections = [("inners", cluster.inners)]
-        if cluster.detected is not None:
-            collections += list(cluster.detected.items())
+        if cluster.overlay is not None:
+            collections += list(cluster.overlay.items())
         for name, items in collections:
             for k, item in enumerate(items):
                 geom = _item_geometry(item)

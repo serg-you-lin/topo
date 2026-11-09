@@ -36,7 +36,7 @@ def to_json(result: Result, *, indent: int = 2,
     Top level: `source_file`, `source_format`, `reading`, `tolerance`,
     `max_gap`, `is_valid`, `warnings`, `errors`, `loose_count`, `text_count`,
     `clusters`. Each cluster: `label`, `area`, `outer_perimeter`,
-    `inner_perimeter`, `inner_count`, `bbox`, `detected` (items per
+    `inner_perimeter`, `inner_count`, `bbox`, `overlay` (items per
     collection). Drawing units, exact on the primitives, no coordinates
     (`topo_dxf.to_dxf` carries the curves).
 

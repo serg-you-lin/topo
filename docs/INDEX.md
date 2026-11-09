@@ -8,7 +8,7 @@ python scripts/gen_index.py
 
 What this is: the lookup table of *what already exists* in the package, down to internal helpers. `docs/API.md` documents the public surface (`topo, topo_dxf, topo_pdf.<name>`) with full cards; this file lists every module-level function and class so nothing gets rewritten because it was not found. Signatures and docstring lines come straight from the source, so they cannot drift.
 
-`84` modules · `543` module-level functions · `65` classes · `16535` lines of code.
+`84` modules · `543` module-level functions · `64` classes · `16521` lines of code.
 
 Sections: [Lookup](#lookup) · [Duplicate names](#duplicate-names) · [Dependency rule](#dependency-rule) · [By module](#by-module) · [Internal dependencies](#internal-dependencies)
 
@@ -153,8 +153,6 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_derivative_points` | func | `topo/core/geometry/integrals.py:229` | Punti di controllo della derivata (grado p − 1, nodi senza il primo e l'ultimo). |
 | `_describe_dxf_entity` | func | `topo_dxf/inspect.py:77` |  |
 | `_describe_segment` | func | `topo/inspect.py:113` |  |
-| `DetectedFeature` | class | `topo/model/detected.py:25` | Contratto minimo di un elemento attaccato a `DetectedFeatures`: la |
-| `DetectedFeatures` | class | `topo/model/detected.py:36` | Contenitore aperto per nome: ogni consumatore scrive sotto il nome che |
 | `Diagnostic` | class | `topo/model/diagnostic.py:26` | A warning that says what topo found, where, why it left it, and how to fix it. |
 | `_dimension_anchor` | func | `topo_dxf/text_extractor.py:129` | Def-point di una DIMENSION. |
 | `_dimension_measurement` | func | `topo_dxf/text_extractor.py:560` |  |
@@ -208,10 +206,10 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `facing_boundaries` | func | `topo/tools/strips.py:54` | Fatto 1: un `Facing` per ogni regione vuota di `cluster`, nell'ordine di `cluster.inners`. |
 | `_fallback_anchor` | func | `topo_dxf/text_extractor.py:137` | Cerca un qualsiasi attributo-punto usabile. |
 | `_farthest` | func | `topo/core/topology/rim.py:123` | La distanza massima da `ring` del tratto di `geom` da `d0` a `d1`, sui |
-| `feature_closed` | func | `topo/model/detected.py:79` | True if a contour of an overlay item is drawn as a closed ring: it is a |
+| `feature_closed` | func | `topo/model/overlay.py:68` | True if a contour of an overlay item is drawn as a closed ring: it is a |
 | `_feature_entries` | func | `topo/io/view_model.py:62` | Un elemento dell'overlay (MAP.md D90) → una voce per contorno: ruolo, |
 | `feature_role` | func | `topo/model/role.py:91` | Il ruolo con cui si disegna un contorno di un elemento dell'overlay (D90): |
-| `_features` | func | `topo/io/view_model.py:93` | `cluster.detected` per nome → lista di voci disegnabili. |
+| `_features` | func | `topo/io/view_model.py:93` | `cluster.overlay` per nome → lista di voci disegnabili. |
 | `_find_duplicates` | func | `topo_dxf/sanitize.py:258` | Restituisce i ref delle entità duplicate (seconda occorrenza in poi). |
 | `find_joining_edges` | func | `topo/core/readings/heal_steps.py:48` | Gli Edge fra `candidate_ids` (di solito i non-contorno) che uniscono due |
 | `find_non_contour_edges` | func | `topo/core/readings/heal_steps.py:31` | id(edge) degli Edge che non chiudono un contorno (catene fra due nodi di |
@@ -238,7 +236,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_generic` | func | `topo/core/geometry/shape.py:219` |  |
 | `GeometryReader` | class | `topo/core/geometry_input.py:46` | Traduce descrizioni geometriche pure (dict) in Edge del dominio topo. |
 | `_get_solver` | func | `topo/core/base/gap_solver.py:180` |  |
-| `__getattr__` | func | `topo/model/__init__.py:57` |  |
+| `__getattr__` | func | `topo/model/__init__.py:56` |  |
 | `golden_max` | func | `topo/core/geometry/measure.py:263` | (x, f(x)) del massimo di `f` unimodale su [a, b], per sezione aurea. |
 | `Graph` | class | `topo/core/topology/graph.py:57` | Grafo topologico interrogabile. |
 | `_grazing` | func | `topo/core/topology/noding.py:689` | (punto di `a`, punto di `b`) più vicini fra due curve che non si |
@@ -397,6 +395,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `OuterHit` | class | `topo/core/readings/outer_scan.py:42` | Un raggio per cui l'Edge è stato l'estremo. |
 | `OutlineReading` | class | `topo/core/readings/outline.py:50` | Cosa outlines() ha deciso su un gruppo, pezzo per pezzo. |
 | `_over` | func | `topo/core/base/normalizer.py:446` | La proiezione di `p` sulla retta di `seg` cade dentro `seg` (a meno di FLOAT_NOISE). |
+| `Overlay` | class | `topo/model/overlay.py:25` | Contenitore aperto per nome: ogni consumatore scrive sotto il nome che |
 | `_p` | func | `topo/inspect.py:41` | Formatta un punto (x, y) con nd decimali. |
 | `_palette_dict` | func | `topo/io/view_model.py:190` | role (stringa) → colore hex, per la legenda di un renderer: i tre ruoli |
 | `_param` | func | `topo/core/geometry/regions.py:67` |  |
@@ -608,7 +607,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `_upgrade_to_r2010` | func | `topo_dxf/loader.py:176` | Converte un documento DXF legacy in R2010. |
 | `validate_document` | func | `topo/rules/validator.py:33` | Check a `Document` before `heal()`, without changing it. |
 | `validate_result` | func | `topo/rules/validator.py:82` | Check the clusters of a `Result` a reading produced. **Mutates** `result`: |
-| `_void_area` | func | `topo/model/cluster.py:114` | Area di un vuoto dell'overlay, esatta sui suoi `segments` (D165). |
+| `_void_area` | func | `topo/model/cluster.py:113` | Area di un vuoto dell'overlay, esatta sui suoi `segments` (D165). |
 | `_warn_non_roundtrip_types` | func | `topo_dxf/loader.py:86` | Avvisa sui tipi di entità che to_dxf() non riscrive (HATCH, IMAGE, …). |
 | `weld_degenerate_linesegs` | func | `topo/core/base/normalizer.py:524` | Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale |
 | `_width_factor` | func | `topo_dxf/text_extractor.py:163` | Stretch orizzontale effettivo del testo (1.0 = nessuno). |
@@ -621,7 +620,7 @@ Every module-level name in the package, alphabetically. **Search here before wri
 | `within_diameter` | func | `topo/core/geometry/measure.py:324` | True se ogni coppia di `points` dista al più `limit`: il diametro |
 | `_within_reach` | func | `topo/core/base/gap_solver.py:376` | Un incontro che sposta un estremo più di `reach` non chiude il gap: due |
 | `_without_free_branches` | func | `topo/core/base/normalizer.py:685` | Il gruppo senza i rami che finiscono in un capo libero (tolti uno alla volta finché ce ne sono). |
-| `_write_attached_features` | func | `topo_dxf/writer.py:257` | Ogni collezione di `cluster.detected` (D70, D90): topo non sa cosa siano. |
+| `_write_attached_features` | func | `topo_dxf/writer.py:257` | Ogni collezione di `cluster.overlay` (D70, D90): topo non sa cosa siano. |
 | `_write_loose` | func | `topo_dxf/writer.py:234` | Materializza `result.loose`, tutte: in un file per parte le ha |
 | `write_native_segments` | func | `topo_dxf/exporter.py:301` | Materializza segmenti aperti come geometria NATIVA, una entità DXF per |
 | `write_open_segments` | func | `topo_dxf/exporter.py:360` | Materializza una lista di segmenti puri come geometria APERTA su msp. |
@@ -671,7 +670,7 @@ Same name defined at module level in different modules. Not automatically a bug 
 
 ### `topo/` (root)
 
-#### `topo/__init__.py` — 135 lines
+#### `topo/__init__.py` — 134 lines
 
 _topo_
 
@@ -1366,7 +1365,7 @@ _io/view_model.py_
 - `_track(segments, tolerance: float) -> list` — L49 — Traccia aperta (lista di segmenti nativi) discretizzata a lista di [x, y].
 - `_contour_entry(contour, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict` — L54
 - `_feature_entries(item, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> list` — L62 — Un elemento dell'overlay (MAP.md D90) → una voce per contorno: ruolo,
-- `_features(cluster, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict` — L93 — `cluster.detected` per nome → lista di voci disegnabili.
+- `_features(cluster, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict` — L93 — `cluster.overlay` per nome → lista di voci disegnabili.
 - `_loose_entry(curve, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict` — L103
 - `_text_entry(text) -> dict` — L113
 - `_bbox_of(clusters) -> Optional[list]` — L123
@@ -1375,19 +1374,19 @@ _io/view_model.py_
 
 ### `topo/model/`
 
-#### `topo/model/__init__.py` — 63 lines
+#### `topo/model/__init__.py` — 62 lines
 
 _topo/model/__init__.py_
 
-- `__getattr__(name)` — L57
+- `__getattr__(name)` — L56
 
-#### `topo/model/cluster.py` — 117 lines
+#### `topo/model/cluster.py` — 116 lines
 
 _model/cluster.py_
 
 - **class** `Cluster` — L15
   - methods: `features`, `overlay_voids`, `bbox`, `area`, `summary`, `to_dict`
-- `_void_area(item) -> float` — L114 — Area di un vuoto dell'overlay, esatta sui suoi `segments` (D165).
+- `_void_area(item) -> float` — L113 — Area di un vuoto dell'overlay, esatta sui suoi `segments` (D165).
 
 #### `topo/model/contour.py` — 67 lines
 
@@ -1405,15 +1404,6 @@ _model/curve.py_
   - methods: `area`, `bbox`, `centroid`, `contains`, `points`
 - **class** `OpenCurve(Curve)` — L95 — Curva aperta: segmenti che non chiudono un giro.
 
-#### `topo/model/detected.py` — 89 lines
-
-_topo/model/detected.py_
-
-- **class** `DetectedFeature(Protocol)` — L25 — Contratto minimo di un elemento attaccato a `DetectedFeatures`: la
-- **class** `DetectedFeatures` — L36 — Contenitore aperto per nome: ogni consumatore scrive sotto il nome che
-  - methods: `attach`, `add`, `get`, `items`, `names`
-- `feature_closed(contour, item) -> bool` — L79 — True if a contour of an overlay item is drawn as a closed ring: it is a
-
 #### `topo/model/diagnostic.py` — 91 lines
 
 _topo/model/diagnostic.py_
@@ -1429,6 +1419,14 @@ _model/document.py_
 
 - **class** `Document` — L39 — Documento di dominio prodotto da load_dxf() / load_svg() / load_pdf().
   - methods: `node_tolerance`
+
+#### `topo/model/overlay.py` — 78 lines
+
+_topo/model/overlay.py_
+
+- **class** `Overlay` — L25 — Contenitore aperto per nome: ogni consumatore scrive sotto il nome che
+  - methods: `attach`, `add`, `get`, `items`, `names`
+- `feature_closed(contour, item) -> bool` — L68 — True if a contour of an overlay item is drawn as a closed ring: it is a
 
 #### `topo/model/result.py` — 111 lines
 
@@ -1713,7 +1711,7 @@ _topo_dxf/writer.py_
 - `_emit_string(msp, note: Text, attribs: dict) -> None` — L179
 - `_emit_rendered(msp, ann, attribs: dict) -> None` — L205 — Ri-materializza l'immagine appiattita (DIMENSION / LEADER di un DXF). I testi in
 - `_write_loose(msp, result: Result, book: '_Layers') -> None` — L234 — Materializza `result.loose`, tutte: in un file per parte le ha
-- `_write_attached_features(msp, cluster: Cluster, book: '_Layers') -> None` — L257 — Ogni collezione di `cluster.detected` (D70, D90): topo non sa cosa siano.
+- `_write_attached_features(msp, cluster: Cluster, book: '_Layers') -> None` — L257 — Ogni collezione di `cluster.overlay` (D70, D90): topo non sa cosa siano.
 - `_remove_excluded_entities(msp, excluded_upper: Set[str]) -> None` — L289
 - `_contour_role(contour, default: ContourRole)` — L295 — Il ruolo di contorno nel grafo: outer/inner se lo porta, `default` se
 - **class** `_Layers` — L302 — I layer di un documento in scrittura (D128): il nome viene dalla scelta
@@ -1809,13 +1807,13 @@ Which `topo, topo_dxf, topo_pdf` modules each module imports — "what works wit
 | `topo/io/shapes.py` | `topo.core.geometry.measure` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.model` |
 | `topo/io/svg.py` | `topo.io.view_model` · `topo.model` |
 | `topo/io/view_model.py` | `topo.core.geometry.measure` · `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.model` · `topo.model.role` |
-| `topo/model/__init__.py` | `topo.core.topology.edge` · `topo.model.cluster` · `topo.model.contour` · `topo.model.curve` · `topo.model.detected` · `topo.model.diagnostic` · `topo.model.document` · `topo.model.result` · `topo.model.role` · `topo.model.role_rule` · `topo.model.style` · `topo.model.text` |
+| `topo/model/__init__.py` | `topo.core.topology.edge` · `topo.model.cluster` · `topo.model.contour` · `topo.model.curve` · `topo.model.diagnostic` · `topo.model.document` · `topo.model.overlay` · `topo.model.result` · `topo.model.role` · `topo.model.role_rule` · `topo.model.style` · `topo.model.text` |
 | `topo/model/cluster.py` | `topo.core.geometry.integrals` · `topo.core.geometry.rings` · `topo.model.contour` |
 | `topo/model/contour.py` | `topo.core.primitives.polygon_builder` · `topo.core.primitives.segments` · `topo.model.curve` |
 | `topo/model/curve.py` | `topo.core.geometry.integrals` · `topo.core.geometry.rings` · `topo.core.primitives.segments` · `topo.model.style` |
-| `topo/model/detected.py` | `topo.core.geometry.rings` · `topo.model.curve` |
 | `topo/model/document.py` | `topo.core.topology.edge` · `topo.model.text` |
-| `topo/model/result.py` | `topo.model.cluster` · `topo.model.curve` · `topo.model.detected` · `topo.model.text` |
+| `topo/model/overlay.py` | `topo.core.geometry.rings` · `topo.model.curve` |
+| `topo/model/result.py` | `topo.model.cluster` · `topo.model.curve` · `topo.model.overlay` · `topo.model.text` |
 | `topo/model/role_rule.py` | `topo.model.role` · `topo.model.style` |
 | `topo/model/style.py` | `topo.model.role` |
 | `topo/model/text.py` | `topo.model.role` |

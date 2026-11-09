@@ -129,7 +129,7 @@ class TestHealerCircleHole(unittest.TestCase):
 
     def test_002_circle_is_an_inner(self):
         self.assertEqual(len(self.result.clusters[0].inners), 1)
-        self.assertEqual(self.result.clusters[0].detected, None)
+        self.assertEqual(self.result.clusters[0].overlay, None)
 
 
 # ---------------------------------------------------------------------------

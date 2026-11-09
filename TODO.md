@@ -329,24 +329,22 @@ novembre, ramo `no-join-ends` fuso in `main`.
       suite senza rossi attesi. Golden dei `_noframe` non fatti (Federico).
 - [ ] **G8** README / README_IT / `description` di pyproject / prima riga di
       CLAUDE.md: motore di geometria 2D, i disegni tecnici sono un caso.
-- [ ] **G9** `docs/API.md` e `docs/ARCHITECTURE.md` in inglese; docstring dei
-      nomi pubblici in inglese, con un controllo nella suite.
-      Con G9, nella stessa passata: i nomi vecchi (`dxf_forge` in
-      `test_splitter.py`, `test_models.py`, `test_loops.py`, `ARCHITECTURE.md:415`).
-      Da decidere con Federico nella stessa passata: `cluster.detected` /
-      `DetectedFeatures` non rilevano niente (è lo strato aperto di un consumatore,
-      D44): nome neutro (es. `overlay`/`Overlay`). `DetectedFeature` (Protocol con
-      `source`/`confidence`) non lo usa nessuno, né topo né snapbend né snapdraw: via.
+- [ ] **G9** `docs/API.md` in inglese; docstring dei nomi pubblici in inglese
+      (61 rosse in `release_check.py`). Fatti: `ARCHITECTURE.md`, `overlay` (D238).
+      Nella stessa passata: i nomi vecchi (`dxf_forge` in
+      `test_splitter.py`, `test_models.py`, `test_loops.py`).
 - [ ] **Pulizia del repo prima della 1.0** (Federico, 8 novembre): TODO.md, MAP.md
       e il resto pieni di log di sessione (misure, cose fatte, riordini) lasciati da
       Claude; restano solo le cose da fare e le decisioni, i log vanno fuori dal repo.
+- [ ] **Licenza** (Federico, 9 novembre): oggi `LICENSE` è "All rights reserved"
+      (anche `pyproject.toml` e i due README): nessuno può usare topo senza un
+      permesso scritto. Prima della 1.0 una licenza scelta da Federico.
 - [ ] **G10** Rewrite della history (`git filter-repo` + `--message-callback`,
       un solo force-push) contro le liste di D76–D78. `audit_names --strict`
-      dà 5 sospetti (2 novembre, dopo l'accorciamento di MAP e TODO): un codice
-      tipo disegno in `tests/engine/base/test_normalizer.py:351`, nei commit non
-      ancora pushati; gli altri (`BLE001`, `SLEP009`) sono falsi positivi
-      probabili. Da descrivere a parole e togliere dai commit prima di
-      qualunque push. Nei commit vecchi restano anche i blocchi-logo definiti
+      verde sui file di oggi (9 novembre). Un codice tipo disegno, scritto
+      come riferimento in un commento di `test_normalizer.py` (G6e), è già
+      su GitHub (in `origin/main` dal 1 novembre) e in 4 commit: oggi è
+      descritto a parole, dalla history lo toglie solo questo rewrite. Nei commit vecchi restano anche i blocchi-logo definiti
       e mai usati di `anch_01…06` (D97), e i 258 file `tests/**/*healed*`
       (uscite di `11_batch_heal.py`, fuori da git dal 7 novembre, sul disco
       restano): fra quelli di `output_polylines/` alcuni nomi sembrano codici pezzo.
@@ -432,6 +430,7 @@ mai rigenerando alla cieca.
 ## Dopo la 1.0 (1.x, additivo — non toccare finché il cancello è aperto)
 
 Difetti trovati il 6 novembre (fatti, nessuna analisi):
+- `faces()` su soli bordi con ruolo non strutturale (rettangolo `role="centerline"`, 9 novembre): `is_valid=False`, 0 cluster, `loose` **vuoto**, mentre il warning `set-aside` dice "set aside, in loose". Tocca la regola 7 di CLAUDE.md: Federico decide se è del cancello.
 - `near-copy` (D237): l'help scatta anche su spigoli veri (167 coppie a 45-90° nella forza bruta, help giusto in 40). Idea di Federico, per un agente: alzare la soglia solo nello spicchio dei `points` dell'avviso; conta solo quando la lineetta serve a chiudere un esterno.
 - Agganci dei testi persi con D161 (golden di `golden_anchoring/` rigenerati il 7 novembre, Federico li accetta senza giudicarli): testi rimasti senza aggancio anch_02 3, anch_03 1, anch_04 10, anch_05 7, anch_07 1; tipico un richiamo "M6 n°16 fori" che era legato a una figurina 6×3 (inner di `faces()` di prima) e oggi a niente. Da guardare con snapdraw.
 - D229: 18 nomi ancora doppi con contenuti diversi (`SAME_NAME_DIFFERENT_CONTENT` in `tests/package/test_one_copy.py`): `anch_01..08` in `golden_anchoring/` e `golden_outlines/` sono disegni diversi con lo stesso nome; gli altri 10 hanno una copia nella radice letta dai test unitari e una in `golden_faces/` letta dai golden. Per ognuno: quale contenuto resta, o un nome nuovo.
@@ -705,8 +704,8 @@ Aperte:
 - Fitting ellisse da punti grezzi (5 gradi di libertà, per smoother):
   rimandato dopo D45.
 - `rotate_result`/`rotate_cluster` non ruotano `Document.annotations` né
-  `cluster.detected`/`custom` (overlay a schema libero, D44): la detection
-  va fatta dopo la rotazione.
+  `cluster.overlay`/`custom` (overlay a schema libero, D44): l'overlay
+  va scritto dopo la rotazione.
 - **PDF da riprendere** (D10): `load_pdf` oggi restituisce `list[Edge]`; deve
   restituire un `Document` come ogni adapter, portando in `topo_pdf/` il
   lavoro fermo nella worktree `forge-pdf-adapter` (branch

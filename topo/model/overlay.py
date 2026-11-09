@@ -1,39 +1,28 @@
 """
-topo/model/detected.py
+topo/model/overlay.py
 -----------------------
-L'overlay aperto di un cluster (MAP.md D44): `Cluster.detected` è un
-`DetectedFeatures`, un contenitore che si scrive per nome. topo non ci scrive
+L'overlay aperto di un cluster (MAP.md D44): `Cluster.overlay` è un
+`Overlay`, un contenitore che si scrive per nome. topo non ci scrive
 niente: lo riempie un consumatore (snapbend: fori, pieghe, incisioni; snapdraw;
-un riconoscitore custom), tutti con lo stesso meccanismo. `cluster.detected is
+un riconoscitore custom), tutti con lo stesso meccanismo. `cluster.overlay is
 None` finché nessuno ci ha scritto.
 
-`DetectedFeature` è il contratto minimo dichiarato per chi vuole tipizzare —
-non imposto a runtime (MAP.md D5: "convenzione, non gerarchia"). I renderer
-leggono di ogni elemento solo `role` e la geometria (`contours`, oppure
+Nessun contratto sugli elementi, nemmeno a runtime (MAP.md D5: "convenzione,
+non gerarchia"). I renderer leggono
+di ogni elemento solo `role` e la geometria (`contours`, oppure
 `segments`; un vuoto lo dichiara con `is_void`) — MAP.md D90.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Protocol, runtime_checkable
+from typing import Any, Dict, Iterable, List
 
 from topo.core.geometry.rings import ring_closes
 
 
-@runtime_checkable
-class DetectedFeature(Protocol):
-    """
-    Contratto minimo di un elemento attaccato a `DetectedFeatures`: la
-    convenzione `source`/`confidence` (MAP.md D5). Un `Protocol`, non un
-    `ABC`: un tipo custom lo soddisfa per forma, senza ereditare nulla.
-    """
-    source: str
-    confidence: float
-
-
 @dataclass
-class DetectedFeatures:
+class Overlay:
     """
     Contenitore aperto per nome: ogni consumatore scrive sotto il nome che
     vuole, con lo stesso metodo.
@@ -61,19 +50,19 @@ class DetectedFeatures:
 
     def __getattr__(self, name: str) -> List[Any]:
         # Scatta solo per attributi assenti: `_store` è un campo vero del
-        # dataclass, mai in loop. `cluster.detected.<nome>` per qualunque nome.
+        # dataclass, mai in loop. `cluster.overlay.<nome>` per qualunque nome.
         store = self.__dict__.get("_store", {})
         try:
             return store[name]
         except KeyError:
             raise AttributeError(
-                f"{name!r} is not attached to this DetectedFeatures "
+                f"{name!r} is not attached to this Overlay "
                 f"(names present: {list(store)})"
             )
 
     def __repr__(self) -> str:
         counts = {k: len(v) for k, v in self._store.items()}
-        return f"DetectedFeatures({counts})"
+        return f"Overlay({counts})"
 
 
 def feature_closed(contour, item) -> bool:

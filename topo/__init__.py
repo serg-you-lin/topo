@@ -49,7 +49,7 @@ from .io.shapes           import to_shapely
 from .model         import (
     Result, Cluster, Contour, Document,
     Text,
-    DetectedFeature, DetectedFeatures,
+    Overlay,
     # un avviso come in Rust: testo + campi, con la soglia che lo corregge (D227)
     Diagnostic,
 )
@@ -122,8 +122,7 @@ __all__ = [
     "Contour",
     "Document",
     "Text",
-    "DetectedFeature",
-    "DetectedFeatures",
+    "Overlay",
     "Diagnostic",
     # Ruoli — aggancio per un consumatore che marca la geometria pre-heal
     "normalize_role",

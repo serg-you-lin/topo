@@ -534,3 +534,5 @@ real polygon stays. D60's 0.1 mm side left 0.14 mm sides as lines and broke dama
 ### D237 — `near-copy` stays as it is for 1.0 (Federico, 9 November).
 heal() reads both lines and changes nothing; only the help can mislead, by calling the experimental merge on a real corner.
 A 1.x fix narrows where it fires; code, message and fields stay.
+### D238 — `cluster.detected` → `cluster.overlay`, `DetectedFeatures` → `Overlay`, JSON key `overlay`; `DetectedFeature` removed (Federico, 9 November).
+topo detects nothing: the layer is where a consumer writes its own reading (D44, D90). Clean break before 1.0 (0.28.0); the Protocol had no user. Consumers adapt in their own sessions.

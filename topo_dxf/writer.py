@@ -62,7 +62,7 @@ def to_dxf(
     default dell'adapter (`topo_dxf/layers.py`):
       - `layers` → `{ruolo: "Nome"}` o `{ruolo: funzione(elemento) -> nome}`:
         con una funzione le entità di un ruolo si dividono su più layer
-        (l'elemento è il Contour, l'elemento di `cluster.detected`, la
+        (l'elemento è il Contour, l'elemento di `cluster.overlay`, la
         curva di `loose` o il Text che si sta scrivendo). Default: `OuterContour`,
         `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo.
       - `role_styles` → `{ruolo: RoleStyle}`: colore, tratto, spessore.
@@ -256,7 +256,7 @@ def _write_loose(msp, result: Result, book: "_Layers") -> None:
 
 def _write_attached_features(msp, cluster: Cluster, book: "_Layers") -> None:
     """
-    Ogni collezione di `cluster.detected` (D70, D90): topo non sa cosa siano.
+    Ogni collezione di `cluster.overlay` (D70, D90): topo non sa cosa siano.
     Di un elemento legge solo `role` e geometria — i suoi `contours`, se li
     ha, altrimenti l'elemento stesso. Un contorno con `polygon` si scrive
     chiuso, uno senza come una entità per primitiva. Il ruolo di un contorno
@@ -265,9 +265,9 @@ def _write_attached_features(msp, cluster: Cluster, book: "_Layers") -> None:
     La scelta del layer riceve l'elemento, non il suo contorno: è l'elemento
     che porta l'informazione (una piega "up" o "down").
     """
-    if cluster.detected is None:
+    if cluster.overlay is None:
         return
-    for _name, items in cluster.detected.items():
+    for _name, items in cluster.overlay.items():
         for item in items:
             role = getattr(item, "role", None)
             contours = getattr(item, "contours", None)

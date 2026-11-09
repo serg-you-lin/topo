@@ -91,12 +91,12 @@ def _feature_entries(item, tolerance: float, role_styles: Mapping[str, RoleStyle
 
 
 def _features(cluster, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict:
-    """`cluster.detected` per nome → lista di voci disegnabili."""
-    if cluster.detected is None:
+    """`cluster.overlay` per nome → lista di voci disegnabili."""
+    if cluster.overlay is None:
         return {}
     return {
         name: [e for item in items for e in _feature_entries(item, tolerance, role_styles)]
-        for name, items in cluster.detected.items()
+        for name, items in cluster.overlay.items()
     }
 
 

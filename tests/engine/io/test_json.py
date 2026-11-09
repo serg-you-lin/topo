@@ -33,7 +33,7 @@ def test_dice_da_dove_arriva_e_come_e_letto():
 def test_fatti_esatti_senza_coordinate_ne_processo():
     cluster = json.loads(topo.to_json(_result()))["clusters"][0]
     assert set(cluster) == {"label", "area", "outer_perimeter", "inner_perimeter",
-                            "inner_count", "bbox", "detected"}
+                            "inner_count", "bbox", "overlay"}
     assert cluster["area"] == pytest.approx(100 * 60 - math.pi * 10 ** 2, abs=1e-9)
     assert cluster["outer_perimeter"] == pytest.approx(320, abs=1e-9)
     assert cluster["inner_perimeter"] == pytest.approx(2 * math.pi * 10, abs=1e-9)

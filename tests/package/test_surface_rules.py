@@ -52,11 +52,11 @@ DATA = {
     'topo.Contour.from_segments': ('segments', 'role'),
     'topo.Document': ('edges',),
     'topo.Text': ('position', 'text'),
-    'topo.DetectedFeatures': ('_store',),
+    'topo.Overlay': ('_store',),
     'topo.Diagnostic': ('code', 'message'),
-    'topo.DetectedFeatures.attach': ('name', 'items'),
-    'topo.DetectedFeatures.add': ('name', 'item'),
-    'topo.DetectedFeatures.get': ('name', 'default'),
+    'topo.Overlay.attach': ('name', 'items'),
+    'topo.Overlay.add': ('name', 'item'),
+    'topo.Overlay.get': ('name', 'default'),
     'topo.normalize_role': ('value',),
     'topo.is_structural_role': ('role',),
     'topo.RoleRule': ('role',),
@@ -146,7 +146,7 @@ DATA = {
 
 # eccezioni dichiarate in D176: un'opzione per posizione per un protocollo noto
 DECLARED_EXCEPTIONS = {
-    ("topo.DetectedFeatures.get", "default"),   # il protocollo di dict.get
+    ("topo.Overlay.get", "default"),   # il protocollo di dict.get
 }
 
 # un parametro con questo nome è un'opzione, sempre: rete di sicurezza per

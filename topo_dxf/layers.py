@@ -47,7 +47,7 @@ DEFAULT_LAYERS: dict[str, str] = {
 }
 
 # Il layer di un ruolo come lo dà il chiamante: un nome, o una funzione
-# dell'elemento scritto (un Contour, un elemento di `cluster.detected`,
+# dell'elemento scritto (un Contour, un elemento di `cluster.overlay`,
 # una curva di `loose`, un Text) che ne ritorna il nome — così le entità
 # di un ruolo possono dividersi su più layer (una piega "up" e una "down").
 LayerChoice = Union[str, Callable[[object], str]]

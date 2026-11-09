@@ -19,25 +19,24 @@ class Cluster:
     label:         str                                     = ""
     source_file:   str                                     = ""
     # Overlay di un consumatore (snapbend, snapdraw, un tool custom), di
-    # norma un `model.detected.DetectedFeatures` (D44, D90). `None` finché
-    # nessuno ci ha scritto: distingue "non
-    # ho ancora fatto detect" da "ho fatto detect e non c'è nessuna
-    # feature", cosa che i vecchi campi fissi (sempre liste vuote) non
-    # permettevano di distinguere. Il solo contratto richiesto, mai imposto
+    # norma un `model.overlay.Overlay` (D44, D90). `None` finché
+    # nessuno ci ha scritto: distingue "nessuno ha ancora letto il cluster"
+    # da "letto e nessun elemento", cosa che i vecchi campi fissi (sempre
+    # liste vuote) non permettevano di distinguere. Il solo contratto richiesto, mai imposto
     # a runtime, è duck-typed: `.get(name, default)` e `.items()`.
-    detected:      Optional[Any]                           = None
+    overlay:       Optional[Any]                           = None
 
     def features(self, name: str) -> list:
         """
-        Collezione `name` attaccata a `self.detected`, o `[]` se `detected` è
+        Collezione `name` attaccata a `self.overlay`, o `[]` se `overlay` è
         `None` o quel nome non è stato scritto — accesso sicuro per un
         consumatore che non vuole gestire `None` a mano. Generico: non ha
         bisogno di sapere quali nomi esistono (`"holes"`, `"flange_view_hint"`,
         qualunque altro).
         """
-        if self.detected is None:
+        if self.overlay is None:
             return []
-        return self.detected.get(name, [])
+        return self.overlay.get(name, [])
 
     @property
     def overlay_voids(self) -> list:
@@ -48,10 +47,10 @@ class Cluster:
         consumatore che toglie un contorno da `inners` per farne un suo
         elemento (un foro di snapbend) non cambia l'area del pezzo.
         """
-        if self.detected is None:
+        if self.overlay is None:
             return []
         return [
-            item for _name, items in self.detected.items() for item in items
+            item for _name, items in self.overlay.items() for item in items
             if getattr(item, "is_void", False) and getattr(item, "segments", None)
         ]
 
@@ -75,7 +74,7 @@ class Cluster:
     def summary(self) -> dict:
         """
         Conteggio grezzo per nome — `{nome}_count: len(items)` per ogni
-        collezione attaccata a `self.detected` (`{}` se `detected is None`).
+        collezione attaccata a `self.overlay` (`{}` se `overlay is None`).
 
         Generico e sempre disponibile, zero import a runtime: funziona
         identico per chi ha fatto solo `heal()` (oggi: sempre `{}`, come
@@ -85,16 +84,16 @@ class Cluster:
         Il conteggio ricco per tipo (fori per tipo, pieghe raggruppate) è del
         consumatore che li ha letti (snapbend `describe_features`, D88).
         """
-        if self.detected is None:
+        if self.overlay is None:
             return {}
-        return {f"{name}_count": len(items) for name, items in self.detected.items()}
+        return {f"{name}_count": len(items) for name, items in self.overlay.items()}
 
     def to_dict(self) -> dict:
         """
         I fatti geometrici della parte, senza coordinate (D230): `label`,
         `area` (D89), perimetri esatti sulle primitive (D165), numero di
         contorni interni, `bbox`, e quanti elementi ha ogni collezione di
-        `detected`. Unità del disegno, nessun arrotondamento.
+        `overlay`. Unità del disegno, nessun arrotondamento.
         """
         outer_perimeter = ring_perimeter(self.outer.segments)
         inner_perimeter = sum(ring_perimeter(i.segments) for i in self.inners)
@@ -106,8 +105,8 @@ class Cluster:
             "inner_perimeter": inner_perimeter,
             "inner_count":     len(self.inners),
             "bbox":            {"minx": minx, "miny": miny, "maxx": maxx, "maxy": maxy},
-            "detected":        {} if self.detected is None
-                               else {name: len(items) for name, items in self.detected.items()},
+            "overlay":        {} if self.overlay is None
+                               else {name: len(items) for name, items in self.overlay.items()},
         }
 
 
