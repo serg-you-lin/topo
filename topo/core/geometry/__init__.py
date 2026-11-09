@@ -1,29 +1,29 @@
 """
 topo/core/geometry/__init__.py
 -------------------------------
-La geometria di topo, un posto solo: `topo.geometry.<nome>` (MAP.md D95).
-Fatti con nomi geometrici — "cerchio", mai "foro": cosa significano lo
-decide il consumatore.
+topo's geometry, in one place: `topo.geometry.<name>` (MAP.md D95).
+Facts with geometric names - "circle", never "hole": what they mean is
+decided by the consumer.
 
-Pubblici (qui sotto):
-    build.py          costruire forme come segmenti: polygon, rectangle, regular_polygon, circle, ellipse, stadium
-    shape.py          forma di un contorno chiuso; cerchi concentrici; archi attorno a un cerchio
-    lines.py          una corda che divide un contorno; file di tratti collineari unite attraverso dei contorni; tratteggio di un segmento
-    regions.py        punto su un contorno (vertice, raccordo, lato); tratto tagliato da una regione; contorno meno regione
-    axis.py           rettangoli coperti da tratti, linee che li attraversano, lati sul bordo di un altro, quota sugli assi;
-                      tratti sugli assi, tratti dentro un riquadro, intervalli uniti
-    measure.py        lunghezza di un segmento e quanta ne sta in un riquadro, angolo di una corda,
-                      tracce aperte (vertici, lunghezza, "è un tratto dritto?")
-    lines.py          anche: tratti raggruppati per retta
+Public (below):
+    build.py          build shapes as segments: polygon, rectangle, regular_polygon, circle, ellipse, stadium
+    shape.py          shape of a closed contour; concentric circles; arcs around a circle
+    lines.py          a chord that splits a contour; runs of collinear strokes joined across contours; hatching of a segment
+    regions.py        point on a contour (vertex, fillet, side); stroke cut by a region; contour minus region
+    axis.py           rectangles covered by strokes, lines that cross them, sides on another's edge, dimension on the axes;
+                      strokes on the axes, strokes inside a box, merged intervals
+    measure.py        length of a segment and how much of it lies in a box, angle of a chord,
+                      open traces (vertices, length, "is it a straight stroke?")
+    lines.py          also: strokes grouped by line
 
-Mattoni (si importano dal sottomodulo, interni):
-    measure.py        arrotondamento dei nodi, "è circolare?" (bounding box: per una misura usa contour_shape)
-    points.py         sequenze di punti: spigoli, doppioni, fit di cerchio, b-spline
-    strips.py         una striscia fra due contorni, distanza fra due contorni, un contorno aperto
-                      dove le strisce lo coprono (D142; i fatti sulla gerarchia in topo.tools.strips)
-    intersections.py  retta/retta, cerchio/retta, cerchio/cerchio
-                      (pubblica: `intersections(a, b)` fra due primitive qualunque)
-    lines.py, axis.py anche: distanza da una retta, collinearità, intervalli, tratti dentro un riquadro
+Building blocks (imported from the submodule, internal):
+    measure.py        rounding of nodes, "is it circular?" (bounding box: for a measure use contour_shape)
+    points.py         point sequences: corners, duplicates, circle fit, b-spline
+    strips.py         a strip between two contours, distance between two contours, an open contour
+                      where the strips cover it (D142; the facts on the hierarchy are in topo.tools.strips)
+    intersections.py  line/line, circle/line, circle/circle
+                      (public: `intersections(a, b)` between any two primitives)
+    lines.py, axis.py also: distance from a line, collinearity, intervals, strokes inside a box
 """
 
 from .build import polygon, rectangle, regular_polygon, circle, ellipse, stadium

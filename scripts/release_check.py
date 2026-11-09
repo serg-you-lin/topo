@@ -149,6 +149,9 @@ def public_docstring_problems() -> list[str]:
     problems: list[str] = []
     for label, module in (("topo", topo), ("topo.geometry", topo.geometry),
                           ("topo_dxf", topo_dxf)):
+        # anche l'intestazione del modulo: è la prima cosa che mostra help()
+        if not module.__doc__ or not_english(module.__doc__):
+            problems.append(f"{label} (modulo): non in inglese")
         for name in module.__all__:
             obj = getattr(module, name)
             # costanti e moduli: la docstring sarebbe quella del tipo
