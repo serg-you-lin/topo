@@ -16,7 +16,7 @@ angoli su una singola parte, senza pagare il costo di un `heal()` ad ogni
 tentativo.
 
 Cosa NON viene ruotato, di proposito, non per svista:
-- `cluster.detected` — overlay a schema libero (D44), topo
+- `cluster.overlay` — overlay a schema libero (D44), topo
   non sa cosa contengono; se hai già fatto `detect_flat()`, quei dati (bending
   line, fori tipizzati, ...) restano nelle coordinate vecchie dopo una
   rotazione. Fai `detect_flat()` DOPO aver ruotato, non prima.
@@ -120,7 +120,7 @@ def rotate_cluster(cluster: Cluster, angle_rad: float, origin: Point = (0.0, 0.0
     CCW) attorno a `origin` — segmenti nativi (`.rotated()`) e poligono
     (`shapely.affinity.rotate`) in un colpo solo, nessun `heal()`.
 
-    `cluster.detected` NON è toccato — vedi il modulo.
+    `cluster.overlay` NON è toccato — vedi il modulo.
     L'albero `depth`/`parent` fra outer e inner è preservato (i nuovi
     `Contour` puntano ai NUOVI oggetti ruotati, non a quelli vecchi).
 
@@ -152,7 +152,7 @@ def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) 
 
     `result.texts` non sono ruotate (vedi il modulo) — se presenti,
     aggiunge un warning invece di lasciarle ferme senza avvisare.
-    `cluster.detected` non è toccato — se presente su qualche cluster, un
+    `cluster.overlay` non è toccato — se presente su qualche cluster, un
     warning ricorda di rifare `detect_flat()` dopo la rotazione.
     """
     new_clusters = [rotate_cluster(c, angle_rad, origin) for c in result.clusters]
@@ -165,9 +165,9 @@ def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) 
     new_warnings = list(result.warnings)
     if result.texts:
         new_warnings.append(_texts_not_rotated("rotate_result", result.texts))
-    if any(c.detected is not None for c in result.clusters):
+    if any(c.overlay is not None for c in result.clusters):
         new_warnings.append(Diagnostic(
-            "not-rotated", "rotate_result(): cluster.detected is not rotated",
+            "not-rotated", "rotate_result(): cluster.overlay is not rotated",
             notes=["topo does not know what a consumer stored there"],
             help="run the consumer's reading again after the rotation"))
 

@@ -3,7 +3,7 @@ tests/engine/readings/test_loose.py
 ------------------------
 `result.loose` (MAP.md D137): ogni curva che non è contorno di nessun
 cluster sa quale cluster la contiene (`cluster_ref`), un consumatore la
-sposta in `cluster.detected` con `result.promote`, `split` la manda alla parte
+sposta in `cluster.overlay` con `result.promote`, `split` la manda alla parte
 del suo `cluster_ref`.
 
 Il disegno: una piastra 200×100 centrata nell'origine con un foro Ø20 in
@@ -81,23 +81,23 @@ class TestPromote(unittest.TestCase):
     def setUp(self):
         self.result = topo.heal(_drawing()).faces()
 
-    def test_sposta_da_loose_a_detected(self):
+    def test_sposta_da_loose_a_overlay(self):
         line = _at(self.result, 0, -50)
         plate = self.result.clusters[0]
         self.result.promote(line, plate, "lines")
         self.assertFalse(any(c is line for c in self.result.loose))
-        self.assertIs(plate.detected.get("lines")[0], line)
+        self.assertIs(plate.overlay.get("lines")[0], line)
 
     def test_il_chiamante_attacca_quello_che_ne_ha_fatto(self):
         line = _at(self.result, 0, -50)
         plate = self.result.clusters[0]
         self.result.promote(line, plate, "axes", item=("asse", line))
-        self.assertEqual(plate.detected.get("axes"), [("asse", line)])
+        self.assertEqual(plate.overlay.get("axes"), [("asse", line)])
 
     def test_anche_una_curva_fuori_da_ogni_cluster(self):
         guide = _at(self.result, 150, 0)
         self.result.promote(guide, self.result.clusters[1], "guides")
-        self.assertIs(self.result.clusters[1].detected.get("guides")[0], guide)
+        self.assertIs(self.result.clusters[1].overlay.get("guides")[0], guide)
 
     def test_due_volte_solleva(self):
         line = _at(self.result, 0, -50)
@@ -105,7 +105,7 @@ class TestPromote(unittest.TestCase):
         self.result.promote(line, plate, "lines")
         with self.assertRaises(ValueError):
             self.result.promote(line, plate, "lines")
-        self.assertEqual(len(plate.detected.get("lines")), 1)
+        self.assertEqual(len(plate.overlay.get("lines")), 1)
 
     def test_cluster_di_un_altro_result_solleva(self):
         other = topo.heal(_drawing()).faces().clusters[0]
@@ -127,26 +127,26 @@ class TestPromoteGroup(unittest.TestCase):
 
     def test_due_curve_un_item(self):
         self.result.promote([self.line, self.guide], self.plate, "pairs", item="coppia")
-        self.assertEqual(self.plate.detected.get("pairs"), ["coppia"])
+        self.assertEqual(self.plate.overlay.get("pairs"), ["coppia"])
         self.assertEqual(len(self.result.loose), self.before - 2)
         self.assertFalse(any(c is self.line or c is self.guide for c in self.result.loose))
 
     def test_una_curva_in_lista_e_la_curva_stessa(self):
         self.result.promote([self.line], self.plate, "lines")
-        self.assertIs(self.plate.detected.get("lines")[0], self.line)
+        self.assertIs(self.plate.overlay.get("lines")[0], self.line)
 
     def test_senza_item_solleva_e_non_tocca(self):
         with self.assertRaises(ValueError):
             self.result.promote([self.line, self.guide], self.plate, "pairs")
         self.assertEqual(len(self.result.loose), self.before)
-        self.assertIsNone(self.plate.detected)
+        self.assertIsNone(self.plate.overlay)
 
     def test_una_curva_assente_non_sposta_le_altre(self):
         self.result.promote(self.guide, self.plate, "guides")
         with self.assertRaises(ValueError):
             self.result.promote([self.line, self.guide], self.plate, "pairs", item="coppia")
         self.assertTrue(any(c is self.line for c in self.result.loose))
-        self.assertEqual(self.plate.detected.get("pairs"), [])
+        self.assertEqual(self.plate.overlay.get("pairs"), [])
 
     def test_doppione_solleva(self):
         with self.assertRaises(ValueError):
@@ -182,7 +182,7 @@ class TestSplit(unittest.TestCase):
         guide = _at(result, 150, 0)
         result.promote(guide, result.clusters[1], "guides")
         plate, small = topo.split(result, min_area=0)
-        self.assertEqual(small.clusters[0].detected.get("guides"), [guide])
+        self.assertEqual(small.clusters[0].overlay.get("guides"), [guide])
         self.assertFalse(any(c.cluster_ref is None for c in plate.loose))
 
 

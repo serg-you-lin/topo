@@ -152,8 +152,8 @@ def _relink(texts: list, cluster: Cluster, loose: list, local_loose: list) -> No
     della parte: i contorni e le feature del cluster sono gli stessi oggetti,
     le curve sciolte sono copie. Il resto non sta nella parte (D177)."""
     own = {id(c): c for c in [cluster.outer, *cluster.inners]}
-    if cluster.detected is not None:
-        own.update((id(item), item) for _, items in cluster.detected.items() for item in items)
+    if cluster.overlay is not None:
+        own.update((id(item), item) for _, items in cluster.overlay.items() for item in items)
     own.update((id(orig), copy_) for orig, copy_ in zip(loose, local_loose))
     for text in texts:
         text.target = own.get(id(text.target)) if text.target is not None else None

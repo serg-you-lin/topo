@@ -1,7 +1,7 @@
 """
 tests/adapters/dxf/test_attached_export.py
 ----------------------------------
-D70: `to_dxf` scrive ogni collezione attaccata a `cluster.detected` da un
+D70: `to_dxf` scrive ogni collezione attaccata a `cluster.overlay` da un
 consumatore (D90: tutte, topo non ne conosce nessuna per nome). Un elemento
 con `role` va sul layer del suo ruolo: i suoi `contours` se ne ha, altrimenti
 i suoi `segments`. Senza ruolo o senza geometria si salta.
@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 
 import topo
 import topo_dxf
-from topo.model import DetectedFeatures
+from topo.model import Overlay
 from topo import to_shapely
 
 
@@ -56,8 +56,8 @@ class TestAttachedExport(unittest.TestCase):
         doc, result = _plate()
         cluster = result.clusters[0]
         single = next(i for i in cluster.inners if abs(to_shapely(i).area - 3.1416 * 16) < 1)
-        cluster.detected = DetectedFeatures()
-        cluster.detected.attach("my_marks", [_Mark(role="my_role", segments=single.segments)])
+        cluster.overlay = Overlay()
+        cluster.overlay.attach("my_marks", [_Mark(role="my_role", segments=single.segments)])
         layers = _layers(topo_dxf.to_dxf(result, doc))
         self.assertEqual(layers.count("my_role"), 1)
 
@@ -66,16 +66,16 @@ class TestAttachedExport(unittest.TestCase):
         cluster = result.clusters[0]
         pair = [i for i in cluster.inners if abs(to_shapely(i).centroid.x - 20) < 1e-6]
         self.assertEqual(len(pair), 2)
-        cluster.detected = DetectedFeatures()
-        cluster.detected.attach("my_marks", [_Composite(role="my_seat", contours=pair)])
+        cluster.overlay = Overlay()
+        cluster.overlay.attach("my_marks", [_Composite(role="my_seat", contours=pair)])
         self.assertEqual(_layers(topo_dxf.to_dxf(result, doc)).count("my_seat"), 2)
 
     def test_senza_ruolo_o_senza_geometria_si_salta(self):
         doc, result = _plate()
         cluster = result.clusters[0]
         before = len(_layers(topo_dxf.to_dxf(result, doc)))
-        cluster.detected = DetectedFeatures()
-        cluster.detected.attach("my_marks", [_Mark(role="", segments=cluster.inners[0].segments),
+        cluster.overlay = Overlay()
+        cluster.overlay.attach("my_marks", [_Mark(role="", segments=cluster.inners[0].segments),
                                              _Mark(role="my_role"), object()])
         self.assertEqual(len(_layers(topo_dxf.to_dxf(result, doc))), before)
 

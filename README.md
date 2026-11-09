@@ -4,7 +4,7 @@
 
 `topo` turns a messy 2D drawing into a clean, lossless model — healed closed
 contours, their containment hierarchy, the drawing's texts, and an open
-overlay where detected features are attached — then renders it to DXF (one
+overlay where a consumer attaches its own reading — then renders it to DXF (one
 document, or one per part), JSON, SVG, a view model for a UI, or (experimental) a compact text reading for
 a language model. The model is the product; a CAD format is
 only a door in or out of it. **topo itself knows no file format**: geometry and
@@ -23,7 +23,7 @@ boundary: the engine knows no material, process or product. Reading geometry as
 "a hole to drill" or "a bend" is the consumer's interpretation (`snapbend` for
 sheet metal, `snapdraw` for drawing notation) — topo has no reading of that
 kind built in, so a consumer in any domain gets the same geometry and puts its
-own vocabulary on top through one open overlay (`cluster.detected`).
+own vocabulary on top through one open overlay (`cluster.overlay`).
 
 > Status: **alpha**. Used in production, but the API still moves. See `MAP.md` for the current design decisions.
 
@@ -189,7 +189,7 @@ topo.load_segments(segs)  ──►  Document   the adapter is the only code tha
                           │            outer / inner containment tree
                           ▼
   (a consumer's reading)               e.g. snapbend: hole type, bend lines, engraving,
-                          │            attached to cluster.detected
+                          │            attached to cluster.overlay
                           ▼
    split(result)                 ──►  list[Result]     one per part, no format
    topo_dxf.to_dxf(result, doc)  ──►  ezdxf Drawing    render — a whole Result or one part

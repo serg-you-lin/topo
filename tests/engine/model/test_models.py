@@ -19,7 +19,7 @@ from topo.model import (
     Result,
     Edge,
 )
-from topo.model import DetectedFeatures
+from topo.model import Overlay
 import topo
 
 from topo.model.role import ContourRole
@@ -159,8 +159,8 @@ class TestForgeCluster(unittest.TestCase):
         """Area netta = outer - un vuoto dell'overlay (is_void, D90)."""
         import math
         outer = self._make_outer()
-        cluster = Cluster(outer=outer, detected=DetectedFeatures())
-        cluster.detected.attach("holes", [_Void(topo.geometry.circle(5.0, center=(50, 50)))])
+        cluster = Cluster(outer=outer, overlay=Overlay())
+        cluster.overlay.attach("holes", [_Void(topo.geometry.circle(5.0, center=(50, 50)))])
         expected = 10000.0 - math.pi * 25.0
         print(f"\n[Cluster with hole] area={cluster.area:.4f} expected≈{expected:.4f}")
         self.assertAlmostEqual(cluster.area, expected, delta=0.01)
@@ -168,8 +168,8 @@ class TestForgeCluster(unittest.TestCase):
     def test_004_to_shapely_with_void(self):
         """to_shapely toglie dal materiale il vuoto dell'overlay."""
         outer = self._make_outer()
-        cluster = Cluster(outer=outer, detected=DetectedFeatures())
-        cluster.detected.attach("holes", [_Void(topo.geometry.circle(5.0, center=(50, 50)))])
+        cluster = Cluster(outer=outer, overlay=Overlay())
+        cluster.overlay.attach("holes", [_Void(topo.geometry.circle(5.0, center=(50, 50)))])
         result_poly = topo.to_shapely(cluster)
         print(f"[Cluster] interiors={len(list(result_poly.interiors))}")
         self.assertEqual(len(list(result_poly.interiors)), 1)
@@ -197,8 +197,8 @@ class TestForgeCluster(unittest.TestCase):
         cluster = Cluster(outer=self._make_outer())
         d = cluster.to_dict()
         self.assertEqual(set(d), {"label", "area", "outer_perimeter", "inner_perimeter",
-                                  "inner_count", "bbox", "detected"})
-        self.assertEqual(d["detected"], {})
+                                  "inner_count", "bbox", "overlay"})
+        self.assertEqual(d["overlay"], {})
 
     def test_009_inners_independent(self):
         """Due Cluster non condividono la stessa lista inners."""

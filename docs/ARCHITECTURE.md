@@ -1,420 +1,420 @@
-# topo — architettura
+# topo — architecture
 
-Questo documento spiega *come è fatto dentro* e *perché*. Per l'uso pratico
-dell'API vedi [`API.md`](API.md).
-
----
-
-## L'idea in una frase
-
-`topo` non è una libreria DXF. È un **motore di ricostruzione topologica**
-che non conosce alcun formato di file: geometria e ruoli, mai layer (MAP.md
-D123). I formati entrano ed escono da adapter, pacchetti fratelli nella stessa
-distribuzione (`topo_dxf`, `topo_pdf`). Prende geometria 2D rumorosa e produce un modello
-geometrico consistente e senza perdite: contorni chiusi, gerarchia di
-contenimento, testi, e un overlay aperto per le feature rilevate. Non
-conosce nessun mestiere: dire cosa significa un contorno o una linea è
-un'interpretazione, e sta nei consumatori (MAP.md D88).
-
-Il DXF è solo il primo formato implementato, e sta fuori da topo: `topo`
-non importa `ezdxf` né un adapter, e si installa senza (`pip install g-topo`;
-`g-topo[dxf]` porta `topo_dxf` con `ezdxf`). Il core non sa cosa sia un arco o
-una spline in quanto entità di CAD — lavora su primitive geometriche pure.
+This document explains *how it is built inside* and *why*. For practical use of
+the API see [`API.md`](API.md).
 
 ---
 
-## Il principio: il prodotto è il modello
+## The idea in one sentence
+
+`topo` is not a DXF library. It is a **topological reconstruction engine**
+that knows no file format: geometry and roles, never layers (MAP.md
+D123). Formats come in and go out through adapters, sibling packages in the same
+distribution (`topo_dxf`, `topo_pdf`). It takes noisy 2D geometry and produces a
+consistent, lossless geometric model: closed contours, containment hierarchy,
+texts, and an open overlay where a consumer writes its own reading. It
+knows no trade: saying what a contour or a line means is an
+interpretation, and it belongs to the consumers (MAP.md D88).
+
+DXF is only the first implemented format, and it lives outside topo: `topo`
+imports neither `ezdxf` nor an adapter, and installs without them (`pip install g-topo`;
+`g-topo[dxf]` brings `topo_dxf` with `ezdxf`). The core does not know what an arc or a
+spline is as a CAD entity — it works on pure geometric primitives.
+
+---
+
+## The principle: the product is the model
 
 ```
                                   ┌──────────────┐
   DXF / DWG ── topo_dxf ─────────►│              ├── topo_dxf ──► DXF (to_dxf)
-  PDF ──────── topo_pdf (sperim.)►│    Result    ├──────────────► JSON (to_json, save_json)
-  geometria ── load_segments ────►│  il modello  ├──────────────► view model (to_view_model)
+  PDF ──────── topo_pdf (exper.) ►│    Result    ├──────────────► JSON (to_json, save_json)
+  geometry ─── load_segments ────►│  the model   ├──────────────► view model (to_view_model)
                                   │              ├──────────────► SVG (to_svg, save_svg)
                                   └──────┬───────┘
-                                         └── split ──► un Result per parte, poi uno qualunque dei render
+                                         └── split ──► one Result per part, then any of the renderers
 ```
 
-Il `Result` è **il prodotto**. Tutti i `to_*` sono renderer del modello.
-`to_dxf` **non rilegge mai il file sorgente** — disegna dal modello. Questo è il
-motivo per cui `to_svg` produce la stessa identica immagine senza una riga di
-codice nuova nel core.
+The `Result` is **the product**. Every `to_*` is a renderer of the model.
+`to_dxf` **never re-reads the source file** — it draws from the model. This is
+why `to_svg` produces the exact same image without a line of
+new code in the core.
 
-Conseguenza pratica: **niente si perde**. Si importa tutto — quote, centerline, spazzatura. 
-Perché `topo` non perda
-niente, il modello è abbastanza ricco da tenere anche ciò che non ha classificato:
+Practical consequence: **nothing is lost**. Everything is imported — dimensions, centerlines, garbage.
+So that `topo` loses
+nothing, the model is rich enough to hold even what it has not classified:
 
-- geometria chiusa ricostruita → parti / contorni interni / feature (se una lettura le aggiunge)
-- ogni curva che non è contorno di nessun cluster → `result.loose`
-  (segmenti puri, formato-indipendenti; `cluster_ref` dice quale cluster la
-  contiene, D137). Cosa sia lo decide un consumatore, che la sposta in
-  `cluster.detected` con `result.promote` (D173)
-- testi → `result.texts` (`Text`, un tipo solo, D138: la stringa, la
-  polilinea che indica, i punti fra cui è stato misurato il numero, e
-  l'immagine disegnata attorno come primitive)
+- reconstructed closed geometry → parts / inner contours / features (if a reading adds them)
+- every curve that is no cluster's contour → `result.loose`
+  (pure segments, format-independent; `cluster_ref` says which cluster
+  contains it, D137). What it is, a consumer decides, and moves it into
+  `cluster.overlay` with `result.promote` (D173)
+- texts → `result.texts` (`Text`, a single type, D138: the string, the
+  polyline it points to, the points between which the number was measured, and
+  the image drawn around it as primitives)
 
-I tipi di entità che `topo` non modella (`HATCH`, `IMAGE`, `TABLE`, `3DFACE`,
-`XLINE`…) restano fuori, ma `load_dxf` emette un warning che li elenca — nessuna
-perdita silenziosa.
+The entity types that `topo` does not model (`HATCH`, `IMAGE`, `TABLE`, `3DFACE`,
+`XLINE`…) stay out, but `load_dxf` emits a warning listing them — no
+silent loss.
 
 ---
 
-## La struttura
+## The structure
 
-Una distribuzione (`g-topo`), tre pacchetti importabili nella radice del repo
+One distribution (`g-topo`), three importable packages at the repo root
 (MAP.md D124, D129):
 
 ```
-topo/             IL MOTORE — nessun formato, nessun ezdxf / PyMuPDF
-topo_dxf/         ADAPTER DXF/DWG                      (conosce ezdxf; extra [dxf])
-│                     consumer di topo: solo nomi pubblici, mai topo.core (D125)
+topo/             THE ENGINE — no format, no ezdxf / PyMuPDF
+topo_dxf/         DXF/DWG ADAPTER                      (knows ezdxf; extra [dxf])
+│                     a consumer of topo: public names only, never topo.core (D125)
 ├── loader.py         load_dxf, document_from_msp       (+ adapter, parser, sanitize,
 │                                                         text_extractor, mtext)
-├── writer.py         to_dxf                            (+ exporter: segmenti → entità)
-├── layers.py         i layer di default, SKIP_LAYERS, role_to_dxf_layer
-├── xdata.py          write/read_metadata_to_dxf
+├── writer.py         to_dxf                            (+ exporter: segments → entities)
+├── layers.py         the default layers, SKIP_LAYERS, role_to_dxf_layer
 └── inspect.py        inspect_dxf, inspect_file
-topo_pdf/         ADAPTER PDF — sperimentale, congelato (conosce fitz; extra [pdf])
+topo_pdf/         PDF ADAPTER — experimental, frozen (knows fitz; extra [pdf])
 ```
 
-Dentro `topo/`:
+Inside `topo/`:
 
 ```
 topo/
-├── core/         MOTORE geometrico puro               (zero formato)
-│   ├── primitives/   LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg + discretizzazione;
-│   │                 fitting.py: primitive da una sequenza di punti (simplify_points)
-│   ├── topology/     edge.py, grafo dei nodi, ricerca loop;
-│   │                 noding.py (rete piana), outer_face.py (faccia esterna)
-│   ├── base/         LE BASI DI OGNI LETTURA (D187, D188): prepare.py (nodi decisi
-│   │                 una volta, normalizzazione), cleanup.py, normalizer.py,
-│   │                 gap_solver.py, hierarchy.py — heal, le letture e ogni ricetta
-│   │                 di un chiamante partono da qui
-│   ├── readings/     LE LETTURE: network.py (la riparazione e `Network`),
+├── core/         pure geometric ENGINE                (zero format)
+│   ├── primitives/   LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg + discretization;
+│   │                 fitting.py: primitives from a sequence of points (simplify_points)
+│   ├── topology/     edge.py, node graph, loop search;
+│   │                 noding.py (planar network), outer_face.py (outer face)
+│   ├── base/         THE FOUNDATIONS OF EVERY READING (D187, D188): prepare.py (nodes decided
+│   │                 once, normalization), cleanup.py, normalizer.py,
+│   │                 gap_solver.py, hierarchy.py — heal, the readings and every caller
+│   │                 recipe start from here
+│   ├── readings/     THE READINGS: network.py (the repair and `Network`),
 │   │                 heal.py (`heal()`), faces.py (`faces()`), outline.py
-│   │                 (`outlines()`) e i passi propri (heal_steps.py,
-│   │                 touching.py, outer_scan.py) — ogni lettura sceglie solo
-│   │                 come cerca il contorno
-│   ├── geometry/     LA GEOMETRIA, `topo.geometry` (D95): fatti con nomi geometrici
-│   │                 — shape (forma, cerchi concentrici, archi attorno), lines
-│   │                 (corde, file collineari), axis (rettangoli coperti) — e i
-│   │                 mattoni measure / points / intersections
-│   ├── geometry_input.py load_geometry / load_segments — geometria pura, non un
-│   │                 formato: un ingresso di topo, non un adapter (D123, D125)
+│   │                 (`outlines()`) and their own steps (heal_steps.py,
+│   │                 touching.py, outer_scan.py) — each reading chooses only
+│   │                 how it looks for the contour
+│   ├── geometry/     THE GEOMETRY, `topo.geometry` (D95): facts with geometric names
+│   │                 — shape (shape, concentric circles, arcs around), lines
+│   │                 (chords, collinear rows), axis (covered rectangles) — and the
+│   │                 building blocks measure / points / intersections
+│   ├── geometry_input.py load_geometry / load_segments — pure geometry, not a
+│   │                 format: an input of topo, not an adapter (D123, D125)
 │
-├── model/        IL DOMINIO topo                     (dataclass pure, nessun tipo shapely — D166)
+├── model/        THE topo DOMAIN                     (pure dataclasses, no shapely types — D166)
 │   ├── document.py   Document
-│   ├── result.py     Result — `promote()` sposta curve da `loose` a
-│   │                 `cluster.detected`, mai in due posti (D137, D173)
-│   ├── cluster.py    Cluster — il contenitore, `detected` è l'overlay
-│   │                 di un consumatore (vocabolario aperto per nome — D44)
-│   ├── detected.py   DetectedFeatures — il contenitore dell'overlay (D44, D90)
+│   ├── result.py     Result — `promote()` moves curves from `loose` to
+│   │                 `cluster.overlay`, never in two places (D137, D173)
+│   ├── cluster.py    Cluster — the container, `overlay` is a consumer's
+│   │                 overlay (vocabulary open by name — D44)
+│   ├── overlay.py    Overlay — the overlay container (D44, D90)
 │   ├── curve.py      Curve → ClosedCurve / OpenCurve
 │   ├── contour.py
-│   ├── text.py       Text — i testi della sorgente (D138)
-│   └── role.py       ContourRole = solo UNKNOWN/OUTER/INNER — il minimo
-│                      che il motore usa. Nessun ruolo di un consumatore qui
+│   ├── text.py       Text — the source's texts (D138)
+│   ├── diagnostic.py Diagnostic — a warning: what, where, why, how to fix
+│   ├── style.py      EdgeStyle — what the source says about a curve's look
+│   ├── role_rule.py  RoleRule — source facts → role
+│   └── role.py       ContourRole = only UNKNOWN/OUTER/INNER — the minimum
+│                      the engine uses. No consumer role here
 │                      (D47, "roles out of core")
 │
-├── tools/        STADI opzionali su un Document/Result (il caller sceglie quali e in che ordine)
-│   ├── anchor.py         anchor_texts()         — àncora i testi ai cluster (anchor_elements sperimentale, D228)
-│   ├── non_contour.py    non_contour_candidates() — stesso criterio non-contorno
-│   │                     di heal() (D49), esposto per decidere `edge.role`
-│   │                     PRIMA di heal() (D55) — lavora su Document
-│   ├── rotate.py         rotate_*() (sperimentale, D46)
-│   ├── split.py          split() — un Result per parte, senza formato (D129)
+├── tools/        optional STAGES on a Document/Result (the caller chooses which and in what order)
+│   ├── anchor.py         anchor_texts()         — anchors texts to clusters (anchor_elements experimental, D228)
+│   ├── non_contour.py    non_contour_candidates() — the same non-contour criterion
+│   │                     as heal() (D49), exposed to decide `edge.role`
+│   │                     BEFORE heal() (D55) — works on Document
+│   ├── rotate.py         rotate_*() (experimental, D46)
+│   ├── split.py          split() — one Result per part, no format (D129)
 │   └── strips.py         facing_boundaries(), link(), unconnected_regions(), open_boundaries() (D134, D142)
 │
-├── io/           RENDERER del modello senza dipendenze di formato
-│   ├── svg.py        to_svg(), save_svg()  (fuori dalla 1.0 stabile, D133)
-│   ├── view_model.py to_view_model()  (fuori dalla 1.0 stabile, D133)
-│   └── exporter.py   to_json / save_json (solo geometria, D230)
+├── io/           RENDERERS of the model with no format dependencies
+│   ├── svg.py        to_svg(), save_svg()  (outside the stable 1.0, D133)
+│   ├── view_model.py to_view_model()  (outside the stable 1.0, D133)
+│   └── exporter.py   to_json / save_json (geometry only, D230)
 │
-├── rules/        REGOLE di dominio                     (validazione)
-├── inspect.py    ispezione: inspect_document, inspect_result (il livello del
-│                 file è dell'adapter: topo_dxf.inspect_dxf)
-└── experimental.py  tutto ciò che si usa senza promessa di stabilità: passi di
-                  heal/faces/outlines, viewer, rotate_*, simplify_points,
-                  strisce (D175 C, D176)
+├── rules/        domain RULES                          (validation)
+├── inspect.py    inspection: inspect_document, inspect_result (the file
+│                 level belongs to the adapter: topo_dxf.inspect_dxf)
+└── experimental.py  everything used with no promise of stability: heal/faces/outlines
+                  steps, viewer, rotate_*, simplify_points,
+                  strips (D175 C, D176)
 ```
 
-`pipeline/` non esiste più (MAP.md D22): metteva insieme tre cose diverse —
-`heal` (ora in `core/`), gli stadi opzionali (`tools/`) e i renderer
-(`to_dxf`, poi in `io/` e oggi in `topo_dxf`; `split`, oggi in `tools/`). D22 diceva anche
-che `heal` è "l'atto unico del motore": non è più vero (D58) — `heal()` ripara il
-disegno una volta (D202) e restituisce una `Network`; le due letture,
-`faces()` e `outlines()`, compongono gli stessi ingredienti del core in modo
-diverso e riempiono lo stesso modello. Il prodotto è il modello, non una delle
-due letture.
+`pipeline/` no longer exists (MAP.md D22): it put together three different things —
+`heal` (now in `core/`), the optional stages (`tools/`) and the renderers
+(`to_dxf`, later in `io/` and today in `topo_dxf`; `split`, today in `tools/`). D22 also said
+that `heal` is "the engine's single act": that is no longer true (D58) — `heal()` repairs the
+drawing once (D202) and returns a `Network`; the two readings,
+`faces()` and `outlines()`, compose the same core ingredients in different
+ways and fill the same model. The product is the model, not one of the
+two readings.
 
-**Regola di dipendenza** (controllata da `scripts/gen_index.py --check`,
+**Dependency rule** (checked by `scripts/gen_index.py --check`,
 in `pyproject.toml`):
 
-- `topo` non importa mai `ezdxf`, `fitz`/`pymupdf`, `topo_dxf`, `topo_pdf`:
-  non sa che gli adapter esistono (D123, D129). Un test lo prova anche a
-  runtime: `import topo`, `heal`, `split` in un processo dove ezdxf e PyMuPDF
-  non si possono importare.
-- un adapter non importa `topo.core`/`tools`/`io`/`rules`, né l'altro
-  adapter: solo i nomi pubblici (`topo`, `topo.model`, `topo.primitives`,
-  D125). Quello che un adapter si trova a dover prendere da dentro è un nome
-  pubblico che manca.
-- dentro `topo`, `core` e `model` non importano mai `tools` né `io` (D44).
-  Quando `model/` deve comunque annotare un tipo che vive in `tools/` (es.
-  `Cluster.detected`), lo fa solo sotto `TYPE_CHECKING` — zero import a
-  runtime, `from __future__ import annotations` rende l'annotazione una
-  stringa pigra.
+- `topo` never imports `ezdxf`, `fitz`/`pymupdf`, `topo_dxf`, `topo_pdf`:
+  it does not know the adapters exist (D123, D129). A test also proves it at
+  runtime: `import topo`, `heal`, `split` in a process where ezdxf and PyMuPDF
+  cannot be imported.
+- an adapter does not import `topo.core`/`tools`/`io`/`rules`, nor the other
+  adapter: only the public names (`topo`, `topo.model`, `topo.primitives`,
+  D125). Whatever an adapter finds it needs to take from inside is a missing
+  public name.
+- inside `topo`, `core` and `model` never import `tools` or `io` (D44).
+  Should `model/` ever need to annotate a type that lives in `tools/`, it does
+  so only under `TYPE_CHECKING` — zero imports at runtime,
+  `from __future__ import annotations` turns the annotation into a lazy string.
 
-Il core non sa da dove viene la geometria. Spostare un adapter in un repo suo,
-un giorno, è spostare una cartella: il confine è già pulito.
+The core does not know where the geometry comes from. Moving an adapter to a repo of its own,
+one day, is moving a folder: the boundary is already clean.
 
 ---
 
-## Il flusso, passo per passo
+## The flow, step by step
 
 ### 1. `topo_dxf.load_dxf` → `Document`
 
-L'adapter DXF, unico codice che legge `ezdxf`; un `Document` può venire anche
-da `topo.load_segments`/`load_geometry` (geometria in mano, nessun formato).
-In ordine:
+The DXF adapter, the only code that reads `ezdxf`; a `Document` can also come
+from `topo.load_segments`/`load_geometry` (geometry in hand, no format).
+In order:
 
-1. se `.dwg` → conversione via ODA File Converter
+1. if `.dwg` → conversion via ODA File Converter
 2. `readfile`
-3. `audit` (i testi vengono estratti **prima**: l'auditor di ezdxf
-   cancella le quote che referenziano un blocco geometria mancante)
-4. upgrade a R2010 se il file è legacy (R12/R13/R14)
-5. explode degli `INSERT` (default `True` — un blocco non esploso fa sparire la
-   sua geometria)
-6. sanitize: normalizzazione OCS, appiattimento Z ≠ 0, deduplica
-7. traduzione: ogni entità → uno o più `Edge`; ogni testo/quota → un
-   `Text`. I layer che il writer usa per `loose` e testi
-   (`SKIP_LAYERS`) si saltano, così un file già passato da topo si rilegge
-   pulito (D129)
+3. `audit` (texts are extracted **before**: the ezdxf auditor
+   deletes dimensions that reference a missing geometry block)
+4. upgrade to R2010 if the file is legacy (R12/R13/R14)
+5. explode of `INSERT`s (default `True` — an unexploded block makes its
+   geometry disappear)
+6. sanitize: OCS normalization, flattening of Z ≠ 0, deduplication
+7. translation: each entity → one or more `Edge`s; each text/dimension → one
+   `Text`. The layers the writer uses for `loose` and texts
+   (`SKIP_LAYERS`) are skipped, so a file that already went through topo is read back
+   clean (D129)
 
-Dopo questa funzione l'oggetto `ezdxf` sorgente **sparisce**. Tutto il resto
-lavora sul `Document`.
+After this function the source `ezdxf` object **disappears**. Everything else
+works on the `Document`.
 
-### 2. `heal` → `Network`, `faces()` → `Result` (topologia)
+### 2. `heal` → `Network`, `faces()` → `Result` (topology)
 
-Il passo difficile. Lavora su `doc.edges`, zero `ezdxf`. Due tempi: `heal()`
-ripara e dà una `Network` (passi 0–1); `faces()` la legge (passi 2–6). Ogni
-passo è una funzione (D62), esposta in `topo.experimental` (D176); i warning
-della riparazione stanno sulla rete. Un consumatore (snapdraw) compone gli
-stessi passi come gli serve.
+The hard step. It works on `doc.edges`, zero `ezdxf`. Two phases: `heal()`
+repairs and gives a `Network` (steps 0–1); `faces()` reads it (steps 2–6). Every
+step is a function (D62), exposed in `topo.experimental` (D176); the repair
+warnings live on the network. A consumer (snapdraw) composes the
+same steps as it needs.
 
-La riparazione è **una sola per ogni lettura** (`readings/network.py`, D202):
-due numeri, `tolerance` per i nodi e `max_gap` per i gap (default `tolerance`),
-e `Network` li porta insieme a `source_file` e `label` (D204). Le basi sono
-**le stesse per ogni lettura** (`core/base/`, D187, D189): `faces()`,
-`outlines()` e qualunque ricetta passano dalle stesse funzioni, con le stesse
-regole; una lettura sceglie solo come cerca il contorno. Il solo punto in cui
-le due letture leggono diversamente lo stesso fatto è un parametro con un nome:
-`split_at_crossings(cut_crossings=...)`, perché un incrocio fra due curve che
-proseguono è un disegno rotto o un segno per `faces()` (D132) e un contatto per
-`outlines()` (D101): la rete tiene gli incroci come dato (`crossings`), il
-taglio lo fa la lettura che lo chiede.
+The repair is **one for every reading** (`readings/network.py`, D202):
+two numbers, `tolerance` for nodes and `max_gap` for gaps (default `tolerance`),
+and `Network` carries them together with `source_file` and `label` (D204). The foundations are
+**the same for every reading** (`core/base/`, D187, D189): `faces()`,
+`outlines()` and any recipe go through the same functions, with the same
+rules; a reading chooses only how it looks for the contour. The only point where
+the two readings read the same fact differently is a named parameter:
+`split_at_crossings(cut_crossings=...)`, because a crossing between two curves that
+continue is a broken drawing or a mark for `faces()` (D132) and a contact for
+`outlines()` (D101): the network keeps the crossings as data (`crossings`), the
+cut is made by the reading that asks for it.
 
-0. **prepara** (`prepare`): ruoli non strutturali da parte (`split_labeled`, D30: il punto d'aggancio per un
-   consumatore che marca la geometria prima di `heal`, e
-   `topo.non_contour_candidates(doc)` espone il criterio del passo 3), poi i
-   nodi decisi una volta: dai punti reali dei segmenti, gli estremi entro
-   `GRAPH_EPSILON` sono un nodo solo, per vicinanza, mai per cella di griglia
+0. **prepare** (`prepare`): non-structural roles set aside (`split_labeled`, D30: the hook point for a
+   consumer that marks the geometry before `heal`, and
+   `topo.non_contour_candidates(doc)` exposes the step 3 criterion), then the
+   nodes decided once: from the real points of the segments, endpoints within
+   `GRAPH_EPSILON` are a single node, by proximity, never by grid cell
    (D180, D187)
-1. **normalizza** (`normalize`): curve scritte a punti rifittate in primitive
-   (D60), rette e archi tracciati a spezzoni fusi (D50, D52, D184), `LineSeg`
-   sotto 0.05 mm saldati (D56, D186), archi quasi completi chiusi in cerchio
-   (gap entro `tolerance` e al più 2° mancanti, D112), poi i gap: ogni estremo
-   libero si chiude sul punto più vicino della rete entro `tolerance` — un altro
-   estremo (incontro o segmento, ogni estremo al più un gap, D112) o il punto
-   dove la sua curva, proseguita, incontra un altro edge; mai con un ponte di
-   traverso; a pari merito nessuno (D185, D189). Ogni confronto con una
-   tolleranza la comprende a meno del rumore (`reach`, D183)
-2. **rete piana** (`split_at_crossings`): ogni contatto deciso una volta sulle
-   curve vere (D180); per `faces()` tagliano i contatti dove un capo tocca
-   qualcosa, non gli incroci
-3. **non-contorno** (`non_contour_pieces`): le catene attraverso nodi di grado
-   2 (`Graph.chains`, D131) fra due nodi di branching distinti, che il bordo
-   della faccia esterna della loro componente non percorre una volta sola (una
-   corda, un ponte), non sono contorno (D111) — escono, intere. `faces()` non
-   decide cosa siano: lo decide un consumatore, a modo suo
-4. **facce** (`face_loops`): il cammino della faccia esterna preso su ogni lato
-   di ogni edge dà tutte le facce; quelle limitate, divise in giri semplici
-   (due asole che si toccano in un punto sono due giri), sono i contorni.
-   Nessuna scelta dipende dall'ordine degli edge o dal riferimento (D189). Un
-   lato tagliato da un contatto torna il segmento del file se il giro ne
-   percorre tutti i pezzi (`NodedEdges.whole`, D143)
-5. **giro → curva** (`structural_loops`, `loops_to_curves`): un giro con un
-   edge di ruolo non strutturale non è contorno; un giro senza area (o un
-   micro-cerchio) non prende niente, e i suoi edge vanno in `loose` interi
-   (D151); `loose` ha una regola sola, `loose_curves` (D162)
-6. **gerarchia** (`build_hierarchy`): quale giro contiene quale → albero di
-   contenimento `outer` / `inner`. `faces()` si ferma qui: **non** dà un
-   significato ai contorni interni (D15) — ogni giro contenuto è un `Contour`
+1. **normalize** (`normalize`): curves written as points refitted into primitives
+   (D60), lines and arcs drawn in pieces merged (D50, D52, D184), `LineSeg`
+   under 0.05 mm welded (D56, D186), nearly complete arcs closed into a circle
+   (gap within `tolerance` and at most 2° missing, D112), then the gaps: every
+   free endpoint closes on the nearest point of the network within `tolerance` — another
+   endpoint (meeting or segment, each endpoint at most one gap, D112) or the point
+   where its curve, extended, meets another edge; never with a cross
+   bridge; on a tie, none (D185, D189). Every comparison with a
+   tolerance includes it up to noise (`reach`, D183)
+2. **planar network** (`split_at_crossings`): every contact decided once on the
+   true curves (D180); for `faces()` the contacts where an end touches
+   something cut, not the crossings
+3. **non-contour** (`non_contour_pieces`): the chains through degree-2 nodes
+   (`Graph.chains`, D131) between two distinct branching nodes, which the boundary
+   of the outer face of their component does not walk exactly once (a
+   chord, a bridge), are not contour (D111) — they leave, whole. `faces()` does not
+   decide what they are: a consumer decides, in its own way
+4. **faces** (`face_loops`): the outer-face walk taken on each side
+   of each edge gives all the faces; the bounded ones, split into simple loops
+   (two lobes touching at a point are two loops), are the contours.
+   No choice depends on edge order or on the reference (D189). A
+   side cut by a contact returns the file's segment if the loop
+   walks all its pieces (`NodedEdges.whole`, D143)
+5. **loop → curve** (`structural_loops`, `loops_to_curves`): a loop with an
+   edge of non-structural role is not a contour; a loop with no area (or a
+   micro-circle) takes nothing, and its edges go whole into `loose`
+   (D151); `loose` has a single rule, `loose_curves` (D162)
+6. **hierarchy** (`build_hierarchy`): which loop contains which → containment
+   tree `outer` / `inner`. `faces()` stops here: it gives **no**
+   meaning to the inner contours (D15) — every contained loop is a `Contour`
    in `cluster.inners`.
 
-Se non si forma **nessun** contorno esterno chiuso, il risultato è dichiarato
-**non valido** (`is_valid = False`) — come il modelspace vuoto. `topo_dxf.to_dxf` e
-`to_svg` lo disegnano lo stesso (tutto in `loose`) per farti vedere cosa ha capito
-topo; rifiutarlo è scelta del chiamante che consegna a una macchina
+If **no** closed outer contour forms, the result is declared
+**invalid** (`is_valid = False`) — like an empty modelspace. `topo_dxf.to_dxf` and
+`to_svg` draw it all the same (everything in `loose`) to let you see what
+topo understood; refusing it is the choice of a caller that delivers to a machine
 (`allow_invalid=False`, D83).
 
-`validate_result` viene chiamata automaticamente alla fine di `faces()`.
+`validate_result` is called automatically at the end of `faces()`.
 
-### 2b. `outlines()` → `Result` (lettura per contorni)
+### 2b. `outlines()` → `Result` (reading by outlines)
 
-L'alternativa a `faces()` per un disegno di **viste** (più viste su un foglio,
-isometriche, 3D proiettato). `faces()` cerca il pezzo dall'interno, per
-connettività: su una vista proiettata più spigoli quasi coincidenti convergono
-sugli stessi nodi e non c'è nessun segnale locale per scegliere quale prosegue
-come contorno. `outlines()` parte da un fatto globale, cosa sta fuori. La
-rete è quella di `heal()`:
+The alternative to `faces()` for a drawing of **views** (several views on a sheet,
+isometrics, projected 3D). `faces()` looks for the part from the inside, by
+connectivity: on a projected view several nearly coincident edges converge
+on the same nodes and there is no local signal to choose which one continues
+as the contour. `outlines()` starts from a global fact, what lies outside. The
+network is that of `heal()`:
 
-1. **da parte** gli `Edge` con ruolo deciso e non strutturale, già fatto da
-   `heal()` (D30): è così che un consumatore toglie cornice, cartiglio, cerchi
-   di ingrandimento; vanno in `loose` col loro ruolo (D203)
-2. **gruppi**: gli edge che si toccano entro `max_gap` (`touching_groups`):
-   nessuna nozione di chiusura, quindi nessuna ambiguità di grafo. Nessuna
-   distanza fra le viste: quella dipendeva da come è impaginato il disegno,
-   che topo non conosce (D99)
-3. i nodi, le catene tassellate rifittate e i gap fino a `max_gap` (senza mai
-   spostare un estremo più di così) sono già quelli della rete: `outlines()`
-   non ripara più per conto suo (D202)
-4. **rete piana** di ogni gruppo (`split_at_crossings`, D180): ogni contatto, deciso una
-   volta per coppia sulle curve vere, diventa un nodo condiviso da tutti gli
-   edge che tocca
-5. **faccia esterna** (`outer_face`): si parte dal punto più a sinistra della
-   geometria, a ogni nodo si gira il meno possibile in senso antiorario; un
-   edge percorso andata e ritorno è una sporgenza (asse, segno)
-6. **interno**: nessun `inner` (D161), tutto il resto in `loose` col
-   `cluster_ref` del cluster che lo contiene o che tocca. Un gruppo il cui
-   contorno sta dentro quello di un altro non è un cluster: va in `loose`
+1. **set aside** the `Edge`s with a decided, non-structural role, already done by
+   `heal()` (D30): this is how a consumer removes frame, title block, magnification
+   circles; they go into `loose` with their role (D203)
+2. **groups**: the edges that touch within `max_gap` (`touching_groups`):
+   no notion of closure, hence no graph ambiguity. No distance
+   between views: that depended on how the drawing is laid out,
+   which topo does not know (D99)
+3. the nodes, the refitted tessellated chains and the gaps up to `max_gap` (never
+   moving an endpoint more than that) are already those of the network: `outlines()`
+   no longer repairs on its own (D202)
+4. **planar network** of each group (`split_at_crossings`, D180): every contact, decided once
+   per pair on the true curves, becomes a node shared by all the
+   edges it touches
+5. **outer face** (`outer_face`): start from the leftmost point of the
+   geometry, at each node turn as little as possible counterclockwise; an
+   edge walked back and forth is a protrusion (axis, mark)
+6. **interior**: no `inner` (D161), everything else in `loose` with the
+   `cluster_ref` of the cluster that contains it or that it touches. A group whose
+   contour lies inside another's is not a cluster: it goes in `loose`
 
-Stesso contratto di `faces()`: un `Result`, un `Cluster` per contorno, e
-`split` e i renderer non sanno quale lettura l'ha prodotto. Cosa sia
-un contorno (vista, pezzo, cornice) lo decide chi chiama (D21).
+Same contract as `faces()`: a `Result`, a `Cluster` per contour, and
+`split` and the renderers do not know which reading produced it. What a
+contour is (view, part, frame) is decided by the caller (D21).
 
-### 3. la lettura di un consumatore (fuori da topo)
+### 3. a consumer's reading (outside topo)
 
-Cosa significa un contorno o una curva è la lettura di un consumatore
-(MAP.md D88): la fa sopra il `Result` e la attacca a `cluster.detected` (D44) — non a campi fissi del cluster. topo non conosce
-nessun nome dell'overlay: `cluster.features(name)` legge una collezione per
-nome, `[]` se `detected` è `None` o quel nome non è stato scritto. I renderer
-disegnano ogni elemento dal suo `role` e dalla sua geometria (D90), e l'area
-netta toglie gli elementi che si dichiarano vuoti del pezzo (`is_void`).
+What a contour or a curve means is a consumer's reading
+(MAP.md D88): it makes it on top of the `Result` and attaches it to `cluster.overlay` (D44) — not to fixed cluster fields. topo knows
+no name in the overlay: `cluster.features(name)` reads a collection by
+name, `[]` if `overlay` is `None` or that name was not written. The renderers
+draw each element from its `role` and its geometry (D90), and the
+net area removes the elements that declare themselves voids of the part (`is_void`).
 
-### 4. un Result per parte — `split`
+### 4. one Result per part — `split`
 
-`topo.split(result)` sceglie le parti sul modello (`min_area`, `namer`) e dà
-un `Result` per parte, con le curve sciolte e i testi che le
-appartengono: una curva va al cluster del suo `cluster_ref`, un testo
-alla parte che lo contiene; se nessuna, alla più vicina fra tutte — niente
-duplicato, niente perso (D124, D129). Nessun formato: ogni renderer prende un
-`Result`, quindi una parte va in DXF, SVG o testo allo stesso modo.
+`topo.split(result)` chooses the parts on the model (`min_area`, `namer`) and gives
+one `Result` per part, with the loose curves and the texts that
+belong to it: a curve goes to the cluster of its `cluster_ref`, a text
+to the part that contains it; if none, to the nearest among all — no
+duplicate, nothing lost (D124, D129). No format: every renderer takes a
+`Result`, so a part goes to DXF, SVG or text in the same way.
 
 ### 5. render — `topo_dxf.to_dxf`
 
-Costruisce un documento `ezdxf` **nuovo** (mai il sorgente) e ci scrive i
-segmenti puri del modello, ognuno sul layer che il chiamante sceglie per il
-suo ruolo, o su quello di default dell'adapter (vedi la tabella nel README e
-`API.md` §9). Regole di fedeltà:
+It builds a **new** `ezdxf` document (never the source) and writes into it the pure
+segments of the model, each on the layer the caller chooses for its
+role, or on the adapter's default (see the table in the README and
+`API.md` §9). Fidelity rules:
 
-- **le spline** si riemettono come `SPLINE` native, ricostruite da control points
-  / knots / weights / degree (D135) — **mai discretizzate a polilinea**
-- **l'overlay**: un contorno chiuso (una `ClosedCurve`, un vuoto `is_void`,
-  segmenti che chiudono un giro — `model.feature_closed`) si scrive chiuso, gli altri come N
-  entità native (`LINE`/`ARC`/`SPLINE`/`CIRCLE`), **mai come `LWPOLYLINE`**
-  (D90) — così esce una curva aperta attaccata da un consumatore
-- **`loose`** si scrive sempre, sul layer del ruolo di ogni curva (`Trash`
-  per `unknown`)
-- **i testi** si riscrivono tutti, quelli del `Result` che riceve (con la
-  loro immagine `rendered` se ce l'hanno): in un file per parte, quelli che
-  `split` ha dato alla parte
+- **splines** are re-emitted as native `SPLINE`s, rebuilt from control points
+  / knots / weights / degree (D135) — **never discretized to a polyline**
+- **the overlay**: a closed contour (a `ClosedCurve`, an `is_void` void,
+  segments that close a loop — `model.feature_closed`) is written closed, the others as N
+  native entities (`LINE`/`ARC`/`SPLINE`/`CIRCLE`), **never as `LWPOLYLINE`**
+  (D90) — so an open curve attached by a consumer comes out
+- **`loose`** is always written, on the layer of each curve's role (`Trash`
+  for `unknown`)
+- **texts** are all rewritten, those of the `Result` it receives (with
+  their `rendered` image if they have one): in a per-part file, those
+  `split` gave to the part
 
-### 6. export JSON
+### 6. JSON export
 
-`to_json` / `save_json` scrivono `Result.to_dict()`: da dove arriva la
-geometria (`source_format`), come è stata letta (`reading`, `tolerance`,
-`max_gap`), gli avvisi, e per ogni parte i fatti esatti sulle primitive (area,
-perimetri, bbox, conteggi di `detected`). Niente coordinate, niente di un
-processo (D230, D231): materiale, spessore o un codice pezzo li aggiunge il
-consumatore con `extra(cluster)`, che non può sostituire un campo di topo.
+`to_json` / `save_json` write `Result.to_dict()`: where the
+geometry comes from (`source_format`), how it was read (`reading`, `tolerance`,
+`max_gap`), the warnings, and for each part the exact facts on the primitives (area,
+perimeters, bbox, counts of `overlay`). No coordinates, nothing of a
+process (D230, D231): material, thickness or a part code are added by the
+consumer with `extra(cluster)`, which cannot replace a topo field.
 
 ---
 
-## Due concetti che tornano ovunque
+## Two concepts that recur everywhere
 
-### La tolleranza
+### The tolerance
 
-`tolerance` (default 0.05, i golden usano 0.5) è il gap più largo che topo può
-chiudere. **Non** arrotonda i nodi: un endpoint è il suo punto vero, senza
-griglia (MAP.md D216); due capi diventano lo stesso nodo per distanza. Serve in due modi:
+`tolerance` (default 0.05, the goldens use 0.5) is the widest gap topo can
+close. It does **not** round nodes: an endpoint is its true point, no
+grid (MAP.md D216); two ends become the same node by distance. It serves in two ways:
 
-1. **chiusura gap**: un estremo libero si chiude entro `tolerance` su un
-   altro estremo o dove la sua curva, proseguita, incontra la rete (D189)
-2. **nodo per contatto** (`split_at_crossings`, D101): un estremo che giace
-   entro `tolerance` sulla curva di un altro edge è un nodo — non solo
-   estremo-su-estremo, anche estremo-su-curva (un vero contatto a T), format-
-   agnostico, indipendente da come il file è stato disegnato. E due tagli
-   entro `tolerance` l'uno dall'altro sono lo stesso nodo, non due: una retta
-   quasi tangente a un arco incrocia in due radici matematicamente distinte
-   ma vicinissime (una quasi-tangenza è numericamente instabile: una
-   perturbazione minima dei dati di origine sposta parecchio il punto
-   d'incrocio quando l'angolo è piccolo). Trattarle come due nodi lascia uno
-   sliver fra loro che può spaccare in due una faccia che doveva restare una
-   sola (MAP.md D100, la causa isolata e risolta alla radice da D101).
-   Con D180 il contatto si decide una volta sola per coppia e dà un nodo
-   condiviso: l'identità di nodo (T, due estremi, tangenza mancata) è entro
-   `GRAPH_EPSILON`, come già faceva il grafo; `tolerance` fonde solo gli
-   incontri di una stessa coppia, perché su tutta la rete percola (D101).
+1. **gap closing**: a free endpoint closes within `tolerance` on another
+   endpoint or where its curve, extended, meets the network (D189)
+2. **node by contact** (`split_at_crossings`, D101): an endpoint that lies
+   within `tolerance` on another edge's curve is a node — not only
+   endpoint-on-endpoint, also endpoint-on-curve (a true T contact), format-
+   agnostic, independent of how the file was drawn. And two cuts
+   within `tolerance` of each other are the same node, not two: a line
+   nearly tangent to an arc crosses in two mathematically distinct but very close
+   roots (a near-tangency is numerically unstable: a
+   minimal perturbation of the source data moves the crossing point a lot
+   when the angle is small). Treating them as two nodes leaves a
+   sliver between them that can split in two a face that was meant to stay
+   one (MAP.md D100, the cause isolated and fixed at the root by D101).
+   With D180 the contact is decided once per pair and gives one
+   shared node: node identity (T, two endpoints, missed tangency) is within
+   `GRAPH_EPSILON`, as the graph already did; `tolerance` merges only the
+   meetings of one same pair, because over the whole network it percolates (D101).
 
-Un gap 4× la tolleranza **non** viene chiuso — è una scelta, non un bug: se il
-file ha buchi grossi, o sono voluti o l'unità di misura è sbagliata. Workaround:
-alza `tolerance`.
+A gap 4× the tolerance is **not** closed — it is a choice, not a bug: if the
+file has big holes, either they are intended or the unit of measure is wrong. Workaround:
+raise `tolerance`.
 
-### Il doppio binario delle feature (role_rules / inferenza)
+### The double track of features (role_rules / inference)
 
-Ogni feature di un consumatore è raggiungibile per **due strade** (la
-seconda la fa il consumatore, D88):
+Every feature of a consumer is reachable by **two paths** (the
+second is the consumer's, D88):
 
-- **`role_rules`**: il chiamante dice "le linee del gruppo sorgente `A` hanno
-  ruolo `a`", o "le tratteggiate con `constr` nel nome hanno ruolo `b`". Il ruolo è
-  assegnato al load, è **autoritativo**, a valle non si rimette in discussione
-  (`source="labeled"`, `confidence=1.0`). Il vocabolario dei ruoli è aperto —
-  passa per `normalize_role` e non è un errore che topo (cioè il motore)
-  non lo conosca. Cosa succede in `heal` dipende da `is_structural=...`
-  (D47): senza, qualunque ruolo di un consumatore resta fuori dal grafo; con
-  il predicato del consumatore, i ruoli che lui dichiara strutturali restano
-  DENTRO il grafo (chiudono contorni del pezzo), gli altri restano fuori.
-  L'output lo scrive su un layer DXF col nome dello slug (non
-  `Trash` — non è spazzatura), geometria intatta (D27, D30, D31, D47).
-  Una regola combina segnali neutri — nome del gruppo sorgente, tratteggio,
-  colore — tutti veri insieme; le regole sono in ordine e vince la prima
-  (D63). topo dà il meccanismo, il contenuto lo scrive il chiamante: nessun
-  vocabolario di nomi vive in topo. Il nome resta nell'adapter, l'`Edge`
-  riceve solo il ruolo. Tratteggio e colore sono quelli **effettivi**: un'entità
-  `ByLayer` eredita lo stile dal layer che la contiene, e `DxfAdapter` lo
-  risolve prima di consegnare un `EdgeStyle`, che non conosce parole di un
-  formato (D126): tratto come segni con segno, colore in RGB. "Tratteggiata" vuol dire che il pattern ha
-  almeno un vuoto — un fatto del pattern, non del nome del linetype.
-- **inferenza geometrica**: il consumatore riconosce la feature dalla forma
+- **`role_rules`**: the caller says "the lines of source group `A` have
+  role `a`", or "the dashed ones with `constr` in the name have role `b`". The role is
+  assigned at load, is **authoritative**, and is not questioned downstream
+  (`source="labeled"`, `confidence=1.0`). The vocabulary of roles is open —
+  it goes through `normalize_role` and it is not an error that topo (that is, the engine)
+  does not know it. What happens in `heal` depends on `is_structural=...`
+  (D47): without it, any consumer role stays out of the graph; with
+  the consumer's predicate, the roles it declares structural stay
+  INSIDE the graph (they close the part's contours), the others stay out.
+  The output writes it on a DXF layer named after the slug (not
+  `Trash` — it is not garbage), geometry intact (D27, D30, D31, D47).
+  A rule combines neutral signals — source group name, dashing,
+  color — all true together; rules are ordered and the first wins
+  (D63). topo gives the mechanism, the content is written by the caller: no
+  vocabulary of names lives in topo. The name stays in the adapter, the `Edge`
+  receives only the role. Dashing and color are the **effective** ones: a
+  `ByLayer` entity inherits the style from the layer that contains it, and `DxfAdapter`
+  resolves it before handing over an `EdgeStyle`, which knows no words of a
+  format (D126): stroke as signed marks, color in RGB. "Dashed" means the pattern has
+  at least one gap — a fact of the pattern, not of the linetype's name.
+- **geometric inference**: the consumer recognizes the feature by its shape
   (`source="geometric"`, `confidence < 1.0`).
 
 ---
 
-## Cosa NON è (ancora) pulito
+## What is NOT (yet) clean
 
-Onestà sullo stato — dettagli e motivazioni sono in `MAP.md` (sezione
-"Closed decisions"), non ripetuti qui:
+Honesty about the state — details and reasons are in `MAP.md` (section
+"Closed decisions"), not repeated here:
 
-- **`topo_pdf.load_pdf`** ritorna `list[Edge]` invece di un `Document` → non
-  si aggancia a `heal()`. Congelato (MAP.md D10); il lavoro fermo nella
-  cartella sorella `forge-pdf-adapter` si riprende qui (TODO, punto 0.7).
-- **Il DWG** passa da ODA File Converter, un eseguibile esterno: `topo_dxf`
-  lo chiama via l'addon `odafc` di `ezdxf`.
-- **`faces()` con solo edge etichettati** (tutti con ruolo non strutturale):
-  errore "Nessuna geometria chiusa trovata dopo healing." e `loose` **vuota** — gli
-  etichettati non ci arrivano, a differenza di ogni altro caso invalido.
-  Comportamento di sempre, conservato tale e quale nella fase B (D62).
+- **`topo_pdf.load_pdf`** returns `list[Edge]` instead of a `Document` → it does not
+  hook into `heal()`. Frozen (MAP.md D10); the work parked in the
+  `forge-pdf-adapter` worktree is resumed here (TODO, "PDF da riprendere").
+- **DWG** goes through ODA File Converter, an external executable: `topo_dxf`
+  calls it via `ezdxf`'s `odafc` addon.
+- **`faces()` with only labeled edges** (all with a non-structural role):
+  no error, an invalid `Result` with no cluster and an **empty** `loose`,
+  although the `set-aside` warning says the edges went to `loose` (TODO).
 
-Tutta la storia dei refactor già chiusi (bridge/shape eliminato, dispatcher
-entità→primitiva unificato, `Edge` spostato da `adapters/` a
-`core/topology/`, ecc.) è nel log decisioni — vedi `MAP.md`.
+The whole history of the refactors already closed (bridge/shape removed, entity→primitive
+dispatcher unified, `Edge` moved from `adapters/` to
+`core/topology/`, etc.) is in the decision log — see `MAP.md`.

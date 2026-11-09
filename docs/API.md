@@ -198,7 +198,7 @@ non importano `topo.core`/`tools`/`io`/`rules` (D129). Quello che gli serve:
 
 Per riscrivere in un formato: `topo.primitives.segment_endpoints(segment)` dà i
 due estremi di un segmento, `topo.model.feature_role(contour, item_role)` il
-ruolo con cui si disegna un contorno di un elemento rilevato,
+ruolo con cui si disegna un contorno di un elemento dell'overlay,
 `topo.model.role_style(role, *, role_styles=None)` come si disegna: la palette di
 topo con sopra la mappa del chiamante (D128). Un exporter non sceglie colori,
 traduce quello che `role_style` gli dà nella codifica del suo formato.
@@ -930,7 +930,7 @@ vanno alla più vicina al suo contorno esterno fra **tutte** le parti (anche
 quelle scartate da `min_area`). Niente viene duplicato, niente perso: ogni
 elemento è copiato con `cluster_ref` riferito alla parte (`0` se il suo
 cluster la contiene, `None` altrimenti). Una curva promossa (`Result.promote`) sta
-già in `cluster.detected` e viaggia col suo cluster. Gli altri campi
+già in `cluster.overlay` e viaggia col suo cluster. Gli altri campi
 (sorgente, avvisi) sono copiati. Ogni writer prende un `Result`, quindi una
 parte va in DXF, SVG o testo allo stesso modo.
 
@@ -1045,7 +1045,7 @@ topo.experimental.pointer_target(result: Result, text: Text, *,
 
 L'elemento su cui cade la punta (`pointer[0]`) di `text`: l'oggetto stesso —
 un contorno di `result.clusters` (`outer`, `inners`), un oggetto di una
-collezione di `cluster.detected`, o un pezzo chiuso di `result.loose` (D162).
+collezione di `cluster.overlay`, o un pezzo chiuso di `result.loose` (D162).
 Non una sua posizione nel risultato (D177): resta giusto se dopo un consumer
 riordina le collezioni o promuove una curva (`Result.promote`).
 
@@ -1104,7 +1104,7 @@ sostituzione. Struttura:
       "label": "P-1", "area": 12345.67,
       "outer_perimeter": 480.0, "inner_perimeter": 60.0, "inner_count": 1,
       "bbox": {"minx": 0, "miny": 0, "maxx": 200, "maxy": 100},
-      "detected": {"holes": 3}
+      "overlay": {"holes": 3}
     }
   ]
 }
@@ -1229,7 +1229,7 @@ Il JSON di topo è solo geometria. Non esistono più:
 | `save_xml`, `to_json(schema=)`, `topo/rules/metadata_schema.py` | `to_json`; rinominare i campi o scrivere XML è del consumatore |
 | `to_json(extra_metadata=)` | `to_json(extra=)` |
 | `inject(result, data_injector=)` | `anchor_texts(result)`, poi i testi con `text.cluster_ref == i` passati alla funzione del consumatore |
-| `Cluster.custom` | `cluster.detected` (l'overlay, D44), o le strutture del consumatore |
+| `Cluster.custom` | `cluster.overlay` (l'overlay, D44), o le strutture del consumatore |
 | `experimental.to_nester_input` | `to_view_model`, o le primitive di `cluster.outer.segments` |
 | `topo_dxf.write_metadata_to_dxf` / `read_metadata_from_dxf` | nessuno: gli XDATA davano un DXF sbagliato |
 
@@ -1253,7 +1253,7 @@ grafo dei nodi (nodi totali, loop degeneri, nodi di branching, estremi liberi).
 topo.inspect_result(result, *, coords=False) -> None
 ```
 **Livello 3** — un `Result`: validità, warning/errori, e per ogni parte
-outer/inner, le collezioni di `cluster.detected` (quello che un consumatore ha
+outer/inner, le collezioni di `cluster.overlay` (quello che un consumatore ha
 attaccato), custom, più `loose` e testi. "Cosa ha prodotto topo."
 
 ---
@@ -1277,8 +1277,8 @@ garanzie. Gli adapter sono pacchetti a parte (§9, §10):
   uniforme né affine generica: un arco diventerebbe un'ellisse (D170).
 - **`topo.model`** — i tipi qui sotto (`Document`, `Result`, `Cluster`,
   `Contour`), le curve (`Curve`, `ClosedCurve`, `OpenCurve`), `Edge` (un
-  segmento con ruolo e stile), `EdgeStyle`, i testi, le feature
-  rilevate e i ruoli: `ContourRole`, `role_str`, `normalize_role`,
+  segmento con ruolo e stile), `EdgeStyle`, i testi, l'overlay
+  e i ruoli: `ContourRole`, `role_str`, `normalize_role`,
   `is_structural_role`. I quattro più usati stanno anche in `topo.<Nome>`.
 - **`topo.experimental`** — quello che si usa senza promessa di stabilità (D175 C, D176): i passi di `heal()` e i mattoni di `outlines()` (§3), il viewer (§4), `rotate_*`, `simplify_points`.
 
@@ -1350,7 +1350,7 @@ Prodotto da `Network.faces()` o `Network.outlines()`, arricchito da un consumato
 | `clusters` | `list[Cluster]` | un elemento per contorno esterno chiuso |
 | `is_valid` | `bool` | **controllalo prima di `split` o di scrivere (`topo_dxf.to_dxf`)** |
 | `warnings` / `errors` | `list[str]` | diagnostica |
-| `loose` | `list[OpenCurve \| ClosedCurve]` | ogni curva che non è contorno di nessun cluster: catene che non chiudono niente, tracce aperte, curve chiuse con un ruolo non strutturale (D137). `curve.cluster_ref` = indice del cluster il cui contorno esterno la contiene tutta, bordo e buchi compresi (una linea da lato a lato, una croce dentro un foro); `None` altrimenti. Con `outlines()` anche il cluster che la curva tocca (D99). Un consumatore la sposta in `cluster.detected` con `result.promote` |
+| `loose` | `list[OpenCurve \| ClosedCurve]` | ogni curva che non è contorno di nessun cluster: catene che non chiudono niente, tracce aperte, curve chiuse con un ruolo non strutturale (D137). `curve.cluster_ref` = indice del cluster il cui contorno esterno la contiene tutta, bordo e buchi compresi (una linea da lato a lato, una croce dentro un foro); `None` altrimenti. Con `outlines()` anche il cluster che la curva tocca (D99). Un consumatore la sposta in `cluster.overlay` con `result.promote` |
 | `texts` | `list[Text]` | copiati dalla `Network` (dal `Document`) |
 | `cluster_count` | property | `len(clusters)` |
 
@@ -1362,14 +1362,14 @@ Metodo `to_dict()` → dizionario JSON-ready (usato internamente dagli export).
 result.promote(
     curves,                           # un elemento di result.loose, o più d'uno
     cluster: Cluster,                 # un elemento di result.clusters
-    name: str,                        # la collezione di cluster.detected
+    name: str,                        # la collezione di cluster.overlay
     *, item=None,                     # cosa attaccare: la curva stessa se None
 ) -> None
 ```
 
 **Curve sciolte diventano parte di un cluster** (D137, D172, D173). Toglie `curves`
 (una curva, o una sequenza) da `result.loose` e mette **un solo** `item`
-nella collezione `name` di `cluster.detected`, creandolo se manca. `item` è
+nella collezione `name` di `cluster.overlay`, creandolo se manca. `item` è
 quello che il chiamante ha fatto delle curve (un suo oggetto con `role` e
 geometria, D90); con una curva sola può mancare, e allora è la curva stessa.
 Più curve lette come una cosa sola — un foro e la sua sede — sono un item.
@@ -1399,19 +1399,18 @@ result.promote([hole, seat], view, "features", item=my_counterbore)
 | `outer` | `Contour` | profilo esterno (ha `segments`, `role`, `area`, `bbox`) |
 | `inners` | `list[Contour]` | contorni chiusi dentro l'outer, senza lettura (un cerchio non è un foro, D15) |
 | `label` | `str` | etichetta, base del nome file |
-| `detected` | `Optional[DetectedFeatures]` | overlay di un consumatore — `None` finché nessuno ci ha scritto (D44, D90) |
-| `features(name)` | metodo | collezione `name` da `detected` — `[]` se `detected` è `None` o `name` non è stato scritto |
-| `summary` | property | conteggio **grezzo**, sempre disponibile: `{nome}_count: len(items)` per ogni collezione in `detected` — `{}` se `detected` è `None` |
+| `overlay` | `Optional[Overlay]` | overlay di un consumatore — `None` finché nessuno ci ha scritto (D44, D90) |
+| `features(name)` | metodo | collezione `name` da `overlay` — `[]` se `overlay` è `None` o `name` non è stato scritto |
+| `summary` | property | conteggio **grezzo**, sempre disponibile: `{nome}_count: len(items)` per ogni collezione in `overlay` — `{}` se `overlay` è `None` |
 | `overlay_voids` | property | gli elementi dell'overlay con `is_void = True` e i `segments` di un giro chiuso: vuoti del pezzo letti da un consumatore (D90) |
 | `area` | property | outer − vuoti dell'overlay − inner a depth dispari + inner a depth pari (D89, D90) |
 | `bbox` | property | `(minx, miny, maxx, maxy)` |
-| `to_dict()` | metodo | i fatti che scrive `to_json`: `label`, `area`, perimetri, `inner_count`, `bbox`, `detected` (D230) |
+| `to_dict()` | metodo | i fatti che scrive `to_json`: `label`, `area`, perimetri, `inner_count`, `bbox`, `overlay` (D230) |
 
-Un consumatore attacca la sua detection così (`topo.DetectedFeatures`):
-`cluster.detected = cluster.detected or DetectedFeatures();
-cluster.detected.attach("flange_view_hint", [...])`, poi la legge con
-`cluster.features("flange_view_hint")`. Nessun nome è privilegiato (D44) — `DetectedFeature` (`typing.Protocol`, `source`/`confidence`)
-è il contratto minimo, non imposto a runtime.
+Un consumatore attacca la sua detection così (`topo.Overlay`):
+`cluster.overlay = cluster.overlay or Overlay();
+cluster.overlay.attach("flange_view_hint", [...])`, poi la legge con
+`cluster.features("flange_view_hint")`. Nessun nome è privilegiato (D44) e nessun contratto sugli elementi, nemmeno a runtime.
 
 ### `Contour`
 
@@ -1695,7 +1694,7 @@ entità dalla sorgente: `source_doc` serve solo a riportare gli header
 | `exclude_types` | set di `dxftype` da togliere dal documento (es. `{"TEXT"}`). |
 | `include_loose` | `True` (default): le curve di `result.loose` vanno sul layer del loro ruolo (`Trash` per `unknown`). Chi apre il file deve poter vedere ogni entità del disegno di partenza. |
 | `allow_invalid` | `True` (default): un `result` non valido viene scritto lo stesso (`loose` e testi), come fa `to_svg`. `False` → `ValueError`: per il chiamante che consegna il file a una macchina (D83). |
-| `layers` | dove va ogni ruolo: `{ruolo: "Nome"}`, o `{ruolo: funzione(elemento) -> nome}` per dividere le entità di un ruolo su più layer guardando l'elemento scritto (il `Contour`, l'elemento di `cluster.detected`, la curva di `loose` o il `Text`). Un ruolo che non nomini resta al default dell'adapter: `OuterContour`, `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo (D31, D128). |
+| `layers` | dove va ogni ruolo: `{ruolo: "Nome"}`, o `{ruolo: funzione(elemento) -> nome}` per dividere le entità di un ruolo su più layer guardando l'elemento scritto (il `Contour`, l'elemento di `cluster.overlay`, la curva di `loose` o il `Text`). Un ruolo che non nomini resta al default dell'adapter: `OuterContour`, `InnerContour`, `Trash` per `unknown`, lo slug per ogni altro ruolo (D31, D128). |
 | `role_styles` | come si disegna ogni ruolo: `{ruolo: RoleStyle}` (vedi sotto). Agisce sul layer — tutto si scrive BYLAYER — e su un layer di più ruoli vince il primo scritto. Un ruolo con uno stile ha il suo layer anche senza entità. Sotto c'è sempre la palette di topo (`DEFAULT_ROLE_STYLES`): la mappa aggiunge i ruoli del chiamante e cambia solo i campi che dà. |
 | `text_layer` | il layer dei testi **senza ruolo** (default `"Annotation"`). Un testo con un ruolo va sul layer del suo ruolo, come un edge (D127, D128). Nessun testo viene mai scartato. |
 
@@ -1713,7 +1712,7 @@ topo_dxf.to_dxf(result, doc,
 topo_dxf.to_dxf(result, doc, layers={"bending": lambda bend: "BendUp" if is_up(bend) else "BendDown"})   # is_up: del chiamante
 ```
 
-**L'overlay** (D70, D90): scrive ogni collezione di `cluster.detected`,
+**L'overlay** (D70, D90): scrive ogni collezione di `cluster.overlay`,
 senza conoscerne nessuna per nome. Di un elemento legge solo `role` e
 geometria: `item.contours` se c'è (ognuno con `segments`/`styles` ed
 eventualmente un suo `role`), altrimenti l'elemento stesso. Un contorno si

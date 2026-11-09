@@ -2,7 +2,7 @@
 topo/model/__init__.py
 ----------------------
 I tipi del modello, pubblici (MAP.md D120): documento, risultato, cluster,
-contorni, curve, testi, stili, feature rilevate, ruoli, regole di ruolo
+contorni, curve, testi, stili, overlay, ruoli, regole di ruolo
 e `Edge` — quello che serve a un adapter per costruire un `Document` (D125).
 Si scrive `topo.model.<Nome>`; i quattro più usati (`Document`, `Result`,
 `Cluster`, `Contour`) stanno anche in `topo.<Nome>`.
@@ -16,7 +16,7 @@ from .cluster import Cluster
 from .result import Result
 from .curve import Curve, ClosedCurve, OpenCurve
 from .style import EdgeStyle, RoleStyle, DEFAULT_ROLE_STYLES, CONSUMER_ROLE_STYLE, role_style
-from .detected import DetectedFeature, DetectedFeatures, feature_closed
+from .overlay import Overlay, feature_closed
 from .role import ContourRole, role_str, normalize_role, is_structural_role, feature_role
 from .role_rule import RoleRule, resolve_role, name_rules
 from .diagnostic import Diagnostic
@@ -38,8 +38,7 @@ __all__ = [
     "DEFAULT_ROLE_STYLES",
     "CONSUMER_ROLE_STYLE",
     "role_style",
-    "DetectedFeature",
-    "DetectedFeatures",
+    "Overlay",
     "feature_closed",
     "ContourRole",
     "role_str",

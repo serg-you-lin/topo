@@ -118,11 +118,11 @@ class TestRotateResult(unittest.TestCase):
         rotated = rotate_result(result, 0.1)
         self.assertTrue(any(w.code == "not-rotated" and "text" in w.message for w in rotated.warnings))
 
-    def test_004_warns_when_detected_overlay_present(self):
+    def test_004_warns_when_overlay_present(self):
         result = topo.heal(_tall_rect_with_diagonal()).faces()
-        result.clusters[0].detected = {"bending_lines": []}
+        result.clusters[0].overlay = {"bending_lines": []}
         rotated = rotate_result(result, 0.1)
-        self.assertTrue(any(w.code == "not-rotated" and "detected" in w.message for w in rotated.warnings))
+        self.assertTrue(any(w.code == "not-rotated" and "overlay" in w.message for w in rotated.warnings))
 
 
 class TestRotateDocument(unittest.TestCase):

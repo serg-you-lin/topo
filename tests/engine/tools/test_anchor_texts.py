@@ -134,13 +134,13 @@ class TestPointerTarget(unittest.TestCase):
 
     def test_elemento_dell_overlay(self):
         # un consumatore sposta un contorno in una sua collezione: il target segue
-        from topo.model import DetectedFeatures
+        from topo.model import Overlay
         result = topo.heal(_plate_with_holes()).faces()
         cluster = result.clusters[0]
         small = min(cluster.inners, key=lambda c: to_shapely(c).area)
         cluster.inners = [c for c in cluster.inners if c is not small]
-        cluster.detected = DetectedFeatures()
-        cluster.detected.attach("my_circles", [small])
+        cluster.overlay = Overlay()
+        cluster.overlay.attach("my_circles", [small])
         result.texts = [_leader((24, 25), (40, 60))]
         topo.experimental.anchor_elements(result)
         self.assertIs(result.texts[0].target, small)

@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ET
 
 import topo
 import topo_dxf
-from topo.model import DetectedFeatures
+from topo.model import Overlay
 from topo import to_shapely
 from tests.paths import DATA
 
@@ -45,8 +45,8 @@ def _result(path):
             c = to_shapely(inner).centroid
             marks.append(_Mark(inner, (c.x, c.y), 2 * (to_shapely(inner).area / 3.141592653589793) ** 0.5))
         cluster.inners = []
-        cluster.detected = DetectedFeatures()
-        cluster.detected.attach("my_circles", marks)
+        cluster.overlay = Overlay()
+        cluster.overlay.attach("my_circles", marks)
     return result
 
 
