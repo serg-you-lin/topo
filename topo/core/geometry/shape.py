@@ -283,7 +283,7 @@ def _angle_diff(a: float, b: float) -> float:
 # "questo arco gira attorno a quel cerchio". Cosa siano (svasatura, sede,
 # cresta di un filetto) e con che soglie lo decide il consumatore.
 
-CONCENTRIC_TOLERANCE = 0.1   # distanza massima fra i centri, unità del disegno
+CONCENTRIC_TOLERANCE = 0.1   # distanza massima fra i centri, mm
 
 
 @dataclass(frozen=True)

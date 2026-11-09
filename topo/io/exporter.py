@@ -37,7 +37,7 @@ def to_json(result: Result, *, indent: int = 2,
     `max_gap`, `is_valid`, `warnings`, `errors`, `loose_count`, `text_count`,
     `clusters`. Each cluster: `label`, `area`, `outer_perimeter`,
     `inner_perimeter`, `inner_count`, `bbox`, `overlay` (items per
-    collection). Drawing units, exact on the primitives, no coordinates
+    collection). In mm, exact on the primitives, no coordinates
     (`topo_dxf.to_dxf` carries the curves).
 
     `extra(cluster) -> dict` adds a consumer's fields (material, a part code,

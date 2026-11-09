@@ -214,6 +214,8 @@ own for the raw file (`docs/API.md`).
 
 ## What topo promises, and its limits
 
+- **Millimetres**: every length, tolerance and area is in mm. topo does not read the unit a file
+  declares (it is often wrong): convert an inch drawing to mm before reading it.
 - **Faithful**: every contour lies within `tolerance` of the source geometry, both ways.
 - **Complete**: every curve is a cluster's contour or in `result.loose`; nothing is
   silently dropped.

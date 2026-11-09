@@ -556,3 +556,7 @@ layers that happen to carry those names. `SKIP_LAYERS` stays public; a caller re
 Measured: two curves promoted into an item with no `contours` left `loose` and reached no DXF, with no warning (D137).
 The test is a contour with `segments` and a role, as `to_dxf` draws it; private (`model/overlay.py`), so 0.29.1 adds
 no public name.
+### D245 — topo works in millimetres; the unit a file declares is not read (Federico, 9 November).
+Of 158 DXF fixtures, 65 declare metres and are drawn in mm: the declared unit is not trustworthy. Docs and messages say mm,
+not "drawing units"; an inch drawing is converted by the caller (the default tolerance 0.05 would be 1.27 mm in inches).
+To be revisited when a real user needs another unit.

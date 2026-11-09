@@ -98,7 +98,7 @@ class Cluster:
         I fatti geometrici della parte, senza coordinate (D230): `label`,
         `area` (D89), perimetri esatti sulle primitive (D165), numero di
         contorni interni, `bbox`, e quanti elementi ha ogni collezione di
-        `overlay`. Unità del disegno, nessun arrotondamento.
+        `overlay`. In mm, nessun arrotondamento.
         """
         outer_perimeter = ring_perimeter(self.outer.segments)
         inner_perimeter = sum(ring_perimeter(i.segments) for i in self.inners)

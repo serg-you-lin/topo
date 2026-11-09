@@ -48,7 +48,7 @@ def split(
     cluster, so a file name can be derived downstream
     (`f"{cluster.label}.dxf"`); without it, the i-th part is
     `f"{label}_P{i + 1}"`. By default it discards nothing (D232): a part
-    below `min_area` (drawing units squared; `<= 0`: no filter) is discarded
+    below `min_area` (mm²; `<= 0`: no filter) is discarded
     with a warning in `result.warnings` and in those of every part: even if
     it discards them all, the discard can be read.
 
