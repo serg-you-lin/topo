@@ -543,3 +543,6 @@ Whether D## belong in the code at all is an open thread: Federico discusses it w
 `code`, `message`, `points`, `notes`, `level` are stable; the suggested call (`help`, `param`, `value`) is experimental: it can be wrong where it was not measured (D237) and can change in a minor.
 Format words (entity types, layers, versions) live only in the adapters and their docs (API.md §9-10); the README names DXF/DWG once, as what `topo_dxf` reads.
 The README lists the healing's known defects from TODO, in plain geometry.
+### D241 — reopening D148: `heal()` warns of two known defects, `self-crossing` and `closed-touch` (Federico, 9 November).
+A wrong reading must not be silent: a spline crossing itself (points = the crossings) and a closed curve's node on another closed curve.
+Facts on the network, so every reading copies them; the defects stay for 1.x. On the 630 repo drawings: 2 and 1 drawings.

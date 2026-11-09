@@ -193,3 +193,39 @@ def dangling_splines(edges: List[Edge]) -> List[Edge]:
     return [e for e in open_splines if graph.degree(e.start) < 2 or graph.degree(e.end) < 2]
 
 
+def self_crossings(edges: List[Edge]) -> List[Tuple[float, float]]:
+    """I punti dove una spline incrocia se stessa (le altre primitive non possono)."""
+    from shapely.geometry import LineString
+    from shapely.ops import unary_union
+    found = []
+    for e in edges:
+        if not isinstance(e.segment, BSplineSeg):
+            continue
+        line = LineString(e.segment.discretize())
+        if line.is_simple:
+            continue
+        # la curva nodata su se stessa: a un incrocio arrivano 4 pezzi
+        ends = {}
+        for piece in unary_union(line).geoms:
+            for p in (piece.coords[0], piece.coords[-1]):
+                ends[p] = ends.get(p, 0) + 1
+        found += [p for p, n in ends.items() if n >= 4]
+    return found
+
+
+def closed_touches(edges: List[Edge], tolerance: float) -> List[Tuple[float, float]]:
+    """I nodi di una curva chiusa che stanno su un'altra curva chiusa."""
+    from shapely.geometry import LineString, Point
+    from shapely.strtree import STRtree
+    from ..primitives.segments import segment_is_closed
+    closed = [e for e in edges if segment_is_closed(e.segment)]
+    if len(closed) < 2:
+        return []
+    lines = [LineString(e.segment.discretize()) for e in closed]
+    tree = STRtree(lines)
+    found = []
+    for i, e in enumerate(closed):
+        node = Point(e.start)
+        if any(j != i and lines[j].distance(node) <= tolerance for j in tree.query(node.buffer(tolerance))):
+            found.append(tuple(e.start))
+    return found

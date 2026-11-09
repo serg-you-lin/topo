@@ -20,7 +20,8 @@ from ...model.document import Document
 from ...model.text import Text
 from ...model.role import is_structural_role
 from ...model.diagnostic import Diagnostic, plural as _plural
-from ..base.cleanup import NEAR_FULL_ARC_MISSING, dangling_splines, near_free_gaps, open_near_full_arcs
+from ..base.cleanup import (NEAR_FULL_ARC_MISSING, closed_touches, dangling_splines, near_free_gaps,
+                            open_near_full_arcs, self_crossings)
 from ..base.normalizer import near_copies
 from ..base.prepare import normalize, prepare
 from ..geometry.measure import reach
@@ -165,6 +166,17 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
     gaps = near_free_gaps(net.edges, reach(gap), reach(_NEAR_GAP_REACH * gap))
     if gaps:
         net.warnings.append(_near_gap_warning(gaps, gap))
+    loops = self_crossings(net.edges)   # D241
+    if loops:
+        net.warnings.append(Diagnostic(
+            "self-crossing", f"{_plural(len(loops), 'curve crosses', 'curves cross')} itself, not cut there",
+            points=loops))
+    touches = closed_touches(net.edges, tol)   # D241
+    if touches:
+        net.warnings.append(Diagnostic(
+            "closed-touch", f"{_plural(len(touches), 'closed curve', 'closed curves')} with its node on "
+                            f"another closed curve; outlines() may keep only one",
+            points=touches))
     dangling = dangling_splines(net.edges)
     if dangling:
         net.notes.append(Diagnostic(

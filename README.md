@@ -235,10 +235,10 @@ fixed in 1.x. Each was reproduced on the current code.
 - *Self-crossing curve.* One curve that crosses itself is not cut at its own
   crossing: both readings return the whole ring as one contour (a square with a
   curl gives the ring's signed area, not the square plus a lobe in `loose`).
-  No diagnostic says so today.
+  The warning `self-crossing` says so.
 - *A node on another closed curve.* Two simple closed curves where a vertex of
   one lies exactly on the other's boundary: `outlines()` gives the first and puts
-  the second in `loose`. No diagnostic says so today.
+  the second in `loose`; the warning `closed-touch` says so.
 - *A circle drawn as many short lines with a tiny opening.* It is refitted into
   one open curve whose two ends are never treated as a gap, so it stays in
   `loose` instead of closing (about 6% of such rings in a random sample); the
