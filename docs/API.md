@@ -1380,8 +1380,10 @@ that points to a detail of it. topo promotes nothing on its own.
 
 **Raises `ValueError`**, touching nothing, if a curve is not in
 `result.loose` or is given twice, if `curves` is empty, if `cluster` is not in
-`result.clusters`, or if there are several curves and `item` is missing: a curve
-is never in two places, nor lost.
+`result.clusters`, if there are several curves and `item` is missing, or if
+`item` carries no geometry a renderer draws (no contour with `segments` and a
+role, D244): a curve is never in two places, nor
+lost — the curves would otherwise leave `loose` and reach no file.
 
 ```python
 for curve in list(result.loose):

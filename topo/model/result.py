@@ -5,7 +5,7 @@ from dataclasses import field
 from typing import Any, List, Optional, Sequence
 from .curve import ClosedCurve, OpenCurve
 from .cluster import Cluster
-from .overlay import Overlay
+from .overlay import Overlay, _feature_drawable
 from .text import Text
 
 
@@ -67,7 +67,9 @@ class Result:
 
         Solleva `ValueError`, senza toccare niente, se una curva non è in
         `loose` o è data due volte, se `curves` è vuoto, se `cluster` non è
-        in `clusters`, o se le curve sono più d'una e `item` manca: niente
+        in `clusters`, se le curve sono più d'una e `item` manca, o se `item`
+        non porta geometria da disegnare: le curve
+        uscirebbero da `loose` senza arrivare in nessun file (D244). Niente
         viene scritto due volte né perso.
         """
         group = [curves] if isinstance(curves, (OpenCurve, ClosedCurve)) else list(curves)
@@ -82,6 +84,9 @@ class Result:
             raise ValueError("promote(): a curve is not in result.loose")
         if not any(c is cluster for c in self.clusters):
             raise ValueError("promote(): the cluster is not in result.clusters")
+        if item is not None and not _feature_drawable(item):
+            raise ValueError("promote(): item carries no geometry (no `contours` or `segments` with a role): "
+                             "the curves would leave result.loose and reach no output")
         if cluster.overlay is None:
             cluster.overlay = Overlay()
         cluster.overlay.add(name, group[0] if item is None else item)

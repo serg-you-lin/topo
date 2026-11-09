@@ -14,12 +14,20 @@ tutto; più in là una piastrina 50×50 con una linea dentro.
 
 import math
 import unittest
+from dataclasses import dataclass
 
 import topo
 from topo.primitives import LineSeg
 from topo import to_shapely
 
 fg = topo.geometry
+
+
+@dataclass
+class _Item:
+    """Quello che un chiamante fa di più curve: le tiene come suoi contorni."""
+    contours: list
+    role: str = "pair"
 
 
 def _drawing():
@@ -91,8 +99,19 @@ class TestPromote(unittest.TestCase):
     def test_il_chiamante_attacca_quello_che_ne_ha_fatto(self):
         line = _at(self.result, 0, -50)
         plate = self.result.clusters[0]
-        self.result.promote(line, plate, "axes", item=("asse", line))
-        self.assertEqual(plate.overlay.get("axes"), [("asse", line)])
+        axis = _Item([line], role="axis")
+        self.result.promote(line, plate, "axes", item=axis)
+        self.assertEqual(plate.overlay.get("axes"), [axis])
+
+    def test_item_senza_geometria_solleva_e_non_tocca(self):
+        # le curve uscirebbero da loose senza arrivare in nessun file (D244)
+        line = _at(self.result, 0, -50)
+        plate = self.result.clusters[0]
+        for item in ("asse", ("asse", line), _Item([])):
+            with self.assertRaises(ValueError):
+                self.result.promote(line, plate, "axes", item=item)
+        self.assertTrue(any(c is line for c in self.result.loose))
+        self.assertIsNone(plate.overlay)
 
     def test_anche_una_curva_fuori_da_ogni_cluster(self):
         guide = _at(self.result, 150, 0)
@@ -126,8 +145,9 @@ class TestPromoteGroup(unittest.TestCase):
         self.before = len(self.result.loose)
 
     def test_due_curve_un_item(self):
-        self.result.promote([self.line, self.guide], self.plate, "pairs", item="coppia")
-        self.assertEqual(self.plate.overlay.get("pairs"), ["coppia"])
+        pair = _Item([self.line, self.guide])
+        self.result.promote([self.line, self.guide], self.plate, "pairs", item=pair)
+        self.assertEqual(self.plate.overlay.get("pairs"), [pair])
         self.assertEqual(len(self.result.loose), self.before - 2)
         self.assertFalse(any(c is self.line or c is self.guide for c in self.result.loose))
 
@@ -144,18 +164,18 @@ class TestPromoteGroup(unittest.TestCase):
     def test_una_curva_assente_non_sposta_le_altre(self):
         self.result.promote(self.guide, self.plate, "guides")
         with self.assertRaises(ValueError):
-            self.result.promote([self.line, self.guide], self.plate, "pairs", item="coppia")
+            self.result.promote([self.line, self.guide], self.plate, "pairs", item=_Item([self.line, self.guide]))
         self.assertTrue(any(c is self.line for c in self.result.loose))
         self.assertEqual(self.plate.overlay.get("pairs"), [])
 
     def test_doppione_solleva(self):
         with self.assertRaises(ValueError):
-            self.result.promote([self.line, self.line], self.plate, "pairs", item="coppia")
+            self.result.promote([self.line, self.line], self.plate, "pairs", item=_Item([self.line, self.guide]))
         self.assertEqual(len(self.result.loose), self.before)
 
     def test_vuoto_solleva(self):
         with self.assertRaises(ValueError):
-            self.result.promote([], self.plate, "pairs", item="niente")
+            self.result.promote([], self.plate, "pairs", item=_Item([]))
 
 
 class TestSplit(unittest.TestCase):
