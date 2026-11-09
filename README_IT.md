@@ -3,11 +3,10 @@
 **Motore di geometria 2D deterministico per il disegno tecnico e la geometria CAD.**
 
 `topo` prende un disegno 2D disordinato e ne ricava un modello pulito e senza
-perdite — contorni chiusi ricuciti, la loro gerarchia di contenimento, le
+perdite — contorni chiusi ricuciti, la loro gerarchia di contenimento, i
 testi del disegno, e un overlay aperto dove un consumatore attacca la
 sua lettura — poi lo riscrive in DXF (un documento, o uno per pezzo), JSON, SVG,
-un view model per una UI, o (sperimentale) una lettura testuale compatta per un
-modello linguistico. Il prodotto è il
+o un view model per una UI. Il prodotto è il
 modello; un formato CAD è solo una porta di entrata o di uscita. **topo stesso
 non conosce alcun formato di file**: geometria e ruoli, mai layer. Le porte sono
 adapter, pacchetti fratelli nella stessa distribuzione — `topo_dxf` (DXF, DWG
