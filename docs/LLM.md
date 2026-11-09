@@ -2,7 +2,7 @@
 
 Dense, token-minimal reference for an AI writing code against `topo`. No
 narrative, no rationale — those live in `API.md` (full reference), `ARCHITECTURE.md`
-(why), `MAP.md` (decision history), `INDEX.md` (generated inventory of every
+(why), `MAP.md` (decision history), `INDEX.md` (generated locally by `scripts/gen_index.py`, not in git: inventory of every
 module-level name, internal helpers included — the place to check before writing
 a new one). Load this file alone to use the library; load the others only if this
 one doesn't answer the question.
