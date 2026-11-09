@@ -229,41 +229,51 @@ own for the raw file (`docs/API.md`).
   on a case it was not measured on, and it can change in a minor. Read it, judge
   it, never apply it blindly.
 
-**Known defects of the healing**, to be fixed in 1.x — what you can meet today:
+**Known defects of the healing** — a wrong result you can meet today, to be
+fixed in 1.x. Each was reproduced on the current code.
 
-- *Near-copy warning on real corners.* A short line with both ends within
-  `tolerance` of a longer one is reported as a near-copy even when the two meet
-  at a real corner (45–90°); its advice then suggests a merge that would open
-  the contour. The geometry itself is read right.
 - *Self-crossing curve.* One curve that crosses itself is not cut at its own
-  crossing: `outlines()` reads the whole ring as one contour (e.g. a square with
-  a curl gives the ring's signed area, not the square plus a lobe in `loose`).
+  crossing: both readings return the whole ring as one contour (a square with a
+  curl gives the ring's signed area, not the square plus a lobe in `loose`).
+  No diagnostic says so today.
 - *A node on another closed curve.* Two simple closed curves where a vertex of
   one lies exactly on the other's boundary: `outlines()` gives the first and puts
-  the second in `loose`.
+  the second in `loose`. No diagnostic says so today.
 - *A circle drawn as many short lines with a tiny opening.* It is refitted into
   one open curve whose two ends are never treated as a gap, so it stays in
-  `loose` (about 20 in 750 random cases, opening 0.02–0.03 at `tolerance` 0.1).
-- *An end that overshoots by a few thousandths.* Where one curve passes another
-  by ~0.003, the meeting is closed by a new short line (note `gap-closed`)
-  instead of trimming the end onto the other curve.
-- *A very short piece* with both ends on one node is welded away (note `welded`).
-- *Merging inside `outlines()`.* It still merges nearly collinear or concentric
-  pieces (within 1e-3); the readings will stop merging once a public merge
-  function exists.
-- *Two nearly coincident closed curves* (the same circle drawn twice, 0.05
-  apart at `tolerance` 0.1) come out as two clusters and the result stays valid;
-  the `crossing` warning says so. Whether crossing closed contours should make a
-  result invalid is not decided yet.
+  `loose` instead of closing (about 6% of such rings in a random sample); the
+  note `open-spline` reports it.
 - *Edges excluded from the graph.* With a custom `is_structural` that accepts
   every role, `faces()` can deliver edges set aside as non-contour nowhere at
-  all (no cluster, nothing in `loose`) — an exception to *complete* above.
-  `outlines()` delivers them.
-- *Time.* Drawings made of long chains of very short strokes cost about twice
-  as much to heal; spline discretization is the largest single cost of
-  `outlines()`; two large sheets of views measured over 300 s.
-- *Texts linked to geometry* (`topo.experimental`) miss some links a reader
-  would draw.
+  all (no cluster, nothing in `loose`) — an exception to *complete* above. The
+  warning `non-contour` counts them; `outlines()` delivers them.
+- *Near-copy advice on real corners.* A short line with both ends within
+  `tolerance` of a longer one is reported as a near-copy even where the two meet
+  at a real corner (45–90°), and its advice suggests a merge that would open the
+  contour. The geometry is read right; only the advice is wrong.
+
+**Behaviour by design**, worth knowing:
+
+- *Tiny pieces are welded.* A group of strokes within 0.05 is welded onto one
+  node (note `welded`): a piece shorter than that cannot be told from a node.
+- *A jump is closed, never moved.* Where one curve passes another by a few
+  thousandths, the reading adds a short straight segment between the two ends
+  (note `gap-closed`) instead of moving either curve: the drawing's own curves
+  stay as drawn. Trimming the end along itself onto the other curve, as at a
+  crossing, is planned for 1.x.
+- *`outlines()` joins pieces that continue each other* (collinear or on one
+  circle, within 1e-3) into one curve; `faces()` keeps every piece as drawn.
+  Both stay within `tolerance` of the source.
+- *Two closed curves that cross* (the same circle drawn twice, 0.05 apart) are
+  two clusters and the result stays valid, with the warning `crossing`.
+  Whether crossing contours should make a result invalid is not decided yet.
+
+**Cost and experimental parts**
+
+- Drawings made of long chains of very short strokes cost about twice as much
+  to heal; spline discretization is the largest single cost of `outlines()`;
+  two large sheets of views measured over 300 s.
+- Texts linked to geometry (`topo.experimental`) miss some links a reader would draw.
 
 ---
 

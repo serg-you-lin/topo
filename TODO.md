@@ -103,8 +103,6 @@ repo, mai rigenerando alla cieca.
   `close_contour_jumps` (D209) mette una retta nuova con un warning. Da fare: il
   capo si prolunga o accorcia lungo se stesso fino all'altra curva (come agli
   incroci); su una spline non si può prolungare, lì un segmento nuovo.
-- `decide_nodes` salda ancora un tratto più corto di 0,01 coi due capi sullo
-  stesso nodo (warning "2 LineSeg degeneri" su `anch_01`).
 - Sweep dei disegni di snapdraw: restano da capire un disegno con un salto di
   0,84 mm negli inner (oltre la tolleranza 0,5, `is_valid=False`) e due fogli
   oltre 300 s. Il perché non è cercato.

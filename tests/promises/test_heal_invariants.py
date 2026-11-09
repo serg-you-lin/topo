@@ -38,10 +38,11 @@ from tests.paths import DATA
 SOURCE_DIR = DATA / "golden_faces"
 DEFAULT_HEAL_TOLERANCE = 0.5          # come tests/golden/test_golden_faces.py
 GLOBAL_NAME_ROLES = {"MARK": "engrave", "Signature": "engrave"}
-# disegni con un gap largo esattamente la tolleranza: ruotato di un angolo
-# qualunque, l'arrotondamento dei nodi alla griglia (D96) lo porta di poco
-# sopra o sotto la soglia — un caso sul filo, non un difetto; i moti esatti
-# sulla griglia (quarto di giro, traslazione, specchio) li controllano comunque
+# disegni con un gap largo esattamente la tolleranza: una rotazione di un angolo
+# qualunque cambia le coordinate dell'arrotondamento (~1e-14), quanto basta a
+# portare quel gap sopra o sotto la soglia. È il bordo di una regola sì/no: la
+# stessa geometria mossa non è promessa (D215, docs/LIMITS.md), non un difetto.
+# I moti esatti (`exact` in MOTIONS) li controllano comunque
 GAP_AT_TOLERANCE = {"Multipolis"}
 # difetti veri trovati da queste invarianti, aperti in TODO.md: quando sono
 # risolti la lista si svuota
