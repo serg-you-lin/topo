@@ -215,6 +215,8 @@ file grezzo (`docs/API.md`).
 
 ## Cosa promette topo, e i suoi limiti
 
+- **Millimetri**: ogni lunghezza, tolleranza e area è in mm. topo non legge l'unità che un file
+  dichiara (spesso è sbagliata): un disegno in pollici va convertito in mm prima di leggerlo.
 - **Fedele**: ogni contorno sta entro `tolerance` dalla geometria sorgente, nei due sensi.
 - **Completo**: ogni curva è contorno di un cluster o sta in `result.loose`;
   niente viene scartato in silenzio.

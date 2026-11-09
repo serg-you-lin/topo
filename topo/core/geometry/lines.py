@@ -21,7 +21,7 @@ from .rings import ON_BOUNDARY, ring_bbox, ring_covers_chord, ring_split_by_chor
 
 Point = Tuple[float, float]
 
-COLLINEAR_TOLERANCE = 0.1        # distanza massima dalla retta, unità del disegno
+COLLINEAR_TOLERANCE = 0.1        # distanza massima dalla retta, mm
 COLLINEAR_ANGLE_TOLERANCE = 1e-6  # differenza massima di direzione, radianti
 
 

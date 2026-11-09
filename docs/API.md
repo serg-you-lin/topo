@@ -937,7 +937,7 @@ part goes to DXF, SVG or text in the same way.
 | parameter | meaning |
 |---|---|
 | `namer` | `callable(i, cluster) -> str` — gives the `label` of the part's cluster, so the name of a file can still be derived (`f"{cluster.label}.dxf"`). Without it, `f"{label}_P{i+1}"`. |
-| `min_area` | by default `0.0`, no discard (D232): a size threshold belongs to a process. With a value, the parts with area below it (drawing units squared) are discarded with a warning in `result.warnings` and in those of every part. |
+| `min_area` | by default `0.0`, no discard (D232): a size threshold belongs to a process. With a value, the parts with area below it (mm²) are discarded with a warning in `result.warnings` and in those of every part. |
 
 **Mutates** only `result.warnings` (the discard warnings: even if it discards them all, the discard can be read). The cluster of each part is a copy with its `label`; the original does not change (D176).
 **Returns** the parts in the order of the kept clusters.
@@ -1088,7 +1088,7 @@ topo.to_json(result: Result, *, indent=2,
 (`source_format`, told by the adapter), how it was read (`reading`,
 `tolerance`, `max_gap`), whether it is valid, the warnings, and the facts of each part.
 No coordinates (the exact curves are carried by `topo_dxf.to_dxf`), nothing of a
-process, drawing units. `extra(cluster) -> dict`, called once per
+process, lengths in mm. `extra(cluster) -> dict`, called once per
 cluster, adds the caller's fields (material, part code, what
 topo cannot know); a key that topo already writes → `ValueError`, never a
 replacement. Structure:
