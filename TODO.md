@@ -1,455 +1,215 @@
 # topo — TODO
 
-Lo stato, non la storia: qui sta solo ciò che è aperto. Il perché di ogni
-scelta è in `MAP.md` (`D##`), la cronaca nel git log. Il testo intero di questo
-file prima dell'accorciamento (2 novembre) è in `TODO_ARCHIVE.md`, solo locale,
-fuori da git.
+Solo ciò che resta da fare. Il perché di ogni scelta è in `MAP.md` (`D##`), la
+cronaca nel git log. Misure, esiti e storia dei tentativi non stanno qui.
 
 ---
 
-## PIANO — ultimo tentativo (Federico, 2 novembre; D207)
+## Il cancello della 1.0 (D148, D207)
 
-Data di consegna di cui parla Federico: 1 dicembre.
+**Feature freeze.** La lista è chiusa: può solo accorciarsi (D193). Quando è
+vuota topo è *1.0-ready*: `python scripts/release_check.py` esce 0 e da quel
+giorno ogni commit su `main` lo tiene a 0. Entra solo ciò che rompe un nome
+pubblico, o rende vere e provate le invarianti di D143 sui fixture del repo,
+più i documenti (D144) e la history pulita; il resto è 1.x (D158, D174).
+Regole (D207): il cancello non cresce (un difetto trovato va in "Dopo la 1.0",
+mai in un G nuovo); nessun rifacimento del motore, un meccanismo per commit; un
+commit che alza il numero dei difetti si revoca; ogni test nuovo si mostra
+rosso su un difetto vero prima di contare.
 
-Se questo piano apre cose nuove nel cancello, Federico chiude topo.
-Ogni sessione parte da qui e lo dice in chat: passo, contatore.
-
-**Regole (valgono per Claude, non si discutono a metà strada)**
-1. Il cancello non cresce. Un difetto trovato strada facendo va in "Dopo la
-   1.0" con una riga di fatti, mai in un G nuovo. Unica eccezione: un difetto
-   causato da un nostro commit di questo piano → quel commit si revoca.
-2. Nessun rifacimento del motore. Solo correzioni locali, un meccanismo per
-   commit. Una modifica in `normalize`/`heal`/letture si misura prima e dopo
-   su tutte le 162 letture (81 disegni × faces/outlines).
-3. Cricchetto: il contatore delle letture con un salto (oggi 48) scende o
-   resta, mai sale. Un commit che lo alza si revoca, non si rattoppa.
-4. Ogni test nuovo si mostra rosso su un difetto vero prima di contare.
-5. "Verde" non vuol dire "stabile": vuol dire solo le promesse della lista
-   (D143 + D206). Ogni report dice quale promessa ha controllato.
-6. Pezzi cambiati → DXF in `_debug` con cosa guardare; giudica Federico.
-
-**Passi**
-- [ ] L1 Commit del lavoro di oggi (D206, D207, `largo` +
-      golden, TODO). Controllo D206 in `validate_result`, chiamato anche da
-      `outlines()`: un salto → warning + `is_valid=False`. Test
-      `test_closure` su 162 letture con la lista dei 48 noti scritta nel test:
-      fallisce se ne compare uno nuovo o se uno guarito non viene tolto.
-- [ ] L2 I 48 raggruppati per causa (salti 0,05 esatti,
-      0,0032, 0,0051, 0,0087, 0,0002, sotto 1e-4…), con il commit in cui
-      ciascuno è nato (17 dopo il 25 ottobre). Esce il numero di meccanismi →
-      la stima del lavoro. Federico decide lì se si va avanti.
-- [ ] L3 Un meccanismo per commit, dal gruppo più grande.
-      Ogni commit: contatore giù, suite verde nel budget, DXF in `_debug`.
-- [ ] L4 Solo se L3 è a zero: G16 (stretto, 1136 segmenti in `faces()`),
-      stesse regole.
-- [ ] L5 Bilancio con numeri: contatore (48 → ?), voci del
-      cancello (7 → ?), voci entrate (deve essere 0). Federico decide.
-
-**Stato (4 novembre)**: L1 fatto (`773a4e3`). `eabf73c` `join_ends`: i capi
-sullo stesso nodo portati sullo stesso punto (linee spostate, archi ruotati,
-spline ed ellissi no) → contatore 48 → 28, nessuno nuovo. Rossi/aperti:
-`TestTangentSpike` (due linee da 74 mm spostate 0,0016 sul capo dell'arco,
-area 1011,35 → 1011,29: accettare o lasciare aperto); D208 citata nel codice
-ma non scritta in MAP; `join_ends` non scritto in MAP; suite 4:27 (budget 3);
-regr_01 `outlines()` 0,0237 → 0,0903 (contatto linea–arco quasi tangente);
-`sbagli_tratteggio_stretto.dxf` tolto dalla suite (Federico, 7 novembre): ci gira `tratteggio_stretto_piccolo.dxf` (`tests/tools/generate_hatch_small.py`), suite 11:49 → 4:33.
-
-**Ramo `no-join-ends` (6 novembre)**: `join_ends` tolto (revert di
-`eabf73c`), saldatura dei tratti corti tolta da `normalize`. Ogni salto entro
-la tolleranza rimasto in un contorno consegnato lo chiude ora una retta nuova
-(`close_contour_jumps`, D206), con un warning; `test_fidelity` pretende 0 salti
-ovunque. Le cause qui sotto restano: dicono quando nasce quella retta.
-Ramo `node-moves-geometry`: abbandonato (spostava i capi).
-Aperti, con i fatti:
-- Sweep 6 novembre (`21_sweep_invariants.py` su `snapdraw/`, 121 disegni, ora
-  con il controllo `jumps`): `faces()` rossa su 18 disegni contro 3 del 2
-  novembre. "out once" nuovo su 17 (es. drw_0012 4,58 mm, drw_0016 fino a
-  57,5 mm); drw_0016 nuovo anche in "scrambled" (inner 22 → 20); drw_0017 ha
-  due salti di 0,8395 mm (oltre la tolleranza 0,5) negli inner 41 e 42 a
-  (318.61, 249.23), con `is_valid=False`. `outlines()` verde ovunque.
-  Riletti i 18 a ogni commit del motore da `4e5d9c0` (`per_commit.json`): "out
-  once" 0 → 17 con `db780b7`; drw_0016 "scrambled" nasce con `df67722`; il
-  salto 0,8395 di drw_0017 nasce con `34102bc`. Disegni con un salto 17 → 1
-  (con `384aebc`). Il perché di ciascuno non è cercato. Rapporto in
-  `_debug/2026-11-06_topo_sweep-jumps`.
-  `db780b7` ritirato (Federico, 6 novembre): out once 17 → 0, suite verde;
-  `df67722` ritirato: drw_0016 verde, suite verde (il salto di anch_01_noframe
-  lo chiude `384aebc`). Restano drw_0017 (salto + scrambled), sweep #8, #79 (oltre 300 s).
-- **Forza bruta 6-7 novembre** (banco e rapporto in
-  `_debug/2026-11-06_topo_node-distance`, `RAPPORTO.md`; generatore `fuzz/gen.py`,
-  controlli `fuzz/check.py` e `fuzz/sweep2.py`, lanciatore `fuzz/drive.py`). Da fare
-  in una chat nuova (Federico, 7 novembre): tutte le fix qui sotto, poi di nuovo la
-  forza bruta sulle stesse passate, codice vecchio contro nuovo.
-  1. ~~Togliere la griglia dei nodi (D216)~~ fatto. I 2 rossi: `test_007` aveva
-     la premessa fatta dalla griglia (ora il nodo unico è scritto a mano);
-     `TestChordContactUnderMotion` era il difetto noto G6e, ora chiuso (5 moti, una
-     risposta). I 4 DXF veri: 2 "guastati" (non giudicabili), 1 a ~5e9 mm (senza
-     griglia l'area cambia meno: 0,0003% contro 0,1%), 1 è il difetto qui sotto.
-     ~~Difetto delle due spline chiuse~~ fatto (D219). La diagnosi di prima era
-     sbagliata: basta una spline chiusa che incrocia se stessa, con `end` scritto a
-     1e-13 da `start` (`moved()` dei test, `rotate_document`): `renode` lasciava i
-     nodi delle curve chiuse come scritti → `outlines()` la mandava intera in loose.
-  2. ~~Cerchio scritto due volte~~ fatto (D217).
-  3. ~~Foro in archi~~ fatto (D218). La voce di prima era sbagliata: r 5 con buco 0,3
-     sono 3,4°, sopra i 2° di D112, e restare aperto è giusto. Il difetto vero: due
-     archi con buchi sotto i 2° si chiudevano con segmenti, non col cerchio.
-  Il controllo della forza bruta contava "foro mancante" anche un cerchio spezzato
-  oltre i 2° (giusto per D112): corretto il 7 novembre (`fuzz/check.py`,
-  `open_by_d112`; il vecchio in `check_prima_D112.py`); su 30 semi 5 → 3 rossi.
-  Forza bruta (~3 ore) di notte: `bash notte.sh` nel banco, `topo_base` (`4e729d1`)
-  contro `topo_new` (`a9e2d61`), uscite in `notte/`. I numeri di prima qui sotto
-  sono col controllo vecchio: si confronta solo con le due copie di `notte/`.
-  Riordino dei test fatto (D222); si continua dalla voce "Tempo della suite" nel cancello (suite 3:56, budget 3).
-- Una curva sola che incrocia se stessa non si taglia nell'incrocio
-  (`split_at_crossings` taglia solo fra edge diversi): spline di grado 1 a forma
-  di quadrato 100×100 con un ricciolo sotto → `outlines()` 9900 (l'anello intero,
-  area con segno), le stesse rette 10100 + il lobo in loose. DXF vero fuori dal
-  repo (banco della forza bruta, seme 3339): spline 8 (3 lobi), 9 (6 lobi),
-  silhouette di 8+9+10 ~13944, `outlines()` 10735 e la 8 in loose a pezzi.
-- Due curve chiuse semplici, il nodo dell'una sul bordo dell'altra (spline di
-  grado 1, cerchi a 24 lati r 50 in (0,0) e r 40 in (90,0)): `outlines()` dà solo
-  la prima (7764,6) e l'altra in loose; il nodo 7e-5 dentro → un contorno da
-  12733,9. Nel disegno del seme 3339 il nodo della spline 8 sta a 6,6e-5 dalla 10.
-  Numeri prima delle fix (attuale / senza griglia): 3000 inventati, risposta sbagliata
-  790 / 767 (fori in più: quasi sempre con un doppione nel disegno; fori mancanti: quasi
-  sempre con un cerchio spezzato + un buco; 8 senza nessuno dei due; compatibile con 2 e
-  3, non dimostrato). Mosso → conti diversi 123 / 21 (cause dei 21: non cercate).
-  Mosso → aree diverse 876 / 862. 3551 DXF veri: mosso 46 / 29, salti 4 / 0.
-- Precisioni (Federico, 2 novembre, chiese di uniformarle; D196 le tenne
-  separate): in `core/` + `sanitize` ~40 soglie di coincidenza su 9 valori
-  (1e-2 … 1e-12). Misurato sui 18 rossi: solo `NODE_DECIMALS` 6 → drw_0016 e
-  il salto di drw_0017 guariti, +36% tempo; 9 → nulla di più, ×20 tempo.
-  Tutte le soglie a un valore: 1e-3 meglio (out once 17 → 9, 0 salti, 39 s),
-  1e-6 e 1e-9 peggio. Sweep 121 con tutto a 1e-3: rossi 18 → 17, 7 guariti,
-  5 nuovi in "scrambled" (regr_04 e due derivati, sweep #83 e #97), #79
-  finisce (279 s), 0 salti, `outlines()` sempre verde. Script `per_unified.py`
-  e rapporto `unified_1e-3/` in `_debug/2026-11-06_topo_sweep-jumps`.
-- un contatto dove una curva supera l'altra di pochi millesimi (anch_07: retta
-  oltre un arco di 0,003; regr_01: spline oltre una retta di 0,004): l'arco si
-  taglia all'incrocio, la retta no, i due punti finiscono nello stesso nodo →
-  salto. Fatto per l'accorciamento in `34102bc` (anch_07 e regr_05 a 0 salti).
-- `decide_nodes` salda ancora un tratto più corto di 0,01 coi due capi sullo
-  stesso nodo (warning "2 LineSeg degeneri" su anch_01).
-- I salti si guardano un file alla volta (DXF in `_debug`, salti cerchiati) e
-  ognuno prende un nome:
-  - **N1** (anch_01 faces, 0,0107; chiuso in `e15c053`). Natura: due capi
-    diversi fusi in un nodo. Una lineetta di tratteggio da 0,015 taglia in
-    diagonale un angolo esatto (due orizzontali e una verticale); l'angolo sta
-    a 0,0075 di lato dalla lineetta, il capo della lineetta sul lato a 0,0107
-    dall'angolo. `_same_contact` fondeva i due contatti della coppia (entro
-    `tolerance` lungo il lato) e `merge_along_edges` misurava solo lungo la
-    lineetta (0,0075), non sul piano (0,0107): angolo e capo nello stesso nodo,
-    il pezzo di lato fra i due spariva. Ora due capi diversi restano due punti.
-  - **N2** (anch_01_noframe outlines, 0,0040; aperto). Natura: un contatto a T
-    il cui capo non tocca la curva. Tre lineette di tratteggio, una da 0,011;
-    heal chiude due buchi con due segmenti suoi, uno per capo della lineetta
-    corta. Il capo del primo (0,129) resta a 0,004 di lato dal secondo (0,406):
-    sotto 0,01 è un T, il secondo si taglia nel suo punto più vicino, col nome
-    del capo, e i due punti veri restano a 0,004. Da fare: il capo si
-    prolunga o accorcia lungo se stesso fino all'altra curva (come agli incroci,
-    `34102bc`); su una spline non si può prolungare, lì un segmento nuovo.
-    Il contorno è un triangolino di tre lineette e due segmenti di heal.
-
-Fuori da questo piano: G8, G9, G10, G14 (non toccati).
-
-## Fuori dal cancello: MAP e TODO corte (Federico, 1 novembre) — fatto il 2 novembre
-
-- [x] **MAP.md** 7 464 → 400 righe: una voce `### D##` per decisione (titolo =
-      la regola in una frase, al massimo 4 righe sotto); una regola superata è
-      una riga ("D59 → D99, D161"). Il testo intero è in `MAP_ARCHIVE.md`
-      (locale, in gitignore; lo stesso testo è in git a `67fda38:MAP.md`).
-      `python scripts/check_map_shrink.py --archive MAP_ARCHIVE.md` esce 0:
-      201 decisioni su 201, nessuna doppia, nessun rimando appeso.
-      Da qui in poi una decisione nuova è un titolo `### D##` + al massimo 4
-      righe; il perché lungo va nel commit.
-- [x] **TODO.md** 1 732 → 293 righe; il testo intero in `TODO_ARCHIVE.md`
-      (locale, in gitignore).
-
-## DECISO prima della 1.0 (D202) — `heal()` ripara, `faces()`/`outlines()` leggono (2 novembre)
-
-Deciso da Federico il 2 novembre: si fa comunque, bene, in pochi giorni.
-Verifica del lavoro: golden cambiati classificati + DXF in `_debug`;
-tetto dei tempi: quello della suite.
-Sottopassi, uno per commit:
-- [x] A. inventario (2 novembre). Le differenze sono quattro, non tre
-      (`heal.py:87,110` contro `outline.py:136-165`):
-      1. portata dei gap: `reach(tol)` contro `reach(max(tol, max_gap))`.
-         `faces()` non ne ha bisogno: nessun consumer chiede a heal() gap
-         larghi (passano solo `tolerance`). Risolto in B: i numeri sono
-         **due** (D202), `tolerance` per i nodi e `max_gap` per i gap
-         (default `tolerance`).
-      2. `keep_junctions`: True (D110) contro False (D50). Nella rete i pezzi
-         restano separati (non si perde niente); `outlines()` ricompone già
-         lungo il contorno (`merge_runs`, `outline.py:200`). Da misurare in B.
-      3. scope: tutto il disegno contro un gruppo `touching_groups` alla
-         volta. I gap si chiudono entro `max_gap` e i gruppi sono a `max_gap`,
-         quindi le coppie dovrebbero essere le stesse: il raggruppamento
-         diventa un passo di `outlines()`. Da misurare: risultati e tempi.
-      4. `cut_crossings`: False in heal (D132, D189), True in outlines (D101).
-         È già "lo dice la lettura" (docstring `noding.py:170`): la rete
-         tiene gli incroci come dato (`crossings`), il taglio lo fa
-         `outlines()`. Serve un taglio applicabile a una rete già fatta.
-      Minori: il filtro dei degeneri (`outline.py:163`) va nella riparazione
-      comune; il secondo `decide_nodes` in `read_outline` sparisce; gli errori
-      di disegno vuoto (solo in heal) valgono per tutti; `label` e
-      `source_file` (heal li prende, outlines usa `doc.source_path`) vanno
-      sulla rete.
-      Superficie di `Network`: `edges` (riparati), `crossings`, `free_ends`,
-      `set_aside` (ruoli non strutturali), `warnings`, `errors`, `is_valid`,
-      `source_file`, `label`; `faces()`, `outlines()`. `NodedEdges` resta
-      interno.
-- [x] B. una riparazione sola dietro `heal()` → `Network`; golden classificati.
-      Fatto: `readings/network.py` (`build_network`, `repair_edges`); heal() e
-      outlines() leggono la stessa rete, firme invariate (il cambio è C). Loose
-      sempre dalla rete (D203). Suite verde, nessun golden cambiato; anch_06
-      rientra nel budget di testo (loose 179 → 101, doppioni fusi, 0 mm persi)
-      ed esce dai fallimenti attesi. Note della misura:
-      Misura fatta il 2 novembre (`_debug/2026-11-02_topo_D202-network`,
-      `measure.py`, solo lettura): `faces()` = `heal()` su 218/218 disegni;
-      `outlines()` su una riparazione sola (tutto il disegno, keep_junctions
-      True), con un numero solo o con due: geometria dei contorni identica
-      su 51/51, i loose fuori da ogni isola (quelli del golden) uguali sui 15
-      golden; tempi uguali o un poco sotto (52 s contro 55). Cambia una cosa
-      sola: le isole che outlines() non legge (riquadro, isole annidate,
-      gruppi senza contorno) oggi vanno in loose **come nel file**
-      (docstring: "intatto"), dalla rete arrivano **riparate** (doppioni
-      fusi, curve rifittate, gap chiusi): fino a 900 mm di linee doppie in
-      meno su un disegno. Le isole lette già oggi danno loose riparati, e
-      anche heal(). Proposta: loose sempre dalla rete (uniforme, un
-      fondamento), la provenienza resta sulla rete. Controllo "fedele"
-      (`tests/invariants.uncovered`) sui 51: 0,000 mm persi. Un numero o due:
-      **due** (D202), con uno solo un contorno resta aperto di 0,41 mm.
-      Lo sweep di snapdraw non è stato rifatto: l'hook blocca un comando che
-      nomina la cartella di snapdraw.
-- [ ] filo parcheggiato → **G15** (cancello): vedi sotto.
-- [x] C. `heal()` → `Network`; `faces()`/`outlines()`; `island()` tolto;
-      `read_outline(s)`/`OutlineReading` (taglio netto, D202). `source_file`
-      di default da `doc.source_path`, `label` su tutte e due le letture (D204).
-- [x] D. docs (LLM, API §3, README x2, CLAUDE.md regola 5, SCRIPTS, ARCHITECTURE)
-      e `release_check` (3 novembre). `release_check.py` non nomina `island`:
-      nessuna modifica. Suite 244 s (sopra il budget). I consumer si adattano
-      nelle loro sessioni.
-
-## IL CANCELLO DELLA 1.0 (D148, 22 ottobre)
-
-**Feature freeze.** La lista è chiusa: può solo accorciarsi (D193 l'elenco).
-Quando è vuota topo è *1.0-ready*: `python scripts/release_check.py` esce 0 e
-da quel giorno ogni commit su `main` lo tiene a 0. Entra solo ciò che rompe un
-nome pubblico, o rende vere e provate le invarianti di D143 sui fixture del
-repo, più i documenti (D144) e la history pulita; il resto è 1.x (D158, D174).
-
-**Chiusi:** G1 (campi di `Result`, D150), G7 (D220), G2 (→ 1.x, D149), G3 (fedeltà a due
-vie, D152), G4 (discretizzazione, D145/D153/D154), G5 (misure, D156), G6 (4
-dubbi D103, D157), G6b (ogni pezzo una volta, D163), G6c (contatto deciso una
-volta, D180), G6d (D189), G6e (`heal()` indipendente dal riferimento: D201,
-3 residui in 1.x), G11 (`release_check.py`), G12 (area esatta, D165), G13
-(nessun tipo shapely nella superficie, D166–D168), G15 (contorni chiusi
-esatti, D206/D209), G16 (tratteggio per ruolo, D210) — tutti e due il 6
-novembre, ramo `no-join-ends` fuso in `main`; G9 (docstring pubbliche in inglese).
-Da G7 resta un filo fuori dal cancello: i golden dei `_noframe` (Federico).
+**Chiusi:** G1 (D150), G2 (→ 1.x, D149), G3 (D152), G4 (D145/D153/D154), G5
+(D156), G6 (D103, D157), G6b (D163), G6c (D180), G6d (D189), G6e (D201), G7
+(D220), G9, G11, G12 (D165), G13 (D166–D168), G15 (D206/D209), G16 (D210).
 
 **Aperti**
 - [ ] **G14** Superficie allineata alle API di una libreria matura (D174,
-      D175). Fatti: la regola (D175), la passata sui nomi (D176, D177), la
-      regola 1 come test (D178). Restano: la regola 8 (con G9) e il test di
-      rimozione delle deprecazioni (vuoto finché non ce n'è una). Consumer da
-      adeguare con le tabelle vecchio → nuovo di D176/D177: snapbend,
-      snapdraw, smoother, pippo — dalle loro sessioni.
+      D175). Restano: la regola 8 (docstring pubbliche in inglese: G9 è chiuso,
+      da verificare che basti) e il test di rimozione delle deprecazioni (vuoto
+      finché non ce n'è una). I consumer si adeguano con le tabelle
+      vecchio → nuovo di D176/D177, dalle loro sessioni (snapbend, snapdraw,
+      smoother, pippo).
 - [ ] **G8** README / README_IT / `description` di pyproject / prima riga di
-      CLAUDE.md: motore di geometria 2D, i disegni tecnici sono un caso.
-      Oggi tutti e quattro dicono "for technical drawings and CAD geometry":
-      Federico giudica se basta. Tolta dai README la lettura testuale (`to_text`, D213).
-- [ ] **Pulizia del repo prima della 1.0** (Federico, 8 novembre): TODO.md, MAP.md
-      e il resto pieni di log di sessione (misure, cose fatte, riordini) lasciati da
-      Claude; restano solo le cose da fare e le decisioni, i log vanno fuori dal repo.
-- [ ] **Licenza** (Federico, 9 novembre): oggi `LICENSE` è "All rights reserved"
-      (anche `pyproject.toml` e i due README): nessuno può usare topo senza un
-      permesso scritto. Prima della 1.0 una licenza scelta da Federico.
+      CLAUDE.md: motore di geometria 2D, i disegni tecnici sono un caso. Oggi
+      tutti e quattro dicono "for technical drawings and CAD geometry":
+      Federico giudica se basta.
+- [ ] **Pulizia del repo** (Federico): TODO.md, MAP.md e il resto non devono
+      avere log di sessione; restano solo cose da fare e decisioni. TODO.md è
+      fatto; resta MAP.md e il controllo del resto.
+- [ ] **Licenza**: `LICENSE`, `pyproject.toml` e i due README dicono "All rights
+      reserved", quindi nessuno può usare topo senza permesso scritto. Prima
+      della 1.0 una licenza scelta da Federico.
 - [ ] **G10** Rewrite della history (`git filter-repo` + `--message-callback`,
-      un solo force-push) contro le liste di D76–D78. `audit_names --strict`
-      verde sui file di oggi (9 novembre). Un codice tipo disegno, scritto
-      come riferimento in un commento di `test_normalizer.py` (G6e), è già
-      su GitHub (in `origin/main` dal 1 novembre) e in 4 commit: oggi è
-      descritto a parole, dalla history lo toglie solo questo rewrite. Nei commit vecchi restano anche i blocchi-logo definiti
-      e mai usati di `anch_01…06` (D97), e i 258 file `tests/**/*healed*`
-      (uscite di `11_batch_heal.py`, fuori da git dal 7 novembre, sul disco
-      restano): fra quelli di `output_polylines/` alcuni nomi sembrano codici pezzo.
-- [ ] **Tempo della suite**: 3:22 il 9 novembre (seriale, 2601 passati, 201
-      saltati), sopra il tetto di 2.5–3 min.
-      Misura del 2 novembre: 4:07 a `fc9997e` (prima di D202 C), 4:08 dopo.
-      Restano `test_fidelity` sulle spline e le letture di `outlines()`.
-      Misura del 7 novembre a `43cf58a` (seriale, `--durations=0`): 4:35, 3242 test.
-      Le letture di `outlines()` valgono ~159 s su 272: `test_fidelity` _outlines 81 s
-      (31 test), `test_outlines_invariants` 65 s (`TestScrambled` 47), `test_outlines_single_use`
-      13 s. `test_heal_invariants` 57 s (1496 test). I 17 file con `ezdxf`: 7,5 s in tutto,
-      quindi il punto 1 qui sotto non accorcia la suite. Il disegno più caro: anch_02 (38 s + 18 il noframe).
-      Misura del 7 novembre dopo `bfe161f`: 3:56, 2521 passati, 119 saltati.
-      Riordino fatto (D222): stessi 2639 test raccolti, stessa suite.
-      Fatto il punto 3 (D223): via i 4 generatori ezdxf e le 13 copie identiche
-      che nessun test leggeva per nome (tutta `gap/`). `tests/shapes.py` lasciato:
-      i file restano comunque per i test dell'adapter.
-      Fatto il punto 1: `test_gap` e le letture da file di `test_splitter` con
-      `load_dxf` (stessa geometria misurata), `test_inspect` con `load_segments`,
-      via `load_msp` e due import morti. Suite dopo: 3:56, 2521 passati, come prima.
-      Poi anche `test_edge_cases` e il giro di `test_splitter` su tutti i file con
-      `load_dxf`; quel giro era sempre verde (`except Exception: pass` prendeva anche
-      l'assert): ora controlla, e i contorni misti (pezzi aperti, `write_segments`)
-      sono esclusi.
-      Passata sui test deboli (7 novembre, analisi verificata): fatti gli spostamenti
-      (D224: le quote DXF in `adapters/dxf/test_dimension_text.py`, `test_pipeline` dentro
-      `test_writeback`, `non_contour_candidates` in `engine/tools/`, `edge_cases` in
-      `adapters/dxf/`) e tolto codice morto; stessi 2639 test. Corretti i test vuoti,
-      ognuno visto rosso su un difetto finto: `TestOverlapNoClose` (0 pezzi, 4 loose,
-      D132), `test_edge_cases` (almeno una parte), `TestChordsKeepTheOuter` salta senza
-      corde (82 disegni). Suite: 3:56, 2439 passati, 201 saltati. Restano, da decidere:
-      - gemelli (151 disegni, 138 geometrie): non si fa. Contarli per geometria vuol
-        dire `load_dxf` di 151 file alla raccolta, 4 s misurati, contro ~6 s
-        risparmiati; restano contati per byte;
-      - per `--full`: `test_outlines_single_use` (11 s), fedeltà "confronto non vuoto" (6,5 s);
-      - `test_golden_split` su 7 padri ripete i confronti di `test_golden_faces`, non guarda i figli.
-      Piano A fatto: viste 3D tolte da `golden_anchoring/` anch_02, 03, 07, 08 e `_noframe`
-      (anch_01 è una vista vera, resta); agganci del golden archiviato uguali. Le viste 3D
-      restano in `golden_outlines/`. Da decidere `--full` (piano B: `TestScrambled` e
-      fedeltà sui fogli > 500 bordi solo con `--full`, mai scritto).
-      Da guardare: i rossi nuovi della forza bruta col codice di oggi (4 file veri,
-      36 + 94 semi inventati); numeri in `RAPPORTO.md` del banco
-      `_debug/2026-11-06_topo_node-distance`. La faccia sottile D225 nel controllo
-      "guastato" è corretta nel banco (`damaged_d225`); il giro nuovo scrive in `notte2/`.
-      Da decidere: il foro che una quasi-copia lascia aperto (D226, avvisato, es. seme 1775)
-      il controllo "risposta" lo conta ancora rosso. Giro dell'8 novembre in `notte2/`
-      (numeri in `RAPPORTO.md`): da guardare il file vero 3581, nuovo rosso in faces
-      mosso (isole 3 → 4).
-      `near_copies` (`topo/core/base/normalizer.py:449`) prende per copia ogni retta più
-      corta coi due capi entro `distance` da una più lunga, senza chiedere parallele né
-      sovrapposte: nel seme 215 (nessuna copia fra i guasti) 545 coppie, tutte sotto 1 mm,
-      354 a più di 5°. L'help di `near-copy` propone la più grande (> 0,1 mm in 303 su 346) e
-      fondendo apre i contorni. Rapporto e DXF in `_debug/2026-11-08_topo_forza-bruta-gruppi`.
-      Da decidere col banco: "mosso" col bordo entro la tolleranza (D143) invece dell'area
-      a 1e-5; 26 rossi veri con un guasto solo (DXF A-E).
-      Un foro scritto a linee con un buco fra i capi (0,02-0,03 mm, `tolerance=0.1`) finisce in
-      `loose`, non è un contorno: `refit_tessellations` fa della catena aperta una spline sola
-      e "i due capi dello stesso edge non sono mai un gap" (`compute_gap_fixes`). Già prima di
-      D236; 20 su ~750 cerchi a caso (`_debug/2026-11-09_topo_fori-cerchi`).
-      Federico, 9 novembre: i rossi del banco restano rossi, fuori dal cancello 1.0; anche
-      l'avviso `near-copy` esce dal cancello e resta com'è (D237).
-      Spazzatura tracciata: `tests/data/mixed_pipeline/*.dwl*`
-      (file di blocco AutoCAD, di solito portano utente e PC: non aperti, audit pre-1.0).
-      1. Fatto (sopra).
-      2. I test che provano un adapter vanno in `tests/adapters/dxf/` e
-         `tests/adapters/pdf/`, con un `conftest.py` che fa
-         `pytest.importorskip`. Da decidere: `tests/golden/` sotto
-         `adapters/dxf/` o lì con lo stesso skip.
-      3. Fatto (D223). `generate_hatch_small` resta per il piano A.
-      Nel cancello (D160, D212); misurare il tempo prima e dopo.
-- [ ] **Generatore di disegni credibili** (30 ottobre): compone forme vere
-      (contorni con raccordi, cerchi e asole dentro, archi tangenti, spline,
-      annidamenti) e le guasta come i file veri (piccoli buchi, ripassati,
-      segmenti spezzati, versi invertiti, ordine rimescolato, rotazioni). La
-      risposta è nota per costruzione: ogni disegno è un test senza golden.
-      Nella suite pochi semi fissi; passate grandi a mano. Da decidere:
-      `hypothesis` come dipendenza di test.
+      un solo force-push) contro le liste di D76–D78. `audit_names --strict` è
+      verde sui file di oggi. Dalla history il rewrite deve togliere: un codice
+      tipo disegno scritto come riferimento in un commento di un test, già su
+      GitHub e in più commit; i blocchi-logo definiti e mai usati dei fixture
+      `anch_01…06` (D97); i file `tests/**/*healed*` (uscite di
+      `11_batch_heal.py`, oggi fuori da git): fra quelli di `output_polylines/`
+      alcuni nomi sembrano codici pezzo. Da guardare nell'audit anche i file di
+      blocco AutoCAD (`.dwl*`) tracciati in `tests/data/mixed_pipeline/`: di
+      solito portano nome utente e PC.
+- [ ] **Tempo della suite** (D160, D212): ~3:22 seriale, sopra il tetto di
+      2,5–3 min. Pesano `test_fidelity` sulle spline e le letture di
+      `outlines()` (`TestScrambled` in `test_outlines_invariants`,
+      `test_outlines_single_use`). Misurare il tempo prima e dopo ogni
+      intervento. Da decidere:
+      - `--full`: `TestScrambled` e la fedeltà sui fogli > 500 bordi solo con
+        `--full` (mai scritto), più `test_outlines_single_use`;
+      - `test_golden_split` su 7 padri ripete i confronti di
+        `test_golden_faces` e non guarda i figli;
+      - i test che provano un adapter vanno in `tests/adapters/dxf/` e
+        `tests/adapters/pdf/` con un `conftest.py` che fa
+        `pytest.importorskip`; dove metta `tests/golden/` è da decidere.
+- [ ] **Generatore di disegni credibili**: compone forme vere (contorni con
+      raccordi, cerchi e asole dentro, archi tangenti, spline, annidamenti) e le
+      guasta come i file veri (piccoli buchi, ripassati, segmenti spezzati,
+      versi invertiti, ordine rimescolato, rotazioni). La risposta è nota per
+      costruzione: ogni disegno è un test senza golden. Nella suite pochi semi
+      fissi; passate grandi a mano. Da decidere: `hypothesis` come dipendenza di
+      test.
+- [ ] **D208 non è in `MAP.md`**: è citata nel codice (`topo_dxf/exporter.py` e
+      i test di esportazione: una polilinea non copre un salto con un vertice)
+      ma la decisione non è scritta.
 
 **Fuori dal cancello, ma prima di snapbend 1.0:** le suite dei consumer erano
-rosse già prima di D150 (snapbend 16 golden di processo, aree spostate di ~1
-mm², probabilmente D145; snapdraw 3 regressioni). Si giudicano nei loro repo,
-mai rigenerando alla cieca.
+rosse già prima di D150 (snapbend: 16 golden di processo con aree spostate di
+~1 mm², probabilmente D145; snapdraw: 3 regressioni). Si giudicano nei loro
+repo, mai rigenerando alla cieca.
 
 ## Dopo la 1.0 (1.x, additivo — non toccare finché il cancello è aperto)
 
-Difetti trovati il 6 novembre (fatti, nessuna analisi):
-- `near-copy` (D237): l'help scatta anche su spigoli veri (167 coppie a 45-90° nella forza bruta, help giusto in 40). Idea di Federico, per un agente: alzare la soglia solo nello spicchio dei `points` dell'avviso; conta solo quando la lineetta serve a chiudere un esterno.
-- Agganci dei testi persi con D161 (golden di `golden_anchoring/` rigenerati il 7 novembre, Federico li accetta senza giudicarli): testi rimasti senza aggancio anch_02 3, anch_03 1, anch_04 10, anch_05 7, anch_07 1; tipico un richiamo "M6 n°16 fori" che era legato a una figurina 6×3 (inner di `faces()` di prima) e oggi a niente. Da guardare con snapdraw.
-- D229: 18 nomi ancora doppi con contenuti diversi (`SAME_NAME_DIFFERENT_CONTENT` in `tests/package/test_one_copy.py`): `anch_01..08` in `golden_anchoring/` e `golden_outlines/` sono disegni diversi con lo stesso nome; gli altri 10 hanno una copia nella radice letta dai test unitari e una in `golden_faces/` letta dai golden. Per ognuno: quale contenuto resta, o un nome nuovo.
-- Obiettivo dichiarato di D228: `target`/`references` sugli edge della rete, uguali per ogni lettura (oggi `anchor_elements`, sperimentale, non vede le curve aperte). Una forma nuova sola, poi promossa. I golden di aggancio sono fuori dalla suite, in `_archive/golden_anchoring/` (test + `json/`, i DXF restano in `tests/data/golden_anchoring/`): vanno bene come base dei golden futuri.
-- `tests/engine/readings/test_non_structural_role.py`, stesso disegno, righe
-  senza ruolo (`unknown`) a 0,5: `faces()` 0 cluster, `is_valid` False,
-  435 curve in `loose` su 475 edge. Con `is_structural=lambda r: True` e
-  ruolo `x`: 0 cluster, `loose` vuoto, warning "508 edge non di contorno
-  esclusi dal grafo" → edge non consegnati da nessuna parte (D137?).
+**Difetti noti, fuori dal cancello (D207, D237).** Fatti, nessuna analisi.
+- `near-copy` (D237): l'avviso scatta anche su spigoli veri (coppie a 45–90°).
+  Idea di Federico: alzare la soglia solo nello spicchio dei `points`
+  dell'avviso; conta solo quando la lineetta serve a chiudere un esterno.
+  `near_copies` (`topo/core/base/normalizer.py`) prende per copia ogni retta più
+  corta coi due capi entro `distance` da una più lunga, senza chiedere parallele
+  né sovrapposte.
+- Una curva sola che incrocia se stessa non si taglia nell'incrocio
+  (`split_at_crossings` taglia solo fra edge diversi): una spline di grado 1 a
+  forma di quadrato 100×100 con un ricciolo sotto dà in `outlines()` 9900
+  (l'anello intero, area con segno) invece di 10100 + il lobo in `loose`.
+- Due curve chiuse semplici con il nodo dell'una sul bordo dell'altra (spline di
+  grado 1, cerchi a 24 lati r 50 in (0,0) e r 40 in (90,0)): `outlines()` dà
+  solo la prima (7764,6) e l'altra in `loose`; con il nodo 7e-5 dentro, un
+  contorno da 12733,9.
+- Un foro scritto a linee con un buco fra i capi (0,02–0,03 mm,
+  `tolerance=0.1`) finisce in `loose`: `refit_tessellations` fa della catena
+  aperta una spline sola e "i due capi dello stesso edge non sono mai un gap"
+  (`compute_gap_fixes`). Circa 20 su 750 cerchi a caso.
+- Un contatto dove una curva supera l'altra di pochi millesimi (retta oltre un
+  arco di 0,003; spline oltre una retta di 0,004): l'arco si taglia
+  all'incrocio, la retta no, i due punti finiscono nello stesso nodo →
+  `close_contour_jumps` (D209) mette una retta nuova con un warning. Da fare: il
+  capo si prolunga o accorcia lungo se stesso fino all'altra curva (come agli
+  incroci); su una spline non si può prolungare, lì un segmento nuovo.
+- `decide_nodes` salda ancora un tratto più corto di 0,01 coi due capi sullo
+  stesso nodo (warning "2 LineSeg degeneri" su `anch_01`).
+- Sweep dei disegni di snapdraw: restano da capire un disegno con un salto di
+  0,84 mm negli inner (oltre la tolleranza 0,5, `is_valid=False`) e due fogli
+  oltre 300 s. Il perché non è cercato.
+- Rossi della forza bruta (`_debug/2026-11-06_topo_node-distance`,
+  `_debug/2026-11-08_topo_forza-bruta-gruppi`): restano rossi, fuori dal
+  cancello (Federico, 9 novembre). Da decidere col banco: "mosso" col bordo
+  entro la tolleranza (D143) invece dell'area a 1e-5; il foro che una
+  quasi-copia lascia aperto (D226) il controllo "risposta" lo conta rosso; un
+  file vero con "mosso" che passa da 3 a 4 isole.
+- Agganci dei testi persi con D161 (golden di `golden_anchoring/` accettati senza
+  giudicarli): testi rimasti senza aggancio in anch_02 (3), anch_03 (1), anch_04
+  (10), anch_05 (7), anch_07 (1); tipico un richiamo "M6 n°16 fori" legato a una
+  figurina 6×3 e oggi a niente. Da guardare con snapdraw.
+- D229: 18 nomi ancora doppi con contenuti diversi
+  (`SAME_NAME_DIFFERENT_CONTENT` in `tests/package/test_one_copy.py`):
+  `anch_01..08` in `golden_anchoring/` e `golden_outlines/` sono disegni diversi
+  con lo stesso nome; gli altri 10 hanno una copia nella radice letta dai test
+  unitari e una in `golden_faces/` letta dai golden. Per ognuno: quale contenuto
+  resta, o un nome nuovo.
+- D228: `target`/`references` sugli edge della rete, uguali per ogni lettura
+  (oggi `anchor_elements`, sperimentale, non vede le curve aperte). Una forma
+  nuova sola, poi promossa. I golden di aggancio sono fuori dalla suite, in
+  `_archive/golden_anchoring/`: vanno bene come base dei golden futuri.
+- `tests/engine/readings/test_non_structural_role.py`: righe senza ruolo
+  (`unknown`) a 0,5 → `faces()` 0 cluster, `is_valid` False, 435 curve in
+  `loose` su 475 edge. Con `is_structural=lambda r: True` e ruolo `x`: 0
+  cluster, `loose` vuoto, warning "508 edge non di contorno esclusi dal grafo"
+  → edge non consegnati da nessuna parte (D137?).
 
-Primo lavoro (deciso il 30 ottobre):
-- **discretizzazione delle spline in Rust** (o almeno numpy): De Boor in Python
-  è il costo singolo più grosso di `outlines()`. Prova numpy a blocchi: scende
-  solo da 6.5 a 5.1 s (D169 chiede la misura per un core Rust).
+**Primo lavoro (deciso il 30 ottobre)**
+- **Discretizzazione delle spline in Rust** (o almeno numpy): De Boor in Python
+  è il costo singolo più grosso di `outlines()`. Numpy a blocchi scende solo da
+  6,5 a 5,1 s (D169 chiede la misura per un core Rust).
 
-- **Fusione delle curve quasi allineate / quasi coarcali** (Federico, 6
-  novembre): funzione pubblica a parte, chiamata da chi usa topo sul
-  risultato, con la soglia sua. Le letture non fondono mai due curve diverse
-  del file (sposterebbe il vertice fra le due); `merge_runs` è la base.
-  Oggi `outlines()` le fonde (`_contour`, `merge_runs` a 1e-3): da togliere
-  quando c'è la funzione.
-
-- **`topo_dxf` non legge `HATCH`** (adapter, 1.x; Federico, 2 novembre): oggi
-  solo un avviso in `doc.warnings`. Un tratteggio (es. ANSI31) va esploso in
-  righe e dato come edge normali: topo non sa che cosa sono (regola 4), lo sa
-  il consumer. `ezdxf.render.hatching.hatch_entity` le genera; sul fixture
-  `tests/data/sbagli_tratteggio.dxf` (non tracciato) sono 2622 righe a 45°
-  ogni 0,125 mm. Da decidere con lui: edge con ruolo `unknown`, o altro.
-
-Da G6e (D199, D201) e G6c (D179):
-- **ordine dei rami a un nodo in `_leaving_angle`**: la direzione si legge a
-  `DIRECTION_SAMPLE`; una spline che lascia il nodo e passa oltre una retta
-  vicina può rovesciare l'ordine, e la camminata dà un lobo per sporgenza
-  (oggi lo salva l'unione di D100).
-- **togliere l'unione di D100** (`_faces_union_loop`, `_network`, `_on_nodes`,
+**Altro**
+- **Fusione delle curve quasi allineate / quasi coarcali** (D211, D226):
+  funzione pubblica a parte, chiamata da chi usa topo sul risultato, con la
+  soglia sua. Le letture non fondono mai due curve diverse del file. Oggi
+  `outlines()` le fonde (`_contour`, `merge_runs` a 1e-3): da togliere quando
+  c'è la funzione.
+- **Precisioni**: in `core/` + `sanitize` ~40 soglie di coincidenza su 9 valori
+  (1e-2 … 1e-12). Federico ha chiesto di uniformarle; D196 le tenne separate.
+  Da decidere con una misura completa, non a tentativi.
+- **`topo_dxf` e i `HATCH`**: D205 esplode già i tratteggi a pattern in `LINE`;
+  restano da decidere gli altri tipi (riempimenti pieni, gradienti).
+- **Ordine dei rami a un nodo in `_leaving_angle`** (D199, D201): la direzione
+  si legge a `DIRECTION_SAMPLE`; una spline che lascia il nodo e passa oltre una
+  retta vicina può rovesciare l'ordine, e la camminata dà un lobo per
+  sporgenza (oggi lo salva l'unione di D100).
+- **Togliere l'unione di D100** (`_faces_union_loop`, `_network`, `_on_nodes`,
   `UNION_GRID`, `rim.py`): rifà il noding sulle discretizzazioni e salda
   contatti che D180 esclude. Dopo la voce sopra; rifare le due misure di D199;
-  `TestChordContactUnderMotion` diventa rosso e esce dai difetti noti.
-- **il ripiego D100 senza edge interi sul bordo dell'unione** restituisce
-  `None` e vince il giro più piccolo; da sistemare in generale.
-- i 3 residui della passata sui 121 disegni (D201).
-- costo accettato di D186: `heal()` raddoppia sui disegni a catene di tratti
+  `TestChordContactUnderMotion` diventa rosso.
+- **Il ripiego D100 senza edge interi sul bordo dell'unione** restituisce `None`
+  e vince il giro più piccolo; da sistemare in generale.
+- I 3 residui della passata sui 121 disegni (D201).
+- Costo accettato di D186: `heal()` raddoppia sui disegni a catene di tratti
   corti; ottimizzare, prima in Python, poi Rust.
-
-Additivi decisi con Federico (25–30 ottobre):
-- **warning sui pezzi d'ingresso che coincidono** (un `CIRCLE` ripassato da
-  una polilinea): difetto del disegno, topo lo dice e non ne cancella nessuno
-  (D137). Oggi due cerchi r 2 a 0.05 (tol 0.1) escono 2 cluster, `is_valid`
-  True, e l'unico avviso (D132) dà il consiglio sbagliato. Da decidere con
-  tutti gli avvisi: due contorni chiusi che si incrociano invalidano? avvisi
-  come dati invece che frasi?
-- **terza lettura, la rete**: gruppi di pezzi che si toccano o si incrociano,
+- **Warning sui pezzi d'ingresso che coincidono** (un `CIRCLE` ripassato da una
+  polilinea): difetto del disegno, topo lo dice e non ne cancella nessuno
+  (D137). Oggi due cerchi r 2 a 0,05 (tol 0,1) escono 2 cluster, `is_valid`
+  True. Da decidere con tutti gli avvisi: due contorni chiusi che si incrociano
+  invalidano? avvisi come dati invece che frasi (D227)?
+- **Terza lettura, la rete**: gruppi di pezzi che si toccano o si incrociano,
   coi punti di contatto, senza contorni né dentro/fuori.
-- **in `outlines()` i pezzi dello stesso cerchio/retta si ricompongono anche in
-  `loose`** (richiesta snapdraw/pippo): un cerchio attraversato da linee esce
-  in archi aperti; estendere a `loose` la ricomposizione di D65, senza
-  scegliere cicli (D161). Fino ad allora i consumer ricompongono da sé.
-- **griglia per le spline** (come D145/D153): `BSplineSeg.discretize` è
-  adattiva sul proprio intervallo, un pezzo tagliato (D163) non dà gli stessi
-  vertici dell'intera. Solo se si vede un difetto; nessun rosso oggi (D167).
-- **criterio del punto medio di `_refine_segment`**: su un tratto a S il medio
-  cade sulla corda; oggi lo copre il campionamento fitto (0.00988 a tol 0.01).
-- **la forma dai punti, per PDF e visione** (31 ottobre): `simplify_points`
-  (D141) e `refit_tessellations` (D60) sono già geometria di topo; gli estremi
-  ambigui di D185, oggi solo in un warning, come dato interrogabile sul
-  `Result`. Il dettaglio del formato resta nell'adapter (regola 1).
-- **report di scostamento di `heal()` per entità** (D149); **PDF** (`topo_pdf`);
+- **In `outlines()` i pezzi dello stesso cerchio/retta si ricompongono anche in
+  `loose`** (richiesta snapdraw/pippo): un cerchio attraversato da linee esce in
+  archi aperti; estendere a `loose` la ricomposizione di D65, senza scegliere
+  cicli (D161). Fino ad allora i consumer ricompongono da sé.
+- **Griglia per le spline** (come D145/D153): `BSplineSeg.discretize` è adattiva
+  sul proprio intervallo, un pezzo tagliato (D163) non dà gli stessi vertici
+  dell'intera. Solo se si vede un difetto; nessun rosso oggi (D167).
+- **Criterio del punto medio di `_refine_segment`**: su un tratto a S il medio
+  cade sulla corda; oggi lo copre il campionamento fitto.
+- **La forma dai punti, per PDF e visione**: `simplify_points` (D141) e
+  `refit_tessellations` (D60) sono già geometria di topo; gli estremi ambigui di
+  D185, oggi solo in un warning, come dato interrogabile sul `Result`. Il
+  dettaglio del formato resta nell'adapter.
+- **Report di scostamento di `heal()` per entità** (D149); **PDF** (`topo_pdf`);
   **modello `Curve`**, `as_analytic`, firma dei contorni (D121) e fatti di
-  riconoscimento (si promuovono in una minor quando un secondo consumer li
-  usa, D91/D118); **curve da equazione**; **viewer**; **strisce** (D142,
-  promozione a `topo.geometry` quando un secondo chiamante le usa); **D147**
-  (ponti sui T, branch `d147-t-ends`; `regr_04` peggiora); **snapfence**.
-- **bisettrice e offset** (2 novembre; ricerca: nulla di simile in
-  `topo.geometry`, vicino c'è solo `offset_from_line` = distanza con segno,
-  positiva a sinistra, e le strisce D142). In due minor: (1) primitive esatte,
+  riconoscimento (si promuovono in una minor quando un secondo consumer li usa,
+  D91/D118); **curve da equazione**; **strisce** (D142, promozione a
+  `topo.geometry` quando un secondo chiamante le usa); **D147** (ponti sui T,
+  branch `d147-t-ends`; `regr_04` peggiora); **snapfence**.
+- **Bisettrice e offset**: nulla di simile in `topo.geometry` (vicino c'è solo
+  `offset_from_line` e le strisce D142). In due minor: (1) primitive esatte,
   senza politica, in `core/geometry/` + `topo.geometry`: `offset_segment`
   (retta traslata, arco concentrico r±d, mai un poligono discretizzato) e la
-  bisettrice di due tratti come `LineSeg` con `length` richiesta (nessun
-  tipo nuovo di retta infinita); stesso segno di `offset_from_line`. I due
-  tratti NON devono toccarsi: il vertice è l'incrocio delle rette (con un
-  raccordo o uno smusso in mezzo è fuori dal materiale); se un tratto
-  contiene il vertice l'angolo è ambiguo → `ValueError`. La linea di mezzo
-  fra parallele è un fatto a parte (`midline`, lista di tratti). L'offset di
-  una catena aperta e quello di un contorno chiuso sono lo stesso meccanismo.
-  (2) offset di contorno (giunzioni, collasso, un contorno che si divide in
-  due) in `topo.experimental` finché non regge D143; mai silenzioso (regola 7).
-  "Kerf" è l'uso di un consumer, non un nome di topo. Da decidere prima di
-  scrivere: `side` o due funzioni; dove finisce la bisettrice (solo `length`).
-- **dipendenze** (D169): misurare i tempi di `heal()`/`outlines()` sulle
+  bisettrice di due tratti come `LineSeg` con `length` richiesta; stesso segno
+  di `offset_from_line`. I due tratti NON devono toccarsi (il vertice è
+  l'incrocio delle rette); se un tratto contiene il vertice → `ValueError`. La
+  linea di mezzo fra parallele è un fatto a parte (`midline`). (2) offset di
+  contorno (giunzioni, collasso, un contorno che si divide) in
+  `topo.experimental` finché non regge D143; mai silenzioso. "Kerf" è l'uso di
+  un consumer, non un nome di topo. Da decidere prima di scrivere: `side` o due
+  funzioni; dove finisce la bisettrice (solo `length`).
+- **Viewer** (`to_view_model` + `to_svg`, D133: fuori dalla 1.0 stabile): da
+  rifare in una sessione a parte; non scala (su un foglio di viste pesa più del
+  DXF di partenza) e non deve più discretizzare archi e cerchi (riapre D12;
+  coordinate a 3 decimali nelle uscite di lettura, non in `to_dxf`).
+- **Dipendenze** (D169): misurare i tempi di `heal()`/`outlines()` sulle
   fixture; inventario shapely/numpy → sostituto; poi un pezzo alla volta e a
   pari golden. Il noding resta a GEOS.
 
-## Catalogo dei fatti geometrici futuri (2 novembre) — 1.x, nulla deciso
+## Catalogo dei fatti geometrici futuri — 1.x, nulla deciso
 
 Un elenco di candidati, non un impegno: ognuno passa dal triage di "Richieste
 dalla superficie" (D139: non entra perché esiste altrove) e, se la firma non è
@@ -576,6 +336,7 @@ Aperte:
   (D162); avviso a snapdraw e cogo che `topo.core.healing` è diviso in
   `base/` e `readings/` (D188).
 
+
 ## Fili da ragionare con Federico
 
 - **`Text.source_kind`** (`"MTEXT"`, `"DIMENSION"`, …) è un fatto del formato nel
@@ -583,83 +344,71 @@ Aperte:
 - **snapbend dopo D230**: `snapbend/flat/detect.py` scrive `cluster.custom` e i
   suoi test chiamano `topo.inject`; con D230 non esistono più. Va adattato in una
   sessione aperta in snapbend.
-
-- **Datum** (origine e assi da cui si misura un pezzo): il sistema di
-  riferimento attaccato a un contorno è di topo; quale datum scegliere è del
-  consumer. Additivo; la 1.0 non deve legare niente al solo sistema mondo.
+- **Datum** (origine e assi da cui si misura un pezzo): il sistema di riferimento
+  attaccato a un contorno è di topo; quale datum scegliere è del consumer.
+  Additivo; la 1.0 non deve legare niente al solo sistema mondo.
 - **La scansione** (`healing/outer_scan`, raggi del lab `island_rays`): come
   farla completa e a cosa serve oltre al giro esterno.
-- **Ricette di ricomposizione**: oggi `heal` (un pezzo piano) e `outlines` (più
-  viste, per isole); se ne servono altre. Candidata: una lettura "mesh" dove
-  una faccia interna chiusa è vuota per default. Legato al filo `faces()`/
-  `outlines()` in cima.
+- **Ricette di ricomposizione**: oggi `faces()` (un pezzo piano) e `outlines()`
+  (più viste); se ne servono altre. Candidata: una lettura "mesh" dove una
+  faccia interna chiusa è vuota per default.
 - **Scelta A: faccia interna chiusa, materiale o foro?** (D131) Oggi le catene
   interne a 0 passaggi sono corde: rettangolo + quadrato interno + 4 diagonali
-  → 1 pezzo pieno, 8 linee in `loose`. Federico: "corda e opzionalmente
-  foro", ma la regola dell'opzione (proposta: vuota se nessun lato sul
-  contorno esterno) non è decisa. Un disegno con pareti appese a una linea
-  (U + barra, 26 ottobre) è un assieme di due pezzi saldati, non l'opzione
-  "foro": serve una lettura che spezza lungo i bordi in comune (futuro
-  snapweld). Sul pezzo piano di `heal()` il default resta pieno. DXF locali
-  in `tests/lab/caso_A/`.
+  → 1 pezzo pieno, 8 linee in `loose`. Federico: "corda e opzionalmente foro",
+  ma la regola dell'opzione (proposta: vuota se nessun lato sul contorno
+  esterno) non è decisa. Un disegno con pareti appese a una linea (U + barra) è
+  un assieme di due pezzi saldati, non l'opzione "foro": serve una lettura che
+  spezza lungo i bordi in comune. Sul pezzo piano di `heal()` il default resta
+  pieno.
 - **Scelta E: foro con un vertice in comune col contorno esterno** (D132). Oggi
-  resta foro; per Federico è `loose` con warning. Nessun golden lo contiene:
-  si decide quando arriva un disegno vero.
+  resta foro; per Federico è `loose` con warning. Nessun golden lo contiene: si
+  decide quando arriva un disegno vero.
 - **`outlines()` e cornici**: i test girano sui disegni grezzi, la cornice
-  diventa l'isola più esterna (la riconosce snapdraw, D90). Copie
-  `*_noframe.dxf` fatte; un cerchio chiuso non dovrebbe cambiare natura per
-  ciò che gli sta attorno (anch_07: due cerchi sono inner con la cornice,
-  `loose` senza). Si chiude in G7.
+  diventa l'isola più esterna (la riconosce snapdraw, D90). Un cerchio chiuso
+  non dovrebbe cambiare natura per ciò che gli sta attorno (`anch_07`: due
+  cerchi sono inner con la cornice, `loose` senza). Esistono le copie
+  `*_noframe.dxf`; i loro golden non ci sono (D220).
 - **Contatto di un giro con sé stesso deciso sul poligono discretizzato**
-  (`_loop_faces`, anch_06: un cerchio D2.2 toccato da un simbolo passa da
-  `circle` a `other` cambiando la discretizzazione): decidere il contatto sulle
-  primitive prima di rifare i golden di outlines (G7).
+  (`_loop_faces`, `anch_06`: un cerchio toccato da un simbolo passa da `circle`
+  a `other` cambiando la discretizzazione): decidere il contatto sulle primitive.
 - **Lato PDF dei fix di D101** (`_drop_redundant_meets`,
   `_drop_boundary_duplicates`): provati solo sui DXF; su un PDF Federico li ha
-  visti sbagliati (12 ottobre). Ipotesi non verificata: `band = tolerance +
-  max_gap` è calibrata sulla precisione DXF. Si riprende col PDF.
+  visti sbagliati. Ipotesi non verificata: `band = tolerance + max_gap` è
+  calibrata sulla precisione DXF. Si riprende col PDF.
 
 ## Aperti minori
-
 
 - `contour_minus` rifiuta i bordi che corrono uno sull'altro (`ValueError`):
   da gestire se un caso vero lo chiede (D118).
 - `load_geometry`: gli angoli dell'arco sono ancora in gradi "per convenzione
   CAD" (resto di D96); `ArcSeg` usa i radianti. Passare ai radianti tocca la
   matematica di cono e sezione di snapbend.
-- Fitting ellisse da punti grezzi (5 gradi di libertà, per smoother):
-  rimandato dopo D45.
+- Fitting ellisse da punti grezzi (5 gradi di libertà, per smoother): rimandato
+  dopo D45.
 - `rotate_result`/`rotate_cluster` non ruotano `Document.annotations` né
-  `cluster.overlay`/`custom` (overlay a schema libero, D44): l'overlay
-  va scritto dopo la rotazione.
+  `cluster.overlay`/`custom` (schema libero, D44): l'overlay va scritto dopo la
+  rotazione.
 - **PDF da riprendere** (D10): `load_pdf` oggi restituisce `list[Edge]`; deve
-  restituire un `Document` come ogni adapter, portando in `topo_pdf/` il
-  lavoro fermo nella worktree `forge-pdf-adapter` (branch
-  `experiment/pdf-adapter`: non proporre di cancellarli).
-- **Viewer** (`to_view_model` + `to_svg`, D133: fuori dalla 1.0 stabile) da
-  rifare in una sessione a parte: non scala (su un foglio di viste pesa più
-  del DXF di partenza), e non deve più discretizzare archi e cerchi (riapre
-  D12; coordinate a 3 decimali nelle uscite di lettura, non in `to_dxf`).
+  restituire un `Document` come ogni adapter, portando in `topo_pdf/` il lavoro
+  fermo nella worktree `forge-pdf-adapter` (branch `experiment/pdf-adapter`: non
+  cancellarli).
 - Estrazione dei loop planari (half-edge/DCEL): ricorrente sui fogli densi
-  (grafo con il 91% dei nodi a grado > 2, un file Creo quasi tutto SPLINE).
-  Da riverificare con la lettura di oggi (D189) prima di riaprire.
-- `anonymize`: ora è `dxf-anonymize` (D80, repo privata, `pipx`). Regola: la
-  marcatura (testo che ripete il numero del pezzo, la scrive Advance Steel)
-  non è dato cliente, si tiene. Aperti lì: loghi senza retini, 6 disegni dove
-  snapdraw non è sicuro del cartiglio, `tests/examples/cartella_3/` (nome da
-  guardare).
+  (grafo con il 91% dei nodi a grado > 2, un file Creo quasi tutto SPLINE). Da
+  riverificare con la lettura di oggi (D189) prima di riaprire.
+- `anonymize` è ora `dxf-anonymize` (D80, repo privata, `pipx`). Regola: la
+  marcatura (testo che ripete il numero del pezzo, la scrive Advance Steel) non è
+  dato cliente, si tiene. Aperti lì: loghi senza retini; 6 disegni dove snapdraw
+  non è sicuro del cartiglio; una cartella sotto `tests/examples/` il cui nome
+  è da guardare.
 - Fogli A e C di "outer che non si chiude" (D49): non riverificati con la
   lettura di oggi. Foglio C: 1682 pezzi in `loose` con catene di tratti
-  ~0.3–0.5 mm; il foglio A è un assieme con archi e linee di costruzione.
-- Limiti geometrici di vecchi fixture, non bloccanti: `compute_gap_fixes`
-  scarta ogni coppia arco/arco oltre `tolerance` anche quando i cerchi si
-  intersecano davvero; un'altra scelta di design solo con un file reale.
+  ~0,3–0,5 mm; il foglio A è un assieme con archi e linee di costruzione.
+- `compute_gap_fixes` scarta ogni coppia arco/arco oltre `tolerance` anche
+  quando i cerchi si intersecano davvero; un'altra scelta di design solo con un
+  file reale.
 - Backlog: `DxfAnalyzer.summary_stats()` anche in CSV; fingerprint geometrica
-  per validare una parte; "meccanismo anti-rotazione di un pezzo staccato"
-  (un ponticello su un contorno singolo, nome non deciso: non "microjoint").
-- Idee di tool sul motore (misura, classificazione, confronto, validazione,
-  normalizzazione, orientamento, scheletro, decomposizione): ora nel
-  "Catalogo dei fatti geometrici futuri".
+  per validare una parte; "meccanismo anti-rotazione di un pezzo staccato" (un
+  ponticello su un contorno singolo, nome non deciso: non "microjoint").
 
 ## Regola da ricordare
 
