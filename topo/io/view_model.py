@@ -22,6 +22,7 @@ from __future__ import annotations
 from typing import Mapping, Optional
 
 from ..model import Result, RoleStyle, feature_closed, role_style
+from ..model.overlay import _feature_contours
 from ..model.role import ContourRole, feature_role, role_str as _role_str
 from ..core.geometry.measure import track_points
 from ..core.primitives.polygon_builder import build_polygon, curve_polygon
@@ -67,9 +68,6 @@ def _feature_entries(item, tolerance: float, role_styles: Mapping[str, RoleStyle
     `center` + `diameter`).
     """
     role = getattr(item, "role", None)
-    contours = getattr(item, "contours", None)
-    if contours is None:
-        contours = [item]
     extra = {}
     if callable(getattr(item, "to_dict", None)):
         for key, value in item.to_dict().items():
@@ -78,7 +76,7 @@ def _feature_entries(item, tolerance: float, role_styles: Mapping[str, RoleStyle
             elif isinstance(value, (tuple, list)) and all(isinstance(v, (int, float)) for v in value):
                 extra[key] = [round(v, 4) for v in value]
     entries = []
-    for contour in contours:
+    for contour in _feature_contours(item):
         c_role = feature_role(contour, role) or ContourRole.UNKNOWN
         segments = getattr(contour, "segments", []) or []
         closed = feature_closed(contour, item)

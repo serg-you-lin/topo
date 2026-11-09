@@ -552,3 +552,7 @@ The default `skip_layers` itself: D243.
 ### D243 — reopening D129: `load_dxf`/`document_from_msp` read every layer by default, `skip_layers=()` (Federico, 9 November).
 Skipping `Trash`/`Annotation` by name was a fact of how one file is named: a drawing topo never wrote lost geometry on
 layers that happen to carry those names. `SKIP_LAYERS` stays public; a caller reading back topo's own output passes it.
+### D244 — `promote` refuses an `item` that carries no geometry (Federico, 9 November).
+Measured: two curves promoted into an item with no `contours` left `loose` and reached no DXF, with no warning (D137).
+The test is a contour with `segments` and a role, as `to_dxf` draws it; private (`model/overlay.py`), so 0.29.1 adds
+no public name.

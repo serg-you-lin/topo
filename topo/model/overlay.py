@@ -76,3 +76,25 @@ def feature_closed(contour, item) -> bool:
     if isinstance(contour, ClosedCurve) or getattr(item, "is_void", False):
         return True
     return ring_closes(getattr(contour, "segments", None) or [])
+
+
+
+def _feature_contours(item) -> list:
+    """
+    I contorni di un elemento dell'overlay come li legge ogni renderer: i suoi
+    `contours` se li ha, altrimenti l'elemento stesso (D90).
+    """
+    contours = getattr(item, "contours", None)
+    return [item] if contours is None else list(contours)
+
+
+def _feature_drawable(item) -> bool:
+    """
+    Vero se un renderer disegna qualcosa dell'elemento: almeno un contorno con
+    `segments` e un ruolo (suo o dell'elemento, D90). Altrimenti l'elemento non
+    porta geometria (D244).
+    """
+    from .role import feature_role
+    role = getattr(item, "role", None)
+    return any(getattr(c, "segments", None) and feature_role(c, role)
+               for c in _feature_contours(item))

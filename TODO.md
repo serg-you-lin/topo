@@ -337,16 +337,6 @@ Aperte:
 
 ## Fili da ragionare con Federico
 
-- **`promote` con un `item` che non porta geometria perde le curve in uscita.**
-  Misurato: un quadro con tre `loose`, due promosse con
-  `promote([c1, c2], cluster, "slot", item=Slot())` (una dataclass senza
-  `contours`): `to_dxf` passa da 4 a 2 entità, e così ogni parte di `split`;
-  nessun avviso. Le curve escono da `loose` e l'item non le tiene. Contrasta D137
-  ("never dropped"). Strade: `promote` rifiuta (`ValueError`) un item senza
-  `contours` quando le curve sono più d'una; oppure `promote` tiene le curve in
-  un campo suo accanto all'item; oppure `to_dxf` avvisa per l'item senza
-  geometria.
-
 - **Riferimenti D## nel codice e nelle docstring pubbliche** (D239): 484 nel codice,
   58 in 22 docstring pubbliche, che `help()` mostra. Federico ne parla col forum;
   fino ad allora restano.
