@@ -292,7 +292,8 @@ fixed in 1.x. Each was reproduced on the current code.
   the layers, the flow, "the model is the product".
 - **[`docs/LIMITS.md`](docs/LIMITS.md)** — what topo cannot promise, and why.
 - **`MAP.md`** — the design decisions, in chronological order.
-- **`SCRIPTS.md`** — the numbered scripts in `scripts/`, one per stage of the pipeline.
+- **[`tutorial/`](tutorial/README.md)** — numbered lessons, from a part drawn in code to a folder of your own drawings.
+- **`SCRIPTS.md`** — the maintenance tools in `scripts/`.
 
 ---
 
