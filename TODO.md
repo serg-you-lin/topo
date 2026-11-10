@@ -385,6 +385,17 @@ Aperte:
 
 ## Aperti minori
 
+- `load_dxf` sbaglia in silenzio cerchi, archi ed ellissi su un piano inclinato
+  (estrusione diversa da (0,0,±1), o asse maggiore con Z). Misurato su un DXF
+  generato, un caso per layer: un cerchio r=8 inclinato di 45° con centro WCS
+  (110,60) diventa `CircleSeg(center=(110, 42.43), r=8)` (prende il centro OCS
+  come XY), la proiezione vera è un'ellisse centrata in (110,60) con semiassi 8
+  e 5.66; scarto massimo 15.2 mm (arco uguale), ellisse con asse inclinato
+  2.07 mm. Nessuna nota, solo `dxf-flattened`. Corretti (scarto ≤ 0.002):
+  LINE, LWPOLYLINE/POLYLINE con quota, POLYLINE 3D, SPLINE, cerchi/archi a Z≠0
+  o con estrusione (0,0,-1).
+- `docs/LLM.md`: `geometry.circle(radius, center)` scritto posizionale, ma
+  `center` è solo keyword (`circle(10, (-50, 0))` → `TypeError`).
 - Il consiglio di `near-gap` può essere falso (D240: sperimentale, ma non deve
   mentire). Misurato con `faces()` e la tolleranza di default:
   - `tests/data/golden_faces/rect_gap.dxf` e `rect_overlap.dxf`: dice
