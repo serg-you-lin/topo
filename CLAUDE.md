@@ -28,7 +28,7 @@ docstrings/comments, see Conventions).
 | why is it built this way | `docs/ARCHITECTURE.md` |
 | why was X decided | `MAP.md` — decision log `D1…Dn`. Grep for the topic. **A closed decision is not re-decided**; to reopen it, say "reopening D##" out loud |
 | what's missing / planned | `TODO.md` |
-| running something end to end | `scripts/NN_*.py` (first line `import _paths`), listed in `SCRIPTS.md` |
+| running something end to end | `tutorial/NN_*.py` (lessons, D247); the tools in `scripts/` are listed in `SCRIPTS.md` |
 | tests, fixtures, goldens | `tests/`, plus the `python-testing-style` skill |
 
 `docs/INDEX.md` is **generated**. Never edit it by hand:

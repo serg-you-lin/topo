@@ -563,3 +563,7 @@ To be revisited when a real user needs another unit.
 ### D246 — `heal()` refuses a threshold that is not a length in mm (Federico, 9 November).
 `tolerance` (given, or the loader's) finite and > 0, `max_gap` finite and ≥ 0 (0 is used: no gap closed); else `ValueError`,
 a non-number `TypeError`. Checked once in `build_network`, so every loader's value passes through it.
+### D247 — the learning path is `tutorial/`: numbered lessons on tracked files, each run by the suite (Federico, 10 November).
+A lesson reads a file in `tutorial/files/` or the reader's own path, set in its CONFIG block (no command line), and writes to
+`tutorial_output/`. English: alpha testers read it (D144). The numbered learning scripts leave `scripts/`, which keeps the tools
+(supersedes D14; D23's `_paths` carries over). The generator of `tutorial/files/` stays untracked.

@@ -302,7 +302,8 @@ da sistemare nella 1.x. Ognuno è stato riprodotto sul codice attuale.
   perché: gli strati, il flusso, "il prodotto è il modello".
 - **[`docs/LIMITS_IT.md`](docs/LIMITS_IT.md)** — cosa topo non può promettere, e perché.
 - **`MAP.md`** — le decisioni di design, in ordine cronologico.
-- **`SCRIPTS.md`** — gli script numerati in `scripts/`, uno per passo della pipeline.
+- **[`tutorial/`](tutorial/README.md)** — lezioni numerate (in inglese), da un pezzo disegnato in codice a una cartella di disegni tuoi.
+- **`SCRIPTS.md`** — gli strumenti di manutenzione in `scripts/`.
 
 ---
 
