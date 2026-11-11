@@ -16,13 +16,6 @@ closed contours, and nothing is silently dropped.
 Today the geometry mostly comes from CAD files and technical drawings (DXF in;
 DXF, JSON or SVG out); the engine itself sees only geometry, whatever its source.
 
-topo is **not a sheet-metal tool**. Sheet and plate manufacturing is where it
-grew up and still its first consumer, not its boundary: the engine knows no
-material, process or product. Reading a contour as "a hole to drill" or a line
-as "a bend" is a consumer's interpretation (`snapbend` for sheet metal,
-`snapdraw` for drawing notation), written on top through one open overlay
-(`cluster.overlay`).
-
 > Status: **alpha**. Used in production, but the API still moves. See `MAP.md` for the current design decisions.
 
 > **Writing code against topo with an AI assistant?** Give it
