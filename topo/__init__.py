@@ -1,8 +1,9 @@
 """
 topo
 ----
-Deterministic 2D-geometry engine for technical drawings: geometry and roles,
-no file format (MAP.md D123). DXF and PDF come in and go out through the
+Deterministic 2D geometry engine: it repairs vector geometry and reads its
+structure - closed contours, what lies inside what, what is connected.
+Geometry and roles, no file format (MAP.md D123). DXF and PDF come in and go out through the
 adapters, sibling packages in the same distribution: `topo_dxf`
 (`pip install g-topo[dxf]`) and `topo_pdf` (`g-topo[pdf]`) - D124, D129.
 

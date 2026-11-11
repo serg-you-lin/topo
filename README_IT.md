@@ -1,6 +1,6 @@
 # topo
 
-**Motore di geometria 2D deterministico per il disegno tecnico e la geometria CAD.**
+**Motore di geometria 2D deterministico: ripara la geometria vettoriale e ne legge la struttura — contorni chiusi, cosa sta dentro cosa, cosa è collegato.**
 
 `topo` prende geometria 2D rotta e ne ricava un modello pulito e senza perdite —
 contorni chiusi ricuciti, la loro gerarchia di contenimento, i testi del
@@ -12,6 +12,10 @@ adapter, pacchetti fratelli nella stessa distribuzione.
 La parte distintiva è l'**healing**: le curve che dovrebbero incontrarsi e non
 lo fanno — piccoli gap, doppioni, sporgenze, pezzi disegnati uno per uno —
 vengono ricucite in contorni chiusi, e niente viene scartato in silenzio.
+
+Oggi la geometria arriva soprattutto da file CAD e disegni tecnici (DXF in
+ingresso; DXF, JSON o SVG in uscita); il motore vede solo geometria, da
+qualunque fonte arrivi.
 
 topo **non è uno strumento per la lamiera**. La lamiera e la piastra sono il
 contesto in cui è nato, e il suo primo consumatore, non il suo confine: il

@@ -1,6 +1,7 @@
 # topo — working agreement
 
-Deterministic 2D-geometry engine for technical drawings and CAD geometry.
+Deterministic 2D geometry engine: it repairs vector geometry and reads its
+structure — closed contours, what lies inside what, what is connected.
 Input adapters (DXF today; PDF frozen/experimental; raw primitives) → a lossless
 domain model (healed closed contours, containment hierarchy, texts, an open
 overlay for a consumer's reading) → renderers (DXF / JSON / XML / SVG / view-model).

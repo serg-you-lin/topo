@@ -1,6 +1,6 @@
 # topo
 
-**Deterministic 2D-geometry engine for technical drawings and CAD geometry.**
+**Deterministic 2D geometry engine: it repairs vector geometry and reads its structure — closed contours, what lies inside what, what is connected.**
 
 `topo` turns broken 2D geometry into a clean, lossless model — healed closed
 contours, their containment hierarchy, the drawing's texts, and an open overlay
@@ -12,6 +12,9 @@ distribution.
 The distinctive part is the **healing**: curves that should meet but do not —
 small gaps, doubles, overshoots, pieces drawn one by one — are reconnected into
 closed contours, and nothing is silently dropped.
+
+Today the geometry mostly comes from CAD files and technical drawings (DXF in;
+DXF, JSON or SVG out); the engine itself sees only geometry, whatever its source.
 
 topo is **not a sheet-metal tool**. Sheet and plate manufacturing is where it
 grew up and still its first consumer, not its boundary: the engine knows no

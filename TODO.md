@@ -19,7 +19,7 @@ rosso su un difetto vero prima di contare.
 
 **Chiusi:** G1 (D150), G2 (→ 1.x, D149), G3 (D152), G4 (D145/D153/D154), G5
 (D156), G6 (D103, D157), G6b (D163), G6c (D180), G6d (D189), G6e (D201), G7
-(D220), G9, G11, G12 (D165), G13 (D166–D168), G15 (D206/D209), G16 (D210).
+(D220), G8 (D248), G9, G11, G12 (D165), G13 (D166–D168), G15 (D206/D209), G16 (D210).
 
 **Aperti**
 - [ ] **G14** Superficie allineata alle API di una libreria matura (D174,
@@ -28,10 +28,6 @@ rosso su un difetto vero prima di contare.
       finché non ce n'è una). I consumer si adeguano con le tabelle
       vecchio → nuovo di D176/D177, dalle loro sessioni (snapbend, snapdraw,
       smoother, pippo).
-- [ ] **G8** README / README_IT / `description` di pyproject / prima riga di
-      CLAUDE.md: motore di geometria 2D, i disegni tecnici sono un caso. Oggi
-      tutti e quattro dicono "for technical drawings and CAD geometry":
-      Federico giudica se basta.
 - [ ] **Pulizia del repo** (Federico): TODO.md, MAP.md e il resto non devono
       avere log di sessione; restano solo cose da fare e decisioni. TODO.md è
       fatto; resta MAP.md e il controllo del resto. In `tests/data/` resta solo

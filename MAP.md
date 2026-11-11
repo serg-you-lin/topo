@@ -567,3 +567,6 @@ a non-number `TypeError`. Checked once in `build_network`, so every loader's val
 A lesson reads a file in `tutorial/files/` or the reader's own path, set in its CONFIG block (no command line), and writes to
 `tutorial_output/`. English: alpha testers read it (D144). The numbered learning scripts leave `scripts/`, which keeps the tools
 (supersedes D14; D23's `_paths` carries over). The generator of `tutorial/files/` stays untracked.
+### D248 — topo says what it is without a format or a trade: "repairs vector geometry and reads its structure" (Federico, 11 November).
+Same line in README, README_IT, pyproject, CLAUDE.md and `topo/__init__.py`; CAD files and technical drawings are where the
+geometry comes from today, said once below it, not in the name. Closes G8.
