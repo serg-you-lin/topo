@@ -17,13 +17,6 @@ Oggi la geometria arriva soprattutto da file CAD e disegni tecnici (DXF in
 ingresso; DXF, JSON o SVG in uscita); il motore vede solo geometria, da
 qualunque fonte arrivi.
 
-topo **non è uno strumento per la lamiera**. La lamiera e la piastra sono il
-contesto in cui è nato, e il suo primo consumatore, non il suo confine: il
-motore non conosce materiale, processo né prodotto. Leggere un contorno come "un
-foro da forare" o una linea come "una piega" è interpretazione del consumatore
-(`snapbend` per la lamiera, `snapdraw` per la notazione del disegno), scritta
-sopra attraverso un overlay aperto (`cluster.overlay`).
-
 > Stato: **alpha**. In produzione, ma l'API si muove ancora. Vedi `MAP.md` per le decisioni di design correnti.
 
 > **Scrivi codice contro topo con un assistente AI?** Dagli anche
