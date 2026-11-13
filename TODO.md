@@ -5,21 +5,20 @@ cronaca nel git log. Misure, esiti e storia dei tentativi non stanno qui.
 
 ---
 
-## Il cancello della 1.0 (D148, D207)
+## Il cancello della 1.0 (D148, D249)
 
-**Feature freeze.** La lista è chiusa: può solo accorciarsi (D193). Quando è
+**Feature freeze.** Quando la lista è
 vuota topo è *1.0-ready*: `python scripts/release_check.py` esce 0 e da quel
 giorno ogni commit su `main` lo tiene a 0. Entra solo ciò che rompe un nome
 pubblico, o rende vere e provate le invarianti di D143 sui fixture del repo,
 più i documenti (D144) e la history pulita; il resto è 1.x (D158, D174).
-Regole (D207): il cancello non cresce (un difetto trovato va in "Dopo la 1.0",
-mai in un G nuovo); nessun rifacimento del motore, un meccanismo per commit; un
-commit che alza il numero dei difetti si revoca; ogni test nuovo si mostra
-rosso su un difetto vero prima di contare.
+Un difetto trovato prima della 1.0 entra nel cancello (D249); ogni test nuovo
+si mostra rosso su un difetto vero prima di contare.
 
 **Chiusi:** G1 (D150), G2 (→ 1.x, D149), G3 (D152), G4 (D145/D153/D154), G5
 (D156), G6 (D103, D157), G6b (D163), G6c (D180), G6d (D189), G6e (D201), G7
-(D220), G8 (D248), G9, G11, G12 (D165), G13 (D166–D168), G15 (D206/D209), G16 (D210).
+(D220), G8 (D248), G9, G11, G12 (D165), G13 (D166–D168), G15 (D206/D209), G16 (D210),
+G17 (D250).
 
 **Aperti**
 - [ ] **G14** Superficie allineata alle API di una libreria matura (D174,
@@ -80,7 +79,10 @@ repo, mai rigenerando alla cieca.
 
 ## Dopo la 1.0 (1.x, additivo — non toccare finché il cancello è aperto)
 
-**Difetti noti, fuori dal cancello (D207, D237).** Fatti, nessuna analisi.
+**Difetti noti, fuori dal cancello (D237).** Fatti, nessuna analisi.
+- `experimental.parity_faces` (D250): nei pareggi del T-join decide l'ordine
+  delle coordinate; 108 dei 631 disegni di `tests/` si leggono diversi ruotati
+  o specchiati (l'asola con la croce di `Multifeature.dxf`).
 - `near-copy` (D237): l'avviso scatta anche su spigoli veri (coppie a 45–90°).
   Idea di Federico: alzare la soglia solo nello spicchio dei `points`
   dell'avviso; conta solo quando la lineetta serve a chiudere un esterno.
@@ -329,6 +331,11 @@ Aperte:
   `healing/hierarchy.py`) e `contour_shape` (esatta). Da unificare su
   `contour_shape`, provando i golden come in snapbend D66.
 - **snapdraw/pippo, cerchio attraversato da altre linee** → 1.x (sopra).
+- **snapbend, vaschetta** (un anello che tocca l'outer nei 4 vertici concavi
+  esce inner in `faces()`): topo non cambia, è geometria giusta (D250: tutti i
+  nodi pari, l'unica lettura con ogni linea contorno). snapbend usa
+  `topo.experimental.gap(inner, cluster.outer).distance == 0` per trattarlo come
+  suo (`tests/data/golden_faces/vaschetta_input.dxf`: distanza 0 in (200, 0)).
 - Da fare nei consumer (non qui): snapdraw `tag_features` → `result.promote`;
   snapbend `topo.promote(result, …)` → `result.promote(…)` (D172, D173);
   smoother strisce → `link` (D142) e `simplify_points` (D141); pippo
@@ -381,6 +388,12 @@ Aperte:
 
 ## Aperti minori
 
+- `HierarchyBuilder._collect_loose` (`hierarchy.py:217`) toglie da `loose` le
+  curve con ruolo OUTER/INNER: una curva così che non entra nella gerarchia
+  sparisce, contro D137. Letto nel codice, non misurato se succede.
+- `closed-touch` (D241) non scatta su un anello che tocca l'outer in un punto
+  solo (quadrato 100 con un triangolo che ha un vertice a metà di un lato):
+  da capire perché.
 - `load_dxf` sbaglia in silenzio cerchi, archi ed ellissi su un piano inclinato
   (estrusione diversa da (0,0,±1), o asse maggiore con Z). Misurato su un DXF
   generato, un caso per layer: un cerchio r=8 inclinato di 45° con centro WCS

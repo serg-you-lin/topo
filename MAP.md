@@ -410,10 +410,7 @@ and the same file read twice gave different `faces()`/`outlines()`. Solid fills 
 A gap within tolerance is closed by the engine: every segment starts where the previous one ends,
 the last returns to the first. A jump left in a delivered contour is an engine bug, not a tolerance
 case. A gap beyond tolerance leaves the profile open (in `loose`) with a warning; the rest of the drawing is still read.
-### D207 — the 1.0 gate only shrinks, with a ratchet: no engine rewrites, a commit that adds a defect is reverted.
-Measured: contours with a jump went 32 (0.23.0) → 48 (2 November) while the gate stayed at 7 items;
-each rewrite broke what no test measured. A found defect goes to 1.x, never into a new G item;
-the jump count never rises. Plan in TODO.md "PIANO".
+### ~~D207~~ → D249: the gate that only shrinks is removed.
 ### D209 — a jump within tolerance in a delivered contour becomes a new straight segment (G15, how D206 closes).
 No curve is moved: the readings insert a `LineSeg` between the two ends (`close_contour_jumps`) and
 say how many in `warnings`. Moving an end sideways changes the drawing; a new segment only adds what
@@ -570,3 +567,11 @@ A lesson reads a file in `tutorial/files/` or the reader's own path, set in its 
 ### D248 — topo says what it is without a format or a trade: "repairs vector geometry and reads its structure" (Federico, 11 November).
 Same line in README, README_IT, pyproject, CLAUDE.md and `topo/__init__.py`; CAD files and technical drawings are where the
 geometry comes from today, said once below it, not in the name. Closes G8.
+### D249 — D207 is removed: a defect found before 1.0 goes into the gate (Federico, 13 November).
+D207 was never kept, and it pushed past 1.0 exactly what is free to fix only before it: a reading that changes
+its output after 1.0 needs a deprecation (D174, D175). First in: the model of `faces()` (G17).
+### D250 — the parity reading is `topo.experimental.parity_faces`, a third reading; `faces()` stays as it is (Federico, 13 November).
+Theorem: the faces admit an inside/outside labelling with every line a contour iff every node has even degree, and it is
+unique and frame-free. Odd nodes: free ends and bridges go, then a minimum T-join (least outer boundary, then least
+length, exact: `topology/matching.py`). Declared limit: a tie is broken by the coordinates; 108 of 631 drawings read
+differently moved or mirrored, so it cannot replace `faces()`. Closes G17.

@@ -46,11 +46,10 @@ GLOBAL_NAME_ROLES = {
     "Signature": "engrave",
 }
 
-# L'unico ruolo che i golden assegnano al load (MARK/Signature → engrave):
-# il round-trip lo rilegge dal layer su cui to_dxf l'ha scritto.
-ROUNDTRIP_NAME_ROLES = {
-    role_to_dxf_layer("engrave"): "engrave",
-}
+# I ruoli che un golden assegna al load (MARK/Signature → engrave, più quelli
+# del suo config): il round-trip li rilegge dal layer su cui to_dxf li ha scritti.
+def _roundtrip_name_roles(name_roles: dict) -> dict:
+    return {role_to_dxf_layer(role): role for role in set(name_roles.values())}
 
 # Contorni misti BSplineSeg + linee/archi: materializzati come SPLINE native +
 # LWPOLYLINE aperte con endpoint coincidenti (mai discretizzati). Il round-trip
@@ -288,7 +287,7 @@ def _make_roundtrip_test(path):
         doc_out = topo_dxf.to_dxf(result, source_doc)
         rt_result = _pipeline(
             topo_dxf.document_from_msp(
-                doc_out.modelspace(), tolerance=tol, role_rules=topo.name_rules(ROUNDTRIP_NAME_ROLES),
+                doc_out.modelspace(), tolerance=tol, role_rules=topo.name_rules(_roundtrip_name_roles(name_roles)),
                 skip_layers=topo_dxf.SKIP_LAYERS,  # rilegge l'uscita di topo senza loose e testi (D243)
             )
         )

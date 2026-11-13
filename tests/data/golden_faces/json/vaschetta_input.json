@@ -1,0 +1,23 @@
+{
+  "source_file": "vaschetta_input.dxf",
+  "cluster_count": 1,
+  "clusters": [
+    {
+      "area_mm2": 28000.0,
+      "outer_perimeter_mm": 1020.0,
+      "inner_perimeter_mm": 700.0,
+      "total_perimeter_mm": 1720.0,
+      "outer_wkt": "POLYGON ((0 -40, 200 -40, 200 0, 240 0, 240 150, 200 150, 200 190, 0 190, 0 150, -40 150, -40 0, 0 0, 0 -40))",
+      "inners_count": 1,
+      "inners_wkt": [
+        "POLYGON ((0 0, 200 0, 200 150, 0 150, 0 0))"
+      ],
+      "inners": [
+        {
+          "role": "inner",
+          "area": 30000.0
+        }
+      ]
+    }
+  ]
+}

@@ -99,9 +99,12 @@ def structural_loops(loops: List[list],
     I loop in cui ogni edge con ruolo deciso è strutturale: un solo edge non
     strutturale (engrave, frame, ...) declassa l'intero loop.
     """
-    structural = is_structural or is_structural_role
-    return [loop for loop in loops
-            if all(e.role == ContourRole.UNKNOWN or structural(e.role) for e, _ in loop)]
+    return [loop for loop in loops if all(may_be_contour(e, is_structural) for e, _ in loop)]
+
+
+def may_be_contour(edge: Edge, is_structural: Optional[Callable[[str], bool]] = None) -> bool:
+    """L'edge può essere un contorno: ruolo non deciso, o strutturale."""
+    return edge.role == ContourRole.UNKNOWN or (is_structural or is_structural_role)(edge.role)
 
 
 def build_hierarchy(curves: list, label: str = "", source_file: str = "",

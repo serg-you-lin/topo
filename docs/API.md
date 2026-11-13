@@ -40,7 +40,7 @@ A function that modifies its argument returns `None`.
 
 1. [Input geometry](#1-input-geometry) — `load_segments`, `load_geometry`, `RoleRule`, `name_rules`, writing an adapter
 2. [Validation](#2-validation) — `validate_document`, `validate_result`
-3. [Processing](#3-processing) — `heal` → `Network` (`faces()` / `outlines()`) and their building blocks (core), `split`, `anchor_texts` (tools)
+3. [Processing](#3-processing) — `heal` → `Network` (`faces()` / `outlines()`) and their building blocks (core), experimental `parity_faces` (a third reading, D250), `split`, `anchor_texts` (tools)
 4. [Export](#4-export) — `save_json`, `to_json`, `to_shapely`; experimental `to_view_model`, `to_svg`, `save_svg`
 5. [Removed before 1.0](#5-removed-before-10-d230) — metadata, `inject`, `custom`
 6. [Inspection / debug](#6-inspection--debug) — `inspect_document`, `inspect_result`
@@ -491,6 +491,31 @@ None **mutates** the input: they return new lists/objects.
 | `non_contour` | `list[Edge]` | non-contour candidates, same criterion as `faces()` (D49) |
 | `unclassified` | `list[Edge]` | the rest |
 | `nested_in` | `int \| None` | index of the outermost group that contains it |
+
+### `topo.experimental.parity_faces` — a third reading, by parity (experimental, D250)
+
+```python
+topo.experimental.parity_faces(network) -> Result      # result.reading == "parity"
+```
+
+Reads the network so that every remaining line separates an inside face from an outside one. Same `Result` as
+`faces()` (clusters, inners by containment, `loose`, diagnostics); crossings are cut; edges with a decided
+non-structural role take no part.
+
+- **Guaranteed — every node of even degree.** The faces of a planar network admit an inside/outside labelling with
+  every line a contour if and only if every node has even degree, and then the labelling is unique (the colour of a
+  face is the parity of the lines crossed to reach it from outside: the even-odd rule). Here the reading is the only one
+  that keeps every line, and it does not depend on the frame.
+- **Chosen — a node of odd degree.** No reading keeps every line. Free ends and bridges go first (the same face on both
+  sides, never a contour). Then the set of lines that leaves every node even, removing first the least length of the
+  outer boundary, then the least length overall: a minimum T-join, exact on integer lengths. This minimum is a choice
+  ("change the drawing as little as possible"), not a theorem.
+- **Declared limit — ties.** Where two such sets have the same length (symmetric drawings: a slot crossed by two axes),
+  the coordinates decide which one goes, so a moved or mirrored drawing can read differently: 108 of the 631 drawings
+  in `tests/` do. This is why it is not `faces()`.
+
+New diagnostics: `rim-cut` (warning: part of the outer boundary had to go), `face-colour` (warning: two neighbouring
+faces read the same side, where the walk round a node does not order tangent branches, D199).
 
 ---
 
