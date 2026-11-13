@@ -144,6 +144,48 @@ class Graph:
             components.append(comp)
         return components
 
+    def bridges(self) -> set:
+        """
+        id degli edge ponte: tolti, i loro due nodi non sono più collegati.
+        Un ponte ha la stessa faccia dai due lati. Tarjan iterativo; due edge
+        paralleli fra gli stessi nodi non sono ponti.
+        """
+        disc: dict = {}
+        low: dict = {}
+        out: set = set()
+        clock = 0
+        for root in self.nodes:
+            if root in disc:
+                continue
+            disc[root] = low[root] = clock
+            clock += 1
+            stack = [(root, None, iter(self.nodes[root]))]
+            while stack:
+                node, via, pending = stack[-1]
+                for edge, other in pending:
+                    if via is not None and id(edge) == via:
+                        continue
+                    if other not in disc:
+                        disc[other] = low[other] = clock
+                        clock += 1
+                        stack.append((other, id(edge), iter(self.nodes[other])))
+                        break
+                    low[node] = min(low[node], disc[other])
+                else:
+                    stack.pop()
+                    if stack:
+                        parent = stack[-1][0]
+                        low[parent] = min(low[parent], low[node])
+                        if low[node] > disc[parent]:
+                            out.add(via)
+        return out
+
+    def without(self, ids: set) -> 'Graph':
+        """Un nuovo Graph senza gli edge `ids` (i nodi rimasti senza edge spariscono)."""
+        nodes = {n: [(e, o) for e, o in conn if id(e) not in ids] for n, conn in self.nodes.items()}
+        return Graph(nodes={n: conn for n, conn in nodes.items() if conn},
+                     degenerate_loops=self.degenerate_loops, node_map=self.node_map)
+
     def open_nodes(self) -> list:
         """
         Nodi con un solo edge incidente — gli estremi liberi del grafo.
