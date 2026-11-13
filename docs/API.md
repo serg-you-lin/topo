@@ -710,6 +710,28 @@ where the result falls on the contour, pass it to `point_on_contour` (D140).
 
 ---
 
+### `gap`, `Gap`
+
+```python
+topo.geometry.gap(a, b) -> Gap        # Gap(distance, on_a, on_b)
+```
+
+The minimum distance between the boundaries `a` and `b`, and the closest pair of points: `on_a` on `a`, `on_b` on
+`b`. Each is a `Contour`, any object with `.segments`, or a list of primitives (a ring, or open pieces). Boundaries that
+touch or cross give 0 within float noise: compare with a small threshold (1e-6 mm), never with `== 0`. One
+boundary inside the other gives the distance between the two boundaries, not 0: it is about boundaries, not regions.
+Exact on lines, arcs and circles; on splines and ellipses within `1e-4` (D251).
+
+```python
+cluster = result.clusters[0]
+g = topo.geometry.gap(cluster.inners[0], cluster.outer)
+g.distance       # 0.0 where the inner touches the outer
+```
+
+**Mutates** nothing. **Raises** `ValueError` if `a` or `b` is empty.
+
+---
+
 ### `cut_by`
 
 ```python

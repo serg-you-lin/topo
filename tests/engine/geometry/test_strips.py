@@ -14,7 +14,7 @@ import topo
 import topo_dxf
 from topo.core.geometry import circle, rectangle
 from topo.core.primitives.segments import ArcSeg, LineSeg
-from topo.tools.strips import facing_boundaries, gap, link, open_boundaries, unconnected_regions
+from topo.tools.strips import facing_boundaries, link, open_boundaries, unconnected_regions
 from topo import to_shapely
 from tests.paths import DATA
 
@@ -75,14 +75,14 @@ class TestGap(unittest.TestCase):
 
     def test_001_two_discs(self):
         _, _, left, right = _window_with_two_discs()
-        g = gap(left, right)
+        g = topo.geometry.gap(left, right)
         self.assertAlmostEqual(g.distance, 20.0, places=9)
         self.assertAlmostEqual(g.on_a[0], 70.0, places=6)
         self.assertAlmostEqual(g.on_b[0], 90.0, places=6)
 
     def test_002_disc_and_window(self):
         _, facing, left, _ = _window_with_two_discs()
-        g = gap(facing.region, left)
+        g = topo.geometry.gap(facing.region, left)
         # finestra x 20..180, y 20..100; disco in (60, 60) r=10: 30 dal lato sinistro, da sopra e da sotto
         self.assertAlmostEqual(g.distance, 30.0, places=9)
         self.assertAlmostEqual(math.dist(g.on_b, (60, 60)), 10.0, places=9)

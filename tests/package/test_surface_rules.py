@@ -88,6 +88,8 @@ DATA = {
     'topo.geometry.point_on_contour': ('segments', 'point'),
     'topo.geometry.ContourPoint': ('point', 'kind', 'segments', 'turn_deg', 'concave'),
     'topo.geometry.nearest_point': ('segments', 'point'),
+    'topo.geometry.gap': ('a', 'b'),
+    'topo.geometry.Gap': ('distance', 'on_a', 'on_b'),
     'topo.geometry.cut_by': ('segment', 'region'),
     'topo.geometry.contour_minus': ('contour', 'region'),
     'topo.geometry.contour_union': ('contour', 'other'),
@@ -147,6 +149,7 @@ DATA = {
 # eccezioni dichiarate in D176: un'opzione per posizione per un protocollo noto
 DECLARED_EXCEPTIONS = {
     ("topo.Overlay.get", "default"),   # il protocollo di dict.get
+    ("topo.geometry.Gap", "distance"),  # un campo del risultato di gap(), non un'opzione
 }
 
 # un parametro con questo nome è un'opzione, sempre: rete di sicurezza per

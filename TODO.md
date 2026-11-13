@@ -334,8 +334,9 @@ Aperte:
 - **snapbend, vaschetta** (un anello che tocca l'outer nei 4 vertici concavi
   esce inner in `faces()`): topo non cambia, è geometria giusta (D250: tutti i
   nodi pari, l'unica lettura con ogni linea contorno). snapbend usa
-  `topo.experimental.gap(inner, cluster.outer).distance == 0` per trattarlo come
-  suo (`tests/data/golden_faces/vaschetta_input.dxf`: distanza 0 in (200, 0)).
+  `topo.geometry.gap(inner, cluster.outer).distance <= 1e-6` per
+  trattarlo come suo (D251; `tests/data/golden_faces/vaschetta_input.dxf`:
+  distanza 0 in (200, 0)). Mai `== 0`: un incrocio dà 0 a meno del rumore.
 - Da fare nei consumer (non qui): snapdraw `tag_features` → `result.promote`;
   snapbend `topo.promote(result, …)` → `result.promote(…)` (D172, D173);
   smoother strisce → `link` (D142) e `simplify_points` (D141); pippo

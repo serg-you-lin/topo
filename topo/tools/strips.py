@@ -9,7 +9,7 @@ regione con quale):
    quelli delle regioni piene direttamente dentro. Solo fra questi passa una
    striscia: due regioni dentro regioni vuote diverse hanno materiale in
    mezzo, e sono escluse per costruzione.
-2. `gap`: distanza minima fra due bordi e i due punti più vicini.
+2. la distanza fra due bordi è `topo.geometry.gap` (D251).
 3. `link`: la striscia fra due bordi affacciati (genitore–figlio e
    fratello–fratello) in un punto e con una larghezza; rifiutata se
    attraversa un altro bordo o un'altra striscia.
@@ -28,11 +28,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Dict, List, Sequence, Tuple
 
-from ..core.geometry.strips import Gap, Strip, gap as _ring_gap, open_ring, strip_between
+from ..core.geometry.strips import Strip, open_ring, strip_between
 from ..core.primitives.segments import LineSeg, Point
 
 __all__ = [
-    "facing_boundaries", "Facing", "gap", "Gap", "link", "Link", "Strip",
+    "facing_boundaries", "Facing", "link", "Link", "Strip",
     "unconnected_regions", "open_boundaries", "Opened",
 ]
 
@@ -59,11 +59,6 @@ def facing_boundaries(cluster) -> List[Facing]:
         if c.depth % 2 == 0 and c.parent is not None and id(c.parent) in by_region:
             by_region[id(c.parent)].inside.append(c)
     return groups
-
-
-def gap(a: "Contour", b: "Contour") -> Gap:
-    """Fatto 2: distanza minima fra i bordi `a` e `b` e i due punti più vicini."""
-    return _ring_gap(a.segments, b.segments)
 
 
 @dataclass(frozen=True)

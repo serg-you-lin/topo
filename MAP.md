@@ -575,3 +575,7 @@ Theorem: the faces admit an inside/outside labelling with every line a contour i
 unique and frame-free. Odd nodes: free ends and bridges go, then a minimum T-join (least outer boundary, then least
 length, exact: `topology/matching.py`). Declared limit: a tie is broken by the coordinates; 108 of 631 drawings read
 differently moved or mirrored, so it cannot replace `faces()`. Closes G17.
+### D251 — `topo.geometry.gap(a, b) -> Gap`: the distance between two boundaries is public (Federico, 13 November).
+A pure geometric fact, the twin of `nearest_point`; takes a `Contour`, anything with `.segments`, or primitives.
+Touching or crossing gives 0 within float noise (compare with 1e-6 mm, never `== 0`). `topo.experimental.gap` and
+`topo.tools.strips.gap` are removed, no alias (before 1.0). First user: snapbend, an inner that touches its outer.

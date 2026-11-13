@@ -38,7 +38,8 @@ _TOUCH = 10 * CURVE_TOLERANCE   # un incontro più vicino di così a un capo del
 
 @dataclass(frozen=True)
 class Gap:
-    """La distanza minima fra due contorni e i due punti, uno per contorno, dove cade."""
+    """The minimum distance between two boundaries and the closest pair of
+    points, one on each (`on_a` on the first, `on_b` on the second)."""
     distance: float
     on_a:     Point
     on_b:     Point
@@ -49,13 +50,20 @@ def _ring_points(ring: Sequence) -> List[Point]:
     return pts + pts[:1]
 
 
-def gap(a: Sequence, b: Sequence) -> Gap:
+def gap(a, b) -> Gap:
     """
-    La distanza minima fra gli anelli `a` e `b` e la coppia di punti più
-    vicini. Prima sulle due discretizzazioni, poi rifinita sulle primitive
-    (proiezioni alterne con `nearest_point`): esatta su rette, archi e
-    cerchi; su spline ed ellissi entro `CURVE_TOLERANCE`.
+    The minimum distance between the boundaries `a` and `b` and the closest
+    pair of points. Each is a `Contour`, any object with `.segments`, or a
+    list of primitives (a ring, or open pieces). Boundaries that touch or
+    cross give 0 within float noise (compare with a small threshold,
+    1e-6 mm, never with `== 0`); one inside the other gives the distance between the two
+    boundaries, not 0. Exact on lines, arcs and circles; on splines and
+    ellipses within `CURVE_TOLERANCE`.
     """
+    a = list(getattr(a, "segments", a))
+    b = list(getattr(b, "segments", b))
+    if not a or not b:
+        raise ValueError("gap(): empty boundary")
     pa, pb = nearest_points(LineString(_ring_points(a)), LineString(_ring_points(b)))
     return refine_gap(a, b, (pa.x, pa.y), (pb.x, pb.y))
 
