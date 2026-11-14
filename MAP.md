@@ -579,3 +579,7 @@ differently moved or mirrored, so it cannot replace `faces()`. Closes G17.
 A pure geometric fact, the twin of `nearest_point`; takes a `Contour`, anything with `.segments`, or primitives.
 Touching or crossing gives 0 within float noise (compare with 1e-6 mm, never `== 0`). `topo.experimental.gap` and
 `topo.tools.strips.gap` are removed, no alias (before 1.0). First user: snapbend, an inner that touches its outer.
+### D252 — `topo_dxf.load_dxf` raises `ValueError` on a file with entities but none topo models (Federico, 14 November; snapdraw request).
+An empty `Document` with only a `dxf-not-modeled` warning reads as an empty sheet, which is false, and every consumer went on
+with nothing. The error comes from topo because it is topo that does not read them. A file with no entities stays an empty
+`Document`; a file read in part keeps the warning; skipped layers and unexploded INSERTs are the caller's choice and never raise.

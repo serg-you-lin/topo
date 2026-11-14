@@ -82,8 +82,8 @@ _ROUNDTRIP_TYPES = frozenset({
 })
 
 
-def _warn_non_roundtrip_types(msp, sink: list, verbose: bool = False) -> None:
-    """Avvisa sui tipi di entità che to_dxf() non riscrive (HATCH, IMAGE, …)."""
+def _warn_non_roundtrip_types(msp, sink: list, verbose: bool = False) -> list[str]:
+    """Avvisa sui tipi di entità che to_dxf() non riscrive (HATCH, IMAGE, …); li restituisce."""
     lost = sorted({
         e.dxftype() for e in msp if e.dxftype() not in _ROUNDTRIP_TYPES
     })
@@ -91,6 +91,7 @@ def _warn_non_roundtrip_types(msp, sink: list, verbose: bool = False) -> None:
         _emit(sink, Diagnostic(
             "dxf-not-modeled", f"entity types topo does not model, not written back by to_dxf(): {', '.join(lost)}",
             notes=["their geometry is not in the Document"]), verbose)
+    return lost
 
 
 def _emit(sink: list, msg: str, verbose: bool = False) -> None:
@@ -270,6 +271,11 @@ def load_dxf(
         did on its own (exploded INSERTs, duplicates removed, Z flattened) in
         `doc.notes`, all `Diagnostic` (D233); with verbose=True also
         printed. `topo.validate_document(doc)` re-raises them.
+
+    Raises:
+        ValueError: the file has entities but none topo models (e.g. only
+            3DFACE): an empty Document would read as an empty sheet (D252).
+            A file with no entities at all gives an empty Document.
     """
     warnings: list = []
     notes: list = []
@@ -335,7 +341,15 @@ def load_dxf(
     if inserts_found and explode_inserts:
         _merge_texts(texts, DxfTextExtractor(msp, role_rules).extract())
 
-    _warn_non_roundtrip_types(msp, warnings, verbose)
+    lost = _warn_non_roundtrip_types(msp, warnings, verbose)
+    # Un file con contenuto ma nessuna entità letta: un Document vuoto
+    # direbbe "foglio vuoto", che è falso (D252). Un file vuoto davvero resta
+    # un Document vuoto; layer saltati e INSERT non esplosi sono scelta del
+    # chiamante, i loro tipi non sono in `lost`.
+    if lost and not edges and not texts:
+        raise ValueError(
+            f"{path}: nothing topo can read, only entity types it does not model: {', '.join(lost)}"
+        )
 
     meta = {
         "$INSUNITS":     doc.header.get("$INSUNITS", 4),

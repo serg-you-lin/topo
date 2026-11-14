@@ -335,6 +335,18 @@ Aperte:
   `healing/hierarchy.py`) e `contour_shape` (esatta). Da unificare su
   `contour_shape`, provando i golden come in snapbend D66.
 - **snapdraw/pippo, cerchio attraversato da altre linee** → 1.x (sopra).
+- **snapdraw, drw_0007 (14 novembre): isola dimezzata.** Nell'isometrico di
+  destra la linea verticale x 173,177 (y 130,7–151,2) finisce 0,017 mm prima
+  del fianco di un arco (c 173,849; 151,158; r 0,655): il ponte sarebbe
+  perpendicolare, D189 lo vieta, il bordo basso va in `loose`. Spostata la
+  linea sull'arco, il contorno è intero (173,19–245,03 × 96,4–158,3). Da
+  decidere con Federico se riaprire D189; prima trovare perché il ponte
+  perpendicolare fu vietato.
+- **snapdraw, HATCH col bordo in percorsi aperti (14 novembre).** `anch_01`
+  (`tests/data/golden_anchoring/`): 38 percorsi aperti su 44; l'HATCH "B" ha
+  ogni rettangolo (3×18, 3×20) salvato come una L più due lati sciolti.
+  `hatch_entity` chiude ogni percorso con la sua corda: righe solo in un
+  triangolo. Federico non ha ancora deciso (spiegazione col caso B data).
 - **snapbend, vaschetta** (un anello che tocca l'outer nei 4 vertici concavi
   esce inner in `faces()`): topo non cambia, è geometria giusta (D250: tutti i
   nodi pari, l'unica lettura con ogni linea contorno). snapbend usa
@@ -346,7 +358,8 @@ Aperte:
   smoother strisce → `link` (D142) e `simplify_points` (D141); pippo
   `cancel_on_line` → `contour_union` (D171); snapdraw legge i fori da `loose`
   (D162); avviso a snapdraw e cogo che `topo.core.healing` è diviso in
-  `base/` e `readings/` (D188).
+  `base/` e `readings/` (D188); snapdraw toglie la richiesta su `load_dxf`
+  e i file di sole entità non lette, fatta (D252, 0.29.6).
 
 
 ## Fili da ragionare con Federico

@@ -1643,7 +1643,10 @@ R2010 (a note says so). Every other entity type is not in the `Document` and is
 named in the `dxf-not-modeled` warning, never dropped in silence.
 
 **Raises** `FileNotFoundError`, `EnvironmentError` (DWG without `ODA_PATH`),
-`RuntimeError` (DWG conversion failed), or the read exceptions of `ezdxf`.
+`RuntimeError` (DWG conversion failed), `ValueError` (the file has entities but
+none topo models, e.g. only `3DFACE`: an empty `Document` would read as an empty
+sheet, D252; a file with no entities at all gives an empty `Document`), or the
+read exceptions of `ezdxf`.
 
 ```python
 doc = topo_dxf.load_dxf("pezzo.dxf", tolerance=0.5,
