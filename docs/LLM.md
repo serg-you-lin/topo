@@ -152,7 +152,7 @@ topo.save_json(result, "out.json")
 import error names the extra. Layer names and colours are the caller's
 (`layers=`, `role_styles=`); the rest is the adapter's default.
 
-`load_dxf` speaks in `topo.Diagnostic` too (D233): `doc.warnings` = `dxf-audit`, `dxf-inserts-ignored` (→ `explode_inserts=True`), `dxf-not-modeled`, `dxf-no-curve`, `dxf-layer-skipped`, `dxf-explode-failed`, `dxf-oda-path`; `doc.notes` = `dxf-dwg-converted`, `dxf-upgraded`, `dxf-inserts-exploded`, `dxf-hatches-exploded`, `dxf-duplicates-removed`, `dxf-flattened`. `topo.validate_document(doc)` hands both on.
+`load_dxf` speaks in `topo.Diagnostic` too (D233): `doc.warnings` = `dxf-audit`, `dxf-inserts-ignored` (→ `explode_inserts=True`), `dxf-not-modeled`, `dxf-hatch-open-boundary` (a HATCH boundary that does not close even rejoined, D253), `dxf-no-curve`, `dxf-layer-skipped`, `dxf-explode-failed`, `dxf-oda-path`; `doc.notes` = `dxf-dwg-converted`, `dxf-upgraded`, `dxf-inserts-exploded`, `dxf-hatches-exploded`, `dxf-duplicates-removed`, `dxf-flattened`. `topo.validate_document(doc)` hands both on.
 
 | name | signature (defaults trimmed) | does |
 |---|---|---|

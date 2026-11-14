@@ -342,11 +342,6 @@ Aperte:
   linea sull'arco, il contorno è intero (173,19–245,03 × 96,4–158,3). Da
   decidere con Federico se riaprire D189; prima trovare perché il ponte
   perpendicolare fu vietato.
-- **snapdraw, HATCH col bordo in percorsi aperti (14 novembre).** `anch_01`
-  (`tests/data/golden_anchoring/`): 38 percorsi aperti su 44; l'HATCH "B" ha
-  ogni rettangolo (3×18, 3×20) salvato come una L più due lati sciolti.
-  `hatch_entity` chiude ogni percorso con la sua corda: righe solo in un
-  triangolo. Federico non ha ancora deciso (spiegazione col caso B data).
 - **snapbend, vaschetta** (un anello che tocca l'outer nei 4 vertici concavi
   esce inner in `faces()`): topo non cambia, è geometria giusta (D250: tutti i
   nodi pari, l'unica lettura con ogni linea contorno). snapbend usa
@@ -359,7 +354,8 @@ Aperte:
   `cancel_on_line` → `contour_union` (D171); snapdraw legge i fori da `loose`
   (D162); avviso a snapdraw e cogo che `topo.core.healing` è diviso in
   `base/` e `readings/` (D188); snapdraw toglie la richiesta su `load_dxf`
-  e i file di sole entità non lette, fatta (D252, 0.29.6).
+  e i file di sole entità non lette, fatta (D252, 0.29.6),
+  e quella sugli HATCH col bordo a pezzi, fatta (D253, 0.29.7).
 
 
 ## Fili da ragionare con Federico

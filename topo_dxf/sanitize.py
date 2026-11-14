@@ -127,16 +127,22 @@ def _explode_inserts(msp, sink: list = None) -> int:
     return len(inserts)
 
 
-def _explode_hatches(msp, sink: list = None) -> int:
+def _explode_hatches(msp, sink: list = None, tolerance: float = 1e-6) -> int:
     """
     Sostituisce ogni HATCH a pattern con le LINE del suo pattern, tagliate
     sul bordo, con layer/colore/tipo linea dell'HATCH. Un riempimento pieno
     non ha righe: resta e finisce negli avvisi. Restituisce gli HATCH esplosi.
+
+    Un bordo salvato a pezzi (percorsi aperti, lati fuori fila) si rimette in
+    anelli chiusi coi soli lati del file (D253). `tolerance` è quasi zero: dentro
+    un HATCH i capi in comune sono scritti uguali, e la tolleranza dei nodi
+    renderebbe ambiguo un lato corto quanto lei.
     """
     from ezdxf.render.hatching import hatch_entity
 
     hatches = [h for h in msp.query("HATCH") if not h.dxf.solid_fill]
     failed = []
+    open_left = []
     for hatch in hatches:
         attribs = {
             k: hatch.dxf.get(k)
@@ -144,9 +150,17 @@ def _explode_hatches(msp, sink: list = None) -> int:
             if hatch.dxf.hasattr(k)
         }
         try:
-            # jiggle_origin di ezdxf sposta l'origine del pattern a caso: le
-            # righe devono essere quelle del file, uguali a ogni lettura
-            segments = list(hatch_entity(hatch, jiggle_origin=False))
+            rings = None
+            if _boundary_in_pieces(hatch, tolerance):
+                rings = _boundary_rings(hatch, tolerance)
+                if rings is None:
+                    open_left.append(hatch.dxf.get("pattern_name", "?"))
+            if rings is None:
+                # jiggle_origin di ezdxf sposta l'origine del pattern a caso: le
+                # righe devono essere quelle del file, uguali a ogni lettura
+                segments = list(hatch_entity(hatch, jiggle_origin=False))
+            else:
+                segments = list(_pattern_lines(hatch, rings))
         except Exception as ex:
             failed.append(str(ex))
             continue
@@ -154,7 +168,107 @@ def _explode_hatches(msp, sink: list = None) -> int:
             msp.add_line(start, end, dxfattribs=attribs)
         msp.delete_entity(hatch)
     _explode_failed(sink, "HATCH", failed)
+    if open_left and sink is not None:
+        sink.append(Diagnostic(
+            "dxf-hatch-open-boundary",
+            f"{len(open_left)} HATCH with a boundary that does not close, each piece closed on its own chord",
+            notes=[f"pattern {name}" for name in open_left[:5]]))
     return len(hatches)
+
+
+def _edge_ends(edge):
+    """I due capi di un lato di un EdgePath, come Vec2."""
+    from ezdxf.math import Vec2
+    if edge.type.name == "LINE":
+        return Vec2(edge.start), Vec2(edge.end)
+    return Vec2(edge.start_point), Vec2(edge.end_point)
+
+
+def _boundary_in_pieces(hatch, tolerance: float) -> bool:
+    """Il bordo ha un EdgePath i cui lati non vanno testa-coda fino a tornare al primo."""
+    for path in hatch.paths.rendering_paths(hatch.dxf.hatch_style):
+        if not hasattr(path, "edges") or not path.edges:
+            continue
+        ends = [_edge_ends(e) for e in path.edges]
+        for (_, a), (b, _) in zip(ends, ends[1:] + ends[:1]):
+            if not a.isclose(b, abs_tol=tolerance):
+                return True
+    return False
+
+
+def _boundary_rings(hatch, tolerance: float):
+    """
+    I lati del bordo di `hatch` incatenati in anelli chiusi (ezdxf `Path`),
+    in tutti e due i versi; i percorsi polilinea restano come sono. None se un
+    lato non si chiude o un capo ha più di un seguito: allora non si sceglie.
+    """
+    from ezdxf.lldxf.const import BOUNDARY_PATH_TEXTBOX
+    from ezdxf.path import from_hatch_boundary_path
+
+    rings, pieces = [], []
+    for path in hatch.paths.rendering_paths(hatch.dxf.hatch_style):
+        if path.path_type_flags & BOUNDARY_PATH_TEXTBOX:
+            continue
+        if not hasattr(path, "edges"):
+            rings.extend(sp for sp in from_hatch_boundary_path(path).sub_paths() if len(sp))
+            continue
+        pieces.extend(_edge_piece(e) for e in path.edges)
+
+    while pieces:
+        ring = pieces.pop(0)
+        while not ring.start.isclose(ring.end, abs_tol=tolerance):
+            nexts = [i for i, q in enumerate(pieces)
+                     if ring.end.isclose(q.start, abs_tol=tolerance)
+                     or ring.end.isclose(q.end, abs_tol=tolerance)]
+            if len(nexts) != 1:
+                return None
+            q = pieces.pop(nexts[0])
+            if not ring.end.isclose(q.start, abs_tol=tolerance):
+                q = q.reversed()
+            ring.append_path(q)
+        ring.close()
+        rings.append(ring)
+    return rings
+
+
+def _edge_piece(edge):
+    """Un lato di un EdgePath come `Path` aperto, dal suo inizio alla sua fine."""
+    from ezdxf.entities.boundary_paths import EdgePath
+    from ezdxf.path import Command, Path, from_hatch_boundary_path
+
+    if edge.type.name == "LINE":
+        piece = Path(edge.start)
+        piece.line_to(edge.end)
+        return piece
+    one = EdgePath()
+    one.edges.append(edge)
+    # ezdxf chiude ogni percorso tornando all'inizio: quel lato non è del file
+    closed = from_hatch_boundary_path(one)
+    piece = Path(closed.start)
+    for cmd in list(closed.commands())[:-1]:
+        if cmd.type == Command.LINE_TO:
+            piece.line_to(cmd.end)
+        elif cmd.type == Command.CURVE3_TO:
+            piece.curve3_to(cmd.end, cmd.ctrl)
+        elif cmd.type == Command.CURVE4_TO:
+            piece.curve4_to(cmd.end, cmd.ctrl1, cmd.ctrl2)
+    return piece
+
+
+def _pattern_lines(hatch, rings):
+    """Le righe del pattern di `hatch` dentro `rings`, come `hatch_entity` (senza jiggle)."""
+    from ezdxf.math import Vec3
+    from ezdxf.render.hatching import hatch_paths, pattern_baselines
+
+    ocs = hatch.ocs()
+    elevation = hatch.dxf.elevation.z
+    for baseline in pattern_baselines(hatch, jiggle_origin=False):
+        for line in hatch_paths(baseline, rings):
+            for s, e in baseline.pattern_renderer(line.distance).render(line.start, line.end):
+                if ocs.transform:
+                    yield ocs.to_wcs((s.x, s.y, elevation)), ocs.to_wcs((e.x, e.y, elevation))
+                else:
+                    yield Vec3(s), Vec3(e)
 
 
 def _explode_failed(sink, dxftype: str, failed: list) -> None:

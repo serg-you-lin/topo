@@ -69,5 +69,73 @@ class TestHatchExploded(unittest.TestCase):
         self.assertFalse(any("HATCH" in w for w in lost))
 
 
+# il rettangolo 3x18 dell'HATCH "B" di anch_01, ritagliato dal file: il CAD
+# lo salva in tre percorsi aperti, una L (sinistro + alto) e due lati sciolti
+_ANCH_01 = os.path.join(os.path.dirname(__file__), "..", "..", "data", "golden_anchoring", "anch_01.dxf")
+
+
+def _hatch_rect(path: str, in_pieces: bool) -> None:
+    doc = ezdxf.readfile(_ANCH_01)
+    msp = doc.modelspace()
+    hatch = next(h for h in msp.query("HATCH") if h.dxf.pattern_name == "B")
+    for e in list(msp):
+        if e is not hatch:
+            msp.delete_entity(e)
+    first = hatch.paths.paths[:3]  # i tre pezzi del primo rettangolo
+    if in_pieces:
+        hatch.paths.paths = first
+    else:
+        # gli stessi lati, salvati come un solo anello chiuso
+        xs = [v for p in first for e in p.edges for v in (e.start.x, e.end.x)]
+        ys = [v for p in first for e in p.edges for v in (e.start.y, e.end.y)]
+        hatch.paths.clear()
+        hatch.paths.add_polyline_path([(min(xs), min(ys)), (max(xs), min(ys)),
+                                       (max(xs), max(ys)), (min(xs), max(ys))], is_closed=True)
+    doc.saveas(path)
+
+
+class TestHatchBoundaryInPieces(unittest.TestCase):
+    # D253: un bordo a pezzi si rimette in anelli coi soli lati del file
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        pieces = os.path.join(cls.tmp.name, "pieces.dxf")
+        whole = os.path.join(cls.tmp.name, "whole.dxf")
+        _hatch_rect(pieces, in_pieces=True)
+        _hatch_rect(whole, in_pieces=False)
+        cls.pieces = topo_dxf.load_dxf(pieces)
+        cls.whole = topo_dxf.load_dxf(whole)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def _lines(self, doc):
+        return sorted(tuple(sorted((tuple(round(v, 6) for v in e.start),
+                                    tuple(round(v, 6) for v in e.end))))
+                      for e in doc.edges)
+
+    def test_same_lines_as_one_closed_boundary(self):
+        # oggi ezdxf chiude ogni pezzo con la sua corda: righe in metà rettangolo
+        self.assertTrue(self.whole.edges)
+        self.assertEqual(self._lines(self.pieces), self._lines(self.whole))
+
+    def test_no_open_boundary_warning(self):
+        self.assertFalse(any(w.code == "dxf-hatch-open-boundary" for w in self.pieces.warnings))
+
+    def test_boundary_that_never_closes_is_warned(self):
+        # solo la L del file: nessun lato la chiude, resta la corda di ezdxf e si dice
+        path = os.path.join(self.tmp.name, "only_l.dxf")
+        _hatch_rect(path, in_pieces=True)
+        doc = ezdxf.readfile(path)
+        hatch = doc.modelspace().query("HATCH")[0]
+        hatch.paths.paths = hatch.paths.paths[:1]
+        doc.saveas(path)
+        read = topo_dxf.load_dxf(path)
+        self.assertTrue(read.edges)
+        self.assertTrue(any(w.code == "dxf-hatch-open-boundary" for w in read.warnings))
+
+
 if __name__ == "__main__":
     unittest.main()

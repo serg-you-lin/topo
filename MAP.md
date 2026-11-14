@@ -583,3 +583,8 @@ Touching or crossing gives 0 within float noise (compare with 1e-6 mm, never `==
 An empty `Document` with only a `dxf-not-modeled` warning reads as an empty sheet, which is false, and every consumer went on
 with nothing. The error comes from topo because it is topo that does not read them. A file with no entities stays an empty
 `Document`; a file read in part keeps the warning; skipped layers and unexploded INSERTs are the caller's choice and never raise.
+### D253 — a HATCH boundary saved in pieces is rejoined into closed rings before it is exploded (Federico, 14 November; snapdraw request).
+A CAD may save one region's boundary as open paths or sides out of order (anch_01: a 3×18 rectangle as an L and two
+loose sides). ezdxf closes each path on its own chord, so the lines filled a triangle. The sides are chained end to end,
+either direction, ends equal within 1e-6 (the file writes shared ends equal; the node tolerance made a 0.05 side ambiguous).
+No unique chain → ezdxf as before plus `dxf-hatch-open-boundary`. Pattern step and angle are unchanged (measured to 2e-9 mm).
