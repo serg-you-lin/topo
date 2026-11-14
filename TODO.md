@@ -83,6 +83,10 @@ repo, mai rigenerando alla cieca.
 - `experimental.parity_faces` (D250): nei pareggi del T-join decide l'ordine
   delle coordinate; 108 dei 631 disegni di `tests/` si leggono diversi ruotati
   o specchiati (l'asola con la croce di `Multifeature.dxf`).
+- `experimental.parity_faces` su `anch_04`: secondo Federico in una versione
+  di prova leggeva da sola la faccia frontale della L con l'aletta in su, e ora
+  non lo fa più; non verificato quale versione fosse. Resta in experimental
+  (Federico, 14 novembre): senza quella lettura gli interessa poco.
 - `near-copy` (D237): l'avviso scatta anche su spigoli veri (coppie a 45–90°).
   Idea di Federico: alzare la soglia solo nello spicchio dei `points`
   dell'avviso; conta solo quando la lineetta serve a chiudere un esterno.
