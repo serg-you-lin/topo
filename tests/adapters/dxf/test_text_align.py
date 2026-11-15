@@ -3,8 +3,9 @@ tests/adapters/dxf/test_text_align.py
 -------------------------------------
 Ancora e allineamento dei testi (MAP.md D256): un testo scritto da topo e
 riletto torna nello stesso punto con lo stesso allineamento, per ogni coppia
-halign × valign; una stringa su più righe torna su più righe. Il tipo
-d'entità della sorgente non è nel modello.
+halign × valign; una stringa su più righe torna su più righe; gli spazi ai
+bordi restano, perché l'ancora li conta (D261). Il tipo d'entità della
+sorgente non è nel modello.
 """
 
 import os
@@ -35,6 +36,8 @@ class TestTextAlignRoundTrip(unittest.TestCase):
                  for i, (h, v) in enumerate(product(HALIGNS, VALIGNS))]
         texts.append(topo.Text(position=(50.0, 20.0), text="riga 1\nriga 2",
                                halign="center", valign="top"))
+        texts.append(topo.Text(position=(60.0, 80.0), text="SECTION  ", halign="right"))
+        texts.append(topo.Text(position=(60.0, 85.0), text="  Materiale"))
         doc = _square_doc(texts)
         path = os.path.join(cls.tmp.name, "align.dxf")
         topo_dxf.to_dxf(topo.heal(doc).faces(), doc).saveas(path)
@@ -46,7 +49,7 @@ class TestTextAlignRoundTrip(unittest.TestCase):
         cls.tmp.cleanup()
 
     def test_ogni_allineamento_torna_uguale(self):
-        for t in self.sent[:-1]:
+        for t in self.sent[:-3]:
             with self.subTest(halign=t.halign, valign=t.valign):
                 r = self.back[t.text]
                 self.assertEqual((r.halign, r.valign), (t.halign, t.valign))
@@ -57,6 +60,10 @@ class TestTextAlignRoundTrip(unittest.TestCase):
         r = self.back["riga 1\nriga 2"]
         self.assertEqual((r.halign, r.valign), ("center", "top"))
         self.assertEqual(r.position, (50.0, 20.0))
+
+    def test_spazi_ai_bordi_restano(self):
+        self.assertEqual(self.back["SECTION  "].position, (60.0, 80.0))
+        self.assertIn("  Materiale", self.back)
 
     def test_allineamento_sconosciuto_rifiutato(self):
         with self.assertRaises(ValueError):
