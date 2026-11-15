@@ -20,7 +20,6 @@ passare un test senza aver prima verificato che l'output è giusto.
 import argparse
 import json
 import sys
-from collections import Counter
 from pathlib import Path
 
 import ezdxf
@@ -81,14 +80,13 @@ def generate(force: bool = False, only: str = None) -> None:
             golden = {
                 "source_file": dxf_path.name,
                 "text_count": len(entries),
-                "by_source_kind": dict(Counter(e["source_kind"] for e in entries)),
                 "cluster_count": result.cluster_count,
                 "texts": entries,
             }
             golden_path.write_text(
                 json.dumps(golden, indent=2, ensure_ascii=False), encoding="utf-8"
             )
-            print(f"  OK: {dxf_path.name} → {len(entries)} testi {golden['by_source_kind']}")
+            print(f"  OK: {dxf_path.name} → {len(entries)} testi")
             generated += 1
         except Exception as ex:
             import traceback

@@ -64,12 +64,13 @@ def _to_text(entity, role_rules: Sequence[RoleRule] = ()) -> Optional[Text]:
     # solo quelle sul nome, di un testo non si legge l'aspetto (D127). Il
     # layer resta qui (D128).
     role = resolve_role(role_rules, entity.dxf.get("layer", "0"))
-    pos = text_anchor(entity)
 
     if kind in ("TEXT", "MTEXT"):
         content = _extract_content(entity)
-        if not content or pos is None:
+        placement = text_placement(entity)
+        if not content or placement is None:
             return None
+        pos, halign, valign = placement
         dxf = entity.dxf
         raw_h = dxf.get("char_height", 2.5) if kind == "MTEXT" else dxf.get("height", 2.5)
         return Text(
@@ -78,15 +79,18 @@ def _to_text(entity, role_rules: Sequence[RoleRule] = ()) -> Optional[Text]:
             text=content,
             height=_f(raw_h) or 2.5,
             rotation=_f(dxf.get("rotation", 0.0)) or 0.0,
-            source_kind=kind,
+            halign=halign,
+            valign=valign,
             width_factor=_width_factor(entity),
         )
+
+    pos = text_anchor(entity)
 
     if kind == "DIMENSION":
         return _dimension_text_of(entity, pos, role)
 
     if kind in ("LEADER", "MULTILEADER"):
-        return _leader_text(entity, pos, role, kind)
+        return _leader_text(entity, pos, role)
 
     return None
 
@@ -95,18 +99,69 @@ def _to_text(entity, role_rules: Sequence[RoleRule] = ()) -> Optional[Text]:
 # Punto d'ancoraggio — dove `write` riposiziona il testo
 # ---------------------------------------------------------------------------
 
+# Punto d'attacco di un MTEXT (gruppo 71, 1..9) → (halign, valign). MTEXT non
+# ha linea di base: la riga in basso è `bottom`.
+_MTEXT_ALIGN = {
+    1: ("left", "top"), 2: ("center", "top"), 3: ("right", "top"),
+    4: ("left", "center"), 5: ("center", "center"), 6: ("right", "center"),
+    7: ("left", "bottom"), 8: ("center", "bottom"), 9: ("right", "bottom"),
+}
+# Allineamento di un TEXT (ezdxf `TextEntityAlignment`) → (halign, valign).
+_TEXT_ALIGN = {
+    "LEFT": ("left", "baseline"), "CENTER": ("center", "baseline"),
+    "RIGHT": ("right", "baseline"), "MIDDLE": ("center", "center"),
+    "ALIGNED": ("center", "baseline"), "FIT": ("center", "baseline"),
+    "BOTTOM_LEFT": ("left", "bottom"), "BOTTOM_CENTER": ("center", "bottom"),
+    "BOTTOM_RIGHT": ("right", "bottom"), "MIDDLE_LEFT": ("left", "center"),
+    "MIDDLE_CENTER": ("center", "center"), "MIDDLE_RIGHT": ("right", "center"),
+    "TOP_LEFT": ("left", "top"), "TOP_CENTER": ("center", "top"),
+    "TOP_RIGHT": ("right", "top"),
+}
+
+
+def text_placement(entity) -> Optional[Tuple[Tuple[float, float], str, str]]:
+    """
+    (punto, halign, valign) di un TEXT/MTEXT (D256): il punto a cui la
+    sorgente aggancia la stringa e come la stringa gli sta attorno.
+
+    MTEXT: il punto d'inserimento col suo attacco. TEXT: l'inserimento se
+    allineato a sinistra sulla base, altrimenti il punto d'allineamento (il
+    gruppo 11, quello che il CAD rispetta); ALIGNED/FIT stanno fra i due
+    punti, e l'ancora è il loro punto medio. None senza un punto.
+    """
+    t = entity.dxftype()
+    if t == "MTEXT":
+        ins = entity.dxf.get("insert")
+        if ins is None:
+            return None
+        halign, valign = _MTEXT_ALIGN.get(entity.dxf.get("attachment_point", 1), ("left", "top"))
+        return (float(ins[0]), float(ins[1])), halign, valign
+    try:
+        align, p1, p2 = entity.get_placement()
+    except Exception:
+        return None
+    name = align.name
+    halign, valign = _TEXT_ALIGN[name]
+    if name == "LEFT" or p2 is None:
+        p = p1
+    elif name in ("ALIGNED", "FIT"):
+        p = ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
+    else:
+        p = p2
+    if p is None:
+        return None
+    return (float(p[0]), float(p[1])), halign, valign
+
+
 def text_anchor(entity) -> Optional[Tuple[float, float]]:
     """
-    Punto d'ancoraggio XY di un'entità di testo.
+    Punto d'ancoraggio XY di una quota o di un richiamo.
 
-    TEXT/MTEXT hanno il punto d'inserimento nei campi DXF; MULTILEADER e
-    DIMENSION lo tengono in strutture annidate; LEADER non ce l'ha e ricade
-    sul fallback (poi lo si ricava dalla geometria appiattita).
+    MULTILEADER e DIMENSION lo tengono in strutture annidate; LEADER non ce
+    l'ha e ricade sul fallback (poi lo si ricava dalla geometria appiattita).
     Ritorna None se nessuna fonte è disponibile.
     """
     t = entity.dxftype()
-    if t in ("TEXT", "MTEXT"):
-        return (entity.dxf.insert.x, entity.dxf.insert.y)
     if t == "MULTILEADER":
         return _mleader_anchor(entity)
     if t == "DIMENSION":
@@ -221,7 +276,6 @@ def _dimension_text_of(entity, pos, role: str) -> Optional[Text]:
     return Text(
         position=pos,
         role=role,
-        source_kind="DIMENSION",
         text=_shown_text(override, rendered, measured),
         measure=measured,
         measure_is_angle=dim_type in ("angular", "angular3p"),
@@ -366,7 +420,9 @@ def _synthesize_dimension(entity):
     content = _dimension_text(entity)
     if content:
         pos = (float(tm[0]), float(tm[1])) if tm is not None else _bbox_center(strokes)
-        text_item = RenderedText(content=content, position=pos)
+        # il punto medio del testo di una quota è il centro della stringa
+        text_item = RenderedText(content=content, position=pos,
+                                 halign="center", valign="center")
 
     return strokes, text_item
 
@@ -375,7 +431,7 @@ def _synthesize_dimension(entity):
 # LEADER / MULTILEADER
 # ---------------------------------------------------------------------------
 
-def _leader_text(entity, pos, role: str, source_kind) -> Optional[Text]:
+def _leader_text(entity, pos, role: str) -> Optional[Text]:
     rendered = _render_block(entity)
     if rendered.is_empty():
         return None
@@ -405,7 +461,6 @@ def _leader_text(entity, pos, role: str, source_kind) -> Optional[Text]:
     return Text(
         position=pos,
         role=role,
-        source_kind=source_kind,
         text=text,
         pointer=vertices,
         rendered=rendered,
@@ -482,15 +537,18 @@ def _text_item(v) -> Optional[RenderedText]:
     content = clean_mtext(v.text) if t == "MTEXT" else (v.dxf.get("text", "") or "").strip()
     if not content:
         return None
-    ins = v.dxf.get("insert") or v.dxf.get("align_point")
-    if ins is None:
+    placement = text_placement(v)
+    if placement is None:
         return None
+    pos, halign, valign = placement
     raw_h = v.dxf.get("char_height", 2.5) if t == "MTEXT" else v.dxf.get("height", 2.5)
     return RenderedText(
         content=content,
-        position=(float(ins[0]), float(ins[1])),
+        position=pos,
         height=_f(raw_h) or 2.5,
         rotation=_f(v.dxf.get("rotation", 0.0)) or 0.0,
+        halign=halign,
+        valign=valign,
     )
 
 

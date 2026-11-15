@@ -110,8 +110,9 @@ def _loose_entry(curve, tolerance: float, role_styles: Mapping[str, RoleStyle]) 
 
 def _text_entry(text) -> dict:
     return {
-        "source_kind": text.source_kind,
         "position":    [round(text.position[0], 4), round(text.position[1], 4)],
+        "halign":      text.halign,
+        "valign":      text.valign,
         "text":        text.text,
         "height":      text.height or 2.5,
         "rotation":    text.rotation or 0.0,

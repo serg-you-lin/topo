@@ -1,17 +1,15 @@
 {
   "source_file": "piega_cazzuta.dxf",
   "text_count": 1,
-  "by_source_kind": {
-    "DIMENSION": 1
-  },
   "cluster_count": 1,
   "texts": [
     {
-      "source_kind": "DIMENSION",
       "position": [
         310.89,
         873.733
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "0",
       "cluster_ref": null,
       "measure": 0.0,

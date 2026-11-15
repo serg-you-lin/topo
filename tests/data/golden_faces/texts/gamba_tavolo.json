@@ -1,18 +1,15 @@
 {
   "source_file": "gamba_tavolo.dxf",
   "text_count": 8,
-  "by_source_kind": {
-    "DIMENSION": 7,
-    "MTEXT": 1
-  },
   "cluster_count": 4,
   "texts": [
     {
-      "source_kind": "DIMENSION",
       "position": [
         -944.299,
         181.534
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "50",
       "cluster_ref": null,
       "measure": 50.0,
@@ -25,11 +22,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         -932.088,
         122.84
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "40",
       "cluster_ref": null,
       "measure": 40.0,
@@ -42,11 +40,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         -878.008,
         221.534
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "90",
       "cluster_ref": null,
       "measure": 90.0,
@@ -59,11 +58,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         -869.884,
         122.84
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "50",
       "cluster_ref": null,
       "measure": 50.0,
@@ -76,11 +76,12 @@
       }
     },
     {
-      "source_kind": "MTEXT",
       "position": [
         -848.004,
         239.813
       ],
+      "halign": "left",
+      "valign": "bottom",
       "text": "SPESSORE 8mm",
       "cluster_ref": null,
       "height": 10.0,
@@ -95,11 +96,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         -797.681,
         122.84
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "50",
       "cluster_ref": null,
       "measure": 50.0,
@@ -112,11 +114,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         -675.477,
         122.84
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "50",
       "cluster_ref": null,
       "measure": 50.0,
@@ -129,11 +132,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         -665.019,
         223.172
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "91.6",
       "cluster_ref": null,
       "measure": 91.6381,

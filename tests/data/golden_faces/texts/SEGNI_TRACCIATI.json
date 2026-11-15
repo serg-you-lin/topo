@@ -1,17 +1,15 @@
 {
   "source_file": "SEGNI_TRACCIATI.dxf",
   "text_count": 1,
-  "by_source_kind": {
-    "DIMENSION": 1
-  },
   "cluster_count": 1,
   "texts": [
     {
-      "source_kind": "DIMENSION",
       "position": [
         70.5,
         33.0
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "0.5",
       "cluster_ref": 0,
       "measure": 0.5,

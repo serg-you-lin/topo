@@ -15,6 +15,7 @@ from __future__ import annotations
 from typing import Callable, List, Mapping, Optional, Set
 
 import ezdxf
+from ezdxf.enums import TextEntityAlignment
 
 from topo.model import (
     Cluster, ContourRole, Document, Result, Text,
@@ -177,30 +178,57 @@ def _emit_text(msp, text: Text, layer: str) -> None:
         _emit_rendered(msp, text, attribs)
 
 
-def _emit_string(msp, note: Text, attribs: dict) -> None:
-    if not note.text:
-        return
-    width = note.width_factor or 1.0
-    if note.source_kind == "MTEXT":
+# (halign, valign) del modello (D256) → attacco MTEXT / allineamento TEXT.
+# MTEXT non ha linea di base: `baseline` vi diventa `bottom`.
+_MTEXT_ATTACH = {
+    ("left", "top"): 1, ("center", "top"): 2, ("right", "top"): 3,
+    ("left", "center"): 4, ("center", "center"): 5, ("right", "center"): 6,
+    ("left", "bottom"): 7, ("center", "bottom"): 8, ("right", "bottom"): 9,
+}
+_TEXT_ALIGN = {
+    ("left", "baseline"): "LEFT", ("center", "baseline"): "CENTER",
+    ("right", "baseline"): "RIGHT",
+    ("left", "bottom"): "BOTTOM_LEFT", ("center", "bottom"): "BOTTOM_CENTER",
+    ("right", "bottom"): "BOTTOM_RIGHT",
+    ("left", "center"): "MIDDLE_LEFT", ("center", "center"): "MIDDLE_CENTER",
+    ("right", "center"): "MIDDLE_RIGHT",
+    ("left", "top"): "TOP_LEFT", ("center", "top"): "TOP_CENTER",
+    ("right", "top"): "TOP_RIGHT",
+}
+
+
+def _add_string(msp, content: str, position, *, height: float, rotation: float,
+                halign: str, valign: str, width: float, attribs: dict) -> None:
+    """Una stringa nel punto e con l'allineamento del modello: TEXT se sta
+    su una riga, MTEXT se ne ha più d'una (TEXT non va a capo)."""
+    if "\n" in content:
         # MTEXT non ha un attributo per-entità per lo stretch dei glifi (il suo
         # gruppo 41 è la larghezza di colonna, un'altra cosa): si ottiene con
         # un codice di formattazione inline, non con uno stile dedicato — resta
         # un override numerico, niente stili con nome da inventare o mappare.
-        text = note.text if width == 1.0 else f"\\W{width:.4g};{note.text}"
-        entity = msp.add_mtext(text, dxfattribs={
+        body = content.replace("\n", "\\P")
+        body = body if width == 1.0 else f"\\W{width:.4g};{body}"
+        v = "bottom" if valign == "baseline" else valign
+        entity = msp.add_mtext(body, dxfattribs={
             **attribs,
-            "char_height": note.height or 2.5,
-            "rotation": note.rotation or 0.0,
+            "char_height": height,
+            "rotation": rotation,
+            "attachment_point": _MTEXT_ATTACH[(halign, v)],
         })
-        entity.set_location(note.position)
-    else:
-        msp.add_text(note.text, dxfattribs={
-            **attribs,
-            "height": note.height or 2.5,
-            "rotation": note.rotation or 0.0,
-            "insert": note.position,
-            "width": width,
-        })
+        entity.set_location(position)
+        return
+    entity = msp.add_text(content, dxfattribs={
+        **attribs, "height": height, "rotation": rotation, "width": width,
+    })
+    entity.set_placement(position, align=TextEntityAlignment[_TEXT_ALIGN[(halign, valign)]])
+
+
+def _emit_string(msp, note: Text, attribs: dict) -> None:
+    if not note.text:
+        return
+    _add_string(msp, note.text, note.position, height=note.height or 2.5,
+                rotation=note.rotation or 0.0, halign=note.halign, valign=note.valign,
+                width=note.width_factor or 1.0, attribs=attribs)
 
 
 def _emit_rendered(msp, ann, attribs: dict) -> None:
@@ -219,12 +247,9 @@ def _emit_rendered(msp, ann, attribs: dict) -> None:
     for rt in rendered.texts:
         if not rt.content:
             continue
-        msp.add_text(rt.content, dxfattribs={
-            **attribs,
-            "height": rt.height or 2.5,
-            "rotation": rt.rotation or 0.0,
-            "insert": rt.position,
-        })
+        _add_string(msp, rt.content, rt.position, height=rt.height or 2.5,
+                    rotation=rt.rotation or 0.0, halign=rt.halign, valign=rt.valign,
+                    width=1.0, attribs=attribs)
 
 
 # ---------------------------------------------------------------------------
