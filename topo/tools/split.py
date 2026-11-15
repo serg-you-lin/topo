@@ -39,10 +39,6 @@ def split(
     `cluster_ref` referring to the part (0 if its cluster contains it,
     `None` otherwise). A promoted curve (`result.promote`) is already in its
     cluster. The other `Result` fields (source, warnings) are copied.
-    `Text.target`/`references` of a text point to the elements of its own
-    part (the copies of the loose curves); an element of another part is not
-    in that `Result`: `target` becomes `None`, the reference leaves
-    `references` (D177).
 
     `namer(i, cluster)` — if given — returns the `label` of the part's
     cluster, so a file name can be derived downstream
@@ -82,7 +78,6 @@ def split(
         label = namer(i, cluster) if namer else f"{cluster.label}_P{i + 1}"
         loose = _local(loose_of.get(id(cluster), []), i)
         texts = _local(texts_of.get(id(cluster), []), i)
-        _relink(texts, cluster, loose_of.get(id(cluster), []), loose)
         parts.append(replace(
             result,
             clusters=[replace(cluster, label=label)],
@@ -146,19 +141,6 @@ def _local(items: list, i: int) -> list:
         local.cluster_ref = 0 if item.cluster_ref == i else None
         out.append(local)
     return out
-
-
-def _relink(texts: list, cluster: Cluster, loose: list, local_loose: list) -> None:
-    """Riporta `target`/`references` dei testi di una parte sugli elementi
-    della parte: i contorni e le feature del cluster sono gli stessi oggetti,
-    le curve sciolte sono copie. Il resto non sta nella parte (D177)."""
-    own = {id(c): c for c in [cluster.outer, *cluster.inners]}
-    if cluster.overlay is not None:
-        own.update((id(item), item) for _, items in cluster.overlay.items() for item in items)
-    own.update((id(orig), copy_) for orig, copy_ in zip(loose, local_loose))
-    for text in texts:
-        text.target = own.get(id(text.target)) if text.target is not None else None
-        text.references = [own[id(r)] for r in text.references if id(r) in own]
 
 
 def _probe_point(curve) -> Optional[tuple]:

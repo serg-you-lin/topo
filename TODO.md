@@ -357,14 +357,20 @@ Aperte:
   intero drw_0007, nessun no; ma 52 rossi, fra cui ordine degli edge (16) e
   moto rigido (9). Così com'è non va; log `suite_contatto_005.log`.
 - **Omologazione fra adapter (D254; Federico, 15 novembre; da snapdraw).** In ordine:
-  1. **riquadro stimato del testo** (dopo D256): da stringa, `height`,
-     `width_factor`, rotazione e allineamento, con una regola fissa senza
-     font (deterministico, dichiarato stima); il contenimento (`anchor_texts`)
-     sul suo centro invece che su `position`. Serve a snapdraw: cella del
-     cartiglio e densità dei testi leggono `position` (`titleblock.py:251`,
-     `geometry.py:213`). Prima: quote e richiami hanno `position` sul
-     def-point o sulla punta, non sulla stringa (la stringa è in
-     `rendered.texts`): un riquadro su `position` lì non vuol dire niente.
+  1. **testi minimi (D257, D258, D259)**, a pezzi, un commit ciascuno:
+     a. via `measure`, `measure_is_angle`, `measured_points`, `pointer`,
+        `target`, `references` da `Text`; via `experimental.anchor_elements`,
+        `pointer_target`, `measured_references`.
+     b. `position` di una quota sulla sua stringa (primo pezzo).
+     c. LEADER senza stringa → curva + area piena (D258, dopo D255).
+     d. documento sui testi in `docs/`.
+     f. 1.x, con deprecazione (D175): anche `rendered` è del consumer
+        (Federico, 15 novembre: "per ora non gestibile"); resta fino alla 1.0.
+     e. quota senza blocco: oggi topo_dxf ne calcola le linee dai punti di
+        definizione (`_synthesize_dimension`); con D259 solo la stringa.
+        Prima contare quante sono sui 46 fogli.
+     Consumer da adeguare dalle loro sessioni: snapdraw `features.py`,
+     `model.py`, `tests/test_features.py`; pippo `plan.py`.
   2. **contratto scritto per adapter**: quali campi opzionali riempie
      (`EdgeStyle.dash`, `measured_points`, `pointer`, `rendered`, …).
   3. **trattini già esplosi** (richiesta snapdraw 15 novembre, entra):

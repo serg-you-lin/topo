@@ -17,8 +17,6 @@ in una minor; qui resta come alias con avviso per due minor.
   fuse con la soglia del chiamante, dove vuole lui (D226);
 - `simplify_points` (D33, D141), `rotate_*` (D46),
   `to_view_model` / `to_svg` / `save_svg` (D133);
-- `anchor_elements` / `pointer_target` / `measured_references`: su quale
-  elemento cade una quota o una freccia (D228; obiettivo: sugli edge grezzi);
 - le strisce fra bordi affacciati: `facing_boundaries`, `link`,
   `unconnected_regions`, `open_boundaries` (D134, D142; la distanza fra due
   bordi è pubblica, `topo.geometry.gap`, D251);
@@ -46,7 +44,6 @@ from .core.primitives.fitting import simplify_points
 from .tools.rotate import rotate_result, rotate_cluster, rotate_document, rotate_to_longest
 from .io.view_model import to_view_model
 from .io.svg import to_svg, save_svg
-from .tools.anchor import anchor_elements, pointer_target, measured_references
 from .core.readings.parity_faces import parity_faces
 from .tools.strips import (
     facing_boundaries, Facing, link, Link, Strip,
@@ -70,7 +67,6 @@ __all__ = [
     "simplify_points",
     "rotate_result", "rotate_cluster", "rotate_document", "rotate_to_longest",
     "to_view_model", "to_svg", "save_svg",
-    "anchor_elements", "pointer_target", "measured_references",
     "facing_boundaries", "Facing", "link", "Link", "Strip",
     "unconnected_regions", "open_boundaries", "Opened",
     "parity_faces",

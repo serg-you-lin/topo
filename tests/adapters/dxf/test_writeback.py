@@ -332,10 +332,9 @@ class TestWritebackTexts(unittest.TestCase):
         if not (drawing(name)).exists():
             self.skipTest(name)
         doc = topo_dxf.load_dxf(drawing(name))
-        # le quote hanno i punti misurati, i leader la punta (D256: il tipo
-        # d'entità della sorgente non è nel modello)
-        self.assertEqual(sum(1 for a in doc.texts if a.measured_points), 16)
-        self.assertEqual(sum(1 for a in doc.texts if a.pointer and not a.measured_points), 4)
+        # tutte e 20 portano il loro disegno (D256, D259: né il tipo
+        # d'entità né cosa misurano entrano nel modello)
+        self.assertEqual(sum(1 for a in doc.texts if not a.rendered.is_empty()), 20)
         result = topo.heal(doc).faces()
         msp = topo_dxf.to_dxf(result, doc).modelspace()
         ann_geom = [e for e in msp.query("LWPOLYLINE")

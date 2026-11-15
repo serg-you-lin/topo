@@ -256,7 +256,7 @@ def _dimension_text_of(entity, pos, role: str) -> Optional[Text]:
         if syn_text is not None:
             rendered.texts.append(syn_text)
 
-    dim_type, measured = _dimension_semantics(entity)
+    measured = _measured_number(entity)
     override = _dimension_override(entity)
 
     if rendered.is_empty():
@@ -277,10 +277,7 @@ def _dimension_text_of(entity, pos, role: str) -> Optional[Text]:
         position=pos,
         role=role,
         text=_shown_text(override, rendered, measured),
-        measure=measured,
-        measure_is_angle=dim_type in ("angular", "angular3p"),
         rendered=rendered,
-        measured_points=_measured_points(entity, dim_type),
     )
 
 
@@ -310,22 +307,15 @@ def _shown_value(rendered: RenderedGeometry, measured: Optional[float]) -> str:
     return ""
 
 
-def _dimension_semantics(entity) -> Tuple[str, Optional[float]]:
-    """(dim_type, valore misurato) di una DIMENSION."""
-    kinds = {0: "linear", 1: "aligned", 2: "angular", 3: "diameter",
-             4: "radius", 5: "angular3p", 6: "ordinate"}
-    try:
-        dim_type = kinds.get(int(entity.dxf.get("dimtype", 0)) & 7, "linear")
-    except (TypeError, ValueError):
-        dim_type = "linear"
-    measured: Optional[float] = None
+def _measured_number(entity) -> Optional[float]:
+    """Il valore che ezdxf calcola dai def-point: serve solo a scrivere la
+    stringa di una quota ``<>`` senza testo nel blocco, non entra nel
+    modello (D259)."""
     try:
         m = entity.get_measurement()
-        if isinstance(m, (int, float)):
-            measured = float(m)
     except Exception:
-        pass
-    return dim_type, measured
+        return None
+    return float(m) if isinstance(m, (int, float)) else None
 
 
 def _dimension_override(entity) -> Optional[str]:
@@ -351,24 +341,6 @@ def _dimension_override(entity) -> Optional[str]:
 # Codici speciali del testo DXF → carattere (diametro, grado, più-meno).
 _SPECIAL_CODES = {"%%c": "Ø", "%%d": "°", "%%p": "±"}
 _UNICODE_ESCAPE = re.compile(r"\\[Uu]\+([0-9A-Fa-f]{4})")   # "\U+00B0" → "°"
-
-
-def _measured_points(entity, dim_type: str) -> List[Tuple[float, float]]:
-    """
-    I punti sulla geometria fra cui la quota misura, dai def-point:
-    lineare → origini delle due direttrici (13, 14); diametro → i due punti
-    opposti sul cerchio (10, 15); raggio → il punto sull'arco (15; il 10 è
-    il centro). Angolari e ordinate: nessuno, per ora.
-    """
-    names = {"linear": ("defpoint2", "defpoint3"), "aligned": ("defpoint2", "defpoint3"),
-             "diameter": ("defpoint", "defpoint4"), "radius": ("defpoint4",)}.get(dim_type, ())
-    points = []
-    for name in names:
-        v = entity.dxf.get(name)
-        if v is None:
-            return []
-        points.append((float(v[0]), float(v[1])))
-    return points
 
 
 def _synthesize_dimension(entity):
@@ -462,7 +434,6 @@ def _leader_text(entity, pos, role: str) -> Optional[Text]:
         position=pos,
         role=role,
         text=text,
-        pointer=vertices,
         rendered=rendered,
     )
 

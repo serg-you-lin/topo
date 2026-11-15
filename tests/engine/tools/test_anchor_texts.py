@@ -2,14 +2,11 @@
 tests/engine/tools/test_anchor_texts.py
 -------------------------------
 `anchor_texts()`: assegna `cluster_ref` (indice della parte contenitrice)
-ai testi del modello. `topo.experimental.anchor_elements()` (D228): `target`
-a chi ha un `pointer`, `references` a chi ha dei `measured_points` (D138).
-Fasi separate e opzionali (topo/tools/).
+ai testi del modello. Fase separata e opzionale (topo/tools/). Su cosa
+cade una punta o cosa misura una quota è una lettura del consumer (D259).
 """
 
 import unittest
-
-from shapely.geometry import Point, Polygon
 
 import topo
 from topo.model.cluster import Cluster
@@ -18,11 +15,6 @@ from topo.model.result import Result
 from topo.model.role import ContourRole
 from topo.model.text import Text
 from topo.tools.anchor import anchor_texts
-from topo import to_shapely
-
-# max_gap non ha default (D98); island_gap non esiste più (D99)
-MAX_GAP = 0.5
-
 
 def _part(x0, y0, x1, y1):
     ring = topo.geometry.polygon([(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
@@ -80,156 +72,6 @@ class TestAnchorTexts(unittest.TestCase):
         res = _result(texts=[Text(position=(1, 1), text="x")])
         anchor_texts(res)
         self.assertIsNone(res.texts[0].cluster_ref)
-
-
-def _plate_with_holes():
-    """Piastra 100x50 con due fori: Ø8 in (20, 25), Ø20 in (70, 25)."""
-    return topo.load_geometry([
-        {"type": "polygon", "points": [(0, 0), (100, 0), (100, 50), (0, 50)]},
-        {"type": "circle", "center": (20, 25), "radius": 4},
-        {"type": "circle", "center": (70, 25), "radius": 10},
-    ])
-
-
-def _leader(*vertices):
-    return Text(position=vertices[-1], text="M8", pointer=list(vertices))
-
-
-class TestPointerTarget(unittest.TestCase):
-    """`Text.target`: l'elemento su cui cade la punta di `pointer` (D66)."""
-
-    def _outlines(self, *leaders):
-        result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
-        result.texts = list(leaders)
-        topo.experimental.anchor_elements(result)
-        return result
-
-    def _hole_at(self, result, center):
-        # D161: outlines() non fa inner, il foro è un pezzo chiuso in loose (D162)
-        return next(k for k, c in enumerate(result.loose)
-                    if to_shapely(c) is not None and to_shapely(c).centroid.distance(Point(center)) < 0.1)
-
-    def test_punta_sul_bordo_del_foro(self):
-        result = self._outlines(_leader((24, 25), (40, 60)))
-        k = self._hole_at(result, (20, 25))
-        self.assertIs(result.texts[0].target, result.loose[k])
-
-    def test_punta_dentro_il_foro(self):
-        result = self._outlines(_leader((72, 27), (90, 70)))
-        k = self._hole_at(result, (70, 25))
-        self.assertIs(result.texts[0].target, result.loose[k])
-
-    def test_punta_sul_contorno_esterno(self):
-        result = self._outlines(_leader((100, 40), (120, 60)))
-        self.assertIs(result.texts[0].target, result.clusters[0].outer)
-
-    def test_freccia_lontana_nessun_target(self):
-        # freccia di sezione: si ferma a 5 mm dal pezzo
-        result = self._outlines(_leader((-5, 25), (-15, 25)))
-        self.assertIsNone(result.texts[0].target)
-
-    def test_senza_vertici_nessun_target(self):
-        result = self._outlines(Text(position=(20, 25), text="M8"))
-        self.assertIsNone(result.texts[0].target)
-
-    def test_elemento_dell_overlay(self):
-        # un consumatore sposta un contorno in una sua collezione: il target segue
-        from topo.model import Overlay
-        result = topo.heal(_plate_with_holes()).faces()
-        cluster = result.clusters[0]
-        small = min(cluster.inners, key=lambda c: to_shapely(c).area)
-        cluster.inners = [c for c in cluster.inners if c is not small]
-        cluster.overlay = Overlay()
-        cluster.overlay.attach("my_circles", [small])
-        result.texts = [_leader((24, 25), (40, 60))]
-        topo.experimental.anchor_elements(result)
-        self.assertIs(result.texts[0].target, small)
-        self.assertAlmostEqual(to_shapely(small).centroid.x, 20, places=1)
-
-
-class TestTargetIsTheObject(unittest.TestCase):
-    """D177: `target`/`references` sono gli oggetti, non posizioni nel
-    risultato — restano giusti quando le collezioni cambiano dopo."""
-
-    def _outlines(self):
-        result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
-        result.texts = [_leader((24, 25), (40, 60)),
-                        Text(position=(40, 40), measured_points=[(60, 25), (80, 25)])]
-        topo.experimental.anchor_elements(result)
-        return result
-
-    def test_promote_non_sposta_il_target(self):
-        # promuovere una curva che sta prima in loose spostava "loose[k]"
-        result = self._outlines()
-        hole, big = result.texts[0].target, result.texts[1].references[0]
-        before = [c for c in result.loose if c is not hole][0]
-        result.promote(before, result.clusters[0], "mine")
-        self.assertIs(result.texts[0].target, hole)
-        self.assertIs(result.texts[1].references[0], big)
-
-    def test_promote_del_target_stesso(self):
-        result = self._outlines()
-        hole = result.texts[0].target
-        result.promote(hole, result.clusters[0], "holes")
-        self.assertIs(result.texts[0].target, hole)
-        self.assertIs(result.clusters[0].features("holes")[0], hole)
-
-    def test_split_punta_alle_copie_della_parte(self):
-        result = self._outlines()
-        part = topo.split(result)[0]
-        target = part.texts[0].target
-        self.assertTrue(any(target is c for c in part.loose))
-        self.assertFalse(any(target is c for c in result.loose))
-        self.assertTrue(any(part.texts[1].references[0] is c for c in part.loose))
-        # l'originale non cambia
-        self.assertTrue(any(result.texts[0].target is c for c in result.loose))
-
-    def test_repr_e_uguaglianza_senza_i_riferimenti(self):
-        result = self._outlines()
-        text = result.texts[0]
-        self.assertNotIn("target", repr(text))
-        self.assertEqual(text, Text(position=text.position, text=text.text,
-                                    pointer=list(text.pointer), cluster_ref=text.cluster_ref,
-                                    halign=text.halign, valign=text.valign))
-
-
-class TestMeasuredReferences(unittest.TestCase):
-    """`Text.references`: gli elementi su cui cadono i `measured_points` (D69)."""
-
-    def _result(self, *dims):
-        result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
-        result.texts = list(dims)
-        topo.experimental.anchor_elements(result)
-        return result
-
-    def test_diametro_sul_foro(self):
-        dim = Text(position=(40, 40), measured_points=[(60, 25), (80, 25)])
-        result = self._result(dim)
-        self.assertEqual(len(dim.references), 1)
-        hole = dim.references[0]
-        self.assertAlmostEqual(topo.geometry.contour_shape(hole).diameter, 20)
-
-    def test_raggio_sul_foro(self):
-        dim = Text(position=(40, 40), measured_points=[(20, 29)])
-        result = self._result(dim)
-        self.assertAlmostEqual(topo.geometry.contour_shape(dim.references[0]).diameter, 8)
-
-    def test_lineare_fra_due_elementi(self):
-        # dal bordo sinistro del pezzo al bordo sinistro del foro Ø8
-        dim = Text(position=(8, 60), measured_points=[(0, 25), (16, 25)])
-        result = self._result(dim)
-        self.assertIs(dim.references[0], result.clusters[0].outer)
-        self.assertEqual(len(dim.references), 2)
-        self.assertAlmostEqual(topo.geometry.contour_shape(dim.references[1]).diameter, 8)
-
-    def test_punti_fuori_dalla_geometria(self):
-        dim = Text(position=(0, 0), measured_points=[(-20, -20), (200, 200)])
-        self._result(dim)
-        self.assertEqual(dim.references, [])
-
-    def test_senza_punti(self):
-        result = topo.heal(_plate_with_holes(), max_gap=MAX_GAP).outlines()
-        self.assertEqual(topo.experimental.measured_references(result, Text(position=(0, 0))), [])
 
 
 if __name__ == "__main__":

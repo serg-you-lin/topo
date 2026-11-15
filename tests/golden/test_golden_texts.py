@@ -63,9 +63,6 @@ def text_dict(t) -> dict:
     if t.rendered.is_empty():
         d["height"] = round(t.height, 3)
         d["rotation"] = round(t.rotation, 3)
-    d["measure"] = None if t.measure is None else round(t.measure, 4)
-    d["measure_is_angle"] = t.measure_is_angle
-    d["pointer"] = len(t.pointer)
     d["rendered"] = _rendered_counts(t.rendered)
     return d
 
@@ -99,17 +96,13 @@ def _make_test(path: Path):
         for i, (act, exp) in enumerate(zip(actual, expected)):
             ctx = f"{golden['source_file']} testo[{i}]"
             self.assertEqual(act.keys(), exp.keys(), msg=f"{ctx}: campi")
-            for key in ("halign", "valign", "text", "cluster_ref", "measure_is_angle", "pointer", "rendered"):
+            for key in ("halign", "valign", "text", "cluster_ref", "rendered"):
                 self.assertEqual(act[key], exp[key], msg=f"{ctx}: {key}")
             for key in ("height", "rotation"):
                 if key in exp:
                     self.assertAlmostEqual(act[key], exp[key], delta=TOL_VALUE, msg=f"{ctx}: {key}")
             self.assertAlmostEqual(act["position"][0], exp["position"][0], delta=TOL_POS, msg=f"{ctx}: x")
             self.assertAlmostEqual(act["position"][1], exp["position"][1], delta=TOL_POS, msg=f"{ctx}: y")
-            if exp["measure"] is None:
-                self.assertIsNone(act["measure"], msg=f"{ctx}: measure")
-            else:
-                self.assertAlmostEqual(act["measure"], exp["measure"], delta=TOL_VALUE, msg=f"{ctx}: measure")
 
     return test
 

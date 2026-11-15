@@ -12,9 +12,6 @@
       "valign": "baseline",
       "text": "50",
       "cluster_ref": null,
-      "measure": 50.0,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,
@@ -30,9 +27,6 @@
       "valign": "baseline",
       "text": "40",
       "cluster_ref": null,
-      "measure": 40.0,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,
@@ -48,9 +42,6 @@
       "valign": "baseline",
       "text": "90",
       "cluster_ref": null,
-      "measure": 90.0,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,
@@ -66,9 +57,6 @@
       "valign": "baseline",
       "text": "50",
       "cluster_ref": null,
-      "measure": 50.0,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,
@@ -86,9 +74,6 @@
       "cluster_ref": null,
       "height": 10.0,
       "rotation": 0.0,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -104,9 +89,6 @@
       "valign": "baseline",
       "text": "50",
       "cluster_ref": null,
-      "measure": 50.0,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,
@@ -122,9 +104,6 @@
       "valign": "baseline",
       "text": "50",
       "cluster_ref": null,
-      "measure": 50.0,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,
@@ -140,9 +119,6 @@
       "valign": "baseline",
       "text": "91.6",
       "cluster_ref": null,
-      "measure": 91.6381,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 6,
         "fills": 2,
