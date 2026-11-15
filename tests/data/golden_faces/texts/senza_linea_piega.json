@@ -39,8 +39,8 @@
     },
     {
       "position": [
-        59.774,
-        98.387
+        62.215,
+        100.638
       ],
       "halign": "left",
       "valign": "baseline",
@@ -50,21 +50,6 @@
         "strokes": 0,
         "fills": 0,
         "texts": 2
-      }
-    },
-    {
-      "position": [
-        75.358,
-        134.868
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "20",
-      "cluster_ref": null,
-      "rendered": {
-        "strokes": 3,
-        "fills": 0,
-        "texts": 1
       }
     },
     {
@@ -82,6 +67,21 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      }
+    },
+    {
+      "position": [
+        81.745,
+        142.368
+      ],
+      "halign": "left",
+      "valign": "top",
+      "text": "20",
+      "cluster_ref": null,
+      "rendered": {
+        "strokes": 3,
+        "fills": 0,
+        "texts": 1
       }
     },
     {
@@ -131,21 +131,6 @@
     },
     {
       "position": [
-        172.543,
-        25.733
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "245",
-      "cluster_ref": null,
-      "rendered": {
-        "strokes": 3,
-        "fills": 0,
-        "texts": 1
-      }
-    },
-    {
-      "position": [
         177.875,
         87.103
       ],
@@ -185,6 +170,21 @@
       "cluster_ref": 0,
       "rendered": {
         "strokes": 0,
+        "fills": 0,
+        "texts": 1
+      }
+    },
+    {
+      "position": [
+        289.725,
+        33.233
+      ],
+      "halign": "left",
+      "valign": "top",
+      "text": "245",
+      "cluster_ref": null,
+      "rendered": {
+        "strokes": 3,
         "fills": 0,
         "texts": 1
       }
@@ -326,11 +326,11 @@
     },
     {
       "position": [
-        856.542,
-        673.267
+        849.042,
+        618.494
       ],
       "halign": "left",
-      "valign": "baseline",
+      "valign": "top",
       "text": "100",
       "cluster_ref": null,
       "rendered": {
@@ -341,11 +341,11 @@
     },
     {
       "position": [
-        884.364,
-        760.469
+        876.864,
+        773.044
       ],
       "halign": "left",
-      "valign": "baseline",
+      "valign": "top",
       "text": "36,5",
       "cluster_ref": null,
       "rendered": {
@@ -356,11 +356,11 @@
     },
     {
       "position": [
-        1006.424,
-        521.727
+        998.924,
+        274.878
       ],
       "halign": "left",
-      "valign": "baseline",
+      "valign": "top",
       "text": "479,1",
       "cluster_ref": null,
       "rendered": {

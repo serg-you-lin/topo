@@ -5,11 +5,11 @@
   "texts": [
     {
       "position": [
-        123.069,
+        89.069,
         99.872
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "68",
       "cluster_ref": null,
       "rendered": {
@@ -21,10 +21,10 @@
     {
       "position": [
         142.665,
-        269.83
+        252.83
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "1",
       "cluster_ref": null,
       "rendered": {
@@ -36,10 +36,10 @@
     {
       "position": [
         144.352,
-        116.891
+        176.891
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "120",
       "cluster_ref": null,
       "rendered": {

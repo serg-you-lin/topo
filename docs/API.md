@@ -1314,7 +1314,7 @@ already says so: the source's entity type is not in the model (D256).
 
 | field | content |
 |---|---|
-| `position` | `(x, y)` — the anchor point |
+| `position` | `(x, y)` — the anchor point; for a text with its source drawing (`rendered`), that of its first string, with its `halign`/`valign`, `height`, `rotation` (D260) |
 | `text` | the string as it reads on the drawing (a DXF dimension with `<>` is already resolved: `"12 H7"`) |
 | `height`, `rotation`, `width_factor` | how the string is written |
 | `role` | what it is for whoever uses it (see below) |

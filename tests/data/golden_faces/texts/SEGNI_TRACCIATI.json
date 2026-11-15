@@ -5,11 +5,11 @@
   "texts": [
     {
       "position": [
-        70.5,
-        33.0
+        73.569,
+        34.875
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "0.5",
       "cluster_ref": 0,
       "rendered": {
