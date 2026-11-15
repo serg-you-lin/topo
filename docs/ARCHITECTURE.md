@@ -119,7 +119,7 @@ topo/
 │                      (D47, "roles out of core")
 │
 ├── tools/        optional STAGES on a Document/Result (the caller chooses which and in what order)
-│   ├── anchor.py         anchor_texts()         — anchors texts to clusters (anchor_elements experimental, D228)
+│   ├── anchor.py         anchor_texts()         — anchors texts to clusters (D259)
 │   ├── non_contour.py    non_contour_candidates() — the same non-contour criterion
 │   │                     as heal() (D49), exposed to decide `edge.role`
 │   │                     BEFORE heal() (D55) — works on Document

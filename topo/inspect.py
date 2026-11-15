@@ -181,11 +181,9 @@ def inspect_result(result, *, coords: bool = False) -> None:
 
 
 def _text_kind(text) -> str:
-    """Cosa porta un testo, dai campi del modello: una misura, una punta o
-    solo la stringa (il tipo d'entità della sorgente non c'è più, D256)."""
-    if text.measured_points or text.measure is not None:
-        return "measure"
-    return "pointer" if text.pointer else "string"
+    """Cosa porta un testo, dai campi del modello: la sola stringa o anche
+    il disegno della sorgente (D256, D259)."""
+    return "drawn" if not text.rendered.is_empty() else "string"
 
 
 def _sub_part(i: int, cluster, coords: bool) -> None:

@@ -2,11 +2,11 @@
 topo/model/text.py
 ------------------
 I testi della sorgente come dati di dominio (MAP.md D20, D138): un tipo solo,
-`Text`. Una stringa in un punto; con, se la sorgente li dà, una polilinea che
-punta a qualcosa (`pointer`, la punta per prima) e i punti fra cui il numero
-che mostra è stato misurato (`measured_points`, `measure`). Che sia una nota,
-una quota o un richiamo è una lettura del consumatore, anche quando il formato
-lo dice già: il tipo d'entità della sorgente non entra nel modello (D256).
+`Text`. Una stringa posata nel piano (D257); con, se la sorgente lo dà, il
+disegno che la sorgente le traccia attorno (`rendered`). Che sia una nota,
+una quota o un richiamo, cosa misura e dove punta è una lettura del
+consumatore, anche quando il formato lo dice già (D259): né il tipo d'entità
+della sorgente (D256) né le sue affermazioni entrano nel modello.
 `halign`/`valign` dicono come la stringa sta attorno a `position`, con lo
 stesso significato per ogni formato.
 
@@ -14,21 +14,17 @@ Divisione dei compiti:
     - adapter → read/write formato ↔ modello, solo conoscenza di formato (dove
       sta il testo, come si appiattisce il blocco di una quota DXF).
     - ``anchor_texts()`` → ``cluster_ref`` (indice della parte che lo
-      contiene); ``topo.experimental.anchor_elements()`` (D228) → ``target``
-      (l'elemento su cui cade la punta di ``pointer``), ``references`` (gli
-      elementi fra cui misura).
+      contiene).
     - agente → legge e modifica questi oggetti; un writer li riemette.
 
 ``cluster_ref`` è l'indice in ``result.clusters``, non un ``id()`` — così resta
-valido dopo serializzazione. ``target`` e ``references`` sono gli oggetti
-stessi (contorno, feature, curva di ``loose``): restano giusti se un consumer
-riordina le collezioni o promuove una curva (D177).
+valido dopo serializzazione.
 """
 
 from __future__ import annotations
 
 from dataclasses import KW_ONLY, dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from .role import ContourRole, normalize_role
 
@@ -91,21 +87,15 @@ class Text:
     none). Without it, whoever rewrites the text on a generic style loses the
     original's condensation and the text overflows its cell.
 
-    ``pointer``: a polyline starting at the tip (``pointer[0]``) — where the
-    text points. ``target`` is the element the tip falls on.
-
-    ``measured_points``: the points on the geometry between which the number
-    ``measure`` was measured (two ends; two opposite points of a circle; a
-    point of an arc). ``measure_is_angle``: the number is an angle, not a
-    length. ``references``: the elements the points fall on.
-
     ``halign`` (``left``/``center``/``right``) and ``valign``
     (``baseline``/``bottom``/``center``/``top``): where ``position`` lies on
     the string, the same for every format; ``left``/``baseline`` when the
     source does not say. Unknown value → ``ValueError``.
 
-    ``rendered``: the image the source draws around it (empty for a plain
-    text).
+    ``rendered``: the strokes, fills and strings the source draws with it
+    (a DXF dimension's or leader's own block), empty for a plain text and
+    for a source that does not group them. What they mean — what is
+    measured, where it points — is a reading (D259).
 
     ``role``: what the text is for a consumer (``"title_block"``,
     ``"part_code"``, ...), as for an edge: topo does not read it and does not
@@ -122,12 +112,6 @@ class Text:
     cluster_ref:      Optional[int]    = None   # indice in result.clusters della parte che lo contiene
     halign:           str              = "left"
     valign:           str              = "baseline"
-    pointer:          List[Point]      = field(default_factory=list)
-    target:           Optional[Any]    = field(default=None, repr=False, compare=False)
-    measured_points:  List[Point]      = field(default_factory=list)
-    measure:          Optional[float]  = None
-    measure_is_angle: bool             = False
-    references:       List[Any]        = field(default_factory=list, repr=False, compare=False)
     rendered:         RenderedGeometry = field(default_factory=RenderedGeometry)
 
     def __post_init__(self):

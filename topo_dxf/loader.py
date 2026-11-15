@@ -60,8 +60,7 @@ DWG_VERSIONS = {
 # ---------------------------------------------------------------------------
 
 def _text_signature(text) -> tuple:
-    return (round(text.position[0], 3), round(text.position[1], 3), text.text,
-            text.measure, len(text.pointer))
+    return (round(text.position[0], 3), round(text.position[1], 3), text.text)
 
 
 def _merge_texts(base: list, extra: list) -> None:

@@ -14,9 +14,6 @@
       "cluster_ref": 5,
       "height": 4.0,
       "rotation": 0.0,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -34,9 +31,6 @@
       "cluster_ref": 5,
       "height": 4.0,
       "rotation": 0.0,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -52,9 +46,6 @@
       "valign": "baseline",
       "text": "MARCARE I PRIMI 25 mm\nPER TUTTI I RIFERIMENTI PIEGA",
       "cluster_ref": null,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -70,9 +61,6 @@
       "valign": "baseline",
       "text": "20",
       "cluster_ref": null,
-      "measure": 20.0,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -90,9 +78,6 @@
       "cluster_ref": 5,
       "height": 2.5,
       "rotation": 0.0,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -108,9 +93,6 @@
       "valign": "baseline",
       "text": "PEZZI N°: 1",
       "cluster_ref": 3,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -126,9 +108,6 @@
       "valign": "baseline",
       "text": "SPESSORE: 2,00 mm",
       "cluster_ref": 3,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -144,9 +123,6 @@
       "valign": "baseline",
       "text": "CODICE: ARTX_5",
       "cluster_ref": 3,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -162,9 +138,6 @@
       "valign": "baseline",
       "text": "245",
       "cluster_ref": null,
-      "measure": 245.0,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -180,9 +153,6 @@
       "valign": "baseline",
       "text": "SPESSORE: 2,00 mm",
       "cluster_ref": 0,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -198,9 +168,6 @@
       "valign": "baseline",
       "text": "PEZZI N°: 1",
       "cluster_ref": 0,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -216,9 +183,6 @@
       "valign": "baseline",
       "text": "CODICE: ARTX_1",
       "cluster_ref": 0,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -234,9 +198,6 @@
       "valign": "baseline",
       "text": "SPESSORE: 2,00 mm",
       "cluster_ref": 1,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -252,9 +213,6 @@
       "valign": "baseline",
       "text": "PEZZI N°: 2",
       "cluster_ref": 1,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -270,9 +228,6 @@
       "valign": "baseline",
       "text": "CODICE: ARTX_2",
       "cluster_ref": 1,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -288,9 +243,6 @@
       "valign": "baseline",
       "text": "SPESSORE: 4,00 mm",
       "cluster_ref": 2,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -306,9 +258,6 @@
       "valign": "baseline",
       "text": "PEZZI N°: 2",
       "cluster_ref": 2,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -324,9 +273,6 @@
       "valign": "baseline",
       "text": "CODICE: ARTX_4",
       "cluster_ref": 2,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -342,9 +288,6 @@
       "valign": "baseline",
       "text": "SPESSORE: 2,00 mm",
       "cluster_ref": 4,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -360,9 +303,6 @@
       "valign": "baseline",
       "text": "PEZZI N°: 2",
       "cluster_ref": 4,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -378,9 +318,6 @@
       "valign": "baseline",
       "text": "CODICE: ARTX_3",
       "cluster_ref": 4,
-      "measure": null,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
@@ -396,9 +333,6 @@
       "valign": "baseline",
       "text": "100",
       "cluster_ref": null,
-      "measure": 100.0,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -414,9 +348,6 @@
       "valign": "baseline",
       "text": "36,5",
       "cluster_ref": null,
-      "measure": 36.4694,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,
@@ -432,9 +363,6 @@
       "valign": "baseline",
       "text": "479,1",
       "cluster_ref": null,
-      "measure": 479.1075,
-      "measure_is_angle": false,
-      "pointer": 0,
       "rendered": {
         "strokes": 3,
         "fills": 0,

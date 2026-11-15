@@ -1062,63 +1062,11 @@ topo.anchor_texts(result: Result, *, snap_distance=0.0) -> None
 
 Links every text to the part that contains it: `cluster_ref` = index of the
 cluster whose outer contour contains its position (with
-`snap_distance` > 0, also the nearest within that distance, D82). Which
-element a dimension or an arrow falls on is `topo.experimental.anchor_elements`
-(D228).
+`snap_distance` > 0, also the nearest within that distance, D82). What a
+dimension measures or where an arrow lands is a reading of whoever uses the
+drawing, not topo's (D259).
 
 **Mutates** the texts of `result` and returns `None` (D176).
-
-#### Which element a text falls on — experimental (D228)
-
-They live in `topo.experimental`: the candidates depend on the reading (contours
-and closed pieces of `loose`, never an open curve), so on a sheet of views
-read with `outlines()` most dimensions do not bind to anything; and
-what relates a dimension (datum, hole relative to edge) belongs to whoever
-reads the drawing. Goal for 1.x: the link on the edges of the network, the same for
-every reading.
-
-```python
-topo.experimental.anchor_elements(result: Result, *, distance=0.5) -> None
-```
-
-For every text with a `pointer` it sets `target` (`pointer_target`), for every
-text with `measured_points` `references` (`measured_references`). **Mutates** the
-texts of `result` and returns `None`.
-
-##### `pointer_target`
-
-```python
-topo.experimental.pointer_target(result: Result, text: Text, *,
-                                 distance=0.5) -> Any | None
-```
-
-The element on which the tip (`pointer[0]`) of `text` falls: the object itself —
-a contour of `result.clusters` (`outer`, `inners`), an object of a
-collection of `cluster.overlay`, or a closed piece of `result.loose` (D162).
-Not a position of it in the result (D177): it stays right if afterwards a consumer
-reorders the collections or promotes a curve (`Result.promote`).
-
-Rule: the border nearest to the tip, if within `distance` (on a tie, the
-smallest element wins); otherwise the smallest closed element, not the outer
-contour, that contains the tip (arrow ending inside a hole);
-otherwise `None` (arrow outside the part). It does not read the string.
-
-**Mutates** nothing.
-
-##### `measured_references`
-
-```python
-topo.experimental.measured_references(result: Result, text: Text, *,
-                                      distance=0.5) -> list
-```
-
-The elements on which the `measured_points` of `text` fall, the objects themselves
-like `target`: for each point the element whose border passes within `distance`
-(on a tie the smallest). Without duplicates, in the order of the points: two opposite
-points on a circle give the circle, two ends one or two elements. It does not
-read the string.
-
-**Mutates** nothing.
 
 ---
 
@@ -1372,13 +1320,7 @@ already says so: the source's entity type is not in the model (D256).
 | `role` | what it is for whoever uses it (see below) |
 | `cluster_ref` | index of the cluster that contains it (from `anchor_texts`) |
 | `halign`, `valign` | where `position` lies on the string: `left`/`center`/`right` and `baseline`/`bottom`/`center`/`top`, one meaning for every format; `left`/`baseline` when the source does not say; anything else → `ValueError` (D256) |
-| `pointer` | a polyline starting at the tip (`pointer[0]`): where the text points |
-| `target` | the element on which the tip falls, the object itself (from `topo.experimental.anchor_elements`, D177); outside `repr` and `==` |
-| `measured_points` | the points on the geometry between which the number was measured: two ends; two opposite points of a circle; a point of an arc |
-| `measure` | the number that the source says it measured; `None` if it does not say (a PDF) |
-| `measure_is_angle` | `measure` is an angle, not a length |
-| `references` | the elements on which the `measured_points` fall, the objects themselves (from `topo.experimental.anchor_elements`, D177); outside `repr` and `==` |
-| `rendered` | the image that the source draws around the string (lines, arrows, other texts): `to_dxf` rewrites that instead of the string alone |
+| `rendered` | the strokes, fills and strings the source draws with the string (a DXF dimension's or leader's own block): `to_dxf` rewrites that instead of the string alone; empty when the source does not group them. What they mean — measured points, the measure, where a pointer lands — is not in the model (D259) |
 
 `role` says what the text is for whoever uses it (`"title_block"`, `"part_code"`,
 ...), like the role of an edge (MAP.md D127). topo does not read it and does not
