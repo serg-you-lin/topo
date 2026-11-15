@@ -274,11 +274,23 @@ def _dimension_text_of(entity, pos, role: str) -> Optional[Text]:
             return None
 
     return Text(
-        position=pos,
         role=role,
         text=_shown_text(override, rendered, measured),
         rendered=rendered,
+        **_on_string(rendered, pos),
     )
+
+
+def _on_string(rendered: RenderedGeometry, pos) -> dict:
+    """Punto, allineamento, altezza e rotazione di un testo col suo disegno:
+    quelli della sua prima stringa, nell'ordine della sorgente (D260), così
+    `position` sta dove la stringa si legge come per ogni altro testo. Senza
+    stringhe resta `pos`."""
+    if not rendered.texts:
+        return {"position": pos}
+    first = rendered.texts[0]
+    return {"position": first.position, "halign": first.halign, "valign": first.valign,
+            "height": first.height, "rotation": first.rotation}
 
 
 _NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
@@ -431,10 +443,10 @@ def _leader_text(entity, pos, role: str) -> Optional[Text]:
             return None
 
     return Text(
-        position=pos,
         role=role,
         text=text,
         rendered=rendered,
+        **_on_string(rendered, pos),
     )
 
 

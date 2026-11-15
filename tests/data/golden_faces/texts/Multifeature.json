@@ -6,10 +6,10 @@
     {
       "position": [
         194.727,
-        135.305
+        175.305
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "80",
       "cluster_ref": null,
       "rendered": {
@@ -21,10 +21,10 @@
     {
       "position": [
         204.727,
-        175.305
+        187.805
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "25",
       "cluster_ref": null,
       "rendered": {
@@ -36,10 +36,10 @@
     {
       "position": [
         204.736,
-        150.305
+        162.805
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "25",
       "cluster_ref": null,
       "rendered": {
@@ -51,11 +51,26 @@
     {
       "position": [
         214.727,
-        192.805
+        186.702
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "15",
+      "cluster_ref": null,
+      "rendered": {
+        "strokes": 3,
+        "fills": 0,
+        "texts": 1
+      }
+    },
+    {
+      "position": [
+        216.248,
+        245.305
+      ],
+      "halign": "center",
+      "valign": "center",
+      "text": "11.25",
       "cluster_ref": null,
       "rendered": {
         "strokes": 3,
@@ -80,11 +95,26 @@
     },
     {
       "position": [
-        231.727,
+        245.727,
+        115.305
+      ],
+      "halign": "center",
+      "valign": "center",
+      "text": "42",
+      "cluster_ref": null,
+      "rendered": {
+        "strokes": 3,
+        "fills": 0,
+        "texts": 1
+      }
+    },
+    {
+      "position": [
+        249.477,
         225.305
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "8.5",
       "cluster_ref": null,
       "rendered": {
@@ -95,12 +125,12 @@
     },
     {
       "position": [
-        235.977,
-        245.305
+        249.727,
+        125.305
       ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "11.25",
+      "halign": "center",
+      "valign": "center",
+      "text": "50",
       "cluster_ref": null,
       "rendered": {
         "strokes": 3,
@@ -126,36 +156,6 @@
     {
       "position": [
         266.727,
-        115.305
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "32",
-      "cluster_ref": null,
-      "rendered": {
-        "strokes": 3,
-        "fills": 0,
-        "texts": 1
-      }
-    },
-    {
-      "position": [
-        266.727,
-        115.305
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "42",
-      "cluster_ref": null,
-      "rendered": {
-        "strokes": 3,
-        "fills": 0,
-        "texts": 1
-      }
-    },
-    {
-      "position": [
-        266.727,
         255.516
       ],
       "halign": "left",
@@ -166,21 +166,6 @@
         "strokes": 1,
         "fills": 1,
         "texts": 0
-      }
-    },
-    {
-      "position": [
-        274.727,
-        125.305
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "50",
-      "cluster_ref": null,
-      "rendered": {
-        "strokes": 3,
-        "fills": 0,
-        "texts": 1
       }
     },
     {
@@ -219,6 +204,51 @@
     },
     {
       "position": [
+        279.477,
+        235.305
+      ],
+      "halign": "center",
+      "valign": "center",
+      "text": "109.5",
+      "cluster_ref": null,
+      "rendered": {
+        "strokes": 3,
+        "fills": 0,
+        "texts": 1
+      }
+    },
+    {
+      "position": [
+        282.727,
+        115.305
+      ],
+      "halign": "center",
+      "valign": "center",
+      "text": "32",
+      "cluster_ref": null,
+      "rendered": {
+        "strokes": 3,
+        "fills": 0,
+        "texts": 1
+      }
+    },
+    {
+      "position": [
+        284.727,
+        125.305
+      ],
+      "halign": "center",
+      "valign": "center",
+      "text": "20",
+      "cluster_ref": null,
+      "rendered": {
+        "strokes": 3,
+        "fills": 0,
+        "texts": 1
+      }
+    },
+    {
+      "position": [
         293.342,
         179.057
       ],
@@ -234,12 +264,12 @@
     },
     {
       "position": [
-        294.727,
-        125.305
+        299.727,
+        245.305
       ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "20",
+      "halign": "center",
+      "valign": "center",
+      "text": "127.5",
       "cluster_ref": null,
       "rendered": {
         "strokes": 3,
@@ -249,11 +279,11 @@
     },
     {
       "position": [
-        314.727,
+        304.727,
         125.305
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "20",
       "cluster_ref": null,
       "rendered": {
@@ -275,21 +305,6 @@
         "strokes": 1,
         "fills": 1,
         "texts": 0
-      }
-    },
-    {
-      "position": [
-        334.227,
-        235.305
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "109.5",
-      "cluster_ref": null,
-      "rendered": {
-        "strokes": 3,
-        "fills": 0,
-        "texts": 1
       }
     },
     {
@@ -343,26 +358,11 @@
     },
     {
       "position": [
-        363.477,
-        245.305
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "127.5",
-      "cluster_ref": null,
-      "rendered": {
-        "strokes": 3,
-        "fills": 0,
-        "texts": 1
-      }
-    },
-    {
-      "position": [
         390.922,
-        193.305
+        175.305
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "36",
       "cluster_ref": 0,
       "rendered": {

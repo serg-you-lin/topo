@@ -600,3 +600,7 @@ The yardstick: topo is format-agnostic and deterministic. What a source claims i
 this tip points there) is a reading: no PDF says it, and rebuilding it needs drawing notation (snapdraw). `rendered` stays:
 it only says which strokes the source drew with a string, and keeps them out of `heal()` (7 of 31 sheets broke without it).
 One road for every format: snapdraw rebuilds the points from the strokes; topo_dxf exposes no DXF shortcut (additive later if measured).
+### D260 — a `Text` with its source drawing takes `position`, `halign`/`valign`, `height`, `rotation` from its first string, in source order (Federico, 15 November).
+A dimension's `position` was its definition point, up to 1 m from the number (median 74.5 mm on the 46 sheets); two
+dimensions of drw_0024 shared one. Now it is where the string reads, as for every text, so containment (`anchor_texts`)
+and a consumer see the same thing from every format. With no string (a leader alone) it stays as it was until D258.

@@ -366,6 +366,8 @@ Aperte:
      d. documento sui testi in `docs/`.
      f. 1.x, con deprecazione (D175): anche `rendered` è del consumer
         (Federico, 15 novembre: "per ora non gestibile"); resta fino alla 1.0.
+     g. drw_0024: la quota angolare esce `text='90~'` (atteso `90°`?).
+        Non guardato.
      e. quota senza blocco: oggi topo_dxf ne calcola le linee dai punti di
         definizione (`_synthesize_dimension`); con D259 solo la stringa.
         Prima contare quante sono sui 46 fogli.

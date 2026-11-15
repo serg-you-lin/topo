@@ -6,10 +6,10 @@
     {
       "position": [
         310.89,
-        873.733
+        22.0
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "0",
       "cluster_ref": null,
       "rendered": {

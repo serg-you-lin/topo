@@ -6,10 +6,10 @@
     {
       "position": [
         -944.299,
-        181.534
+        156.534
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "50",
       "cluster_ref": null,
       "rendered": {
@@ -20,11 +20,11 @@
     },
     {
       "position": [
-        -932.088,
+        -912.088,
         122.84
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "40",
       "cluster_ref": null,
       "rendered": {
@@ -36,26 +36,11 @@
     {
       "position": [
         -878.008,
-        221.534
+        176.534
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "90",
-      "cluster_ref": null,
-      "rendered": {
-        "strokes": 6,
-        "fills": 2,
-        "texts": 1
-      }
-    },
-    {
-      "position": [
-        -869.884,
-        122.84
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "50",
       "cluster_ref": null,
       "rendered": {
         "strokes": 6,
@@ -82,11 +67,11 @@
     },
     {
       "position": [
-        -797.681,
+        -844.884,
         122.84
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "50",
       "cluster_ref": null,
       "rendered": {
@@ -97,11 +82,26 @@
     },
     {
       "position": [
-        -675.477,
+        -772.681,
         122.84
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
+      "text": "50",
+      "cluster_ref": null,
+      "rendered": {
+        "strokes": 6,
+        "fills": 2,
+        "texts": 1
+      }
+    },
+    {
+      "position": [
+        -700.477,
+        122.84
+      ],
+      "halign": "center",
+      "valign": "center",
       "text": "50",
       "cluster_ref": null,
       "rendered": {
@@ -113,10 +113,10 @@
     {
       "position": [
         -665.019,
-        223.172
+        177.353
       ],
-      "halign": "left",
-      "valign": "baseline",
+      "halign": "center",
+      "valign": "center",
       "text": "91.6",
       "cluster_ref": null,
       "rendered": {
