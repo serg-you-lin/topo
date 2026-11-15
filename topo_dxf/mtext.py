@@ -18,7 +18,8 @@ from ezdxf.tools.text import plain_mtext
 def clean_mtext(txt) -> str:
     """
     Testo semplice da una stringa MTEXT grezza: rimuove i codici di
-    formattazione (font, colore, allineamento, …) e normalizza gli spazi.
+    formattazione (font, colore, allineamento, …). Gli spazi ai bordi
+    restano: occupano posto nella stringa disegnata (D261).
     Accetta anche un'entità con attributo ``.text`` per comodità.
     Ritorna "" per stringhe vuote o segnaposto ("<>").
     """
@@ -30,8 +31,8 @@ def clean_mtext(txt) -> str:
         except Exception:
             txt = str(txt)
 
-    result = plain_mtext(txt).strip()
-    return "" if result in ("<>", "") else result
+    result = plain_mtext(txt)
+    return "" if result.strip() in ("<>", "") else result
 
 
 def mleader_text(entity) -> Optional[str]:

@@ -374,6 +374,16 @@ Aperte:
      e. quota senza blocco: oggi topo_dxf ne calcola le linee dai punti di
         definizione (`_synthesize_dimension`); con D259 solo la stringa.
         Prima contare quante sono sui 46 fogli.
+     i. frecce di quota: `rendered.fills` mette insieme le punte SOLID e le
+        polilinee chiuse del blocco, e `_emit_rendered` le riscrive tutte come
+        polilinee chiuse vuote (drw_0024: nell'originale sono piene). Da tenere
+        presente quando snapdraw cerca le frecce; Federico: per ora va bene.
+     j. TEXT allineato non a sinistra: `to_dxf` scrive il punto d'inserimento
+        (codice 10) uguale al punto d'allineamento; il CAD d'origine ci mette
+        l'inizio della stringa calcolato col suo font. Un visualizzatore che
+        disegna dal codice 10 sposta la stringa (drw_0024: SECTION su A-A).
+        Calcolarlo vuole le metriche del font: per `txt` ezdxf stima 17,87
+        contro 21,66 del CAD. Federico: per ora lasciamo stare.
      Consumer da adeguare dalle loro sessioni: snapdraw `features.py`,
      `model.py`, `tests/test_features.py`; pippo `plan.py`.
   2. **contratto scritto per adapter**: quali campi opzionali riempie

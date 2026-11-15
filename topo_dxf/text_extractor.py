@@ -209,7 +209,9 @@ def _extract_content(entity) -> str:
     """Testo pulito dell'entità, stringa vuota se non ne ha."""
     t = entity.dxftype()
     if t == "TEXT":
-        return (entity.dxf.get("text", "") or "").strip()
+        # spazi ai bordi compresi: l'ancora del testo li conta (D261)
+        raw = entity.dxf.get("text", "") or ""
+        return raw if raw.strip() else ""
     if t == "MTEXT":
         return clean_mtext(entity.text)
     return ""
@@ -533,7 +535,8 @@ def _flatten_virtual(entity):
 
 def _text_item(v) -> Optional[RenderedText]:
     t = v.dxftype()
-    content = clean_mtext(v.text) if t == "MTEXT" else (v.dxf.get("text", "") or "").strip()
+    content = clean_mtext(v.text) if t == "MTEXT" else (v.dxf.get("text", "") or "")
+    content = content if content.strip() else ""
     if not content:
         return None
     placement = text_placement(v)

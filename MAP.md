@@ -605,3 +605,8 @@ One road for every format: snapdraw rebuilds the points from the strokes; topo_d
 A dimension's `position` was its definition point, up to 1 m from the number (median 74.5 mm on the 46 sheets); two
 dimensions of drw_0024 shared one. Now it is where the string reads, as for every text, so containment (`anchor_texts`)
 and a consumer see the same thing from every format. With no string (a leader alone) it stays as it was until D258.
+
+### D261 — a `Text`'s string keeps its edge spaces; only a string of spaces alone is no text (15 November).
+A string's anchor counts its spaces: `"SECTION  "` aligned right at x ends its letters one space before x. Stripping
+them moves the letters by one space each (980 of 9,070 TEXT in the test drawings have them).
+The string as drawn is the raw fact, the same from every format; trimming it is the consumer's choice.
