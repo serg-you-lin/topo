@@ -363,7 +363,6 @@ Aperte:
         `pointer_target`, `measured_references`.
      b. `position` di una quota sulla sua stringa (primo pezzo).
      c. LEADER senza stringa → curva + area piena (D258, dopo D255).
-     d. documento sui testi in `docs/`.
      f. 1.x, con deprecazione (D175): anche `rendered` è del consumer
         (Federico, 15 novembre: "per ora non gestibile"); resta fino alla 1.0.
      h. polilinea con larghezza ad arco (le due "ciambelle" di drw_0010): la
@@ -384,6 +383,8 @@ Aperte:
         disegna dal codice 10 sposta la stringa (drw_0024: SECTION su A-A).
         Calcolarlo vuole le metriche del font: per `txt` ezdxf stima 17,87
         contro 21,66 del CAD. Federico: per ora lasciamo stare.
+     k. `Text.origin` ("provenienza nella sorgente") non lo riempie nessun
+        adapter e non è documentato: da togliere o da dire cos'è.
      Consumer da adeguare dalle loro sessioni: snapdraw `features.py`,
      `model.py`, `tests/test_features.py`; pippo `plan.py`.
   2. **contratto scritto per adapter**: quali campi opzionali riempie

@@ -49,9 +49,9 @@ nothing, the model is rich enough to hold even what it has not classified:
   (pure segments, format-independent; `cluster_ref` says which cluster
   contains it, D137). What it is, a consumer decides, and moves it into
   `cluster.overlay` with `result.promote` (D173)
-- texts → `result.texts` (`Text`, a single type, D138: the string, the
-  polyline it points to, the points between which the number was measured, and
-  the image drawn around it as primitives)
+- texts → `result.texts` (`Text`, a single type, D138: the string laid in the
+  plane and, when the source groups one, the picture drawn with it as
+  primitives; what a dimension measures is a reading, D259). See `TEXTS.md`
 
 The entity types that `topo` does not model (`HATCH`, `IMAGE`, `TABLE`, `3DFACE`,
 `XLINE`…) stay out, but `load_dxf` emits a warning listing them — no
