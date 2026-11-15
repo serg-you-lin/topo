@@ -1362,7 +1362,7 @@ that `heal` and `validate_document` use when `tolerance` is not passed (D86).
 
 A text of the source, a single type (MAP.md D138). Whether it is a note, a
 dimension or a callout is a reading by whoever uses it, even when the format
-already says so: the format stays in `source_kind`.
+already says so: the source's entity type is not in the model (D256).
 
 | field | content |
 |---|---|
@@ -1371,7 +1371,7 @@ already says so: the format stays in `source_kind`.
 | `height`, `rotation`, `width_factor` | how the string is written |
 | `role` | what it is for whoever uses it (see below) |
 | `cluster_ref` | index of the cluster that contains it (from `anchor_texts`) |
-| `source_kind` | the entity type in the source format (`"TEXT"`, `"MTEXT"`, `"DIMENSION"`, `"LEADER"`, `"MULTILEADER"` in a DXF) |
+| `halign`, `valign` | where `position` lies on the string: `left`/`center`/`right` and `baseline`/`bottom`/`center`/`top`, one meaning for every format; `left`/`baseline` when the source does not say; anything else → `ValueError` (D256) |
 | `pointer` | a polyline starting at the tip (`pointer[0]`): where the text points |
 | `target` | the element on which the tip falls, the object itself (from `topo.experimental.anchor_elements`, D177); outside `repr` and `==` |
 | `measured_points` | the points on the geometry between which the number was measured: two ends; two opposite points of a circle; a point of an arc |

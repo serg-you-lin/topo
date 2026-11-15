@@ -340,8 +340,44 @@ Aperte:
   del fianco di un arco (c 173,849; 151,158; r 0,655): il ponte sarebbe
   perpendicolare, D189 lo vieta, il bordo basso va in `loose`. Spostata la
   linea sull'arco, il contorno è intero (173,19–245,03 × 96,4–158,3). Da
-  decidere con Federico se riaprire D189; prima trovare perché il ponte
-  perpendicolare fu vietato.
+  decidere con Federico se riaprire D189. Il divieto difende i simboli di
+  filettatura (D189); in discussione una chiusura con svolta minima, misure in
+  `_debug/2026-11-14_topo_ponte_perpendicolare/`.
+- **Capi liberi a svolta 0° che heal() non chiude.** Con `max_gap` 0,5 restano
+  liberi capi la cui retta proseguita tocca una linea entro il raggio
+  (gamba_tavolo_healed: 28 capi a 0,25; drw_0008_island_*). Capire perché
+  (pari merito D185? altro) prima di toccare la regola dei gap.
+- **Dieci casi giudicati da Federico** (`_debug/2026-11-14_topo_ponte_perpendicolare/dieci_casi.dxf`):
+  la svolta minima non separa (caso 10, 2,4°, unisce una quota a un profilo).
+  Casi 5, 6, 7 e 10: sono linee di quota (Federico, viste le letture di oggi),
+  non un difetto della regola dei gap; con `max_gap` 0,5 restano strutturali
+  in snapdraw. I sì netti (1, 2, 8) mancano la linea di
+  0,014–0,02: contatto entro la tolleranza invece di `GRAPH_EPSILON` riapre D101.
+  Provato (solo il T di `_Contacts.meet` a `self.tol`): chiude 1, 2, 6, 8 e
+  intero drw_0007, nessun no; ma 52 rossi, fra cui ordine degli edge (16) e
+  moto rigido (9). Così com'è non va; log `suite_contatto_005.log`.
+- **Omologazione fra adapter (D254; Federico, 15 novembre; da snapdraw).** In ordine:
+  1. **riquadro stimato del testo** (dopo D256): da stringa, `height`,
+     `width_factor`, rotazione e allineamento, con una regola fissa senza
+     font (deterministico, dichiarato stima); il contenimento (`anchor_texts`)
+     sul suo centro invece che su `position`. Serve a snapdraw: cella del
+     cartiglio e densità dei testi leggono `position` (`titleblock.py:251`,
+     `geometry.py:213`). Prima: quote e richiami hanno `position` sul
+     def-point o sulla punta, non sulla stringa (la stringa è in
+     `rendered.texts`): un riquadro su `position` lì non vuol dire niente.
+  2. **contratto scritto per adapter**: quali campi opzionali riempie
+     (`EdgeStyle.dash`, `measured_points`, `pointer`, `rendered`, …).
+  3. **trattini già esplosi** (richiesta snapdraw 15 novembre, entra):
+     ricomporli in un segmento con `EdgeStyle.dash` (collineari, vuoti
+     regolari), così stile e trattini esplosi danno lo stesso `Edge`. Prova di
+     snapdraw: tratto e punto esploso in LINE (12, vuoto 3, punto 0,5).
+     Candidati da guardare a occhio: drw_0006 (15, forse tratteggi D205),
+     drw_0010 (4), drw_0015 (1).
+  4. **aree piene, D255** (richiesta snapdraw 15 novembre, entra): SOLID,
+     TRACE, HATCH pieno, polilinea con larghezza fuori da DIMENSION/LEADER →
+     contorno chiuso segnato pieno. Prima misurare quanti sono nei 46 fogli.
+  Smistata anche, 15 novembre: segni di centro, snapdraw l'ha ritirata (resta
+  sua, D40/D56).
 - **snapbend, vaschetta** (un anello che tocca l'outer nei 4 vertici concavi
   esce inner in `faces()`): topo non cambia, è geometria giusta (D250: tutti i
   nodi pari, l'unica lettura con ogni linea contorno). snapbend usa

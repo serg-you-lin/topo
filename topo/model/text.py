@@ -6,7 +6,9 @@ I testi della sorgente come dati di dominio (MAP.md D20, D138): un tipo solo,
 punta a qualcosa (`pointer`, la punta per prima) e i punti fra cui il numero
 che mostra è stato misurato (`measured_points`, `measure`). Che sia una nota,
 una quota o un richiamo è una lettura del consumatore, anche quando il formato
-lo dice già: il formato resta in `source_kind`, per riscriverlo fedele.
+lo dice già: il tipo d'entità della sorgente non entra nel modello (D256).
+`halign`/`valign` dicono come la stringa sta attorno a `position`, con lo
+stesso significato per ogni formato.
 
 Divisione dei compiti:
     - adapter → read/write formato ↔ modello, solo conoscenza di formato (dove
@@ -32,6 +34,17 @@ from .role import ContourRole, normalize_role
 
 Point = Tuple[float, float]
 
+# Come la stringa sta attorno al suo punto (D256): orizzontale e verticale.
+HALIGNS = ("left", "center", "right")
+VALIGNS = ("baseline", "bottom", "center", "top")
+
+
+def _check_align(halign: str, valign: str) -> None:
+    if halign not in HALIGNS:
+        raise ValueError(f"halign {halign!r}: one of {', '.join(HALIGNS)}")
+    if valign not in VALIGNS:
+        raise ValueError(f"valign {valign!r}: one of {', '.join(VALIGNS)}")
+
 
 @dataclass
 class RenderedText:
@@ -41,6 +54,11 @@ class RenderedText:
     _: KW_ONLY
     height:   float = 2.5
     rotation: float = 0.0
+    halign:   str   = "left"
+    valign:   str   = "baseline"
+
+    def __post_init__(self):
+        _check_align(self.halign, self.valign)
 
 
 @dataclass
@@ -81,9 +99,13 @@ class Text:
     point of an arc). ``measure_is_angle``: the number is an angle, not a
     length. ``references``: the elements the points fall on.
 
+    ``halign`` (``left``/``center``/``right``) and ``valign``
+    (``baseline``/``bottom``/``center``/``top``): where ``position`` lies on
+    the string, the same for every format; ``left``/``baseline`` when the
+    source does not say. Unknown value → ``ValueError``.
+
     ``rendered``: the image the source draws around it (empty for a plain
-    text). ``source_kind``: the entity type in the source format ("TEXT",
-    "MTEXT", "DIMENSION", "LEADER", "MULTILEADER" in a DXF).
+    text).
 
     ``role``: what the text is for a consumer (``"title_block"``,
     ``"part_code"``, ...), as for an edge: topo does not read it and does not
@@ -98,7 +120,8 @@ class Text:
     role:             str              = ContourRole.UNKNOWN.value
     origin:           Optional[str]    = None   # provenienza nella sorgente — diagnostica
     cluster_ref:      Optional[int]    = None   # indice in result.clusters della parte che lo contiene
-    source_kind:      str              = ""
+    halign:           str              = "left"
+    valign:           str              = "baseline"
     pointer:          List[Point]      = field(default_factory=list)
     target:           Optional[Any]    = field(default=None, repr=False, compare=False)
     measured_points:  List[Point]      = field(default_factory=list)
@@ -109,3 +132,4 @@ class Text:
 
     def __post_init__(self):
         self.role = normalize_role(self.role)
+        _check_align(self.halign, self.valign)

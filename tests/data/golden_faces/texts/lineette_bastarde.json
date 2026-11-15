@@ -1,17 +1,15 @@
 {
   "source_file": "lineette_bastarde.dxf",
   "text_count": 1,
-  "by_source_kind": {
-    "DIMENSION": 1
-  },
   "cluster_count": 1,
   "texts": [
     {
-      "source_kind": "DIMENSION",
       "position": [
         54.78,
         483.324
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "975.43",
       "cluster_ref": null,
       "measure": 975.4301,

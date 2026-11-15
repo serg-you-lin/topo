@@ -1,17 +1,15 @@
 {
   "source_file": "due_viste_un_foglio.dxf",
   "text_count": 3,
-  "by_source_kind": {
-    "DIMENSION": 3
-  },
   "cluster_count": 2,
   "texts": [
     {
-      "source_kind": "DIMENSION",
       "position": [
         123.069,
         99.872
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "68",
       "cluster_ref": null,
       "measure": 68.0,
@@ -24,11 +22,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         142.665,
         269.83
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "1",
       "cluster_ref": null,
       "measure": 1.0,
@@ -41,11 +40,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         144.352,
         116.891
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "120",
       "cluster_ref": null,
       "measure": 120.0,

@@ -88,11 +88,11 @@ def inspect_document(doc, *, graph: bool = True, limit: Optional[int] = 60) -> N
     anns = doc.texts or []
     if anns:
         print(f"\ntexts: {len(anns)}")
-        kinds = Counter(a.source_kind for a in anns)
+        kinds = Counter(_text_kind(a) for a in anns)
         print(f"  by kind: {dict(kinds)}")
         for a in anns[:20]:
             content = (a.text or "")[:40]
-            print(f"  - {a.source_kind:<10} @ {_p(a.position)}  {content!r}")
+            print(f"  - {_text_kind(a):<10} @ {_p(a.position)}  {content!r}")
 
     if not graph:
         return
@@ -177,7 +177,15 @@ def inspect_result(result, *, coords: bool = False) -> None:
 
     anns = result.texts or []
     if anns:
-        print(f"\ntexts in the model: {len(anns)}  ({dict(Counter(a.source_kind for a in anns))})")
+        print(f"\ntexts in the model: {len(anns)}  ({dict(Counter(_text_kind(a) for a in anns))})")
+
+
+def _text_kind(text) -> str:
+    """Cosa porta un testo, dai campi del modello: una misura, una punta o
+    solo la stringa (il tipo d'entità della sorgente non c'è più, D256)."""
+    if text.measured_points or text.measure is not None:
+        return "measure"
+    return "pointer" if text.pointer else "string"
 
 
 def _sub_part(i: int, cluster, coords: bool) -> None:

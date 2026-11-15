@@ -15,7 +15,6 @@ Un test per fixture, generato dalla fabbrica in fondo al file.
 
 import json
 import unittest
-from collections import Counter
 from pathlib import Path
 
 
@@ -55,8 +54,9 @@ def text_dict(t) -> dict:
     """Il golden di un `Text`: altezza e rotazione solo per una stringa senza
     immagine (con un'immagine il writer riscrive quella)."""
     d = {
-        "source_kind": t.source_kind,
         "position": [round(t.position[0], 3), round(t.position[1], 3)],
+        "halign": t.halign,
+        "valign": t.valign,
         "text": t.text,
         "cluster_ref": t.cluster_ref,
     }
@@ -71,7 +71,7 @@ def text_dict(t) -> dict:
 
 
 def sort_key(entry: dict):
-    return (entry["position"][0], entry["position"][1], entry["source_kind"], entry["text"])
+    return (entry["position"][0], entry["position"][1], entry["text"])
 
 
 def _make_test(path: Path):
@@ -96,14 +96,10 @@ def _make_test(path: Path):
             )
         self.assertEqual(len(actual), golden["text_count"],
                          msg=f"{golden['source_file']}: numero testi")
-        self.assertEqual(
-            dict(Counter(e["source_kind"] for e in actual)), golden["by_source_kind"],
-            msg=f"{golden['source_file']}: conteggio per source_kind",
-        )
         for i, (act, exp) in enumerate(zip(actual, expected)):
             ctx = f"{golden['source_file']} testo[{i}]"
             self.assertEqual(act.keys(), exp.keys(), msg=f"{ctx}: campi")
-            for key in ("source_kind", "text", "cluster_ref", "measure_is_angle", "pointer", "rendered"):
+            for key in ("halign", "valign", "text", "cluster_ref", "measure_is_angle", "pointer", "rendered"):
                 self.assertEqual(act[key], exp[key], msg=f"{ctx}: {key}")
             for key in ("height", "rotation"):
                 if key in exp:

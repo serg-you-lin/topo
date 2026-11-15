@@ -1,19 +1,15 @@
 {
   "source_file": "Multifeature.dxf",
   "text_count": 24,
-  "by_source_kind": {
-    "DIMENSION": 16,
-    "LEADER": 4,
-    "TEXT": 4
-  },
   "cluster_count": 1,
   "texts": [
     {
-      "source_kind": "DIMENSION",
       "position": [
         194.727,
         135.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "80",
       "cluster_ref": null,
       "measure": 80.0,
@@ -26,11 +22,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         204.727,
         175.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "25",
       "cluster_ref": null,
       "measure": 25.0,
@@ -43,11 +40,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         204.736,
         150.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "25",
       "cluster_ref": null,
       "measure": 25.0,
@@ -60,11 +58,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         214.727,
         192.805
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "15",
       "cluster_ref": null,
       "measure": 15.0,
@@ -77,11 +76,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         230.727,
         209.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "R6",
       "cluster_ref": 0,
       "measure": 6.0,
@@ -94,11 +94,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         231.727,
         225.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "8.5",
       "cluster_ref": null,
       "measure": 8.5,
@@ -111,11 +112,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         235.977,
         245.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "11.25",
       "cluster_ref": null,
       "measure": 11.25,
@@ -128,11 +130,12 @@
       }
     },
     {
-      "source_kind": "LEADER",
       "position": [
         266.727,
         96.91
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "",
       "cluster_ref": null,
       "measure": null,
@@ -145,11 +148,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         266.727,
         115.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "32",
       "cluster_ref": null,
       "measure": 32.0,
@@ -162,11 +166,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         266.727,
         115.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "42",
       "cluster_ref": null,
       "measure": 42.0,
@@ -179,11 +184,12 @@
       }
     },
     {
-      "source_kind": "LEADER",
       "position": [
         266.727,
         255.516
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "",
       "cluster_ref": null,
       "measure": null,
@@ -196,11 +202,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         274.727,
         125.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "50",
       "cluster_ref": null,
       "measure": 50.0,
@@ -213,11 +220,12 @@
       }
     },
     {
-      "source_kind": "TEXT",
       "position": [
         277.319,
         89.41
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "B",
       "cluster_ref": null,
       "height": 5.0,
@@ -232,11 +240,12 @@
       }
     },
     {
-      "source_kind": "TEXT",
       "position": [
         277.319,
         258.016
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "B",
       "cluster_ref": null,
       "height": 5.0,
@@ -251,11 +260,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         293.342,
         179.057
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "M8",
       "cluster_ref": 0,
       "measure": 8.0,
@@ -268,11 +278,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         294.727,
         125.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "20",
       "cluster_ref": null,
       "measure": 20.0,
@@ -285,11 +296,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         314.727,
         125.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "20",
       "cluster_ref": null,
       "measure": 20.0,
@@ -302,11 +314,12 @@
       }
     },
     {
-      "source_kind": "LEADER",
       "position": [
         334.227,
         96.122
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "",
       "cluster_ref": null,
       "measure": null,
@@ -319,11 +332,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         334.227,
         235.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "109.5",
       "cluster_ref": null,
       "measure": 109.5,
@@ -336,11 +350,12 @@
       }
     },
     {
-      "source_kind": "LEADER",
       "position": [
         334.227,
         255.718
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "",
       "cluster_ref": null,
       "measure": null,
@@ -353,11 +368,12 @@
       }
     },
     {
-      "source_kind": "TEXT",
       "position": [
         343.974,
         88.622
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "A",
       "cluster_ref": null,
       "height": 5.0,
@@ -372,11 +388,12 @@
       }
     },
     {
-      "source_kind": "TEXT",
       "position": [
         343.974,
         258.218
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "A",
       "cluster_ref": null,
       "height": 5.0,
@@ -391,11 +408,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         363.477,
         245.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "127.5",
       "cluster_ref": null,
       "measure": 127.5,
@@ -408,11 +426,12 @@
       }
     },
     {
-      "source_kind": "DIMENSION",
       "position": [
         390.922,
         193.305
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "36",
       "cluster_ref": 0,
       "measure": 36.0,

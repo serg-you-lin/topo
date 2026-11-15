@@ -1,17 +1,15 @@
 {
   "source_file": "spline_line_gap_qcad.dxf",
   "text_count": 1,
-  "by_source_kind": {
-    "DIMENSION": 1
-  },
   "cluster_count": 0,
   "texts": [
     {
-      "source_kind": "DIMENSION",
       "position": [
         100.0,
         -23.081
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "100",
       "cluster_ref": null,
       "measure": 100.0,

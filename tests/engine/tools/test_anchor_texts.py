@@ -190,7 +190,7 @@ class TestTargetIsTheObject(unittest.TestCase):
         self.assertNotIn("target", repr(text))
         self.assertEqual(text, Text(position=text.position, text=text.text,
                                     pointer=list(text.pointer), cluster_ref=text.cluster_ref,
-                                    source_kind=text.source_kind))
+                                    halign=text.halign, valign=text.valign))
 
 
 class TestMeasuredReferences(unittest.TestCase):

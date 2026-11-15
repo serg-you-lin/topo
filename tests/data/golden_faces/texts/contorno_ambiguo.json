@@ -1,17 +1,15 @@
 {
   "source_file": "contorno_ambiguo.dxf",
   "text_count": 1,
-  "by_source_kind": {
-    "DIMENSION": 1
-  },
   "cluster_count": 1,
   "texts": [
     {
-      "source_kind": "DIMENSION",
       "position": [
         56.124,
         1244.281
       ],
+      "halign": "left",
+      "valign": "baseline",
       "text": "2027.43",
       "cluster_ref": null,
       "measure": 2027.4301,

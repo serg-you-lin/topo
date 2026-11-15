@@ -588,3 +588,16 @@ A CAD may save one region's boundary as open paths or sides out of order (anch_0
 loose sides). ezdxf closes each path on its own chord, so the lines filled a triangle. The sides are chained end to end,
 either direction, ends equal within 1e-6 (the file writes shared ends equal; the node tolerance made a 0.05 side ambiguous).
 No unique chain → ezdxf as before plus `dxf-hatch-open-boundary`. Pattern step and angle are unchanged (measured to 2e-9 mm).
+### D254 — one model for every adapter: a field is filled by the source if it says it, else by a geometric reconstruction; a richer source is never cut down to match a poorer one (Federico, 15 November).
+The same drawing must give the same `Document` from any format, as far as the geometry allows. A format detail never becomes a
+model field (`Text.source_kind` goes, first). Each adapter writes down which optional fields it fills (`EdgeStyle.dash`,
+`measured_points`, `pointer`, `rendered`); a consumer never relies on one without a geometric fallback.
+### D255 — a filled area (SOLID, TRACE, solid HATCH, a polyline with width) reaches the model as its closed boundary, marked filled (Federico, 15 November; snapdraw request).
+Filling is a neutral fact: PDF and SVG fill a path as a DXF fills a SOLID. Today outside a DIMENSION/LEADER they are lost
+(`dxf-not-modeled`), so an exploded dimension keeps its lines and loses its arrows. Boundary only (as D205) would lose the one
+fact that tells an arrowhead from a contour. Where the mark lives and how `heal()` treats it: to design, measured first.
+### D256 — `Text.source_kind` is gone; `Text`/`RenderedText` carry `halign`/`valign`, where `position` lies on the string (Federico, 15 November; first step of D254).
+A visual centre needs the string's width, and that needs the source's font: ezdxf ships none, and on this PC every font
+(`txt`, `romans`, `arialn`) resolves to arial (widths differ up to 0.39–1.05×). Exact and the same for every format are only
+the source's point and how the string sits on it. TEXT reads its alignment point, MTEXT its attachment; the writer writes
+both back (before: 358 of 655 MTEXT and 60 of 1216 TEXT on the 46 sheets were rewritten elsewhere). One line → TEXT, more → MTEXT.
