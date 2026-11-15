@@ -6,9 +6,8 @@ Regressione sulla lettura dei testi: confronta `topo_dxf.load_dxf(...).texts`
 
 Golden generati da tests/tools/generate_golden_texts.py — da rigenerare solo
 dopo aver verificato a mano che la lettura è giusta, mai per far passare un
-test. I golden di prima di D138 (Note/Dimension/Leader) sono stati convertiti
-chiave per chiave, stessi valori: `dim_type` → `measure_is_angle`,
-`measured_value` → `measure`, `display_text` → `text`, `vertices` → `pointer`.
+test. Con D256 e D259 hanno perso le chiavi del tipo d'entità e delle
+affermazioni della sorgente; ogni altra voce provata uguale a prima.
 
 Un test per fixture, generato dalla fabbrica in fondo al file.
 """
