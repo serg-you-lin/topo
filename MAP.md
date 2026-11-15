@@ -581,7 +581,8 @@ model field (`Text.source_kind` goes, first). Each adapter writes down which opt
 ### D255 — a filled area (SOLID, TRACE, solid HATCH, a polyline with width) reaches the model as its closed boundary, marked filled (Federico, 15 November; snapdraw request).
 Filling is a neutral fact: PDF and SVG fill a path as a DXF fills a SOLID. Today outside a DIMENSION/LEADER they are lost
 (`dxf-not-modeled`), so an exploded dimension keeps its lines and loses its arrows. Boundary only (as D205) would lose the one
-fact that tells an arrowhead from a contour. Where the mark lives and how `heal()` treats it: to design, measured first.
+fact that tells an arrowhead from a contour. The mark is `EdgeStyle.filled`, read by `RoleRule(filled=)`; `heal()` treats the
+sides like any curve and the consumer sets them aside by role (D210). Each HATCH side is its own curve, as in the file (D253).
 ### D256 — `Text.source_kind` is gone; `Text`/`RenderedText` carry `halign`/`valign`, where `position` lies on the string (Federico, 15 November; first step of D254).
 A visual centre needs the string's width, and that needs the source's font: ezdxf ships none, and on this PC every font
 (`txt`, `romans`, `arialn`) resolves to arial (widths differ up to 0.39–1.05×). Exact and the same for every format are only

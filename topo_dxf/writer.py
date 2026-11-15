@@ -133,6 +133,8 @@ def to_dxf(
     if include_loose and result.loose:
         _write_loose(msp, result, book)
 
+    _write_fills(msp, result, book, include_loose)
+
     if include_texts and result.texts:
         _write_texts(msp, result.texts, book, text_layer)
 
@@ -274,6 +276,40 @@ def _write_loose(msp, result: Result, book: "_Layers") -> None:
             # Il colore resta quello del layer — solo il linetype (tratteggio)
             # della sorgente viene ripristinato fedele.
             write_open_segments(segments, msp, layer, styles)
+
+
+def _write_fills(msp, result: Result, book: "_Layers", include_loose: bool) -> None:
+    """
+    Le aree piene tornano piene (D255): i lati con `EdgeStyle.filled`, già
+    scritti come linee, si rimettono in giri (`face_loops`, layer per layer) e
+    ogni giro diventa un HATCH pieno sul layer dei suoi lati. Il bordo del
+    riempimento segue le curve discretizzate; le curve scritte restano esatte.
+    """
+    import topo
+    from topo.model import Edge
+
+    curves = [(c.outer, _contour_role(c.outer, ContourRole.OUTER)) for c in result.clusters
+              if c.outer is not None]
+    curves += [(i, _contour_role(i, ContourRole.INNER)) for c in result.clusters for i in c.inners]
+    if include_loose:
+        curves += [(c, getattr(c, "role", ContourRole.UNKNOWN)) for c in result.loose]
+    by_layer: dict = {}
+    for curve, role in curves:
+        styles = list(getattr(curve, "styles", []) or [])
+        segments = list(getattr(curve, "segments", []) or [])
+        for segment, style in zip(segments, styles):
+            if style is not None and style.filled:
+                layer = book.for_role(role, curve)
+                by_layer.setdefault(layer, []).append(Edge.of(segment, "unknown", style=style))
+    for layer, edges in by_layer.items():
+        for loop in topo.experimental.face_loops(edges):
+            points = []
+            for edge, backwards in loop:
+                pts = [tuple(p[:2]) for p in edge.segment.discretize()]
+                points.extend(reversed(pts) if backwards else pts)
+            if len(points) >= 3:
+                hatch = msp.add_hatch(dxfattribs={"layer": layer, "color": 256})
+                hatch.paths.add_polyline_path(points, is_closed=True)
 
 
 # ---------------------------------------------------------------------------

@@ -53,12 +53,16 @@ class EdgeStyle:
                         dichiarato, `None` = non noto. Un dash-array PDF/SVG
                         `[3, 1]` è `(3, -1)`.
         color         : colore effettivo (r, g, b) 0–255, None se non noto
+        filled        : la linea è un lato di un'area piena (un SOLID, un
+                        HATCH pieno, la sagoma di una polilinea larga; un
+                        tracciato PDF/SVG riempito), D255
     """
     _: KW_ONLY
     linetype:      str                          = ""
     linetype_desc: str                          = ""
     dash:          Optional[Tuple[float, ...]]  = None
     color:         Optional[Tuple[int, int, int]] = None
+    filled:        bool                         = False
 
     @property
     def is_dashed(self) -> bool:

@@ -366,6 +366,9 @@ Aperte:
      d. documento sui testi in `docs/`.
      f. 1.x, con deprecazione (D175): anche `rendered` è del consumer
         (Federico, 15 novembre: "per ora non gestibile"); resta fino alla 1.0.
+     h. polilinea con larghezza ad arco (le due "ciambelle" di drw_0010): la
+        sagoma esce dal `TraceBuilder` di ezdxf come poligono di 64 lati, non
+        come due cerchi esatti.
      g. drw_0024: la quota angolare esce `text='90~'` (atteso `90°`?).
         Non guardato.
      e. quota senza blocco: oggi topo_dxf ne calcola le linee dai punti di

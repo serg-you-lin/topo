@@ -415,6 +415,19 @@ def _synthesize_dimension(entity):
 # LEADER / MULTILEADER
 # ---------------------------------------------------------------------------
 
+def carries_string(entity) -> bool:
+    """Un LEADER/MULTILEADER porta una stringa sua: nel campo dell'entità o
+    fra le entità del suo blocco. Senza, è geometria (D258): la stessa regola
+    per l'estrattore dei testi e per il loader che lo esplode."""
+    if clean_mtext(mleader_text(entity)):
+        return True
+    try:
+        return any(v.dxftype() in ("TEXT", "MTEXT") and _text_item(v) is not None
+                   for v in _flatten_virtual(entity))
+    except Exception:
+        return False
+
+
 def _leader_text(entity, pos, role: str) -> Optional[Text]:
     rendered = _render_block(entity)
     if rendered.is_empty():
@@ -425,6 +438,9 @@ def _leader_text(entity, pos, role: str) -> Optional[Text]:
     text = clean_mtext(mleader_text(entity))
     if not text and rendered.texts:
         text = rendered.texts[0].content
+    if not text:
+        # nessuna stringa sua: è geometria, la esplode il loader (D258)
+        return None
     vertices = _leader_vertices(entity)
 
     if pos is None:
