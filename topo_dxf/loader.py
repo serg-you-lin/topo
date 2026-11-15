@@ -20,9 +20,9 @@ from typing import Callable, Sequence, Union
 import ezdxf
 from ezdxf.addons import odafc
 
-from .sanitize import sanitize, _explode_inserts, _explode_hatches, deduplicate
+from .sanitize import sanitize, _explode_inserts, _explode_hatches, _explode_fills, _explode_leaders, deduplicate
 from .adapter import DxfAdapter
-from .text_extractor import DxfTextExtractor
+from .text_extractor import DxfTextExtractor, carries_string
 from topo.model import DEFAULT_NODE_TOLERANCE, Diagnostic, Document, RoleRule
 
 # Percorso dell'eseguibile ODA File Converter. `topo` NON legge i DWG da solo:
@@ -315,6 +315,11 @@ def load_dxf(
                 points=[tuple(i.dxf.insert)[:2] for i in inserts_found],
                 help="topo_dxf.load_dxf(path, explode_inserts=True) reads them"), verbose)
 
+    n = _explode_leaders(msp, sink=warnings)
+    if n:
+        _emit(notes, Diagnostic("dxf-leaders-exploded", f"{n} LEADER with no string of their own exploded into curves (D258)",
+                                level="note"), verbose)
+
     n = _explode_hatches(msp, sink=warnings)
     if n:
         _emit(notes, Diagnostic("dxf-hatches-exploded", f"{n} HATCH exploded into their pattern lines (D205)",
@@ -325,12 +330,19 @@ def load_dxf(
         _emit(notes, Diagnostic("dxf-duplicates-removed", f"{removed} duplicate entities removed", level="note"),
               verbose)
 
+    # dopo la deduplicazione: un lato pieno uguale a una linea del disegno
+    # cede alla linea, che resta senza il segno (D255)
+    filled = _explode_fills(msp, sink=warnings)
+    if filled:
+        _emit(notes, Diagnostic("dxf-fills-exploded", f"{len(filled)} filled-area sides read as filled curves (D255)",
+                                level="note"), verbose)
+
     flattened = sanitize(msp, flatten_z_flag=flatten_z, verbose=verbose)
     if flattened:
         _emit(notes, Diagnostic("dxf-flattened", f"{flattened} entities with Z != 0 brought onto the plane",
                                 level="note"), verbose)
 
-    adapter = DxfAdapter(msp, role_rules=role_rules, skip_layers=skip_layers)
+    adapter = DxfAdapter(msp, role_rules=role_rules, skip_layers=skip_layers, filled_handles=filled)
     edges = adapter.to_edges()
     for msg in adapter.warnings:
         _emit(warnings, msg, verbose)
@@ -394,10 +406,19 @@ def document_from_msp(
         "$MEASUREMENT":  header.get("$MEASUREMENT", 1) if header else 1,
         "tolerance":     tolerance,
     }
+    # niente esplosioni qui: quello che resta non letto lo dice un avviso,
+    # mai un silenzio (D137) — i tipi non modellati e i richiami senza stringa
+    warnings = list(adapter.warnings)
+    _warn_non_roundtrip_types(msp, warnings)
+    bare = [e for e in msp.query("LEADER MULTILEADER") if not carries_string(e)]
+    if bare:
+        warnings.append(Diagnostic(
+            "dxf-not-modeled", f"{len(bare)} LEADER with no string of their own not read: not exploded here",
+            help="topo_dxf.load_dxf reads them as curves (D258)"))
     return Document(
         edges=edges, texts=texts,
         source_meta=meta, source_path=source_path, source_format="dxf",
-        warnings=list(adapter.warnings),
+        warnings=warnings,
     )
 
 

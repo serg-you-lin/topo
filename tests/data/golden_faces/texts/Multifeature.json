@@ -1,7 +1,7 @@
 {
   "source_file": "Multifeature.dxf",
-  "text_count": 24,
-  "cluster_count": 1,
+  "text_count": 20,
+  "cluster_count": 5,
   "texts": [
     {
       "position": [
@@ -140,36 +140,6 @@
     },
     {
       "position": [
-        266.727,
-        96.91
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "",
-      "cluster_ref": null,
-      "rendered": {
-        "strokes": 1,
-        "fills": 1,
-        "texts": 0
-      }
-    },
-    {
-      "position": [
-        266.727,
-        255.516
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "",
-      "cluster_ref": null,
-      "rendered": {
-        "strokes": 1,
-        "fills": 1,
-        "texts": 0
-      }
-    },
-    {
-      "position": [
         277.319,
         89.41
       ],
@@ -290,36 +260,6 @@
         "strokes": 3,
         "fills": 0,
         "texts": 1
-      }
-    },
-    {
-      "position": [
-        334.227,
-        96.122
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "",
-      "cluster_ref": null,
-      "rendered": {
-        "strokes": 1,
-        "fills": 1,
-        "texts": 0
-      }
-    },
-    {
-      "position": [
-        334.227,
-        255.718
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "",
-      "cluster_ref": null,
-      "rendered": {
-        "strokes": 1,
-        "fills": 1,
-        "texts": 0
       }
     },
     {

@@ -61,7 +61,7 @@ applies them.
 ### `RoleRule`
 
 ```python
-topo.RoleRule(role, *, name=None, name_contains=None, dashed=None, dash=None, color=None)
+topo.RoleRule(role, *, name=None, name_contains=None, dashed=None, dash=None, color=None, filled=None)
 ```
 
 One rule: if **all** the given conditions are true, the line takes `role`.
@@ -76,6 +76,7 @@ role) is written by the caller (MAP.md D63).
 | `dashed` | `True` only dashed lines, `False` only continuous ones. Dashed = the linetype pattern has at least one gap (`EdgeStyle.is_dashed`), not the name of the linetype. Chains count too. |
 | `dash` | shape of the stroke (`EdgeStyle.dash_kind`), read from the marks of the pattern: `"continuous"` no gap; `"uniform"` a single mark repeated (all dashes equal, or only dots); `"chain"` different marks alternating (long dash + short dash or dot). Two marks are different if they differ by more than 5% of the pattern length. Unknown value → `ValueError`. |
 | `color` | effective colour in RGB: `(r, g, b)`, `"#rrggbb"` or a basic name (`red`, `yellow`, `green`, `cyan`, `blue`, `magenta`, `white`, `black`, `gray`/`grey`, `lightgray`/`lightgrey`, `pink`). Every adapter reads the colour of the source as RGB: for a DXF an ACI index becomes its canonical RGB (7 is white) (MAP.md D126). An integer is an error. |
+| `filled` | `True` only the sides of a filled area (`EdgeStyle.filled`: a DXF SOLID, TRACE, solid HATCH or polyline with width; a filled PDF/SVG path), `False` only the others (MAP.md D255). An arrowhead is such a side: a rule that gives it a non-structural role keeps it out of the contours (D210). |
 
 Method `matches(name, style) -> bool`. Conditions left as `None` do not
 count.
@@ -191,7 +192,7 @@ they do not import `topo.core`/`tools`/`io`/`rules` (D129). What it needs:
 |---|---|
 | `topo.primitives.LineSeg` … `EllipseSeg` | the geometry read from the source, native (never discretised by the adapter) |
 | `topo.model.Edge.of(segment, role, *, style=None) -> Edge` | the `Edge` of a segment: endpoints on the segment's true points (no grid, D216); a closed circle, spline or ellipse has a single node |
-| `topo.model.EdgeStyle(*, linetype="", linetype_desc="", dash=None, color=None)` | the effective look of the source entity, with no words of any format (D126): `dash` are signed marks (`> 0` dash, `0` dot, `< 0` gap; `()` continuous, `None` unknown — a dash-array `[3, 1]` is `(3, -1)`), `color` is `(r, g, b)`. The adapter resolves inheritance (a "by layer" style) before handing it over |
+| `topo.model.EdgeStyle(*, linetype="", linetype_desc="", dash=None, color=None, filled=False)` | the effective look of the source entity, with no words of any format (D126): `dash` are signed marks (`> 0` dash, `0` dot, `< 0` gap; `()` continuous, `None` unknown — a dash-array `[3, 1]` is `(3, -1)`), `color` is `(r, g, b)`, `filled` the line is a side of a filled area (D255); `to_dxf` writes each ring of filled sides back as a solid fill. The adapter resolves inheritance (a "by layer" style) before handing it over |
 | `topo.model.RoleRule`, `topo.model.resolve_role(rules, name, style) -> str` | the role of an entity from the caller's rules: the first that matches, otherwise `unknown` |
 | `topo.model.Document`, `topo.model.DEFAULT_NODE_TOLERANCE` | the adapter's result and the default tolerance that `heal()` will close |
 | `topo.model.Text`, `RenderedGeometry`, `RenderedText` | the texts read from the source, each with its `role` (D127, D138; the source group does not stay in the model, D128) |

@@ -10,6 +10,7 @@ UNICO punto di conversione DXF → primitive.
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import replace
 from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 from ezdxf.colors import aci2rgb, int2rgb
@@ -250,8 +251,11 @@ class DxfAdapter:
         exclude_ids: Optional[set] = None,
         role_rules: Sequence[RoleRule] = (),
         skip_layers: Union[Sequence[str], Callable[[str], bool]] = (),
+        filled_handles: Optional[set] = None,
     ):
         self.msp = msp
+        # entità nate dal bordo di un'area piena (D255): i loro lati sono `filled`
+        self.filled_handles = filled_handles or set()
         self.exclude_ids = exclude_ids or set()
         self.skip_layer = layer_skipper(skip_layers)
         self.role_rules = list(role_rules)
@@ -306,6 +310,8 @@ class DxfAdapter:
                 else ""
             )
             style = _entity_style(entity)
+            if entity.dxf.handle in self.filled_handles:
+                style = replace(style, filled=True)
             role = resolve_role(self.role_rules, label, style)
 
             # CIRCLE → CircleSeg (preservato!)

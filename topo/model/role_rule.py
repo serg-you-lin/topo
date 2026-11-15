@@ -51,6 +51,8 @@ class RoleRule:
         dash          : stroke shape, "continuous" / "uniform" / "chain"
         color         : effective color, (r, g, b), "#rrggbb" or a basic
                         name ("cyan", "red", ...)
+        filled        : True = sides of a filled area only, False = the
+                        others (`EdgeStyle.filled`, D255)
     """
     role:          str
     _: KW_ONLY
@@ -59,10 +61,11 @@ class RoleRule:
     dashed:        Optional[bool]             = None
     dash:          Optional[str]              = None
     color:         Optional[Union[RGB, str]]  = None
+    filled:        Optional[bool]             = None
 
     def __post_init__(self):
-        if (self.name is None and self.name_contains is None
-                and self.dashed is None and self.dash is None and self.color is None):
+        if (self.name is None and self.name_contains is None and self.dashed is None
+                and self.dash is None and self.color is None and self.filled is None):
             raise ValueError(f"RoleRule({self.role!r}) has no condition: it would match everything")
         self.role = normalize_role(self.role)
         if self.name is not None:
@@ -79,8 +82,9 @@ class RoleRule:
 
     @property
     def reads_style(self) -> bool:
-        """True se la regola guarda l'aspetto (tratto o colore), non solo il nome."""
-        return self.dashed is not None or self.dash is not None or self.color is not None
+        """True se la regola guarda l'aspetto (tratto, colore, pieno), non solo il nome."""
+        return (self.dashed is not None or self.dash is not None or self.color is not None
+                or self.filled is not None)
 
     def matches(self, name: str, *, style: Optional[EdgeStyle] = None) -> bool:
         """
@@ -100,6 +104,8 @@ class RoleRule:
         if self.dash is not None and style.dash_kind != self.dash:
             return False
         if self.color is not None and style.color != self.color:
+            return False
+        if self.filled is not None and style.filled != self.filled:
             return False
         return True
 

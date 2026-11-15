@@ -176,6 +176,167 @@ def _explode_hatches(msp, sink: list = None, tolerance: float = 1e-6) -> int:
     return len(hatches)
 
 
+def _explode_leaders(msp, sink: list = None) -> int:
+    """
+    Esplode nelle sue entità ogni LEADER/MULTILEADER senza una stringa sua
+    (D258): la direttrice e la punta sono geometria come un blocco esploso, e
+    mettere insieme una freccia e la lettera vicina è una lettura. Le punte a
+    blocco escono come INSERT e si esplodono qui. Restituisce i richiami esplosi.
+    """
+    from .text_extractor import carries_string
+
+    leaders = [e for e in msp.query("LEADER MULTILEADER") if not carries_string(e)]
+    failed = []
+    for leader in leaders:
+        try:
+            parts = list(leader.explode())
+        except Exception as ex:
+            failed.append(str(ex))
+            continue
+        for part in parts:
+            if part.dxftype() == "INSERT":
+                try:
+                    part.explode()
+                except Exception as ex:
+                    failed.append(str(ex))
+    _explode_failed(sink, "LEADER", failed)
+    return len(leaders)
+
+
+def _explode_fills(msp, sink: list = None) -> set:
+    """
+    Sostituisce ogni area piena col suo bordo in entità normali (D255): SOLID e
+    TRACE coi loro lati, un HATCH pieno coi lati del suo bordo, una polilinea
+    con larghezza con la sagoma che disegna. Restituisce gli handle delle
+    entità nuove: i loro lati sono `EdgeStyle.filled`.
+
+    Il bordo di un HATCH esce lato per lato, così com'è nel file (lo stesso
+    principio di D253): le giunzioni le fa il grafo di topo dai capi, e un
+    bordo salvato a pezzi non viene mai chiuso su una corda.
+    """
+    from .text_extractor import _solid_points
+
+    filled: set = set()
+    failed = []
+
+    def attribs_of(entity, ocs=True) -> dict:
+        out = {k: entity.dxf.get(k) for k in ("layer", "color", "linetype", "true_color")
+               if entity.dxf.hasattr(k)}
+        if ocs:
+            for k in ("extrusion", "elevation"):
+                if entity.dxf.hasattr(k):
+                    out[k] = entity.dxf.get(k)
+        return out
+
+    def keep(entity) -> None:
+        filled.add(entity.dxf.handle)
+
+    for solid in list(msp.query("SOLID TRACE")):
+        pts = _solid_points(solid)
+        if len(pts) >= 3:
+            attribs = attribs_of(solid)
+            z = solid.dxf.vtx0[2] if solid.dxf.hasattr("vtx0") else 0.0
+            attribs.pop("elevation", None)
+            keep(msp.add_lwpolyline(pts, close=True, dxfattribs={**attribs, "elevation": z}))
+            msp.delete_entity(solid)
+
+    for hatch in [h for h in msp.query("HATCH") if h.dxf.solid_fill]:
+        try:
+            made = _hatch_boundary_entities(msp, hatch, attribs_of(hatch, ocs=False))
+        except Exception as ex:
+            failed.append(str(ex))
+            continue
+        for entity in made:
+            keep(entity)
+        msp.delete_entity(hatch)
+
+    for poly in [p for p in msp.query("LWPOLYLINE POLYLINE") if _has_width(p)]:
+        try:
+            from ezdxf.render.trace import TraceBuilder
+            ocs = poly.ocs()
+            elevation = poly.dxf.get("elevation", 0.0) if poly.dxftype() == "LWPOLYLINE" else 0.0
+            if hasattr(elevation, "__len__"):
+                elevation = elevation[2]
+            outlines = list(TraceBuilder.from_polyline(poly).polygons_wcs(ocs, elevation))
+        except Exception as ex:
+            failed.append(str(ex))
+            continue
+        attribs = attribs_of(poly, ocs=False)
+        for outline in outlines:
+            keep(msp.add_lwpolyline([(v.x, v.y) for v in outline], close=True, dxfattribs=attribs))
+        msp.delete_entity(poly)
+
+    _explode_failed(sink, "filled area", failed)
+    return filled
+
+
+def _has_width(poly) -> bool:
+    """Una polilinea disegnata con una larghezza (costante o per vertice)."""
+    if poly.dxftype() == "LWPOLYLINE":
+        if (poly.dxf.get("const_width", 0) or 0) > 0:
+            return True
+        return any((w or 0) > 0 for *_, sw, ew, _b in poly.get_points("xyseb") for w in (sw, ew))
+    if (poly.dxf.get("default_start_width", 0) or 0) > 0 or (poly.dxf.get("default_end_width", 0) or 0) > 0:
+        return True
+    return any((v.dxf.get("start_width", 0) or 0) > 0 or (v.dxf.get("end_width", 0) or 0) > 0
+               for v in poly.vertices)
+
+
+def _hatch_boundary_entities(msp, hatch, attribs: dict) -> list:
+    """
+    I lati del bordo di un HATCH come entità del modelspace, uno per lato:
+    LINE, ARC, ELLIPSE, SPLINE; un percorso polilinea come LWPOLYLINE chiusa.
+    Gli archi e le ellissi orari ezdxf li ha già girati antiorari al
+    caricamento: escono esatti.
+    """
+    from ezdxf.lldxf.const import BOUNDARY_PATH_TEXTBOX
+    from ezdxf.math import OCS, Vec3
+
+    extrusion = Vec3(hatch.dxf.get("extrusion", (0, 0, 1)))
+    ocs = OCS(extrusion)
+    elevation = Vec3(hatch.dxf.get("elevation", (0, 0, 0))).z
+
+    def wcs(p) -> Vec3:
+        return ocs.to_wcs(Vec3(p[0], p[1], elevation))
+
+    made = []
+    for path in hatch.paths.rendering_paths(hatch.dxf.hatch_style):
+        if path.path_type_flags & BOUNDARY_PATH_TEXTBOX:
+            continue
+        if not hasattr(path, "edges"):
+            points = [(v[0], v[1], v[2] if len(v) > 2 else 0.0) for v in path.vertices]
+            made.append(msp.add_lwpolyline(points, format="xyb", close=True,
+                                           dxfattribs={**attribs, "extrusion": extrusion,
+                                                       "elevation": elevation}))
+            continue
+        for edge in path.edges:
+            kind = edge.type.name
+            if kind == "LINE":
+                made.append(msp.add_line(wcs(edge.start), wcs(edge.end), dxfattribs=attribs))
+            elif kind == "ARC":
+                made.append(msp.add_arc(
+                    (edge.center[0], edge.center[1], elevation), edge.radius,
+                    edge.start_angle, edge.end_angle,
+                    dxfattribs={**attribs, "extrusion": extrusion}))
+            elif kind == "ELLIPSE":
+                tool = edge.construction_tool()
+                made.append(msp.add_ellipse(
+                    wcs(tool.center), ocs.to_wcs(tool.major_axis), tool.ratio,
+                    tool.start_param, tool.end_param, dxfattribs=attribs))
+            elif kind == "SPLINE":
+                if edge.control_points:
+                    spline = msp.add_open_spline([wcs(p) for p in edge.control_points],
+                                                 degree=edge.degree, knots=list(edge.knot_values),
+                                                 dxfattribs=attribs)
+                    if edge.weights:
+                        spline.weights = list(edge.weights)
+                else:
+                    spline = msp.add_spline([wcs(p) for p in edge.fit_points], degree=edge.degree,
+                                            dxfattribs=attribs)
+                made.append(spline)
+    return made
+
+
 def _edge_ends(edge):
     """I due capi di un lato di un EdgePath, come Vec2."""
     from ezdxf.math import Vec2

@@ -332,14 +332,16 @@ class TestWritebackTexts(unittest.TestCase):
         if not (drawing(name)).exists():
             self.skipTest(name)
         doc = topo_dxf.load_dxf(drawing(name))
-        # tutte e 20 portano il loro disegno (D256, D259: né il tipo
-        # d'entità né cosa misurano entrano nel modello)
-        self.assertEqual(sum(1 for a in doc.texts if not a.rendered.is_empty()), 20)
+        # le 16 quote portano il loro disegno (D256, D259); i 4 LEADER non hanno
+        # una stringa loro e sono curve, la punta piena compresa (D258, D255)
+        self.assertEqual(sum(1 for a in doc.texts if not a.rendered.is_empty()), 16)
+        self.assertEqual([a for a in doc.texts if not a.text], [])
+        self.assertEqual(sum(1 for e in doc.edges if e.style.filled), 12)
         result = topo.heal(doc).faces()
         msp = topo_dxf.to_dxf(result, doc).modelspace()
         ann_geom = [e for e in msp.query("LWPOLYLINE")
                     if e.dxf.layer == LAYER_ANNOTATION]
-        # direttrici delle quote lineari + frecce dei leader
+        # direttrici delle quote lineari
         self.assertGreater(len(ann_geom), 20)
 
     def test_008_every_layer_read_by_default(self):
