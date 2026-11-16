@@ -357,12 +357,7 @@ Aperte:
   intero drw_0007, nessun no; ma 52 rossi, fra cui ordine degli edge (16) e
   moto rigido (9). Così com'è non va; log `suite_contatto_005.log`.
 - **Omologazione fra adapter (D254; Federico, 15 novembre; da snapdraw).** In ordine:
-  1. **testi minimi (D257, D258, D259)**, a pezzi, un commit ciascuno:
-     a. via `measure`, `measure_is_angle`, `measured_points`, `pointer`,
-        `target`, `references` da `Text`; via `experimental.anchor_elements`,
-        `pointer_target`, `measured_references`.
-     b. `position` di una quota sulla sua stringa (primo pezzo).
-     c. LEADER senza stringa → curva + area piena (D258, dopo D255).
+  1. **testi minimi (D257)**, a pezzi, un commit ciascuno:
      f. 1.x, con deprecazione (D175): anche `rendered` è del consumer
         (Federico, 15 novembre: "per ora non gestibile"); resta fino alla 1.0.
      h. polilinea con larghezza ad arco (le due "ciambelle" di drw_0010): la
@@ -382,10 +377,7 @@ Aperte:
         contro 21,66 del CAD. Federico: per ora lasciamo stare.
      k. `Text.origin` ("provenienza nella sorgente") non lo riempie nessun
         adapter e non è documentato: da togliere o da dire cos'è.
-     l. `Text.measures` (D264): snapdraw lo usa al posto di ricostruire dai tratti;
-        le quote QCAD hanno `<>` nella stringa, il numero lo scrive lui
-        (punti × `drawn_to_real`, `decimals`), con altezza e rotazione del testo.
-     Consumer da adeguare dalle loro sessioni: snapdraw `features.py`,
+     Consumer da adeguare dalle loro sessioni (D256-D265): snapdraw `features.py`,
      `model.py`, `tests/test_features.py`; pippo `plan.py`.
   2. **contratto scritto per adapter**: quali campi opzionali riempie
      (`EdgeStyle.dash`, `measured_points`, `pointer`, `rendered`, …).
@@ -395,9 +387,6 @@ Aperte:
      snapdraw: tratto e punto esploso in LINE (12, vuoto 3, punto 0,5).
      Candidati da guardare a occhio: drw_0006 (15, forse tratteggi D205),
      drw_0010 (4), drw_0015 (1).
-  4. **aree piene, D255** (richiesta snapdraw 15 novembre, entra): SOLID,
-     TRACE, HATCH pieno, polilinea con larghezza fuori da DIMENSION/LEADER →
-     contorno chiuso segnato pieno. Prima misurare quanti sono nei 46 fogli.
   Smistata anche, 15 novembre: segni di centro, snapdraw l'ha ritirata (resta
   sua, D40/D56).
 - **snapbend, vaschetta** (un anello che tocca l'outer nei 4 vertici concavi
