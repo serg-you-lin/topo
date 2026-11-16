@@ -61,16 +61,6 @@ G17 (D250).
       - i test che provano un adapter vanno in `tests/adapters/dxf/` e
         `tests/adapters/pdf/` con un `conftest.py` che fa
         `pytest.importorskip`; dove metta `tests/golden/` è da decidere.
-- [ ] **Generatore di disegni credibili**: compone forme vere (contorni con
-      raccordi, cerchi e asole dentro, archi tangenti, spline, annidamenti) e le
-      guasta come i file veri (piccoli buchi, ripassati, segmenti spezzati,
-      versi invertiti, ordine rimescolato, rotazioni). La risposta è nota per
-      costruzione: ogni disegno è un test senza golden. Nella suite pochi semi
-      fissi; passate grandi a mano. Da decidere: `hypothesis` come dipendenza di
-      test.
-- [ ] **D208 non è in `MAP.md`**: è citata nel codice (`topo_dxf/exporter.py` e
-      i test di esportazione: una polilinea non copre un salto con un vertice)
-      ma la decisione non è scritta.
 
 **Fuori dal cancello, ma prima di snapbend 1.0:** le suite dei consumer erano
 rosse già prima di D150 (snapbend: 16 golden di processo con aree spostate di
@@ -78,6 +68,14 @@ rosse già prima di D150 (snapbend: 16 golden di processo con aree spostate di
 repo, mai rigenerando alla cieca.
 
 ## Dopo la 1.0 (1.x, additivo — non toccare finché il cancello è aperto)
+
+- **Generatore di disegni credibili** (D266): compone forme vere (contorni con
+  raccordi, cerchi e asole dentro, archi tangenti, spline, annidamenti) e le
+  guasta come i file veri (piccoli buchi, ripassati, segmenti spezzati, versi
+  invertiti, ordine rimescolato, rotazioni). La risposta è nota per
+  costruzione: ogni disegno è un test senza golden. Nella suite pochi semi
+  fissi; passate grandi a mano. Da decidere: `hypothesis` come dipendenza di
+  test.
 
 **Difetti noti, fuori dal cancello (D237).** Fatti, nessuna analisi.
 - `experimental.parity_faces` (D250): nei pareggi del T-join decide l'ordine

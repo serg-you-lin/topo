@@ -409,6 +409,10 @@ A gap within tolerance is closed by the engine: every segment starts where the p
 the last returns to the first. A jump left in a delivered contour is an engine bug, not a tolerance
 case. A gap beyond tolerance leaves the profile open (in `loose`) with a warning; the rest of the drawing is still read.
 ### ~~D207~~ → D249: the gate that only shrinks is removed.
+### D208 — the DXF never covers a jump with a vertex (written 16 November; in the code since `773a4e3`, with D206).
+`topo_dxf` splits a chain where a segment does not start within 1e-6 (`JUMP`, same as FLOAT_NOISE, D183) of the previous one's end.
+A closed contour with a jump is written as open polylines, never as a closed one: that would draw a side over the gap,
+and the DXF would show a contour the `Result` does not have. The same holds inside an open run.
 ### D209 — a jump within tolerance in a delivered contour becomes a new straight segment (G15, how D206 closes).
 No curve is moved: the readings insert a `LineSeg` between the two ends (`close_contour_jumps`) and
 say how many in `warnings`. Moving an end sideways changes the drawing; a new segment only adds what
@@ -631,3 +635,6 @@ Points, kind, `decimals` and the scale factor decide the number written on the s
 Without the points a QCAD dimension is lost: snapdraw, from string and geometry only, placed 15 of 478 (137 wrong as certain).
 `drawn_to_real` says the direction (number = distance × it; 1:4 view → 4). A number written by hand: both `None`, the text is the number,
 `dxf-dimension-written-number` counts them (topo cannot tell if it is false: that needs computing it, D263).
+### D266 — the generator of credible drawings leaves the 1.0 gate (Federico, 16 November).
+The gate takes what breaks a public name or proves D143 on the repo's fixtures (D148); the generator makes new drawings
+and touches no name, so it is 1.x. `hypothesis` as a test dependency is decided then.
