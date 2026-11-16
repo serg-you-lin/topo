@@ -29,6 +29,7 @@ import shapely
 import shapely.ops
 from shapely import STRtree
 
+from ..geometry.measure import reach
 from ..geometry.strips import refine_gap
 from ..primitives.segments import DEFAULT_TOLERANCE
 from ..topology.edge import Edge
@@ -96,7 +97,7 @@ def _near_pairs(edges: List[Edge], geoms: list, gap_tolerance: float) -> List[Tu
         if d > gap_tolerance - band:
             pa, pb = shapely.ops.nearest_points(geoms[i], geoms[j])
             found = refine_gap([edges[i].segment], [edges[j].segment], (pa.x, pa.y), (pb.x, pb.y))
-            if found.distance > gap_tolerance:
+            if found.distance > reach(gap_tolerance):   # D183: la soglia è compresa
                 continue
         pairs.append((i, j))
     return pairs

@@ -157,16 +157,17 @@ def _both_ends_free(edge: Edge, graph) -> bool:
     return graph.degree(edge.start) == 1 and graph.degree(edge.end) == 1
 
 
-def close_free_gaps(edges: List[Edge], tolerance: float) -> List[Edge]:
+def close_free_gaps(edges: List[Edge], tolerance: float, closed: Optional[list] = None) -> List[Edge]:
     """
     Chiude i gap fra estremi liberi entro `tolerance` col gap solver
     (estensione all'intersezione reale o linea di congiunzione), a coppie (D112).
+    `closed`, se dato, riceve (estremo, distanza) di ogni gap chiuso.
     """
     graph = build_node_graph(edges)
     endpoints = free_endpoints_from_edges(edges, graph)
     if not endpoints:
         return list(edges)
-    fixes = compute_gap_fixes(endpoints, tolerance, edges)
+    fixes = compute_gap_fixes(endpoints, tolerance, edges, closed)
     if not fixes:
         return list(edges)
     return apply_gap_fixes(edges, fixes)

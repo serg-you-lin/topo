@@ -462,10 +462,11 @@ Aperte:
   2.07 mm. Nessuna nota, solo `dxf-flattened`. Corretti (scarto ≤ 0.002):
   LINE, LWPOLYLINE/POLYLINE con quota, POLYLINE 3D, SPLINE, cerchi/archi a Z≠0
   o con estrusione (0,0,-1).
-- `heal(max_gap=0.5)` chiude gli angoli aperti di 0.3 mm di un rettangolo di
-  4 linee (ogni lato accorciato di 0.3 a un capo) senza nessuna nota: `notes`
-  vuoto, outer di 4 `LineSeg`, area 7200 esatta. Con 4 archi e gap 0.2 dà
-  `arc-joined`. Da capire se è un "silently" di D137/D206.
+- Senza `max_gap` (D267) un buco sotto 0,01 mm si chiude ancora: due capi
+  entro `GRAPH_EPSILON` sono un nodo solo (D180), e `faces()` dice
+  `gap-closed`. Misurato su un rettangolo con gli spigoli aperti da 0,009 a
+  1e-5 mm: valido. Fa parte della soglia unica (inventario in
+  `_debug/2026-11-16_topo_soglie/SOGLIE.md`).
 - `topo/core/readings/outer_scan.py` lo usava solo `scripts/18_outer_scan.py`,
   tolto con D247: ora lo chiama solo il suo test (`test_outer_scan.py`).
 - `docs/LLM.md`: `geometry.circle(radius, center)` scritto posizionale, ma

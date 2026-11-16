@@ -25,7 +25,7 @@ from ..base.cleanup import (NEAR_FULL_ARC_MISSING, closed_touches, dangling_spli
                             open_near_full_arcs, self_crossings)
 from ..base.normalizer import near_copies
 from ..base.prepare import normalize, prepare
-from ..geometry.measure import reach
+from ..geometry.measure import FLOAT_NOISE, reach
 from ..primitives.segments import segment_is_closed
 from ..topology.edge import Edge
 from ..topology.noding import GRAPH_EPSILON, NodedEdges, decide_nodes, split_at_crossings
@@ -47,7 +47,7 @@ class Network:
     free_ends:   (point, distance to the nearest node) of every end no other
                  edge reaches.
     tolerance:   the node tolerance used (from the document when not given).
-    max_gap:     the widest gap closed (at least `tolerance`).
+    max_gap:     the widest gap closed; 0 (the default) closes none.
     source_file, label: copied onto every Result and Cluster read from here.
     source_format: the document's (D231), copied onto every Result.
     warnings:    advice about the drawing (`Diagnostic`, D233); every reading copies it.
@@ -122,13 +122,14 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
     """
     Ripara `doc` una volta per tutte le letture (D187, D202): ruoli non
     strutturali da parte, nodi decisi, pulizie di `normalize` con i gap fino a
-    `max_gap` (default `tolerance`), tratti degeneri tolti.
+    `max_gap` (None: nessuno), tratti degeneri tolti.
     """
     tol = doc.node_tolerance(override=tolerance)
     _check_length("tolerance", tol, zero_ok=False)
     if max_gap is not None:
         _check_length("max_gap", max_gap, zero_ok=True)
-    gap = tol if max_gap is None else max(tol, max_gap)
+    # un buco si chiude solo fino al max_gap del chiamante; senza, nessuno (D246)
+    gap = 0.0 if max_gap is None else max_gap
     net = Network(tolerance=tol, max_gap=gap, source_file=source_file, label=label,
                   source_format=doc.source_format,
                   _structural=is_structural or is_structural_role, _texts=list(doc.texts))
@@ -162,8 +163,11 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
     if clean.full_arcs:
         net.notes.append(Diagnostic(
             "arc-joined", f"{_plural(clean.full_arcs, 'arc', 'arcs')} on one circle joined across their holes",
-            notes=[f"holes within tolerance and at most {math.degrees(NEAR_FULL_ARC_MISSING):.0f}° (D218)"],
+            notes=[f"holes within max_gap and at most {math.degrees(NEAR_FULL_ARC_MISSING):.0f}° (D218)"],
             level="note"))
+    closed = [(pt, d) for pt, d in clean.gaps if d > FLOAT_NOISE]
+    if closed:
+        net.notes.append(_ends_joined_note(closed, gap))
     if clean.ambiguous:
         net.warnings.append(Diagnostic(
             "tie", f"{_plural(len(clean.ambiguous), 'free end', 'free ends')} with two partners at the same "
@@ -176,7 +180,7 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
     arcs = open_near_full_arcs(net.edges, reach(gap))
     if arcs:
         net.warnings.append(_open_arc_warning(arcs))
-    gaps = near_free_gaps(net.edges, reach(gap), reach(_NEAR_GAP_REACH * gap))
+    gaps = near_free_gaps(net.edges, reach(gap), reach(_NEAR_GAP_REACH * max(gap, tol)))
     if gaps:
         net.warnings.append(_near_gap_warning(gaps, gap))
     loops = self_crossings(net.edges)   # D241
@@ -202,7 +206,7 @@ def repair_edges(edges: List[Edge], tolerance: float, max_gap: float) -> List[Ed
     """La stessa riparazione su edge sciolti, per chi legge senza un Document
     (experimental): nodi decisi, `normalize`, degeneri tolti."""
     noded, _ = decide_nodes(edges)
-    return _no_degenerate(normalize(noded, reach(max(tolerance, max_gap)), keep_junctions=True).edges)
+    return _no_degenerate(normalize(noded, reach(max_gap), keep_junctions=True).edges)
 
 
 def _no_degenerate(edges: List[Edge]) -> List[Edge]:
@@ -224,7 +228,8 @@ _NEAR_GAP_REACH = 2.0   # un gap fino al doppio della soglia "c'è quasi"; oltre
 
 def _span(values, fmt: str) -> str:
     lo, hi = min(values), max(values)
-    return format(lo, fmt) if lo == hi else f"{format(lo, fmt)} to {format(hi, fmt)}"
+    a, b = format(lo, fmt), format(hi, fmt)
+    return a if a == b else f"{a} to {b}"
 
 
 def _near_copy_warning(pairs: list) -> Diagnostic:
@@ -253,12 +258,20 @@ def _open_arc_warning(arcs: list) -> Diagnostic:
         param="max_missing_angle", value=arcs[-1][1])
 
 
+def _ends_joined_note(closed: list, gap: float) -> Diagnostic:
+    return Diagnostic(
+        "ends-joined", f"{_plural(len(closed), 'gap', 'gaps')} between free ends closed",
+        points=[pt for pt, _ in sorted(closed, key=lambda c: -c[1])],
+        notes=[f"{_span([d for _, d in closed], '.4f')} mm, max_gap {gap:g} mm"],
+        level="note")
+
+
 def _near_gap_warning(gaps: list, gap: float) -> Diagnostic:
     longest = max(d for _, _, d in gaps)
     return Diagnostic(
         "near-gap", f"{_plural(len(gaps), 'gap', 'gaps')} just over the gap limit, left open",
         points=[a for a, _, _ in gaps],
-        notes=[f"{_span([d for _, _, d in gaps], '.4f')} mm, limit {gap:g} mm (max_gap, default the tolerance)"],
+        notes=[f"{_span([d for _, _, d in gaps], '.4f')} mm, limit {gap:g} mm (max_gap, default 0)"],
         help=f"topo.heal(doc, ..., max_gap={_ceil_2(longest):g}) closes them all, and every other gap up to that",
         param="max_gap", value=longest)
 

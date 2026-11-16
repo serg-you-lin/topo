@@ -638,3 +638,7 @@ Without the points a QCAD dimension is lost: snapdraw, from string and geometry 
 ### D266 — the generator of credible drawings leaves the 1.0 gate (Federico, 16 November).
 The gate takes what breaks a public name or proves D143 on the repo's fixtures (D148); the generator makes new drawings
 and touches no name, so it is 1.x. `hypothesis` as a test dependency is decided then.
+### D267 — reopening D202: without `max_gap` no gap is closed, and every gap closed is said (Federico, 16 November).
+`heal(doc)` reads the drawing as it is; `max_gap` alone bounds the gaps closed, also below `tolerance` (D246 already said 0 closes none;
+the code took `max(tolerance, max_gap)`). Each gap closed between free ends is in the note `ends-joined`: count, lengths, points.
+Measured on the 631 test drawings: with `max_gap` = tolerance the readings are unchanged; without it none turns invalid.

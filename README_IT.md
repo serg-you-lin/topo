@@ -118,7 +118,7 @@ for cluster in result.clusters:              # una vista (o un pezzo) per contor
     print(cluster.outer.area)
 ```
 
-`max_gap` (default `tolerance`) è il gap più largo che viene chiuso. Le letture
+`max_gap` è il gap più largo che viene chiuso; senza, nessun gap si chiude, e ogni gap chiuso è elencato in `notes`. Le letture
 sono ricette su passi pubblici: i passi di `heal()` sono esportati uno per uno
 in `topo.experimental` (`topo.experimental.split_labeled`,
 `topo.experimental.close_free_gaps`, `topo.experimental.face_loops`,
