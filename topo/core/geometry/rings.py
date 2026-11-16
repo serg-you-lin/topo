@@ -14,12 +14,12 @@ from typing import Iterator, List, Sequence, Tuple
 from ..primitives.segments import (
     ArcSeg, BSplineSeg, CircleSeg, DEFAULT_TOLERANCE, EllipseSeg, LineSeg, segment_endpoints,
 )
-from .measure import Reach, segment_length
+from .measure import Reach, segment_length, SAME_POINT
 
 Point = Tuple[float, float]
 Bounds = Tuple[float, float, float, float]
 
-ON_BOUNDARY = 1e-6   # mm: un punto più vicino di così al bordo ci sta sopra (FLOAT_NOISE, D183)
+ON_BOUNDARY = SAME_POINT   # mm: un punto più vicino di così al bordo ci sta sopra (FLOAT_NOISE, D183)  # D268
 
 
 def ring_jumps(segments: Sequence) -> Iterator[Tuple[Point, Point]]:

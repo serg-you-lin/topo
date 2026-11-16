@@ -24,7 +24,7 @@ from ...model.cluster import Cluster
 from ...model.diagnostic import Diagnostic
 from ...model.role import ContourRole, is_structural_role
 from ..base.hierarchy import HierarchyBuilder
-from ..geometry.measure import FLOAT_NOISE
+from ..geometry.measure import FLOAT_NOISE, reach
 from ..geometry.rings import ring_bridges
 
 
@@ -131,7 +131,7 @@ def close_contour_jumps(result, tolerance: float) -> None:
     starts, widest = [], 0.0
     for cluster in result.clusters:
         for contour in [cluster.outer] + list(cluster.inners):
-            bridges = ring_bridges(contour.segments, tolerance, FLOAT_NOISE)
+            bridges = ring_bridges(contour.segments, reach(tolerance), FLOAT_NOISE)   # D183
             for k, line in reversed(bridges):
                 contour.segments.insert(k + 1, line)
                 if len(contour.styles) > k:

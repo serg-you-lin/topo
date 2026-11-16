@@ -21,7 +21,7 @@ from typing import Optional, Tuple
 
 from shapely.geometry import Polygon
 
-from .measure import FLOAT_NOISE, Reach, chord_angle_deg, golden_max, noise_runs
+from .measure import FLOAT_NOISE, Reach, chord_angle_deg, golden_max, noise_runs, SAME_POINT
 from ..primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, segment_endpoints, segment_is_closed
 
 Point = Tuple[float, float]
@@ -392,7 +392,7 @@ def merge_runs(segments: list, styles: list):
     return out_s, out_st
 
 
-_MERGE_EPS = 1e-3   # mm — il passo della vecchia griglia dei nodi (D113, D216)
+_MERGE_EPS = SAME_POINT   # mm — il passo della vecchia griglia dei nodi (D113, D216)  # D268
 
 
 def _continues(prev, prev_style, seg, style) -> bool:

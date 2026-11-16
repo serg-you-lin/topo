@@ -9,13 +9,13 @@ from ...model.contour import Contour
 from ...model.role import ContourRole, is_structural_role
 from ..primitives.polygon_builder import curve_polygon, with_polygon
 from ..geometry.integrals import ring_area
-from ..geometry.measure import FLOAT_NOISE, circular_geometry, noise_runs, track_points
+from ..geometry.measure import FLOAT_NOISE, circular_geometry, noise_runs, track_points, SAME_POINT
 from ..geometry.rings import ring_perimeter
 from ..geometry.regions import enclosing
 
 
 MIN_CONTOUR_AREA = 1e-3
-MIN_SINGLE_LOOP_DIAMETER = 0.05
+MIN_SINGLE_LOOP_DIAMETER = SAME_POINT  # D268
 
 
 # ---------------------------------------------------------------------------

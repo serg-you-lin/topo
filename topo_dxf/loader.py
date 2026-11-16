@@ -20,7 +20,7 @@ from typing import Callable, Sequence, Union
 import ezdxf
 from ezdxf.addons import odafc
 
-from .sanitize import sanitize, _explode_inserts, _explode_hatches, _explode_fills, _explode_leaders, deduplicate
+from .sanitize import sanitize, _explode_inserts, _explode_hatches, _explode_fills, _explode_leaders
 from .adapter import DxfAdapter
 from .text_extractor import DxfTextExtractor, bare_dimensions, carries_string, hand_written_dimensions
 from topo.model import DEFAULT_NODE_TOLERANCE, Diagnostic, Document, RoleRule
@@ -343,10 +343,7 @@ def load_dxf(
         _emit(notes, Diagnostic("dxf-hatches-exploded", f"{n} HATCH exploded into their pattern lines (D205)",
                                 level="note"), verbose)
 
-    removed = deduplicate(msp)
-    if removed > 0:
-        _emit(notes, Diagnostic("dxf-duplicates-removed", f"{removed} duplicate entities removed", level="note"),
-              verbose)
+    # i doppioni li decide topo (normalize), con la soglia unica (D268)
 
     # dopo la deduplicazione: un lato pieno uguale a una linea del disegno
     # cede alla linea, che resta senza il segno (D255)

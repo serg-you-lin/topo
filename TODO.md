@@ -66,6 +66,21 @@ G17 (D250).
         `gap-closed` (rettangolo con spigoli aperti da 0,009 a 1e-5: valido).
       Metodo: prototipo su branch, misurato sui 631 DXF prima e dopo, una
       proposta sola; mai cambiare a caso.
+      Stato (16 novembre): branch `experiment/one-threshold`, non su main.
+      `topo.geometry.SAME_POINT` = 0,001 usata dalle soglie misurate; nodi
+      senza catena (`_Contacts._union`, diametro); salti confrontati con
+      `reach`; dedup del DXF tolta; test portati sotto la soglia; golden di
+      outlines rigenerati (simboli di rugosità: da gocce a cerchi, visti da
+      Federico). Restano: suite completa, test di guardia sulle soglie
+      (eccezioni col perché: COLLINEAR/CONCENTRIC 0,1, AXIS_EPS, DIRECTION_SAMPLE,
+      discretizzazioni, JUMP, PDF 0,15 — non misurate), docs (LLM, API,
+      README: limite 0,001 dichiarato), D268, versione, merge. Da guardare a
+      occhio: a 0,001 cambiano 65 letture `faces()` e 17 `outlines()` sui 631
+      DXF. Dopo: contatti sulle spline vere, poi la soglia può scendere.
+      Forma (Federico, 16 novembre): una costante sola, visibile, con un
+      commento che dice cosa cambia se la si cambia; ogni funzione di topo
+      con una soglia la usa, salvo eccezioni scritte col loro perché; un test
+      che blocca un numero-soglia nuovo fuori dalla costante.
 - [ ] **Tempo della suite** (D160, D212): ~3:22 seriale, sopra il tetto di
       2,5–3 min. Pesano `test_fidelity` sulle spline e le letture di
       `outlines()` (`TestScrambled` in `test_outlines_invariants`,
