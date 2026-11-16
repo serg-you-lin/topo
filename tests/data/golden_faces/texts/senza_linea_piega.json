@@ -97,9 +97,8 @@
           134.868
         ],
         "direction": null,
-        "text_height": 6.0,
         "decimals": 2,
-        "length_factor": null,
+        "drawn_to_real": null,
         "kind": "MeasuredDistance"
       }
     },
@@ -221,9 +220,8 @@
           25.733
         ],
         "direction": null,
-        "text_height": 6.0,
         "decimals": 2,
-        "length_factor": null,
+        "drawn_to_real": null,
         "kind": "MeasuredDistance"
       }
     },
@@ -390,9 +388,8 @@
           673.267
         ],
         "direction": 90.0,
-        "text_height": 6.0,
         "decimals": 1,
-        "length_factor": null,
+        "drawn_to_real": null,
         "kind": "MeasuredDistance"
       }
     },
@@ -424,9 +421,8 @@
           760.469
         ],
         "direction": 90.0,
-        "text_height": 6.0,
         "decimals": 1,
-        "length_factor": null,
+        "drawn_to_real": null,
         "kind": "MeasuredDistance"
       }
     },
@@ -458,9 +454,8 @@
           521.727
         ],
         "direction": 90.0,
-        "text_height": 6.0,
         "decimals": 1,
-        "length_factor": null,
+        "drawn_to_real": null,
         "kind": "MeasuredDistance"
       }
     }

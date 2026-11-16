@@ -1348,9 +1348,13 @@ what a dimension measures without rebuilding it from the strokes. Frozen.
 | `MeasuredDiameter` | `on_circle`, `opposite` |
 | `MeasuredAngle` | `first_leg`, `second_leg` (two points each), `arc_at` (a point of the measure arc: it picks which of the four angles) |
 
-All four carry `text_height` and `decimals` from the source's style; the three
-lengths also `length_factor`, what the source multiplies the length by before
-writing its number (a view drawn 2:1 writes half). `None` when absent. topo
+All four carry `decimals`, how many decimals the source writes the number with;
+the three lengths also `drawn_to_real`, drawn length → real length: the number
+is the distance between the points times it (a view drawn at 1:4 has 4, a detail
+at 4:1 has 0.25). `None` when the source does not say, or writes the number by
+hand (`120` on a side drawn 100): then `Text.text` is the number, kept as written,
+and a `dxf-dimension-written-number` warning counts them (D265). They are what the text
+says, not how it looks: height and rotation are the consumer's (D265). topo
 computes no measure from them: the number, if the source writes none, is the
 consumer's (`<>` in `Text.text`).
 

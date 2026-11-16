@@ -8,7 +8,9 @@ MAP.md D138).
 import unittest
 
 from topo.model.text import RenderedGeometry, RenderedText
-from topo_dxf.text_extractor import _shown_text
+from types import SimpleNamespace
+
+from topo_dxf.text_extractor import _shown_text, written_by_hand
 
 
 def _texts(*contents):
@@ -44,6 +46,24 @@ class TestShownText(unittest.TestCase):
 
     def test_frammenti_uniti(self):
         self.assertEqual(_shown_text(None, _texts("∅5,3", "+0,05^-0")), "∅5,3+0,05^-0")
+
+
+def _dimension(text):
+    # solo il campo testo del file: la regola non guarda altro
+    return SimpleNamespace(dxf={"text": text})
+
+
+class TestWrittenByHand(unittest.TestCase):
+    """Una quota col numero scritto a mano non ha decimali né fattore: il numero
+    è il testo com'è scritto, topo non lo confronta coi punti (D265)."""
+
+    def test_numero_scritto(self):
+        self.assertTrue(written_by_hand(_dimension("2000.00")))
+        self.assertTrue(written_by_hand(_dimension("R5")))
+
+    def test_segnaposto_o_vuoto(self):
+        for text in ("", "<>", "R<>", "<>±0.2", " "):
+            self.assertFalse(written_by_hand(_dimension(text)), text)
 
 
 if __name__ == "__main__":

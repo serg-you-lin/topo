@@ -22,7 +22,7 @@ from ezdxf.addons import odafc
 
 from .sanitize import sanitize, _explode_inserts, _explode_hatches, _explode_fills, _explode_leaders, deduplicate
 from .adapter import DxfAdapter
-from .text_extractor import DxfTextExtractor, bare_dimensions, carries_string
+from .text_extractor import DxfTextExtractor, bare_dimensions, carries_string, hand_written_dimensions
 from topo.model import DEFAULT_NODE_TOLERANCE, Diagnostic, Document, RoleRule
 
 # Percorso dell'eseguibile ODA File Converter. `topo` NON legge i DWG da solo:
@@ -94,13 +94,20 @@ def _warn_non_roundtrip_types(msp, sink: list, verbose: bool = False) -> list[st
 
 
 def _warn_bare_dimensions(msp, sink: list, verbose: bool = False) -> None:
-    """Avvisa delle quote senza disegno nel file: di loro resta solo la stringa (D262)."""
+    """Avvisa delle quote senza disegno nel file (resta solo la stringa, D262)
+    e di quelle col numero scritto a mano (D265)."""
     n = bare_dimensions(msp)
     if n:
         _emit(sink, Diagnostic(
             "dxf-dimension-no-block",
             f"{n} DIMENSION carry no drawing of their own in the file: only their string is read (D262)",
             notes=["their lines, arrows and text style are drawn by whoever opens the file, not stored in it"]), verbose)
+    n = hand_written_dimensions(msp)
+    if n:
+        _emit(sink, Diagnostic(
+            "dxf-dimension-written-number",
+            f"{n} DIMENSION write their number by hand: it is kept as written, not checked against their points (D265)",
+            notes=["their measures carry no decimals nor drawn_to_real"]), verbose)
 
 
 def _emit(sink: list, msg: str, verbose: bool = False) -> None:

@@ -83,18 +83,19 @@ class MeasuredDistance:
     (`Text.measures`). ``first``/``second``: the two measured points;
     ``line_at``: a point the measure line passes through; ``direction``: the
     measure's direction in degrees, ``None`` = along ``first`` → ``second``.
-    ``text_height``/``decimals``: from the source's style, ``None`` if absent.
-    ``length_factor``: what the source multiplies the length by before
-    writing its number (a view drawn 2:1 writes half), ``None`` if absent.
+    ``decimals``: how many decimals the source writes the number with.
+    ``drawn_to_real``: drawn length → real length; the number is the
+    distance between the points times it (a view drawn at 1:4 has 4, a
+    detail at 4:1 has 0.25). ``None`` if the source does not say, or writes the
+    number by hand: then the number is `Text.text` as written.
     """
     first:         Point
     second:        Point
     line_at:       Point
     direction:     Optional[float] = None
     _: KW_ONLY
-    text_height:   Optional[float] = None
     decimals:      Optional[int]   = None
-    length_factor: Optional[float] = None
+    drawn_to_real: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -104,9 +105,8 @@ class MeasuredRadius:
     center:      Point
     on_circle:   Point
     _: KW_ONLY
-    text_height: Optional[float] = None
-    decimals:    Optional[int]   = None
-    length_factor: Optional[float] = None
+    decimals:      Optional[int]   = None
+    drawn_to_real: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -116,9 +116,8 @@ class MeasuredDiameter:
     on_circle:   Point
     opposite:    Point
     _: KW_ONLY
-    text_height: Optional[float] = None
-    decimals:    Optional[int]   = None
-    length_factor: Optional[float] = None
+    decimals:      Optional[int]   = None
+    drawn_to_real: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -126,13 +125,13 @@ class MeasuredAngle:
     """
     An angle between two legs, as the source writes it: each leg is two
     points of its line; ``arc_at`` is a point the measure arc passes through,
-    so it picks which of the four angles the legs make.
+    so it picks which of the four angles the legs make. ``decimals`` as in
+    `MeasuredDistance`.
     """
     first_leg:   Tuple[Point, Point]
     second_leg:  Tuple[Point, Point]
     arc_at:      Point
     _: KW_ONLY
-    text_height: Optional[float] = None
     decimals:    Optional[int]   = None
 
 
