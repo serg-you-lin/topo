@@ -610,3 +610,8 @@ and a consumer see the same thing from every format. With no string (a leader al
 A string's anchor counts its spaces: `"SECTION  "` aligned right at x ends its letters one space before x. Stripping
 them moves the letters by one space each (980 of 9,070 TEXT in the test drawings have them).
 The string as drawn is the raw fact, the same from every format; trimming it is the consumer's choice.
+
+### D262 — topo_dxf never draws a dimension the file does not draw: a DIMENSION with no block is only its string, centred on the text midpoint (Federico, 16 November; TODO 1.e).
+QCAD writes every dimension without its block (1019 in the tests, none elsewhere): only points and style, no lines, no number.
+Each CAD draws them its own way (two CADs differ); drawing them is a renderer's job, and topo is none. The three lines
+topo_dxf rebuilt go; `dxf-dimension-no-block` says what was not read. At most topo exposes the file's facts for a consumer.

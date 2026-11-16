@@ -12,10 +12,12 @@
       "valign": "center",
       "text": "68",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     },
     {
@@ -27,10 +29,12 @@
       "valign": "center",
       "text": "1",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     },
     {
@@ -42,10 +46,12 @@
       "valign": "center",
       "text": "120",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     }
   ]

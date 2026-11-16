@@ -370,12 +370,6 @@ Aperte:
         come due cerchi esatti.
      g. drw_0024: la quota angolare esce `text='90~'` (atteso `90°`?).
         Non guardato.
-     e. quota senza blocco: oggi topo_dxf ne calcola le linee dai punti di
-        definizione (`_synthesize_dimension`); con D259 solo la stringa.
-        Contate (report `_debug/2026-11-15_topo_testi_ancora/quote_senza_blocco.txt`):
-        nessuna nei drw_00xx, tutti i tratti sintetizzati inventati. Proposta in
-        attesa del sì di Federico: togliere la sintesi, `rendered` vuoto, testo al
-        `text_midpoint`; golden testi di anch_*/Multifeature da riprovare prima.
      i. frecce di quota: `rendered.fills` mette insieme le punte SOLID e le
         polilinee chiuse del blocco, e `_emit_rendered` le riscrive tutte come
         polilinee chiuse vuote (drw_0024: nell'originale sono piene). Da tenere
@@ -388,6 +382,14 @@ Aperte:
         contro 21,66 del CAD. Federico: per ora lasciamo stare.
      k. `Text.origin` ("provenienza nella sorgente") non lo riempie nessun
         adapter e non è documentato: da togliere o da dire cos'è.
+     l. quote senza blocco (D262; file passati da QCAD, report
+        `_debug/2026-11-15_topo_testi_ancora/quote_senza_blocco.txt`): nel file
+        solo punti e stile, nessun numero né rotazione. Quali fatti passare a
+        snapdraw perché le disegni lui (punti di definizione, `dimtxt`, `dimexo`,
+        …), riapre D259: passo a sé. Difetti già presenti: `height` 2,5 invece di
+        `dimtxt` (anch_08: 14); numero calcolato da ezdxf senza "R"/"Ø" e a volte
+        sbagliato (piega_cazzuta allineata: "0" invece di 1703,47; anch_08
+        angolare: 125,65 invece di 54,35).
      Consumer da adeguare dalle loro sessioni: snapdraw `features.py`,
      `model.py`, `tests/test_features.py`; pippo `plan.py`.
   2. **contratto scritto per adapter**: quali campi opzionali riempie

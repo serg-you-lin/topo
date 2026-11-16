@@ -22,7 +22,7 @@ from ezdxf.addons import odafc
 
 from .sanitize import sanitize, _explode_inserts, _explode_hatches, _explode_fills, _explode_leaders, deduplicate
 from .adapter import DxfAdapter
-from .text_extractor import DxfTextExtractor, carries_string
+from .text_extractor import DxfTextExtractor, bare_dimensions, carries_string
 from topo.model import DEFAULT_NODE_TOLERANCE, Diagnostic, Document, RoleRule
 
 # Percorso dell'eseguibile ODA File Converter. `topo` NON legge i DWG da solo:
@@ -91,6 +91,16 @@ def _warn_non_roundtrip_types(msp, sink: list, verbose: bool = False) -> list[st
             "dxf-not-modeled", f"entity types topo does not model, not written back by to_dxf(): {', '.join(lost)}",
             notes=["their geometry is not in the Document"]), verbose)
     return lost
+
+
+def _warn_bare_dimensions(msp, sink: list, verbose: bool = False) -> None:
+    """Avvisa delle quote senza disegno nel file: di loro resta solo la stringa (D262)."""
+    n = bare_dimensions(msp)
+    if n:
+        _emit(sink, Diagnostic(
+            "dxf-dimension-no-block",
+            f"{n} DIMENSION carry no drawing of their own in the file: only their string is read (D262)",
+            notes=["their lines, arrows and text style are drawn by whoever opens the file, not stored in it"]), verbose)
 
 
 def _emit(sink: list, msg: str, verbose: bool = False) -> None:
@@ -290,9 +300,10 @@ def load_dxf(
     # I testi vanno estratti PRIMA di doc.audit(): l'auditor di ezdxf
     # cancella le DIMENSION che referenziano un blocco geometria non definito
     # (dims salvate senza pre-rendering) — sono comunque testi validi da
-    # riportare in output. `_dimension_text()` / `virtual_entities()` non hanno
+    # riportare in output. `get_measurement()` / `virtual_entities()` non hanno
     # bisogno del documento auditato.
     texts = DxfTextExtractor(doc.modelspace(), role_rules).extract()
+    _warn_bare_dimensions(doc.modelspace(), warnings, verbose)
 
     auditor = doc.audit()
     if auditor.errors:
@@ -410,6 +421,7 @@ def document_from_msp(
     # mai un silenzio (D137) — i tipi non modellati e i richiami senza stringa
     warnings = list(adapter.warnings)
     _warn_non_roundtrip_types(msp, warnings)
+    _warn_bare_dimensions(msp, warnings)
     bare = [e for e in msp.query("LEADER MULTILEADER") if not carries_string(e)]
     if bare:
         warnings.append(Diagnostic(

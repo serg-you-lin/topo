@@ -79,7 +79,7 @@ block is missing:
 |---|---|
 | `TEXT` | one `Text`. Anchor: the insert point for left/baseline, else the alignment point (group 11); `ALIGNED`/`FIT` → center/baseline at the midpoint of the two points |
 | `MTEXT` | one `Text` at its insert point; attachment 1–9 → `halign`/`valign` (MTEXT has no baseline: its bottom line is `bottom`). Formatting codes are removed, the string keeps its line breaks and spaces |
-| `DIMENSION` | one `Text` with its block as `rendered`. `text` is the string shown: an override with `<>` replaced by the number of the picture, or by the value ezdxf computes from the definition points when the picture has none. `%%c`, `%%d`, `%%p` → `Ø`, `°`, `±`. With no block, topo_dxf draws the lines from the definition points (`_synthesize_dimension`, TODO: to be counted and removed) |
+| `DIMENSION` | one `Text` with its block as `rendered`. `text` is the string shown: an override with `<>` replaced by the number of the picture, or by the value ezdxf computes from the definition points when the picture has none. `%%c`, `%%d`, `%%p` → `Ø`, `°`, `±`. With no block (as QCAD writes them): only the string, center/center on the text midpoint (group 11), `rendered` empty, a `dxf-dimension-no-block` warning (D262) |
 | `LEADER`, `MULTILEADER` with a string | one `Text` with its block as `rendered` |
 | `LEADER`, `MULTILEADER` without a string | exploded to curves and filled areas (D258) |
 | texts inside a block | with `explode_inserts=True` (the default) they surface as texts, attributes included; with `False` the INSERT is ignored and a warning says so |

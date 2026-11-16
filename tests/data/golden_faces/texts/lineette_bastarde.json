@@ -12,10 +12,12 @@
       "valign": "center",
       "text": "975.43",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     }
   ]

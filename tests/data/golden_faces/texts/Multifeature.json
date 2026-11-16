@@ -12,10 +12,12 @@
       "valign": "center",
       "text": "80",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     },
     {
@@ -27,10 +29,12 @@
       "valign": "center",
       "text": "25",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     },
     {
@@ -42,10 +46,29 @@
       "valign": "center",
       "text": "25",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
+      }
+    },
+    {
+      "position": [
+        211.139,
+        230.206
+      ],
+      "halign": "center",
+      "valign": "center",
+      "text": "R6",
+      "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
+      "rendered": {
+        "strokes": 0,
+        "fills": 0,
+        "texts": 0
       }
     },
     {
@@ -57,10 +80,12 @@
       "valign": "center",
       "text": "15",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     },
     {
@@ -72,25 +97,12 @@
       "valign": "center",
       "text": "11.25",
       "cluster_ref": null,
-      "rendered": {
-        "strokes": 3,
-        "fills": 0,
-        "texts": 1
-      }
-    },
-    {
-      "position": [
-        230.727,
-        209.305
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "R6",
-      "cluster_ref": 0,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     },
     {
@@ -102,10 +114,12 @@
       "valign": "center",
       "text": "42",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     },
     {
@@ -117,10 +131,12 @@
       "valign": "center",
       "text": "8.5",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     },
     {
@@ -132,10 +148,29 @@
       "valign": "center",
       "text": "50",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
+      }
+    },
+    {
+      "position": [
+        267.393,
+        227.93
+      ],
+      "halign": "center",
+      "valign": "center",
+      "text": "M8",
+      "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
+      "rendered": {
+        "strokes": 0,
+        "fills": 0,
+        "texts": 0
       }
     },
     {
@@ -181,10 +216,12 @@
       "valign": "center",
       "text": "109.5",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     },
     {
@@ -196,10 +233,12 @@
       "valign": "center",
       "text": "32",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     },
     {
@@ -211,25 +250,12 @@
       "valign": "center",
       "text": "20",
       "cluster_ref": null,
-      "rendered": {
-        "strokes": 3,
-        "fills": 0,
-        "texts": 1
-      }
-    },
-    {
-      "position": [
-        293.342,
-        179.057
-      ],
-      "halign": "left",
-      "valign": "baseline",
-      "text": "M8",
-      "cluster_ref": 0,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
         "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     },
     {
@@ -241,10 +267,12 @@
       "valign": "center",
       "text": "127.5",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     },
     {
@@ -256,10 +284,12 @@
       "valign": "center",
       "text": "20",
       "cluster_ref": null,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     },
     {
@@ -305,10 +335,12 @@
       "valign": "center",
       "text": "36",
       "cluster_ref": 0,
+      "height": 2.5,
+      "rotation": 0.0,
       "rendered": {
-        "strokes": 3,
+        "strokes": 0,
         "fills": 0,
-        "texts": 1
+        "texts": 0
       }
     }
   ]
