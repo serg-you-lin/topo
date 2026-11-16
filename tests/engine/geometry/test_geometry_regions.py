@@ -321,9 +321,13 @@ class TestContourUnion(unittest.TestCase):
         contour = Contour.from_segments(ring, role="outer")
         self.assertTrue(to_shapely(contour).is_valid)
 
-    def test_a_border_running_along_without_coinciding_raises(self):
-        with self.assertRaises(ValueError):
-            g.contour_union(SQUARE, g.rectangle(10, 10, center=(15.00001, 5)))
+    def test_a_border_within_same_point_is_shared(self):
+        # entro SAME_POINT i due bordi sono lo stesso bordo; oltre, due anelli (D268)
+        near = g.contour_union(SQUARE, g.rectangle(10, 10, center=(15 + g.SAME_POINT / 2, 5)))
+        self.assertEqual(len(near), 1)
+        self.assertAlmostEqual(_area(near[0]), 200, delta=0.01)
+        apart = g.contour_union(SQUARE, g.rectangle(10, 10, center=(15 + 2 * g.SAME_POINT, 5)))
+        self.assertEqual(len(apart), 2)
 
 
 class TestTouchingRingsUnderMotion(unittest.TestCase):

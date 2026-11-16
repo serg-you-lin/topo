@@ -49,7 +49,7 @@ from collections import Counter
 from dataclasses import dataclass, replace
 from typing import Any, Callable, Iterable, List, Tuple
 
-from ..geometry.measure import FLOAT_NOISE, node_point, within_diameter
+from ..geometry.measure import FLOAT_NOISE, node_point, within_diameter, SAME_POINT
 from ..geometry.points import fit_circle_kasa
 from ..primitives.segments import LineSeg, ArcSeg, CircleSeg, Point, segment_endpoints
 from ..primitives.fitting import simplify_points
@@ -64,7 +64,7 @@ from ...model.role import ContourRole
 # ---------------------------------------------------------------------------
 
 _SAME_DIRECTION = 1e-7   # seno dell'angolo fra due direzioni: quasi-esatta per costruzione, non tollerante
-_SAME_OFFSET    = 1e-3   # mm — "stessa retta / stesso cerchio", non "vicina"
+_SAME_OFFSET    = SAME_POINT   # mm — "stessa retta / stesso cerchio", non "vicina"  # D268
 _CHAIN_GAP_EPS  = FLOAT_NOISE  # guardia da rumore in virgola mobile, non tolleranza utente
 
 
@@ -518,7 +518,7 @@ def _median_line(a: Edge, b: Edge) -> Edge:
 # weld_degenerate_linesegs
 # ---------------------------------------------------------------------------
 
-_DEGENERATE_LENGTH_EPS = 0.05  # mm — fisso, non la tolerance del chiamante (v. MAP.md D56)
+_DEGENERATE_LENGTH_EPS = SAME_POINT  # mm — fisso, non la tolerance del chiamante (v. MAP.md D56)  # D268
 
 
 def weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]:

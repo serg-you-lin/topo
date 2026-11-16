@@ -26,6 +26,7 @@ from typing import List, Optional, Sequence, Tuple
 from shapely.geometry import LineString, Point as SPoint, Polygon
 from shapely.prepared import prep
 
+from .measure import SAME_POINT
 from ..primitives.polygon_builder import build_polygon
 from ..primitives.segments import (
     ArcSeg, CircleSeg, LineSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle,
@@ -38,10 +39,10 @@ from .shape import merge_runs
 Point = Tuple[float, float]
 
 TANGENT_TOLERANCE = 1e-3   # radianti: sotto, due lati proseguono uno nell'altro
-_JOIN = 1e-6               # capi più vicini di così sono lo stesso nodo
-_MIN_PIECE = 1e-6          # pezzi più corti di così non esistono
+_JOIN = SAME_POINT               # capi più vicini di così sono lo stesso nodo  # D268
+_MIN_PIECE = SAME_POINT          # pezzi più corti di così non esistono  # D268
 _POLYGON_TOLERANCE = 1e-5  # sagitta della discretizzazione per i test dentro/fuori
-_ON_BORDER = 5e-5          # un punto medio più vicino di così al bordo ci corre sopra
+_ON_BORDER = SAME_POINT          # un punto medio più vicino di così al bordo ci corre sopra  # D268
 
 
 # ---------------------------------------------------------------------------

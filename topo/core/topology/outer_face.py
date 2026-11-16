@@ -29,6 +29,7 @@ import shapely
 from shapely.geometry import Polygon
 from shapely.ops import polygonize, unary_union
 
+from ..geometry.measure import SAME_POINT
 from .edge import Edge
 from ..geometry.integrals import ring_area, ring_moments
 from .noding import GRAPH_EPSILON, edge_geometry
@@ -38,7 +39,7 @@ from .rim import face_segments, off_rim
 from ..primitives.segments import DEFAULT_TOLERANCE
 
 DIRECTION_SAMPLE = 3.0   # mm — la direzione di un edge a un nodo si legge fin qui (al massimo a metà edge)
-UNION_GRID = 1e-6        # mm — griglia dell'unione delle facce (D100): sotto quella dei nodi, decide solo l'aritmetica
+UNION_GRID = SAME_POINT        # mm — griglia dell'unione delle facce (D100): sotto quella dei nodi, decide solo l'aritmetica  # D268
 
 
 @dataclass

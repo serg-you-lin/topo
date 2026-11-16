@@ -451,12 +451,12 @@ class TestWeldDegenerateLinesegs(unittest.TestCase):
     def _chain(self):
         return [
             _line_raw((0.0, 0.0), (10.0, 0.0), (0.0, 0.0), (10.0, 0.0)),
-            _line_raw((10.0, 0.0), (10.02, 0.0), (10.0, 0.0), (10.02, 0.0)),
-            _line_raw((10.02, 0.0), (20.0, 0.0), (10.02, 0.0), (20.0, 0.0)),
+            _line_raw((10.0, 0.0), (10.0002, 0.0), (10.0, 0.0), (10.0002, 0.0)),
+            _line_raw((10.0002, 0.0), (20.0, 0.0), (10.0002, 0.0), (20.0, 0.0)),
         ]
 
     def test_catena_resta_connessa(self):
-        # D56: il LineSeg da 0.02mm sparisce, ma i due vicini devono ritrovarsi
+        # D56: il LineSeg da 0.0002 mm (sotto SAME_POINT, D268) sparisce, ma i due vicini devono ritrovarsi
         # sullo stesso nodo — cancellarlo e basta staccherebbe la catena.
         out = weld_degenerate_linesegs(self._chain())
         self.assertEqual(len(out), 2)
@@ -465,7 +465,7 @@ class TestWeldDegenerateLinesegs(unittest.TestCase):
     def test_segmento_conserva_il_punto_reale(self):
         # si sposta solo il nodo, il segment resta a piena precisione
         out = weld_degenerate_linesegs(self._chain())
-        self.assertEqual(out[1].segment.start, (10.02, 0.0))
+        self.assertEqual(out[1].segment.start, (10.0002, 0.0))
 
     def test_ruolo_gia_assegnato_non_e_saldato(self):
         edges = [_line((0.0, 0.0), (0.02, 0.0), role="engrave")]

@@ -48,13 +48,13 @@ from ..primitives.segments import (
     segment_endpoints, segment_is_closed,
 )
 
-from ..geometry.measure import FLOAT_NOISE, node_point, within_diameter
+from ..geometry.measure import FLOAT_NOISE, SAME_POINT, node_point, reach, within_diameter
 from .graph import cluster_points, connected_groups
 
-GRAPH_EPSILON = 0.01   # mm — due nodi così vicini sono uno solo per il grafo (heal, ripiego D100)
+GRAPH_EPSILON = SAME_POINT   # mm — due nodi così vicini sono uno solo per il grafo (heal, ripiego D100)  # D268
 
 _EPS = 1e-9
-_MIN_PIECE = 1e-4   # mm — sotto, lo spezzone non viene creato
+_MIN_PIECE = SAME_POINT   # mm — sotto, lo spezzone non viene creato  # D268
 _EXACT = (LineSeg, ArcSeg, CircleSeg)
 
 
@@ -65,7 +65,7 @@ def _is_loop(seg) -> bool:
     return isinstance(seg, CircleSeg) or (not isinstance(seg, _EXACT) and segment_is_closed(seg))
 # mm — spline ed ellissi si misurano su questa discretizzazione (il valore
 # della vecchia griglia dei nodi, D113, tenuto quando la griglia è uscita, D216)
-_FINE = 1e-3
+_FINE = SAME_POINT  # D268
 
 
 @dataclass
@@ -344,6 +344,7 @@ class _Contacts:
         self.trim_at: Dict[int, List[float]] = defaultdict(list)   # fermata di un capo -> s degli incroci del suo contatto
         self.absorbed: set = set()         # fermate interne fuse con un estremo dell'edge
         self.sides: Dict[int, Dict[int, int]] = {}   # radice -> {edge: estremi nel nodo, 1 inizio 2 fine}
+        self.group_pts: Dict[int, list] = {}          # radice -> punti del gruppo (diametro, D268)
         by_node: Dict[tuple, int] = {}
         for i, edge in enumerate(edges):
             if self._is_open(i):
@@ -367,6 +368,7 @@ class _Contacts:
         k = len(self.stops)
         self.stops.append((i, s, pt, kind))
         self.up.append(k)
+        self.group_pts[k] = [pt]
         if kind != "end":
             self.on_edge[i].append(k)
         return k
@@ -381,14 +383,18 @@ class _Contacts:
 
     def _union(self, a: int, b: int) -> bool:
         """Un nodo solo per `a` e `b`, se non mette i due estremi di uno
-        stesso edge nello stesso nodo: un lato corto non sparisce."""
+        stesso edge nello stesso nodo (un lato corto non sparisce) e se il
+        gruppo resta entro `node` di diametro: mai a catena (D186, D268)."""
         ra, rb = self._find(a), self._find(b)
         if ra == rb:
             return True
         if not self._joinable([ra, rb]):
             return False
+        if not within_diameter(self.group_pts[ra] + self.group_pts[rb], reach(self.node)):
+            return False
         keep, gone = min(ra, rb), max(ra, rb)
         self.up[gone] = keep
+        self.group_pts[keep] = self.group_pts[keep] + self.group_pts.pop(gone)
         merged = self.sides.pop(gone, {})
         mine = self.sides.setdefault(keep, {})
         for i, mask in merged.items():

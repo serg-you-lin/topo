@@ -13,7 +13,8 @@ Public (below):
     strips.py         distance between two boundaries and the closest pair (`gap`, `Gap`)
     axis.py           rectangles covered by strokes, lines that cross them, sides on another's edge, dimension on the axes;
                       strokes on the axes, strokes inside a box, merged intervals
-    measure.py        length of a segment and how much of it lies in a box, angle of a chord,
+    measure.py        SAME_POINT, topo's one threshold (D268): two points closer than it are one point;
+                      length of a segment and how much of it lies in a box, angle of a chord,
                       open traces (vertices, length, "is it a straight stroke?")
     lines.py          also: strokes grouped by line
 
@@ -35,6 +36,7 @@ from .shape import (
 )
 from .lines import splits_contour, bridged_runs, CollinearRun, dash_line, group_collinear_lines
 from .measure import (
+    SAME_POINT,
     segment_length, length_inside, chord_angle_deg,
     track_points, track_length,
 )
@@ -47,6 +49,7 @@ from .axis import (
 )
 
 __all__ = [
+    "SAME_POINT",
     "polygon", "rectangle", "regular_polygon", "circle", "ellipse", "stadium",
     "contour_shape", "ContourShape", "ShapeKind",
     "concentric_groups", "ConcentricGroup",

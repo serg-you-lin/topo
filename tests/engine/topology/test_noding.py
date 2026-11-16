@@ -1,6 +1,7 @@
 # tests/engine/topology/test_noding.py
 
 import math
+from collections import Counter
 import unittest
 from topo.core.topology.noding import split_at_crossings, renode
 from topo.core.topology.edge import Edge
@@ -79,10 +80,10 @@ class TestContattoDecisoUnaVolta(unittest.TestCase):
     def _pieces_of(self, noded, parent):
         return [p for p in noded.pieces if noded.parent_of(p) is parent]
 
-    def test_t_a_meno_di_un_centesimo_condivide_il_nodo(self):
-        # il gambo finisce 0.004 sopra la base: la base si taglia e il suo
+    def test_t_entro_la_soglia_condivide_il_nodo(self):
+        # il gambo finisce 0.0004 sopra la base, sotto SAME_POINT (D268): la base si taglia e il suo
         # nodo è l'estremo del gambo, non la proiezione arrotondata
-        base, stem = _line((0, 0), (10, 0)), _line((5, 0.004), (5, 5))
+        base, stem = _line((0, 0), (10, 0)), _line((5, 0.0004), (5, 5))
         noded = split_at_crossings([base, stem], tolerance=0.05)
         cuts = {p.end for p in self._pieces_of(noded, base)[:-1]}
         self.assertEqual(cuts, {stem.start})
@@ -93,7 +94,7 @@ class TestContattoDecisoUnaVolta(unittest.TestCase):
                             knots=[0, 0, 0, 1, 1, 1])
         top = spline._evaluate(0.5)
         curve = Edge(role="unknown", start=(0.0, 0.0), end=(10.0, 0.0), segment=spline)
-        stem = _line((round(top[0], 3), round(top[1] + 0.002, 3)), (5, 8))
+        stem = _line((round(top[0], 4), round(top[1] + 0.0002, 4)), (5, 8))
         noded = split_at_crossings([curve, stem], tolerance=0.05)
         halves = self._pieces_of(noded, curve)
         self.assertEqual(len(halves), 2)
@@ -102,9 +103,9 @@ class TestContattoDecisoUnaVolta(unittest.TestCase):
         self.assertEqual(halves[1].start, stem.start)
 
     def test_tangenza_mancata_e_un_contatto(self):
-        # una retta passa 0.004 fuori da un cerchio senza toccarlo: un nodo
+        # una retta passa 0.0004 fuori da un cerchio (sotto SAME_POINT, D268) senza toccarlo: un nodo
         # condiviso, e il cerchio, toccato una volta sola, resta intero
-        c, line = _circle((0, 0), 5), _line((-10, 5.004), (10, 5.004))
+        c, line = _circle((0, 0), 5), _line((-10, 5.0004), (10, 5.0004))
         noded = split_at_crossings([c, line], tolerance=0.05)
         self.assertEqual(len(self._pieces_of(noded, line)), 2)
         self.assertIn(c, noded.pieces)
@@ -289,10 +290,8 @@ class TestCrossingNodesUnderMotion(unittest.TestCase):
         for motion in [(0.0, 0.0, 0.0), (0.8126685826151423, -0.5047703326061714, -0.21810059373354584)]:
             with self.subTest(motion=motion):
                 segment, _ = rigid(*motion)
-                result = topo.heal(topo.load_segments([segment(s) for s in self.SEGMENTS]), max_gap=0.0).outlines()
-                self.assertEqual(len(result.clusters), 1)
-                # i tre lati e la retta nuova che chiude il salto di 0.0086 fra
-                # il capo della terza e la prima (D206): prima il contorno restava aperto
-                self.assertEqual(len(result.clusters[0].outer.segments), 4)
-                self.assertTrue(result.is_valid, result.errors)
-                self.assertEqual(len(result.loose), 5)
+                net = topo.heal(topo.load_segments([segment(s) for s in self.SEGMENTS]), max_gap=0.0)
+                ends = Counter(q for e in split_at_crossings(net.edges, net.tolerance).pieces for q in (e.start, e.end))
+                # i due incroci sono due nodi, ognuno coi quattro mezzi lati che vi arrivano;
+                # il terzo capo, a 0.0086 dalla seconda retta, non la tocca più (D268)
+                self.assertEqual(sorted(n for n in ends.values() if n >= 3), [4, 4])
