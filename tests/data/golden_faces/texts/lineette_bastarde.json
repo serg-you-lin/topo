@@ -10,7 +10,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "975.43",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -18,6 +18,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          54.78,
+          386.801
+        ],
+        "second": [
+          1030.21,
+          386.801
+        ],
+        "line_at": [
+          54.78,
+          483.324
+        ],
+        "direction": null,
+        "text_height": 2.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     }
   ]

@@ -10,7 +10,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "68",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -18,6 +18,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          55.069,
+          117.091
+        ],
+        "second": [
+          123.069,
+          117.091
+        ],
+        "line_at": [
+          123.069,
+          99.872
+        ],
+        "direction": 0.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 0.5,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -27,7 +46,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "1",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -35,6 +54,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          123.069,
+          268.83
+        ],
+        "second": [
+          123.069,
+          269.83
+        ],
+        "line_at": [
+          142.665,
+          269.83
+        ],
+        "direction": 90.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 0.5,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -44,7 +82,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "120",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -52,6 +90,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          122.869,
+          236.891
+        ],
+        "second": [
+          122.869,
+          116.891
+        ],
+        "line_at": [
+          144.352,
+          116.891
+        ],
+        "direction": 90.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 0.5,
+        "kind": "MeasuredDistance"
       }
     }
   ]

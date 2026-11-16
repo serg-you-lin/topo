@@ -3,10 +3,10 @@ topo/model/text.py
 ------------------
 I testi della sorgente come dati di dominio (MAP.md D20, D138): un tipo solo,
 `Text`. Una stringa posata nel piano (D257); con, se la sorgente lo dà, il
-disegno che la sorgente le traccia attorno (`rendered`). Che sia una nota,
-una quota o un richiamo, cosa misura e dove punta è una lettura del
-consumatore, anche quando il formato lo dice già (D259): né il tipo d'entità
-della sorgente (D256) né le sue affermazioni entrano nel modello.
+disegno che la sorgente le traccia attorno (`rendered`) e cosa misura coi
+punti che la sorgente scrive (`measures`, D264). Che sia una nota, una quota o
+un richiamo e dove punta è una lettura del consumatore (D259); il tipo
+d'entità della sorgente non entra nel modello (D256).
 `halign`/`valign` dicono come la stringa sta attorno a `position`, con lo
 stesso significato per ogni formato.
 
@@ -24,7 +24,7 @@ valido dopo serializzazione.
 from __future__ import annotations
 
 from dataclasses import KW_ONLY, dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 from .role import ContourRole, normalize_role
 
@@ -76,6 +76,69 @@ class RenderedGeometry:
         return not self.strokes and not self.fills and not self.texts
 
 
+@dataclass(frozen=True)
+class MeasuredDistance:
+    """
+    What a dimension measures when it is a distance, as its source writes it
+    (`Text.measures`). ``first``/``second``: the two measured points;
+    ``line_at``: a point the measure line passes through; ``direction``: the
+    measure's direction in degrees, ``None`` = along ``first`` → ``second``.
+    ``text_height``/``decimals``: from the source's style, ``None`` if absent.
+    ``length_factor``: what the source multiplies the length by before
+    writing its number (a view drawn 2:1 writes half), ``None`` if absent.
+    """
+    first:         Point
+    second:        Point
+    line_at:       Point
+    direction:     Optional[float] = None
+    _: KW_ONLY
+    text_height:   Optional[float] = None
+    decimals:      Optional[int]   = None
+    length_factor: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class MeasuredRadius:
+    """A radius, as the source writes it: ``center`` and a point ``on_circle``;
+    the other fields as in `MeasuredDistance`."""
+    center:      Point
+    on_circle:   Point
+    _: KW_ONLY
+    text_height: Optional[float] = None
+    decimals:    Optional[int]   = None
+    length_factor: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class MeasuredDiameter:
+    """A diameter, as the source writes it: two opposite points of the circle;
+    the other fields as in `MeasuredDistance`."""
+    on_circle:   Point
+    opposite:    Point
+    _: KW_ONLY
+    text_height: Optional[float] = None
+    decimals:    Optional[int]   = None
+    length_factor: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class MeasuredAngle:
+    """
+    An angle between two legs, as the source writes it: each leg is two
+    points of its line; ``arc_at`` is a point the measure arc passes through,
+    so it picks which of the four angles the legs make.
+    """
+    first_leg:   Tuple[Point, Point]
+    second_leg:  Tuple[Point, Point]
+    arc_at:      Point
+    _: KW_ONLY
+    text_height: Optional[float] = None
+    decimals:    Optional[int]   = None
+
+
+Measure = Union[MeasuredDistance, MeasuredRadius, MeasuredDiameter, MeasuredAngle]
+
+
 @dataclass
 class Text:
     """
@@ -94,8 +157,14 @@ class Text:
 
     ``rendered``: the strokes, fills and strings the source draws with it
     (a DXF dimension's or leader's own block), empty for a plain text and
-    for a source that does not group them. What they mean — what is
-    measured, where it points — is a reading (D259).
+    for a source that does not group them; never built by topo (D262).
+    Where a pointer lands is a reading (D259).
+
+    ``measures``: what the text measures, with the points its source writes
+    (``MeasuredDistance``, ``MeasuredRadius``, ``MeasuredDiameter``,
+    ``MeasuredAngle``), ``None`` for any other text or when the source does
+    not say. A ``<>`` in ``text`` is where the measure goes when the source
+    writes no number (D264).
 
     ``role``: what the text is for a consumer (``"title_block"``,
     ``"part_code"``, ...), as for an edge: topo does not read it and does not
@@ -113,6 +182,7 @@ class Text:
     halign:           str              = "left"
     valign:           str              = "baseline"
     rendered:         RenderedGeometry = field(default_factory=RenderedGeometry)
+    measures:         Optional[Measure] = None
 
     def __post_init__(self):
         self.role = normalize_role(self.role)

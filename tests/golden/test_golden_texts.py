@@ -63,7 +63,19 @@ def text_dict(t) -> dict:
         d["height"] = round(t.height, 3)
         d["rotation"] = round(t.rotation, 3)
     d["rendered"] = _rendered_counts(t.rendered)
+    if t.measures is not None:
+        # cosa misura, coi punti della sorgente (D264)
+        d["measures"] = {k: _rounded(v) for k, v in vars(t.measures).items()}
+        d["measures"]["kind"] = type(t.measures).__name__
     return d
+
+
+def _rounded(v):
+    if isinstance(v, float):
+        return round(v, 3)
+    if isinstance(v, tuple):
+        return [_rounded(x) for x in v]
+    return v
 
 
 def sort_key(entry: dict):

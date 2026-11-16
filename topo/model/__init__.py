@@ -9,6 +9,7 @@ Si scrive `topo.model.<Nome>`; i quattro più usati (`Document`, `Result`,
 """
 from .text import (
     Text, RenderedGeometry, RenderedText,
+    MeasuredDistance, MeasuredRadius, MeasuredDiameter, MeasuredAngle,
 )
 from .document import Document, DEFAULT_NODE_TOLERANCE
 from .contour import Contour
@@ -27,6 +28,10 @@ __all__ = [
     "Text",
     "RenderedGeometry",
     "RenderedText",
+    "MeasuredDistance",
+    "MeasuredRadius",
+    "MeasuredDiameter",
+    "MeasuredAngle",
     "Contour",
     "Cluster",
     "Result",

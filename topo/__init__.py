@@ -50,6 +50,8 @@ from .io.shapes           import to_shapely
 from .model         import (
     Result, Cluster, Contour, Document,
     Text,
+    # cosa misura un testo, coi punti della sorgente (D264)
+    MeasuredDistance, MeasuredRadius, MeasuredDiameter, MeasuredAngle,
     Overlay,
     # un avviso come in Rust: testo + campi, con la soglia che lo corregge (D227)
     Diagnostic,
@@ -123,6 +125,10 @@ __all__ = [
     "Contour",
     "Document",
     "Text",
+    "MeasuredDistance",
+    "MeasuredRadius",
+    "MeasuredDiameter",
+    "MeasuredAngle",
     "Overlay",
     "Diagnostic",
     # Ruoli — aggancio per un consumatore che marca la geometria pre-heal

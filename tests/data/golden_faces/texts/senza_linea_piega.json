@@ -82,6 +82,25 @@
         "strokes": 3,
         "fills": 0,
         "texts": 1
+      },
+      "measures": {
+        "first": [
+          75.358,
+          159.742
+        ],
+        "second": [
+          95.358,
+          159.742
+        ],
+        "line_at": [
+          75.358,
+          134.868
+        ],
+        "direction": null,
+        "text_height": 6.0,
+        "decimals": 2,
+        "length_factor": null,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -187,6 +206,25 @@
         "strokes": 3,
         "fills": 0,
         "texts": 1
+      },
+      "measures": {
+        "first": [
+          172.543,
+          44.811
+        ],
+        "second": [
+          417.543,
+          44.811
+        ],
+        "line_at": [
+          172.543,
+          25.733
+        ],
+        "direction": null,
+        "text_height": 6.0,
+        "decimals": 2,
+        "length_factor": null,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -337,6 +375,25 @@
         "strokes": 3,
         "fills": 0,
         "texts": 1
+      },
+      "measures": {
+        "first": [
+          829.8,
+          573.267
+        ],
+        "second": [
+          777.068,
+          673.267
+        ],
+        "line_at": [
+          856.542,
+          673.267
+        ],
+        "direction": 90.0,
+        "text_height": 6.0,
+        "decimals": 1,
+        "length_factor": null,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -352,6 +409,25 @@
         "strokes": 3,
         "fills": 0,
         "texts": 1
+      },
+      "measures": {
+        "first": [
+          858.074,
+          796.938
+        ],
+        "second": [
+          855.289,
+          760.469
+        ],
+        "line_at": [
+          884.364,
+          760.469
+        ],
+        "direction": 90.0,
+        "text_height": 6.0,
+        "decimals": 1,
+        "length_factor": null,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -367,6 +443,25 @@
         "strokes": 3,
         "fills": 0,
         "texts": 1
+      },
+      "measures": {
+        "first": [
+          977.726,
+          42.619
+        ],
+        "second": [
+          694.886,
+          521.727
+        ],
+        "line_at": [
+          1006.424,
+          521.727
+        ],
+        "direction": 90.0,
+        "text_height": 6.0,
+        "decimals": 1,
+        "length_factor": null,
+        "kind": "MeasuredDistance"
       }
     }
   ]
