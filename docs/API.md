@@ -355,7 +355,7 @@ topo.experimental.non_contour_pieces(noded, tolerance) -> set[int]
 topo.experimental.find_non_contour_edges(edges, tolerance) -> set[int]
 topo.experimental.find_joining_edges(edges, candidate_ids) -> list[Edge]
 topo.experimental.free_ends(edges, epsilon=0.0) -> list[tuple[point, float]]
-topo.experimental.face_loops(edges, epsilon=GRAPH_EPSILON) -> list[loop]
+topo.experimental.face_loops(edges, epsilon=GRAPH_EPSILON) -> list[loop]   # GRAPH_EPSILON = SAME_POINT (D268)
 topo.experimental.structural_loops(loops, is_structural=None) -> list[loop]
 topo.experimental.loops_to_curves(loops) -> list[ClosedCurve | OpenCurve]
 topo.experimental.loose_curves(edges) -> list[ClosedCurve | OpenCurve]
@@ -368,7 +368,7 @@ a recipe composed by a caller go through the same functions.
 
 | step | takes → returns | what it does |
 |---|---|---|
-| `prepare` | `list[Edge]` → `Prepared` (`edges`, `labeled`, `welded`) | non-structural roles set aside (`split_labeled`), then the nodes decided once: from the real points, endpoints within `GRAPH_EPSILON` are one node (D180, D187). |
+| `prepare` | `list[Edge]` → `Prepared` (`edges`, `labeled`, `welded`) | non-structural roles set aside (`split_labeled`), then the nodes decided once: from the real points, endpoints within `GRAPH_EPSILON` (= `SAME_POINT`, D268) are one node (D180, D187). |
 | `normalize` | `list[Edge]`, `gap` → `Normalized` (`edges` and the counts of each step) | tessellations refitted, duplicates merged, degenerate strokes welded, near-full arcs closed, gaps closed: the same cleanups for everyone (D189). `gap` already with the margin (`reach(tolerance)`, D183). `keep_junctions`: two collinear pieces that touch only at a junction are not merged (D110). |
 | `merge_collinear_overlaps` | `list[Edge]` → `list[Edge]` | merges lines drawn as overlapping pieces, judging "same line" on the true segments (D50, D184). |
 | `merge_cocircular_overlaps` | `list[Edge]` → `list[Edge]` | the same on co-circular arcs (D52, D184). |
@@ -475,7 +475,7 @@ topo.experimental.refit_tessellations(edges, max_segment=0.1, min_run=10,
 | `read_outlines` | `list[Edge]` → `list[OutlineReading]` | the same repair as `heal()` on loose edges, then the touching groups + `read_outline` for each + nesting (`nested_in`, also for a group with no outline lying entirely inside another). It is `outlines()` before it becomes a `Result`. |
 | `read_outline` | `list[Edge]` → `OutlineReading` | one group: the same repair as `heal()`, planar network, outer face, the rest classified. |
 | `touching_groups` | `list[Edge]` → `list[TouchingGroup]` | the groups of edges that touch: union-find on the pairs at true distance `<= gap_tolerance` (STRtree), chained. No notion of closure or of inside. `TouchingGroup`: `edges`, `bbox`, `.width`, `.height`. |
-| `split_at_crossings` | `list[Edge]` → `NodedEdges` | planar network (D180): every contact is decided once per pair of edges, on the true curves — a crossing, an endpoint within `GRAPH_EPSILON` (0.01 mm) of the other curve (T or two endpoints), two curves that pass within `GRAPH_EPSILON` without crossing — and gives a single node tuple for all the edges it touches (union-find; never the two endpoints of the same edge). Several meetings of the same pair within `tolerance` along one of the two edges are a single contact (D101: the two roots of a near-tangency). Every type is cut, splines and ellipses included (a periodic spline stays whole). `NodedEdges.parent_of(piece)` gives the original `Edge`, `.crossings` the interior crossings (D132). |
+| `split_at_crossings` | `list[Edge]` → `NodedEdges` | planar network (D180): every contact is decided once per pair of edges, on the true curves — a crossing, an endpoint within `GRAPH_EPSILON` (0.01 mm) of the other curve (T or two endpoints), two curves that pass within `GRAPH_EPSILON` (= `SAME_POINT`, D268) without crossing — and gives a single node tuple for all the edges it touches (union-find; never the two endpoints of the same edge). Several meetings of the same pair within `tolerance` along one of the two edges are a single contact (D101: the two roots of a near-tangency). Every type is cut, splines and ellipses included (a periodic spline stays whole). `NodedEdges.parent_of(piece)` gives the original `Edge`, `.crossings` the interior crossings (D132). |
 | `outer_face` | `list[Edge]` (planar network) → `OuterFace \| None` | border of the outer face, per component, the one of largest area; `spurs` = edges walked there and back. |
 | `refit_tessellations` | `list[Edge]` → `list[Edge]` | chains of short `LineSeg`s (a curve written as points) refitted by `simplify_points` (lines, arcs, splines within `tolerance`, corners by turn over `max_segment`, D141); chain endpoints on the original nodes. |
 
@@ -1094,7 +1094,7 @@ replacement. Structure:
 ```json
 {
   "source_file": "batch.dxf", "source_format": "dxf", "reading": "faces",
-  "tolerance": 0.05, "max_gap": 0.05,
+  "tolerance": 0.001, "max_gap": 0.0,
   "is_valid": true, "warnings": [], "errors": [],
   "loose_count": 2, "text_count": 4,
   "clusters": [

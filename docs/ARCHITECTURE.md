@@ -363,7 +363,7 @@ grid (MAP.md D216); two ends become the same node by distance. It serves in two 
    one (MAP.md D100, the cause isolated and fixed at the root by D101).
    With D180 the contact is decided once per pair and gives one
    shared node: node identity (T, two endpoints, missed tangency) is within
-   `GRAPH_EPSILON`, as the graph already did; `tolerance` merges only the
+   `GRAPH_EPSILON` (= `SAME_POINT`, D268), as the graph already did; `tolerance` merges only the
    meetings of one same pair, because over the whole network it percolates (D101).
 
 A gap 4× the tolerance is **not** closed — it is a choice, not a bug: if the
