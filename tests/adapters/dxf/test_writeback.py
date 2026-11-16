@@ -332,17 +332,21 @@ class TestWritebackTexts(unittest.TestCase):
         if not (drawing(name)).exists():
             self.skipTest(name)
         doc = topo_dxf.load_dxf(drawing(name))
-        # le 16 quote portano il loro disegno (D256, D259); i 4 LEADER non hanno
-        # una stringa loro e sono curve, la punta piena compresa (D258, D255)
-        self.assertEqual(sum(1 for a in doc.texts if not a.rendered.is_empty()), 16)
+        # le 16 quote non hanno blocco: solo la loro stringa, centrata sul
+        # punto medio del testo, topo_dxf non le disegna (D262); i 4 LEADER non hanno una
+        # stringa loro e sono curve, la punta piena compresa (D258, D255)
+        dims = [a for a in doc.texts if a.rendered.is_empty()
+                and (a.halign, a.valign) == ("center", "center")]
+        self.assertEqual(len(dims), 16)
+        # e un avviso le conta: il loro disegno nel file non c'è
+        self.assertEqual([str(w).split(":")[1].split()[0] for w in doc.warnings
+                          if w.code == "dxf-dimension-no-block"], ["16"])
         self.assertEqual([a for a in doc.texts if not a.text], [])
         self.assertEqual(sum(1 for e in doc.edges if e.style.filled), 12)
         result = topo.heal(doc).faces()
         msp = topo_dxf.to_dxf(result, doc).modelspace()
-        ann_geom = [e for e in msp.query("LWPOLYLINE")
-                    if e.dxf.layer == LAYER_ANNOTATION]
-        # direttrici delle quote lineari
-        self.assertGreater(len(ann_geom), 20)
+        ann = Counter(e.dxftype() for e in msp if e.dxf.layer == LAYER_ANNOTATION)
+        self.assertEqual(ann, Counter({"TEXT": len(doc.texts)}))
 
     def test_008_every_layer_read_by_default(self):
         # Di default si legge ogni layer (D243); chi rilegge un file di topo

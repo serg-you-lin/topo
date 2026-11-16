@@ -237,7 +237,7 @@ def _emit_rendered(msp, ann, attribs: dict) -> None:
     """
     Ri-materializza l'immagine appiattita (DIMENSION / LEADER di un DXF). I testi in
     `rendered.texts` sono già il testo visualizzato finale (il blocco DXF lo
-    incorpora risolto; i percorsi sintetici passano da `_dimension_text`).
+    incorpora risolto).
     """
     rendered = ann.rendered
     for pts in rendered.strokes:

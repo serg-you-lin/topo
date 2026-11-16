@@ -249,24 +249,12 @@ def _width_factor(entity) -> float:
 
 def _dimension_text_of(entity, pos, role: str) -> Optional[Text]:
     rendered = _render_block(entity)
-
-    if rendered.is_empty():
-        # Nessun blocco geometria: ricostruiamo direttrici + linea di misura
-        # dai def-point. Meglio del solo numero.
-        syn_strokes, syn_text = _synthesize_dimension(entity)
-        rendered.strokes.extend(syn_strokes)
-        if syn_text is not None:
-            rendered.texts.append(syn_text)
-
     measured = _measured_number(entity)
     override = _dimension_override(entity)
 
     if rendered.is_empty():
-        # Nemmeno i def-point: almeno il valore come testo alla sua posizione.
-        content = _dimension_text(entity)
-        if not content or pos is None:
-            return None
-        rendered.texts.append(RenderedText(content=content, position=pos))
+        return _bare_dimension(entity, pos, role,
+                               _shown_text(override, rendered, measured))
 
     if pos is None:
         pos = _bbox_center(
@@ -281,6 +269,27 @@ def _dimension_text_of(entity, pos, role: str) -> Optional[Text]:
         rendered=rendered,
         **_on_string(rendered, pos),
     )
+
+
+def _bare_dimension(entity, pos, role: str, text: str) -> Optional[Text]:
+    """Quota senza blocco (così le scrive QCAD): il file non ne disegna niente,
+    ne resta la stringa centrata sul punto medio del testo (codice 11);
+    `rendered` vuoto, topo_dxf non disegna quote (D262). Senza quel punto resta `pos`."""
+    if not text.strip():
+        return None
+    tm = entity.dxf.get("text_midpoint")
+    if tm is not None:
+        return Text(position=(float(tm[0]), float(tm[1])), text=text, role=role,
+                    halign="center", valign="center")
+    if pos is None:
+        return None
+    return Text(position=pos, text=text, role=role)
+
+
+def bare_dimensions(msp) -> int:
+    """Quante DIMENSION non portano il loro disegno nel file (nessun blocco
+    geometria): di quelle resta solo la stringa (D262)."""
+    return sum(1 for e in msp.query("DIMENSION") if e.get_geometry_block() is None)
 
 
 def _on_string(rendered: RenderedGeometry, pos) -> dict:
@@ -355,62 +364,6 @@ def _dimension_override(entity) -> Optional[str]:
 # Codici speciali del testo DXF → carattere (diametro, grado, più-meno).
 _SPECIAL_CODES = {"%%c": "Ø", "%%d": "°", "%%p": "±"}
 _UNICODE_ESCAPE = re.compile(r"\\[Uu]\+([0-9A-Fa-f]{4})")   # "\U+00B0" → "°"
-
-
-def _synthesize_dimension(entity):
-    """
-    Ricostruisce l'immagine di una DIMENSION lineare dai def-point, quando il
-    blocco geometria manca. Ritorna (strokes, RenderedText | None).
-
-    Solo per le quote lineari/allineate/ruotate (dimtype & 7 in {0, 1}); per
-    radiali/diametrali/angolari lasciamo il fallback al solo valore.
-    """
-    import math
-
-    try:
-        dimtype = int(entity.dxf.get("dimtype", 0)) & 7
-    except (TypeError, ValueError):
-        dimtype = 0
-    if dimtype not in (0, 1):
-        return [], None
-
-    dxf = entity.dxf
-    p  = dxf.get("defpoint")   # punto sulla linea di misura
-    e1 = dxf.get("defpoint2")  # origine 1ª direttrice
-    e2 = dxf.get("defpoint3")  # origine 2ª direttrice
-    if p is None or e1 is None or e2 is None:
-        return [], None
-
-    p  = (float(p[0]), float(p[1]))
-    e1 = (float(e1[0]), float(e1[1]))
-    e2 = (float(e2[0]), float(e2[1]))
-
-    ang = dxf.get("angle")
-    if ang is None:
-        dx, dy = e2[0] - e1[0], e2[1] - e1[1]
-        norm = math.hypot(dx, dy) or 1.0
-        d = (dx / norm, dy / norm)
-    else:
-        a = math.radians(float(ang))
-        d = (math.cos(a), math.sin(a))
-
-    def _proj(q):
-        t = (q[0] - p[0]) * d[0] + (q[1] - p[1]) * d[1]
-        return (p[0] + t * d[0], p[1] + t * d[1])
-
-    f1, f2 = _proj(e1), _proj(e2)
-    strokes = [[e1, f1], [e2, f2], [f1, f2]]
-
-    text_item = None
-    tm = dxf.get("text_midpoint")
-    content = _dimension_text(entity)
-    if content:
-        pos = (float(tm[0]), float(tm[1])) if tm is not None else _bbox_center(strokes)
-        # il punto medio del testo di una quota è il centro della stringa
-        text_item = RenderedText(content=content, position=pos,
-                                 halign="center", valign="center")
-
-    return strokes, text_item
 
 
 # ---------------------------------------------------------------------------
@@ -596,35 +549,6 @@ def _solid_points(solid) -> List[Tuple[float, float]]:
     if len(vs) == 4 and vs[2] == vs[3]:
         vs = vs[:3]
     return vs
-
-
-def _dimension_text(entity) -> str:
-    """
-    Testo visualizzato della quota, quando l'immagine non è espandibile.
-
-    Regole DXF sul campo `text`:
-      - "" / "<>" → misura calcolata (`get_measurement()`)
-      - " "       → testo soppresso → nessun testo
-      - "...<>"   → prefisso/suffisso attorno alla misura
-      - altro     → override esplicito
-    """
-    raw = entity.dxf.get("text", "") or ""
-    if raw == " ":
-        return ""
-    measure = _dimension_measurement(entity)
-    if raw and raw != "<>":
-        return raw.replace("<>", measure) if "<>" in raw else raw
-    return measure
-
-
-def _dimension_measurement(entity) -> str:
-    try:
-        m = entity.get_measurement()
-    except Exception:
-        return ""
-    if isinstance(m, (int, float)):
-        return f"{m:.2f}".rstrip("0").rstrip(".")
-    return ""
 
 
 def _f(value) -> Optional[float]:
