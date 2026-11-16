@@ -28,6 +28,23 @@ class TestShownText(unittest.TestCase):
     def test_override_senza_testo_disegnato(self):
         self.assertEqual(_shown_text("(<>)", RenderedGeometry(), 35.0), "(35)")
 
+    def test_numero_dentro_la_stringa_del_blocco(self):
+        # il blocco scrive "R5", non un "5" isolato: il numero si prende da lì,
+        # non dal calcolo di ezdxf, che qui non arriva (D263)
+        self.assertEqual(_shown_text("R<>", _texts("R5"), None), "R5")
+        self.assertEqual(_shown_text("Ø<>", _texts("n4.2"), None), "Ø4.2")
+
+    def test_numero_scritto_nell_override_saltato(self):
+        # "0.2" lo scrive già l'override: la misura è l'altro numero
+        self.assertEqual(_shown_text("<>±0.2", _texts("10±0.2"), None), "10±0.2")
+
+    def test_blocco_vince_sul_calcolo(self):
+        # il disegno scrive 41°, il calcolo darebbe 319: vale il disegno
+        self.assertEqual(_shown_text("(<>)", _texts("41°"), 319.0), "(41)")
+
+    def test_nessun_numero_lascia_il_segnaposto(self):
+        self.assertEqual(_shown_text("R<>", _texts("R"), None), "R<>")
+
     def test_frammenti_uniti(self):
         self.assertEqual(_shown_text(None, _texts("∅5,3", "+0,05^-0"), 6.625), "∅5,3+0,05^-0")
 
