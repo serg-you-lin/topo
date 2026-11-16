@@ -305,10 +305,10 @@ def dimension_measures(entity):
         kind = int(dxf.get("dimtype", 0)) & 7
     except (TypeError, ValueError):
         return None
-    height, decimals, factor = _dimension_style(entity, angular=kind == 2)
-    style = {"text_height": height, "decimals": decimals}
-    if kind != 2:
-        style["length_factor"] = factor
+    decimals, factor = _dimension_style(entity, angular=kind == 2)
+    style = {} if written_by_hand(entity) else {"decimals": decimals}
+    if kind != 2 and style:
+        style["drawn_to_real"] = factor
     if kind in (0, 1):
         pts = pt("defpoint2"), pt("defpoint3"), pt("defpoint")
         if None in pts:
@@ -330,19 +330,28 @@ def dimension_measures(entity):
 
 
 def _dimension_style(entity, angular: bool):
-    """Altezza del testo (`dimtxt` per `dimscale`; `dimscale` assente o 0 conta 1),
-    decimali (`dimdec`, `dimadec` per un angolo) e fattore delle lunghezze
-    (`dimlfac`) dallo stile della quota."""
+    """Quello che la quota dice del suo numero (D265): decimali (`dimdec`,
+    `dimadec` per un angolo) e fattore da lunghezza disegnata a vera (`dimlfac`).
+    L'aspetto (altezza, rotazione) è del consumer."""
     try:
         o = entity.override()
-        txt, scale = o.get("dimtxt"), o.get("dimscale")
         dec = o.get("dimadec" if angular else "dimdec")
         lfac = o.get("dimlfac")
     except Exception:
-        return None, None, None
-    height = None if txt is None else float(txt) * (float(scale) if scale else 1.0)
-    return (height, None if dec is None else int(dec),
-            None if lfac is None else float(lfac))
+        return None, None
+    return None if dec is None else int(dec), None if lfac is None else float(lfac)
+
+
+def written_by_hand(entity) -> bool:
+    """La quota ha il numero scritto a mano: il campo testo del file non è
+    vuoto e non ha `<>`, quindi decimali e fattore non lo producono (D265)."""
+    raw = entity.dxf.get("text", "") or ""
+    return bool(raw.strip()) and "<>" not in raw
+
+
+def hand_written_dimensions(msp) -> int:
+    """Quante DIMENSION hanno il numero scritto a mano (D265)."""
+    return sum(1 for e in msp.query("DIMENSION") if written_by_hand(e))
 
 
 def bare_dimensions(msp) -> int:

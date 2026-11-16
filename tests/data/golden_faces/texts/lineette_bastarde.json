@@ -33,9 +33,8 @@
           483.324
         ],
         "direction": null,
-        "text_height": 2.5,
         "decimals": 2,
-        "length_factor": 1.0,
+        "drawn_to_real": 1.0,
         "kind": "MeasuredDistance"
       }
     }

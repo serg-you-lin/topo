@@ -31,9 +31,8 @@
           181.534
         ],
         "direction": 90.0,
-        "text_height": 5.0,
         "decimals": 1,
-        "length_factor": 1.0,
+        "drawn_to_real": 1.0,
         "kind": "MeasuredDistance"
       }
     },
@@ -65,9 +64,8 @@
           122.84
         ],
         "direction": 0.0,
-        "text_height": 5.0,
         "decimals": 1,
-        "length_factor": 1.0,
+        "drawn_to_real": 1.0,
         "kind": "MeasuredDistance"
       }
     },
@@ -99,9 +97,8 @@
           221.534
         ],
         "direction": 90.0,
-        "text_height": 5.0,
         "decimals": 1,
-        "length_factor": 1.0,
+        "drawn_to_real": 1.0,
         "kind": "MeasuredDistance"
       }
     },
@@ -150,9 +147,8 @@
           122.84
         ],
         "direction": 0.0,
-        "text_height": 5.0,
         "decimals": 1,
-        "length_factor": 1.0,
+        "drawn_to_real": 1.0,
         "kind": "MeasuredDistance"
       }
     },
@@ -184,9 +180,8 @@
           122.84
         ],
         "direction": 0.0,
-        "text_height": 5.0,
         "decimals": 1,
-        "length_factor": 1.0,
+        "drawn_to_real": 1.0,
         "kind": "MeasuredDistance"
       }
     },
@@ -218,9 +213,8 @@
           122.84
         ],
         "direction": 0.0,
-        "text_height": 5.0,
         "decimals": 1,
-        "length_factor": 1.0,
+        "drawn_to_real": 1.0,
         "kind": "MeasuredDistance"
       }
     },
@@ -252,9 +246,8 @@
           223.172
         ],
         "direction": 90.0,
-        "text_height": 5.0,
         "decimals": 1,
-        "length_factor": 1.0,
+        "drawn_to_real": 1.0,
         "kind": "MeasuredDistance"
       }
     }

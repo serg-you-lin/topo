@@ -384,7 +384,7 @@ Aperte:
         adapter e non è documentato: da togliere o da dire cos'è.
      l. `Text.measures` (D264): snapdraw lo usa al posto di ricostruire dai tratti;
         le quote QCAD hanno `<>` nella stringa, il numero lo scrive lui
-        (punti × `length_factor`, `decimals`), con altezza e rotazione del testo.
+        (punti × `drawn_to_real`, `decimals`), con altezza e rotazione del testo.
      Consumer da adeguare dalle loro sessioni: snapdraw `features.py`,
      `model.py`, `tests/test_features.py`; pippo `plan.py`.
   2. **contratto scritto per adapter**: quali campi opzionali riempie

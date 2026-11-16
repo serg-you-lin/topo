@@ -625,3 +625,9 @@ does not write itself; none → `<>` stays. Step 1 of making every dimension one
 `MeasuredDistance`/`Radius`/`Diameter`/`Angle`, on every DXF DIMENSION with or without a block: one road for the consumer,
 which no longer rebuilds them from strokes nor reads a format. Facts of the file, not a reading; topo computes no number
 (a QCAD dimension keeps `<>`). An adapter that does not know them leaves `None`; topo_pdf will have to fill them (D254).
+
+### D265 — a text's measure keeps what the text says, not how it looks: `text_height` leaves, `length_factor` becomes `drawn_to_real` (Federico, 16 November).
+Points, kind, `decimals` and the scale factor decide the number written on the sheet; height and rotation are drawing, the consumer's.
+Without the points a QCAD dimension is lost: snapdraw, from string and geometry only, placed 15 of 478 (137 wrong as certain).
+`drawn_to_real` says the direction (number = distance × it; 1:4 view → 4). A number written by hand: both `None`, the text is the number,
+`dxf-dimension-written-number` counts them (topo cannot tell if it is false: that needs computing it, D263).
