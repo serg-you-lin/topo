@@ -262,7 +262,10 @@ da sistemare nella 1.x. Ognuno è stato riprodotto sul codice attuale.
 
 **Comportamenti voluti**, da sapere:
 
-- *I pezzi minuscoli si saldano.* Un gruppo di tratti entro 0,05 viene saldato
+- *Una soglia sola.* Due punti più vicini di `topo.geometry.SAME_POINT` (0,001 mm)
+  sono un punto solo, in tutto topo. Sotto 0,001 i contatti sulle spline rompono
+  ancora i contorni: un disegno i cui punti coincidono solo più alla grossa vuole `max_gap`.
+- *I pezzi minuscoli si saldano.* Un gruppo di tratti entro `SAME_POINT` viene saldato
   su un nodo solo (nota `welded`): un pezzo più corto di così non si distingue
   da un nodo.
 - *Un salto si chiude, non si sposta.* Dove una curva supera un'altra di pochi

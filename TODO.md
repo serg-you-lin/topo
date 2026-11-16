@@ -49,38 +49,21 @@ G17 (D250).
       alcuni nomi sembrano codici pezzo. Da guardare nell'audit anche i file di
       blocco AutoCAD (`.dwl*`) tracciati in `tests/data/mixed_pipeline/`: di
       solito portano nome utente e PC.
-- [ ] **Una soglia sola** (Federico, 16 novembre: "una soglia sola, anche se
-      domani entra il PDF"; riapre D196). Ogni decisione di lunghezza
-      ("stesso punto", "si tocca", "stessa curva") usa un numero solo, dato
-      dall'adapter; gli angoli si ricavano da lui; le guardie dell'aritmetica
-      (1e-12, 1e-14) non sono soglie. Oggi le lunghezze sono ~12 scale (0,15 …
-      1e-9): inventario con file e riga in
-      `_debug/2026-11-16_topo_soglie/SOGLIE.md`. Fatti misurati:
-      - `topo_dxf/sanitize.py` `_key_for` cancella i doppi arrotondando a 2
-        decimali, con il layer nella chiave: sui 631 DXF di `tests/` 77
-        cancellati non identici (fino a 0,0075 mm), 284 doppi esatti tenuti
-        perché su layer diversi. "Doppio" si decide in tre posti (0,01 lì,
-        1e-6 in `topo_dxf/adapter.py` `_segment_key`, 1e-3 `_SAME_OFFSET`);
-      - senza `max_gap` (D267) un buco sotto 0,01 mm si chiude ancora: due
-        capi entro `GRAPH_EPSILON` sono un nodo solo (D180), `faces()` dice
-        `gap-closed` (rettangolo con spigoli aperti da 0,009 a 1e-5: valido).
-      Metodo: prototipo su branch, misurato sui 631 DXF prima e dopo, una
-      proposta sola; mai cambiare a caso.
-      Stato (16 novembre): branch `experiment/one-threshold`, non su main.
-      `topo.geometry.SAME_POINT` = 0,001 usata dalle soglie misurate; nodi
-      senza catena (`_Contacts._union`, diametro); salti confrontati con
-      `reach`; dedup del DXF tolta; test portati sotto la soglia; golden di
-      outlines rigenerati (simboli di rugosità: da gocce a cerchi, visti da
-      Federico). Restano: suite completa, test di guardia sulle soglie
-      (eccezioni col perché: COLLINEAR/CONCENTRIC 0,1, AXIS_EPS, DIRECTION_SAMPLE,
-      discretizzazioni, JUMP, PDF 0,15 — non misurate), docs (LLM, API,
-      README: limite 0,001 dichiarato), D268, versione, merge. Da guardare a
-      occhio: a 0,001 cambiano 65 letture `faces()` e 17 `outlines()` sui 631
-      DXF. Dopo: contatti sulle spline vere, poi la soglia può scendere.
-      Forma (Federico, 16 novembre): una costante sola, visibile, con un
-      commento che dice cosa cambia se la si cambia; ogni funzione di topo
-      con una soglia la usa, salvo eccezioni scritte col loro perché; un test
-      che blocca un numero-soglia nuovo fuori dalla costante.
+- [ ] **Una soglia sola, il resto** (D268 fatto: `topo.geometry.SAME_POINT`
+      = 0,001, guardia in `tests/package/test_one_threshold.py`).
+      - Letture che a 0,001 cambiano sui DXF di `tests/` senza golden: 82,
+        di cui 23 con area cambiata meno di un millesimo; le altre sono copie
+        degli stessi ~8 disegni. Verificare con una misura (non a occhio) che
+        il cambio venga da capi oltre 0,001 non più uniti; a Federico solo
+        ciò che la misura non spiega (`_debug/2026-11-16_topo_soglie/SOGLIE.md`).
+      - Misurare le eccezioni segnate "da misurare" nel test di guardia
+        (COLLINEAR/CONCENTRIC 0,1, AXIS_EPS, CLUSTER_TOLERANCE, MIN_CONTOUR_AREA,
+        `refit_circle_rings` 0,02, `non_contour_edges` 0,1) e portarle a
+        `SAME_POINT` dove la misura regge.
+      - Contatti su spline ed ellissi calcolati sulla curva vera, non sulla
+        discretizzazione (`noding._Curve.locate`/`at`): solo allora la soglia
+        scende sotto 0,001 senza rompere contorni né rallentare (a 1e-6 con
+        `_FINE` = soglia: +40% di tempo; a 1e-8 ~280 s a foglio).
 - [ ] **Tempo della suite** (D160, D212): ~3:22 seriale, sopra il tetto di
       2,5–3 min. Pesano `test_fidelity` sulle spline e le letture di
       `outlines()` (`TestScrambled` in `test_outlines_invariants`,

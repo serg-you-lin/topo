@@ -255,7 +255,10 @@ fixed in 1.x. Each was reproduced on the current code.
 
 **Behaviour by design**, worth knowing:
 
-- *Tiny pieces are welded.* A group of strokes within 0.05 is welded onto one
+- *One threshold.* Two points closer than `topo.geometry.SAME_POINT` (0.001 mm)
+  are one point, everywhere in topo. Below 0.001 the contacts on splines still
+  break contours: a drawing whose points coincide only more coarsely needs `max_gap`.
+- *Tiny pieces are welded.* A group of strokes within `SAME_POINT` is welded onto one
   node (note `welded`): a piece shorter than that cannot be told from a node.
 - *A jump is closed, never moved.* Where one curve passes another by a few
   thousandths, the reading adds a short straight segment between the two ends

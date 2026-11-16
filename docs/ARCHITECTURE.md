@@ -217,11 +217,11 @@ cut is made by the reading that asks for it.
    consumer that marks the geometry before `heal`, and
    `topo.non_contour_candidates(doc)` exposes the step 3 criterion), then the
    nodes decided once: from the real points of the segments, endpoints within
-   `GRAPH_EPSILON` are a single node, by proximity, never by grid cell
+   `SAME_POINT` (D268) are a single node, by proximity, never by grid cell
    (D180, D187)
 1. **normalize** (`normalize`): curves written as points refitted into primitives
    (D60), lines and arcs drawn in pieces merged (D50, D52, D184), `LineSeg`
-   under 0.05 mm welded (D56, D186), nearly complete arcs closed into a circle
+   under `SAME_POINT` welded (D56, D186, D268), nearly complete arcs closed into a circle
    (gap within `tolerance` and at most 2° missing, D112), then the gaps: every
    free endpoint closes on the nearest point of the network within `tolerance` — another
    endpoint (meeting or segment, each endpoint at most one gap, D112) or the point
@@ -344,8 +344,8 @@ consumer with `extra(cluster)`, which cannot replace a topo field.
 
 ### The tolerance
 
-`tolerance` (default 0.05, the goldens use 0.5) is the widest gap topo can
-close. It does **not** round nodes: an endpoint is its true point, no
+`tolerance` (default `topo.geometry.SAME_POINT` = 0.001, D268) is the distance under which two
+ends are one node; gaps are closed only by `max_gap` (D267). It does **not** round nodes: an endpoint is its true point, no
 grid (MAP.md D216); two ends become the same node by distance. It serves in two ways:
 
 1. **gap closing**: a free endpoint closes within `tolerance` on another

@@ -108,7 +108,7 @@ rules.append(topo.RoleRule("bending", dashed=True))   # after the names
 ### `load_segments`
 
 ```python
-topo.load_segments(segments, *, tolerance=0.05, role="unknown", source_path="") -> Document
+topo.load_segments(segments, *, tolerance=SAME_POINT, role="unknown", source_path="") -> Document
 ```
 
 A `Document` from topo segments (`LineSeg`, `ArcSeg`, `CircleSeg`, …) or
@@ -129,7 +129,7 @@ result = topo.heal(doc).faces()     # one part: outer 200×100, one inner 100×5
 ```python
 topo.load_geometry(
     entities,
-    *, tolerance=0.05,
+    *, tolerance=SAME_POINT,
     source_path="",
 ) -> Document
 ```
@@ -194,7 +194,7 @@ they do not import `topo.core`/`tools`/`io`/`rules` (D129). What it needs:
 | `topo.model.Edge.of(segment, role, *, style=None) -> Edge` | the `Edge` of a segment: endpoints on the segment's true points (no grid, D216); a closed circle, spline or ellipse has a single node |
 | `topo.model.EdgeStyle(*, linetype="", linetype_desc="", dash=None, color=None, filled=False)` | the effective look of the source entity, with no words of any format (D126): `dash` are signed marks (`> 0` dash, `0` dot, `< 0` gap; `()` continuous, `None` unknown — a dash-array `[3, 1]` is `(3, -1)`), `color` is `(r, g, b)`, `filled` the line is a side of a filled area (D255); `to_dxf` writes each ring of filled sides back as a solid fill. The adapter resolves inheritance (a "by layer" style) before handing it over |
 | `topo.model.RoleRule`, `topo.model.resolve_role(rules, name, style) -> str` | the role of an entity from the caller's rules: the first that matches, otherwise `unknown` |
-| `topo.model.Document`, `topo.model.DEFAULT_NODE_TOLERANCE` | the adapter's result and the default tolerance that `heal()` will close |
+| `topo.model.Document`, `topo.model.DEFAULT_NODE_TOLERANCE` | the adapter's result and the default node tolerance, `topo.geometry.SAME_POINT` (D268) |
 | `topo.model.Text`, `RenderedGeometry`, `RenderedText`, `MeasuredDistance`/`Radius`/`Diameter`/`Angle` (also `topo.*`) | the texts read from the source, each with its `role` (D127, D138; the source group does not stay in the model, D128) |
 
 To write out in a format: `topo.primitives.segment_endpoints(segment)` gives the
@@ -372,7 +372,7 @@ a recipe composed by a caller go through the same functions.
 | `normalize` | `list[Edge]`, `gap` → `Normalized` (`edges` and the counts of each step) | tessellations refitted, duplicates merged, degenerate strokes welded, near-full arcs closed, gaps closed: the same cleanups for everyone (D189). `gap` already with the margin (`reach(tolerance)`, D183). `keep_junctions`: two collinear pieces that touch only at a junction are not merged (D110). |
 | `merge_collinear_overlaps` | `list[Edge]` → `list[Edge]` | merges lines drawn as overlapping pieces, judging "same line" on the true segments (D50, D184). |
 | `merge_cocircular_overlaps` | `list[Edge]` → `list[Edge]` | the same on co-circular arcs (D52, D184). |
-| `weld_degenerate_linesegs` | `list[Edge]` → `list[Edge]` | welds `LineSeg`s under 0.05 mm into a single node; a wider group is a piecewise curve and stays (D56, D186). |
+| `weld_degenerate_linesegs` | `list[Edge]` → `list[Edge]` | welds `LineSeg`s under `SAME_POINT` into a single node; a wider group is a piecewise curve and stays (D56, D186). |
 | `split_labeled` | `list[Edge]` → `(kept, labelled)` | sets aside the edges with an already decided, non-structural role (D30). Without `is_structural`, only `outer`/`inner` are structural. |
 | `close_near_full_arcs` | `list[Edge]` → `(edges, n_closed)` | the `ArcSeg`s with free ends on the same circle are joined across every gap within `tolerance` **and** within `max_missing_angle` (`NEAR_FULL_ARC_MISSING` = 2°): all closed gives a `CircleSeg`, otherwise an `ArcSeg` open on the remaining gaps; `n` = edges rebuilt. `tolerance=math.inf` leaves only the angle (D112, D218). |
 | `close_free_gaps` | `list[Edge]` → `list[Edge]` | every free endpoint closes onto the nearest point of the network within `tolerance`: another free endpoint (meeting or segment, each endpoint at most one gap, D112) or the point where its curve, continued, meets another edge — never with a bridge across. An endpoint whose two nearest points tie does not choose (D185, D189). |
@@ -1146,7 +1146,7 @@ a chord that divides it) do not go through here: they are facts of the contour.
 ```python
 topo.experimental.to_view_model(
     result: Result,
-    tolerance=0.05,
+    tolerance=SAME_POINT,
     include_loose=True,
     include_texts=True,
     role_styles=None,
@@ -1179,7 +1179,7 @@ It does not mutate `result`, does not raise on an invalid `result` (the dict com
 ```python
 topo.experimental.to_svg(
     result: Result,
-    tolerance=0.05,
+    tolerance=SAME_POINT,
     include_loose=True,
     include_texts=True,
     padding=0.03,
@@ -1304,7 +1304,7 @@ core: after it, `ezdxf` is never touched again.
 
 `node_tolerance(override=None) -> float`: the distance below which two endpoints
 are the same node — `override` if given, otherwise `source_meta["tolerance"]`,
-otherwise `DEFAULT_NODE_TOLERANCE` (0.05, `model/document.py`). It is the reading
+otherwise `DEFAULT_NODE_TOLERANCE` (= `topo.geometry.SAME_POINT`, 0.001, D268). It is the reading
 that `heal` and `validate_document` use when `tolerance` is not passed (D86).
 
 ### `Text`
@@ -1576,7 +1576,7 @@ topo_dxf.load_dxf(
     explode_inserts=True,
     flatten_z=True,
     verbose=False,
-    tolerance=0.05,
+    tolerance=SAME_POINT,
     role_rules=(),
     skip_layers=(),                   # layer names, or a function name -> bool
 ) -> Document
@@ -1678,7 +1678,7 @@ this same guide in the message.
 ```python
 topo_dxf.document_from_msp(
     msp,
-    *, tolerance=0.05,
+    *, tolerance=SAME_POINT,
     role_rules=(),
     source_path="",
     skip_layers=(),
@@ -1775,7 +1775,7 @@ topo_dxf.inspect_dxf(path, *, entities=True, limit=40) -> None
 layer, detail of each entity. Does not touch `topo`.
 
 ```python
-topo_dxf.inspect_file(path, *, tolerance=0.05, role_rules=(),
+topo_dxf.inspect_file(path, *, tolerance=SAME_POINT, role_rules=(),
                    run_heal=True, entities=True, coords=False) -> None
 ```
 Orchestrator: opens the file and prints the three levels in a row. `run_heal=False` to

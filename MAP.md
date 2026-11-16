@@ -642,3 +642,7 @@ and touches no name, so it is 1.x. `hypothesis` as a test dependency is decided 
 `heal(doc)` reads the drawing as it is; `max_gap` alone bounds the gaps closed, also below `tolerance` (D246 already said 0 closes none;
 the code took `max(tolerance, max_gap)`). Each gap closed between free ends is in the note `ends-joined`: count, lengths, points.
 Measured on the 631 test drawings: with `max_gap` = tolerance the readings are unchanged; without it none turns invalid.
+### D268 — reopening D196: one threshold, `topo.geometry.SAME_POINT` = 0.001 mm (Federico, 16 November).
+Two points closer than it are one point: nodes, contacts, same line/circle, degenerate sides, contour jumps, spline cuts, the default
+node tolerance. Exceptions only as listed with their reason in `tests/package/test_one_threshold.py`. Nodes no longer merge in chains
+(diameter, as D186); the DXF dedup at 2 decimals + layer is gone. Below 0.001 spline contacts, found on their discretization, break contours.
