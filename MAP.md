@@ -615,3 +615,8 @@ The string as drawn is the raw fact, the same from every format; trimming it is 
 QCAD writes every dimension without its block (1019 in the tests, none elsewhere): only points and style, no lines, no number.
 Each CAD draws them its own way (two CADs differ); drawing them is a renderer's job, and topo is none. The three lines
 topo_dxf rebuilt go; `dxf-dimension-no-block` says what was not read. At most topo exposes the file's facts for a consumer.
+
+### D263 — a dimension's number is the one its block draws, never one ezdxf computes (Federico, 16 November).
+`<>` took ezdxf's value when no number stood alone in the block; in all 25 such cases (of 4732) the block writes it inside
+a string (`R5`, `10±0.2`, `n4.2`), and in one ezdxf gave 319 where the block draws 41°. Now the first number the override
+does not write itself; none → `<>` stays. Step 1 of making every dimension one road (`Text.measures`, next).

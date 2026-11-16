@@ -382,14 +382,15 @@ Aperte:
         contro 21,66 del CAD. Federico: per ora lasciamo stare.
      k. `Text.origin` ("provenienza nella sorgente") non lo riempie nessun
         adapter e non è documentato: da togliere o da dire cos'è.
-     l. quote senza blocco (D262; file passati da QCAD, report
-        `_debug/2026-11-15_topo_testi_ancora/quote_senza_blocco.txt`): nel file
-        solo punti e stile, nessun numero né rotazione. Quali fatti passare a
-        snapdraw perché le disegni lui (punti di definizione, `dimtxt`, `dimexo`,
-        …), riapre D259: passo a sé. Difetti già presenti: `height` 2,5 invece di
-        `dimtxt` (anch_08: 14); numero calcolato da ezdxf senza "R"/"Ø" e a volte
-        sbagliato (piega_cazzuta allineata: "0" invece di 1703,47; anch_08
-        angolare: 125,65 invece di 54,35).
+     l. una strada sola per ogni quota (Federico, 16 novembre; D263 è il passo 1).
+        Passo 2: `Text.measures` su ogni DIMENSION, con o senza blocco: cosa misura,
+        coi punti del file. `MeasuredDistance` (first, second, line_at, direction;
+        None = allineata), `MeasuredRadius` (center, on_circle), `MeasuredDiameter`
+        (on_circle, opposite), `MeasuredAngle` (first_leg, second_leg, arc_at); tutte
+        `text_height`, `decimals` dallo stile. `rendered` resta quello che la sorgente
+        disegna, mai costruito. Quota senza blocco: `text` col `<>` aperto, niente più
+        ezdxf. Riapre D259 (anche topo_pdf dovrà riempire `measures`). Altezza e
+        rotazione del testo: snapdraw. Report `_debug/2026-11-15_topo_testi_ancora/`.
      Consumer da adeguare dalle loro sessioni: snapdraw `features.py`,
      `model.py`, `tests/test_features.py`; pippo `plan.py`.
   2. **contratto scritto per adapter**: quali campi opzionali riempie

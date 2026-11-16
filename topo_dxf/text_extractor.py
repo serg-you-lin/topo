@@ -249,12 +249,11 @@ def _width_factor(entity) -> float:
 
 def _dimension_text_of(entity, pos, role: str) -> Optional[Text]:
     rendered = _render_block(entity)
-    measured = _measured_number(entity)
     override = _dimension_override(entity)
 
     if rendered.is_empty():
         return _bare_dimension(entity, pos, role,
-                               _shown_text(override, rendered, measured))
+                               _shown_text(override, rendered, _measured_number(entity)))
 
     if pos is None:
         pos = _bbox_center(
@@ -265,7 +264,7 @@ def _dimension_text_of(entity, pos, role: str) -> Optional[Text]:
 
     return Text(
         role=role,
-        text=_shown_text(override, rendered, measured),
+        text=_shown_text(override, rendered, None),
         rendered=rendered,
         **_on_string(rendered, pos),
     )
@@ -314,26 +313,35 @@ def _shown_text(override: Optional[str], rendered: RenderedGeometry,
     misura; senza override, i testi dell'immagine; senza immagine, la misura.
     """
     if override is not None:
-        return override.replace("<>", _shown_value(rendered, measured))
+        return override.replace("<>", _shown_value(rendered, measured, override))
     if rendered.texts:
         return "".join(t.content for t in rendered.texts)
     return _shown_value(rendered, measured)
 
 
-def _shown_value(rendered: RenderedGeometry, measured: Optional[float]) -> str:
-    """La misura come la mostra il disegno (precisione, virgola), o calcolata."""
+def _shown_value(rendered: RenderedGeometry, measured: Optional[float],
+                 override: str = "") -> str:
+    """La misura come la scrive il disegno (precisione, virgola): una stringa
+    che è solo un numero, se no il primo numero dei testi che l'override non
+    scrive già (``R5`` per ``R<>``, ``10`` di ``10±0.2`` per ``<>±0.2``).
+    Un blocco non la calcola mai (D263); `measured` serve solo alla quota
+    senza blocco. Nessun numero: ``<>`` resta."""
     for t in rendered.texts:
         if _NUMBER.fullmatch(t.content.strip()):
             return t.content.strip()
+    written = set(_NUMBER.findall(override.replace("<>", " ")))
+    for t in rendered.texts:
+        for n in _NUMBER.findall(t.content):
+            if n not in written:
+                return n
     if measured is not None:
         return f"{measured:.2f}".rstrip("0").rstrip(".")
-    return ""
+    return "<>"
 
 
 def _measured_number(entity) -> Optional[float]:
-    """Il valore che ezdxf calcola dai def-point: serve solo a scrivere la
-    stringa di una quota ``<>`` senza testo nel blocco, non entra nel
-    modello (D259)."""
+    """Il valore che ezdxf calcola dai def-point: oggi solo per la stringa di
+    una quota senza blocco, non entra nel modello (D259)."""
     try:
         m = entity.get_measurement()
     except Exception:
