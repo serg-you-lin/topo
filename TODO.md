@@ -372,7 +372,10 @@ Aperte:
         Non guardato.
      e. quota senza blocco: oggi topo_dxf ne calcola le linee dai punti di
         definizione (`_synthesize_dimension`); con D259 solo la stringa.
-        Prima contare quante sono sui 46 fogli.
+        Contate (report `_debug/2026-11-15_topo_testi_ancora/quote_senza_blocco.txt`):
+        nessuna nei drw_00xx, tutti i tratti sintetizzati inventati. Proposta in
+        attesa del sì di Federico: togliere la sintesi, `rendered` vuoto, testo al
+        `text_midpoint`; golden testi di anch_*/Multifeature da riprovare prima.
      i. frecce di quota: `rendered.fills` mette insieme le punte SOLID e le
         polilinee chiuse del blocco, e `_emit_rendered` le riscrive tutte come
         polilinee chiuse vuote (drw_0024: nell'originale sono piene). Da tenere
