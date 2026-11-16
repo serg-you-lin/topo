@@ -49,6 +49,23 @@ G17 (D250).
       alcuni nomi sembrano codici pezzo. Da guardare nell'audit anche i file di
       blocco AutoCAD (`.dwl*`) tracciati in `tests/data/mixed_pipeline/`: di
       solito portano nome utente e PC.
+- [ ] **Una soglia sola** (Federico, 16 novembre: "una soglia sola, anche se
+      domani entra il PDF"; riapre D196). Ogni decisione di lunghezza
+      ("stesso punto", "si tocca", "stessa curva") usa un numero solo, dato
+      dall'adapter; gli angoli si ricavano da lui; le guardie dell'aritmetica
+      (1e-12, 1e-14) non sono soglie. Oggi le lunghezze sono ~12 scale (0,15 …
+      1e-9): inventario con file e riga in
+      `_debug/2026-11-16_topo_soglie/SOGLIE.md`. Fatti misurati:
+      - `topo_dxf/sanitize.py` `_key_for` cancella i doppi arrotondando a 2
+        decimali, con il layer nella chiave: sui 631 DXF di `tests/` 77
+        cancellati non identici (fino a 0,0075 mm), 284 doppi esatti tenuti
+        perché su layer diversi. "Doppio" si decide in tre posti (0,01 lì,
+        1e-6 in `topo_dxf/adapter.py` `_segment_key`, 1e-3 `_SAME_OFFSET`);
+      - senza `max_gap` (D267) un buco sotto 0,01 mm si chiude ancora: due
+        capi entro `GRAPH_EPSILON` sono un nodo solo (D180), `faces()` dice
+        `gap-closed` (rettangolo con spigoli aperti da 0,009 a 1e-5: valido).
+      Metodo: prototipo su branch, misurato sui 631 DXF prima e dopo, una
+      proposta sola; mai cambiare a caso.
 - [ ] **Tempo della suite** (D160, D212): ~3:22 seriale, sopra il tetto di
       2,5–3 min. Pesano `test_fidelity` sulle spline e le letture di
       `outlines()` (`TestScrambled` in `test_outlines_invariants`,
@@ -149,9 +166,6 @@ repo, mai rigenerando alla cieca.
   soglia sua. Le letture non fondono mai due curve diverse del file. Oggi
   `outlines()` le fonde (`_contour`, `merge_runs` a 1e-3): da togliere quando
   c'è la funzione.
-- **Precisioni**: in `core/` + `sanitize` ~40 soglie di coincidenza su 9 valori
-  (1e-2 … 1e-12). Federico ha chiesto di uniformarle; D196 le tenne separate.
-  Da decidere con una misura completa, non a tentativi.
 - **`topo_dxf` e i `HATCH`**: D205 esplode già i tratteggi a pattern in `LINE`;
   restano da decidere gli altri tipi (riempimenti pieni, gradienti).
 - **Ordine dei rami a un nodo in `_leaving_angle`** (D199, D201): la direzione
@@ -462,11 +476,6 @@ Aperte:
   2.07 mm. Nessuna nota, solo `dxf-flattened`. Corretti (scarto ≤ 0.002):
   LINE, LWPOLYLINE/POLYLINE con quota, POLYLINE 3D, SPLINE, cerchi/archi a Z≠0
   o con estrusione (0,0,-1).
-- Senza `max_gap` (D267) un buco sotto 0,01 mm si chiude ancora: due capi
-  entro `GRAPH_EPSILON` sono un nodo solo (D180), e `faces()` dice
-  `gap-closed`. Misurato su un rettangolo con gli spigoli aperti da 0,009 a
-  1e-5 mm: valido. Fa parte della soglia unica (inventario in
-  `_debug/2026-11-16_topo_soglie/SOGLIE.md`).
 - `topo/core/readings/outer_scan.py` lo usava solo `scripts/18_outer_scan.py`,
   tolto con D247: ora lo chiama solo il suo test (`test_outer_scan.py`).
 - `docs/LLM.md`: `geometry.circle(radius, center)` scritto posizionale, ma
