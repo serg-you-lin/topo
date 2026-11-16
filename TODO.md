@@ -382,15 +382,9 @@ Aperte:
         contro 21,66 del CAD. Federico: per ora lasciamo stare.
      k. `Text.origin` ("provenienza nella sorgente") non lo riempie nessun
         adapter e non è documentato: da togliere o da dire cos'è.
-     l. una strada sola per ogni quota (Federico, 16 novembre; D263 è il passo 1).
-        Passo 2: `Text.measures` su ogni DIMENSION, con o senza blocco: cosa misura,
-        coi punti del file. `MeasuredDistance` (first, second, line_at, direction;
-        None = allineata), `MeasuredRadius` (center, on_circle), `MeasuredDiameter`
-        (on_circle, opposite), `MeasuredAngle` (first_leg, second_leg, arc_at); tutte
-        `text_height`, `decimals` dallo stile. `rendered` resta quello che la sorgente
-        disegna, mai costruito. Quota senza blocco: `text` col `<>` aperto, niente più
-        ezdxf. Riapre D259 (anche topo_pdf dovrà riempire `measures`). Altezza e
-        rotazione del testo: snapdraw. Report `_debug/2026-11-15_topo_testi_ancora/`.
+     l. `Text.measures` (D264): snapdraw lo usa al posto di ricostruire dai tratti;
+        le quote QCAD hanno `<>` nella stringa, il numero lo scrive lui
+        (punti × `length_factor`, `decimals`), con altezza e rotazione del testo.
      Consumer da adeguare dalle loro sessioni: snapdraw `features.py`,
      `model.py`, `tests/test_features.py`; pippo `plan.py`.
   2. **contratto scritto per adapter**: quali campi opzionali riempie

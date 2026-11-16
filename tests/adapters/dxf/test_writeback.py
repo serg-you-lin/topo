@@ -15,6 +15,7 @@ Poi lancia:
     python -m pytest tests/adapters/dxf/test_writeback.py -v
 """
 
+import math
 import unittest
 from collections import Counter
 import ezdxf
@@ -342,6 +343,12 @@ class TestWritebackTexts(unittest.TestCase):
         self.assertEqual([str(w).split(":")[1].split()[0] for w in doc.warnings
                           if w.code == "dxf-dimension-no-block"], ["16"])
         self.assertEqual([a for a in doc.texts if not a.text], [])
+        # cosa misurano, coi punti del file, il numero no: `<>` aperto (D264)
+        self.assertTrue(all(a.measures is not None for a in dims))
+        radius = [a for a in dims if isinstance(a.measures, topo.MeasuredRadius)]
+        self.assertEqual([a.text for a in radius], ["R<>"])
+        m = radius[0].measures
+        self.assertAlmostEqual(math.dist(m.center, m.on_circle), 6.0, places=6)
         self.assertEqual(sum(1 for e in doc.edges if e.style.filled), 12)
         result = topo.heal(doc).faces()
         msp = topo_dxf.to_dxf(result, doc).modelspace()

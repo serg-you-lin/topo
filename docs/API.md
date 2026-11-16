@@ -195,7 +195,7 @@ they do not import `topo.core`/`tools`/`io`/`rules` (D129). What it needs:
 | `topo.model.EdgeStyle(*, linetype="", linetype_desc="", dash=None, color=None, filled=False)` | the effective look of the source entity, with no words of any format (D126): `dash` are signed marks (`> 0` dash, `0` dot, `< 0` gap; `()` continuous, `None` unknown — a dash-array `[3, 1]` is `(3, -1)`), `color` is `(r, g, b)`, `filled` the line is a side of a filled area (D255); `to_dxf` writes each ring of filled sides back as a solid fill. The adapter resolves inheritance (a "by layer" style) before handing it over |
 | `topo.model.RoleRule`, `topo.model.resolve_role(rules, name, style) -> str` | the role of an entity from the caller's rules: the first that matches, otherwise `unknown` |
 | `topo.model.Document`, `topo.model.DEFAULT_NODE_TOLERANCE` | the adapter's result and the default tolerance that `heal()` will close |
-| `topo.model.Text`, `RenderedGeometry`, `RenderedText` | the texts read from the source, each with its `role` (D127, D138; the source group does not stay in the model, D128) |
+| `topo.model.Text`, `RenderedGeometry`, `RenderedText`, `MeasuredDistance`/`Radius`/`Diameter`/`Angle` (also `topo.*`) | the texts read from the source, each with its `role` (D127, D138; the source group does not stay in the model, D128) |
 
 To write out in a format: `topo.primitives.segment_endpoints(segment)` gives the
 two endpoints of a segment, `topo.model.feature_role(contour, item_role)` the
@@ -1316,12 +1316,13 @@ already says so: the source's entity type is not in the model (D256).
 | field | content |
 |---|---|
 | `position` | `(x, y)` — the anchor point; for a text with its source drawing (`rendered`), that of its first string, with its `halign`/`valign`, `height`, `rotation` (D260) |
-| `text` | the string as it reads on the drawing (a DXF dimension with `<>` is already resolved: `"12 H7"`) |
+| `text` | the string as it reads on the drawing (a DXF dimension's `<>` replaced by the number its block draws: `"12 H7"`; a `<>` left is where the measure goes when the source writes no number, D264) |
 | `height`, `rotation`, `width_factor` | how the string is written |
 | `role` | what it is for whoever uses it (see below) |
 | `cluster_ref` | index of the cluster that contains it (from `anchor_texts`) |
 | `halign`, `valign` | where `position` lies on the string: `left`/`center`/`right` and `baseline`/`bottom`/`center`/`top`, one meaning for every format; `left`/`baseline` when the source does not say; anything else → `ValueError` (D256) |
-| `rendered` | the strokes, fills and strings the source draws with the string (a DXF dimension's or leader's own block): `to_dxf` rewrites that instead of the string alone; empty when the source does not group them. What they mean — measured points, the measure, where a pointer lands — is not in the model (D259) |
+| `rendered` | the strokes, fills and strings the source draws with the string (a DXF dimension's or leader's own block): `to_dxf` rewrites that instead of the string alone; empty when the source does not group them, never built by topo (D262) |
+| `measures` | what the text measures, with the points its source writes: `MeasuredDistance`, `MeasuredRadius`, `MeasuredDiameter`, `MeasuredAngle` (below); `None` for any other text or when the source does not say (D264). Where a pointer lands stays a reading (D259) |
 
 `role` says what the text is for whoever uses it (`"title_block"`, `"part_code"`,
 ...), like the role of an edge (MAP.md D127). topo does not read it and does not
@@ -1333,6 +1334,25 @@ group (the layer of a DXF). On a text only the rules on the name count
 stay in the model (D128): whoever wants a distinct text in the output gives it a
 role. `topo_dxf.to_dxf` writes a text that has a role on the layer of its
 role, like an edge; without a role, on `text_layer`.
+
+### `MeasuredDistance`, `MeasuredRadius`, `MeasuredDiameter`, `MeasuredAngle`
+
+What a text measures, with the points its source writes (`Text.measures`,
+D264): the same fields from every adapter that knows them, so a consumer reads
+what a dimension measures without rebuilding it from the strokes. Frozen.
+
+| class | fields |
+|---|---|
+| `MeasuredDistance` | `first`, `second` (the measured points), `line_at` (a point of the measure line), `direction` (degrees; `None` = along `first` → `second`) |
+| `MeasuredRadius` | `center`, `on_circle` |
+| `MeasuredDiameter` | `on_circle`, `opposite` |
+| `MeasuredAngle` | `first_leg`, `second_leg` (two points each), `arc_at` (a point of the measure arc: it picks which of the four angles) |
+
+All four carry `text_height` and `decimals` from the source's style; the three
+lengths also `length_factor`, what the source multiplies the length by before
+writing its number (a view drawn 2:1 writes half). `None` when absent. topo
+computes no measure from them: the number, if the source writes none, is the
+consumer's (`<>` in `Text.text`).
 
 ### `Result`
 

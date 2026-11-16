@@ -10,7 +10,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "80",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -18,6 +18,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          230.727,
+          215.305
+        ],
+        "second": [
+          230.727,
+          135.305
+        ],
+        "line_at": [
+          194.727,
+          135.305
+        ],
+        "direction": 270.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -27,7 +46,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "25",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -35,6 +54,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          226.238,
+          200.305
+        ],
+        "second": [
+          226.438,
+          175.305
+        ],
+        "line_at": [
+          204.727,
+          175.305
+        ],
+        "direction": 270.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -44,7 +82,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "25",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -52,6 +90,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          226.438,
+          175.305
+        ],
+        "second": [
+          226.576,
+          150.305
+        ],
+        "line_at": [
+          204.736,
+          150.305
+        ],
+        "direction": 270.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -61,7 +118,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "R6",
+      "text": "R<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -69,6 +126,20 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "center": [
+          230.727,
+          209.305
+        ],
+        "on_circle": [
+          226.24,
+          213.288
+        ],
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredRadius"
       }
     },
     {
@@ -78,7 +149,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "15",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -86,6 +157,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          235.977,
+          207.805
+        ],
+        "second": [
+          235.977,
+          192.805
+        ],
+        "line_at": [
+          214.727,
+          192.805
+        ],
+        "direction": 270.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -95,7 +185,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "11.25",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -103,6 +193,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          224.727,
+          209.305
+        ],
+        "second": [
+          235.977,
+          210.043
+        ],
+        "line_at": [
+          235.977,
+          245.305
+        ],
+        "direction": 0.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -112,7 +221,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "42",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -120,6 +229,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          224.727,
+          141.305
+        ],
+        "second": [
+          266.727,
+          154.055
+        ],
+        "line_at": [
+          266.727,
+          115.305
+        ],
+        "direction": 0.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -129,7 +257,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "8.5",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -137,6 +265,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          240.227,
+          203.555
+        ],
+        "second": [
+          231.727,
+          203.555
+        ],
+        "line_at": [
+          231.727,
+          225.305
+        ],
+        "direction": 180.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -146,7 +293,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "50",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -154,6 +301,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          224.727,
+          141.305
+        ],
+        "second": [
+          274.727,
+          171.405
+        ],
+        "line_at": [
+          274.727,
+          125.305
+        ],
+        "direction": 0.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -163,7 +329,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "M8",
+      "text": "M<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -171,6 +337,20 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "on_circle": [
+          296.112,
+          171.552
+        ],
+        "opposite": [
+          293.342,
+          179.057
+        ],
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDiameter"
       }
     },
     {
@@ -214,7 +394,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "109.5",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -222,6 +402,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          224.727,
+          209.305
+        ],
+        "second": [
+          334.227,
+          205.055
+        ],
+        "line_at": [
+          334.227,
+          235.305
+        ],
+        "direction": 0.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -231,7 +430,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "32",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -239,6 +438,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          298.727,
+          154.055
+        ],
+        "second": [
+          266.727,
+          154.055
+        ],
+        "line_at": [
+          266.727,
+          115.305
+        ],
+        "direction": 180.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -248,7 +466,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "20",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -256,6 +474,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          274.727,
+          171.405
+        ],
+        "second": [
+          294.727,
+          171.405
+        ],
+        "line_at": [
+          294.727,
+          125.305
+        ],
+        "direction": 0.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -265,7 +502,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "127.5",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -273,6 +510,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          235.977,
+          210.043
+        ],
+        "second": [
+          363.477,
+          210.091
+        ],
+        "line_at": [
+          363.477,
+          245.305
+        ],
+        "direction": 0.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -282,7 +538,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "20",
+      "text": "<>",
       "cluster_ref": null,
       "height": 2.5,
       "rotation": 0.0,
@@ -290,6 +546,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          294.727,
+          171.405
+        ],
+        "second": [
+          314.727,
+          171.405
+        ],
+        "line_at": [
+          314.727,
+          125.305
+        ],
+        "direction": 0.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     },
     {
@@ -333,7 +608,7 @@
       ],
       "halign": "center",
       "valign": "center",
-      "text": "36",
+      "text": "<>",
       "cluster_ref": 0,
       "height": 2.5,
       "rotation": 0.0,
@@ -341,6 +616,25 @@
         "strokes": 0,
         "fills": 0,
         "texts": 0
+      },
+      "measures": {
+        "first": [
+          301.977,
+          157.305
+        ],
+        "second": [
+          301.977,
+          193.305
+        ],
+        "line_at": [
+          390.922,
+          193.305
+        ],
+        "direction": 90.0,
+        "text_height": 3.5,
+        "decimals": 2,
+        "length_factor": 1.0,
+        "kind": "MeasuredDistance"
       }
     }
   ]

@@ -29,6 +29,7 @@ from typing import List, Optional, Sequence, Tuple
 
 from topo.model import (
     Text, RenderedGeometry, RenderedText, RoleRule, resolve_role,
+    MeasuredDistance, MeasuredRadius, MeasuredDiameter, MeasuredAngle,
 )
 from ezdxf.tools.text import plain_mtext
 
@@ -250,10 +251,10 @@ def _width_factor(entity) -> float:
 def _dimension_text_of(entity, pos, role: str) -> Optional[Text]:
     rendered = _render_block(entity)
     override = _dimension_override(entity)
+    measures = dimension_measures(entity)
 
     if rendered.is_empty():
-        return _bare_dimension(entity, pos, role,
-                               _shown_text(override, rendered, _measured_number(entity)))
+        return _bare_dimension(entity, pos, role, _shown_text(override, rendered), measures)
 
     if pos is None:
         pos = _bbox_center(
@@ -264,25 +265,84 @@ def _dimension_text_of(entity, pos, role: str) -> Optional[Text]:
 
     return Text(
         role=role,
-        text=_shown_text(override, rendered, None),
+        text=_shown_text(override, rendered),
         rendered=rendered,
+        measures=measures,
         **_on_string(rendered, pos),
     )
 
 
-def _bare_dimension(entity, pos, role: str, text: str) -> Optional[Text]:
+def _bare_dimension(entity, pos, role: str, text: str, measures) -> Optional[Text]:
     """Quota senza blocco (così le scrive QCAD): il file non ne disegna niente,
-    ne resta la stringa centrata sul punto medio del testo (codice 11);
-    `rendered` vuoto, topo_dxf non disegna quote (D262). Senza quel punto resta `pos`."""
+    né il numero. Resta la stringa del file col ``<>`` aperto, centrata sul
+    punto medio del testo (codice 11), e cosa misura (D262, D264). Senza quel
+    punto resta `pos`."""
     if not text.strip():
         return None
     tm = entity.dxf.get("text_midpoint")
     if tm is not None:
         return Text(position=(float(tm[0]), float(tm[1])), text=text, role=role,
-                    halign="center", valign="center")
+                    halign="center", valign="center", measures=measures)
     if pos is None:
         return None
-    return Text(position=pos, text=text, role=role)
+    return Text(position=pos, text=text, role=role, measures=measures)
+
+
+def dimension_measures(entity):
+    """
+    Cosa misura una DIMENSION, coi punti di definizione del file (D264):
+    lineare/allineata → `MeasuredDistance`, raggio → `MeasuredRadius`,
+    diametro → `MeasuredDiameter`, angolare fra due linee → `MeasuredAngle`.
+    None per gli altri tipi (angolare a 3 punti, coordinata) o se manca un punto.
+    """
+    dxf = entity.dxf
+
+    def pt(name):
+        v = dxf.get(name)
+        return None if v is None else (float(v[0]), float(v[1]))
+
+    try:
+        kind = int(dxf.get("dimtype", 0)) & 7
+    except (TypeError, ValueError):
+        return None
+    height, decimals, factor = _dimension_style(entity, angular=kind == 2)
+    style = {"text_height": height, "decimals": decimals}
+    if kind != 2:
+        style["length_factor"] = factor
+    if kind in (0, 1):
+        pts = pt("defpoint2"), pt("defpoint3"), pt("defpoint")
+        if None in pts:
+            return None
+        direction = _f(dxf.get("angle", 0.0)) if kind == 0 else None
+        return MeasuredDistance(*pts, direction, **style)
+    if kind == 4:
+        pts = pt("defpoint"), pt("defpoint4")
+        return None if None in pts else MeasuredRadius(*pts, **style)
+    if kind == 3:
+        pts = pt("defpoint4"), pt("defpoint")
+        return None if None in pts else MeasuredDiameter(*pts, **style)
+    if kind == 2:
+        pts = pt("defpoint"), pt("defpoint4"), pt("defpoint3"), pt("defpoint2"), pt("defpoint5")
+        if None in pts:
+            return None
+        return MeasuredAngle((pts[0], pts[1]), (pts[2], pts[3]), pts[4], **style)
+    return None
+
+
+def _dimension_style(entity, angular: bool):
+    """Altezza del testo (`dimtxt` per `dimscale`; `dimscale` assente o 0 conta 1),
+    decimali (`dimdec`, `dimadec` per un angolo) e fattore delle lunghezze
+    (`dimlfac`) dallo stile della quota."""
+    try:
+        o = entity.override()
+        txt, scale = o.get("dimtxt"), o.get("dimscale")
+        dec = o.get("dimadec" if angular else "dimdec")
+        lfac = o.get("dimlfac")
+    except Exception:
+        return None, None, None
+    height = None if txt is None else float(txt) * (float(scale) if scale else 1.0)
+    return (height, None if dec is None else int(dec),
+            None if lfac is None else float(lfac))
 
 
 def bare_dimensions(msp) -> int:
@@ -306,26 +366,23 @@ def _on_string(rendered: RenderedGeometry, pos) -> dict:
 _NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
 
 
-def _shown_text(override: Optional[str], rendered: RenderedGeometry,
-                measured: Optional[float]) -> str:
+def _shown_text(override: Optional[str], rendered: RenderedGeometry) -> str:
     """
     La stringa che la quota mostra: l'override con ``<>`` sostituito dalla
     misura; senza override, i testi dell'immagine; senza immagine, la misura.
     """
     if override is not None:
-        return override.replace("<>", _shown_value(rendered, measured, override))
+        return override.replace("<>", _shown_value(rendered, override))
     if rendered.texts:
         return "".join(t.content for t in rendered.texts)
-    return _shown_value(rendered, measured)
+    return _shown_value(rendered)
 
 
-def _shown_value(rendered: RenderedGeometry, measured: Optional[float],
-                 override: str = "") -> str:
+def _shown_value(rendered: RenderedGeometry, override: str = "") -> str:
     """La misura come la scrive il disegno (precisione, virgola): una stringa
     che è solo un numero, se no il primo numero dei testi che l'override non
     scrive già (``R5`` per ``R<>``, ``10`` di ``10±0.2`` per ``<>±0.2``).
-    Un blocco non la calcola mai (D263); `measured` serve solo alla quota
-    senza blocco. Nessun numero: ``<>`` resta."""
+    topo non la calcola mai (D263, D264): nessun numero, ``<>`` resta."""
     for t in rendered.texts:
         if _NUMBER.fullmatch(t.content.strip()):
             return t.content.strip()
@@ -334,19 +391,7 @@ def _shown_value(rendered: RenderedGeometry, measured: Optional[float],
         for n in _NUMBER.findall(t.content):
             if n not in written:
                 return n
-    if measured is not None:
-        return f"{measured:.2f}".rstrip("0").rstrip(".")
     return "<>"
-
-
-def _measured_number(entity) -> Optional[float]:
-    """Il valore che ezdxf calcola dai def-point: oggi solo per la stringa di
-    una quota senza blocco, non entra nel modello (D259)."""
-    try:
-        m = entity.get_measurement()
-    except Exception:
-        return None
-    return float(m) if isinstance(m, (int, float)) else None
 
 
 def _dimension_override(entity) -> Optional[str]:

@@ -620,3 +620,8 @@ topo_dxf rebuilt go; `dxf-dimension-no-block` says what was not read. At most to
 `<>` took ezdxf's value when no number stood alone in the block; in all 25 such cases (of 4732) the block writes it inside
 a string (`R5`, `10±0.2`, `n4.2`), and in one ezdxf gave 319 where the block draws 41°. Now the first number the override
 does not write itself; none → `<>` stays. Step 1 of making every dimension one road (`Text.measures`, next).
+
+### D264 — reopening D259: `Text.measures` says what a text measures, with the points its source writes (Federico, 16 November).
+`MeasuredDistance`/`Radius`/`Diameter`/`Angle`, on every DXF DIMENSION with or without a block: one road for the consumer,
+which no longer rebuilds them from strokes nor reads a format. Facts of the file, not a reading; topo computes no number
+(a QCAD dimension keeps `<>`). An adapter that does not know them leaves `None`; topo_pdf will have to fill them (D254).
