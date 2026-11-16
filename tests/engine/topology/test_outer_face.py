@@ -264,7 +264,7 @@ class TestChordContactUnderMotion(unittest.TestCase):
         readings = []
         for motion in self.MOTIONS:
             segment, _ = rigid(*motion)
-            result = topo.heal(topo.load_segments([segment(s) for s in self._segments()]), max_gap=0.0).outlines()
+            result = topo.heal(topo.load_segments([segment(s) for s in self._segments()]), max_gap=0.05).outlines()   # la soglia di prima di D267
             readings.append((len(result.clusters), len(result.loose),
                              round(to_shapely(result.clusters[0].outer).area, 1)))
         self.assertEqual(set(readings), {(1, 1, 44.2)}, readings)

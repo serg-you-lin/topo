@@ -119,6 +119,7 @@ def _make_test(path):
                 role_rules=topo.name_rules(name_roles),
             ),
             tolerance=config.get("tolerance", DEFAULT_TOLERANCE),
+            max_gap=config.get("tolerance", DEFAULT_TOLERANCE),
         ).faces()
 
         # --- cluster count ---
@@ -272,7 +273,7 @@ def _make_roundtrip_test(path):
         name_roles = {**GLOBAL_NAME_ROLES, **config.get("name_roles", {})}
 
         def _pipeline(doc):
-            return topo.heal(doc, tolerance=tol).faces()
+            return topo.heal(doc, tolerance=tol, max_gap=tol).faces()
 
         result = _pipeline(
             topo_dxf.load_dxf(

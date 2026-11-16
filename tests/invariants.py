@@ -285,7 +285,7 @@ DIAGNOSTIC_CODES = {
                 "zero-length", "self-intersecting", "inner-outside", "not-rotated", "dropped-part",
                 "rim-cut", "face-colour"},
     "note": {"merged-lines", "merged-arcs", "welded", "arc-joined", "open-spline", "non-contour",
-             "no-loop", "free-end", "joining-edge", "gap-closed"},
+             "no-loop", "free-end", "joining-edge", "gap-closed", "ends-joined"},
     "error": {"empty", "no-closed-outer", "open-contour", "no-area"},
 }
 

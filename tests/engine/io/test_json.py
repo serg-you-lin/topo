@@ -26,7 +26,7 @@ def test_dice_da_dove_arriva_e_come_e_letto():
     data = json.loads(topo.to_json(_result()))
     assert data["source_format"] == "geometry"
     assert data["reading"] == "faces"
-    assert data["tolerance"] == data["max_gap"] == 0.05
+    assert (data["tolerance"], data["max_gap"]) == (0.05, 0.0)   # senza max_gap nessun gap si chiude (D267)
     assert json.loads(topo.to_json(_result("outlines")))["reading"] == "outlines"
 
 

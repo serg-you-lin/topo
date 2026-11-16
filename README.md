@@ -116,7 +116,7 @@ for cluster in result.clusters:              # one view (or part) per outline
     print(cluster.outer.area)
 ```
 
-`max_gap` (default `tolerance`) is the widest gap closed. The readings are
+`max_gap` is the widest gap closed; without it no gap is closed, and every gap closed is listed in `notes`. The readings are
 recipes over public steps: `heal()`'s steps are exported one by one in
 `topo.experimental` (`topo.experimental.split_labeled`,
 `topo.experimental.close_free_gaps`, `topo.experimental.face_loops`,

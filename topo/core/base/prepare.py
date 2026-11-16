@@ -55,6 +55,7 @@ class Normalized:
     welded:         int = 0
     full_arcs:      int = 0
     ambiguous:      list = field(default_factory=list)   # estremi senza compagno scelto (D185)
+    gaps:           list = field(default_factory=list)   # (estremo, distanza) dei gap chiusi
 
 
 def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normalized:
@@ -80,7 +81,7 @@ def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normali
     out.merged_arcs, edges = len(edges) - len(merged), merged
     edges, out.full_arcs = close_near_full_arcs(edges, gap)
     out.ambiguous = ambiguous_free_ends(edges, gap)
-    closed = close_free_gaps(edges, gap)
+    closed = close_free_gaps(edges, gap, out.gaps)
     # chiudere un gap allunga le due metà una verso l'altra: si sovrappongono
     # sul tratto del gap, e quel tratto resta doppio nella rete (G15)
     merged = merge_collinear_overlaps(closed, keep_junctions=keep_junctions)

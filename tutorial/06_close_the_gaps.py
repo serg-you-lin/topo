@@ -3,7 +3,7 @@
 =========================================================
 
 What you learn
-    heal(doc)                  closes nothing wider than the tolerance (0.05 mm by default)
+    heal(doc)                  closes no gap: without max_gap the drawing is read as it is (D267)
     heal(doc, max_gap=0.5)     ends closer than 0.5 mm are joined, the gaps between them closed
     network.free_ends          the ends that found no partner
     result.loose               every curve that is no part's contour: nothing is dropped silently
@@ -33,7 +33,7 @@ import topo_dxf
 
 # --- CONFIG ------------------------------------------------------------------
 INPUT = r"tutorial/files/gaps.dxf"
-MAX_GAPS = [None, 0.5]          # None = the default (the tolerance)
+MAX_GAPS = [None, 0.5]          # None = the default: no gap closed
 # -----------------------------------------------------------------------------
 
 doc = topo_dxf.load_dxf(INPUT)

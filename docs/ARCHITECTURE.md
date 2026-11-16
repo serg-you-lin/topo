@@ -202,7 +202,7 @@ warnings live on the network. A consumer (snapdraw) composes the
 same steps as it needs.
 
 The repair is **one for every reading** (`readings/network.py`, D202):
-two numbers, `tolerance` for nodes and `max_gap` for gaps (default `tolerance`),
+two numbers, `tolerance` for nodes and `max_gap` for gaps (default none closed, D267),
 and `Network` carries them together with `source_file` and `label` (D204). The foundations are
 **the same for every reading** (`core/base/`, D187, D189): `faces()`,
 `outlines()` and any recipe go through the same functions, with the same

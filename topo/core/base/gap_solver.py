@@ -190,7 +190,7 @@ def _get_solver(kind_a: str, kind_b: str):
 # ---------------------------------------------------------------------------
 
 def compute_gap_fixes(endpoints: List[GapEndpoint], tolerance: float,
-                      edges: Sequence[Edge] = ()) -> List[GapFix]:
+                      edges: Sequence[Edge] = (), closed: Optional[list] = None) -> List[GapFix]:
     """
     Calcola i GapFix degli estremi liberi entro `tolerance`, una regola sola
     per ogni lettura (D112, D189). Ogni estremo si chiude sul punto più vicino
@@ -201,6 +201,7 @@ def compute_gap_fixes(endpoints: List[GapEndpoint], tolerance: float,
     edge non sono mai un gap (`close_near_full_arcs`). Un estremo coi due
     punti più vicini a pari merito non sceglie: in una figura simmetrica
     nessuna regola dà lo stesso compagno in ogni riferimento (D185).
+    `closed`, se dato, riceve (estremo, distanza) di ogni gap chiuso.
     """
     candidates = _candidates(endpoints, tolerance, edges)
     ambiguous = _ambiguous_from(candidates, endpoints)
@@ -215,10 +216,14 @@ def compute_gap_fixes(endpoints: List[GapEndpoint], tolerance: float,
             if j in ambiguous or j in taken:
                 continue
             taken.update((i, j))
+            if closed is not None:
+                closed.append((ep.pt, d))
             other = endpoints[j]
             fixes.extend(_within_reach(_get_solver(ep.kind, other.kind)(ep, other), ep, other, tolerance))
         else:
             taken.add(i)
+            if closed is not None:
+                closed.append((ep.pt, d))
             fixes.extend(_onto_curve(ep, target[1], target[2], target[3], tolerance))
     return fixes
 

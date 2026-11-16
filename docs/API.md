@@ -281,7 +281,7 @@ contours are found by `faces()` and `outlines()`.
 | parameter | meaning |
 |---|---|
 | `tolerance` | two points closer than this are one node. If `None`, taken from `doc.source_meta["tolerance"]` (the one passed to `topo_dxf.load_dxf`). |
-| `max_gap` | the widest gap that is closed between free endpoints, and the distance at which `outlines()` puts two edges in the same group. If `None`, `tolerance`; never less than `tolerance`. |
+| `max_gap` | the widest gap that is closed between free endpoints, and the distance at which `outlines()` puts two edges in the same group. If `None`, no gap is closed (D267); each gap closed is listed in the note `ends-joined`. |
 | `is_structural` | `Callable[[str], bool] \| None` — "is this role part-contour topology?", used to decide which already-labelled `Edge`s (by `role_rules`) stay in the network. By itself it knows only `outer`/`inner`/`unknown`; without this parameter a consumer role (`"hole"`, ...) is treated as non-structural and **leaves** the network (heal reports it with a warning). The consumer passes its own (snapbend: `snapbend.flat.is_structural`). |
 | `source_file` | source file name, ends up in every `Result`. Empty: `doc.source_path` (D204). |
 | `label` | label, ends up in `cluster.label` of both readings (D204). |
@@ -313,7 +313,7 @@ The readings do not modify it.
 | `crossings` | `list` | the points where two edges cross without a node (D132) |
 | `free_ends` | `list[(point, mm)]` | the endpoints that no other edge touches, with the distance from the nearest node |
 | `tolerance` | `float` | the node tolerance used |
-| `max_gap` | `float` | the widest gap closed (at least `tolerance`) |
+| `max_gap` | `float` | the widest gap closed; 0 when `heal()` had none (D267) |
 | `source_file`, `label` | `str` | copied onto every `Result` and `Cluster` read from here |
 | `warnings`, `errors` | `list[str]` | what the repair did; with `errors` no reading finds anything |
 | `is_valid` | `bool` | `True` if the repair gave no errors |
