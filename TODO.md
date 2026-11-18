@@ -53,8 +53,20 @@ G17 (D250).
       = 0,001, guardia in `tests/package/test_one_threshold.py`).
       - La nota `welded` dice "shorter than 0.05", ma salda sotto
         `SAME_POINT` (`decide_nodes`): testo fisso in `network.py:157`.
-      - Da capire: famiglia `drw_0033` (`faces()`, −16,9% d'area) con
-        `max_gap=0.05` rispetto a prima di lunedì.
+      - Capi a pochi millesimi *di fianco* a una curva (non liberi, o non
+        raggiunti dal prolungamento, D189): con `tolerance` 0,05 erano
+        contatti, a `SAME_POINT` no. un foglio di `islands/`, `faces()`
+        1 pezzo → 4 (raccordi dei ponticelli spostati di (0,0037; 0,0004),
+        a 2–10° dal lato, non tangenti); ~5 disegni distinti su 631 con
+        `max_gap=0.05`. Provati: ponte di fianco fino a min(max_gap, 0,05)
+        (rompe un altro foglio, `faces()` 4→8 pezzi); spostamento rigido della
+        curva coi due capi su due curve diverse (rimette i due fogli
+        come prima di lunedì, ma con `max_gap=0.5` chiude i
+        filetti di `drw_0017`: righe che attraversano il cerchio a ≥30°).
+        Nessuna regola misurata li separa. L'imprecisione è di `max_gap`
+        (D269), che oggi non copre: due capi vicini già attaccati ad altro
+        (`drw_0031`, lato della vista a 0,0052: non liberi, D267) e un capo
+        di fianco a una curva fuori dal suo prolungamento (D189).
       - Prima della 1.0, solo le soglie di `topo.precision` che entrano nelle
         letture (Federico 18 novembre: non tutto, se no non si esce):
         `RING_TO_CIRCLE`, `MIN_CONTOUR_AREA`, `DIRECTION_SAMPLE`, `SAGITTA`
