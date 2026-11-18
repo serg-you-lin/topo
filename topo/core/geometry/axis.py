@@ -13,6 +13,7 @@ chi chiama passa solo tratti dritti.
 
 from __future__ import annotations
 
+from ...precision import AXIS_DEVIATION, SAME_COORDINATE, SIDE_COVERAGE
 import math
 from dataclasses import dataclass
 from typing import Iterable, List, Optional, Sequence, Tuple
@@ -22,9 +23,9 @@ from ..primitives.segments import LineSeg
 Interval = Tuple[float, float]
 Bounds = Tuple[float, float, float, float]
 
-AXIS_EPS = 0.5             # scarto massimo dall'asse di un tratto orizzontale / verticale
-CLUSTER_TOLERANCE = 1.5    # due coordinate più vicine di così sono la stessa
-SIDE_COVERAGE = 0.85       # frazione minima di un lato coperta dai tratti
+AXIS_EPS = AXIS_DEVIATION             # scarto massimo dall'asse di un tratto orizzontale / verticale  # D269
+CLUSTER_TOLERANCE = SAME_COORDINATE    # due coordinate più vicine di così sono la stessa  # D269
+
 
 
 # ---------------------------------------------------------------------------

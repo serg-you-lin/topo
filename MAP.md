@@ -646,3 +646,7 @@ Measured on the 631 test drawings: with `max_gap` = tolerance the readings are u
 Two points closer than it are one point: nodes, contacts, same line/circle, degenerate sides, contour jumps, spline cuts, the default
 node tolerance. Exceptions only as listed with their reason in `tests/package/test_one_threshold.py`. Nodes no longer merge in chains
 (diameter, as D186); the DXF dedup at 2 decimals + layer is gone. Below 0.001 spline contacts, found on their discretization, break contours.
+### D269 — every fixed threshold lives in `topo.precision`, read-only; `tolerance` leaves `heal()` and the loaders (Federico, 18 November).
+One file holds every fixed threshold with its reason; nothing else writes a threshold as a number (`test_one_threshold.py`); assigning
+one raises `AttributeError`. A caller changes only `max_gap` (reopens D246 for `tolerance`; clean break before 1.0). `SAME_POINT` moves
+from `topo.geometry` to `topo.precision`; `DEFAULT_NODE_TOLERANCE` and `Document.node_tolerance` are gone. Values are unchanged.

@@ -77,6 +77,8 @@ from .tools.non_contour import non_contour_candidates
 # concentrici, corde, rettangoli coperti, ...), tutti in `topo.geometry`.
 # MAP.md D68, D91, D93-D95.
 from .core import geometry
+# Ogni soglia fissa di topo, in un file solo e non riassegnabile (D269).
+from . import precision
 # Tutto ciò che è esposto senza promessa di stabilità: i passi di faces() e di
 # outlines(), il viewer, la lettura testuale, rotate_*, simplify_points
 # (MAP.md D175 C, D176). Si scrive per intero: `topo.experimental.<nome>`.
@@ -108,6 +110,7 @@ __all__ = [
     "split",
     "anchor_texts",
     "geometry",
+    "precision",
     "experimental",
     "primitives",
     "model",

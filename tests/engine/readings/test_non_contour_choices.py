@@ -29,7 +29,7 @@ def _lines(*points, closed: bool = False) -> list:
 
 
 def _heal(segments: list):
-    return topo.heal(topo.load_segments(segments), tolerance=TOL).faces()
+    return topo.heal(topo.load_segments(segments)).faces()
 
 
 class TestA_InteriorChainIsChord(unittest.TestCase):

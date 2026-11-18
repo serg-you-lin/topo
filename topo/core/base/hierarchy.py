@@ -1,5 +1,6 @@
 # topo/core/base/hierarchy.py
 
+from ...precision import MIN_CONTOUR_AREA
 from typing import Optional
 from shapely.geometry import Polygon
 
@@ -14,7 +15,7 @@ from ..geometry.rings import ring_perimeter
 from ..geometry.regions import enclosing
 
 
-MIN_CONTOUR_AREA = 1e-3
+
 MIN_SINGLE_LOOP_DIAMETER = SAME_POINT  # D268
 
 

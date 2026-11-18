@@ -16,6 +16,7 @@ Puro: solo Edge e primitive, nessun formato.
 
 from __future__ import annotations
 
+from ...precision import ZERO_GUARD
 import math
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Tuple
@@ -31,7 +32,7 @@ AXIS_X = "x"   # raggio verticale a quota x, estremi in y
 SIDE_MIN = "min"
 SIDE_MAX = "max"
 
-_EPS = 1e-9
+_EPS = ZERO_GUARD  # D269
 
 
 # ---------------------------------------------------------------------------

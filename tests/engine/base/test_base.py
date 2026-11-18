@@ -46,7 +46,7 @@ class TestSameBaseForEveryReading(unittest.TestCase):
         band = 2 * DEFAULT_TOLERANCE
         for name, move, back, _ in [("al posto", lambda s: s, lambda p: p, None)] + MOTIONS:
             moved_doc = moved(doc, move)
-            healed = [back(p) for p in contours(topo.heal(moved_doc, tolerance=0.05).faces())[0]]
+            healed = [back(p) for p in contours(topo.heal(moved_doc).faces())[0]]
             read = [back(p) for p in contours(topo.heal(moved_doc, max_gap=0.5).outlines())[0]]
             self.assertEqual((len(healed), len(read)), (1, 1), name)
             self.assertEqual(shape_differences(healed, read, band) + shape_differences(read, healed, band),

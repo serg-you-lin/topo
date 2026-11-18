@@ -11,7 +11,7 @@ from .text import (
     Text, RenderedGeometry, RenderedText,
     MeasuredDistance, MeasuredRadius, MeasuredDiameter, MeasuredAngle,
 )
-from .document import Document, DEFAULT_NODE_TOLERANCE
+from .document import Document
 from .contour import Contour
 from .cluster import Cluster
 from .result import Result
@@ -24,7 +24,6 @@ from .diagnostic import Diagnostic
 
 __all__ = [
     "Document",
-    "DEFAULT_NODE_TOLERANCE",
     "Text",
     "RenderedGeometry",
     "RenderedText",

@@ -13,6 +13,7 @@ Un tratto è una coppia di punti `(start, end)` o qualunque cosa porti
 
 from __future__ import annotations
 
+from ...precision import COLLINEAR_ANGLE, COLLINEAR_DISTANCE
 import math
 from dataclasses import dataclass
 from typing import Sequence, Tuple
@@ -21,8 +22,8 @@ from .rings import ON_BOUNDARY, ring_bbox, ring_covers_chord, ring_split_by_chor
 
 Point = Tuple[float, float]
 
-COLLINEAR_TOLERANCE = 0.1        # distanza massima dalla retta, mm
-COLLINEAR_ANGLE_TOLERANCE = 1e-6  # differenza massima di direzione, radianti
+COLLINEAR_TOLERANCE = COLLINEAR_DISTANCE        # distanza massima dalla retta, mm  # D269
+COLLINEAR_ANGLE_TOLERANCE = COLLINEAR_ANGLE  # differenza massima di direzione, radianti  # D269
 
 
 def _ends(item) -> Tuple[Point, Point]:

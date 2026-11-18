@@ -19,7 +19,7 @@ from .segments import DEFAULT_TOLERANCE
 
 def build_polygon(
     primitives: List[LineSeg | ArcSeg | BSplineSeg | CircleSeg | EllipseSeg],
-    tolerance:  float = 0.01,
+    tolerance:  float = DEFAULT_TOLERANCE,   # = topo.precision.SAGITTA (D269)
 ) -> Optional[Polygon]:
     """
     Costruisce un Polygon shapely da una lista di primitive geometriche.

@@ -11,6 +11,7 @@ Funzioni pubbliche:
     sanitize — esegue tutti i sanitizer in sequenza
 """
 
+from topo.precision import FLOAT_NOISE
 from ezdxf import upright as _upright
 from topo.model import Diagnostic
 
@@ -127,7 +128,7 @@ def _explode_inserts(msp, sink: list = None) -> int:
     return len(inserts)
 
 
-def _explode_hatches(msp, sink: list = None, tolerance: float = 1e-6) -> int:
+def _explode_hatches(msp, sink: list = None, tolerance: float = FLOAT_NOISE) -> int:
     """
     Sostituisce ogni HATCH a pattern con le LINE del suo pattern, tagliate
     sul bordo, con layer/colore/tipo linea dell'HATCH. Un riempimento pieno

@@ -24,6 +24,7 @@ generica (D33, D36).
 
 from __future__ import annotations
 
+from ...precision import CORNER_TURN_DEG
 import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple, Union
@@ -37,7 +38,7 @@ from ..geometry.points import (
 
 Primitive = Union[LineSeg, ArcSeg, CircleSeg, BSplineSeg]
 
-DEFAULT_CORNER_TURN_DEG = 35.0
+DEFAULT_CORNER_TURN_DEG = CORNER_TURN_DEG  # D269
 DEFAULT_SPLINE_DEGREE = 3
 
 

@@ -19,6 +19,7 @@ Puro: solo primitive, nessun formato.
 
 from __future__ import annotations
 
+from ...precision import POLYGON_SAGITTA, TANGENT_ANGLE
 import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
@@ -38,10 +39,10 @@ from .shape import merge_runs
 
 Point = Tuple[float, float]
 
-TANGENT_TOLERANCE = 1e-3   # radianti: sotto, due lati proseguono uno nell'altro
+TANGENT_TOLERANCE = TANGENT_ANGLE   # radianti: sotto, due lati proseguono uno nell'altro  # D269
 _JOIN = SAME_POINT               # capi più vicini di così sono lo stesso nodo  # D268
 _MIN_PIECE = SAME_POINT          # pezzi più corti di così non esistono  # D268
-_POLYGON_TOLERANCE = 1e-5  # sagitta della discretizzazione per i test dentro/fuori
+_POLYGON_TOLERANCE = POLYGON_SAGITTA  # sagitta della discretizzazione per i test dentro/fuori  # D269
 _ON_BORDER = SAME_POINT          # un punto medio più vicino di così al bordo ci corre sopra  # D268
 
 

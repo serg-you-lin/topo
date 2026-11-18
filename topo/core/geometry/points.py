@@ -8,6 +8,7 @@ di un cerchio, b-spline interpolante e b-spline approssimante entro una
 tolleranza (MAP.md D141).
 """
 
+from ...precision import FLOAT_NOISE
 import math
 from typing import Optional, Tuple, List
 import numpy as np
@@ -28,7 +29,7 @@ Point = Tuple[float, float]
 # duplicarla — `core/primitives/fitting.py` resta l'orchestratore che decide
 # quando/come usarla per ricostruire linee/archi/spline.
 
-DEFAULT_DUPLICATE_TOLERANCE = 1e-6
+DEFAULT_DUPLICATE_TOLERANCE = FLOAT_NOISE  # D269
 
 
 def drop_duplicate_points(

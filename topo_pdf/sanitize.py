@@ -9,7 +9,10 @@ Funzioni pubbliche:
 
 
 
-def sanitize_pdf_geometries(raw_items: list, page_height: float, snap_tolerance: float = 0.15) -> list:
+from topo.precision import PDF_SNAP
+
+
+def sanitize_pdf_geometries(raw_items: list, page_height: float, snap_tolerance: float = PDF_SNAP) -> list:
     """
     Prende gli item geometrici grezzi estratti dall'extractor, applica la conversione 
     in mm con inversione dell'asse Y, esegue lo snap dei punti vicini entro una tolleranza,

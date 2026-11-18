@@ -87,8 +87,8 @@ def _read(dxf: Path, tol: Optional[float] = None):
 def _read_at(dxf: Path, tol: float):
     rules = topo.name_rules({**GLOBAL_NAME_ROLES, **_config(dxf).get("name_roles", {})})
     doc = topo_dxf.load_dxf(str(dxf), upgrade=True, explode_inserts=True, flatten_z=True,
-                         tolerance=tol, role_rules=rules)
-    return doc, topo.heal(doc, tolerance=tol).faces()
+                          role_rules=rules)
+    return doc, topo.heal(doc).faces()
 
 
 def _shape_differences(before: list, after: list) -> list:
@@ -275,8 +275,7 @@ def _make_chords_test(dxf: Path):
             if not chords:
                 continue
             tried += 1
-            again = topo.heal(topo.load_segments(list(cluster.outer.segments) + chords, tolerance=tol),
-                               tolerance=tol).faces()
+            again = topo.heal(topo.load_segments(list(cluster.outer.segments) + chords)).faces()
             if again.cluster_count != 1 or _shape_differences([to_shapely(cluster.outer)], _outers(again)):
                 broken.append(f"cluster[{ci}] (+{len(chords)} corde): {again.cluster_count} cluster")
         if not tried:
@@ -322,7 +321,7 @@ def _make_roles_test(dxf: Path):
             self.skipTest("nessun edge non strutturale da bordo a bordo")
         blind = Document(edges=[replace(e, role="unknown") if id(e) in ids else e for e in doc.edges],
                               source_path=doc.source_path, source_meta=doc.source_meta)
-        again = topo.heal(blind, tolerance=tol).faces()
+        again = topo.heal(blind).faces()
         self.assertEqual(again.cluster_count, result.cluster_count,
                          f"{dxf.stem}: {len(ids)} edge senza ruolo cambiano il numero di pezzi")
         self.assertEqual(_shape_differences(_outers(result), _outers(again)), [],
@@ -350,7 +349,7 @@ def _make_motion_test(dxf: Path):
             with self.subTest(motion=name):
                 if not exact and dxf.stem in GAP_AT_TOLERANCE:
                     self.skipTest("gap largo esattamente la tolleranza: sul filo della soglia")
-                again = topo.heal(moved(doc, move), tolerance=tol).faces()
+                again = topo.heal(moved(doc, move)).faces()
                 outers_again, inners_again = ([back(p) for p in ps] for ps in contours(again))
                 self.assertEqual(again.cluster_count, result.cluster_count, f"{dxf.stem}, {name}: cambia i pezzi")
                 self.assertEqual(_shape_differences(outers, outers_again), [], f"{dxf.stem}, {name}: cambia gli outer")
@@ -373,7 +372,7 @@ def _make_order_test(dxf: Path):
         for name, edges in orders(doc.edges):
             with self.subTest(order=name):
                 again = topo.heal(Document(edges=edges, source_path=doc.source_path,
-                                           source_meta=doc.source_meta), tolerance=tol).faces()
+                                           source_meta=doc.source_meta)).faces()
                 self.assertEqual(again.cluster_count, result.cluster_count,
                                  f"{dxf.stem}, {name}: l'ordine cambia i pezzi")
                 self.assertEqual(_shape_differences(_outers(result), _outers(again)), [],

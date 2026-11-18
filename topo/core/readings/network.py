@@ -11,6 +11,7 @@ Puro: solo Edge, primitive e modello, nessun formato.
 
 from __future__ import annotations
 
+from ...precision import NEAR_GAP_FACTOR, SAME_POINT
 import math
 import numbers
 from dataclasses import dataclass, field
@@ -46,7 +47,7 @@ class Network:
     crossings:   points where two edges cross without a shared node.
     free_ends:   (point, distance to the nearest node) of every end no other
                  edge reaches.
-    tolerance:   the node tolerance used (from the document when not given).
+    tolerance:   `topo.precision.SAME_POINT`, the one threshold (D268, D269).
     max_gap:     the widest gap closed; 0 (the default) closes none.
     source_file, label: copied onto every Result and Cluster read from here.
     source_format: the document's (D231), copied onto every Result.
@@ -115,8 +116,7 @@ def _check_length(name: str, value, *, zero_ok: bool) -> None:
         raise ValueError(f"{name} must be a finite number of mm, {bound}; got {value}")
 
 
-def build_network(doc: Document, *, tolerance: Optional[float] = None,
-                  max_gap: Optional[float] = None,
+def build_network(doc: Document, *, max_gap: Optional[float] = None,
                   is_structural: Optional[Callable[[str], bool]] = None,
                   source_file: str = "", label: str = "") -> Network:
     """
@@ -124,8 +124,7 @@ def build_network(doc: Document, *, tolerance: Optional[float] = None,
     strutturali da parte, nodi decisi, pulizie di `normalize` con i gap fino a
     `max_gap` (None: nessuno), tratti degeneri tolti.
     """
-    tol = doc.node_tolerance(override=tolerance)
-    _check_length("tolerance", tol, zero_ok=False)
+    tol = SAME_POINT   # la soglia unica, non un parametro (D268, D269)
     if max_gap is not None:
         _check_length("max_gap", max_gap, zero_ok=True)
     # un buco si chiude solo fino al max_gap del chiamante; senza, nessuno (D246)
@@ -223,7 +222,7 @@ def _ceil_2(x: float) -> float:
     return math.ceil(x / step - 1e-9) * step
 
 
-_NEAR_GAP_REACH = 2.0   # un gap fino al doppio della soglia "c'è quasi"; oltre è geometria (D227)
+_NEAR_GAP_REACH = NEAR_GAP_FACTOR   # un gap fino al doppio della soglia "c'è quasi"; oltre è geometria (D227)  # D269
 
 
 def _span(values, fmt: str) -> str:

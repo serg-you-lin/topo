@@ -16,8 +16,7 @@ from ...model.document import Document
 from .network import Network, build_network
 
 
-def heal(doc: Document, *, tolerance: Optional[float] = None,
-         max_gap: Optional[float] = None,
+def heal(doc: Document, *, max_gap: Optional[float] = None,
          is_structural: Optional[Callable[[str], bool]] = None,
          source_file: str = "", label: str = "") -> Network:
     """
@@ -25,10 +24,10 @@ def heal(doc: Document, *, tolerance: Optional[float] = None,
     `.faces()` (from the inside: outers with their inners) or `.outlines()`
     (from the outside: one outline per group of touching edges).
 
-    tolerance:     two points closer than this are one node. None: the
-                   tolerance the loader used (`doc.source_meta['tolerance']`).
     max_gap:       the widest gap closed between free ends, and the distance
-                   at which `outlines()` groups edges. None: `tolerance`.
+                   at which `outlines()` groups edges. None: no gap is closed
+                   (D267). Two points closer than `topo.precision.SAME_POINT`
+                   are always one point (D268, D269); it is not a parameter.
     is_structural: `Callable[[str], bool]` — "is this role part of a contour?".
                    Edges whose role is not structural stay out of every
                    reading and go to `loose` with their role. Without it only
@@ -41,5 +40,5 @@ def heal(doc: Document, *, tolerance: Optional[float] = None,
         raise TypeError(
             f"topo.heal() takes a Document, got {type(doc).__name__}"
         )
-    return build_network(doc, tolerance=tolerance, max_gap=max_gap, is_structural=is_structural,
+    return build_network(doc, max_gap=max_gap, is_structural=is_structural,
                          source_file=source_file or doc.source_path, label=label)

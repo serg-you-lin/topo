@@ -57,18 +57,19 @@ G17 (D250).
         consegnato (D206). Prima di lunedì era valido.
       - Da capire: famiglia `drw_0033` (`faces()`, −16,9% d'area) con
         `max_gap=0.05` rispetto a prima di lunedì.
-      - Poi: `topo.precision` (tutte le soglie fisse, non assegnabili) e
-        `tolerance` tolta da `heal()` e dai loader (opzione A, Federico 18
-        novembre): resta solo `max_gap`.
+      - Prima della 1.0, solo le soglie di `topo.precision` che entrano nelle
+        letture (Federico 18 novembre: non tutto, se no non si esce):
+        `RING_TO_CIRCLE`, `MIN_CONTOUR_AREA`, `DIRECTION_SAMPLE`, `SAGITTA`
+        dove decide. Misurarle come SAME_POINT e portarle a lei dove regge.
+        Le altre (default di `topo.geometry`, PDF, angoli) dopo la 1.0.
+      - Consumer da adeguare dalle loro sessioni (D269): `heal(tolerance=)`,
+        `load_dxf(tolerance=)`, `topo.geometry.SAME_POINT`,
+        `DEFAULT_NODE_TOLERANCE` non ci sono più.
       - Letture che a 0,001 cambiano sui DXF di `tests/` senza golden: 82,
         di cui 23 con area cambiata meno di un millesimo; le altre sono copie
         degli stessi ~8 disegni. Verificare con una misura (non a occhio) che
         il cambio venga da capi oltre 0,001 non più uniti; a Federico solo
         ciò che la misura non spiega (`_debug/2026-11-16_topo_soglie/SOGLIE.md`).
-      - Misurare le eccezioni segnate "da misurare" nel test di guardia
-        (COLLINEAR/CONCENTRIC 0,1, AXIS_EPS, CLUSTER_TOLERANCE, MIN_CONTOUR_AREA,
-        `refit_circle_rings` 0,02, `non_contour_edges` 0,1) e portarle a
-        `SAME_POINT` dove la misura regge.
       - Contatti su spline ed ellissi calcolati sulla curva vera, non sulla
         discretizzazione (`noding._Curve.locate`/`at`): solo allora la soglia
         scende sotto 0,001 senza rompere contorni né rallentare (a 1e-6 con

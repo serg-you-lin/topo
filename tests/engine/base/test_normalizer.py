@@ -286,7 +286,7 @@ class TestMergeNearCopies(unittest.TestCase):
         long = _line((0, 0), (10, 0))
         for nxt in (_line((10, 0), (10.3, 0.001)), _line((10, 0), (10.2, 0.3))):
             self.assertEqual(merge_near_copies([long, nxt], distance=0.5), [long, nxt])
-        net = topo.heal(topo.load_segments([long.segment, LineSeg(start=(10, 0), end=(10.2, 0.3))]), tolerance=0.5, max_gap=0.5)
+        net = topo.heal(topo.load_segments([long.segment, LineSeg(start=(10, 0), end=(10.2, 0.3))]), max_gap=0.5)
         self.assertNotIn("near-copy", [w.code for w in net.warnings if isinstance(w, topo.Diagnostic)])
 
     def test_oltre_la_distanza_restano_due(self):
@@ -298,13 +298,13 @@ class TestMergeNearCopies(unittest.TestCase):
         # dall'angolo; una copia del lato sinistro parte dall'angolo e lo tiene
         # occupato, così il gap non si chiude. heal() lo dice, non lo fonde
         doc = topo.load_segments(self._PIECES)
-        net = topo.heal(doc, tolerance=0.5, max_gap=0.5)
+        net = topo.heal(doc, max_gap=0.5)
         [d] = [w for w in net.warnings if isinstance(w, topo.Diagnostic)]
         self.assertEqual((d.code, d.param, round(d.value, 4)), ("near-copy", "distance", 0.0005))
         self.assertIn("distance=0.0005)", d.help)
         self.assertEqual(net.faces().cluster_count, 0)
         doc.edges = merge_near_copies(doc.edges, distance=0.0005)
-        result = topo.heal(doc, tolerance=0.5, max_gap=0.5).faces()
+        result = topo.heal(doc, max_gap=0.5).faces()
         self.assertEqual([round(to_shapely(c.outer).area) for c in result.clusters], [5000])
 
 
@@ -529,7 +529,7 @@ def _polygon(center, radius, sides, start=0.3):
 
 
 def _circles(segments):
-    faces = topo.heal(topo.load_segments(segments), tolerance=0.1, max_gap=0.1).faces()
+    faces = topo.heal(topo.load_segments(segments), max_gap=0.1).faces()
     return [s for cl in faces.clusters for ct in [cl.outer, *cl.inners] for s in ct.segments if isinstance(s, CircleSeg)]
 
 
@@ -554,7 +554,7 @@ class TestRefitCircleRings(unittest.TestCase):
         a, b = ring[10].start, ring[10].end
         for extra in (LineSeg(start=a, end=((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)),          # dal vertice, capo libero
                       LineSeg(start=((2 * a[0] + b[0]) / 3, (2 * a[1] + b[1]) / 3), end=b)):  # parte a metà lato
-            faces = topo.heal(topo.load_segments(ring + [extra]), tolerance=0.1, max_gap=0.1).faces()
+            faces = topo.heal(topo.load_segments(ring + [extra]), max_gap=0.1).faces()
             self.assertEqual([[type(s) for s in ct.segments] for cl in faces.clusters for ct in [cl.outer, *cl.inners]],
                              [[CircleSeg]])
 
@@ -564,5 +564,5 @@ class TestRefitCircleRings(unittest.TestCase):
 
     def test_mezzo_giro_non_diventa_cerchio(self):
         half = _polygon((0, 0), 1.0, 60)[:30]
-        net = topo.heal(topo.load_segments(half + [LineSeg(start=half[-1].end, end=half[0].start)]), tolerance=0.1, max_gap=0.1)
+        net = topo.heal(topo.load_segments(half + [LineSeg(start=half[-1].end, end=half[0].start)]), max_gap=0.1)
         self.assertEqual([s for cl in net.faces().clusters for s in cl.outer.segments if isinstance(s, CircleSeg)], [])

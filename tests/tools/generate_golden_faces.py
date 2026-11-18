@@ -114,10 +114,10 @@ def generate(force: bool = False, only: str = None):
             def _load():
                 return topo_dxf.load_dxf(
                     dxf_path, upgrade=True, explode_inserts=True, flatten_z=True,
-                    tolerance=tolerance, verbose=False, role_rules=topo.name_rules(name_roles),
+                    verbose=False, role_rules=topo.name_rules(name_roles),
                 )
 
-            geom = topo.heal(_load(), tolerance=tolerance).faces()
+            geom = topo.heal(_load()).faces()
 
             if not geom.is_valid:
                 print(f"  SKIP (non valido): {dxf_path.name} — {geom.errors}")

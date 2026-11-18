@@ -52,11 +52,10 @@ class TestNonStructuralRoleLeavesThePart(unittest.TestCase):
 
     def test_il_pezzo_resta_quello_senza_le_righe(self):
         for tolerance in TOLERANCES:
-            alone = topo.heal(topo.load_segments(self.part),
-                              tolerance=tolerance)
+            alone = topo.heal(topo.load_segments(self.part))
             doc = topo.load_segments(self.part)
             doc.edges += topo.load_segments(self.lines, role="x").edges
-            network = topo.heal(doc, tolerance=tolerance)
+            network = topo.heal(doc)
             for reading in ("faces", "outlines"):
                 with self.subTest(tolerance=tolerance, reading=reading):
                     expected = getattr(alone, reading)().clusters[0].outer

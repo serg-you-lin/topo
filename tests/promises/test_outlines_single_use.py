@@ -11,6 +11,7 @@ un edge che il percorso aveva contato due volte: finiva nel contorno e in
 import unittest
 
 
+import topo
 import topo_dxf
 from topo.core.readings.outline import read_outlines
 from tests.paths import DATA
@@ -26,7 +27,7 @@ class TestOutlinesSingleUse(unittest.TestCase):
         for name in FILES:
             with self.subTest(name=name):
                 doc = topo_dxf.load_dxf(str(SOURCE_DIR / name))
-                for i, r in enumerate(read_outlines(doc.edges, doc.node_tolerance(override=None), MAX_GAP)):
+                for i, r in enumerate(read_outlines(doc.edges, topo.precision.SAME_POINT, MAX_GAP)):
                     if r.outer is None:
                         continue
                     both = {id(e) for e in r.outer.edges} & {id(e) for e in r.spurs}

@@ -16,7 +16,7 @@ from topo.model.document import Document
 
 
 def _square(side: float = 100.0) -> Document:
-    return topo.load_segments(geometry.rectangle(side, side), tolerance=0.5)
+    return topo.load_segments(geometry.rectangle(side, side))
 
 
 class TestInspectLevels(unittest.TestCase):
@@ -33,7 +33,7 @@ class TestInspectLevels(unittest.TestCase):
 
     def test_level3_result(self):
         doc = _square()
-        result = topo.heal(doc, tolerance=0.5).faces()
+        result = topo.heal(doc).faces()
         buf = io.StringIO()
         with redirect_stdout(buf):
             topo.inspect_result(result)

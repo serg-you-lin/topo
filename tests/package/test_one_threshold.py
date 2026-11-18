@@ -1,6 +1,5 @@
 # tests/package/test_one_threshold.py
-"""Una soglia sola (D268): ogni soglia di lunghezza di topo è `SAME_POINT`,
-salvo le eccezioni elencate qui, ognuna col suo perché.
+"""Ogni soglia fissa di topo sta in `topo/precision.py` e non si riassegna (D268, D269).
 
 Si guardano le costanti a livello di modulo con un valore numerico e i valori
 di default dei parametri che sono soglie (tol, eps, gap, reach, snap, margin,
@@ -15,51 +14,11 @@ from tests.paths import PROJECT_ROOT
 PACKAGES = ("topo", "topo_dxf", "topo_pdf")
 THRESHOLD_PARAM = ("tol", "eps", "gap", "reach", "snap", "margin", "sagitta")
 
-# (file, nome): perché non è SAME_POINT
-EXCEPTIONS = {
-    ("topo/core/geometry/measure.py", "SAME_POINT"): "è la soglia",
-    ("topo_pdf/geometry_adapter.py", "PT_TO_MM"): "conversione di unità, non una soglia",
-    # aritmetica, non geometria del disegno
-    ("topo/core/geometry/measure.py", "FLOAT_NOISE"): "rumore dei double, il margine di ogni soglia (D183)",
-    ("topo/core/geometry/intersections.py", "_SAME_POINT"): "due radici dello stesso calcolo, rumore numerico",
-    ("topo/core/topology/noding.py", "_EPS"): "guardia contro una divisione per zero",
-    ("topo/core/readings/outer_scan.py", "_EPS"): "guardia contro una divisione per zero",
-    ("topo/core/primitives/segments.py", "_GRID_SNAP"): "guardia numerica della discretizzazione",
-    ("topo/core/geometry/points.py", "DEFAULT_DUPLICATE_TOLERANCE"): "punti uguali al rumore dei double",
-    ("topo/core/geometry/lines.py", "COLLINEAR_ANGLE_TOLERANCE"): "un angolo, non una lunghezza",
-    ("topo/core/base/normalizer.py", "_SAME_DIRECTION"): "un angolo (seno), non una lunghezza",
-    ("topo/core/geometry/regions.py", "TANGENT_TOLERANCE"): "un angolo, non una lunghezza",
-    ("topo/core/geometry/shape.py", "ANGLE_TOLERANCE_DEG"): "un angolo, non una lunghezza",
-    ("topo/core/primitives/fitting.py", "DEFAULT_CORNER_TURN_DEG"): "un angolo, non una lunghezza",
-    # frazioni e conteggi
-    ("topo/core/geometry/shape.py", "SHAPE_TOLERANCE"): "una frazione della dimensione del contorno",
-    ("topo/core/geometry/measure.py", "CIRCULAR_BBOX_ASPECT_TOLERANCE"): "un rapporto di lati",
-    ("topo/core/geometry/axis.py", "SIDE_COVERAGE"): "una frazione di un lato",
-    ("topo/model/style.py", "_MARK_REL_TOL"): "una frazione della lunghezza di un tratto",
-    ("topo/core/readings/network.py", "_NEAR_GAP_REACH"): "un multiplo di max_gap (D227)",
-    ("topo/core/base/hierarchy.py", "MIN_CONTOUR_AREA"): "un'area in mm²; da misurare (TODO, D268)",
-    # discretizzazione: quanto un poligono si scosta dalla curva, non chi tocca chi
-    ("topo/core/primitives/segments.py", "DEFAULT_TOLERANCE"): "sagitta dei poligoni; le decisioni si rifiniscono sulle curve (D145, D200)",
-    ("topo/core/primitives/polygon_builder.py", "tolerance"): "sagitta dei poligoni",
-    ("topo/core/geometry/intersections.py", "CURVE_TOLERANCE"): "sagitta per incrociare spline ed ellissi",
-    ("topo/core/geometry/regions.py", "_POLYGON_TOLERANCE"): "sagitta per i test dentro/fuori",
-    ("topo/io/svg.py", "tolerance"): "sagitta del disegno SVG",
-    ("topo/io/view_model.py", "tolerance"): "sagitta del disegno",
-    ("topo_dxf/text_extractor.py", "_ARC_SAGITTA"): "sagitta di un testo su arco",
-    ("topo/core/base/normalizer.py", "tolerance"): "anello scritto a punti → cerchio (D236); da misurare (TODO, D268)",
-    # scrittori e adattatori
-    ("topo_dxf/exporter.py", "JUMP"): "lo scrittore mostra ogni salto del Result; quelli entro SAME_POINT li chiude già close_contour_jumps",
-    ("topo_dxf/sanitize.py", "tolerance"): "bordo di un HATCH ricucito al rumore dei double (D253)",
-    ("topo_pdf/loader.py", "snap_tolerance"): "adattatore PDF sperimentale, congelato (D10)",
-    ("topo_pdf/sanitize.py", "snap_tolerance"): "adattatore PDF sperimentale, congelato (D10)",
-    # fatti geometrici pubblici con la loro tolleranza, non misurati (TODO, D268)
-    ("topo/core/geometry/lines.py", "COLLINEAR_TOLERANCE"): "default di un fatto pubblico; da misurare (TODO, D268)",
-    ("topo/core/geometry/shape.py", "CONCENTRIC_TOLERANCE"): "default di un fatto pubblico; da misurare (TODO, D268)",
-    ("topo/core/topology/non_contour_edges.py", "tolerance"): "da misurare (TODO, D268)",
-    ("topo/core/geometry/axis.py", "AXIS_EPS"): "tratto orizzontale/verticale di un foglio; da misurare (TODO, D268)",
-    ("topo/core/geometry/axis.py", "CLUSTER_TOLERANCE"): "coordinate uguali su un foglio; da misurare (TODO, D268)",
-    ("topo/core/topology/outer_face.py", "DIRECTION_SAMPLE"): "dove si legge una direzione, non chi tocca chi",
+# (file, nome): numeri che non sono soglie, col perché
+NOT_THRESHOLDS = {
+    ("topo_pdf/geometry_adapter.py", "PT_TO_MM"): "conversione di unità",
 }
+PRECISION = "topo/precision.py"
 
 
 def _is_number(node) -> bool:
@@ -102,14 +61,21 @@ def thresholds() -> list:
 
 class TestOneThreshold(unittest.TestCase):
 
-    def test_ogni_soglia_e_same_point_o_una_eccezione_scritta(self):
-        unknown = sorted({(f, n, v) for f, n, v in thresholds() if (f, n) not in EXCEPTIONS})
-        self.assertEqual(unknown, [], "\nsoglie nuove: usare topo.geometry.SAME_POINT, "
-                                      "o scrivere qui l'eccezione col suo perché (D268)")
+    def test_ogni_soglia_sta_in_precision(self):
+        found = sorted({(f, n, v) for f, n, v in thresholds()
+                        if f != PRECISION and (f, n) not in NOT_THRESHOLDS})
+        self.assertEqual(found, [], "soglie scritte fuori da topo/precision.py: "
+                                    "metterle lì, col loro perché (D269)")
 
     def test_le_eccezioni_esistono_ancora(self):
         found = {(f, n) for f, n, _ in thresholds()}
-        self.assertEqual(sorted(set(EXCEPTIONS) - found), [], "eccezione senza più la sua soglia: toglierla")
+        self.assertEqual(sorted(set(NOT_THRESHOLDS) - found), [], "eccezione senza più il suo numero: toglierla")
+
+    def test_le_soglie_non_si_riassegnano(self):
+        import topo
+        with self.assertRaises(AttributeError):
+            topo.precision.SAME_POINT = 0.1
+        self.assertEqual(topo.precision.SAME_POINT, 1e-3)
 
 
 if __name__ == "__main__":

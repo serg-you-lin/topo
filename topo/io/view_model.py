@@ -19,6 +19,7 @@ l'alto). Un renderer SVG deve ribaltare la Y (lo fa `to_svg`).
 
 from __future__ import annotations
 
+from ..precision import DRAW_SAGITTA
 from typing import Mapping, Optional
 
 from ..model import Result, RoleStyle, feature_closed, role_style
@@ -133,7 +134,7 @@ def _bbox_of(clusters) -> Optional[list]:
 
 def to_view_model(
     result: Result,
-    tolerance: float = 0.05,
+    tolerance: float = DRAW_SAGITTA,
     include_loose: bool = True,
     include_texts: bool = True,
     role_styles: Optional[Mapping[str, RoleStyle]] = None,

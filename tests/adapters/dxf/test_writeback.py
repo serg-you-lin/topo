@@ -196,8 +196,8 @@ class TestWritebackSourceLayerNotKept(unittest.TestCase):
     resta nel modello come loose, e il DXF scritto non ha quel layer."""
 
     def setUp(self):
-        doc = topo_dxf.load_dxf(drawing("la_104.DXF"), tolerance=0.2)
-        self.result = topo.heal(doc, tolerance=0.2).faces()
+        doc = topo_dxf.load_dxf(drawing("la_104.DXF"))
+        self.result = topo.heal(doc).faces()
         self.msp = topo_dxf.to_dxf(self.result, doc).modelspace()
 
     def test_001_mark_goes_to_trash_without_detect(self):
