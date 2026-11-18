@@ -24,7 +24,8 @@ from shapely.ops import substring
 
 from .edge import Edge
 from .noding import edge_geometry
-from ..geometry.measure import FLOAT_NOISE
+from ..geometry.measure import FLOAT_NOISE, reach
+from ..geometry.rings import ring_bridges
 from ..primitives.segments import LineSeg, segment_endpoints, segment_is_closed
 from ..primitives.trim import sub_segment
 
@@ -59,6 +60,12 @@ def face_segments(edges: List[Edge], polygon: Polygon, band: float):
             chain = [piece]
         segments += chain
         styles += [edge.style] * len(chain)
+    # due tratti vicini finiscono ognuno sulla sua curva, entro `band` dallo
+    # stesso vertice dell'anello: fino a 2 * band l'uno dall'altro. Il salto
+    # diventa una retta nuova, nessuna curva si sposta (D206, D209)
+    for k, line in reversed(ring_bridges(segments, reach(2 * band), FLOAT_NOISE)):
+        segments.insert(k + 1, line)
+        styles.insert(k + 1, styles[k])
     return segments, styles, used
 
 

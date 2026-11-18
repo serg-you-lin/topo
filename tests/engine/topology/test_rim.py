@@ -67,6 +67,21 @@ class TestFaceSegments(unittest.TestCase):
         segments, _, _ = face_segments(edges, polygon, BAND)
         self.assertEqual(sorted(type(s).__name__ for s in segments), ["ArcSeg", "LineSeg"])
 
+    def test_due_tratti_vicini_si_chiudono_con_una_retta(self):
+        # D206/D209: il lato alto corre 0,01 sopra l'anello, i lati verticali
+        # finiscono sull'anello. Ogni tratto finisce sulla sua curva: fra i due
+        # capi vicini una retta nuova, nessuna curva spostata
+        edges = [_line((0, 0), (10, 0)), _line((10, 0), (10, 10)),
+                 _line((10, 10.01), (0, 10.01)), _line((0, 10), (0, 0))]
+        segments, styles, _ = face_segments(edges, box(0, 0, 10, 10), BAND)
+        self.assertEqual(len(segments), 6)
+        self.assertEqual(len(styles), 6)
+        for k, segment in enumerate(segments):
+            following = segments[(k + 1) % len(segments)]
+            self.assertEqual(segment_endpoints(segment)[1], segment_endpoints(following)[0])
+        bridges = sorted(round(math.dist(*segment_endpoints(s)), 9) for s in segments)[:2]
+        self.assertEqual(bridges, [0.01, 0.01])
+
 
 class TestOffRimCutsUnderMotion(unittest.TestCase):
     """G6e, gruppo B, `rim.py:80`: i tagli di `off_rim` erano le ascisse
