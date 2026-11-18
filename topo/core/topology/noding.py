@@ -30,6 +30,7 @@ Puro: solo Edge e primitive, nessun formato.
 
 from __future__ import annotations
 
+from ...precision import ZERO_GUARD
 import math
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field, replace
@@ -53,7 +54,7 @@ from .graph import cluster_points, connected_groups
 
 GRAPH_EPSILON = SAME_POINT   # mm — due nodi così vicini sono uno solo per il grafo (heal, ripiego D100)  # D268
 
-_EPS = 1e-9
+_EPS = ZERO_GUARD  # D269
 _MIN_PIECE = SAME_POINT   # mm — sotto, lo spezzone non viene creato  # D268
 _EXACT = (LineSeg, ArcSeg, CircleSeg)
 

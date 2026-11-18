@@ -18,7 +18,7 @@ from typing import Optional, Sequence
 import ezdxf
 
 import topo
-from topo.model import DEFAULT_NODE_TOLERANCE, RoleRule
+from topo.model import RoleRule
 
 from .loader import load_dxf
 
@@ -113,8 +113,7 @@ def _describe_dxf_entity(e) -> str:
 
 def inspect_file(
     path: str,
-    *, tolerance: float = DEFAULT_NODE_TOLERANCE,
-    role_rules: Sequence[RoleRule] = (),
+    *, role_rules: Sequence[RoleRule] = (),
     run_heal: bool = True,
     entities: bool = True,
     coords: bool = False,
@@ -129,13 +128,13 @@ def inspect_file(
     inspect_dxf(path, entities=entities)
 
     doc = load_dxf(
-        path, tolerance=tolerance, role_rules=role_rules,
+        path, role_rules=role_rules,
     )
     topo.inspect_document(doc)
 
     if not run_heal:
         return
 
-    result = topo.heal(doc, tolerance=tolerance).faces()
+    result = topo.heal(doc).faces()
 
     topo.inspect_result(result, coords=coords)

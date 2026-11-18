@@ -115,10 +115,8 @@ def _make_test(path):
                 upgrade=True,
                 explode_inserts=True,
                 flatten_z=True,
-                tolerance=config.get("tolerance", DEFAULT_TOLERANCE),
                 role_rules=topo.name_rules(name_roles),
             ),
-            tolerance=config.get("tolerance", DEFAULT_TOLERANCE),
             max_gap=config.get("tolerance", DEFAULT_TOLERANCE),
         ).faces()
 
@@ -273,22 +271,22 @@ def _make_roundtrip_test(path):
         name_roles = {**GLOBAL_NAME_ROLES, **config.get("name_roles", {})}
 
         def _pipeline(doc):
-            return topo.heal(doc, tolerance=tol, max_gap=tol).faces()
+            return topo.heal(doc, max_gap=tol).faces()
 
         result = _pipeline(
             topo_dxf.load_dxf(
                 str(dxf_path), upgrade=True, explode_inserts=True,
-                flatten_z=True, tolerance=tol, role_rules=topo.name_rules(name_roles),
+                flatten_z=True, role_rules=topo.name_rules(name_roles),
             )
         )
         source_doc = topo_dxf.load_dxf(
             str(dxf_path), upgrade=True, explode_inserts=True,
-            flatten_z=True, tolerance=tol, role_rules=topo.name_rules(name_roles),
+            flatten_z=True, role_rules=topo.name_rules(name_roles),
         )
         doc_out = topo_dxf.to_dxf(result, source_doc)
         rt_result = _pipeline(
             topo_dxf.document_from_msp(
-                doc_out.modelspace(), tolerance=tol, role_rules=topo.name_rules(_roundtrip_name_roles(name_roles)),
+                doc_out.modelspace(), role_rules=topo.name_rules(_roundtrip_name_roles(name_roles)),
                 skip_layers=topo_dxf.SKIP_LAYERS,  # rilegge l'uscita di topo senza loose e testi (D243)
             )
         )

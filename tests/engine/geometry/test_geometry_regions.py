@@ -323,10 +323,10 @@ class TestContourUnion(unittest.TestCase):
 
     def test_a_border_within_same_point_is_shared(self):
         # entro SAME_POINT i due bordi sono lo stesso bordo; oltre, due anelli (D268)
-        near = g.contour_union(SQUARE, g.rectangle(10, 10, center=(15 + g.SAME_POINT / 2, 5)))
+        near = g.contour_union(SQUARE, g.rectangle(10, 10, center=(15 + topo.precision.SAME_POINT / 2, 5)))
         self.assertEqual(len(near), 1)
         self.assertAlmostEqual(_area(near[0]), 200, delta=0.01)
-        apart = g.contour_union(SQUARE, g.rectangle(10, 10, center=(15 + 2 * g.SAME_POINT, 5)))
+        apart = g.contour_union(SQUARE, g.rectangle(10, 10, center=(15 + 2 * topo.precision.SAME_POINT, 5)))
         self.assertEqual(len(apart), 2)
 
 

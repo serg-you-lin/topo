@@ -262,7 +262,7 @@ da sistemare nella 1.x. Ognuno è stato riprodotto sul codice attuale.
 
 **Comportamenti voluti**, da sapere:
 
-- *Una soglia sola.* Due punti più vicini di `topo.geometry.SAME_POINT` (0,001 mm)
+- *Una soglia sola.* Due punti più vicini di `topo.precision.SAME_POINT` (0,001 mm)
   sono un punto solo, in tutto topo. Sotto 0,001 i contatti sulle spline rompono
   ancora i contorni: un disegno i cui punti coincidono solo più alla grossa vuole `max_gap`.
 - *I pezzi minuscoli si saldano.* Un gruppo di tratti entro `SAME_POINT` viene saldato

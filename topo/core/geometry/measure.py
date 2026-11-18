@@ -5,6 +5,7 @@ Misure di primitive e tracce: arrotondamento dei nodi, lunghezza e angolo di
 un segmento, vertici e tipo di una traccia aperta, "è circolare?".
 """
 
+from ...precision import CIRCULAR_BBOX_ASPECT, FLOAT_NOISE, SAME_POINT
 import math
 from typing import Optional, Tuple, List
 
@@ -19,20 +20,7 @@ Point = Tuple[float, float]
 # Arrotondamento
 # ---------------------------------------------------------------------------
 
-FLOAT_NOISE = 1e-6  # mm — rumore dei double, mai una tolleranza: sopra quello di un moto (~1e-11),
-                    # sotto ogni soglia di contatto; "entro la tolleranza" la comprende (D183)
-
-# LA soglia di topo (D268): due punti più vicini di così sono lo stesso punto.
-# Ogni decisione di lunghezza la usa (nodi, contatti, stessa retta/cerchio, lato
-# degenere, salti in un contorno, taglio delle spline), salvo le eccezioni scritte
-# in tests/package/test_one_threshold.py, ognuna col suo perché.
-# CAMBIARLA cambia le letture: più grande, capi e curve lontane fino a lei
-# diventano un punto solo (contorni che si chiudono, lati corti che spariscono);
-# più piccola, capi scritti con pochi decimali restano staccati (contorni aperti
-# senza max_gap) e le spline si tagliano più fini (più lento). Misurata sui 631
-# DXF di tests/ (_debug/2026-11-16_topo_soglie): sotto 0,001 i contatti sulle
-# spline, oggi calcolati sulla loro discretizzazione, rompono i contorni.
-SAME_POINT = 1e-3   # mm
+# FLOAT_NOISE e SAME_POINT vivono in topo/precision.py (D268, D269)
 
 
 def node_point(pt) -> Tuple:
@@ -297,7 +285,7 @@ def golden_max(f, a: float, b: float, iterations: int = 40) -> Tuple[float, floa
 # `hierarchy._single_loop_geometry` e i valori erano stoccati su ClosedCurve
 # (campi rimossi in D15) — ora si ricava qui, al momento della classificazione.
 
-CIRCULAR_BBOX_ASPECT_TOLERANCE = 0.15
+CIRCULAR_BBOX_ASPECT_TOLERANCE = CIRCULAR_BBOX_ASPECT  # D269
 
 
 def circular_geometry(polygon, segments=None):

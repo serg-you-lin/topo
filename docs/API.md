@@ -108,7 +108,7 @@ rules.append(topo.RoleRule("bending", dashed=True))   # after the names
 ### `load_segments`
 
 ```python
-topo.load_segments(segments, *, tolerance=SAME_POINT, role="unknown", source_path="") -> Document
+topo.load_segments(segments, *, role="unknown", source_path="") -> Document
 ```
 
 A `Document` from topo segments (`LineSeg`, `ArcSeg`, `CircleSeg`, …) or
@@ -129,8 +129,7 @@ result = topo.heal(doc).faces()     # one part: outer 200×100, one inner 100×5
 ```python
 topo.load_geometry(
     entities,
-    *, tolerance=SAME_POINT,
-    source_path="",
+    *, source_path="",
 ) -> Document
 ```
 
@@ -194,7 +193,7 @@ they do not import `topo.core`/`tools`/`io`/`rules` (D129). What it needs:
 | `topo.model.Edge.of(segment, role, *, style=None) -> Edge` | the `Edge` of a segment: endpoints on the segment's true points (no grid, D216); a closed circle, spline or ellipse has a single node |
 | `topo.model.EdgeStyle(*, linetype="", linetype_desc="", dash=None, color=None, filled=False)` | the effective look of the source entity, with no words of any format (D126): `dash` are signed marks (`> 0` dash, `0` dot, `< 0` gap; `()` continuous, `None` unknown — a dash-array `[3, 1]` is `(3, -1)`), `color` is `(r, g, b)`, `filled` the line is a side of a filled area (D255); `to_dxf` writes each ring of filled sides back as a solid fill. The adapter resolves inheritance (a "by layer" style) before handing it over |
 | `topo.model.RoleRule`, `topo.model.resolve_role(rules, name, style) -> str` | the role of an entity from the caller's rules: the first that matches, otherwise `unknown` |
-| `topo.model.Document`, `topo.model.DEFAULT_NODE_TOLERANCE` | the adapter's result and the default node tolerance, `topo.geometry.SAME_POINT` (D268) |
+| `topo.model.Document` | the adapter's result; two endpoints closer than `topo.precision.SAME_POINT` are one node (D268, D269) |
 | `topo.model.Text`, `RenderedGeometry`, `RenderedText`, `MeasuredDistance`/`Radius`/`Diameter`/`Angle` (also `topo.*`) | the texts read from the source, each with its `role` (D127, D138; the source group does not stay in the model, D128) |
 
 To write out in a format: `topo.primitives.segment_endpoints(segment)` gives the
@@ -269,7 +268,7 @@ a process reading, in snapbend (`snapbend.flat`, MAP.md D88).
 ### `heal`
 
 ```python
-topo.heal(doc: Document, *, tolerance=None, max_gap=None, is_structural=None,
+topo.heal(doc: Document, *, max_gap=None, is_structural=None,
            source_file="", label="") -> Network
 ```
 
@@ -280,7 +279,6 @@ contours are found by `faces()` and `outlines()`.
 
 | parameter | meaning |
 |---|---|
-| `tolerance` | two points closer than this are one node. If `None`, taken from `doc.source_meta["tolerance"]` (the one passed to `topo_dxf.load_dxf`). |
 | `max_gap` | the widest gap that is closed between free endpoints, and the distance at which `outlines()` puts two edges in the same group. If `None`, no gap is closed (D267); each gap closed is listed in the note `ends-joined`. |
 | `is_structural` | `Callable[[str], bool] \| None` — "is this role part-contour topology?", used to decide which already-labelled `Edge`s (by `role_rules`) stay in the network. By itself it knows only `outer`/`inner`/`unknown`; without this parameter a consumer role (`"hole"`, ...) is treated as non-structural and **leaves** the network (heal reports it with a warning). The consumer passes its own (snapbend: `snapbend.flat.is_structural`). |
 | `source_file` | source file name, ends up in every `Result`. Empty: `doc.source_path` (D204). |
@@ -1146,7 +1144,7 @@ a chord that divides it) do not go through here: they are facts of the contour.
 ```python
 topo.experimental.to_view_model(
     result: Result,
-    tolerance=SAME_POINT,
+    tolerance=DRAW_SAGITTA,            # topo.precision, 0.05
     include_loose=True,
     include_texts=True,
     role_styles=None,
@@ -1179,7 +1177,7 @@ It does not mutate `result`, does not raise on an invalid `result` (the dict com
 ```python
 topo.experimental.to_svg(
     result: Result,
-    tolerance=SAME_POINT,
+    tolerance=DRAW_SAGITTA,            # topo.precision, 0.05
     include_loose=True,
     include_texts=True,
     padding=0.03,
@@ -1302,10 +1300,8 @@ core: after it, `ezdxf` is never touched again.
 | `source_path` | `str` | path of the file |
 | `warnings` | `list[str]` | loader diagnostics on the raw file |
 
-`node_tolerance(override=None) -> float`: the distance below which two endpoints
-are the same node — `override` if given, otherwise `source_meta["tolerance"]`,
-otherwise `DEFAULT_NODE_TOLERANCE` (= `topo.geometry.SAME_POINT`, 0.001, D268). It is the reading
-that `heal` and `validate_document` use when `tolerance` is not passed (D86).
+Two endpoints closer than `topo.precision.SAME_POINT` are one node; it is not a
+parameter of the document or of `heal()` (D268, D269).
 
 ### `Text`
 
@@ -1478,7 +1474,7 @@ ends up in `loose` with its role intact and the output writes it on the layer
 ### `non_contour_candidates`
 
 ```python
-topo.non_contour_candidates(doc: Document, *, tolerance=None) -> list[Edge]
+topo.non_contour_candidates(doc: Document) -> list[Edge]
 ```
 
 Edges of `doc.edges` that the topological criterion of `heal()` would exclude from the
@@ -1495,10 +1491,6 @@ of candidates that `heal()` would use, without duplicating the criterion, and de
 for itself how to mark them — then assigns `edge.role` on the returned `Edge`s (they are
 references into `doc.edges`, mutating them is reflected there) **before** calling
 `heal()` (see `ContourRole` above, MAP.md D55).
-
-| parameter | meaning |
-|---|---|
-| `tolerance` | if `None`, taken from `doc.source_meta["tolerance"]` — same fallback as `heal()`. |
 
 It works on `doc.edges` as they are, **before** `heal()` merges overlapping/co-circular
 segments and closes tiny gaps (its first internal steps,
@@ -1576,7 +1568,6 @@ topo_dxf.load_dxf(
     explode_inserts=True,
     flatten_z=True,
     verbose=False,
-    tolerance=SAME_POINT,
     role_rules=(),
     skip_layers=(),                   # layer names, or a function name -> bool
 ) -> Document
@@ -1678,8 +1669,7 @@ this same guide in the message.
 ```python
 topo_dxf.document_from_msp(
     msp,
-    *, tolerance=SAME_POINT,
-    role_rules=(),
+    *, role_rules=(),
     source_path="",
     skip_layers=(),
 ) -> Document
@@ -1775,7 +1765,7 @@ topo_dxf.inspect_dxf(path, *, entities=True, limit=40) -> None
 layer, detail of each entity. Does not touch `topo`.
 
 ```python
-topo_dxf.inspect_file(path, *, tolerance=SAME_POINT, role_rules=(),
+topo_dxf.inspect_file(path, *, role_rules=(),
                    run_heal=True, entities=True, coords=False) -> None
 ```
 Orchestrator: opens the file and prints the three levels in a row. `run_heal=False` to

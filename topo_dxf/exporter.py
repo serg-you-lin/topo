@@ -7,6 +7,7 @@ Unico file che tocca ezdxf per il write-back.
 
 from __future__ import annotations
 
+from topo.precision import FLOAT_NOISE
 import math
 from typing import List, Optional, Tuple
 
@@ -108,7 +109,7 @@ def _seg_end_point(seg) -> Optional[tuple]:
 
 # un estremo che dista dal successivo più del rumore dei double è un salto
 # (D208): lo stesso 1e-6 mm di FLOAT_NOISE in topo (D183), che non è pubblico
-JUMP = 1e-6
+JUMP = FLOAT_NOISE  # D269
 
 
 def _joined(a, b) -> bool:

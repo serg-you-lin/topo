@@ -20,6 +20,7 @@ Puro: solo Edge, grafo e primitive, nessun formato.
 
 from __future__ import annotations
 
+from ...precision import DIRECTION_SAMPLE
 import math
 from dataclasses import dataclass, field
 from typing import List, Optional
@@ -38,7 +39,7 @@ from .loop_finder import loop_geometry, segments_from_loop
 from .rim import face_segments, off_rim
 from ..primitives.segments import DEFAULT_TOLERANCE
 
-DIRECTION_SAMPLE = 3.0   # mm — la direzione di un edge a un nodo si legge fin qui (al massimo a metà edge)
+
 UNION_GRID = SAME_POINT        # mm — griglia dell'unione delle facce (D100): sotto quella dei nodi, decide solo l'aritmetica  # D268
 
 

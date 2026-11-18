@@ -26,15 +26,11 @@ from __future__ import annotations
 from dataclasses import KW_ONLY, dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from ..core.geometry.measure import SAME_POINT
 from .text import Text
 
 if TYPE_CHECKING:
     from ..core.topology.edge import Edge
 
-# Distanza sotto cui due estremi sono lo stesso nodo, se il chiamante non la dà:
-# la soglia unica di topo (D268)
-DEFAULT_NODE_TOLERANCE = SAME_POINT
 
 
 @dataclass
@@ -54,9 +50,3 @@ class Document:
     source_format: str               = ""
     warnings:    List[str]           = field(default_factory=list)
     notes:       List[str]           = field(default_factory=list)
-
-    def node_tolerance(self, *, override: Optional[float] = None) -> float:
-        """La tolleranza dei nodi: `override` se dato, altrimenti quella del load."""
-        if override is not None:
-            return override
-        return self.source_meta.get("tolerance", DEFAULT_NODE_TOLERANCE)

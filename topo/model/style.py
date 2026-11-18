@@ -23,6 +23,7 @@ topo e del chiamante, mai di un formato.
 
 from __future__ import annotations
 
+from ..precision import MARK_FRACTION
 from dataclasses import KW_ONLY, dataclass, fields, replace
 from typing import Mapping, Optional, Tuple
 
@@ -38,7 +39,7 @@ VALID_DASH_KINDS = {DASH_CONTINUOUS, DASH_UNIFORM, DASH_CHAIN}
 
 # Due segni sono "diversi" se differiscono più di questa frazione della
 # lunghezza totale del pattern: relativo, così la scala del pattern non conta.
-_MARK_REL_TOL = 0.05
+_MARK_REL_TOL = MARK_FRACTION  # D269
 
 
 @dataclass

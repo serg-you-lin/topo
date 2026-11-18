@@ -14,6 +14,7 @@ cerchio (MAP.md D91).
 
 from __future__ import annotations
 
+from ...precision import CONCENTRIC_DISTANCE, SHAPE_ANGLE_DEG, SHAPE_FRACTION
 import math
 from dataclasses import dataclass
 from enum import Enum
@@ -53,8 +54,8 @@ RECTANGLE = ShapeKind.RECTANGLE
 POLYGON = ShapeKind.POLYGON
 OTHER = ShapeKind.OTHER
 
-SHAPE_TOLERANCE = 0.01       # frazione della dimensione del contorno
-ANGLE_TOLERANCE_DEG = 1.0
+SHAPE_TOLERANCE = SHAPE_FRACTION       # frazione della dimensione del contorno  # D269
+ANGLE_TOLERANCE_DEG = SHAPE_ANGLE_DEG  # D269
 
 
 @dataclass(frozen=True)
@@ -283,7 +284,7 @@ def _angle_diff(a: float, b: float) -> float:
 # "questo arco gira attorno a quel cerchio". Cosa siano (svasatura, sede,
 # cresta di un filetto) e con che soglie lo decide il consumatore.
 
-CONCENTRIC_TOLERANCE = 0.1   # distanza massima fra i centri, mm
+CONCENTRIC_TOLERANCE = CONCENTRIC_DISTANCE   # distanza massima fra i centri, mm  # D269
 
 
 @dataclass(frozen=True)

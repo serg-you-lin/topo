@@ -119,7 +119,7 @@ def _split_to_files(doc, output_folder, label="", source_file="", tolerance=None
     """heal → split → to_dxf + saveas per parte: la ricetta che era
     `topo_dxf.split_to_files`, tolta dalla superficie (D176) e tenuta qui
     come scatola nera dei test d'integrazione."""
-    result = topo.heal(doc, tolerance=tolerance, label=label, source_file=source_file,
+    result = topo.heal(doc,  label=label, source_file=source_file,
                        is_structural=is_structural).faces()
     if result.is_valid and result.clusters:
         _split_files(result, doc, output_folder, min_area=min_area, namer=namer, **write_kwargs)

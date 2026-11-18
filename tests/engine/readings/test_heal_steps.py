@@ -182,7 +182,7 @@ class TestShortElementsAndTolerance(unittest.TestCase):
         g = self.GAP
         segs = [LineSeg((0, 0), (100, 0)), LineSeg((100, 0), (100, a - g)), corner,
                 LineSeg((b - g, 100), (0, 100)), LineSeg((0, 100), (0, 0))]
-        return topo.heal(topo.load_segments(segs, tolerance=1.0), max_gap=1.0).faces()
+        return topo.heal(topo.load_segments(segs), max_gap=1.0).faces()
 
     def test_001_raccordo_resta(self):
         result = self._heal(ArcSeg((99.6, 99.6), 0.4, 0, math.pi / 2), 99.6, 99.6)
@@ -217,9 +217,9 @@ class TestGapAtTolerance(unittest.TestCase):
                 LineSeg(start=(45.0, 70.0), end=(45.0, 60.616)),
                 LineSeg(start=(45.0, 60.616), end=(52.159, 60.616))]
         plate = topo.geometry.rectangle(100, 100, center=(50, 60))
-        doc = topo.load_segments(plate + hole, tolerance=0.5)
+        doc = topo.load_segments(plate + hole)
         for name, move, _, _ in [("al posto", lambda s: s, None, None)] + MOTIONS:
-            result = topo.heal(moved(doc, move), tolerance=0.5, max_gap=0.5).faces()
+            result = topo.heal(moved(doc, move), max_gap=0.5).faces()
             self.assertEqual([len(c.inners) for c in result.clusters], [1], name)
 
 
@@ -257,9 +257,9 @@ class TestTiedGapPartners(unittest.TestCase):
         pieces = [LineSeg(start=(x + 3, y + 0.3), end=(x, y + 0.3)),
                   LineSeg(start=(x - 0.1, y - 5), end=(x - 0.1, y)),
                   LineSeg(start=(x - 0.1, y + 5.6), end=(x - 0.1, y + 0.6))]
-        doc = topo.load_segments(pieces, tolerance=0.5)
+        doc = topo.load_segments(pieces)
         _same_at_every_motion(self, doc)
-        self.assertIn("tie", [w.code for w in topo.heal(doc, tolerance=0.5, max_gap=0.5).faces().warnings])
+        self.assertIn("tie", [w.code for w in topo.heal(doc, max_gap=0.5).faces().warnings])
 
 
 class TestGapOntoCurve(unittest.TestCase):
@@ -272,7 +272,7 @@ class TestGapOntoCurve(unittest.TestCase):
         pieces = [LineSeg(start=(x - 0.25, y), end=(x + 0.25, y)),
                   LineSeg(start=(x - 0.25, y + 0.375), end=(x + 0.25, y + 0.375)),
                   LineSeg(start=(x, y + 0.125), end=(x, y + 0.625))]
-        doc = topo.load_segments(pieces, tolerance=0.5)
+        doc = topo.load_segments(pieces)
         base = _same_at_every_motion(self, doc)
         stem = next(e for e in base if abs(e[0] - x) < 1e-6 and abs(e[2] - x) < 1e-6)
         self.assertAlmostEqual(min(stem[1], stem[3]), y, places=6)
@@ -294,7 +294,7 @@ class TestGapOntoCurve(unittest.TestCase):
         from topo.core.base import gap_solver
         x, y = -71565.8225, -3048.0985
         doc = topo.load_segments([LineSeg(start=(x - 5, y), end=(x, y)),
-                                  CircleSeg(center=(x + 0.3, y), radius=0.1)], tolerance=0.5)
+                                  CircleSeg(center=(x + 0.3, y), radius=0.1)])
         counts = []
         real = gap_solver.intersections
 
@@ -319,7 +319,7 @@ class TestGapOntoCurve(unittest.TestCase):
         pieces = [LineSeg(start=(0, 0), end=(99.9, 0)), LineSeg(start=(100, 0.1), end=(100, 50)),
                   LineSeg(start=(100, 50), end=(0, 50)), LineSeg(start=(0, 50), end=(0, 0))]
         doc = topo.load_segments(pieces)
-        for result in (topo.heal(doc, tolerance=0.5, max_gap=0.5).faces(), topo.heal(doc, max_gap=0.5).outlines()):
+        for result in (topo.heal(doc, max_gap=0.5).faces(), topo.heal(doc, max_gap=0.5).outlines()):
             self.assertEqual([round(to_shapely(c.outer).area, 3) for c in result.clusters], [5000.0])
 
 
@@ -346,7 +346,7 @@ class TestArcLineMeetUnderMotion(unittest.TestCase):
         move_seg, move_pt = rigid(*motion)
         pieces = [ArcSeg(center=(x, y), radius=1.0, start_angle=0.0, end_angle=math.pi / 2, ccw=True),
                   LineSeg(start=(x - 5, y + 0.95), end=(x + offset, y + 0.95))]
-        doc = topo.load_segments([move_seg(p) for p in pieces], tolerance=0.5)
+        doc = topo.load_segments([move_seg(p) for p in pieces])
         tied = []
         real = gap_solver._closest_to
 
@@ -384,7 +384,7 @@ class TestCloseNearFullArcs(unittest.TestCase):
     gap) E l'angolo mancante Ã¨ entro la soglia (Ã¨ un cerchio)."""
 
     def _close(self, seg, tolerance, **kw):
-        doc = topo.load_segments([seg], tolerance=0.01)
+        doc = topo.load_segments([seg])
         edges, n = topo.experimental.close_near_full_arcs(list(doc.edges), tolerance, **kw)
         return type(edges[0].segment).__name__, n
 
@@ -404,12 +404,12 @@ class TestCloseNearFullArcs(unittest.TestCase):
     def test_005_capo_collegato_non_si_chiude(self):
         arc = _arc(10.0, 1.0)
         end = arc._point_at(arc.end_angle)
-        doc = topo.load_segments([arc, LineSeg(end, (end[0] + 5, end[1]))], tolerance=0.01)
+        doc = topo.load_segments([arc, LineSeg(end, (end[0] + 5, end[1]))])
         _, n = topo.experimental.close_near_full_arcs(list(doc.edges), 1.0)
         self.assertEqual(n, 0)
 
     def _close_all(self, segs, tolerance):
-        doc = topo.load_segments(segs, tolerance=0.01)
+        doc = topo.load_segments(segs)
         edges, n = topo.experimental.close_near_full_arcs(list(doc.edges), tolerance)
         return [type(e.segment).__name__ for e in edges], n
 
@@ -422,7 +422,7 @@ class TestCloseNearFullArcs(unittest.TestCase):
         # D218: il buco da 1° si chiude, gli archi sono uno solo aperto di 3°
         h = lambda deg: math.radians(deg) / 2
         arcs = [ArcSeg((0, 0), 5, h(1), math.pi - h(3)), ArcSeg((0, 0), 5, math.pi + h(3), 2 * math.pi - h(1))]
-        doc = topo.load_segments(arcs, tolerance=0.01)
+        doc = topo.load_segments(arcs)
         edges, n = topo.experimental.close_near_full_arcs(list(doc.edges), 0.5)
         self.assertEqual((len(edges), n), (1, 1))
         self.assertAlmostEqual(math.degrees(2 * math.pi - edges[0].segment._sweep()), 3.0)
@@ -459,12 +459,12 @@ class TestCloseNearFullArcs(unittest.TestCase):
 
     def test_012_heal_dice_quanti_gradi_mancano_e_l_help_lo_chiude(self):
         doc = topo.load_segments(self._SPLIT)
-        [d] = [w for w in topo.heal(doc, tolerance=0.5, max_gap=0.5).warnings if isinstance(w, topo.Diagnostic)]
+        [d] = [w for w in topo.heal(doc, max_gap=0.5).warnings if isinstance(w, topo.Diagnostic)]
         self.assertEqual((d.code, d.param, d.at), ("open-arc", "max_missing_angle", (0.0, 0.0)))
         self.assertAlmostEqual(math.degrees(d.value), 5.68, places=2)
         self.assertIn("math.radians(5.7)", d.help)
         doc.edges, _ = topo.experimental.close_near_full_arcs(doc.edges, 0.5, max_missing_angle=math.radians(5.7))
-        net = topo.heal(doc, tolerance=0.5, max_gap=0.5)
+        net = topo.heal(doc, max_gap=0.5)
         self.assertFalse([w for w in net.warnings if isinstance(w, topo.Diagnostic)])
         self.assertEqual(sum(len(c.inners) for c in net.faces().clusters) + net.faces().cluster_count, 1)
 
@@ -472,18 +472,18 @@ class TestCloseNearFullArcs(unittest.TestCase):
         # D227: un rettangolo aperto di 0.055 con tolleranza 0.05
         sides = [LineSeg((0.055, 0), (10, 0)), LineSeg((10, 0), (10, 5)), LineSeg((10, 5), (0, 5)), LineSeg((0, 5), (0, 0))]
         doc = topo.load_segments(sides)
-        net = topo.heal(doc, tolerance=0.05, max_gap=0.05)
+        net = topo.heal(doc, max_gap=0.05)
         [d] = [w for w in net.warnings if isinstance(w, topo.Diagnostic)]
         self.assertEqual((d.code, d.param, round(d.value, 4)), ("near-gap", "max_gap", 0.055))
         self.assertEqual(net.faces().cluster_count, 0)
         self.assertIn("max_gap=0.055)", d.help)
-        net = topo.heal(doc, tolerance=0.05, max_gap=0.055)
+        net = topo.heal(doc, max_gap=0.055)
         self.assertEqual((net.faces().cluster_count, [w for w in net.warnings if isinstance(w, topo.Diagnostic)]), (1, []))
 
     def test_013_un_filetto_piccolo_non_avvisa(self):
         # D227: a un filetto mancano ~90°; r 0.3, corda 0.42 entro 0.5, aperto di proposito
         thread = ArcSeg((0, 0), 0.3, 0.0, math.radians(270))
-        net = topo.heal(topo.load_segments([thread]), tolerance=0.5, max_gap=0.5)
+        net = topo.heal(topo.load_segments([thread]), max_gap=0.5)
         self.assertFalse([w for w in net.warnings if isinstance(w, topo.Diagnostic)])
 
 
@@ -502,7 +502,7 @@ class TestSingleNodeGrid(unittest.TestCase):
     def test_001_l_arco_in_punta_resta_nell_outer(self):
         for tol in (0.05, 0.5):
             with self.subTest(tolerance=tol):
-                result = topo.heal(topo.load_segments(self._lollipop(), tolerance=tol), max_gap=tol).faces()
+                result = topo.heal(topo.load_segments(self._lollipop()), max_gap=tol).faces()
                 self.assertEqual(result.cluster_count, 1)
                 cluster = result.clusters[0]
                 self.assertEqual(cluster.inners, [], "l'arco non Ã¨ un foro")
@@ -511,11 +511,11 @@ class TestSingleNodeGrid(unittest.TestCase):
                 self.assertGreater(math.degrees(arcs[0]._sweep()), 359)
 
     def test_002_i_nodi_non_dipendono_dalla_tolleranza(self):
-        nodes = lambda tol: [(e.start, e.end) for e in topo.load_segments(self._lollipop(), tolerance=tol).edges]
+        nodes = lambda tol: [(e.start, e.end) for e in topo.load_segments(self._lollipop()).edges]
         self.assertEqual(nodes(0.005), nodes(0.5))
 
     def test_006_heal_non_chiude_un_arco_per_sola_tolleranza(self):
-        result = topo.heal(topo.load_segments([_arc(10.0, 2.9)], tolerance=1.0), max_gap=1.0).faces()
+        result = topo.heal(topo.load_segments([_arc(10.0, 2.9)]), max_gap=1.0).faces()
         self.assertEqual(result.cluster_count, 0)
 
 

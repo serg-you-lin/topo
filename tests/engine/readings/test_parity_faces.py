@@ -25,7 +25,7 @@ def _lines(*points, closed: bool = False) -> list:
 
 
 def _read(segments: list):
-    return topo.experimental.parity_faces(topo.heal(topo.load_segments(segments), tolerance=TOL))
+    return topo.experimental.parity_faces(topo.heal(topo.load_segments(segments)))
 
 
 class TestEvenNodes(unittest.TestCase):
@@ -70,7 +70,7 @@ class TestOddNodes(unittest.TestCase):
         doc = topo.load_segments(_lines((0, 0), (100, 0), (100, 60), (0, 60), closed=True))
         doc.edges.append(doc.edges[0].__class__(role="engrave", start=(50, 0), end=(50, 60),
                                                 segment=LineSeg((50, 0), (50, 60))))
-        result = topo.experimental.parity_faces(topo.heal(doc, tolerance=TOL))
+        result = topo.experimental.parity_faces(topo.heal(doc))
         self.assertEqual(result.cluster_count, 1)
         self.assertAlmostEqual(result.clusters[0].area, 100 * 60)
 

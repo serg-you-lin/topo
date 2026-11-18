@@ -26,7 +26,7 @@ def _doc(segments: list, source_path: str = "") -> topo.Document:
 class TestHealReturnsNetwork(unittest.TestCase):
 
     def test_heal_restituisce_la_rete_e_le_due_letture(self):
-        net = topo.heal(_doc(_square()), tolerance=0.01, max_gap=0.01)
+        net = topo.heal(_doc(_square()), max_gap=0.01)
         self.assertIsInstance(net, topo.Network)
         self.assertTrue(net.is_valid)
         for reading in (net.faces(), net.outlines()):
@@ -36,13 +36,13 @@ class TestHealReturnsNetwork(unittest.TestCase):
 
     def test_la_stessa_rete_letta_due_volte_da_lo_stesso(self):
         # una lettura non sporca la rete per la successiva
-        net = topo.heal(_doc(_square() + [LineSeg((2, 2), (4, 4))]), tolerance=0.01, max_gap=0.01)
+        net = topo.heal(_doc(_square() + [LineSeg((2, 2), (4, 4))]), max_gap=0.01)
         first, again = net.faces(), (net.outlines(), net.faces())[1]
         self.assertEqual([c.outer.area for c in first.clusters], [c.outer.area for c in again.clusters])
         self.assertEqual(len(first.loose), len(again.loose))
 
     def test_superficie(self):
-        net = topo.heal(_doc(_square()), tolerance=0.01, max_gap=0.01)
+        net = topo.heal(_doc(_square()), max_gap=0.01)
         for name in ("edges", "crossings", "free_ends", "set_aside", "warnings", "errors",
                      "is_valid", "source_file", "label", "tolerance", "max_gap", "faces", "outlines"):
             self.assertTrue(hasattr(net, name), name)
@@ -60,20 +60,20 @@ class TestTwoNumbers(unittest.TestCase):
     def test_senza_max_gap_nessun_gap_si_chiude(self):
         # un lato interrotto di 0.03, sotto la tolleranza: senza max_gap resta aperto (D267)
         segs = [LineSeg((0.0, 0.0), (9.97, 0.0))] + _square()[1:]
-        net = topo.heal(_doc(segs), tolerance=0.05)
-        self.assertEqual((net.tolerance, net.max_gap), (0.05, 0.0))
+        net = topo.heal(_doc(segs))
+        self.assertEqual((net.tolerance, net.max_gap), (topo.precision.SAME_POINT, 0.0))
         self.assertEqual(len(net.faces().clusters), 0)
 
     def test_max_gap_sotto_la_tolleranza_resta_suo(self):
         segs = [LineSeg((0.0, 0.0), (9.97, 0.0))] + _square()[1:]
-        net = topo.heal(_doc(segs), tolerance=0.05, max_gap=0.01)
+        net = topo.heal(_doc(segs), max_gap=0.01)
         self.assertEqual(net.max_gap, 0.01)
         self.assertEqual(len(net.faces().clusters), 0)
 
     def test_un_gap_chiuso_si_dice(self):
         # quanti, quanto lunghi e dove: mai una chiusura in silenzio (D267)
         segs = [LineSeg((0.0, 0.0), (9.97, 0.0))] + _square()[1:]
-        net = topo.heal(_doc(segs), tolerance=0.05, max_gap=0.05)
+        net = topo.heal(_doc(segs), max_gap=0.05)
         joined = [n for n in net.notes if n.code == "ends-joined"]
         self.assertEqual(len(joined), 1)
         self.assertEqual(len(joined[0].points), 1)
@@ -82,23 +82,17 @@ class TestTwoNumbers(unittest.TestCase):
     def test_un_gap_si_chiude_solo_entro_max_gap(self):
         # un lato interrotto di 0.3: chiuso con max_gap 0.5, aperto senza
         segs = [LineSeg((0.0, 0.0), (9.7, 0.0))] + _square()[1:]
-        self.assertEqual(len(topo.heal(_doc(segs), tolerance=0.01, max_gap=0.01).faces().clusters), 0)
-        self.assertEqual(len(topo.heal(_doc(segs), tolerance=0.01, max_gap=0.5).faces().clusters), 1)
+        self.assertEqual(len(topo.heal(_doc(segs), max_gap=0.01).faces().clusters), 0)
+        self.assertEqual(len(topo.heal(_doc(segs), max_gap=0.5).faces().clusters), 1)
 
 
 class TestThresholdsChecked(unittest.TestCase):
-    """Le due soglie sono mm (D245): un valore che non lo è si ferma a `heal()`."""
+    """`max_gap` è in mm (D245): un valore che non lo è si ferma a `heal()`."""
 
-    def test_tolleranza_non_valida_rifiutata(self):
-        for bad in (-1.0, 0.0, float("nan"), float("inf")):
-            with self.subTest(tolerance=bad), self.assertRaises(ValueError):
-                topo.heal(_doc(_square()), tolerance=bad)
-
-    def test_tolleranza_del_loader_controllata_anche_lei(self):
-        doc = _doc(_square())
-        doc.source_meta["tolerance"] = -0.5
-        with self.assertRaises(ValueError):
-            topo.heal(doc)
+    def test_la_tolleranza_non_e_un_parametro(self):
+        # una soglia sola, fissa: topo.precision.SAME_POINT (D268, D269)
+        with self.assertRaises(TypeError):
+            topo.heal(_doc(_square()), **{"tolerance": 0.05})
 
     def test_max_gap_non_valido_rifiutato(self):
         for bad in (-0.1, float("nan"), float("inf")):
@@ -109,7 +103,7 @@ class TestThresholdsChecked(unittest.TestCase):
         self.assertTrue(topo.heal(_doc(_square()), max_gap=0.0).faces().is_valid)
 
     def test_soglia_non_numerica(self):
-        for kw in ({"tolerance": "0.1"}, {"max_gap": "0.1"}, {"tolerance": True}):
+        for kw in ({"max_gap": "0.1"}, {"max_gap": True}):
             with self.subTest(**kw), self.assertRaises(TypeError):
                 topo.heal(_doc(_square()), **kw)
 
@@ -117,19 +111,19 @@ class TestThresholdsChecked(unittest.TestCase):
 class TestProvenance(unittest.TestCase):
 
     def test_source_file_di_default_dal_documento(self):
-        net = topo.heal(_doc(_square(), source_path="parte.dxf"), tolerance=0.01, max_gap=0.01)
+        net = topo.heal(_doc(_square(), source_path="parte.dxf"), max_gap=0.01)
         self.assertEqual(net.source_file, "parte.dxf")
         for reading in (net.faces(), net.outlines()):
             self.assertEqual(reading.source_file, "parte.dxf")
             self.assertEqual([c.source_file for c in reading.clusters], ["parte.dxf"])
 
     def test_source_file_del_chiamante_vince(self):
-        net = topo.heal(_doc(_square(), source_path="parte.dxf"), tolerance=0.01, source_file="altro.dxf", max_gap=0.01)
+        net = topo.heal(_doc(_square(), source_path="parte.dxf"), source_file="altro.dxf", max_gap=0.01)
         self.assertEqual(net.faces().source_file, "altro.dxf")
         self.assertEqual(net.outlines().source_file, "altro.dxf")
 
     def test_label_su_ogni_cluster_di_tutte_e_due_le_letture(self):
-        net = topo.heal(_doc(_square() + _square(x0=20.0)), tolerance=0.01, label="p", max_gap=0.01)
+        net = topo.heal(_doc(_square() + _square(x0=20.0)), label="p", max_gap=0.01)
         for reading in (net.faces(), net.outlines()):
             self.assertEqual([c.label for c in reading.clusters], ["p", "p"])
 

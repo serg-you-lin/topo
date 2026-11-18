@@ -103,13 +103,12 @@ def check_one(path: Path) -> dict:
     from topo.core.primitives.segments import DEFAULT_TOLERANCE
     report = {}
     try:
-        heal_doc = topo_dxf.load_dxf(str(path), upgrade=True, explode_inserts=True, flatten_z=True,
-                                     tolerance=HEAL_TOLERANCE)
+        heal_doc = topo_dxf.load_dxf(str(path), upgrade=True, explode_inserts=True, flatten_z=True)
         outlines_doc = topo_dxf.load_dxf(str(path))
     except Exception as exc:  # noqa: BLE001  — un file che non si apre non è un difetto di lettura
         return {"load": f"{type(exc).__name__}: {exc}"}
     report["edges"] = len(heal_doc.edges)
-    report["faces"] = _check_reading("faces", heal_doc, lambda d: topo.heal(d, tolerance=HEAL_TOLERANCE).faces(),
+    report["faces"] = _check_reading("faces", heal_doc, lambda d: topo.heal(d).faces(),
                                     HEAL_TOLERANCE, 2 * DEFAULT_TOLERANCE)
     report["outlines"] = _check_reading("outlines", outlines_doc, lambda d: topo.heal(d, max_gap=MAX_GAP).outlines(),
                                       MAX_GAP, 2 * (DEFAULT_TOLERANCE + GRAPH_EPSILON))

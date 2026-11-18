@@ -8,6 +8,7 @@ Funzioni pubbliche:
                e restituisce una lista di Edge per il core.
 """
 
+from topo.precision import PDF_SNAP
 import os
 try:
     import fitz
@@ -19,7 +20,7 @@ from .sanitize import sanitize_pdf_geometries
 from .graph_adapter import map_sanitized_item_to_edge
 
 
-def load_pdf(path: str, snap_tolerance: float = 0.15) -> list:
+def load_pdf(path: str, snap_tolerance: float = PDF_SNAP) -> list:
     """
     Apre un documento PDF, estrae le geometrie vettoriali da tutte le pagine,
     applica una sanificazione pesante (snap geometrico dei nodi vicini),

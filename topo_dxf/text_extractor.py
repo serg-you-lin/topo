@@ -24,6 +24,7 @@ così ``write()`` la ri-materializza fedele all'originale.
 
 from __future__ import annotations
 
+from topo.precision import TEXT_ARC_SAGITTA
 import re
 from typing import List, Optional, Sequence, Tuple
 
@@ -38,7 +39,7 @@ from .mtext import clean_mtext, mleader_text
 TEXT_TYPES = frozenset({"TEXT", "MTEXT", "DIMENSION", "LEADER", "MULTILEADER"})
 
 # Errore massimo di corda per discretizzare archi/curve (mm).
-_ARC_SAGITTA = 0.1
+_ARC_SAGITTA = TEXT_ARC_SAGITTA  # D269
 
 
 class DxfTextExtractor:

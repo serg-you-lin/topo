@@ -29,7 +29,7 @@ from typing import Any, Dict, List
 from .geometry.build import polygon
 from .primitives.segments import LineSeg, ArcSeg, CircleSeg, BSplineSeg, EllipseSeg
 from .topology.edge import Edge
-from ..model.document import DEFAULT_NODE_TOLERANCE, Document
+from ..model.document import Document
 from ..model.role import normalize_role
 
 _SUPPORTED_TYPES = frozenset({"line", "arc", "circle", "polygon", "spline", "ellipse"})
@@ -160,8 +160,7 @@ class GeometryReader:
 
 def load_geometry(
     entities: List[Dict[str, Any]],
-    *, tolerance: float = DEFAULT_NODE_TOLERANCE,
-    source_path: str = "",
+    *, source_path: str = "",
 ) -> Document:
     """
     Builds a Document from a list of pure geometric descriptions — same
@@ -186,9 +185,6 @@ def load_geometry(
 
     Args:
         entities:    list of geometric dicts (see GeometryReader)
-        tolerance:   rounding tolerance of the topological nodes — same
-                     meaning as load_dxf(tolerance=...); pass the same value
-                     to heal() if you customize it
         source_path: free label for Document.source_path — not a file, only
                      used for diagnostics/traceability
 
@@ -200,22 +196,20 @@ def load_geometry(
         edges=edges,
         source_path=source_path or "<load_geometry>",
         source_format="geometry",
-        source_meta={"tolerance": tolerance},
+        source_meta={},
     )
 
 
 def load_segments(
     segments,
-    *, tolerance: float = DEFAULT_NODE_TOLERANCE,
-    role: str = "unknown",
+    *, role: str = "unknown",
     source_path: str = "",
 ) -> Document:
     """
     A Document from topo segments (`LineSeg`, `ArcSeg`, `CircleSeg`, ...)
     or from lists of segments, as returned by the constructors of
     `topo.geometry` (`rectangle`, `regular_polygon`, `polygon`, `circle`,
-    `stadium`). Every edge takes `role`. Same node tolerance as
-    `load_geometry` (D96).
+    `stadium`). Every edge takes `role`.
 
         fg = topo.geometry
         doc = topo.load_segments(fg.rectangle(200, 100) + fg.circle(10))
@@ -230,5 +224,5 @@ def load_segments(
         edges=edges,
         source_path=source_path or "<load_segments>",
         source_format="geometry",
-        source_meta={"tolerance": tolerance},
+        source_meta={},
     )

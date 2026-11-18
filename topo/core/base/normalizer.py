@@ -44,6 +44,7 @@ Funzioni pubbliche:
 """
 
 from __future__ import annotations
+from ...precision import RING_TO_CIRCLE, SAME_DIRECTION_SINE
 import math
 from collections import Counter
 from dataclasses import dataclass, replace
@@ -63,7 +64,7 @@ from ...model.role import ContourRole
 # merge_collinear_overlaps
 # ---------------------------------------------------------------------------
 
-_SAME_DIRECTION = 1e-7   # seno dell'angolo fra due direzioni: quasi-esatta per costruzione, non tollerante
+_SAME_DIRECTION = SAME_DIRECTION_SINE   # seno dell'angolo fra due direzioni: quasi-esatta per costruzione, non tollerante  # D269
 _SAME_OFFSET    = SAME_POINT   # mm — "stessa retta / stesso cerchio", non "vicina"  # D268
 _CHAIN_GAP_EPS  = FLOAT_NOISE  # guardia da rumore in virgola mobile, non tolleranza utente
 
@@ -582,7 +583,7 @@ def refit_tessellations(
     edges: Iterable[Edge],
     max_segment: float = 0.1,
     min_run: int = 10,
-    tolerance: float = 0.02,
+    tolerance: float = RING_TO_CIRCLE,
 ) -> List[Edge]:
     """
     Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di
@@ -630,7 +631,7 @@ def refit_tessellations(
     return [e for e in edges if id(e) not in replaced] + new_edges
 
 
-def refit_circle_rings(edges: Iterable[Edge], tolerance: float = 0.02) -> List[Edge]:
+def refit_circle_rings(edges: Iterable[Edge], tolerance: float = RING_TO_CIRCLE) -> List[Edge]:
     """
     Un gruppo connesso di pezzi `role == UNKNOWN` (niente CircleSeg) il cui
     nucleo (il gruppo senza i rami a capo libero) sta tutto entro `tolerance`

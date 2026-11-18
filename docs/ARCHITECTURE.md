@@ -344,8 +344,8 @@ consumer with `extra(cluster)`, which cannot replace a topo field.
 
 ### The tolerance
 
-`tolerance` (default `topo.geometry.SAME_POINT` = 0.001, D268) is the distance under which two
-ends are one node; gaps are closed only by `max_gap` (D267). It does **not** round nodes: an endpoint is its true point, no
+`topo.precision.SAME_POINT` (0.001, D268) is the distance under which two ends are one
+node — fixed, not a parameter (D269); gaps are closed only by `max_gap` (D267). It does **not** round nodes: an endpoint is its true point, no
 grid (MAP.md D216); two ends become the same node by distance. It serves in two ways:
 
 1. **gap closing**: a free endpoint closes within `tolerance` on another

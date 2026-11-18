@@ -23,7 +23,7 @@ from ezdxf.addons import odafc
 from .sanitize import sanitize, _explode_inserts, _explode_hatches, _explode_fills, _explode_leaders
 from .adapter import DxfAdapter
 from .text_extractor import DxfTextExtractor, bare_dimensions, carries_string, hand_written_dimensions
-from topo.model import DEFAULT_NODE_TOLERANCE, Diagnostic, Document, RoleRule
+from topo.model import Diagnostic, Document, RoleRule
 
 # Percorso dell'eseguibile ODA File Converter. `topo` NON legge i DWG da solo:
 # il supporto DWG di ezdxf È l'addon `odafc`, che è un wrapper attorno a ODA
@@ -240,7 +240,6 @@ def load_dxf(
     explode_inserts: bool = True,
     flatten_z: bool = True,
     verbose: bool = False,
-    tolerance: float = DEFAULT_NODE_TOLERANCE,
     role_rules: Sequence[RoleRule] = (),
     skip_layers: Union[Sequence[str], Callable[[str], bool]] = (),
 ) -> Document:
@@ -266,8 +265,6 @@ def load_dxf(
         flatten_z:       if True (default), brings entities with Z != 0 onto
                          the plane
         verbose:         if True, prints entity detail in sanitize
-        tolerance:       rounding tolerance of the topological nodes;
-                         taken up by heal() if not specified there
         role_rules:      caller's rules that assign the role to Edges at
                          translation time (RoleRule, D63); the name
                          evaluated by `name`/`name_contains` is the layer
@@ -380,7 +377,6 @@ def load_dxf(
     meta = {
         "$INSUNITS":     doc.header.get("$INSUNITS", 4),
         "$MEASUREMENT":  doc.header.get("$MEASUREMENT", 1),
-        "tolerance":     tolerance,
     }
 
     return Document(
@@ -397,7 +393,6 @@ def load_dxf(
 def document_from_msp(
     msp,
     *,
-    tolerance: float = DEFAULT_NODE_TOLERANCE,
     role_rules: Sequence[RoleRule] = (),
     source_path: str = "",
     skip_layers: Union[Sequence[str], Callable[[str], bool]] = (),
@@ -419,7 +414,6 @@ def document_from_msp(
     meta = {
         "$INSUNITS":     header.get("$INSUNITS", 4) if header else 4,
         "$MEASUREMENT":  header.get("$MEASUREMENT", 1) if header else 1,
-        "tolerance":     tolerance,
     }
     # niente esplosioni qui: quello che resta non letto lo dice un avviso,
     # mai un silenzio (D137) — i tipi non modellati e i richiami senza stringa

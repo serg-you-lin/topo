@@ -28,7 +28,7 @@ class TestTangentSpike(unittest.TestCase):
     su questo caso."""
 
     def test_la_punta_arrotondata_non_ha_una_spike(self):
-        doc = topo_dxf.load_dxf(str(FIXTURES / "outline_tangent_spike.dxf"), tolerance=TOLERANCE)
+        doc = topo_dxf.load_dxf(str(FIXTURES / "outline_tangent_spike.dxf"))
         reading = read_outline(doc.edges, tolerance=TOLERANCE, max_gap=MAX_GAP)
         self.assertIsNotNone(reading.outer)
         # 1011.359 a discretizzazione fine; 1011.27 coi punti di ezdxf (D135)

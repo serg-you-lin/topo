@@ -5,6 +5,7 @@ Intersezioni pure: retta/retta, cerchio/retta, cerchio/cerchio
 e `intersections(a, b)` fra due primitive qualunque.
 """
 
+from ...precision import CURVE_SAGITTA, ROOT_NOISE
 import math
 from typing import Optional, Tuple, List
 
@@ -112,8 +113,8 @@ def _closest_to(candidates: List[Point], ref: Point, other: Point) -> Optional[P
 # Due primitive qualunque
 # ---------------------------------------------------------------------------
 
-_SAME_POINT = 1e-7    # due radici più vicine di così sono lo stesso punto
-CURVE_TOLERANCE = 1e-4  # discretizzazione di spline ed ellissi per incrociarle
+_SAME_POINT = ROOT_NOISE    # due radici più vicine di così sono lo stesso punto  # D269
+CURVE_TOLERANCE = CURVE_SAGITTA  # discretizzazione di spline ed ellissi per incrociarle  # D269
 
 
 def _exact_parts(seg) -> list:

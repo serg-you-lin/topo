@@ -52,7 +52,7 @@ class TestGap(unittest.TestCase):
 
     def test_accetta_un_contorno(self):
         result = topo.heal(topo.load_segments(topo.geometry.rectangle(100, 60, center=(50, 30))
-                                              + topo.geometry.rectangle(20, 20, center=(50, 30))), tolerance=0.01).faces()
+                                              + topo.geometry.rectangle(20, 20, center=(50, 30)))).faces()
         cluster = result.clusters[0]
         self.assertAlmostEqual(topo.geometry.gap(cluster.inners[0], cluster.outer).distance, 20.0, places=9)
 
