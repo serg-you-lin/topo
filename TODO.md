@@ -51,10 +51,8 @@ G17 (D250).
       solito portano nome utente e PC.
 - [ ] **Una soglia sola, il resto** (D268 fatto: `topo.geometry.SAME_POINT`
       = 0,001, guardia in `tests/package/test_one_threshold.py`).
-      - Difetto (18 novembre): `heal(doc, max_gap=0.05).outlines()` su
-        `regr_01_island_prima` e altri 3 file dello stesso disegno dà
-        `open-contour`: un salto in un contorno
-        consegnato (D206). Prima di lunedì era valido.
+      - La nota `welded` dice "shorter than 0.05", ma salda sotto
+        `SAME_POINT` (`decide_nodes`): testo fisso in `network.py:157`.
       - Da capire: famiglia `drw_0033` (`faces()`, −16,9% d'area) con
         `max_gap=0.05` rispetto a prima di lunedì.
       - Prima della 1.0, solo le soglie di `topo.precision` che entrano nelle

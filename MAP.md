@@ -650,3 +650,7 @@ node tolerance. Exceptions only as listed with their reason in `tests/package/te
 One file holds every fixed threshold with its reason; nothing else writes a threshold as a number (`test_one_threshold.py`); assigning
 one raises `AttributeError`. A caller changes only `max_gap` (reopens D246 for `tolerance`; clean break before 1.0). `SAME_POINT` moves
 from `topo.geometry` to `topo.precision`; `DEFAULT_NODE_TOLERANCE` and `Document.node_tolerance` are gone. Values are unchanged.
+### D270 — a contour read along the union's rim closes its own jumps (G15, how D206/D209 hold under D268).
+`rim.face_segments` cuts each edge where the rim's vertex projects onto it: two consecutive pieces end within 2·band
+of each other, by construction. It joins them with a new straight segment (no curve moves); `close_contour_jumps` stays at
+`SAME_POINT`. Before D269 `tolerance` (0.05) hid these jumps; at 0.001 they made 4 sheets `open-contour` with `max_gap`.
