@@ -72,9 +72,6 @@ G17 (D250).
         `RING_TO_CIRCLE`, `MIN_CONTOUR_AREA`, `DIRECTION_SAMPLE`, `SAGITTA`
         dove decide. Misurarle come SAME_POINT e portarle a lei dove regge.
         Le altre (default di `topo.geometry`, PDF, angoli) dopo la 1.0.
-      - Consumer da adeguare dalle loro sessioni (D269): `heal(tolerance=)`,
-        `load_dxf(tolerance=)`, `topo.geometry.SAME_POINT`,
-        `DEFAULT_NODE_TOLERANCE` non ci sono più.
       - Letture che a 0,001 cambiano sui DXF di `tests/` senza golden: 82,
         di cui 23 con area cambiata meno di un millesimo; le altre sono copie
         degli stessi ~8 disegni. Verificare con una misura (non a occhio) che
