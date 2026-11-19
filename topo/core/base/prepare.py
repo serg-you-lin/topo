@@ -25,7 +25,8 @@ from ..topology.edge import Edge
 from ..topology.noding import decide_nodes
 from .normalizer import (merge_cocircular_overlaps, merge_collinear_overlaps, refit_circle_rings,
                          refit_tessellations)
-from .cleanup import (ambiguous_free_ends, close_free_gaps, close_near_full_arcs, split_labeled)
+from .cleanup import (ambiguous_free_ends, close_free_gaps, close_near_full_arcs, move_onto_targets,
+                      split_labeled)
 
 
 @dataclass
@@ -56,6 +57,7 @@ class Normalized:
     full_arcs:      int = 0
     ambiguous:      list = field(default_factory=list)   # estremi senza compagno scelto (D185)
     gaps:           list = field(default_factory=list)   # (estremo, distanza) dei gap chiusi
+    moved:          list = field(default_factory=list)   # (punto, spostamento) delle curve spostate (D271)
 
 
 def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normalized:
@@ -80,6 +82,11 @@ def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normali
     merged = merge_cocircular_overlaps(edges)
     out.merged_arcs, edges = len(edges) - len(merged), merged
     edges, out.full_arcs = close_near_full_arcs(edges, gap)
+    # una curva coi capi di fianco ai suoi target si sposta su di loro prima
+    # che un gap li leghi altrove (D271); i nodi si ridecidono dai punti nuovi
+    edges = move_onto_targets(edges, gap, out.moved)
+    if out.moved:
+        edges, _ = decide_nodes(edges)
     out.ambiguous = ambiguous_free_ends(edges, gap)
     closed = close_free_gaps(edges, gap, out.gaps)
     # chiudere un gap allunga le due metà una verso l'altra: si sovrappongono

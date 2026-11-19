@@ -19,7 +19,7 @@ Puro: solo primitive, nessun formato.
 
 from __future__ import annotations
 
-from ...precision import POLYGON_SAGITTA, TANGENT_ANGLE
+from ...precision import FLOAT_NOISE, POLYGON_SAGITTA, TANGENT_ANGLE, ZERO_GUARD
 import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
@@ -44,6 +44,7 @@ _JOIN = SAME_POINT               # capi più vicini di così sono lo stesso nodo
 _MIN_PIECE = SAME_POINT          # pezzi più corti di così non esistono  # D268
 _POLYGON_TOLERANCE = POLYGON_SAGITTA  # sagitta della discretizzazione per i test dentro/fuori  # D269
 _ON_BORDER = SAME_POINT          # un punto medio più vicino di così al bordo ci corre sopra  # D268
+_ONTO_STEPS = 8                  # passi di Newton al più, in `translation_onto`
 
 
 # ---------------------------------------------------------------------------
@@ -293,6 +294,42 @@ def nearest_point(segments: Sequence, point: Point) -> Point:
     if best is None:
         raise ValueError("nearest_point(): `segments` is empty")
     return best
+
+
+def translation_onto(a: Point, b: Point, target_a, target_b) -> Optional[Point]:
+    """
+    (dx, dy) che porta `a` sulla curva `target_a` e `b` sulla curva
+    `target_b` insieme: una traslazione sola, la più vicina a zero. None se
+    non è unica (le due curve parallele dove i punti cadono) o se non si
+    trova. Esatta su rette, archi e cerchi; su spline ed ellissi entro
+    `CURVE_TOLERANCE` (D271).
+    """
+    t = (0.0, 0.0)
+    for _ in range(_ONTO_STEPS):
+        pa, pb = (a[0] + t[0], a[1] + t[1]), (b[0] + t[0], b[1] + t[1])
+        fa, fb = nearest_point([target_a], pa), nearest_point([target_b], pb)
+        if max(math.dist(pa, fa), math.dist(pb, fb)) <= FLOAT_NOISE:
+            return t
+        na, nb = _normal(target_a, fa), _normal(target_b, fb)
+        det = na[0] * nb[1] - na[1] * nb[0]
+        if abs(det) <= ZERO_GUARD:
+            return None
+        ca = na[0] * (fa[0] - pa[0]) + na[1] * (fa[1] - pa[1])
+        cb = nb[0] * (fb[0] - pb[0]) + nb[1] * (fb[1] - pb[1])
+        t = (t[0] + (ca * nb[1] - cb * na[1]) / det, t[1] + (na[0] * cb - nb[0] * ca) / det)
+    return None
+
+
+def _normal(seg, foot: Point) -> Point:
+    """La normale unitaria di `seg` in `foot`, un suo punto."""
+    if isinstance(seg, (ArcSeg, CircleSeg)):
+        dx, dy = foot[0] - seg.center[0], foot[1] - seg.center[1]
+    else:
+        s = _param(seg, foot)
+        p, q = _at(seg, max(0.0, s - _JOIN)), _at(seg, min(_span(seg), s + _JOIN))
+        dx, dy = -(q[1] - p[1]), q[0] - p[0]
+    length = math.hypot(dx, dy) or 1.0
+    return dx / length, dy / length
 
 
 # ---------------------------------------------------------------------------

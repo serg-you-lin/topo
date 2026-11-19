@@ -15,8 +15,14 @@ from dataclasses import replace
 from typing import Callable, List, Optional, Tuple
 
 
-from ..geometry.measure import node_point
-from ..primitives.segments import ArcSeg, CircleSeg, BSplineSeg, segment_endpoints
+from shapely import STRtree
+from shapely.geometry import Point
+
+from ..geometry.measure import SAME_POINT, node_point
+from ..geometry.regions import nearest_point, translation_onto
+from ..primitives.segments import (ArcSeg, CircleSeg, BSplineSeg, LineSeg, DEFAULT_TOLERANCE,
+                                   segment_endpoints, segment_is_closed)
+from ..topology.noding import edge_geometry
 from ..topology.edge import Edge
 from ..topology.graph import build_node_graph, connected_groups
 from ...model.role import ContourRole, is_structural_role
@@ -171,6 +177,73 @@ def close_free_gaps(edges: List[Edge], tolerance: float, closed: Optional[list] 
     if not fixes:
         return list(edges)
     return apply_gap_fixes(edges, fixes)
+
+
+def move_onto_targets(edges: List[Edge], gap: float, moved: Optional[list] = None) -> List[Edge]:
+    """
+    Una curva aperta coi due capi liberi (nessun nodo la lega ad altro: spostarla
+    non strappa niente) ed entro `gap` da due curve diverse (i suoi target),
+    almeno uno staccato, si sposta intera della traslazione unica che li porta
+    tutti e due sui target: il raccordo disegnato qualche millesimo di fianco
+    al lato (D271). Non si sposta verso un arco o cerchio
+    con un altro concentrico (un filetto), né una retta che passa per il
+    centro del cerchio target (un asse). `moved`, se dato, riceve (punto,
+    spostamento) di ogni curva spostata.
+    """
+    edges = list(edges)
+    geoms = [edge_geometry(e) for e in edges]
+    tree = STRtree(geoms)
+    rounds = [e.segment for e in edges if isinstance(e.segment, (ArcSeg, CircleSeg))]
+    graph = build_node_graph(edges)
+    out = list(edges)
+    for k, edge in enumerate(edges):
+        seg = edge.segment
+        if segment_is_closed(seg) or edge.start == edge.end                 or graph.degree(edge.start) != 1 or graph.degree(edge.end) != 1:
+            continue
+        ends = segment_endpoints(seg)
+        found = [_target(p, k, edges, geoms, tree, gap) for p in ends]
+        if None in found or found[0][1] == found[1][1] or max(d for d, _ in found) <= SAME_POINT:
+            continue
+        if any(d > SAME_POINT and not _may_land(seg, edges[j].segment, rounds, gap) for d, j in found):
+            continue
+        t = translation_onto(ends[0], ends[1], edges[found[0][1]].segment, edges[found[1][1]].segment)
+        if t is None or math.hypot(*t) > gap:
+            continue
+        shifted = seg.translated(*t)
+        a, b = segment_endpoints(shifted)
+        out[k] = replace(edge, segment=shifted, start=node_point(a), end=node_point(b))
+        if moved is not None:
+            moved.append((ends[0], math.hypot(*t)))
+    return out
+
+
+def _target(p, k: int, edges: List[Edge], geoms: list, tree, gap: float):
+    """(distanza, indice) della curva più vicina a `p` entro `gap`, fuori da `k`."""
+    best = None
+    for j in tree.query(Point(p), predicate="dwithin", distance=gap + 2 * DEFAULT_TOLERANCE):
+        j = int(j)
+        if j == k:
+            continue
+        d = math.dist(p, nearest_point([edges[j].segment], p))
+        if d <= gap and (best is None or d < best[0]):
+            best = (d, j)
+    return best
+
+
+def _may_land(seg, target, rounds: list, gap: float) -> bool:
+    """Un capo staccato può cadere su `target`: no se è un arco o cerchio con
+    un altro concentrico (filetto), no se `seg` è una retta per il suo centro (asse)."""
+    if not isinstance(target, (ArcSeg, CircleSeg)):
+        return True
+    if any(r is not target and math.dist(r.center, target.center) <= gap for r in rounds):
+        return False
+    if isinstance(seg, LineSeg):
+        (ax, ay), (bx, by) = seg.start, seg.end
+        length = math.hypot(bx - ax, by - ay)
+        cx, cy = target.center
+        if length > 0 and abs((bx - ax) * (ay - cy) - (by - ay) * (ax - cx)) / length <= gap:
+            return False
+    return True
 
 
 def near_free_gaps(edges: List[Edge], tolerance: float, reach_to: float) -> list:
