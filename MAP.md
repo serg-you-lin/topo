@@ -654,3 +654,7 @@ from `topo.geometry` to `topo.precision`; `DEFAULT_NODE_TOLERANCE` and `Document
 `rim.face_segments` cuts each edge where the rim's vertex projects onto it: two consecutive pieces end within 2·band
 of each other, by construction. It joins them with a new straight segment (no curve moves); `close_contour_jumps` stays at
 `SAME_POINT`. Before D269 `tolerance` (0.05) hid these jumps; at 0.001 they made 4 sheets `open-contour` with `max_gap`.
+### D271 — reopening D17 and D209: an open curve with both ends free, each within `max_gap` of a different curve, moves whole onto them (Federico, 19 November).
+The fillet drawn a few thousandths beside its side: no gap rule reaches it (D189), `tolerance` used to. One translation puts both ends
+on their targets, at most `max_gap`, before the gaps close; a curve tied at a node never moves (it would tear the node). Not onto an
+arc or circle with a concentric one (a thread), not a line through the target circle's centre (an axis). Note `curves-moved`.

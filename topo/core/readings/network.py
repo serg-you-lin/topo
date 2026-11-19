@@ -167,6 +167,8 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
     closed = [(pt, d) for pt, d in clean.gaps if d > FLOAT_NOISE]
     if closed:
         net.notes.append(_ends_joined_note(closed, gap))
+    if clean.moved:
+        net.notes.append(_curves_moved_note(clean.moved, gap))
     if clean.ambiguous:
         net.warnings.append(Diagnostic(
             "tie", f"{_plural(len(clean.ambiguous), 'free end', 'free ends')} with two partners at the same "
@@ -262,6 +264,14 @@ def _ends_joined_note(closed: list, gap: float) -> Diagnostic:
         "ends-joined", f"{_plural(len(closed), 'gap', 'gaps')} between free ends closed",
         points=[pt for pt, _ in sorted(closed, key=lambda c: -c[1])],
         notes=[f"{_span([d for _, d in closed], '.4f')} mm, max_gap {gap:g} mm"],
+        level="note")
+
+
+def _curves_moved_note(moved: list, gap: float) -> Diagnostic:
+    return Diagnostic(
+        "curves-moved", f"{_plural(len(moved), 'curve', 'curves')} moved whole, each onto the two curves its ends reach",
+        points=[pt for pt, _ in sorted(moved, key=lambda m: -m[1])],
+        notes=[f"{_span([d for _, d in moved], '.4f')} mm, max_gap {gap:g} mm (D271)"],
         level="note")
 
 
