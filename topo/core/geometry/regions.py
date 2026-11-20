@@ -30,7 +30,7 @@ from shapely.prepared import prep
 from .measure import SAME_POINT
 from ..primitives.polygon_builder import build_polygon
 from ..primitives.segments import (
-    ArcSeg, CircleSeg, LineSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle,
+    ArcSeg, CircleSeg, EllipseSeg, LineSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle,
 )
 from ..primitives.trim import sub_segment
 from .integrals import ring_moments
@@ -283,17 +283,69 @@ def nearest_point(segments: Sequence, point: Point) -> Point:
     """
     The point of the primitives `segments` nearest to `point`: also in the
     middle of a side, not only on a vertex. Exact on lines, arcs and circles;
-    on splines and ellipses within `CURVE_TOLERANCE`. To know where it falls
-    on the contour (vertex, blend, side) pass it to `point_on_contour`.
+    on splines and ellipses refined on the true curve, to float precision.
+    To know where it falls on the contour (vertex, blend, side) pass it to
+    `point_on_contour`.
     """
     best: Optional[Point] = None
     for seg in segments:
-        q = _at(seg, max(0.0, min(_span(seg), _param(seg, point))))
+        curve = None if isinstance(seg, (LineSeg, ArcSeg, CircleSeg)) else _true_curve(seg)
+        q = (_at(seg, max(0.0, min(_span(seg), _param(seg, point)))) if curve is None
+             else _nearest_on_curve(seg, curve, point))
         if best is None or math.dist(q, point) < math.dist(best, point):
             best = q
     if best is None:
         raise ValueError("nearest_point(): `segments` is empty")
     return best
+
+
+def _true_curve(seg):
+    """(punto al parametro, inizio, fine) della spline o ellisse vera; None
+    se la spline non ha un vettore dei nodi completo (resta la discretizzazione)."""
+    if isinstance(seg, EllipseSeg):
+        sign = 1.0 if seg.ccw else -1.0
+        return (lambda u: seg._point_at(seg.start_param + sign * u)), 0.0, seg._sweep()
+    p, knots = seg.degree, seg.knots
+    if len(knots) != len(seg.control_points) + p + 1 or knots[-(p + 1)] <= knots[p]:
+        return None
+    return seg._evaluate, knots[p], knots[-(p + 1)]
+
+
+def _nearest_on_curve(seg, curve, point: Point) -> Point:
+    """Il punto della curva vera più vicino a `point` (D180, D200): il
+    parametro campionato fitto quanto la discretizzazione, poi sezione aurea
+    attorno ai tre campioni più vicini. La poligonale da sola sbaglia fino a
+    `CURVE_TOLERANCE`, e un contatto si decide a 1e-6."""
+    at, t0, t1 = curve
+    n = max(len(_polyline(seg)) - 1, 1)
+    ts = [t0 + (t1 - t0) * i / n for i in range(n + 1)]
+    far = [math.dist(at(t), point) for t in ts]
+    best: Optional[Point] = None
+    for i in sorted(range(n + 1), key=far.__getitem__)[:3]:
+        t = _golden_min(lambda s: math.dist(at(s), point), ts[max(i - 1, 0)], ts[min(i + 1, n)])
+        q = at(t)
+        if best is None or math.dist(q, point) < math.dist(best, point):
+            best = q
+    return best
+
+
+def _golden_min(f, a: float, b: float) -> float:
+    """Il minimo di `f` su [a, b] (sezione aurea), fino a che i double
+    separano i punti interni."""
+    r = (math.sqrt(5) - 1) / 2
+    c, d = b - r * (b - a), a + r * (b - a)
+    fc, fd = f(c), f(d)
+    while a < c < d < b:
+        if fc <= fd:
+            b, d, fd = d, c, fc
+            c = b - r * (b - a)
+            fc = f(c)
+        else:
+            a, c, fc = c, d, fd
+            d = a + r * (b - a)
+            fd = f(d)
+    candidates = [(f(a), a), (fc, c), (fd, d), (f(b), b)]
+    return min(candidates)[1]
 
 
 def translation_meeting(constraints: Sequence[Tuple[Point, object, int]]) -> Optional[Point]:

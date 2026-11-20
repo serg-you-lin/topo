@@ -701,7 +701,8 @@ topo.geometry.nearest_point(segments, point) -> Point
 ```
 
 The point of the primitives `segments` nearest to `point`, even in the middle of a
-side. Exact on lines, arcs and circles; on splines and ellipses within `1e-4`.
+side. Exact on lines, arcs and circles; on splines and ellipses refined on the true
+curve, not on its polyline (D274).
 `point` may be anywhere (a click, the centre of another figure): to know
 where the result falls on the contour, pass it to `point_on_contour` (D140).
 
@@ -719,7 +720,7 @@ The minimum distance between the boundaries `a` and `b`, and the closest pair of
 `b`. Each is a `Contour`, any object with `.segments`, or a list of primitives (a ring, or open pieces). Boundaries that
 touch or cross give 0 within float noise: compare with a small threshold (1e-6 mm), never with `== 0`. One
 boundary inside the other gives the distance between the two boundaries, not 0: it is about boundaries, not regions.
-Exact on lines, arcs and circles; on splines and ellipses within `1e-4` (D251).
+Exact on lines, arcs and circles; on splines and ellipses refined on the true curve (D251, D274).
 
 ```python
 cluster = result.clusters[0]
