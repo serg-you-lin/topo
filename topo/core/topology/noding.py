@@ -30,7 +30,7 @@ Puro: solo Edge e primitive, nessun formato.
 
 from __future__ import annotations
 
-from ...precision import ZERO_GUARD
+from ...precision import FLOAT_NOISE as _FLOAT_NOISE
 import math
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field, replace
@@ -54,7 +54,7 @@ from .graph import cluster_points, connected_groups
 
 GRAPH_EPSILON = SAME_POINT   # mm — due nodi così vicini sono uno solo per il grafo (heal, ripiego D100)  # D268
 
-_EPS = ZERO_GUARD  # D269
+_EPS = _FLOAT_NOISE
 _MIN_PIECE = SAME_POINT   # mm — sotto, lo spezzone non viene creato  # D268
 _EXACT = (LineSeg, ArcSeg, CircleSeg)
 
@@ -722,7 +722,7 @@ def _line_circle_near(line: LineSeg, arc) -> Optional[tuple]:
     """(piede sulla retta, punto dell'arco) della perpendicolare dal centro."""
     dx, dy = line.end[0] - line.start[0], line.end[1] - line.start[1]
     l2 = dx * dx + dy * dy
-    if l2 < _EPS:
+    if l2 < _EPS * _EPS:
         return None
     c = arc.center
     t = ((c[0] - line.start[0]) * dx + (c[1] - line.start[1]) * dy) / l2

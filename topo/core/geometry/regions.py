@@ -19,7 +19,7 @@ Puro: solo primitive, nessun formato.
 
 from __future__ import annotations
 
-from ...precision import FLOAT_NOISE, SAME_POINT, TANGENT_ANGLE, ZERO_GUARD
+from ...precision import FLOAT_NOISE, SAME_POINT, TANGENT_ANGLE
 import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
@@ -27,7 +27,7 @@ from typing import List, Optional, Sequence, Tuple
 from shapely.geometry import LineString, Point as SPoint, Polygon
 from shapely.prepared import prep
 
-from .measure import SAME_POINT
+from .measure import SAME_POINT, segment_length
 from ..primitives.polygon_builder import build_polygon
 from ..primitives.segments import (
     ArcSeg, CircleSeg, EllipseSeg, LineSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle,
@@ -182,7 +182,7 @@ def _tangent(seg, at_end: bool) -> Tuple[float, float]:
         dy = sign * (-math.sin(t) * my + math.cos(t) * mx * r)
     else:
         dx, dy = _spline_derivative(seg, at_end) or (0.0, 0.0)
-        if math.hypot(dx, dy) <= ZERO_GUARD:   # derivata nulla al capo (punti di controllo doppi): la corda
+        if math.hypot(dx, dy) <= FLOAT_NOISE:   # derivata nulla al capo (punti di controllo doppi): la corda
             pts = _polyline(seg)
             (ax, ay), (bx, by) = (pts[-2], pts[-1]) if at_end else (pts[0], pts[1])
             dx, dy = bx - ax, by - ay
@@ -399,7 +399,7 @@ def translation_meeting(constraints: Sequence[Tuple[Point, object, int]]) -> Opt
         vx = sum(a * r for a, _, r in rows)
         vy = sum(b * r for _, b, r in rows)
         det = mxx * myy - mxy * mxy
-        if det <= ZERO_GUARD:
+        if det <= (FLOAT_NOISE / SAME_POINT) ** 2:
             return None
         t = (t[0] + (vx * myy - vy * mxy) / det, t[1] + (mxx * vy - mxy * vx) / det)
     return None
@@ -478,7 +478,8 @@ def _chain(pieces: list, inside_left: Optional[bool] = None) -> List[list]:
                     w = (sign * (back - math.atan2(oy, ox))) % (2 * math.pi)
                     # riparte tangente all'indietro (due curve che si toccano):
                     # la sua regione gira tutto attorno, lo spicchio è il giro intero
-                    return 2 * math.pi if w < TANGENT_TOLERANCE else w
+                    turns_back = w < math.pi / 2 and segment_length(left[i]) * math.sin(w) <= SAME_POINT
+                    return 2 * math.pi if turns_back else w
                 k = min(nexts, key=wedge)
             ring.append(left.pop(k))
         rings.append(ring)

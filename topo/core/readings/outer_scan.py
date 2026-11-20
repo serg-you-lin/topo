@@ -16,7 +16,7 @@ Puro: solo Edge e primitive, nessun formato.
 
 from __future__ import annotations
 
-from ...precision import ZERO_GUARD
+from ...precision import FLOAT_NOISE
 import math
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Tuple
@@ -32,7 +32,7 @@ AXIS_X = "x"   # raggio verticale a quota x, estremi in y
 SIDE_MIN = "min"
 SIDE_MAX = "max"
 
-_EPS = ZERO_GUARD  # D269
+_EPS = FLOAT_NOISE
 
 
 # ---------------------------------------------------------------------------
@@ -123,7 +123,7 @@ def _pieces(edge: Edge) -> list:
 
 
 def _on_arc(arc: _Arc, pt: Point) -> bool:
-    return angle_from_start(arc.center, arc.start, arc.ccw, pt) <= arc.sweep + _EPS
+    return angle_from_start(arc.center, arc.start, arc.ccw, pt) <= arc.sweep + _EPS / arc.radius
 
 
 def _arc_point(arc: _Arc, angle: float) -> Point:
@@ -153,7 +153,8 @@ def _intersections(piece, a: int, level: float) -> List[Point]:
         if abs(q[a] - p[a]) < _EPS:
             return []   # parallelo al raggio: lo vede l'altro asse
         t = (level - p[a]) / (q[a] - p[a])
-        if t < -_EPS or t > 1 + _EPS:
+        slack = _EPS / abs(q[a] - p[a])
+        if t < -slack or t > 1 + slack:
             return []
         pt = [0.0, 0.0]
         pt[a] = level

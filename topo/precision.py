@@ -36,10 +36,6 @@ SAME_POINT = 1e-3
 # rumore dei double: il margine di ogni soglia ("entro" la comprende, D183);
 # sopra quello di un moto (~1e-11), sotto ogni soglia di contatto
 FLOAT_NOISE = 1e-6
-# due radici dello stesso calcolo d'intersezione sono lo stesso punto
-ROOT_NOISE = 1e-7
-# guardia contro una divisione per zero o un passo nullo
-ZERO_GUARD = 1e-9
 
 # ---------------------------------------------------------------------------
 # Angoli: non lunghezze
@@ -58,7 +54,6 @@ ANGLE_BRACKET_DEG = 1.0        # gradi: attorno all'angolo trovato si cerca il r
 # ---------------------------------------------------------------------------
 
 SHAPE_FRACTION = 0.01          # della dimensione del contorno (contour_shape)
-CIRCULAR_BBOX_ASPECT = 0.15    # lati del riquadro di un "quasi cerchio"
 SIDE_COVERAGE = 0.85           # quota minima di un lato coperta dai tratti
 MARK_FRACTION = 0.05           # della lunghezza di un tratto di linea a tratti
 NEAR_GAP_FACTOR = 2.0          # un buco fino a questo multiplo di max_gap "c'è quasi" (D227)

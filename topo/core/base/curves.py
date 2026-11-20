@@ -27,7 +27,7 @@ from .normalizer import chain_runs
 def loops_to_curves(loops: List[list]) -> List[ClosedCurve | OpenCurve]:
     """
     Un ClosedCurve per loop, col ruolo del primo edge. Un loop che non fa un
-    contorno (poligono nullo, area sotto soglia, micro-cerchio) torna come un
+    contorno (poligono nullo, largo meno di SAME_POINT, D279) torna come un
     OpenCurve per edge, così finisce in `loose` invece di sparire (D151).
     """
     curves = []

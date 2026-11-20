@@ -12,7 +12,7 @@ La tolleranza è SEMPRE passata come parametro, mai hardcoded.
 
 from __future__ import annotations
 
-from ...precision import SAME_POINT, ZERO_GUARD
+from ...precision import FLOAT_NOISE, SAME_POINT
 import math
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
@@ -44,7 +44,7 @@ MIN_SEGMENTS_CIRCLE = 64
 
 # Un punto della griglia più vicino di così a un estremo dell'arco coincide
 # con l'estremo e si salta: eviterebbe solo un tratto degenere
-_GRID_SNAP = ZERO_GUARD  # D269
+_GRID_SNAP = FLOAT_NOISE
 
 # Numero massimo di segmenti per tratto di spline (evita esplosione di punti)
 MAX_SEGMENTS_SPLINE = 100

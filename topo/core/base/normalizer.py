@@ -697,7 +697,7 @@ def _full_turn(segments, center, slack: float) -> bool:
     """I pezzi, visti dal centro, coprono tutto il giro: nessuno spicchio scoperto più largo di `slack` radianti."""
     spans = []
     for s in segments:
-        pts = [s.start, s.end] if isinstance(s, LineSeg) else s.discretize(tolerance=FLOAT_NOISE * 1000)
+        pts = [s.start, s.end] if isinstance(s, LineSeg) else s.discretize(tolerance=SAME_POINT)
         angles = [math.atan2(p[1] - center[1], p[0] - center[0]) % (2 * math.pi) for p in pts]
         for u, v in zip(angles, angles[1:]):
             lo, hi = min(u, v), max(u, v)
@@ -729,7 +729,7 @@ def _ring_band(segments, center) -> Tuple[float, float]:
             near = min(near, math.dist(center, (ax + t * dx, ay + t * dy)))
             far = max(far, math.dist(center, s.start[:2]), math.dist(center, s.end[:2]))
         else:
-            ds = [math.dist(center, p[:2]) for p in s.discretize(tolerance=FLOAT_NOISE * 1000)]
+            ds = [math.dist(center, p[:2]) for p in s.discretize(tolerance=SAME_POINT)]
             near, far = min(near, *ds), max(far, *ds)
     return near, far
 

@@ -51,9 +51,8 @@ class ClosedCurve(Curve):
     Curva chiusa: una lista di segmenti che chiude un giro. I suoi fatti
     (area, bbox, baricentro, contains) sono calcolati sui segmenti (D166).
 
-    Non porta `diameter` / `center`: la geometria circolare di un contorno è
-    ricavata al bisogno da `core.geometry.measure.circular_geometry()` e stoccata
-    sull'oggetto `Hole` da `detect_flat()` (D15), non sul contorno grezzo.
+    Non porta `diameter` / `center`: forma e misure di un contorno si leggono
+    da `topo.geometry.contour_shape`.
     """
     segments: List[LineSeg | ArcSeg | BSplineSeg] = field(default_factory=list)
     _: KW_ONLY

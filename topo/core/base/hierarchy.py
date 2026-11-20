@@ -9,13 +9,9 @@ from ...model.contour import Contour
 from ...model.role import ContourRole, is_structural_role
 from ..primitives.polygon_builder import curve_polygon, with_polygon
 from ..geometry.integrals import ring_area
-from ..geometry.measure import FLOAT_NOISE, circular_geometry, noise_runs, track_points, SAME_POINT
+from ..geometry.measure import FLOAT_NOISE, noise_runs, track_points, SAME_POINT
 from ..geometry.rings import ring_perimeter
 from ..geometry.regions import enclosing
-
-
-
-MIN_SINGLE_LOOP_DIAMETER = SAME_POINT  # D268
 
 
 # ---------------------------------------------------------------------------
@@ -48,15 +44,6 @@ def loop_to_closed_curve(
         # sono lo stesso tratto, non c'è un contorno (D279)
         if not segments or 2 * ring_area(segments) <= SAME_POINT * ring_perimeter(segments):
             return None
-
-        # Guard sui micro-cerchi: un loop di una singola primitiva circolare
-        # con diametro sotto soglia è rumore, non un contorno. La
-        # classificazione hole/inner vera e propria è di detect_flat() (D15) —
-        # qui `diameter`/`center` NON vengono stoccati sulla curva.
-        if len(loop) == 1:
-            diameter, _ = circular_geometry(poly, segments)
-            if diameter is not None and diameter < MIN_SINGLE_LOOP_DIAMETER:
-                return None
 
         return with_polygon(ClosedCurve(role=role, segments=segments, styles=styles or []), poly)
     except Exception:
