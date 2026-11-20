@@ -14,7 +14,7 @@ cerchio (MAP.md D91).
 
 from __future__ import annotations
 
-from ...precision import CONCENTRIC_DISTANCE, SHAPE_ANGLE_DEG, SHAPE_FRACTION
+from ...precision import ANGLE_BRACKET_DEG, CONCENTRIC_DISTANCE, SHAPE_ANGLE_DEG, SHAPE_FRACTION
 import math
 from dataclasses import dataclass
 from enum import Enum
@@ -239,7 +239,7 @@ def _generic(segments):
     return ContourShape(kind, (c.x, c.y), sides[i], sides[1 - i], angle, len(segments))
 
 
-_ANGLE_BRACKET = math.radians(1.0)
+_ANGLE_BRACKET = math.radians(ANGLE_BRACKET_DEG)
 
 
 def _min_area_angle(reaches, theta: float) -> float:

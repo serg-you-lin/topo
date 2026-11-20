@@ -50,6 +50,9 @@ COLLINEAR_ANGLE = 1e-6         # radianti: due rette con la stessa direzione
 TANGENT_ANGLE = 1e-3           # radianti: sotto, due lati proseguono uno nell'altro
 SHAPE_ANGLE_DEG = 1.0          # gradi: angolo retto / lati paralleli di una forma (contour_shape)
 CORNER_TURN_DEG = 35.0         # gradi: una svolta più ampia è uno spigolo (simplify_points)
+NEAR_FULL_ARC_MISSING_DEG = 2.0  # gradi: un arco cui manca di più non è un cerchio (D112)
+NEAR_FULL_ARC_HINT_DEG = 8.0     # gradi: fin qui heal() avvisa che manca poco; un filetto (~90°) mai (D227)
+ANGLE_BRACKET_DEG = 1.0        # gradi: attorno all'angolo trovato si cerca il riquadro d'area minima (contour_shape)
 
 # ---------------------------------------------------------------------------
 # Frazioni e rapporti: non lunghezze
@@ -73,6 +76,7 @@ NON_CONTOUR_DISTANCE = 0.1     # mm: default di `find_non_contour_edges`
 AXIS_DEVIATION = 0.5           # mm: un tratto entro così dall'asse è orizzontale/verticale (fogli)
 SAME_COORDINATE = 1.5          # mm: due coordinate di un foglio entro così sono la stessa
 DIRECTION_SAMPLE = 3.0         # mm: dove si legge la direzione di un edge a un nodo
+TESSELLATION_SIDE = 0.1        # mm: lati più corti possono essere punti di una curva scritta a punti (refit_tessellations)
 PDF_SNAP = 0.15                # mm: adattatore PDF sperimentale, congelato (D10)
 
 

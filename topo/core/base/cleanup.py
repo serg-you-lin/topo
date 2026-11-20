@@ -19,7 +19,7 @@ from shapely import STRtree
 from shapely.geometry import Point
 
 from ..geometry.measure import FLOAT_NOISE, SAME_POINT, node_point
-from ...precision import TANGENT_ANGLE
+from ...precision import NEAR_FULL_ARC_HINT_DEG, NEAR_FULL_ARC_MISSING_DEG, TANGENT_ANGLE
 from ..geometry.points import circle_through
 from ..geometry.regions import _tangent, nearest_point, translation_meeting
 from ..primitives.segments import (ArcSeg, CircleSeg, BSplineSeg, LineSeg, DEFAULT_TOLERANCE,
@@ -50,8 +50,8 @@ def split_labeled(edges: List[Edge],
     return [e for e in edges if id(e) not in labeled_ids], labeled
 
 
-NEAR_FULL_ARC_MISSING = math.radians(2.0)   # angolo mancante oltre il quale un arco non è un cerchio (D112)
-NEAR_FULL_ARC_HINT = math.radians(8.0)      # fin qui heal() avvisa che manca poco; un filetto (~90°) mai (D227)
+NEAR_FULL_ARC_MISSING = math.radians(NEAR_FULL_ARC_MISSING_DEG)   # angolo mancante oltre il quale un arco non è un cerchio (D112)
+NEAR_FULL_ARC_HINT = math.radians(NEAR_FULL_ARC_HINT_DEG)      # fin qui heal() avvisa che manca poco; un filetto (~90°) mai (D227)
 
 
 def close_near_full_arcs(edges: List[Edge], tolerance: float,
