@@ -27,7 +27,8 @@ from ..topology.edge import Edge
 from ..topology.graph import build_node_graph, connected_groups
 from ...model.role import ContourRole, is_structural_role
 from .normalizer import _same_circle, merge_cocircular_overlaps
-from .gap_solver import free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, ambiguous_gap_ends, near_gaps
+from .gap_solver import (free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, ambiguous_gap_ends, near_gaps,
+                         tied_facing_ends)
 
 
 def split_labeled(edges: List[Edge],
@@ -177,6 +178,22 @@ def close_free_gaps(edges: List[Edge], tolerance: float, closed: Optional[list] 
     if not fixes:
         return list(edges)
     return apply_gap_fixes(edges, fixes)
+
+
+def join_tied_facing_ends(edges: List[Edge], gap: float, joined: Optional[list] = None) -> List[Edge]:
+    """
+    Due estremi già legati che si guardano lungo il proprio prolungamento,
+    entro `gap`, si uniscono con un tratto nuovo: il lato disegnato in due
+    pezzi con un buco in mezzo (D272). Nessuna curva si sposta. `joined`, se
+    dato, riceve (estremo, distanza) di ogni unione.
+    """
+    out = list(edges)
+    for a, b, d in tied_facing_ends(edges, build_node_graph(edges), gap):
+        out.append(Edge(role=ContourRole.UNKNOWN, start=getattr(a.ref, a.role), end=getattr(b.ref, b.role),
+                        segment=LineSeg(start=tuple(a.pt), end=tuple(b.pt))))
+        if joined is not None:
+            joined.append((tuple(a.pt), d))
+    return out
 
 
 def move_onto_targets(edges: List[Edge], gap: float, moved: Optional[list] = None) -> List[Edge]:

@@ -326,6 +326,50 @@ def _continuation(ep: GapEndpoint, reach: float):
     return LineSeg(start=tuple(ep.pt), end=(ep.pt[0] + ux * reach, ep.pt[1] + uy * reach))
 
 
+def tied_facing_ends(edges: Sequence[Edge], graph, tolerance: float) -> List[Tuple[GapEndpoint, GapEndpoint, float]]:
+    """
+    Le coppie di estremi già legati (grado >= 2) di edge diversi che si
+    guardano: ognuno sul prolungamento della curva dell'altro entro
+    GRAPH_EPSILON, oltre GRAPH_EPSILON ed entro `tolerance` l'uno
+    dall'altro. Un lato disegnato in due pezzi con un buco in mezzo (D272).
+    Ogni estremo nella sua coppia più corta; a pari merito nessuna (D185).
+    """
+    ends = _gap_endpoints(list(edges), lambda node: graph.degree(node) >= 2)
+    if len(ends) < 2:
+        return []
+    points = [Point(ep.pt) for ep in ends]
+    tree = STRtree(points)
+    candidates = []
+    for i, ep in enumerate(ends):
+        for j in tree.query(points[i], predicate="dwithin", distance=tolerance):
+            j = int(j)
+            other = ends[j]
+            if j <= i or other.ref is ep.ref or _node(other) == _node(ep):
+                continue
+            d = _distance(ep.pt, other.pt)
+            if GRAPH_EPSILON < d <= tolerance and _ahead(ep, other.pt, tolerance) and _ahead(other, ep.pt, tolerance):
+                candidates.append((d, tuple(sorted((tuple(ep.pt), tuple(other.pt)))), i, j))
+    lengths: dict = {}
+    for d, _, i, j in candidates:
+        for k in (i, j):
+            lengths.setdefault(k, []).append(d)
+    out, taken = [], set()
+    for d, _, i, j in sorted(candidates, key=lambda c: (c[0], c[1])):
+        if i in taken or j in taken:
+            continue
+        if any(len(lengths[k]) > 1 and sorted(lengths[k])[1] - d <= FLOAT_NOISE for k in (i, j)):
+            continue
+        taken.update((i, j))
+        out.append((ends[i], ends[j], d))
+    return out
+
+
+def _ahead(ep: GapEndpoint, q: Point2D, reach: float) -> bool:
+    """`q` sta sul prolungamento della curva di `ep`, entro GRAPH_EPSILON."""
+    ahead = _continuation(ep, reach)
+    return ahead is not None and _distance(nearest_point([ahead], q), q) <= GRAPH_EPSILON
+
+
 def _ambiguous_from(candidates: list, endpoints: List[GapEndpoint]) -> set:
     """Gli estremi i cui due punti più vicini (distinti oltre GRAPH_EPSILON) distano
     uguale entro FLOAT_NOISE (D185)."""

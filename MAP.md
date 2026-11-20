@@ -658,3 +658,7 @@ of each other, by construction. It joins them with a new straight segment (no cu
 The fillet drawn a few thousandths beside its side: no gap rule reaches it (D189), `tolerance` used to. One translation puts both ends
 on their targets, at most `max_gap`, before the gaps close; a curve tied at a node never moves (it would tear the node). Not onto an
 arc or circle with a concentric one (a thread), not a line through the target circle's centre (an axis). Note `curves-moved`.
+### D272 — two ends already tied, facing each other along their own continuation within `max_gap`, are joined by a new segment (Federico, 20 November).
+A side drawn in two pieces with a gap (drw_0031's side view, 0.0052): no end is free, so D267 does not reach it; `tolerance` used to.
+No curve moves; both ends must lie on each other's continuation (D189 kept). Bounded by `max_gap` only: at 0.5 a slot up to 0.5 wide
+closes too (SEGNI_TRACCIATI), the user declared it imprecision (Federico). Note `tied-ends-joined`.
