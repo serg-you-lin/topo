@@ -18,8 +18,8 @@ from typing import Callable, List, Optional, Tuple
 from shapely import STRtree
 from shapely.geometry import Point
 
-from ..geometry.measure import FLOAT_NOISE, SAME_POINT, node_point
-from ...precision import NEAR_FULL_ARC_HINT_DEG, NEAR_FULL_ARC_MISSING_DEG, TANGENT_ANGLE
+from ..geometry.measure import FLOAT_NOISE, SAME_POINT, node_point, segment_length
+from ...precision import NEAR_FULL_ARC_HINT_DEG, NEAR_FULL_ARC_MISSING_DEG
 from ..geometry.points import circle_through
 from ..geometry.regions import _tangent, nearest_point, translation_meeting
 from ..primitives.segments import (ArcSeg, CircleSeg, BSplineSeg, LineSeg, DEFAULT_TOLERANCE,
@@ -230,10 +230,11 @@ def bend_arcs_through_free_ends(edges: List[Edge], gap: float, bent: Optional[li
             if min(math.dist(foot, q) for q in (a, b)) <= SAME_POINT:
                 continue
             # solo una curva che arriva tangente all'arco: doveva proseguire in lui
-            # (il lato dritto di un'asola); una che arriva storta finisce lì apposta
+            # (il lato dritto di un'asola); una che arriva storta finisce lì apposta.
+            # Tangente: lungo tutta la curva la direzione si scosta meno di SAME_POINT (D277)
             ux, uy = _tangent(edge.segment, node == edge.end)
             rx, ry = foot[0] - arc.center[0], foot[1] - arc.center[1]
-            if abs(ux * rx + uy * ry) > math.sin(TANGENT_ANGLE) * math.hypot(rx, ry):
+            if segment_length(edge.segment) * abs(ux * rx + uy * ry) > SAME_POINT * math.hypot(rx, ry):
                 continue
             circle = circle_through(a, p, b)
             if circle is None:

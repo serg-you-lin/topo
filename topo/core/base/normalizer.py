@@ -44,7 +44,7 @@ Funzioni pubbliche:
 """
 
 from __future__ import annotations
-from ...precision import RING_TO_CIRCLE, SAME_DIRECTION_SINE, TESSELLATION_SIDE
+from ...precision import RING_TO_CIRCLE, TESSELLATION_SIDE
 import math
 from collections import Counter
 from dataclasses import dataclass, replace
@@ -64,16 +64,15 @@ from ...model.role import ContourRole
 # merge_collinear_overlaps
 # ---------------------------------------------------------------------------
 
-_SAME_DIRECTION = SAME_DIRECTION_SINE   # seno dell'angolo fra due direzioni: quasi-esatta per costruzione, non tollerante  # D269
 _SAME_OFFSET    = SAME_POINT   # mm — "stessa retta / stesso cerchio", non "vicina"  # D268
 _CHAIN_GAP_EPS  = FLOAT_NOISE  # guardia da rumore in virgola mobile, non tolleranza utente
 
 
 def _same_line(a: LineSeg, b: LineSeg) -> bool:
     """
-    `a` e `b` stanno sulla stessa retta infinita: direzioni parallele entro
-    `_SAME_DIRECTION` (seno, in qualunque verso) e ogni estremo di ognuno a
-    non più di `_SAME_OFFSET` dalla retta dell'altro. Giudicato sui
+    `a` e `b` stanno sulla stessa retta infinita: ogni estremo di ognuno a
+    non più di `_SAME_OFFSET` dalla retta dell'altro. La direzione è già
+    dentro: lungo il tratto le due rette si scostano meno di `SAME_POINT` (D277). Giudicato sui
     segmenti veri, mai su una chiave arrotondata: una cella di griglia ha
     un bordo dove due spezzoni della stessa retta finiscono da parti
     diverse, e il bordo si sposta col riferimento (D184, G6e).
@@ -85,7 +84,7 @@ def _same_line(a: LineSeg, b: LineSeg) -> bool:
     un pattern di denti/asole sparito in un golden (`fa_che_non_mi_incazzi`).
     """
     da, db = _unit(a), _unit(b)
-    if da is None or db is None or abs(da[0] * db[1] - da[1] * db[0]) > _SAME_DIRECTION:
+    if da is None or db is None:
         return False
     return max(_off_line(p, a.start, da) for p in (b.start, b.end)) <= _SAME_OFFSET         and max(_off_line(p, b.start, db) for p in (a.start, a.end)) <= _SAME_OFFSET
 

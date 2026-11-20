@@ -45,7 +45,6 @@ ZERO_GUARD = 1e-9
 # Angoli: non lunghezze
 # ---------------------------------------------------------------------------
 
-SAME_DIRECTION_SINE = 1e-7     # seno: due direzioni uguali per costruzione, non tolleranti
 COLLINEAR_ANGLE = 1e-6         # radianti: due rette con la stessa direzione
 TANGENT_ANGLE = 1e-3           # radianti: sotto, due lati proseguono uno nell'altro
 SHAPE_ANGLE_DEG = 1.0          # gradi: angolo retto / lati paralleli di una forma (contour_shape)

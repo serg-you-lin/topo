@@ -19,13 +19,13 @@ THRESHOLD_PARAM = ("tol", "eps", "gap", "reach", "snap", "margin", "sagitta", "s
                    "distance", "dist", "length", "radius", "area", "step", "ratio", "fraction",
                    "factor", "width", "limit", "threshold")
 
-# i nomi di topo/precision.py (D269, D275)
+# i nomi di topo/precision.py (D269, D275, D276, D277)
 PRECISION_NAMES = {
     "ANGLE_BRACKET_DEG", "AXIS_DEVIATION", "CIRCULAR_BBOX_ASPECT", "COLLINEAR_ANGLE", "COLLINEAR_DISTANCE",
     "CONCENTRIC_DISTANCE", "CORNER_TURN_DEG", "DIRECTION_SAMPLE", "FLOAT_NOISE", "MARK_FRACTION",
     "MIN_CONTOUR_AREA", "NEAR_FULL_ARC_HINT_DEG", "NEAR_FULL_ARC_MISSING_DEG", "NEAR_GAP_FACTOR",
     "NON_CONTOUR_DISTANCE", "PDF_SNAP", "RING_TO_CIRCLE", "ROOT_NOISE", "SAME_COORDINATE",
-    "SAME_DIRECTION_SINE", "SAME_POINT", "SHAPE_ANGLE_DEG", "SHAPE_FRACTION", "SIDE_COVERAGE",
+    "SAME_POINT", "SHAPE_ANGLE_DEG", "SHAPE_FRACTION", "SIDE_COVERAGE",
     "TANGENT_ANGLE", "TESSELLATION_SIDE", "ZERO_GUARD",
 }
 
