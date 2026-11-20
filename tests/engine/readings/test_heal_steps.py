@@ -19,6 +19,7 @@ from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import ArcSeg, LineSeg, CircleSeg, BSplineSeg
 from topo import to_shapely
+from topo.precision import SAME_POINT
 from tests.paths import DATA, drawing
 
 EXAMPLES = DATA
@@ -558,7 +559,7 @@ class TestLoopsToCurves(unittest.TestCase):
     @staticmethod
     def _arc_with_chords(center=(5.0, 5.0), radius=0.64, n=15):
         # Un quarto di cerchio disegnato due volte: l'arco e la sua copia a
-        # corde. Chiudono un giro di area ~6e-4, sotto MIN_CONTOUR_AREA.
+        # corde. Chiudono un giro largo in media meno di SAME_POINT (D279).
         arc = ArcSeg(center=center, radius=radius, start_angle=0.0,
                      end_angle=math.pi / 2, ccw=True)
         pts = [arc._point_at(k * (math.pi / 2) / n) for k in range(n + 1)]
@@ -573,7 +574,8 @@ class TestLoopsToCurves(unittest.TestCase):
         self.assertTrue(all(isinstance(c, OpenCurve) for c in curves))
 
     def test_003_micro_cerchio_torna_come_curva_aperta(self):
-        loops = topo.experimental.face_loops([_circle((0.0, 0.0), 0.01)])
+        # largo in media (2·area/perimetro = raggio) meno di SAME_POINT: non è un contorno (D279)
+        loops = topo.experimental.face_loops([_circle((0.0, 0.0), 0.9 * SAME_POINT)])
         curves = topo.experimental.loops_to_curves(loops)
         self.assertEqual(len(curves), 1)
         self.assertIsInstance(curves[0], OpenCurve)
@@ -583,10 +585,10 @@ class TestLoopsToCurves(unittest.TestCase):
         # D137: l'arco e le corde non sono contorno, stanno in loose (D151).
         # Otto corde: troppo poche per essere una curva scritta a punti, che
         # heal rifitterebbe e fonderebbe con l'arco (D189); il giro resta
-        # senza area (8e-4 mm², sotto MIN_CONTOUR_AREA)
+        # senza area: freccia delle corde 0,2·(1-cos(π/32)) < SAME_POINT, D279
         square = [LineSeg(start=a, end=b) for a, b in
                   [((0, 0), (10, 0)), ((10, 0), (10, 10)), ((10, 10), (0, 10)), ((0, 10), (0, 0))]]
-        result = topo.heal(topo.load_segments(square + self._arc_with_chords(radius=0.4, n=8))).faces()
+        result = topo.heal(topo.load_segments(square + self._arc_with_chords(radius=0.2, n=8))).faces()
         self.assertEqual(result.cluster_count, 1)
         loose = [s for curve in result.loose for s in curve.segments]
         self.assertEqual(sum(isinstance(s, ArcSeg) for s in loose), 1)

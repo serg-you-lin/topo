@@ -1,6 +1,5 @@
 # topo/core/base/hierarchy.py
 
-from ...precision import MIN_CONTOUR_AREA
 from typing import Optional
 from shapely.geometry import Polygon
 
@@ -45,7 +44,9 @@ def loop_to_closed_curve(
             poly = poly.buffer(0)
         if poly.is_empty:
             return None
-        if not segments or ring_area(segments) <= MIN_CONTOUR_AREA:
+        # largo in media meno di SAME_POINT (2·area/perimetro): i due lati
+        # sono lo stesso tratto, non c'è un contorno (D279)
+        if not segments or 2 * ring_area(segments) <= SAME_POINT * ring_perimeter(segments):
             return None
 
         # Guard sui micro-cerchi: un loop di una singola primitiva circolare

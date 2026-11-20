@@ -20,7 +20,6 @@ Puro: solo Edge, grafo e primitive, nessun formato.
 
 from __future__ import annotations
 
-from ...precision import DIRECTION_SAMPLE
 import math
 from dataclasses import dataclass, field
 from typing import List, Optional
@@ -33,6 +32,7 @@ from shapely.ops import polygonize, unary_union
 from ..geometry.measure import SAME_POINT
 from .edge import Edge
 from ..geometry.integrals import ring_area, ring_moments
+from ..geometry.regions import _tangent
 from .noding import GRAPH_EPSILON, edge_geometry
 from .graph import Graph, build_node_graph
 from .loop_finder import loop_geometry, segments_from_loop
@@ -251,26 +251,37 @@ def _first_step(graph: Graph, component):
 
 
 def _leaving_angle(edge: Edge, node, graph: Graph) -> float:
-    """Direzione con cui `edge` lascia `node`, letta a DIRECTION_SAMPLE (o a
-    metà edge): un raccordo tangente a una retta si distingue da lei solo
-    più avanti, non al primo micron. Si misura dal nodo, non dal primo punto
-    della curva: un contatto entro tolerance (D180) mette il nodo fino a
-    tanto dalla curva, e due pezzi paralleli a quella distanza lo lasciano
-    con direzioni diverse."""
+    """Direzione con cui `edge` lascia `node`, letta dove la curva si è
+    scostata di SAME_POINT dalla sua tangente (o a metà edge, una linea):
+    un raccordo tangente a una retta parte come lei e se ne distingue solo
+    lì (D279). Si misura dal nodo, non dal primo punto della curva: un
+    contatto entro tolerance (D180) mette il nodo fino a tanto dalla curva,
+    e due pezzi paralleli a quella distanza lo lasciano con direzioni
+    diverse."""
     pts = edge.segment.discretize(tolerance=DEFAULT_TOLERANCE)
-    if graph.canonical(edge.start) != node:
+    backwards = graph.canonical(edge.start) != node
+    if backwards:
         pts = list(reversed(pts))
+    tx, ty = _tangent(edge.segment, at_end=backwards)
+    if backwards:
+        tx, ty = -tx, -ty
+    norm = math.hypot(tx, ty)
     total = sum(math.dist(pts[i], pts[i + 1]) for i in range(len(pts) - 1))
-    reach = min(DIRECTION_SAMPLE, total / 2)
+    reach = total / 2
     walked, target = 0.0, pts[-1]
+    x0, y0 = pts[0]
+    off = 0.0
     for i in range(len(pts) - 1):
         step = math.dist(pts[i], pts[i + 1])
-        if step > 0 and walked + step >= reach:
-            t = (reach - walked) / step
+        next_off = abs(tx * (pts[i + 1][1] - y0) - ty * (pts[i + 1][0] - x0)) / norm if norm else 0.0
+        if step > 0 and (walked + step >= reach or next_off >= SAME_POINT):
+            t = min((reach - walked) / step,
+                    (SAME_POINT - off) / (next_off - off) if next_off >= SAME_POINT > off else 1.0)
+            t = min(max(t, 0.0), 1.0)
             target = (pts[i][0] + t * (pts[i + 1][0] - pts[i][0]),
                       pts[i][1] + t * (pts[i + 1][1] - pts[i][1]))
             break
-        walked += step
+        walked, off = walked + step, next_off
     return math.atan2(target[1] - node[1], target[0] - node[0])
 
 
