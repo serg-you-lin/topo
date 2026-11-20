@@ -53,7 +53,6 @@ class Normalized:
     edges:          List[Edge] = field(default_factory=list)
     merged_lines:   int = 0
     merged_arcs:    int = 0
-    welded:         int = 0
     full_arcs:      int = 0
     ambiguous:      list = field(default_factory=list)   # estremi senza compagno scelto (D185)
     gaps:           list = field(default_factory=list)   # (estremo, distanza) dei gap chiusi

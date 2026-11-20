@@ -154,8 +154,8 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
             (clean.merged_lines, "merged-lines", ("overlapping collinear segment", "overlapping collinear segments")),
             (clean.merged_arcs, "merged-arcs", ("overlapping arc or circle on one circle",
                                                 "overlapping arcs or circles on one circle")),
-            (clean.welded + prepared.welded, "welded", ("line segment shorter than 0.05 welded into its node",
-                                                        "line segments shorter than 0.05 welded into their nodes"))):
+            (prepared.welded, "welded", (f"line segment shorter than {SAME_POINT:g} welded into its node",
+                                         f"line segments shorter than {SAME_POINT:g} welded into their nodes"))):
         if count:
             net.notes.append(Diagnostic(code, f"{count} {what[count > 1]} merged" if code != "welded"
                                         else f"{count} {what[count > 1]}", level="note"))
