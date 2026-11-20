@@ -25,8 +25,8 @@ from ..topology.edge import Edge
 from ..topology.noding import decide_nodes
 from .normalizer import (merge_cocircular_overlaps, merge_collinear_overlaps, refit_circle_rings,
                          refit_tessellations)
-from .cleanup import (ambiguous_free_ends, close_free_gaps, close_near_full_arcs, move_onto_targets,
-                      split_labeled)
+from .cleanup import (ambiguous_free_ends, close_free_gaps, close_near_full_arcs, join_tied_facing_ends,
+                      move_onto_targets, split_labeled)
 
 
 @dataclass
@@ -58,6 +58,7 @@ class Normalized:
     ambiguous:      list = field(default_factory=list)   # estremi senza compagno scelto (D185)
     gaps:           list = field(default_factory=list)   # (estremo, distanza) dei gap chiusi
     moved:          list = field(default_factory=list)   # (punto, spostamento) delle curve spostate (D271)
+    tied:           list = field(default_factory=list)   # (estremo, distanza) dei capi legati uniti (D272)
 
 
 def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normalized:
@@ -89,6 +90,8 @@ def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normali
         edges, _ = decide_nodes(edges)
     out.ambiguous = ambiguous_free_ends(edges, gap)
     closed = close_free_gaps(edges, gap, out.gaps)
+    # un lato in due pezzi coi capi già legati: il buco lungo la sua retta (D272)
+    closed = join_tied_facing_ends(closed, gap, out.tied)
     # chiudere un gap allunga le due metà una verso l'altra: si sovrappongono
     # sul tratto del gap, e quel tratto resta doppio nella rete (G15)
     merged = merge_collinear_overlaps(closed, keep_junctions=keep_junctions)
