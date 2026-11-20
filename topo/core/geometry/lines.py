@@ -13,7 +13,6 @@ Un tratto è una coppia di punti `(start, end)` o qualunque cosa porti
 
 from __future__ import annotations
 
-from ...precision import COLLINEAR_ANGLE, COLLINEAR_DISTANCE
 import math
 from dataclasses import dataclass
 from typing import Sequence, Tuple
@@ -21,9 +20,6 @@ from typing import Sequence, Tuple
 from .rings import ON_BOUNDARY, ring_bbox, ring_covers_chord, ring_split_by_chord
 
 Point = Tuple[float, float]
-
-COLLINEAR_TOLERANCE = COLLINEAR_DISTANCE        # distanza massima dalla retta, mm  # D269
-COLLINEAR_ANGLE_TOLERANCE = COLLINEAR_ANGLE  # differenza massima di direzione, radianti  # D269
 
 
 def _ends(item) -> Tuple[Point, Point]:
@@ -43,27 +39,21 @@ def point_line_distance(point: Point, a: Point, b: Point) -> float:
     return abs(dy * (point[0] - a[0]) - dx * (point[1] - a[1])) / length
 
 
-def are_collinear(a, b, tolerance: float = COLLINEAR_TOLERANCE,
-                  angle_tolerance: float = COLLINEAR_ANGLE_TOLERANCE) -> bool:
+def are_collinear(a, b, tolerance: float) -> bool:
     """
-    I tratti `a` e `b` stanno sulla stessa retta infinita: direzioni uguali
-    entro `angle_tolerance` (radianti, a meno del verso) e i due capi di `b`
-    entro `tolerance` dalla retta di `a`.
+    I tratti `a` e `b` stanno sulla stessa retta infinita: i due capi di `b`
+    entro `tolerance` (mm) dalla retta di `a`. Lo scarto di direzione è già
+    lì dentro: nessun angolo a parte (D282).
     """
     (a0, a1), (b0, b1) = _ends(a), _ends(b)
-    ang_a = math.atan2(a1[1] - a0[1], a1[0] - a0[0]) % math.pi
-    ang_b = math.atan2(b1[1] - b0[1], b1[0] - b0[0]) % math.pi
-    diff = abs(ang_a - ang_b)
-    if min(diff, math.pi - diff) > angle_tolerance:
-        return False
     return all(point_line_distance(q, a0, a1) <= tolerance for q in (b0, b1))
 
 
-def group_collinear_lines(lines: list, *, tolerance: float = COLLINEAR_TOLERANCE,
-                          angle_tolerance: float = COLLINEAR_ANGLE_TOLERANCE) -> list:
+def group_collinear_lines(lines: list, *, tolerance: float) -> list:
     """
-    Strokes grouped by line: [[L1, L2], [L3], ...]. Each group takes the line
-    of its first stroke, in the given order.
+    Strokes grouped by line: [[L1, L2], [L3], ...]. A stroke joins a group
+    when both its ends lie within `tolerance` (mm) of the line of the group's
+    first stroke, in the given order. The caller chooses `tolerance` (D282).
     """
     groups = []
     assigned = set()
@@ -73,7 +63,7 @@ def group_collinear_lines(lines: list, *, tolerance: float = COLLINEAR_TOLERANCE
         group = [line]
         assigned.add(i)
         for j, other in enumerate(lines):
-            if j not in assigned and are_collinear(line, other, tolerance, angle_tolerance):
+            if j not in assigned and are_collinear(line, other, tolerance):
                 group.append(other)
                 assigned.add(j)
         groups.append(group)
@@ -113,8 +103,7 @@ class CollinearRun:
     members: Tuple[int, ...]
 
 
-def bridged_runs(segments: Sequence, bridges: Sequence, *, tolerance: float = COLLINEAR_TOLERANCE,
-                 angle_tolerance: float = COLLINEAR_ANGLE_TOLERANCE) -> list[CollinearRun]:
+def bridged_runs(segments: Sequence, bridges: Sequence, *, tolerance: float) -> list[CollinearRun]:
     """
     Runs of two or more strokes on one line where the gap between a stroke
     and the next lies wholly inside one of `bridges` (contours, items with a
@@ -130,7 +119,7 @@ def bridged_runs(segments: Sequence, bridges: Sequence, *, tolerance: float = CO
         if i in used:
             continue
         group = [j for j in range(len(ends))
-                 if j not in used and are_collinear((p0, p1), ends[j], tolerance, angle_tolerance)]
+                 if j not in used and are_collinear((p0, p1), ends[j], tolerance)]
         used.update(group)
         if len(group) < 2:
             continue

@@ -8,7 +8,7 @@ What you learn
     topo.geometry.cut_by(segment, region)    the pieces of a segment outside (or inside) a closed region
     topo.geometry.contour_minus(a, b)        ring a with ring b taken away
     topo.geometry.contour_union(a, b)        the two rings joined
-    topo.geometry.concentric_groups(items)   circles that share a centre
+    topo.geometry.concentric_groups(items, tolerance=)   circles whose centres lie within tolerance (mm)
 
 Each fact works on topo's own segments, exact on lines and arcs: no
 discretization, no shapely. Everything here is built in code; the shapes and
@@ -40,7 +40,7 @@ print(f"plate minus circle: {len(minus)} ring(s) of {[type(s).__name__ for s in 
 print(f"plate plus circle:  {len(union)} ring(s) of {len(union[0])} segment(s)")
 
 rings = [g.circle(5), g.circle(9), g.circle(4, center=(-25, 10)), g.circle(7, center=(-25, 10))]
-for group in g.concentric_groups(rings):
+for group in g.concentric_groups(rings, tolerance=topo.precision.SAME_POINT):
     print(f"concentric group at {group.center}: radii {[s.length / 2 for s in group.shapes]}")
 
 # un layer per fatto: i ruoli sono solo nomi di layer qui

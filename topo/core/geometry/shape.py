@@ -14,7 +14,7 @@ cerchio (MAP.md D91).
 
 from __future__ import annotations
 
-from ...precision import ANGLE_BRACKET_DEG, CONCENTRIC_DISTANCE
+from ...precision import ANGLE_BRACKET_DEG
 import math
 from dataclasses import dataclass
 from enum import Enum
@@ -280,7 +280,6 @@ def _angle_diff(a: float, b: float) -> float:
 # "questo arco gira attorno a quel cerchio". Cosa siano (svasatura, sede,
 # cresta di un filetto) e con che soglie lo decide il consumatore.
 
-CONCENTRIC_TOLERANCE = CONCENTRIC_DISTANCE   # distanza massima fra i centri, mm  # D269
 
 
 @dataclass(frozen=True)
@@ -301,7 +300,7 @@ class ConcentricGroup:
         return tuple(s.length for s in self.shapes)
 
 
-def concentric_groups(items, *, tolerance: float = CONCENTRIC_TOLERANCE) -> list[ConcentricGroup]:
+def concentric_groups(items, *, tolerance: float) -> list[ConcentricGroup]:
     """
     Partition of the circular contours of `items` by center: every circle is
     in exactly one group, even alone. A circle joins, among the groups whose
@@ -346,7 +345,7 @@ class ArcAround:
 
 
 def arcs_around(center: Point, radius: float, arcs,
-                *, tolerance: float = CONCENTRIC_TOLERANCE) -> list[ArcAround]:
+                *, tolerance: float) -> list[ArcAround]:
     """
     The arcs of `arcs` with center within `tolerance` of `center` and radius
     larger than `radius`, from the nearest to the circle to the farthest.

@@ -31,26 +31,26 @@ class TestBridgedRuns(unittest.TestCase):
 
     def test_due_tratti_uniti_attraverso_un_foro(self):
         segments = [((40, 30), (40, 50)), ((40, 0), (40, 20))]
-        (run,) = bridged_runs(segments, [self.HOLE])
+        (run,) = bridged_runs(segments, [self.HOLE], tolerance=0.1)
         self.assertEqual(run, CollinearRun((40, 0), (40, 50), (1, 0)))
 
     def test_spazio_fuori_dal_foro_non_unisce(self):
         segments = [((40, 0), (40, 15)), ((40, 30), (40, 50))]
-        self.assertEqual(bridged_runs(segments, [self.HOLE]), [])
+        self.assertEqual(bridged_runs(segments, [self.HOLE], tolerance=0.1), [])
 
     def test_tratti_su_rette_diverse(self):
         segments = [((40, 0), (40, 20)), ((41, 30), (41, 50))]
-        self.assertEqual(bridged_runs(segments, [self.HOLE]), [])
+        self.assertEqual(bridged_runs(segments, [self.HOLE], tolerance=0.1), [])
 
     def test_lineseg_come_tratto_e_contorno_come_ponte(self):
         segments = [topo.primitives.LineSeg((40, 0), (40, 20)), topo.primitives.LineSeg((40, 30), (40, 50))]
         hole = topo.Contour(segments=self.HOLE, role="inner")
-        self.assertEqual(len(bridged_runs(segments, [hole])), 1)
+        self.assertEqual(len(bridged_runs(segments, [hole], tolerance=0.1)), 1)
 
     def test_ponte_rotondo(self):
         # lo spazio passa dentro un cerchio Ø12: il bordo vero, non le corde
         segments = [((40, 0), (40, 19)), ((40, 31), (40, 50))]
-        self.assertEqual(len(bridged_runs(segments, [topo.geometry.circle(6.0, center=(40, 25))])), 1)
+        self.assertEqual(len(bridged_runs(segments, [topo.geometry.circle(6.0, center=(40, 25))], tolerance=0.1)), 1)
 
     def test_api_pubblica(self):
         self.assertIs(topo.geometry.bridged_runs, bridged_runs)
@@ -63,10 +63,11 @@ class TestLineFacts(unittest.TestCase):
         self.assertAlmostEqual(point_line_distance((0, 3), (-5, 0), (5, 0)), 3)
         self.assertAlmostEqual(point_line_distance((3, 4), (0, 0), (0, 0)), 5)
 
-    def test_collineari_con_tolleranza_angolare(self):
+    def test_lo_scarto_di_direzione_sta_nella_distanza(self):
+        # D282: niente angolo a parte, il capo lontano di b si scosta di 0,06
         a, b = ((0, 0), (100, 0)), ((0, 0.01), (100, 0.06))
-        self.assertFalse(are_collinear(a, b))
-        self.assertTrue(are_collinear(a, b, angle_tolerance=1e-3))
+        self.assertTrue(are_collinear(a, b, 0.1))
+        self.assertFalse(are_collinear(a, b, 0.05))
 
 
 if __name__ == "__main__":

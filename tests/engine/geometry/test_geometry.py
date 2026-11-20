@@ -58,32 +58,32 @@ class TestAreCollinear(unittest.TestCase):
     def test_001_stessa_linea_orizzontale(self):
         a = make_line(0, 10, 45, 10)
         b = make_line(125, 10, 170, 10)
-        self.assertTrue(are_collinear(a, b))
+        self.assertTrue(are_collinear(a, b, 0.1))
 
     def test_002_stessa_linea_verticale(self):
         a = make_line(50, 0, 50, 30)
         b = make_line(50, 80, 50, 120)
-        self.assertTrue(are_collinear(a, b))
+        self.assertTrue(are_collinear(a, b, 0.1))
 
     def test_003_parallele_non_collineari(self):
         a = make_line(0, 10, 100, 10)
         b = make_line(0, 20, 100, 20)
-        self.assertFalse(are_collinear(a, b))
+        self.assertFalse(are_collinear(a, b, 0.1))
 
     def test_004_perpendicolari(self):
         a = make_line(0, 0, 100, 0)
         b = make_line(50, -50, 50, 50)
-        self.assertFalse(are_collinear(a, b))
+        self.assertFalse(are_collinear(a, b, 0.1))
 
     def test_005_stessa_retta_obliqua(self):
         a = make_line(0, 0, 10, 10)
         b = make_line(20, 20, 30, 30)
-        self.assertTrue(are_collinear(a, b))
+        self.assertTrue(are_collinear(a, b, 0.1))
 
     def test_006_direzioni_opposte_stessa_retta(self):
         a = make_line(0, 5, 45, 5)
         b = make_line(170, 5, 125, 5)
-        self.assertTrue(are_collinear(a, b))
+        self.assertTrue(are_collinear(a, b, 0.1))
 
     def test_007_entro_tolleranza(self):
         a = make_line(0, 10.00, 100, 10.00)
@@ -98,7 +98,7 @@ class TestAreCollinear(unittest.TestCase):
     def test_009_linea_degenere(self):
         a = make_line(0, 0, 0, 0)
         b = make_line(10, 10, 10, 10)
-        self.assertFalse(are_collinear(a, b))
+        self.assertFalse(are_collinear(a, b, 0.1))
 
 
 # ---------------------------------------------------------------------------
@@ -117,7 +117,7 @@ class TestGroupCollinearLines(unittest.TestCase):
             make_line(39.8,   21.114,  45.0,  21.114),
         ]
 
-        groups = group_collinear_lines(lines)
+        groups = group_collinear_lines(lines, tolerance=0.1)
         self.assertEqual(len(groups), 2)
 
     def test_002_gruppi_con_dimensione_corretta(self):
@@ -130,19 +130,19 @@ class TestGroupCollinearLines(unittest.TestCase):
             make_line(39.8,   21.114,  45.0,  21.114),
         ]
 
-        groups = group_collinear_lines(lines)
+        groups = group_collinear_lines(lines, tolerance=0.1)
         sizes = sorted(len(g) for g in groups)
         self.assertEqual(sizes, [2, 4])
 
     def test_003_segmento_singolo(self):
         lines = [make_line(0, 0, 100, 0)]
-        groups = group_collinear_lines(lines)
+        groups = group_collinear_lines(lines, tolerance=0.1)
 
         self.assertEqual(len(groups), 1)
         self.assertEqual(len(groups[0]), 1)
 
     def test_004_lista_vuota(self):
-        groups = group_collinear_lines([])
+        groups = group_collinear_lines([], tolerance=0.1)
         self.assertEqual(groups, [])
 
     def test_005_tre_segmenti_stessa_retta(self):
@@ -152,7 +152,7 @@ class TestGroupCollinearLines(unittest.TestCase):
             make_line(40, 0, 50, 0),
         ]
 
-        groups = group_collinear_lines(lines)
+        groups = group_collinear_lines(lines, tolerance=0.1)
 
         self.assertEqual(len(groups), 1)
         self.assertEqual(len(groups[0]), 3)
@@ -164,7 +164,7 @@ class TestGroupCollinearLines(unittest.TestCase):
             make_line(0, 20, 100, 20),
         ]
 
-        groups = group_collinear_lines(lines)
+        groups = group_collinear_lines(lines, tolerance=0.1)
 
         self.assertEqual(len(groups), 3)
 
@@ -175,7 +175,7 @@ class TestGroupCollinearLines(unittest.TestCase):
             make_line(40, 40, 50, 50),
         ]
 
-        groups = group_collinear_lines(lines)
+        groups = group_collinear_lines(lines, tolerance=0.1)
 
         self.assertEqual(len(groups), 1)
         self.assertEqual(len(groups[0]), 3)
@@ -188,7 +188,7 @@ class TestGroupCollinearLines(unittest.TestCase):
             make_line(0, 0, 0, 10),    # verticale x=0
         ]
 
-        groups = group_collinear_lines(lines)
+        groups = group_collinear_lines(lines, tolerance=0.1)
 
         self.assertEqual(len(groups), 3)
         sizes = sorted(len(g) for g in groups)

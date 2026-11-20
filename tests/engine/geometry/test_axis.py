@@ -34,7 +34,7 @@ class TestCoveredRectangles(unittest.TestCase):
 
     def test_doppio_bordo_due_rettangoli(self):
         items = _rect(0, 0, 420, 297) + _rect(10, 10, 410, 287)
-        rects = covered_rectangles(items, min_side=100)
+        rects = covered_rectangles(items, min_side=100, eps=0.5, cluster_tolerance=1.5, coverage=0.85)
         bboxes = sorted(r.bbox for r in rects)
         self.assertIn((0.0, 0.0, 420.0, 297.0), bboxes)
         self.assertIn((10.0, 10.0, 410.0, 287.0), bboxes)
@@ -43,12 +43,12 @@ class TestCoveredRectangles(unittest.TestCase):
         top = [LineSeg(start=(x, 100), end=(x + 19, 100)) for x in range(0, 200, 20)]
         items = [LineSeg(start=(0, 0), end=(200, 0)), LineSeg(start=(200, 0), end=(200, 100)),
                  LineSeg(start=(0, 100), end=(0, 0))] + top + [LineSeg(start=(50, 100), end=(150, 100))]
-        (rect,) = covered_rectangles(items, min_side=50)
+        (rect,) = covered_rectangles(items, min_side=50, eps=0.5, cluster_tolerance=1.5, coverage=0.85)
         self.assertEqual(rect.bbox, (0.0, 0.0, 200.0, 100.0))
         self.assertAlmostEqual(rect.ratio, 2.0)
 
     def test_lato_mancante(self):
-        self.assertEqual(covered_rectangles(_rect(0, 0, 100, 50)[:3], min_side=10), [])
+        self.assertEqual(covered_rectangles(_rect(0, 0, 100, 50)[:3], min_side=10, eps=0.5, cluster_tolerance=1.5, coverage=0.85), [])
 
     def test_api_pubblica(self):
         self.assertIs(topo.geometry.covered_rectangles, covered_rectangles)
@@ -78,7 +78,7 @@ class TestCoveredRectanglesUnderMotion(unittest.TestCase):
                                                LineSeg(start=(0, 0), end=(0, 50)),
                                                LineSeg(start=(100, 0), end=(100, 50)),
                                                LineSeg(start=(100.03, 0), end=(100.03, 50)))]
-                rects = covered_rectangles(items, min_side=10, eps=0.004, cluster_tolerance=0.01)
+                rects = covered_rectangles(items, min_side=10, eps=0.004, cluster_tolerance=0.01, coverage=0.85)
                 expected = []
                 for x0, y0, x1, y1 in corners:
                     pts = [move_pt(p) for p in ((x0, y0), (x1, y1))]
@@ -97,7 +97,7 @@ class TestSpanningLines(unittest.TestCase):
         items = _rect(0, 0, 100, 40) + [LineSeg(start=(0, 20), end=(100, 20)),
                                         LineSeg(start=(60, 0), end=(60, 40)),
                                         LineSeg(start=(0, 30), end=(30, 30))]   # troppo corta
-        self.assertEqual(spanning_lines((0, 0, 100, 40), items), ([20.0], [60.0]))
+        self.assertEqual(spanning_lines((0, 0, 100, 40), items, eps=0.5, cluster_tolerance=1.5, coverage=0.85), ([20.0], [60.0]))
 
 
 class TestMeasures(unittest.TestCase):
@@ -113,7 +113,7 @@ class TestMeasures(unittest.TestCase):
         self.assertIsNone(axis_aligned_share([ArcSeg(center=(0, 0), radius=1, start_angle=0, end_angle=1)], angle_tolerance=2.0))
 
     def test_orizzontali_e_verticali(self):
-        horiz, vert = axis_lines(_rect(0, 0, 10, 5))
+        horiz, vert = axis_lines(_rect(0, 0, 10, 5), eps=0.5)
         self.assertEqual(sorted(h.at for h in horiz), [0.0, 5.0])
         self.assertEqual(sorted(v.at for v in vert), [0.0, 10.0])
 

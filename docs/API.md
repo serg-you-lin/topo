@@ -586,7 +586,7 @@ recomposition), `diameter` (circle only), `.to_dict()`.
 ### `concentric_groups`
 
 ```python
-topo.geometry.concentric_groups(items, *, tolerance=0.1) -> list[ConcentricGroup]
+topo.geometry.concentric_groups(items, *, tolerance) -> list[ConcentricGroup]
 ```
 
 The circular contours of `items` (as for `contour_shape`) grouped by
@@ -608,7 +608,7 @@ how to pair them is decided by the consumer (D91).
 ### `arcs_around`
 
 ```python
-topo.geometry.arcs_around(center, radius, arcs, *, tolerance=0.1) -> list[ArcAround]
+topo.geometry.arcs_around(center, radius, arcs, *, tolerance) -> list[ArcAround]
 ```
 
 The `ArcSeg`s of `arcs` concentric to the circle (`center`, `radius`) within
@@ -643,7 +643,7 @@ is decided by the consumer (snapbend extends it by 1 mm, D93).
 ### `bridged_runs`
 
 ```python
-topo.geometry.bridged_runs(segments, bridges, *, tolerance=0.1, angle_tolerance=1e-6) -> list[CollinearRun]
+topo.geometry.bridged_runs(segments, bridges, *, tolerance) -> list[CollinearRun]
 ```
 
 Rows of two or more strokes on the same line where the space between one stroke and the
@@ -651,8 +651,8 @@ next lies entirely inside one of the contours of `bridges` (for example the void
 of a part; a `Contour`, a loop of `segments` or the list of segments, border
 included, computed on the primitives). A stroke is a pair `(start, end)` or
 anything that carries `start`/`end` (a `LineSeg`, an `Edge`);
-`tolerance` is the maximum distance from the line, `angle_tolerance` the difference
-of direction in radians. Strokes left alone do not appear.
+`tolerance` (mm, chosen by the caller) is the maximum distance of a stroke's ends from the
+line: a difference of direction is in it, there is no separate angle (D282). Strokes left alone do not appear.
 
 `CollinearRun`: `start`, `end` (the outer ends of the row), `members` (indices into
 `segments`, in order along the line).
@@ -680,12 +680,13 @@ meeting is a stretch (D118).
 ### `point_on_contour`, `ContourPoint`
 
 ```python
-topo.geometry.point_on_contour(segments, point, *, tolerance=0.001, angle_tolerance=1e-3) -> ContourPoint | None
+topo.geometry.point_on_contour(segments, point, *, tolerance=0.001) -> ContourPoint | None
 ```
 
 Where `point` falls on the ring `segments` (head to tail, like `contour.segments`).
 `ContourPoint`: `point`, `kind` (`"vertex"` two sides with an angle, `"smooth"`
-two sides that continue into one another — a fillet —, `"edge"` in the middle of a
+two sides that continue into one another — a fillet: along the longer side one strays
+less than `SAME_POINT` from the other's direction (D282) —, `"edge"` in the middle of a
 side), `segments` (indices: incoming and outgoing for a vertex, a single one for a
 side), `turn_deg`, `concave` (the interior occupies more than half a turn). The tangents
 are exact; concave or convex is told by the direction of the ring. None if `point`
@@ -810,7 +811,7 @@ is a bend is decided by the consumer (D115).
 ### `covered_rectangles`
 
 ```python
-topo.geometry.covered_rectangles(items, *, min_side, eps=0.5, cluster_tolerance=1.5, coverage=0.85) -> list[CoveredRectangle]
+topo.geometry.covered_rectangles(items, *, min_side, eps, cluster_tolerance, coverage) -> list[CoveredRectangle]
 ```
 
 The axis-aligned rectangles whose four sides are covered at least by
@@ -830,7 +831,7 @@ four sides as `LineSeg`), `area`, `long_side`, `short_side`, `ratio`.
 ### `spanning_lines`
 
 ```python
-topo.geometry.spanning_lines(bounds, items, *, coverage=0.85, eps=0.5, cluster_tolerance=1.5) -> (list[float], list[float])
+topo.geometry.spanning_lines(bounds, items, *, coverage, eps, cluster_tolerance) -> (list[float], list[float])
 ```
 
 `(ys, xs)`: the lines strictly inside `bounds` that cross it for
@@ -870,7 +871,7 @@ Fraction of the length of the `LineSeg`s that is horizontal or vertical within
 ### `axis_lines`
 
 ```python
-topo.geometry.axis_lines(items, *, eps=0.5) -> (list[AxisLine], list[AxisLine])
+topo.geometry.axis_lines(items, *, eps) -> (list[AxisLine], list[AxisLine])
 ```
 
 `(horizontal, vertical)`: the strokes (`items`, objects with `start`/`end`) that
@@ -911,11 +912,12 @@ apart, in increasing order.
 ### `group_collinear_lines`
 
 ```python
-topo.geometry.group_collinear_lines(lines, *, tolerance=COLLINEAR_TOLERANCE, angle_tolerance=COLLINEAR_ANGLE_TOLERANCE) -> list[list]
+topo.geometry.group_collinear_lines(lines, *, tolerance) -> list[list]
 ```
 
-The strokes (`start`/`end`) grouped by line: `[[L1, L2], [L3], ...]`. Each
-group takes the line of its first stroke, in the order given; it does not look at whether the
+The strokes (`start`/`end`) grouped by line: `[[L1, L2], [L3], ...]`. A stroke
+joins a group when both its ends lie within `tolerance` (mm, chosen by the caller,
+D282) of the line of the group's first stroke, in the order given; it does not look at whether the
 strokes touch (for rows across gaps: `bridged_runs`).
 
 **Mutates** nothing.

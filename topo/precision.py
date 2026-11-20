@@ -41,8 +41,6 @@ FLOAT_NOISE = 1e-6
 # Angoli: non lunghezze
 # ---------------------------------------------------------------------------
 
-COLLINEAR_ANGLE = 1e-6         # radianti: due rette con la stessa direzione
-TANGENT_ANGLE = 1e-3           # radianti: sotto, due lati proseguono uno nell'altro
 CORNER_TURN_DEG = 35.0         # gradi: una svolta più ampia è uno spigolo (simplify_points)
 NEAR_FULL_ARC_MISSING_DEG = 2.0  # gradi: un arco cui manca di più non è un cerchio (D112)
 NEAR_FULL_ARC_HINT_DEG = 8.0     # gradi: fin qui heal() avvisa che manca poco; un filetto (~90°) mai (D227)
@@ -52,20 +50,14 @@ ANGLE_BRACKET_DEG = 1.0        # gradi: attorno all'angolo trovato si cerca il r
 # Frazioni e rapporti: non lunghezze
 # ---------------------------------------------------------------------------
 
-SIDE_COVERAGE = 0.85           # quota minima di un lato coperta dai tratti
 MARK_FRACTION = 0.05           # della lunghezza di un tratto di linea a tratti
 NEAR_GAP_FACTOR = 2.0          # un buco fino a questo multiplo di max_gap "c'è quasi" (D227)
 
 # ---------------------------------------------------------------------------
-# Altro, non ancora portato a SAME_POINT: da misurare (TODO, D268)
+# Come il CAD scrive una curva a punti (misurate: D279) e l'adattatore PDF
 # ---------------------------------------------------------------------------
 
 RING_TO_CIRCLE = 0.02          # mm: un anello scritto a punti entro così da un cerchio è quel cerchio (D236); errore di corda del CAD, non SAME_POINT (D279)
-COLLINEAR_DISTANCE = 0.1       # mm: default di `group_collinear_lines`
-CONCENTRIC_DISTANCE = 0.1      # mm: default di `concentric_groups`
-NON_CONTOUR_DISTANCE = 0.1     # mm: default di `find_non_contour_edges`
-AXIS_DEVIATION = 0.5           # mm: un tratto entro così dall'asse è orizzontale/verticale (fogli)
-SAME_COORDINATE = 1.5          # mm: due coordinate di un foglio entro così sono la stessa
 TESSELLATION_SIDE = 0.1        # mm: lati più corti possono essere punti di una curva scritta a punti (refit_tessellations)
 PDF_SNAP = 0.15                # mm: adattatore PDF sperimentale, congelato (D10)
 

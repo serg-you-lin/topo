@@ -19,7 +19,7 @@ Puro: solo primitive, nessun formato.
 
 from __future__ import annotations
 
-from ...precision import FLOAT_NOISE, SAME_POINT, TANGENT_ANGLE
+from ...precision import FLOAT_NOISE, SAME_POINT
 import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
@@ -39,7 +39,6 @@ from .shape import merge_runs
 
 Point = Tuple[float, float]
 
-TANGENT_TOLERANCE = TANGENT_ANGLE   # radianti: sotto, due lati proseguono uno nell'altro  # D269
 _JOIN = SAME_POINT               # capi più vicini di così sono lo stesso nodo  # D268
 _MIN_PIECE = SAME_POINT          # pezzi più corti di così non esistono  # D268
 _POLYGON_TOLERANCE = SAME_POINT  # sagitta della discretizzazione per i test dentro/fuori  # D275
@@ -276,14 +275,15 @@ class ContourPoint:
     concave:  bool
 
 
-def point_on_contour(segments: Sequence, point: Point, *, tolerance: float = DEFAULT_TOLERANCE,
-                     angle_tolerance: float = TANGENT_TOLERANCE) -> Optional[ContourPoint]:
+def point_on_contour(segments: Sequence, point: Point, *,
+                     tolerance: float = DEFAULT_TOLERANCE) -> Optional[ContourPoint]:
     """
     Where `point` falls on the ring `segments` (head to tail): on a vertex,
     on a blend, in the middle of a side. None if it is farther than
-    `tolerance` from the contour. A vertex is a blend if the two sides turn
-    by less than `angle_tolerance` radians; concave or convex is told by the
-    ring's direction, not by an inside/outside test.
+    `tolerance` from the contour. A vertex is a blend if, along the longer of
+    its two sides, one side strays less than `SAME_POINT` from the other's
+    direction (D282); concave or convex is told by the ring's direction, not
+    by an inside/outside test.
     """
     segs = list(segments)
     n = len(segs)
@@ -293,7 +293,8 @@ def point_on_contour(segments: Sequence, point: Point, *, tolerance: float = DEF
                 t_in, t_out = _tangent(segs[k - 1], at_end=True), _tangent(segs[k], at_end=False)
                 cross = t_in[0] * t_out[1] - t_in[1] * t_out[0]
                 turn = abs(math.atan2(cross, t_in[0] * t_out[0] + t_in[1] * t_out[1]))
-                if turn < angle_tolerance:
+                side = max(segment_length(segs[k - 1]), segment_length(segs[k]))
+                if turn < math.pi / 2 and side * math.sin(turn) <= SAME_POINT:
                     return ContourPoint(point, "smooth", ((k - 1) % n, k), math.degrees(turn), False)
                 concave = cross * _signed_area(segs) < 0
                 return ContourPoint(point, "vertex", ((k - 1) % n, k), math.degrees(turn), concave)

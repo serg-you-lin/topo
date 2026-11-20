@@ -13,7 +13,6 @@ chi chiama passa solo tratti dritti.
 
 from __future__ import annotations
 
-from ...precision import AXIS_DEVIATION, SAME_COORDINATE, SIDE_COVERAGE
 import math
 from dataclasses import dataclass
 from typing import Iterable, List, Optional, Sequence, Tuple
@@ -23,8 +22,6 @@ from ..primitives.segments import LineSeg
 Interval = Tuple[float, float]
 Bounds = Tuple[float, float, float, float]
 
-AXIS_EPS = AXIS_DEVIATION             # scarto massimo dall'asse di un tratto orizzontale / verticale  # D269
-CLUSTER_TOLERANCE = SAME_COORDINATE    # due coordinate più vicine di così sono la stessa  # D269
 
 
 
@@ -51,7 +48,7 @@ def interval_coverage(intervals: Iterable[Interval], lo: float, hi: float) -> fl
     return sum(b - a for a, b in merge_intervals(clipped)) / (hi - lo)
 
 
-def cluster_values(values: Iterable[float], tolerance: float = CLUSTER_TOLERANCE) -> List[float]:
+def cluster_values(values: Iterable[float], tolerance: float) -> List[float]:
     """
     I valori ordinati, tenendo per ogni gruppo il più piccolo: un valore entro
     `tolerance` dall'ultimo tenuto appartiene al suo gruppo.
@@ -83,7 +80,7 @@ class AxisLine:
     at: float
 
 
-def axis_lines(items: Iterable, *, eps: float = AXIS_EPS) -> Tuple[List[AxisLine], List[AxisLine]]:
+def axis_lines(items: Iterable, *, eps: float) -> Tuple[List[AxisLine], List[AxisLine]]:
     """(horizontals, verticals): the strokes that deviate from the axis by at most `eps`; the others do not appear."""
     horiz: List[AxisLine] = []
     vert: List[AxisLine] = []
@@ -144,9 +141,8 @@ class CoveredRectangle:
         return (self.long_side / s) if s else 0.0
 
 
-def covered_rectangles(items: Sequence, *, min_side: float, eps: float = AXIS_EPS,
-                       cluster_tolerance: float = CLUSTER_TOLERANCE,
-                       coverage: float = SIDE_COVERAGE) -> List[CoveredRectangle]:
+def covered_rectangles(items: Sequence, *, min_side: float, eps: float,
+                       cluster_tolerance: float, coverage: float) -> List[CoveredRectangle]:
     """
     The axis-aligned rectangles with every side covered at least by
     `coverage` of strokes, built on the coordinates of the strokes at least
@@ -195,9 +191,8 @@ def _on_border(x_lo, y_lo, x_hi, y_hi, items, tol) -> list:
     return owned
 
 
-def spanning_lines(bounds: Bounds, items: Iterable, *, coverage: float = SIDE_COVERAGE,
-                   eps: float = AXIS_EPS,
-                   cluster_tolerance: float = CLUSTER_TOLERANCE) -> Tuple[List[float], List[float]]:
+def spanning_lines(bounds: Bounds, items: Iterable, *, coverage: float, eps: float,
+                   cluster_tolerance: float) -> Tuple[List[float], List[float]]:
     """
     (ys, xs): the coordinates of the lines strictly inside `bounds` (border
     excluded, within `2 * eps`) that cross it for at least `coverage` of the

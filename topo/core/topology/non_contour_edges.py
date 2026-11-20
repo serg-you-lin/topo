@@ -36,7 +36,6 @@ Input:  Graph, list[Edge]
 Output: set[int]  — id() degli Edge da escludere dal grafo dei contorni
 """
 
-from ...precision import NON_CONTOUR_DISTANCE
 from .graph import Graph, build_node_graph
 from .edge import Edge
 from .noding import GRAPH_EPSILON, NodedEdges, edge_geometry, split_at_crossings
@@ -45,7 +44,7 @@ from .outer_face import outer_face_passes
 
 class NonContourEdgeDetector:
 
-    def __init__(self, tolerance: float = NON_CONTOUR_DISTANCE):
+    def __init__(self, tolerance: float):
         self.tolerance = tolerance
 
     def detect(self, graph: Graph, edges: list[Edge], planar: bool = False) -> set[int]:

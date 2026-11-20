@@ -139,7 +139,7 @@ def test_passi_e_fatti_non_portano_shapely():
     assert _shapely_in(topo.experimental.outer_face(edges), "outer_face") == []
     frame = [LineSeg(a, b) for a, b in (((0, 0), (200, 0)), ((200, 0), (200, 100)),
                                          ((200, 100), (0, 100)), ((0, 100), (0, 0)))]
-    rects = topo.geometry.covered_rectangles(frame, min_side=50)
+    rects = topo.geometry.covered_rectangles(frame, min_side=50, eps=0.5, cluster_tolerance=1.5, coverage=0.85)
     assert rects and _shapely_in(rects, "covered_rectangles") == []
     cluster = topo.heal(doc).faces().clusters[0]
     assert _shapely_in(topo.geometry.contour_shape(cluster.outer), "contour_shape") == []
