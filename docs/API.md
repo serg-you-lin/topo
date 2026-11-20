@@ -668,7 +668,7 @@ topo.geometry.intersections(a, b) -> list[Point]
 
 The points where two primitives meet: crossings and touches, endpoints included.
 Exact between `LineSeg`, `ArcSeg`, `CircleSeg` (closed form); on `BSplineSeg` and
-`EllipseSeg` within `CURVE_TOLERANCE` (1e-4), because there is no closed
+`EllipseSeg` within `SAME_POINT` (0.001), because there is no closed
 form. Two overlapping strokes (same line, same circle) give no points: their
 meeting is a stretch (D118).
 
@@ -679,7 +679,7 @@ meeting is a stretch (D118).
 ### `point_on_contour`, `ContourPoint`
 
 ```python
-topo.geometry.point_on_contour(segments, point, *, tolerance=0.01, angle_tolerance=1e-3) -> ContourPoint | None
+topo.geometry.point_on_contour(segments, point, *, tolerance=0.001, angle_tolerance=1e-3) -> ContourPoint | None
 ```
 
 Where `point` falls on the ring `segments` (head to tail, like `contour.segments`).
@@ -1145,7 +1145,7 @@ a chord that divides it) do not go through here: they are facts of the contour.
 ```python
 topo.experimental.to_view_model(
     result: Result,
-    tolerance=DRAW_SAGITTA,            # topo.precision, 0.05
+    tolerance=SAME_POINT,              # topo.precision, 0.001
     include_loose=True,
     include_texts=True,
     role_styles=None,
@@ -1178,7 +1178,7 @@ It does not mutate `result`, does not raise on an invalid `result` (the dict com
 ```python
 topo.experimental.to_svg(
     result: Result,
-    tolerance=DRAW_SAGITTA,            # topo.precision, 0.05
+    tolerance=SAME_POINT,              # topo.precision, 0.001
     include_loose=True,
     include_texts=True,
     padding=0.03,
@@ -1436,12 +1436,12 @@ cluster.overlay.attach("flange_view_hint", [...])`, then reads it with
 polygon (D165, D166): exact `area` and `centroid` (Green; `centroid` raises
 `ValueError` if the loop encloses no area), exact `bbox` (arcs and ellipses
 at their true extremes, not on the chords), `contains(point, tolerance=1e-6)`
-(closed region: the border within `tolerance` is inside), `points(tolerance=0.01)`
+(closed region: the border within `tolerance` is inside), `points(tolerance=0.001)`
 (the discretised loop as `(x, y)` tuples, the first point not repeated at the
 end). The same on every `ClosedCurve` of `result.loose`.
 
 ```python
-topo.Contour.from_segments(segments, role, *, depth=0, parent=None, tolerance=0.01) -> Contour
+topo.Contour.from_segments(segments, role, *, depth=0, parent=None, tolerance=0.001) -> Contour
 ```
 
 A contour from a ring of primitives written by a caller (for example the

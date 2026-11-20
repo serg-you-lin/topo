@@ -27,6 +27,7 @@ import types
 # DXF di tests/: sotto 0,001 i contatti sulle spline, oggi calcolati sulla loro
 # discretizzazione, rompono i contorni.
 SAME_POINT = 1e-3
+# È anche la sagitta di ogni poligono di una curva (D275): calcolo, disegno, testi.
 
 # ---------------------------------------------------------------------------
 # Aritmetica: il rumore dei calcoli, non il disegno
@@ -59,17 +60,6 @@ CIRCULAR_BBOX_ASPECT = 0.15    # lati del riquadro di un "quasi cerchio"
 SIDE_COVERAGE = 0.85           # quota minima di un lato coperta dai tratti
 MARK_FRACTION = 0.05           # della lunghezza di un tratto di linea a tratti
 NEAR_GAP_FACTOR = 2.0          # un buco fino a questo multiplo di max_gap "c'è quasi" (D227)
-
-# ---------------------------------------------------------------------------
-# Discretizzazione: quanto un poligono si scosta dalla curva (sagitta, mm).
-# Non decide chi tocca chi: le decisioni si rifiniscono sulle curve (D145, D200).
-# ---------------------------------------------------------------------------
-
-SAGITTA = 0.01                 # poligoni delle curve
-CURVE_SAGITTA = 1e-4           # per incrociare spline ed ellissi
-POLYGON_SAGITTA = 1e-5         # per i test dentro/fuori
-DRAW_SAGITTA = 0.05            # disegno (SVG, view model)
-TEXT_ARC_SAGITTA = 0.1         # testo scritto lungo un arco (DXF)
 
 # ---------------------------------------------------------------------------
 # Altro, non ancora portato a SAME_POINT: da misurare (TODO, D268)

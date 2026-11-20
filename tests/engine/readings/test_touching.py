@@ -7,6 +7,7 @@ from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, CircleSeg, segment_endpoints
 from topo.core.geometry.measure import node_point
 from topo.core.topology.noding import edge_geometry
+from topo.precision import SAME_POINT
 
 
 def _line(p1, p2):
@@ -69,9 +70,9 @@ class TestTouchingGroups(unittest.TestCase):
 
 class TestGapOnTrueCurvesUnderMotion(unittest.TestCase):
     """G6e, D193 punto 2, `touching.py`: `dwithin` a `gap_tolerance` sulle
-    discretizzazioni. Un cerchio con freccia 0.0099 e un quadratino a 0.496
-    dal cerchio vero, soglia 0.5: su un vertice la distanza misurata è
-    quella vera, a metà corda ~0.01 di più; mezzo passo della griglia
+    discretizzazioni. Un cerchio con freccia appena sotto `SAME_POINT` e un
+    quadratino a 0.4996 dal cerchio vero, soglia 0.5: su un vertice la
+    distanza misurata è quella vera, a metà corda ~0.001 di più; mezzo passo della griglia
     angolare (D145) la portava oltre 0.5 e il gruppo diventava due."""
 
     N = 64
@@ -80,7 +81,7 @@ class TestGapOnTrueCurvesUnderMotion(unittest.TestCase):
 
     def _pieces(self, distance, move):
         step = 2 * math.pi / self.N
-        r = 0.01 * (1 - 1e-8) / (1 - math.cos(step / 2))
+        r = SAME_POINT * (1 - 1e-8) / (1 - math.cos(step / 2))
         y = r + distance
         pts = [(-0.2, y), (0.2, y), (0.2, y + 0.4), (-0.2, y + 0.4)]
         segments = [CircleSeg(center=(0.0, 0.0), radius=r)] + [
@@ -93,7 +94,7 @@ class TestGapOnTrueCurvesUnderMotion(unittest.TestCase):
 
     def test_la_distanza_vera_decide_a_ogni_moto(self):
         from tests.invariants import rigid
-        for distance, expected in ((0.496, 1), (0.504, 2)):
+        for distance, expected in ((0.4996, 1), (0.5004, 2)):
             for motion in self.MOTIONS:
                 move, _ = rigid(*motion)
                 with self.subTest(distance=distance, motion=motion):
@@ -103,7 +104,7 @@ class TestGapOnTrueCurvesUnderMotion(unittest.TestCase):
         # la prova non è vuota: a mezzo passo la discretizzazione misura più di 0.5
         from tests.invariants import rigid
         move, _ = rigid(math.pi / 64, 0.0, 0.0)
-        edges = self._pieces(0.496, move)
+        edges = self._pieces(0.4996, move)
         geoms = [edge_geometry(e) for e in edges]
         self.assertGreater(min(geoms[0].distance(g) for g in geoms[1:]), 0.5)
 

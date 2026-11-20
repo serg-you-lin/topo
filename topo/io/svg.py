@@ -14,7 +14,7 @@ ribaltata (il modello ha Y verso l'alto, SVG verso il basso).
 
 from __future__ import annotations
 
-from ..precision import DRAW_SAGITTA
+from ..precision import SAME_POINT
 import html
 from typing import Mapping, Optional
 
@@ -46,7 +46,7 @@ def _shape(entry: dict, stroke_w: float, true_circles: bool) -> str:
 
 def to_svg(
     result: Result,
-    tolerance: float = DRAW_SAGITTA,
+    tolerance: float = SAME_POINT,
     include_loose: bool = True,
     include_texts: bool = True,
     padding: float = 0.03,

@@ -156,8 +156,8 @@ class TestClosedSplineSeamUnderMotion(unittest.TestCase):
                 doc = topo.load_segments([move_seg(s) for s in pieces])
                 result = topo.heal(doc, max_gap=0.5).outlines()
                 with self.subTest(gap=gap, motion=motion):
-                    self.assertEqual([round(topo.to_shapely(c.outer).area, 3) for c in result.clusters],
-                                     [465.261])
+                    self.assertEqual([round(c.area, 3) for c in result.clusters],
+                                     [465.317])
 
 
 if __name__ == "__main__":

@@ -236,8 +236,9 @@ class TestUnionGridUnderMotion(unittest.TestCase):
 class TestChordContactUnderMotion(unittest.TestCase):
     """G6e, `outer_face._network` (MAP D199): il ripiego D100 rifà il noding
     sulle discretizzazioni coi capi sulle tuple. F1 ha un morso ad arco con
-    freccia appena sotto 0.01; lo spigolo del triangolo F2 sta 0.0100003
-    dall'arco vero, sopra `GRAPH_EPSILON`: il noding non li tocca, ma al posto
+    freccia appena sotto `SAME_POINT`; lo spigolo del triangolo F2 sta
+    `SAME_POINT` + 2e-6 dall'arco vero, sopra `GRAPH_EPSILON` e oltre la
+    corda di 2e-6: il noding non li tocca, ma al posto
     la tupla dello spigolo passava oltre la corda e l'unione saldava F1 e F2
     solo con la griglia dei nodi; senza (D216) F2 resta in loose a ogni moto."""
 
@@ -247,11 +248,13 @@ class TestChordContactUnderMotion(unittest.TestCase):
     def _segments(self):
         from topo.core.primitives.segments import ArcSeg
         step = 2 * math.pi / self.N
-        r = 0.01 * (1 - 1e-8) / (1 - math.cos(step / 2))
+        from topo.precision import FLOAT_NOISE, SAME_POINT
+        r = SAME_POINT * (1 - 1e-8) / (1 - math.cos(step / 2))
         a = math.pi / 4
         p1, p2 = (-r * math.cos(a), -r * math.sin(a)), (r * math.cos(a), -r * math.sin(a))
         alpha = 48.5 * step
-        q = ((r - 0.0100003) * math.cos(alpha), (r - 0.0100003) * math.sin(alpha))
+        d = SAME_POINT + 2 * FLOAT_NOISE
+        q = ((r - d) * math.cos(alpha), (r - d) * math.sin(alpha))
         return [ArcSeg(center=(0.0, 0.0), radius=r, start_angle=5 * a, end_angle=7 * a, ccw=True),
                 LineSeg(start=p2, end=(p2[0], -r - 3)), LineSeg(start=(p2[0], -r - 3), end=(p1[0], -r - 3)),
                 LineSeg(start=(p1[0], -r - 3), end=p1),
@@ -267,4 +270,4 @@ class TestChordContactUnderMotion(unittest.TestCase):
             result = topo.heal(topo.load_segments([segment(s) for s in self._segments()]), max_gap=0.05).outlines()   # la soglia di prima di D267
             readings.append((len(result.clusters), len(result.loose),
                              round(to_shapely(result.clusters[0].outer).area, 1)))
-        self.assertEqual(set(readings), {(1, 1, 44.2)}, readings)
+        self.assertEqual(set(readings), {(1, 1, 3.6)}, readings)

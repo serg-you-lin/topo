@@ -10,6 +10,7 @@ from topo.core.primitives.segments import LineSeg, CircleSeg
 from topo.core.base.normalizer import refit_tessellations
 from topo.core.primitives.segments import ArcSeg
 from topo import to_shapely
+from topo.precision import SAME_POINT
 
 # max_gap non ha default (D98); island_gap non esiste più (D99)
 MAX_GAP = 0.5
@@ -198,9 +199,10 @@ class TestNestedInUnderMotion(unittest.TestCase):
 class TestHostOfATinyPieceUnderMotion(unittest.TestCase):
     """G6e, D193 punto 2, `outline.py:146`: l'ospite di un pezzo si chiedeva
     al poligono del suo outer allargato di `tolerance`. Un morso ad arco
-    (freccia 0.0099) e dentro il morso un cerchietto di raggio 0.003 a 0.051
-    dall'arco vero, soglia 0.05 (`max_gap` 0): due isole a ogni moto, ma la
-    corda sporge nel morso fino a 0.0099 e a mezzo passo della griglia
+    (freccia appena sotto la sagitta `SAME_POINT`) e dentro il morso un
+    cerchietto di raggio 0.0002 a 0.0502 dall'arco vero, soglia 0.05
+    (`max_gap` 0): due isole a ogni moto, ma la corda sporge nel morso quasi
+    di `SAME_POINT` e a mezzo passo della griglia
     angolare (D145) il buffer copriva tutto il cerchietto, che finiva
     annidato. Da quando due isole distano più della soglia sulle curve vere
     (D200) un punto solo del pezzo dice se sta dentro, sulle primitive."""
@@ -211,13 +213,13 @@ class TestHostOfATinyPieceUnderMotion(unittest.TestCase):
 
     def _segments(self):
         step = 2 * math.pi / self.N
-        r = 0.01 * (1 - 1e-8) / (1 - math.cos(step / 2))
+        r = SAME_POINT * (1 - 1e-8) / (1 - math.cos(step / 2))
         a = math.pi / 4
         p1, p2 = (-r * math.cos(a), -r * math.sin(a)), (r * math.cos(a), -r * math.sin(a))
         return [ArcSeg(center=(0.0, 0.0), radius=r, start_angle=5 * a, end_angle=7 * a, ccw=True),
                 LineSeg(start=p2, end=(p2[0], -r - 3)), LineSeg(start=(p2[0], -r - 3), end=(p1[0], -r - 3)),
                 LineSeg(start=(p1[0], -r - 3), end=p1),
-                CircleSeg(center=(0.0, -r + 0.054), radius=0.003)]
+                CircleSeg(center=(0.0, -r + 0.0504), radius=0.0002)]
 
     def test_il_cerchietto_nel_morso_non_e_annidato_a_nessun_moto(self):
         from tests.invariants import rigid

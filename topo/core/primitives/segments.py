@@ -12,7 +12,7 @@ La tolleranza è SEMPRE passata come parametro, mai hardcoded.
 
 from __future__ import annotations
 
-from ...precision import SAGITTA, ZERO_GUARD
+from ...precision import SAME_POINT, ZERO_GUARD
 import math
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
@@ -50,7 +50,7 @@ _GRID_SNAP = ZERO_GUARD  # D269
 MAX_SEGMENTS_SPLINE = 100
 
 # Tolleranza predefinita se non specificata
-DEFAULT_TOLERANCE = SAGITTA  # D269
+DEFAULT_TOLERANCE = SAME_POINT  # sagitta dei poligoni, D275
 
 
 # ---------------------------------------------------------------------------

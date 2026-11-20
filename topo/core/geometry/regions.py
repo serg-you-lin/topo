@@ -19,7 +19,7 @@ Puro: solo primitive, nessun formato.
 
 from __future__ import annotations
 
-from ...precision import FLOAT_NOISE, POLYGON_SAGITTA, TANGENT_ANGLE, ZERO_GUARD
+from ...precision import FLOAT_NOISE, SAME_POINT, TANGENT_ANGLE, ZERO_GUARD
 import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
@@ -42,7 +42,7 @@ Point = Tuple[float, float]
 TANGENT_TOLERANCE = TANGENT_ANGLE   # radianti: sotto, due lati proseguono uno nell'altro  # D269
 _JOIN = SAME_POINT               # capi più vicini di così sono lo stesso nodo  # D268
 _MIN_PIECE = SAME_POINT          # pezzi più corti di così non esistono  # D268
-_POLYGON_TOLERANCE = POLYGON_SAGITTA  # sagitta della discretizzazione per i test dentro/fuori  # D269
+_POLYGON_TOLERANCE = SAME_POINT  # sagitta della discretizzazione per i test dentro/fuori  # D275
 _ON_BORDER = SAME_POINT          # un punto medio più vicino di così al bordo ci corre sopra  # D268
 _ONTO_STEPS = 8                  # passi di Newton al più, in `translation_meeting`
 

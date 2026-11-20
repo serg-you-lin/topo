@@ -50,10 +50,12 @@ def _load_config(dxf_path: Path) -> dict:
 def generate(force: bool = False, only: str = None):
     GOLDEN_DIR.mkdir(parents=True, exist_ok=True)
 
-    dxf_files = [
+    # i padri in questa cartella e quelli che i golden nominano altrove (`drawing`)
+    from tests.paths import drawing
+    dxf_files = {
         f for f in MULTIPLI_DIR.glob("*")
         if f.is_file() and f.suffix.lower() == ".dxf"
-    ]
+    } | {drawing(json.loads(g.read_text(encoding="utf-8"))["parent_file"]) for g in GOLDEN_DIR.glob("*.json")}
 
     if only:
         dxf_files = [f for f in dxf_files if f.stem == only]
@@ -73,7 +75,7 @@ def generate(force: bool = False, only: str = None):
 
         try:
             doc = topo_dxf.load_dxf(parent_path, upgrade=True, explode_inserts=True)
-            result = topo.heal(doc).faces()
+            result = topo.heal(doc, max_gap=tolerance).faces()
 
             if not result.is_valid or not result.clusters:
                 print(f"  SKIP (non valido): {parent_path.name}")

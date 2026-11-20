@@ -97,7 +97,7 @@ class TestPointOnContour(unittest.TestCase):
             self.assertEqual(g.point_on_contour(stadium, joint).kind, "smooth")
 
     def test_middle_of_a_side_and_far_away(self):
-        p = g.point_on_contour(SQUARE, (4, 0.005))
+        p = g.point_on_contour(SQUARE, (4, 0.0005))
         self.assertEqual((p.kind, p.segments), ("edge", (0,)))
         self.assertIsNone(g.point_on_contour(SQUARE, (4, 1)))
 
