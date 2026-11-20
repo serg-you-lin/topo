@@ -28,7 +28,7 @@ from pathlib import Path
 
 from tests.readings import outline_reading
 from topo import to_shapely
-from tests.paths import DATA
+from tests.paths import DATA, PROJECT_ROOT
 
 MAX_GAP = 0.5    # quello di snapdraw (SHEET_MAX_GAP)
 TOL = 0.01       # mm
@@ -37,14 +37,33 @@ SOURCE_DIR = DATA / "golden_outlines"
 GOLDEN_DIR = SOURCE_DIR / "json"
 
 
-def snapshot(dxf_path: Path) -> dict:
-    """I cluster in ordine di riquadro (due cluster di area uguale non scambiano il golden)."""
-    _, result = outline_reading(dxf_path, MAX_GAP)
-    clusters = sorted([round(float(v), 3) for v in to_shapely(c.outer).bounds] + [len(c.inners)]
-                     for c in result.clusters)
-    return {"source_file": dxf_path.name,
-            "clusters": [{"bbox": i[:4], "inners": i[4]} for i in clusters],
+def snapshot(dxf_path: Path, max_gap: float = MAX_GAP, name: str = None, area: bool = False) -> dict:
+    """I cluster in ordine di riquadro (due cluster di area uguale non scambiano il golden).
+    `area`: anche l'area esatta di ogni pezzo, che vede un outer cambiato dentro lo stesso riquadro."""
+    _, result = outline_reading(dxf_path, max_gap)
+    clusters = sorted([round(float(v), 3) for v in to_shapely(c.outer).bounds] + [len(c.inners), round(c.area, 3)]
+                      for c in result.clusters)
+    return {"source_file": name or dxf_path.name,
+            "clusters": [dict({"bbox": i[:4], "inners": i[4]}, **({"area": i[5]} if area else {}))
+                         for i in clusters],
             "open_outside": sum(1 for t in result.loose if getattr(t, "cluster_ref", None) is None)}
+
+
+# Fogli di viste e pezzi multipli giudicati giusti da Federico il 20 novembre,
+# letti con max_gap 0,05 (quello che conta, non lo 0,5 di snapdraw). I disegni
+# non sono anonimizzati: restano in tests/examples (fuori da git) e la mappa
+# og_NN -> percorso sta lì; in git solo i golden, col nome og_NN. Senza la
+# mappa o il disegno il test si salta.
+MAX_GAP_SHEETS = 0.05
+SHEETS_MAP = PROJECT_ROOT / "tests" / "examples" / "golden_outlines_max_gap.json"
+SHEETS_GOLDEN_DIR = DATA / "golden_outlines_max_gap"
+
+
+def _sheets() -> dict:
+    """{og_NN: percorso del disegno}; vuoto senza la mappa."""
+    if not SHEETS_MAP.exists():
+        return {}
+    return {k: PROJECT_ROOT / v for k, v in json.loads(SHEETS_MAP.read_text(encoding="utf-8")).items()}
 
 
 class TestGoldenOutlines(unittest.TestCase):
@@ -84,6 +103,20 @@ for _dxf in sorted(SOURCE_DIR.glob("*.dxf")):
         setattr(TestGoldenOutlines, f"test_{_dxf.stem}", _test)
 
 
+def _make_sheet_test(name: str, golden: Path):
+    def test(self):
+        dxf = _sheets().get(name)
+        if dxf is None or not dxf.exists():
+            self.skipTest(f"{name}: disegno non presente (mappa {SHEETS_MAP.name})")
+        expected = json.loads(golden.read_text(encoding="utf-8"))
+        self._compare(expected, snapshot(dxf, MAX_GAP_SHEETS, name, area=True), name)
+    return test
+
+
+for _golden in sorted(SHEETS_GOLDEN_DIR.glob("og_*.json")):
+    setattr(TestGoldenOutlines, f"test_max_gap_{_golden.stem}", _make_sheet_test(_golden.stem, _golden))
+
+
 def generate():
     GOLDEN_DIR.mkdir(parents=True, exist_ok=True)
     for dxf in sorted(SOURCE_DIR.glob("*.dxf")):
@@ -92,8 +125,19 @@ def generate():
         print(f"  OK: {dxf.name} — {len(snap['clusters'])} cluster, {snap['open_outside']} linee aperte fuori")
 
 
+def generate_sheets():
+    """I golden dei fogli con max_gap: solo dopo che Federico li ha guardati."""
+    SHEETS_GOLDEN_DIR.mkdir(parents=True, exist_ok=True)
+    for name, dxf in sorted(_sheets().items()):
+        snap = snapshot(dxf, MAX_GAP_SHEETS, name, area=True)
+        (SHEETS_GOLDEN_DIR / f"{name}.json").write_text(json.dumps(snap, indent=2), encoding="utf-8")
+        print(f"  OK: {name} — {len(snap['clusters'])} cluster, {snap['open_outside']} linee aperte fuori")
+
+
 if __name__ == "__main__":
-    if "--generate" in sys.argv:
+    if "--generate-sheets" in sys.argv:
+        generate_sheets()
+    elif "--generate" in sys.argv:
         generate()
     else:
         unittest.main()
