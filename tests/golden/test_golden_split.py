@@ -51,7 +51,7 @@ GOLDEN_DIR   = MULTIPLI_DIR / "golden"
 TOL_AREA      = 0.1
 TOL_PERIMETER = 0.5
 TOL_SHAPE     = 1.0
-DEFAULT_TOLERANCE = 0.5
+MAX_GAP = 0.5    # i golden faces/split si leggono con questo (D267, D269)
 
 _PARENT_PIPELINE_CACHE: dict[tuple[Path, float], dict] = {}
 
@@ -113,8 +113,8 @@ def _load_config(dxf_path: Path) -> dict:
     return {}
 
 
-def _get_parent_split_cache(parent_path: Path, tolerance: float) -> dict:
-    cache_key = (parent_path.resolve(), float(tolerance))
+def _get_parent_split_cache(parent_path: Path, max_gap: float) -> dict:
+    cache_key = (parent_path.resolve(), float(max_gap))
     cached = _PARENT_PIPELINE_CACHE.get(cache_key)
     if cached is not None:
         return cached
@@ -123,7 +123,7 @@ def _get_parent_split_cache(parent_path: Path, tolerance: float) -> dict:
     atexit.register(shutil.rmtree, output_folder, ignore_errors=True)
 
     doc = topo_dxf.load_dxf(parent_path, explode_inserts=True)
-    result = topo.heal(doc, max_gap=tolerance).faces()
+    result = topo.heal(doc, max_gap=max_gap).faces()
 
     if result.is_valid and result.clusters:
         parts = topo.split(
@@ -161,17 +161,17 @@ def _get_parent_split_cache(parent_path: Path, tolerance: float) -> dict:
 class _SplitContext:
     """
     Context manager che esegue la pipeline sul padre una sola volta per
-    parent+tolerance e mette a disposizione la cartella di output per tutta
+    parent+max_gap e mette a disposizione la cartella di output per tutta
     la durata del blocco `with`.
     """
 
-    def __init__(self, parent_path: Path, tolerance: float):
+    def __init__(self, parent_path: Path, max_gap: float):
         self._parent_path = parent_path
-        self._tolerance = tolerance
+        self._max_gap = max_gap
         self._cache_entry = None
 
     def __enter__(self) -> Path:
-        self._cache_entry = _get_parent_split_cache(self._parent_path, self._tolerance)
+        self._cache_entry = _get_parent_split_cache(self._parent_path, self._max_gap)
         return self._cache_entry["output_folder"]
 
     def __exit__(self, *_):
@@ -199,14 +199,14 @@ def _make_split_test(golden_path: Path):
             self.skipTest(f"DXF padre non trovato: {parent_path}")
 
         config    = _load_config(parent_path)
-        tolerance = config.get("tolerance", DEFAULT_TOLERANCE)
+        max_gap = config.get("max_gap", MAX_GAP)
 
         part_index = golden["part_index"]
 
         # Trova il figlio per indice, non per nome: padri diversi producono
         # figli con nomi identici (000_.dxf, 001_.dxf...), quindi il nome
         # non è una chiave affidabile. L'indice è la fonte di verità.
-        with _SplitContext(parent_path, tolerance) as output_folder:
+        with _SplitContext(parent_path, max_gap) as output_folder:
             children = sorted(output_folder.glob("*.dxf"))
 
             if part_index >= len(children):
@@ -216,7 +216,7 @@ def _make_split_test(golden_path: Path):
                     f"Figli generati: {[f.name for f in children]}"
                 )
 
-            part_payload = _PARENT_PIPELINE_CACHE[(parent_path.resolve(), float(tolerance))]["clusters"][part_index]
+            part_payload = _PARENT_PIPELINE_CACHE[(parent_path.resolve(), float(max_gap))]["clusters"][part_index]
 
         self.assertIsNotNone(
             part_payload,
@@ -224,9 +224,9 @@ def _make_split_test(golden_path: Path):
         )
 
         self.assertEqual(
-            len(_PARENT_PIPELINE_CACHE[(parent_path.resolve(), float(tolerance))]["clusters"]),
+            len(_PARENT_PIPELINE_CACHE[(parent_path.resolve(), float(max_gap))]["clusters"]),
             len(children),
-            f"{child_name}: il numero di parti in cache ({len(_PARENT_PIPELINE_CACHE[(parent_path.resolve(), float(tolerance))]['clusters'])}) non coincide con i figli generati ({len(children)})"
+            f"{child_name}: il numero di parti in cache ({len(_PARENT_PIPELINE_CACHE[(parent_path.resolve(), float(max_gap))]['clusters'])}) non coincide con i figli generati ({len(children)})"
         )
 
         label = child_name

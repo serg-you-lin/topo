@@ -15,7 +15,7 @@ Per ogni DXF è possibile affiancare un file di configurazione opzionale:
 Formato config (tutti i campi sono opzionali):
     {
         "name_roles": {"MARK": "engrave", "Bend": "bending"},
-        "tolerance": 0.5
+        "max_gap": 0.5
     }
 
 Lancia:
@@ -40,7 +40,7 @@ from topo import to_shapely
 EXAMPLES_DIR      = project_root / "tests" / "data"
 GOLDEN_DXF_DIR    = EXAMPLES_DIR / "golden_faces"
 GOLDEN_JSON_DIR   = EXAMPLES_DIR / "golden_faces" / "json"
-DEFAULT_TOLERANCE = 0.5
+MAX_GAP = 0.5    # i golden faces/split si leggono con questo (D267, D269)
 
 GLOBAL_NAME_ROLES = {
     "MARK":      "engrave",
@@ -108,7 +108,7 @@ def generate(force: bool = False, only: str = None):
 
         try:
             config     = _load_config(dxf_path)
-            tolerance  = config.get("tolerance", DEFAULT_TOLERANCE)
+            max_gap    = config.get("max_gap", MAX_GAP)
             name_roles = {**GLOBAL_NAME_ROLES, **config.get("name_roles", {})}
 
             def _load():
@@ -117,7 +117,7 @@ def generate(force: bool = False, only: str = None):
                     verbose=False, role_rules=topo.name_rules(name_roles),
                 )
 
-            geom = topo.heal(_load(), max_gap=tolerance).faces()
+            geom = topo.heal(_load(), max_gap=max_gap).faces()
 
             if not geom.is_valid:
                 print(f"  SKIP (non valido): {dxf_path.name} — {geom.errors}")

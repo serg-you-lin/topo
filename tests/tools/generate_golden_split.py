@@ -37,7 +37,7 @@ from topo import to_shapely
 
 MULTIPLI_DIR      = project_root / "tests" / "data" / "golden_split"
 GOLDEN_DIR        = MULTIPLI_DIR / "golden"
-DEFAULT_TOLERANCE = 0.5
+MAX_GAP = 0.5    # i golden faces/split si leggono con questo (D267, D269)
 
 
 def _load_config(dxf_path: Path) -> dict:
@@ -71,11 +71,11 @@ def generate(force: bool = False, only: str = None):
 
     for parent_path in sorted(dxf_files):
         config    = _load_config(parent_path)
-        tolerance = config.get("tolerance", DEFAULT_TOLERANCE)
+        max_gap   = config.get("max_gap", MAX_GAP)
 
         try:
             doc = topo_dxf.load_dxf(parent_path, upgrade=True, explode_inserts=True)
-            result = topo.heal(doc, max_gap=tolerance).faces()
+            result = topo.heal(doc, max_gap=max_gap).faces()
 
             if not result.is_valid or not result.clusters:
                 print(f"  SKIP (non valido): {parent_path.name}")

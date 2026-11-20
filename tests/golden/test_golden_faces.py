@@ -26,7 +26,7 @@ EXAMPLES_DIR = DATA
 GOLDEN_DXF_DIR = EXAMPLES_DIR / "golden_faces"
 GOLDEN_JSON_DIR = GOLDEN_DXF_DIR / "json"
 
-DEFAULT_TOLERANCE = 0.5
+MAX_GAP = 0.5    # i golden faces/split si leggono con questo (D267, D269)
 
 TOL_AREA = 0.1
 TOL_PERIMETER = 0.5
@@ -117,7 +117,7 @@ def _make_test(path):
                 flatten_z=True,
                 role_rules=topo.name_rules(name_roles),
             ),
-            max_gap=config.get("tolerance", DEFAULT_TOLERANCE),
+            max_gap=config.get("max_gap", MAX_GAP),
         ).faces()
 
         # --- cluster count ---
@@ -267,11 +267,11 @@ def _make_roundtrip_test(path):
             self.skipTest(f"{golden['source_file']}: write-back lossy noto (spline miste)")
 
         config = _load_config(dxf_path)
-        tol = config.get("tolerance", DEFAULT_TOLERANCE)
+        max_gap = config.get("max_gap", MAX_GAP)
         name_roles = {**GLOBAL_NAME_ROLES, **config.get("name_roles", {})}
 
         def _pipeline(doc):
-            return topo.heal(doc, max_gap=tol).faces()
+            return topo.heal(doc, max_gap=max_gap).faces()
 
         result = _pipeline(
             topo_dxf.load_dxf(
