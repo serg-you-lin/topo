@@ -14,7 +14,7 @@ cerchio (MAP.md D91).
 
 from __future__ import annotations
 
-from ...precision import ANGLE_BRACKET_DEG, CONCENTRIC_DISTANCE, SHAPE_ANGLE_DEG, SHAPE_FRACTION
+from ...precision import ANGLE_BRACKET_DEG, CONCENTRIC_DISTANCE
 import math
 from dataclasses import dataclass
 from enum import Enum
@@ -54,8 +54,6 @@ RECTANGLE = ShapeKind.RECTANGLE
 POLYGON = ShapeKind.POLYGON
 OTHER = ShapeKind.OTHER
 
-SHAPE_TOLERANCE = SHAPE_FRACTION       # frazione della dimensione del contorno  # D269
-ANGLE_TOLERANCE_DEG = SHAPE_ANGLE_DEG  # D269
 
 
 @dataclass(frozen=True)
@@ -88,76 +86,73 @@ class ContourShape:
                 "sides": self.sides}
 
 
-def contour_shape(item, *, tolerance: float = SHAPE_TOLERANCE,
-                  angle_tolerance: float = ANGLE_TOLERANCE_DEG) -> Optional[ContourShape]:
+def contour_shape(item) -> Optional[ContourShape]:
     """
     Shape of a closed contour (`Contour`, or any object with `.segments`, or
     the list of segments). None if there are no segments or if, in sequence,
     they do not close into a ring (D162).
     Consecutive segments on the same line or circle are first recomposed, so
-    a side split by a node stays one side.
+    a side split by a node stays one side. Every measure of the shape agrees
+    within `SAME_POINT`: a rectangle off by more is a polygon (D281).
     """
     segments = list(getattr(item, "segments", item) or [])
-    if not segments or not _closes(segments, tolerance):
+    if not segments or not _closes(segments):
         return None
     segments, _ = merge_runs(segments, [None] * len(segments))
     for rule in (_circle, _ellipse, _stadium, _rectangle):
-        shape = rule(segments, tolerance, angle_tolerance)
+        shape = rule(segments)
         if shape is not None:
             return shape
     return _generic(segments)
 
 
-def _closes(segments, tol) -> bool:
+def _closes(segments) -> bool:
     """I segmenti, in fila, fanno un anello: ognuno parte dove finisce il
     precedente (in un verso o nell'altro) e l'ultimo torna al primo. Un pezzo
     aperto non ha forma (D162)."""
     if len(segments) == 1:
         return segment_is_closed(segments[0])
     ends = [segment_endpoints(s) for s in segments]
-    xs = [p[0] for e in ends for p in e]
-    ys = [p[1] for e in ends for p in e]
-    eps = tol * math.hypot(max(xs) - min(xs), max(ys) - min(ys))
     for first, last in (ends[0], ends[0][::-1]):
         here = last
         for a, b in ends[1:]:
-            if math.dist(here, a) <= eps:
+            if math.dist(here, a) <= SAME_POINT:
                 here = b
-            elif math.dist(here, b) <= eps:
+            elif math.dist(here, b) <= SAME_POINT:
                 here = a
             else:
                 break
         else:
-            if math.dist(here, first) <= eps:
+            if math.dist(here, first) <= SAME_POINT:
                 return True
     return False
 
 
-def _radius(seg, tol) -> Optional[float]:
-    """Raggio di un pezzo di cerchio; un'ellisse ad assi uguali è un cerchio, esattamente."""
+def _radius(seg) -> Optional[float]:
+    """Raggio di un pezzo di cerchio; un'ellisse con gli assi uguali entro SAME_POINT è un cerchio."""
     if isinstance(seg, (ArcSeg, CircleSeg)):
         return seg.radius
-    if isinstance(seg, EllipseSeg) and abs(1.0 - seg.ratio) <= tol:
+    if isinstance(seg, EllipseSeg) and abs(1.0 - seg.ratio) * math.hypot(*seg.major_axis) <= SAME_POINT:
         return math.hypot(*seg.major_axis)
     return None
 
 
-def _circle(segments, tol, _angle_tol):
-    radii = [_radius(s, tol) for s in segments]
+def _circle(segments):
+    radii = [_radius(s) for s in segments]
     if any(r is None for r in radii):
         return None
     s0, r0 = segments[0], radii[0]
-    if any(abs(r - r0) > tol * r0 or math.dist(s.center, s0.center) > tol * r0
+    if any(abs(r - r0) > SAME_POINT or math.dist(s.center, s0.center) > SAME_POINT
            for s, r in zip(segments, radii)):
         return None
     sweep = sum(2 * math.pi if isinstance(s, CircleSeg) else s._sweep() for s in segments)
-    if abs(sweep - 2 * math.pi) > math.radians(1.0):
+    if abs(sweep - 2 * math.pi) * r0 > SAME_POINT:
         return None
     d = 2 * r0
     return ContourShape(CIRCLE, tuple(s0.center), d, d, None, len(segments))
 
 
-def _ellipse(segments, tol, angle_tol):
+def _ellipse(segments):
     """Pezzi della stessa ellisse (centro, semiassi, direzione dell'asse) per un giro intero."""
     if not all(isinstance(s, EllipseSeg) for s in segments):
         return None
@@ -165,16 +160,16 @@ def _ellipse(segments, tol, angle_tol):
     a = math.hypot(*s0.major_axis)
     angle = math.degrees(math.atan2(s0.major_axis[1], s0.major_axis[0])) % 180
     for s in segments:
-        if (abs(math.hypot(*s.major_axis) - a) > tol * a or abs(s.ratio - s0.ratio) > tol
-                or math.dist(s.center, s0.center) > tol * a
-                or _angle_diff(math.degrees(math.atan2(s.major_axis[1], s.major_axis[0])), angle) > angle_tol):
+        if (abs(math.hypot(*s.major_axis) - a) > SAME_POINT or abs(s.ratio - s0.ratio) * a > SAME_POINT
+                or math.dist(s.center, s0.center) > SAME_POINT
+                or math.radians(_angle_diff(math.degrees(math.atan2(s.major_axis[1], s.major_axis[0])), angle)) * a > SAME_POINT):
             return None
-    if abs(sum(s._sweep() for s in segments) - 2 * math.pi) > math.radians(1.0):
+    if abs(sum(s._sweep() for s in segments) - 2 * math.pi) * a > SAME_POINT:
         return None
     return ContourShape(ELLIPSE, tuple(s0.center), 2 * a, 2 * a * s0.ratio, angle, len(segments))
 
 
-def _stadium(segments, tol, angle_tol):
+def _stadium(segments):
     if len(segments) != 4:
         return None
     k = 0 if isinstance(segments[0], ArcSeg) else 1
@@ -183,32 +178,33 @@ def _stadium(segments, tol, angle_tol):
             and isinstance(l1, LineSeg) and isinstance(l2, LineSeg)):
         return None
     r = a1.radius
-    if abs(a2.radius - r) > tol * r:
+    if abs(a2.radius - r) > SAME_POINT:
         return None
-    if any(abs(a._sweep() - math.pi) > math.radians(angle_tol) for a in (a1, a2)):
+    if any(abs(a._sweep() - math.pi) * r > SAME_POINT for a in (a1, a2)):
         return None
     axis = math.dist(a1.center, a2.center)
-    if axis <= tol * r:
+    if axis <= SAME_POINT:
         return None
     angle = chord_angle_deg(a1.center, a2.center)
     for line in (l1, l2):
-        if abs(_length(line) - axis) > tol * (axis + 2 * r):
+        if abs(_length(line) - axis) > SAME_POINT:
             return None
-        if _angle_diff(chord_angle_deg(line.start, line.end), angle) > angle_tol:
+        if math.radians(_angle_diff(chord_angle_deg(line.start, line.end), angle)) * _length(line) > SAME_POINT:
             return None
     center = ((a1.center[0] + a2.center[0]) / 2, (a1.center[1] + a2.center[1]) / 2)
     return ContourShape(STADIUM, center, axis + 2 * r, 2 * r, angle, 4)
 
 
-def _rectangle(segments, tol, angle_tol):
+def _rectangle(segments):
     if len(segments) != 4 or not all(isinstance(s, LineSeg) for s in segments):
         return None
     angles = [chord_angle_deg(s.start, s.end) for s in segments]
-    if any(abs(_angle_diff(angles[i], angles[i - 1]) - 90) > angle_tol for i in range(4)):
-        return None
     lengths = [_length(s) for s in segments]
-    size = max(lengths)
-    if abs(lengths[0] - lengths[2]) > tol * size or abs(lengths[1] - lengths[3]) > tol * size:
+    # scarto dall'angolo retto lungo il più lungo dei due lati
+    if any(math.radians(abs(_angle_diff(angles[i], angles[i - 1]) - 90)) * max(lengths[i], lengths[i - 1]) > SAME_POINT
+           for i in range(4)):
+        return None
+    if abs(lengths[0] - lengths[2]) > SAME_POINT or abs(lengths[1] - lengths[3]) > SAME_POINT:
         return None
     i = 0 if lengths[0] >= lengths[1] else 1
     xs = [s.start[0] for s in segments]

@@ -69,6 +69,11 @@ class TestContourShape(unittest.TestCase):
         self.assertEqual(s.kind, RECTANGLE)
         self.assertEqual(s.sides, 4)
 
+    def test_rettangolo_storto_oltre_same_point_e_un_poligono(self):
+        # D281: ogni misura entro SAME_POINT, nessun margine di somiglianza (con l'1% era un rettangolo)
+        self.assertEqual(contour_shape(_ring((0, 0), (100, 0), (100, 50.5), (0, 50))).kind, POLYGON)
+        self.assertEqual(contour_shape(_ring((0, 0), (100, 0), (100, 50.0005), (0, 50))).kind, RECTANGLE)
+
     def test_poligono(self):
         s = contour_shape(_ring((0, 0), (10, 0), (5, 8)))
         self.assertEqual(s.kind, POLYGON)

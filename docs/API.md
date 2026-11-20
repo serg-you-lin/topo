@@ -552,7 +552,7 @@ to `docs/INDEX.md` (generated locally, not in git).
 ### `contour_shape`
 
 ```python
-topo.geometry.contour_shape(item, *, tolerance=0.01, angle_tolerance=1.0) -> ContourShape | None
+topo.geometry.contour_shape(item) -> ContourShape | None
 ```
 
 The shape of a closed contour (`Contour`, an object with `.segments`
@@ -562,14 +562,15 @@ equal semicircles and two parallel lines — a geometric name, not "slot"),
 fact, not a feature: `circle` does not mean hole, that is decided by whoever reads the
 drawing or the process. It holds equally on `faces()` and on `outlines()`. Consecutive
 segments on the same line or circumference are recomposed first.
-`tolerance` is a fraction of the size of the contour.
+Every measure of the shape agrees within `SAME_POINT` (0.001 mm); there is
+no tolerance to pass: a rectangle off by more is a `polygon` (D281).
 
 **Closed and stable list** (D136): `kind` is a `ShapeKind` (`str`, so
 `kind == "circle"` works) and in 1.x no other kinds are born and no
 contour changes kind. A shape has a name only if centre, length,
 width and angle determine it; a filleted rectangle, an arc slot,
 a hexagon are `other` or `polygon`. The rules read the primitives as they are:
-an ellipse with equal axes is a `circle` (same points, exactly), a
+an ellipse with axes equal within `SAME_POINT` is a `circle`, a
 circle made of splines stays `other`.
 
 `ContourShape`: `kind`, `center`, `length` (major; circle: diameter;

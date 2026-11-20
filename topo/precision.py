@@ -43,7 +43,6 @@ FLOAT_NOISE = 1e-6
 
 COLLINEAR_ANGLE = 1e-6         # radianti: due rette con la stessa direzione
 TANGENT_ANGLE = 1e-3           # radianti: sotto, due lati proseguono uno nell'altro
-SHAPE_ANGLE_DEG = 1.0          # gradi: angolo retto / lati paralleli di una forma (contour_shape)
 CORNER_TURN_DEG = 35.0         # gradi: una svolta più ampia è uno spigolo (simplify_points)
 NEAR_FULL_ARC_MISSING_DEG = 2.0  # gradi: un arco cui manca di più non è un cerchio (D112)
 NEAR_FULL_ARC_HINT_DEG = 8.0     # gradi: fin qui heal() avvisa che manca poco; un filetto (~90°) mai (D227)
@@ -53,7 +52,6 @@ ANGLE_BRACKET_DEG = 1.0        # gradi: attorno all'angolo trovato si cerca il r
 # Frazioni e rapporti: non lunghezze
 # ---------------------------------------------------------------------------
 
-SHAPE_FRACTION = 0.01          # della dimensione del contorno (contour_shape)
 SIDE_COVERAGE = 0.85           # quota minima di un lato coperta dai tratti
 MARK_FRACTION = 0.05           # della lunghezza di un tratto di linea a tratti
 NEAR_GAP_FACTOR = 2.0          # un buco fino a questo multiplo di max_gap "c'è quasi" (D227)
