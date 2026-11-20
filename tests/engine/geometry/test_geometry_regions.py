@@ -372,5 +372,38 @@ class TestContourFromSegments(unittest.TestCase):
             Contour.from_segments([SQUARE[0], SQUARE[2], SQUARE[1], SQUARE[3]], role="outer")
 
 
+
+class TestTangentOnTheTrueCurve(unittest.TestCase):
+    """D278: la direzione al capo di spline ed ellissi è la derivata della curva
+    vera, non l'ultima corda del poligono. Prova: un quarto di cerchio scritto
+    come NURBS razionale ha tangenti esatte note; una spline e un'ellisse
+    coincidono con la differenza finita sulla curva."""
+
+    def test_quarto_di_cerchio_razionale(self):
+        from topo.core.geometry.regions import _tangent
+        quarter = BSplineSeg(degree=2, control_points=[(1, 0), (1, 1), (0, 1)],
+                             knots=[0, 0, 0, 1, 1, 1], weights=[1, 2 ** -0.5, 1])
+        for at_end, expected in ((False, (0.0, 1.0)), (True, (-1.0, 0.0))):
+            for got, want in zip(_tangent(quarter, at_end), expected):
+                self.assertAlmostEqual(got, want, places=12)
+
+    def test_spline_ed_ellisse_come_la_curva(self):
+        from topo.core.geometry.regions import _tangent
+        from topo.core.primitives import EllipseSeg
+        spline = BSplineSeg(degree=3, control_points=[(0, 0), (1, 2), (3, 3), (4, 1), (6, 0)],
+                            knots=[0, 0, 0, 0, 0.4, 1, 1, 1, 1])
+        ellipse = EllipseSeg(center=(0, 0), major_axis=(2, 0), ratio=0.5, start_param=1.2, end_param=0.3, ccw=False)
+        h = 1e-7
+        cases = [(spline, False, spline._evaluate(0.0), spline._evaluate(h)),
+                 (spline, True, spline._evaluate(1.0 - h), spline._evaluate(1.0)),
+                 (ellipse, False, ellipse._point_at(1.2), ellipse._point_at(1.2 - h)),
+                 (ellipse, True, ellipse._point_at(0.3 + h), ellipse._point_at(0.3))]
+        for seg, at_end, a, b in cases:
+            n = math.dist(a, b)
+            with self.subTest(seg=type(seg).__name__, at_end=at_end):
+                for got, want in zip(_tangent(seg, at_end), ((b[0] - a[0]) / n, (b[1] - a[1]) / n)):
+                    self.assertAlmostEqual(got, want, places=6)
+
+
 if __name__ == "__main__":
     unittest.main()

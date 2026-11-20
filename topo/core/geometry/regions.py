@@ -33,7 +33,7 @@ from ..primitives.segments import (
     ArcSeg, CircleSeg, EllipseSeg, LineSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle,
 )
 from ..primitives.trim import sub_segment
-from .integrals import ring_moments
+from .integrals import _deboor, _derivative_points, ring_moments
 from .intersections import CURVE_TOLERANCE, intersections
 from .shape import merge_runs
 
@@ -167,18 +167,43 @@ def _split(seg, points: Sequence[Point]) -> list:
 
 
 def _tangent(seg, at_end: bool) -> Tuple[float, float]:
-    """Direzione di percorrenza di `seg` nel suo capo iniziale o finale."""
+    """Direzione di percorrenza di `seg` nel suo capo iniziale o finale, sulla
+    curva vera: anche per spline ed ellissi la derivata, non l'ultima corda."""
     if isinstance(seg, LineSeg):
         dx, dy = seg.end[0] - seg.start[0], seg.end[1] - seg.start[1]
     elif isinstance(seg, ArcSeg):
         a = seg.start_angle + ((seg._sweep() if seg.ccw else -seg._sweep()) if at_end else 0.0)
         dx, dy = (-math.sin(a), math.cos(a)) if seg.ccw else (math.sin(a), -math.cos(a))
+    elif isinstance(seg, EllipseSeg):
+        sign = 1.0 if seg.ccw else -1.0
+        t = seg.start_param + (sign * seg._sweep() if at_end else 0.0)
+        (mx, my), r = seg.major_axis, seg.ratio
+        dx = sign * (-math.sin(t) * mx - math.cos(t) * my * r)
+        dy = sign * (-math.sin(t) * my + math.cos(t) * mx * r)
     else:
-        pts = _polyline(seg)
-        (ax, ay), (bx, by) = (pts[-2], pts[-1]) if at_end else (pts[0], pts[1])
-        dx, dy = bx - ax, by - ay
+        dx, dy = _spline_derivative(seg, at_end) or (0.0, 0.0)
+        if math.hypot(dx, dy) <= ZERO_GUARD:   # derivata nulla al capo (punti di controllo doppi): la corda
+            pts = _polyline(seg)
+            (ax, ay), (bx, by) = (pts[-2], pts[-1]) if at_end else (pts[0], pts[1])
+            dx, dy = bx - ax, by - ay
     n = math.hypot(dx, dy) or 1.0
     return dx / n, dy / n
+
+
+def _spline_derivative(seg, at_end: bool) -> Optional[Tuple[float, float]]:
+    """Derivata di una B-spline (anche razionale) al bordo del suo dominio, in
+    coordinate omogenee: C' = (A' - w' C) / w. None se i nodi non la definiscono."""
+    p, knots, ctrl = seg.degree, seg.knots, seg.control_points
+    if p < 1 or len(knots) != len(ctrl) + p + 1 or knots[-(p + 1)] <= knots[p]:
+        return None
+    u = knots[-(p + 1)] if at_end else knots[p]
+    weights = seg.weights or [1.0] * len(ctrl)
+    h = [(c[0] * w, c[1] * w, w) for c, w in zip(ctrl, weights)]
+    a = _deboor(u, p, knots, h)
+    d = _derivative_points(h, knots, p)
+    da = _deboor(u, p - 1, knots[1:-1], d) if p > 1 else (d[-1] if at_end else d[0])
+    x, y = a[0] / a[2], a[1] / a[2]
+    return (da[0] - da[2] * x) / a[2], (da[1] - da[2] * y) / a[2]
 
 
 def _full_arc(seg):

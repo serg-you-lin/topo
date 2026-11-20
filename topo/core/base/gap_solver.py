@@ -32,7 +32,7 @@ from shapely.geometry import Point
 from ..geometry.measure import FLOAT_NOISE, node_point
 from ..geometry.intersections import (_distance, _line_intersection, _circle_line_intersections, _circle_circle_intersections, _closest_to)
 from ..geometry.intersections import intersections
-from ..geometry.regions import nearest_point
+from ..geometry.regions import _tangent, nearest_point
 from ..primitives.segments import DEFAULT_TOLERANCE, LineSeg, ArcSeg, BSplineSeg, segment_endpoints
 from ..topology.noding import GRAPH_EPSILON, edge_geometry
 from ..topology.edge import Edge
@@ -312,17 +312,16 @@ def _continuation(ep: GapEndpoint, reach: float):
                       end_angle=seg.start_angle - sign * step, ccw=not seg.ccw)
     if isinstance(seg, LineSeg):
         far = seg.start if ep.role == "end" else seg.end
-    elif seg is not None:
-        pts = seg.discretize(tolerance=DEFAULT_TOLERANCE)
-        if len(pts) < 2:
+        length = _distance(far, ep.pt)
+        if length <= 0:
             return None
-        far = pts[-2] if ep.role == "end" else pts[1]
+        ux, uy = (ep.pt[0] - far[0]) / length, (ep.pt[1] - far[1]) / length
+    elif seg is not None:
+        # la tangente vera al capo, verso fuori (D278)
+        tx, ty = _tangent(seg, at_end=ep.role == "end")
+        ux, uy = (tx, ty) if ep.role == "end" else (-tx, -ty)
     else:
         return None
-    length = _distance(far, ep.pt)
-    if length <= 0:
-        return None
-    ux, uy = (ep.pt[0] - far[0]) / length, (ep.pt[1] - far[1]) / length
     return LineSeg(start=tuple(ep.pt), end=(ep.pt[0] + ux * reach, ep.pt[1] + uy * reach))
 
 
