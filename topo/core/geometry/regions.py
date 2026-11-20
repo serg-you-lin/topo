@@ -44,7 +44,7 @@ _JOIN = SAME_POINT               # capi più vicini di così sono lo stesso nodo
 _MIN_PIECE = SAME_POINT          # pezzi più corti di così non esistono  # D268
 _POLYGON_TOLERANCE = POLYGON_SAGITTA  # sagitta della discretizzazione per i test dentro/fuori  # D269
 _ON_BORDER = SAME_POINT          # un punto medio più vicino di così al bordo ci corre sopra  # D268
-_ONTO_STEPS = 8                  # passi di Newton al più, in `translation_onto`
+_ONTO_STEPS = 8                  # passi di Newton al più, in `translation_meeting`
 
 
 # ---------------------------------------------------------------------------
@@ -296,27 +296,35 @@ def nearest_point(segments: Sequence, point: Point) -> Point:
     return best
 
 
-def translation_onto(a: Point, b: Point, target_a, target_b) -> Optional[Point]:
+def translation_meeting(constraints: Sequence[Tuple[Point, object, int]]) -> Optional[Point]:
     """
-    (dx, dy) che porta `a` sulla curva `target_a` e `b` sulla curva
-    `target_b` insieme: una traslazione sola, la più vicina a zero. None se
-    non è unica (le due curve parallele dove i punti cadono) o se non si
-    trova. Esatta su rette, archi e cerchi; su spline ed ellissi entro
+    (dx, dy) che soddisfa tutti i vincoli `(punto, curva, verso)` insieme, la
+    più vicina a zero: verso +1, il punto spostato cade sulla curva ferma; verso
+    -1, il punto fermo cade sulla curva spostata. None se la traslazione non è
+    unica (vincoli tutti paralleli) o se non ce n'è una che li soddisfi tutti.
+    Esatta su rette, archi e cerchi; su spline ed ellissi entro
     `CURVE_TOLERANCE` (D271).
     """
     t = (0.0, 0.0)
     for _ in range(_ONTO_STEPS):
-        pa, pb = (a[0] + t[0], a[1] + t[1]), (b[0] + t[0], b[1] + t[1])
-        fa, fb = nearest_point([target_a], pa), nearest_point([target_b], pb)
-        if max(math.dist(pa, fa), math.dist(pb, fb)) <= FLOAT_NOISE:
+        rows, worst = [], 0.0
+        for point, curve, sign in constraints:
+            x = (point[0] + sign * t[0], point[1] + sign * t[1])
+            foot = nearest_point([curve], x)
+            worst = max(worst, math.dist(x, foot))
+            n = _normal(curve, foot)
+            rows.append((sign * n[0], sign * n[1], n[0] * (foot[0] - x[0]) + n[1] * (foot[1] - x[1])))
+        if worst <= FLOAT_NOISE:
             return t
-        na, nb = _normal(target_a, fa), _normal(target_b, fb)
-        det = na[0] * nb[1] - na[1] * nb[0]
-        if abs(det) <= ZERO_GUARD:
+        mxx = sum(a * a for a, _, _ in rows)
+        mxy = sum(a * b for a, b, _ in rows)
+        myy = sum(b * b for _, b, _ in rows)
+        vx = sum(a * r for a, _, r in rows)
+        vy = sum(b * r for _, b, r in rows)
+        det = mxx * myy - mxy * mxy
+        if det <= ZERO_GUARD:
             return None
-        ca = na[0] * (fa[0] - pa[0]) + na[1] * (fa[1] - pa[1])
-        cb = nb[0] * (fb[0] - pb[0]) + nb[1] * (fb[1] - pb[1])
-        t = (t[0] + (ca * nb[1] - cb * na[1]) / det, t[1] + (na[0] * cb - nb[0] * ca) / det)
+        t = (t[0] + (vx * myy - vy * mxy) / det, t[1] + (mxx * vy - mxy * vx) / det)
     return None
 
 

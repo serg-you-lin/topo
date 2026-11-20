@@ -25,8 +25,8 @@ from ..topology.edge import Edge
 from ..topology.noding import decide_nodes
 from .normalizer import (merge_cocircular_overlaps, merge_collinear_overlaps, refit_circle_rings,
                          refit_tessellations)
-from .cleanup import (ambiguous_free_ends, close_free_gaps, close_near_full_arcs, join_tied_facing_ends,
-                      move_onto_targets, split_labeled)
+from .cleanup import (ambiguous_free_ends, bend_arcs_through_free_ends, close_free_gaps, close_near_full_arcs,
+                      join_tied_facing_ends, move_onto_targets, split_labeled)
 
 
 @dataclass
@@ -59,6 +59,7 @@ class Normalized:
     gaps:           list = field(default_factory=list)   # (estremo, distanza) dei gap chiusi
     moved:          list = field(default_factory=list)   # (punto, spostamento) delle curve spostate (D271)
     tied:           list = field(default_factory=list)   # (estremo, distanza) dei capi legati uniti (D272)
+    bent:           list = field(default_factory=list)   # (capo, distanza) degli archi ridisegnati per un capo (D273)
 
 
 def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normalized:
@@ -88,6 +89,8 @@ def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normali
     edges = move_onto_targets(edges, gap, out.moved)
     if out.moved:
         edges, _ = decide_nodes(edges)
+    # un arco inchiodato ai capi passa per il capo libero di fianco alla sua pancia (D273)
+    edges = bend_arcs_through_free_ends(edges, gap, out.bent)
     out.ambiguous = ambiguous_free_ends(edges, gap)
     closed = close_free_gaps(edges, gap, out.gaps)
     # un lato in due pezzi coi capi già legati: il buco lungo la sua retta (D272)

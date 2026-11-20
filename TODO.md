@@ -87,6 +87,9 @@ repo, mai rigenerando alla cieca.
 
 ## Dopo la 1.0 (1.x, additivo — non toccare finché il cancello è aperto)
 
+- **`math_seg`**: una primitiva per curve date da un'equazione (Federico, 20 novembre),
+  oltre a `EllipseSeg` (che è già l'arco di ellisse). Nessun disegno la chiede oggi.
+
 - **Generatore di disegni credibili** (D266): compone forme vere (contorni con
   raccordi, cerchi e asole dentro, archi tangenti, spline, annidamenti) e le
   guasta come i file veri (piccoli buchi, ripassati, segmenti spezzati, versi

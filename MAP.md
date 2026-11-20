@@ -654,11 +654,15 @@ from `topo.geometry` to `topo.precision`; `DEFAULT_NODE_TOLERANCE` and `Document
 `rim.face_segments` cuts each edge where the rim's vertex projects onto it: two consecutive pieces end within 2·band
 of each other, by construction. It joins them with a new straight segment (no curve moves); `close_contour_jumps` stays at
 `SAME_POINT`. Before D269 `tolerance` (0.05) hid these jumps; at 0.001 they made 4 sheets `open-contour` with `max_gap`.
-### D271 — reopening D17 and D209: an open curve with both ends free, each within `max_gap` of a different curve, moves whole onto them (Federico, 19 November).
-The fillet drawn a few thousandths beside its side: no gap rule reaches it (D189), `tolerance` used to. One translation puts both ends
-on their targets, at most `max_gap`, before the gaps close; a curve tied at a node never moves (it would tear the node). Not onto an
-arc or circle with a concentric one (a thread), not a line through the target circle's centre (an axis). Note `curves-moved`.
+### D271 — reopening D17 and D209: a fillet drawn beside what it must touch moves whole; a line never moves, it only lengthens or shortens (Federico, 19-20 November).
+Arcs, splines, ellipses (never a line): a free end lands on the nearest curve within `max_gap` (a line counts as its carrier and lengthens to
+it), an end tied to one line stays on that line's carrier and the line follows; one translation for all, at most `max_gap`, before the gaps
+close. A line is locked per end, so two fillets can each lengthen one end. Not onto a thread, not a line through the circle's centre. Note `curves-moved`.
 ### D272 — two ends already tied, facing each other along their own continuation within `max_gap`, are joined by a new segment (Federico, 20 November).
 A side drawn in two pieces with a gap (drw_0031's side view, 0.0052): no end is free, so D267 does not reach it; `tolerance` used to.
 No curve moves; both ends must lie on each other's continuation (D189 kept). Bounded by `max_gap` only: at 0.5 a slot up to 0.5 wide
 closes too (SEGNI_TRACCIATI), the user declared it imprecision (Federico). Note `tied-ends-joined`.
+### D273 — an arc pinned at both ends passes through the free end that reaches it tangent, within `max_gap` (Federico, 20 November).
+drw_0007: the straight side of a slot ends 0.017 beside the arc it should run into, the arc's ends tied to non-parallel lines. The arc is
+redrawn through its own two ends and that end (`circle_through`); no line moves. Only for a curve arriving tangent (`TANGENT_ANGLE`): one
+arriving at an angle ends there on purpose, and a well-drawn arc is never touched (anch_06). Arcs only. Note `arc-bent`.
