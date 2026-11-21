@@ -522,6 +522,35 @@ class TestRefitJointsUnderMotion(unittest.TestCase):
                 self.assertEqual(sorted(ends.values()), [1, 1, 2, 2])
 
 
+class TestRefitCornerFromTolerance(unittest.TestCase):
+    """D283: nel rifit lo spigolo è dove nessuna curva liscia passa entro la
+    tolleranza, non una svolta sopra 35° (un numero di smoother). Microcasi."""
+
+    def test_spigolo_di_20_gradi_scritto_a_punti_resta_due_rette(self):
+        t = math.radians(20)
+        pts = [(x * 0.05, 0.0) for x in range(41)]
+        pts += [(2.0 + k * 0.05 * math.cos(t), k * 0.05 * math.sin(t)) for k in range(1, 41)]
+        self.assertEqual(self._refit(pts), ["LineSeg", "LineSeg"])
+
+    def test_curva_liscia_che_non_e_un_arco_resta_una_curva(self):
+        # una gobba di 0,04 mm su 3 mm, la curvatura cambia (regr_01 a y 686): nessuno spigolo
+        pts = [(x * 0.02, 0.04 * math.sin(math.pi * x / 150) - 0.3 * (x / 150) ** 3) for x in range(151)]
+        (kind,) = self._refit(pts)     # un pezzo solo; arco o spline, entro 0,02 vanno bene tutti e due
+        self.assertNotEqual(kind, "LineSeg")
+
+    def test_retta_e_raccordo_tangente_senza_spigoli_finti(self):
+        # 2 mm di retta, poi un quarto di cerchio di raggio 1 tangente: retta + arco, nessun pezzo in più
+        pts = [(x * 0.05, 0.0) for x in range(41)]
+        pts += [(2.0 + math.sin(a / 40 * math.pi / 2), 1 - math.cos(a / 40 * math.pi / 2)) for a in range(1, 41)]
+        self.assertEqual(self._refit(pts), ["LineSeg", "ArcSeg"])
+
+    def _refit(self, pts):
+        import topo
+        from topo.core.base.normalizer import refit_tessellations
+        out = refit_tessellations(topo.load_segments([LineSeg(start=a, end=b) for a, b in zip(pts, pts[1:])]).edges)
+        return [type(e.segment).__name__ for e in out]
+
+
 def _polygon(center, radius, sides, start=0.3):
     pts = [(center[0] + radius * math.cos(start + 2 * math.pi * k / sides),
             center[1] + radius * math.sin(start + 2 * math.pi * k / sides)) for k in range(sides)]

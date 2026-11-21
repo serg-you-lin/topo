@@ -160,7 +160,7 @@ topo_dxf.to_dxf(result)
 
 ```python
 # "spline" entity — the fields are those of BSplineSeg, taken 1:1
-segments = topo.experimental.simplify_points(points, tolerance=0.01, scale=25.0, arcs=False)
+segments = topo.experimental.simplify_points(points, tolerance=0.01, scale=25.0, arcs=False, corner_turn_deg=35)
 doc = topo.load_geometry([
     {
         "type": "spline",

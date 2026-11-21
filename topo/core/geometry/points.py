@@ -177,6 +177,35 @@ def offset_from_line(p: Point, a: Point, b: Point) -> float:
     return ((b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])) / length
 
 
+def within_chord(points: List[Point], tolerance: float) -> bool:
+    """Tutti i punti entro `tolerance` dalla corda primo-ultimo."""
+    a, b = points[0], points[-1]
+    return all(abs(offset_from_line(p, a, b)) <= tolerance for p in points[1:-1])
+
+
+def within_circle_through(points: List[Point], tolerance: float) -> Optional[Tuple[Point, float]]:
+    """(centro, raggio) del cerchio per il primo, quello a metà e l'ultimo punto, se
+    tutti i punti stanno entro `tolerance` da lui; None altrimenti."""
+    circle = circle_through(points[0], points[len(points) // 2], points[-1])
+    if circle is None:
+        return None
+    center, radius = circle
+    if any(abs(math.dist(center, p) - radius) > tolerance for p in points):
+        return None
+    return circle
+
+
+def within_smooth_curve(points: List[Point], tolerance: float) -> bool:
+    """Una curva liscia passa entro `tolerance` da tutti i punti: la cubica a un
+    tratto ai minimi quadrati coi capi fissi (`_least_squares`, il cui errore
+    maggiora la distanza vera). Un arco no: una curva liscia non è per forza un
+    arco, la curvatura può cambiare (D283)."""
+    if len(points) < 5:
+        return within_chord(points, tolerance)
+    _, _, error = _least_squares(np.array(points, dtype=np.float64), _chord_params(points), 3, 4)
+    return error <= tolerance
+
+
 def douglas_peucker(points: List[Point], tolerance: float) -> List[int]:
     """
     Indici dei vertici che Douglas-Peucker tiene sulla polilinea aperta
@@ -227,12 +256,16 @@ def _point_at(points: List[Point], cum: List[float], s: float) -> Point:
     return (a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1]))
 
 
-def turn_corners(points: List[Point], closed: bool, turn_deg: float, scale: float,
+def turn_corners(points: List[Point], closed: bool, turn_deg: Optional[float], scale: float,
                  tolerance: float) -> List[int]:
     """
     Indici degli spigoli di una sequenza campionata: vertici Douglas-Peucker
     (a `tolerance`) dove la curva svolta di almeno `turn_deg` gradi fra il
-    punto a `scale` prima e quello a `scale` dopo, lungo la curva. Misurata su
+    punto a `scale` prima e quello a `scale` dopo, lungo la curva. Con
+    `turn_deg=None` è spigolo dove nessuna curva liscia passa entro
+    `tolerance` dalla polilinea fra quei due punti (D283):
+    vale per punti fitti, la cui corda si scosta dalla curva meno di
+    `tolerance` (una curva scritta a punti da un CAD). Misurata su
     una scala e non fra due campioni vicini, un angolo vivo smussato dal
     campionamento conta per tutta la sua svolta. Fra spigoli più vicini di
     `scale` resta quello che svolta di più. Su una sequenza aperta gli
@@ -258,8 +291,16 @@ def turn_corners(points: List[Point], closed: bool, turn_deg: float, scale: floa
         s = cum[k]
         if not closed and (s < scale or s > cum[-1] - scale):
             continue
-        turn = _turn(_point_at(ring, cum, s - scale), ring[k], _point_at(ring, cum, s + scale))
-        if turn >= turn_deg:
+        back, forward = _point_at(ring, cum, s - scale), _point_at(ring, cum, s + scale)
+        turn = _turn(back, ring[k], forward)
+        if turn_deg is None:
+            # la polilinea fra i punti, non solo i punti: per 3 punti passa sempre un cerchio
+            window = [back] + [q for q, c in zip(ring, cum) if s - scale < c < s + scale] + [forward]
+            window = [q for a, b in zip(window, window[1:]) for q in (a, ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2))] + [forward]
+            corner = not within_smooth_curve(window, tolerance)
+        else:
+            corner = turn >= turn_deg
+        if corner:
             scored.append((turn, k))
 
     def apart(k: int, a: int) -> float:

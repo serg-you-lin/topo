@@ -24,7 +24,6 @@ generica (D33, D36).
 
 from __future__ import annotations
 
-from ...precision import CORNER_TURN_DEG
 import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple, Union
@@ -32,13 +31,13 @@ from typing import List, Optional, Sequence, Tuple, Union
 from .segments import ArcSeg, CircleSeg, LineSeg, BSplineSeg, Point
 from ..geometry.measure import FLOAT_NOISE
 from ..geometry.points import (
-    DEFAULT_DUPLICATE_TOLERANCE, approximate_bspline, circle_through, douglas_peucker,
-    drop_duplicate_points, even_spacing, fit_circle_kasa, offset_from_line, turn_corners,
+    DEFAULT_DUPLICATE_TOLERANCE, approximate_bspline, douglas_peucker, drop_duplicate_points,
+    even_spacing, fit_circle_kasa, offset_from_line, turn_corners, within_chord, within_circle_through,
+    within_smooth_curve,
 )
 
 Primitive = Union[LineSeg, ArcSeg, CircleSeg, BSplineSeg]
 
-DEFAULT_CORNER_TURN_DEG = CORNER_TURN_DEG  # D269
 DEFAULT_SPLINE_DEGREE = 3
 
 
@@ -47,12 +46,6 @@ class _Part:
     """Un pezzo della sequenza: `kind` "line" o "curve", coi punti che copre (estremi condivisi coi vicini)."""
     kind: str
     points: List[Point]
-
-
-def _within(points: List[Point], tolerance: float) -> bool:
-    """Tutti i punti entro `tolerance` dalla corda primo-ultimo."""
-    a, b = points[0], points[-1]
-    return all(abs(offset_from_line(p, a, b)) <= tolerance for p in points[1:-1])
 
 
 def _signed_turn(a: Point, b: Point, c: Point) -> float:
@@ -64,7 +57,7 @@ def _signed_turn(a: Point, b: Point, c: Point) -> float:
     return math.degrees(math.atan2(v1[0] * v2[1] - v1[1] * v2[0], v1[0] * v2[0] + v1[1] * v2[1]))
 
 
-def _split_stretch(points: List[Point], tolerance: float, scale: float, corner_turn_deg: float,
+def _split_stretch(points: List[Point], tolerance: float, scale: float, corner_turn_deg: Optional[float],
                    arcs: bool) -> List[_Part]:
     """
     Un tratto senza spigoli: tutto entro `tolerance` dalla corda -> una linea;
@@ -73,9 +66,11 @@ def _split_stretch(points: List[Point], tolerance: float, scale: float, corner_t
     linee, tranne quelli che stanno DENTRO una curva — svolta piccola e nello
     stesso verso ai capi che hanno un vicino, e non molto più lunghi dei
     vicini: sono faccette di una curva, non un lato dritto (il lato dritto di
-    una O squadrata è lungo più del doppio dei vicini).
+    una O squadrata è lungo più del doppio dei vicini). Svolta piccola: sotto
+    `corner_turn_deg`, o con `None` il lato, con `scale` di qua e di là, entro
+    `tolerance` da una curva liscia (D283).
     """
-    if _within(points, tolerance):
+    if within_chord(points, tolerance):
         return [_Part("line", points)]
     if arcs and len(points) >= 4 and _arc_through_ends(points, tolerance) is not None:
         return [_Part("curve", points)]
@@ -97,7 +92,16 @@ def _split_stretch(points: List[Point], tolerance: float, scale: float, corner_t
         if not turns:
             return True
         same_way = all(t > 0 for t in turns) or all(t < 0 for t in turns)
-        inside_curve = same_way and max(abs(t) for t in turns) < corner_turn_deg
+        if corner_turn_deg is None:
+            # il lato più `scale` di qua e di là: un vicino lungo e dritto non c'entra
+            first, last = i, j
+            while first > 0 and math.dist(points[first - 1], points[i]) <= scale:
+                first -= 1
+            while last < len(points) - 1 and math.dist(points[last + 1], points[j]) <= scale:
+                last += 1
+            inside_curve = same_way and within_smooth_curve(points[first: last + 1], tolerance)
+        else:
+            inside_curve = same_way and max(abs(t) for t in turns) < corner_turn_deg
         return not inside_curve or lengths[e] >= 2 * max(neighbours)
 
     parts: List[_Part] = []
@@ -121,12 +125,10 @@ def _arc_through_ends(points: List[Point], tolerance: float) -> Optional[ArcSeg]
     buco con la primitiva accanto.
     """
     a, m, b = points[0], points[len(points) // 2], points[-1]
-    circle = circle_through(a, m, b)
+    circle = within_circle_through(points, tolerance)
     if circle is None:
         return None
     center, radius = circle
-    if any(abs(math.dist(center, p) - radius) > tolerance for p in points):
-        return None
     # da a a b passando per m: antiorario se m sta a destra della corda a->b
     return ArcSeg(center=center, radius=radius,
                   start_angle=math.atan2(a[1] - center[1], a[0] - center[0]),
@@ -178,12 +180,22 @@ def _line_turn(a: _Part, b: _Part) -> float:
     return abs(math.degrees(math.atan2(u[0] * v[1] - u[1] * v[0], u[0] * v[0] + u[1] * v[1])))
 
 
+def _is_rounding(part: _Part, before: _Part, after: _Part, tolerance: float,
+                 corner_turn_deg: Optional[float]) -> bool:
+    """Il pezzo curvo fra le linee `before` e `after` è lo smusso di uno spigolo."""
+    if corner_turn_deg is not None:
+        return _line_turn(before, after) >= corner_turn_deg
+    lines = [(before.points[0], before.points[-1]), (after.points[0], after.points[-1])]
+    return all(min(abs(offset_from_line(q, a, b)) for a, b in lines) <= tolerance for q in part.points)
+
+
 def _restore_corners(parts: List[_Part], closed: bool, tolerance: float, scale: float,
-                     corner_turn_deg: float) -> List[_Part]:
+                     corner_turn_deg: Optional[float]) -> List[_Part]:
     """
     Gli spigoli vivi che il campionamento ha smussato. Un pezzo curvo più
-    corto di `scale` fra due linee che svoltano di almeno `corner_turn_deg` è
-    l'arrotondamento di uno spigolo: sparisce. Poi fra due linee consecutive
+    corto di `scale` fra due linee che svoltano di almeno `corner_turn_deg` (con
+    `None`: i cui punti stanno entro `tolerance` dall'una o dall'altra retta, D283)
+    è l'arrotondamento di uno spigolo: sparisce. Poi fra due linee consecutive
     il vertice comune va nell'incrocio delle due rette ai minimi quadrati,
     dove sta lo spigolo vero, se cade entro `scale` dal vertice campionato e
     i punti delle due linee più lontani di `scale` da lì restano entro
@@ -195,7 +207,7 @@ def _restore_corners(parts: List[_Part], closed: bool, tolerance: float, scale: 
         before, after = parts[k - 1] if (closed or k > 0) else None, parts[(k + 1) % n] if (closed or k < n - 1) else None
         if (part.kind == "curve" and before is not None and after is not None and n > 2
                 and before.kind == "line" and after.kind == "line" and before is not after
-                and _length(part.points) < scale and _line_turn(before, after) >= corner_turn_deg):
+                and _length(part.points) < scale and _is_rounding(part, before, after, tolerance, corner_turn_deg)):
             continue
         kept.append(part)
     parts = kept
@@ -214,7 +226,7 @@ def _restore_corners(parts: List[_Part], closed: bool, tolerance: float, scale: 
             continue
         far_a = [q for q in a.points[:-1] if math.dist(q, corner) > scale] + [corner]
         far_b = [corner] + [q for q in b.points[1:] if math.dist(q, corner) > scale]
-        if _within(far_a, tolerance) and _within(far_b, tolerance):
+        if within_chord(far_a, tolerance) and within_chord(far_b, tolerance):
             a.points, b.points = a.points[:-1] + [corner], [corner] + b.points[1:]
         elif joint_a != joint_b:
             mid = ((joint_a[0] + joint_b[0]) / 2, (joint_a[1] + joint_b[1]) / 2)
@@ -256,7 +268,8 @@ def simplify_points(
     tolerance: float,
     scale: float,
     closed: bool = True,
-    corner_turn_deg: float = DEFAULT_CORNER_TURN_DEG,
+    *,
+    corner_turn_deg: Optional[float],
     arcs: bool = True,
     spline_degree: int = DEFAULT_SPLINE_DEGREE,
 ) -> List[Primitive]:
@@ -274,8 +287,12 @@ def simplify_points(
         scale:            la lunghezza su cui si misura la svolta di uno spigolo:
                           un tratto dritto più corto resta parte di una curva,
                           una curva più corta fra due lati è uno spigolo smussato
-        corner_turn_deg:  svolta minima (gradi) su `scale` per uno spigolo:
-                          più bassa, più spigoli
+        corner_turn_deg:  svolta minima (gradi) su `scale` per uno spigolo,
+                          scelta da chi chiama: più bassa, più spigoli. None:
+                          spigolo dove nessuna retta né arco sta entro `tolerance`
+                          su `scale`; solo per punti fitti, come il rifit di
+                          `heal()` (D283). Transitorio: esce quando smoother ha il
+                          suo fitter
         arcs:             False: niente archi né cerchi, solo linee e spline
         spline_degree:    grado delle spline
     """

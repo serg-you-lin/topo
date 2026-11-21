@@ -41,7 +41,6 @@ FLOAT_NOISE = 1e-6
 # Angoli: non lunghezze
 # ---------------------------------------------------------------------------
 
-CORNER_TURN_DEG = 35.0         # gradi: una svolta più ampia è uno spigolo (simplify_points)
 NEAR_FULL_ARC_MISSING_DEG = 2.0  # gradi: un arco cui manca di più non è un cerchio (D112)
 NEAR_FULL_ARC_HINT_DEG = 8.0     # gradi: fin qui heal() avvisa che manca poco; un filetto (~90°) mai (D227)
 ANGLE_BRACKET_DEG = 1.0        # gradi: attorno all'angolo trovato si cerca il riquadro d'area minima (contour_shape)

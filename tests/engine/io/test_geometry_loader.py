@@ -151,7 +151,7 @@ class TestLoadGeometrySplineFromSimplifyPoints(unittest.TestCase):
             (r * math.cos(2 * math.pi * i / n), r * math.sin(2 * math.pi * i / n))
             for i in range(n)
         ]
-        segments = topo.experimental.simplify_points(points, tolerance=0.01, scale=25.0, closed=True, arcs=False)
+        segments = topo.experimental.simplify_points(points, tolerance=0.01, scale=25.0, closed=True, arcs=False, corner_turn_deg=35)
         self.assertEqual(len(segments), 1)
         seg = segments[0]
 

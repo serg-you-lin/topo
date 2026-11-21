@@ -609,7 +609,7 @@ def refit_tessellations(
             pts.append(b)
         if closed:
             pts = pts[:-1]
-        prims = simplify_points(pts, tolerance=tolerance, scale=max_segment, closed=closed)
+        prims = simplify_points(pts, tolerance=tolerance, scale=max_segment, closed=closed, corner_turn_deg=None)
         if not prims:
             continue
         first, last = path[0], path[-1]

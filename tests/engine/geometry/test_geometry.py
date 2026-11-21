@@ -276,12 +276,14 @@ class TestPointSequenceMath(unittest.TestCase):
         from tests.invariants import rigid
         from topo.core.primitives.fitting import simplify_points
         pts = [(x * 0.05, 0.3 * math.sin(x * 0.05 * math.pi)) for x in range(81)]
-        kinds = lambda ps: [type(q).__name__ for q in simplify_points(ps, tolerance=0.02, scale=0.1, closed=False)]
-        at_rest = kinds(pts)
-        for motion in ((0.7, 0.0, 0.0), (2.294, 0.0, 0.0), (0.031, 3e6, -2.5e6), (0.7, 3e6, -2.5e6)):
-            with self.subTest(motion=motion):
-                _, point = rigid(*motion)
-                self.assertEqual(kinds([point(q) for q in pts]), at_rest)
+        for corner in (35, None):
+            kinds = lambda ps: [type(q).__name__ for q in simplify_points(ps, tolerance=0.02, scale=0.1, closed=False,
+                                                                          corner_turn_deg=corner)]
+            at_rest = kinds(pts)
+            for motion in ((0.7, 0.0, 0.0), (2.294, 0.0, 0.0), (0.031, 3e6, -2.5e6), (0.7, 3e6, -2.5e6)):
+                with self.subTest(corner=corner, motion=motion):
+                    _, point = rigid(*motion)
+                    self.assertEqual(kinds([point(q) for q in pts]), at_rest)
 
     def test_008d_collinear_points_stay_a_line_under_motion(self):
         # G6e, `points.py:282`: tre punti allineati danno un cerchio dal rumore
@@ -293,7 +295,8 @@ class TestPointSequenceMath(unittest.TestCase):
             for motion in ((0.0, 0.0, 0.0), (0.7, 0.0, 0.0), (0.031, 3e6, -2.5e6), (2.294, 3e6, -2.5e6)):
                 with self.subTest(case=name, motion=motion):
                     _, point = rigid(*motion)
-                    prims = simplify_points([point(q) for q in pts], tolerance=0.02, scale=0.1, closed=False)
+                    prims = simplify_points([point(q) for q in pts], tolerance=0.02, scale=0.1, closed=False,
+                                            corner_turn_deg=35)
                     self.assertEqual([type(q).__name__ for q in prims], ["LineSeg"])
 
     def test_009_a_right_angle_rounded_by_sampling_is_still_a_corner(self):
@@ -321,7 +324,7 @@ class TestPointSequenceMath(unittest.TestCase):
             pts += [(a[0] + d_in[0] * t * 0.5, a[1] + d_in[1] * t * 0.5) for t in range(1, 20)]
             pts += [(b[0] - d_in[0] * 0.3, b[1] - d_in[1] * 0.3), (b[0] + d_out[0] * 0.3, b[1] + d_out[1] * 0.3)]
         corners = lambda ps: turn_corners(ps, closed=True, turn_deg=35, scale=2.0, tolerance=0.1)
-        kinds = lambda ps: [type(q).__name__ for q in simplify_points(ps, tolerance=0.1, scale=2.0, closed=True)]
+        kinds = lambda ps: [type(q).__name__ for q in simplify_points(ps, tolerance=0.1, scale=2.0, closed=True, corner_turn_deg=35)]
         at_rest = corners(pts), kinds(pts)
         self.assertEqual(len(at_rest[0]), 4)
         for angle in (0.031, 0.093, 0.155, 0.7, 2.294, 3.007):

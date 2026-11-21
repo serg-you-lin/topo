@@ -49,7 +49,7 @@ class TestGuarantees(unittest.TestCase):
 
     def test_001_rounded_square_four_lines_sharp_corners(self):
         pts = _rounded_square()
-        out = simplify_points(pts, tolerance=0.1, scale=2.0)
+        out = simplify_points(pts, tolerance=0.1, scale=2.0, corner_turn_deg=35)
         self.assertEqual([type(s) for s in out], [LineSeg] * 4)
         self.assertTrue(_is_chain(out, closed=True))
         # lo spigolo torna vivo: nell'incrocio dei due lati, non sul campione
@@ -58,7 +58,7 @@ class TestGuarantees(unittest.TestCase):
 
     def test_002_circle_is_one_circle(self):
         pts = [(5 + 10 * math.cos(2 * math.pi * i / 90), 10 * math.sin(2 * math.pi * i / 90)) for i in range(90)]
-        out = simplify_points(pts, tolerance=0.01, scale=2.0)
+        out = simplify_points(pts, tolerance=0.01, scale=2.0, corner_turn_deg=35)
         self.assertEqual(len(out), 1)
         self.assertIsInstance(out[0], CircleSeg)
         self.assertAlmostEqual(out[0].radius, 10.0, places=6)
@@ -69,7 +69,7 @@ class TestGuarantees(unittest.TestCase):
         pts += [(20 + 5 * math.sin(math.pi * i / 30), 5 - 5 * math.cos(math.pi * i / 30)) for i in range(30)]
         pts += _side((20, 10), (0, 10), 40)
         pts += [(-5 * math.sin(math.pi * i / 30), 5 + 5 * math.cos(math.pi * i / 30)) for i in range(30)]
-        out = simplify_points(pts, tolerance=0.01, scale=2.0)
+        out = simplify_points(pts, tolerance=0.01, scale=2.0, corner_turn_deg=35)
         self.assertEqual(sorted(type(s).__name__ for s in out), ["ArcSeg", "ArcSeg", "LineSeg", "LineSeg"])
         self.assertTrue(_is_chain(out, closed=True))
         self.assertLessEqual(_max_distance(out, pts), 0.01 + 1e-6)
@@ -78,7 +78,7 @@ class TestGuarantees(unittest.TestCase):
         # un tratto aperto fra due tagli: linea e poi quarto d'arco
         pts = _side((0, 0), (10, 0), 20) + [(10 + 5 * math.sin(a), 5 - 5 * math.cos(a))
                                            for a in (math.pi / 2 * i / 20 for i in range(21))]
-        out = simplify_points(pts, tolerance=0.01, scale=2.0, closed=False)
+        out = simplify_points(pts, tolerance=0.01, scale=2.0, closed=False, corner_turn_deg=35)
         # un arco ricava i capi dagli angoli: esatti a meno della virgola mobile
         self.assertLess(math.dist(segment_endpoints(out[0])[0], pts[0]), 1e-9)
         self.assertLess(math.dist(segment_endpoints(out[-1])[1], pts[-1]), 1e-9)
@@ -87,7 +87,7 @@ class TestGuarantees(unittest.TestCase):
 
     def test_005_noisy_free_curve_is_a_spline_within_tolerance(self):
         pts = [(x / 10, math.sin(x / 20) * 3 + 0.03 * math.sin(x * 1.7)) for x in range(200)]
-        out = simplify_points(pts, tolerance=0.1, scale=2.0, closed=False, arcs=False)
+        out = simplify_points(pts, tolerance=0.1, scale=2.0, closed=False, arcs=False, corner_turn_deg=35)
         self.assertTrue(all(isinstance(s, (BSplineSeg, LineSeg)) for s in out))
         self.assertTrue(_is_chain(out, closed=False))
         self.assertLessEqual(_max_distance(out, pts), 0.1 + 1e-6)
@@ -96,7 +96,7 @@ class TestGuarantees(unittest.TestCase):
 
     def test_006_without_arcs_no_arc(self):
         pts = [(10 * math.cos(2 * math.pi * i / 90), 10 * math.sin(2 * math.pi * i / 90)) for i in range(90)]
-        out = simplify_points(pts, tolerance=0.01, scale=2.0, arcs=False)
+        out = simplify_points(pts, tolerance=0.01, scale=2.0, arcs=False, corner_turn_deg=35)
         self.assertFalse(any(isinstance(s, (ArcSeg, CircleSeg)) for s in out))
         self.assertTrue(_is_chain(out, closed=True))
 
@@ -111,9 +111,9 @@ class TestGuarantees(unittest.TestCase):
                                                                              corner_turn_deg=40)))
 
     def test_008_degenerate_inputs(self):
-        self.assertEqual(simplify_points([], tolerance=0.1, scale=1.0), [])
-        self.assertEqual(simplify_points([(0, 0), (0, 0)], tolerance=0.1, scale=1.0), [])
-        out = simplify_points([(0, 0), (3, 4)], tolerance=0.1, scale=1.0, closed=False)
+        self.assertEqual(simplify_points([], tolerance=0.1, scale=1.0, corner_turn_deg=35), [])
+        self.assertEqual(simplify_points([(0, 0), (0, 0)], tolerance=0.1, scale=1.0, corner_turn_deg=35), [])
+        out = simplify_points([(0, 0), (3, 4)], tolerance=0.1, scale=1.0, closed=False, corner_turn_deg=35)
         self.assertEqual(out, [LineSeg(start=(0.0, 0.0), end=(3.0, 4.0))])
 
 
@@ -154,7 +154,7 @@ class TestFlatTopUnderMotion(unittest.TestCase):
         for motion in self.MOTIONS:
             move_pt = rigid(*motion)[1]
             prims = simplify_points([move_pt(p) for p in self._bump()],
-                                    tolerance=0.01, scale=0.5, closed=False)
+                                    tolerance=0.01, scale=0.5, closed=False, corner_turn_deg=35)
             kinds.add(tuple(type(p).__name__ for p in prims))
         self.assertEqual(kinds, {("ArcSeg",) + ("LineSeg",) * 6 + ("ArcSeg",)})
 
