@@ -289,10 +289,9 @@ def _true_curve(seg):
     spline non ha un vettore dei nodi completo (resta la discretizzazione)."""
     if not isinstance(seg, BSplineSeg):
         return (seg.point_at, *seg.t_range)
-    p, knots = seg.degree, seg.knots
-    if len(knots) != len(seg.control_points) + p + 1 or knots[-(p + 1)] <= knots[p]:
+    if not seg._defined():
         return None
-    return seg._evaluate, knots[p], knots[-(p + 1)]
+    return (seg._evaluate, *seg.t_range)
 
 
 def _nearest_on_curve(seg, curve, point: Point) -> Point:

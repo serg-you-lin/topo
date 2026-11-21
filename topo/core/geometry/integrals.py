@@ -239,14 +239,20 @@ def _curve_moments(seg) -> Moments:
 
 
 def curve_length(seg) -> float:
-    """∫|P'(t)| dt sulla derivata esatta (D289): Gauss a 16 punti su 16 tratti,
-    ognuno dimezzato finché due livelli coincidono alla precisione della macchina."""
+    """∫|P'(t)| dt sulla derivata esatta (D289, D293): Gauss a 16 punti, ogni
+    tratto dimezzato finché due livelli coincidono alla precisione della
+    macchina. I tratti: su una spline gli intervalli fra due nodi (su un nodo la
+    derivata può avere un ginocchio, che Gauss non deve attraversare), sulle
+    altre curve quattro parti uguali."""
     def speed(t: float) -> Vec:
         return (math.hypot(*seg.derivative_at(t)),)
 
     t0, t1 = seg.t_range
-    return sum(_adaptive_gauss(speed, t0 + (t1 - t0) * k / 16, t0 + (t1 - t0) * (k + 1) / 16, 16)[0]
-               for k in range(16))
+    if isinstance(seg, BSplineSeg):
+        bounds = [t0] + sorted({k for k in seg.knots if t0 < k < t1}) + [t1]
+    else:
+        bounds = [t0 + (t1 - t0) * k / 4 for k in range(5)]
+    return sum(_adaptive_gauss(speed, a, b, 16)[0] for a, b in zip(bounds, bounds[1:]))
 
 
 @lru_cache(maxsize=None)

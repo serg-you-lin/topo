@@ -9,6 +9,7 @@ Microcasi: le primitive di test_segment_motion più due spline a più tratti.
 import math
 import unittest
 
+import topo
 from topo.core.primitives.segments import BSplineSeg, MathSeg, segment_endpoints
 from topo.core.primitives.conics import CircleSeg, ConicSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg
 from topo.precision import FLOAT_NOISE
@@ -110,6 +111,33 @@ class TestConicSeg(unittest.TestCase):
             a, b, c, *_ = seg.equation
             self.assertAlmostEqual(a, c, delta=FLOAT_NOISE * a, msg=name)
             self.assertAlmostEqual(b, 0.0, delta=FLOAT_NOISE * a, msg=name)
+
+
+
+def _ellipse_perimeter(a: float, b: float) -> float:
+    """Il perimetro esatto con la media aritmetico-geometrica (Gauss, Ivory):
+    P = 2π/M · (a² − Σ 2ⁿ⁻¹·cₙ²), c₀² = a² − b², cₙ₊₁ = (aₙ − bₙ)/2."""
+    total, weight = (a * a - b * b) / 2, 0.5
+    x, y = a, b
+    while x - y > 1e-15 * x:
+        c = (x - y) / 2
+        x, y = (x + y) / 2, math.sqrt(x * y)
+        weight *= 2
+        total += weight * c * c
+    return 2 * math.pi * (a * a - total) / x
+
+
+class TestExactLength(unittest.TestCase):
+    """D293: ogni curva misura la sua lunghezza come ∫|P'|, non la somma delle corde."""
+
+    def test_perimetro_dell_ellisse(self):
+        ellipse = EllipseSeg(center=(0.0, 0.0), major_axis=(5.0, 0.0), ratio=0.6, start_param=0.0, end_param=2 * math.pi)
+        self.assertAlmostEqual(topo.geometry.segment_length(ellipse), _ellipse_perimeter(5.0, 3.0), delta=1e-10)
+
+    def test_quarto_di_cerchio_razionale(self):
+        quarter = BSplineSeg(degree=2, control_points=[(1, 0), (1, 1), (0, 1)], knots=[0, 0, 0, 1, 1, 1],
+                             weights=[1, math.sqrt(0.5), 1])
+        self.assertAlmostEqual(topo.geometry.segment_length(quarter), math.pi / 2, delta=1e-14)
 
 
 if __name__ == "__main__":

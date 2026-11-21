@@ -9,14 +9,22 @@ from ...model.contour import Contour
 from ...model.role import ContourRole, is_structural_role
 from ..primitives.polygon_builder import curve_polygon, with_polygon
 from ..geometry.integrals import ring_area
-from ..geometry.measure import FLOAT_NOISE, noise_runs, track_points, SAME_POINT
-from ..geometry.rings import ring_perimeter
+from ..geometry.measure import FLOAT_NOISE, noise_runs, track_length, track_points, SAME_POINT
+from ..geometry.rings import ring_points
 from ..geometry.regions import enclosing
 
 
 # ---------------------------------------------------------------------------
 # Conversione loop → ClosedCurve
 # ---------------------------------------------------------------------------
+
+
+def _scale(segments) -> float:
+    """La lunghezza del poligono del giro: la scala di una soglia (D195, D279),
+    non una misura. Il poligono sta entro SAME_POINT dalla curva e una spline lo
+    tiene già; il perimetro esatto (`ring_perimeter`, D293) costa un integrale."""
+    pts = ring_points(segments)
+    return track_length(pts + pts[:1])
 
 def loop_to_closed_curve(
     loop,
@@ -42,7 +50,7 @@ def loop_to_closed_curve(
             return None
         # largo in media meno di SAME_POINT (2·area/perimetro): i due lati
         # sono lo stesso tratto, non c'è un contorno (D279)
-        if not segments or 2 * ring_area(segments) <= SAME_POINT * ring_perimeter(segments):
+        if not segments or 2 * ring_area(segments) <= SAME_POINT * _scale(segments):
             return None
 
         return with_polygon(ClosedCurve(role=role, segments=segments, styles=styles or []), poly)
@@ -73,7 +81,7 @@ def sort_clusters(clusters: list) -> list:
     ordered = []
     by_area = sorted(clusters, key=lambda c: -c.outer.area)
     for same_area in noise_runs(by_area, lambda a, b: a.outer.area - b.outer.area
-                           <= FLOAT_NOISE * ring_perimeter(a.outer.segments)):
+                           <= FLOAT_NOISE * _scale(a.outer.segments)):
         by_x = sorted(same_area, key=lambda c: c.bbox[0])
         for same_x in noise_runs(by_x, lambda a, b: b.bbox[0] - a.bbox[0] <= FLOAT_NOISE):
             ordered += sorted(same_x, key=lambda c: c.bbox[1])

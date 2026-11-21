@@ -504,6 +504,12 @@ class BSplineSeg(MathSeg):
                           control_points=[_scale_point(p, factor, origin) for p in self.control_points],
                           knots=list(self.knots), weights=list(self.weights) if self.weights else None)
 
+    def _defined(self) -> bool:
+        """I nodi definiscono la curva: tanti quanti i punti di controllo più
+        grado + 1, e un dominio non vuoto."""
+        p, knots = self.degree, self.knots
+        return p >= 1 and len(knots) == len(self.control_points) + p + 1 and knots[-(p + 1)] > knots[p]
+
     @property
     def t_range(self) -> Tuple[float, float]:
         """Il dominio dei nodi: da `knots[degree]` a `knots[-(degree + 1)]`."""
@@ -516,7 +522,7 @@ class BSplineSeg(MathSeg):
         """In coordinate omogenee, anche razionale: C' = (A' − w'·C) / w."""
         p, knots, ctrl = self.degree, self.knots, self.control_points
         # nodi che non definiscono la curva: nessuna derivata (chi chiama ripiega sulla corda)
-        if p < 1 or len(knots) != len(ctrl) + p + 1 or knots[-(p + 1)] <= knots[p]:
+        if not self._defined():
             return (0.0, 0.0)
         t0, t1 = self.t_range
         t = min(max(t, t0), t1)
