@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from ...precision import FLOAT_NOISE, SAME_POINT
 import math
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
@@ -54,13 +55,98 @@ DEFAULT_TOLERANCE = SAME_POINT  # sagitta dei poligoni, D275
 
 
 # ---------------------------------------------------------------------------
+# Le madri: ogni primitiva è una curva matematica (D285)
+# ---------------------------------------------------------------------------
+
+class MathSeg(ABC):
+    """
+    A curve given by its mathematics: one point for every parameter `t` in
+    `t_range`, walked from `t_range[0]` (the start) to `t_range[1]` (the
+    end). Every topo primitive is one; what a file format called it is not
+    part of it.
+    """
+
+    @property
+    @abstractmethod
+    def t_range(self) -> Tuple[float, float]:
+        """(t0, t1): the parameter at the start and at the end, t0 < t1."""
+
+    @abstractmethod
+    def point_at(self, t: float) -> Point:
+        """The point of the curve at parameter `t`."""
+
+    @abstractmethod
+    def derivative_at(self, t: float) -> Point:
+        """dP/dt at parameter `t`: the direction of travel, exact."""
+
+    @abstractmethod
+    def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
+        """A polyline from start to end, every point of the curve within `tolerance` of it."""
+
+    @abstractmethod
+    def reversed(self) -> "MathSeg":
+        """The same curve walked the other way."""
+
+    @abstractmethod
+    def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "MathSeg":
+        """The curve rotated by `angle` radians about `origin`."""
+
+    @abstractmethod
+    def translated(self, dx: float, dy: float) -> "MathSeg":
+        """The curve moved by (`dx`, `dy`)."""
+
+    @abstractmethod
+    def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "MathSeg":
+        """The curve mirrored on the line through `origin` at `angle` radians."""
+
+    @abstractmethod
+    def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "MathSeg":
+        """The curve scaled by `factor` (> 0) about `origin`."""
+
+
+class ConicSeg(MathSeg):
+    """
+    A piece of a conic: a curve on A·x² + B·xy + C·y² + D·x + E·y + F = 0.
+    The sign of B² − 4AC says which: < 0 an ellipse (a circle when A = C and
+    B = 0), = 0 a parabola, > 0 a hyperbola.
+    """
+
+    @property
+    @abstractmethod
+    def equation(self) -> Tuple[float, float, float, float, float, float]:
+        """(A, B, C, D, E, F) of the conic the piece lies on, up to a common factor."""
+
+
+def _ellipse_equation(center: Point, axis: Point, a: float, b: float) -> Tuple[float, float, float, float, float, float]:
+    """(A..F) dell'ellisse di centro `center`, semiasse `a` lungo il versore
+    `axis` e `b` a 90°: x'²/a² + y'²/b² = 1 nel suo riferimento, espansa."""
+    ux, uy = axis
+    p = ux * ux / (a * a) + uy * uy / (b * b)
+    q = 2 * ux * uy * (1 / (a * a) - 1 / (b * b))
+    r = uy * uy / (a * a) + ux * ux / (b * b)
+    cx, cy = center
+    return (p, q, r, -2 * p * cx - q * cy, -q * cx - 2 * r * cy, p * cx * cx + q * cx * cy + r * cy * cy - 1)
+
+
+# ---------------------------------------------------------------------------
 # LineSeg
 # ---------------------------------------------------------------------------
 
 @dataclass
-class LineSeg:
+class LineSeg(MathSeg):
+    """The straight piece from `start` to `end`: P(t) = start + t·(end − start), t in [0, 1]."""
     start: Point
     end: Point
+
+    @property
+    def t_range(self) -> Tuple[float, float]:
+        return (0.0, 1.0)
+
+    def point_at(self, t: float) -> Point:
+        return (self.start[0] + t * (self.end[0] - self.start[0]), self.start[1] + t * (self.end[1] - self.start[1]))
+
+    def derivative_at(self, t: float) -> Point:
+        return (self.end[0] - self.start[0], self.end[1] - self.start[1])
 
     def __post_init__(self):
         self.start, self.end = _plain(self.start), _plain(self.end)
@@ -223,7 +309,10 @@ def _grid_angles(lo: float, hi: float, radius: float, sides: int) -> List[float]
 # ---------------------------------------------------------------------------
 
 @dataclass
-class ArcSeg:
+class ArcSeg(ConicSeg):
+    """A piece of the circle (`center`, `radius`) from `start_angle` to
+    `end_angle`, counter-clockwise when `ccw`. `t` is the angle walked from the
+    start: t in [0, sweep]."""
     center: Point
     radius: float
     start_angle: float  # radianti
@@ -265,6 +354,22 @@ class ArcSeg:
     def _point_at(self, angle: float) -> Point:
         """Punto sull'arco all'angolo dato (radianti)."""
         return point_on_circle(self.center, self.radius, angle)
+
+    @property
+    def t_range(self) -> Tuple[float, float]:
+        return (0.0, self._sweep())
+
+    def point_at(self, t: float) -> Point:
+        return self._point_at(self.start_angle + (t if self.ccw else -t))
+
+    def derivative_at(self, t: float) -> Point:
+        a = self.start_angle + (t if self.ccw else -t)
+        sign = 1.0 if self.ccw else -1.0
+        return (-sign * self.radius * math.sin(a), sign * self.radius * math.cos(a))
+
+    @property
+    def equation(self) -> Tuple[float, float, float, float, float, float]:
+        return _ellipse_equation(self.center, (1.0, 0.0), self.radius, self.radius)
 
     def reversed(self) -> "ArcSeg":
         """Stesso arco fisico, percorso al contrario: scambia gli angoli e nega ccw."""
@@ -392,6 +497,29 @@ def _bspline_find_span(t: float, degree: int, knots: List[float], n: int) -> int
     return mid
 
 
+def _derivative_points(points: List[tuple], knots: List[float], p: int) -> List[tuple]:
+    """Punti di controllo della derivata (grado p − 1, nodi senza il primo e l'ultimo)."""
+    out = []
+    for i in range(len(points) - 1):
+        span = knots[i + p + 1] - knots[i + 1]
+        scale = p / span if span > 0 else 0.0
+        out.append(tuple(scale * (b - a) for a, b in zip(points[i], points[i + 1])))
+    return out
+
+
+def _deboor(t: float, p: int, knots: List[float], points: List[tuple]) -> tuple:
+    """Punto al parametro `t` di una B-spline di vettori (de Boor, A5.1)."""
+    k = _bspline_find_span(t, p, knots, len(points) - 1)
+    d = [list(points[k - p + j]) for j in range(p + 1)]
+    for r in range(1, p + 1):
+        for j in range(p, r - 1, -1):
+            i = k - p + j
+            denom = knots[i + p - r + 1] - knots[i]
+            alpha = 0.0 if denom == 0 else (t - knots[i]) / denom
+            d[j] = [(1 - alpha) * u + alpha * v for u, v in zip(d[j - 1], d[j])]
+    return tuple(d[p])
+
+
 def _point_to_segment_distance(p: Point, a: Point, b: Point) -> float:
     """Distanza perpendicolare di `p` dal segmento `a`-`b` (0 se `a == b`)."""
     dx, dy = b[0] - a[0], b[1] - a[1]
@@ -450,7 +578,7 @@ def _adaptive_polyline(
 
 
 @dataclass
-class BSplineSeg:
+class BSplineSeg(MathSeg):
     """
     B-spline (NURBS se `weights` è impostato): grado, punti di controllo,
     nodi, pesi — solo la geometria (MAP.md D135). Quello che un formato
@@ -562,6 +690,29 @@ class BSplineSeg:
         return BSplineSeg(degree=self.degree,
                           control_points=[_scale_point(p, factor, origin) for p in self.control_points],
                           knots=list(self.knots), weights=list(self.weights) if self.weights else None)
+
+    @property
+    def t_range(self) -> Tuple[float, float]:
+        """Il dominio dei nodi: da `knots[degree]` a `knots[-(degree + 1)]`."""
+        return (self.knots[self.degree], self.knots[-(self.degree + 1)])
+
+    def point_at(self, t: float) -> Point:
+        return self._evaluate(t)
+
+    def derivative_at(self, t: float) -> Point:
+        """In coordinate omogenee, anche razionale: C' = (A' − w'·C) / w."""
+        p, knots, ctrl = self.degree, self.knots, self.control_points
+        if p < 1:
+            return (0.0, 0.0)
+        t0, t1 = self.t_range
+        t = min(max(t, t0), t1)
+        weights = self.weights or [1.0] * len(ctrl)
+        h = [(c[0] * w, c[1] * w, w) for c, w in zip(ctrl, weights)]
+        a = _deboor(t, p, knots, h)
+        d = _derivative_points(h, knots, p)
+        da = _deboor(t, p - 1, knots[1:-1], d) if p > 1 else d[_bspline_find_span(t, 1, knots, len(ctrl) - 1) - 1]
+        x, y = a[0] / a[2], a[1] / a[2]
+        return ((da[0] - da[2] * x) / a[2], (da[1] - da[2] * y) / a[2])
 
     def _evaluate(self, t: float) -> Point:
         """
@@ -681,15 +832,30 @@ def segment_is_closed(segment, tolerance: float = DEFAULT_TOLERANCE) -> bool:
 
 
 @dataclass
-class CircleSeg:
-    """Cerchio geometrico puro."""
+class CircleSeg(ConicSeg):
+    """The whole circle (`center`, `radius`), counter-clockwise from angle 0:
+    t is the angle, t in [0, 2π]."""
     center: Point
     radius: float
-    
+
     def __post_init__(self):
         self.center, self.radius = _plain(self.center), _real(self.radius)
         if not self.radius > 0:
             raise ValueError(f"the radius must be positive, got {self.radius}")
+
+    @property
+    def t_range(self) -> Tuple[float, float]:
+        return (0.0, 2 * math.pi)
+
+    def point_at(self, t: float) -> Point:
+        return point_on_circle(self.center, self.radius, t)
+
+    def derivative_at(self, t: float) -> Point:
+        return (-self.radius * math.sin(t), self.radius * math.cos(t))
+
+    @property
+    def equation(self) -> Tuple[float, float, float, float, float, float]:
+        return _ellipse_equation(self.center, (1.0, 0.0), self.radius, self.radius)
 
     def reversed(self) -> "CircleSeg":
         """Un cerchio è simmetrico: invertirlo lo lascia identico."""
@@ -735,7 +901,7 @@ class CircleSeg:
 # ---------------------------------------------------------------------------
 
 @dataclass
-class EllipseSeg:
+class EllipseSeg(ConicSeg):
     """
     Ellisse (o arco ellittico) geometrico puro — stessa parametrizzazione del
     gruppo DXF ELLIPSE (ripresa 1:1, non un'invenzione di topo: è così che
@@ -790,6 +956,25 @@ class EllipseSeg:
             self.center[0] + math.cos(t) * mx + math.sin(t) * nx,
             self.center[1] + math.cos(t) * my + math.sin(t) * ny,
         )
+
+    @property
+    def t_range(self) -> Tuple[float, float]:
+        """`t` è il parametro percorso da `start_param`: t in [0, sweep]."""
+        return (0.0, self._sweep())
+
+    def point_at(self, t: float) -> Point:
+        return self._point_at(self.start_param + (t if self.ccw else -t))
+
+    def derivative_at(self, t: float) -> Point:
+        u = self.start_param + (t if self.ccw else -t)
+        sign = 1.0 if self.ccw else -1.0
+        (mx, my), r = self.major_axis, self.ratio
+        return (sign * (-math.sin(u) * mx - math.cos(u) * my * r), sign * (-math.sin(u) * my + math.cos(u) * mx * r))
+
+    @property
+    def equation(self) -> Tuple[float, float, float, float, float, float]:
+        a = math.hypot(*self.major_axis)
+        return _ellipse_equation(self.center, (self.major_axis[0] / a, self.major_axis[1] / a), a, a * self.ratio)
 
     def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """

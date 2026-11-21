@@ -24,7 +24,7 @@ from typing import Callable, List, Sequence, Tuple
 import numpy as np
 
 from ..primitives.segments import (
-    ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, LineSeg, _bspline_find_span,
+    ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, LineSeg, _deboor, _derivative_points,
 )
 from .rings import ring_jumps
 
@@ -224,29 +224,6 @@ def _spline_moments(seg: BSplineSeg) -> Moments:
             part = _gauss(integrand, a, b, 2 * p)
         total = tuple(u + v for u, v in zip(total, part))
     return Moments(*total)
-
-
-def _derivative_points(points: List[Vec], knots: List[float], p: int) -> List[Vec]:
-    """Punti di controllo della derivata (grado p − 1, nodi senza il primo e l'ultimo)."""
-    out = []
-    for i in range(len(points) - 1):
-        span = knots[i + p + 1] - knots[i + 1]
-        scale = p / span if span > 0 else 0.0
-        out.append(tuple(scale * (b - a) for a, b in zip(points[i], points[i + 1])))
-    return out
-
-
-def _deboor(t: float, p: int, knots: List[float], points: List[Vec]) -> Vec:
-    """Punto al parametro `t` di una B-spline di vettori (de Boor, A5.1)."""
-    k = _bspline_find_span(t, p, knots, len(points) - 1)
-    d = [list(points[k - p + j]) for j in range(p + 1)]
-    for r in range(1, p + 1):
-        for j in range(p, r - 1, -1):
-            i = k - p + j
-            denom = knots[i + p - r + 1] - knots[i]
-            alpha = 0.0 if denom == 0 else (t - knots[i]) / denom
-            d[j] = [(1 - alpha) * u + alpha * v for u, v in zip(d[j - 1], d[j])]
-    return tuple(d[p])
 
 
 @lru_cache(maxsize=None)
