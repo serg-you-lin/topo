@@ -538,6 +538,12 @@ angle=20))` gives back 80, 30, 20 (D96):
 | `circle(radius, *, center=(0, 0))` | a `CircleSeg` |
 | `ellipse(length, width, *, center=(0, 0), angle=0)` | a whole `EllipseSeg`, axes `length` × `width` (`length` >= `width`), long axis at `angle` |
 | `stadium(length, width, *, center=(0, 0), angle=0)` | two true semicircles (`CircleSeg`) and two parallel sides; overall `length` × `width` |
+| `triangle(a, b, c, *, start=(0, 0), angle=0)` | the triangle with sides `a`, `b`, `c`; side `a` from `start` at `angle` degrees |
+| `right_triangle(leg_a, leg_b, *, start=(0, 0), angle=0)` | the right triangle with the right angle at `start`; `leg_a` at `angle`, `leg_b` at `angle` + 90° |
+| `blend(start, start_direction, end, end_direction, *, continuity=1)` | the polynomial curve joining two ends along their directions: cubic, tangent (G1); `continuity=2` quintic with zero curvature at the ends (G2 with lines). An exact `BSplineSeg` (D291) |
+| `polynomial(coefficients, x_from, x_to)` | the graph of y = c0 + c1·x + … as an exact Bézier `BSplineSeg` (a `LineSeg` up to degree 1) |
+| `involute(base_radius, end, *, start=0, center=(0, 0), angle=0)` | the involute of a circle, unwinding angle `start`..`end` in radians, a `FormulaSeg` |
+| `clothoid(a, length, *, start=(0, 0), angle=0, left=True)` | the Euler spiral from zero curvature, `length` along the curve, a `ClothoidSeg` |
 
 Rhombi, trapezoids and every other shape with straight sides are a `polygon`.
 

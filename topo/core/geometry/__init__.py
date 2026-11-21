@@ -6,7 +6,8 @@ Facts with geometric names - "circle", never "hole": what they mean is
 decided by the consumer.
 
 Public (below):
-    build.py          build shapes as segments: polygon, rectangle, regular_polygon, circle, ellipse, stadium
+    build.py          build shapes and curves as segments: polygon, rectangle, regular_polygon, circle, ellipse,
+                      stadium, triangle, right_triangle; blend, polynomial, involute, clothoid
     shape.py          shape of a closed contour; concentric circles; arcs around a circle
     lines.py          a chord that splits a contour; runs of collinear strokes joined across contours; hatching of a segment
     regions.py        point on a contour (vertex, fillet, side); stroke cut by a region; contour minus region
@@ -27,7 +28,9 @@ Building blocks (imported from the submodule, internal):
     lines.py, axis.py also: distance from a line, collinearity, intervals, strokes inside a box
 """
 
-from .build import polygon, rectangle, regular_polygon, circle, ellipse, stadium
+from .build import (polygon, rectangle, regular_polygon, circle, ellipse, stadium, triangle, right_triangle,
+                    blend, polynomial,
+                    involute, clothoid)
 from .shape import (
     contour_shape, ContourShape, ShapeKind,
     concentric_groups, ConcentricGroup,
@@ -47,7 +50,8 @@ from .axis import (
 )
 
 __all__ = [
-    "polygon", "rectangle", "regular_polygon", "circle", "ellipse", "stadium",
+    "polygon", "rectangle", "regular_polygon", "circle", "ellipse", "stadium", "triangle", "right_triangle",
+    "blend", "polynomial", "involute", "clothoid",
     "contour_shape", "ContourShape", "ShapeKind",
     "concentric_groups", "ConcentricGroup",
     "arcs_around", "ArcAround",
