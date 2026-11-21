@@ -59,8 +59,13 @@ def segment_moments(segment) -> Moments:
         return _trig_moments(segment.center, (mx, my), minor, t0, t0 + sign * segment._sweep())
     if isinstance(segment, BSplineSeg):
         return _spline_moments(segment)
-    if isinstance(segment, (ParabolaSeg, HyperbolaSeg)):
-        # la stessa curva, esatta, come spline razionale quadratica (D288)
+    if isinstance(segment, HyperbolaSeg):
+        # in forma chiusa come l'ellisse, con cosh e sinh (D294): la sua spline razionale
+        # chiedeva un Gauss adattivo che lontano dall'origine non converge
+        return _trig_moments(segment.center, segment.major_axis, segment._minor(),
+                             segment.start_param, segment.end_param, hyperbolic=True)
+    if isinstance(segment, ParabolaSeg):
+        # la stessa curva, esatta, come spline quadratica polinomiale: Gauss esatto (D288)
         return _spline_moments(segment.to_bspline())
     if isinstance(segment, MathSeg):
         return _curve_moments(segment)
@@ -119,21 +124,24 @@ def _line_moments(p0: Point, p1: Point) -> Moments:
 Trig = dict
 
 
-def _trig_moments(center: Point, m: Point, n: Point, t0: float, t1: float) -> Moments:
+def _trig_moments(center: Point, m: Point, n: Point, t0: float, t1: float, hyperbolic: bool = False) -> Moments:
     """
     Contributo del tratto t0 → t1 di c + M cos t + N sin t (arco: M, N =
-    (r, 0), (0, r); ellisse: asse maggiore e minore). Gli integrandi sono
-    polinomi di grado ≤ 3 in cos t, sin t, integrati in forma chiusa.
+    (r, 0), (0, r); ellisse: asse maggiore e minore), o con `hyperbolic` di
+    c + M cosh t + N sinh t (un ramo d'iperbole, D294). Gli integrandi sono
+    polinomi di grado ≤ 3 nelle due funzioni, integrati in forma chiusa.
     """
     x = {(0, 0): center[0], (1, 0): m[0], (0, 1): n[0]}
     y = {(0, 0): center[1], (1, 0): m[1], (0, 1): n[1]}
-    dx = {(0, 1): -m[0], (1, 0): n[0]}
-    dy = {(0, 1): -m[1], (1, 0): n[1]}
+    # cos' = −sin, sin' = cos; cosh' = sinh, sinh' = cosh
+    turn = 1.0 if hyperbolic else -1.0
+    dx = {(0, 1): turn * m[0], (1, 0): n[0]}
+    dy = {(0, 1): turn * m[1], (1, 0): n[1]}
     area = _trig_add(_trig_mul(x, dy), _trig_mul(y, dx), -1.0)
     return Moments(
-        area=0.5 * _trig_integral(area, t0, t1),
-        mx=0.5 * _trig_integral(_trig_mul(_trig_mul(x, x), dy), t0, t1),
-        my=-0.5 * _trig_integral(_trig_mul(_trig_mul(y, y), dx), t0, t1),
+        area=0.5 * _trig_integral(area, t0, t1, hyperbolic),
+        mx=0.5 * _trig_integral(_trig_mul(_trig_mul(x, x), dy), t0, t1, hyperbolic),
+        my=-0.5 * _trig_integral(_trig_mul(_trig_mul(y, y), dx), t0, t1, hyperbolic),
     )
 
 
@@ -152,8 +160,23 @@ def _trig_add(a: Trig, b: Trig, scale: float = 1.0) -> Trig:
     return out
 
 
-def _trig_integral(poly: Trig, t0: float, t1: float) -> float:
-    return sum(coef * _cos_sin_integral(i, j, t0, t1) for (i, j), coef in poly.items())
+def _trig_integral(poly: Trig, t0: float, t1: float, hyperbolic: bool = False) -> float:
+    integral = _cosh_sinh_integral if hyperbolic else _cos_sin_integral
+    return sum(coef * integral(i, j, t0, t1) for (i, j), coef in poly.items())
+
+
+def _cosh_sinh_integral(i: int, j: int, t0: float, t1: float) -> float:
+    """∫ coshⁱ t · sinhʲ t dt da t0 a t1, in forma chiusa per i + j ≤ 3."""
+    if i + j > 3:
+        raise ValueError(f"unexpected degree: cosh^{i} sinh^{j}")
+
+    def primitive(t: float) -> float:
+        c, s = math.cosh(t), math.sinh(t)
+        return {(0, 0): t, (1, 0): s, (0, 1): c, (2, 0): 0.5 * (t + s * c), (0, 2): 0.5 * (s * c - t),
+                (1, 1): 0.5 * s * s, (3, 0): s + s ** 3 / 3.0, (0, 3): c ** 3 / 3.0 - c,
+                (2, 1): c ** 3 / 3.0, (1, 2): s ** 3 / 3.0}[(i, j)]
+
+    return primitive(t1) - primitive(t0)
 
 
 def _cos_sin_integral(i: int, j: int, t0: float, t1: float) -> float:

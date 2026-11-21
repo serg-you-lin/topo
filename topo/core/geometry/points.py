@@ -214,12 +214,33 @@ def _ellipse_distance(p: Point, center: Point, axis: Point, a: float, b: float) 
     return math.hypot(x - a * math.cos(t), y - b * math.sin(t)), t
 
 
-def within_ellipse_through(points: List[Point], tolerance: float) -> Optional[Tuple[Point, Point, float, List[float]]]:
-    """(centro, vettore del semiasse maggiore, rapporto, parametro di ogni punto)
-    dell'ellisse che passa esatta per il primo e l'ultimo punto, se tutti i punti
-    stanno entro `tolerance` da lei; None altrimenti. La conica ai minimi quadrati
-    algebrici col vincolo dei capi; più punti dei 5 che fissano una conica, se no
-    il test non dice nulla."""
+def _hyperbola_distance(p: Point, center: Point, axis: Point, a: float, b: float) -> Tuple[float, float]:
+    """(distanza, parametro) del punto del ramo x' = a·cosh s, y' = b·sinh s più
+    vicino a `p`: Newton sul parametro, partendo da asinh(y'/b)."""
+    dx, dy = p[0] - center[0], p[1] - center[1]
+    x, y = dx * axis[0] + dy * axis[1], -dx * axis[1] + dy * axis[0]
+    s = math.asinh(y / b)
+    for _ in range(30):
+        ch, sh = math.cosh(s), math.sinh(s)
+        # derivata (a meno di 2) della distanza al quadrato, e la sua derivata
+        g = (a * a + b * b) * sh * ch - x * a * sh - y * b * ch
+        h = (a * a + b * b) * (ch * ch + sh * sh) - x * a * ch - y * b * sh
+        if h == 0:
+            break
+        step = g / h
+        s -= step
+        if abs(step) * max(a, b) <= FLOAT_NOISE:
+            break
+    return math.hypot(x - a * math.cosh(s), y - b * math.sinh(s)), s
+
+
+def within_conic_through(points: List[Point], tolerance: float) -> Optional[Tuple[str, Point, Point, float, List[float]]]:
+    """("ellipse" | "hyperbola", centro, vettore del semiasse reale, rapporto b/a,
+    parametro di ogni punto) della conica che passa esatta per il primo e
+    l'ultimo punto, se tutti i punti stanno entro `tolerance` da lei; None
+    altrimenti. La conica ai minimi quadrati algebrici col vincolo dei capi; il
+    segno di B² − 4AC dice quale (D284, D294). Più punti dei 5 che fissano una
+    conica, se no il test non dice nulla; un'iperbole su un ramo solo."""
     if len(points) < 6:
         return None
     pts = np.asarray(points, dtype=np.float64)
@@ -236,25 +257,39 @@ def within_ellipse_through(points: List[Point], tolerance: float) -> Optional[Tu
     _, _, wt = np.linalg.svd(rows @ free)
     A, B, C, D, E, F = free @ wt[-1]
     det = 4 * A * C - B * B
-    if det <= 0:
+    if det == 0:
         return None
     cx, cy = (B * E - 2 * C * D) / det, (B * D - 2 * A * E) / det
     value = A * cx * cx + B * cx * cy + C * cy * cy + D * cx + E * cy + F
     w, v = np.linalg.eigh(np.array([[A, B / 2], [B / 2, C]]))
-    if not (-value / w[0] > 0 and -value / w[1] > 0):
-        return None
-    # il semiasse maggiore va col valore proprio più piccolo in modulo
-    major = int(np.argmin(np.abs(w)))
-    a, b = (math.sqrt(-value / w[major]) * size, math.sqrt(-value / w[1 - major]) * size)
-    axis = (float(v[0, major]), float(v[1, major]))
     center = (float(cx * size + origin[0]), float(cy * size + origin[1]))
+    if det > 0:
+        if not (-value / w[0] > 0 and -value / w[1] > 0):
+            return None
+        # il semiasse maggiore va col valore proprio più piccolo in modulo
+        real = int(np.argmin(np.abs(w)))
+        kind, distance = "ellipse", _ellipse_distance
+    else:
+        # x'²/a² − y'²/b² = 1: l'asse reale è quello con −value/λ positivo
+        real = 0 if -value / w[0] > 0 else 1
+        if not (-value / w[real] > 0 and value / w[1 - real] > 0):
+            return None
+        kind, distance = "hyperbola", _hyperbola_distance
+    a = math.sqrt(-value / w[real]) * size
+    b = math.sqrt(abs(value / w[1 - real])) * size
+    axis = (float(v[0, real]), float(v[1, real]))
+    if kind == "hyperbola":
+        # il ramo dei punti: x' > 0 lungo l'asse
+        mx, my = points[len(points) // 2]
+        if (mx - center[0]) * axis[0] + (my - center[1]) * axis[1] < 0:
+            axis = (-axis[0], -axis[1])
     params = []
     for p in points:
-        distance, t = _ellipse_distance(p, center, axis, a, b)
-        if distance > tolerance:
+        gap, t = distance(p, center, axis, a, b)
+        if gap > tolerance:
             return None
         params.append(t)
-    return center, (axis[0] * a, axis[1] * a), b / a, params
+    return kind, center, (axis[0] * a, axis[1] * a), b / a, params
 
 
 def within_smooth_curve(points: List[Point], tolerance: float) -> bool:

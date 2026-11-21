@@ -584,6 +584,17 @@ class TestRefitEllipse(unittest.TestCase):
             self.assertLessEqual(math.dist(end, pts[-1]), FLOAT_NOISE, sweep)
             self.assertAlmostEqual(seg._sweep(), 2.0, delta=SAME_POINT, msg=sweep)
 
+    def test_ramo_d_iperbole_scritto_a_punti_diventa_un_iperbole(self):
+        # D294: la conica che il fit trova dice quale; lati sotto 0,1 mm come un rifit vero
+        from topo.primitives import HyperbolaSeg
+        hyp = HyperbolaSeg(center=(1000.0, 500.0), major_axis=(3.0, 1.0), ratio=0.6, start_param=-0.9, end_param=1.1)
+        pts = [hyp.point_at(hyp.t_range[1] * k / 120) for k in range(121)]
+        (seg,) = _refit_segments(pts)
+        self.assertIsInstance(seg, HyperbolaSeg)
+        start, end = segment_endpoints(seg)
+        self.assertLessEqual(math.dist(start, pts[0]), FLOAT_NOISE)
+        self.assertLessEqual(math.dist(end, pts[-1]), FLOAT_NOISE)
+
     def test_curva_che_non_e_una_conica_non_diventa_ellisse(self):
         pts = [(x * 0.05, math.sin(x / 80) + 0.12 * math.sin(x / 20)) for x in range(300)]
         self.assertFalse(any(isinstance(s, EllipseSeg) and not isinstance(s, CircleSeg) for s in _refit_segments(pts)))

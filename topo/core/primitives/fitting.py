@@ -29,12 +29,12 @@ from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
 
 from .segments import LineSeg, BSplineSeg, MathSeg, Point
-from .conics import CircleSeg, EllipseSeg, is_arc
+from .conics import CircleSeg, EllipseSeg, HyperbolaSeg, is_arc
 from ..geometry.measure import FLOAT_NOISE
 from ..geometry.points import (
     DEFAULT_DUPLICATE_TOLERANCE, approximate_bspline, douglas_peucker, drop_duplicate_points,
     even_spacing, fit_circle_kasa, offset_from_line, turn_corners, within_chord, within_circle_through,
-    within_ellipse_through, within_smooth_curve,
+    within_conic_through, within_smooth_curve,
 )
 
 Primitive = MathSeg
@@ -74,7 +74,7 @@ def _split_stretch(points: List[Point], tolerance: float, scale: float, corner_t
     if within_chord(points, tolerance):
         return [_Part("line", points)]
     if arcs and len(points) >= 4 and (_arc_through_ends(points, tolerance) is not None
-                                      or within_ellipse_through(points, tolerance) is not None):
+                                      or _ellipse_fits(points, tolerance)):
         return [_Part("curve", points)]
     dp = douglas_peucker(points, tolerance)
     sides = list(zip(dp, dp[1:]))
@@ -138,30 +138,45 @@ def _arc_through_ends(points: List[Point], tolerance: float) -> Optional[CircleS
                   ccw=offset_from_line(m, a, b) < 0)
 
 
-def _ellipse_through_ends(points: List[Point], tolerance: float) -> Optional[EllipseSeg]:
-    """L'arco d'ellisse per il primo e l'ultimo punto, nel verso che passa per
-    gli altri, se tutti stanno entro `tolerance` da lui (come `_arc_through_ends`)."""
-    fit = within_ellipse_through(points, tolerance)
+def _ellipse_fits(points: List[Point], tolerance: float) -> bool:
+    """Il tratto intero sta su un'ellisse per i capi. Non un'iperbole: i suoi rami
+    stanno vicini ai loro asintoti, e una stretta passa entro `tolerance` da due
+    rette che si incontrano. I lati dritti si separano prima; l'iperbole si prova
+    poi sul pezzo curvo che resta (`_fit_curve`)."""
+    fit = within_conic_through(points, tolerance)
+    return fit is not None and fit[0] == "ellipse"
+
+
+def _conic_through_ends(points: List[Point], tolerance: float):
+    """L'arco d'ellisse o d'iperbole per il primo e l'ultimo punto, nel verso
+    che passa per gli altri, se tutti stanno entro `tolerance` da lui (come
+    `_arc_through_ends`); quale delle due lo dice la conica (D294)."""
+    fit = within_conic_through(points, tolerance)
     if fit is None:
         return None
-    center, major_axis, ratio, params = fit
+    kind, center, major_axis, ratio, params = fit
     ta, tm, tb = params[0], params[len(params) // 2], params[-1]
+    if kind == "hyperbola":
+        # su un ramo il parametro va dritto da un capo all'altro: il punto di mezzo sta fra loro
+        if not min(ta, tb) < tm < max(ta, tb):
+            return None
+        return HyperbolaSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=ta, end_param=tb)
     ccw = (tm - ta) % (2 * math.pi) < (tb - ta) % (2 * math.pi)
     return EllipseSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=ta, end_param=tb, ccw=ccw)
 
 
 def _fit_curve(points: List[Point], tolerance: float, arcs: bool, degree: int) -> List[Primitive]:
     """Un pezzo curvo: la famiglia più semplice entro `tolerance` per gli estremi —
-    arco, arco d'ellisse (con `arcs`), spline."""
+    arco, arco d'ellisse o d'iperbole (con `arcs`), spline."""
     if len(points) <= degree:
         return [LineSeg(start=a, end=b) for a, b in zip(points, points[1:])]
     if arcs and len(points) >= 4:
         arc = _arc_through_ends(points, tolerance)
         if arc is not None:
             return [arc]
-        ellipse = _ellipse_through_ends(points, tolerance)
-        if ellipse is not None:
-            return [ellipse]
+        conic = _conic_through_ends(points, tolerance)
+        if conic is not None:
+            return [conic]
     control, knots = approximate_bspline(points, degree, tolerance)
     return [BSplineSeg(degree=degree, control_points=control, knots=knots)]
 
@@ -311,7 +326,7 @@ def simplify_points(
                           su `scale`; solo per punti fitti, come il rifit di
                           `heal()` (D283). Transitorio: esce quando smoother ha il
                           suo fitter
-        arcs:             False: niente archi, cerchi né ellissi, solo linee e spline
+        arcs:             False: niente archi, cerchi né coniche, solo linee e spline
         spline_degree:    grado delle spline
     """
     pts = [(float(p[0]), float(p[1])) for p in drop_duplicate_points(list(points), DEFAULT_DUPLICATE_TOLERANCE)]
@@ -329,9 +344,9 @@ def simplify_points(
             fit = fit_circle_kasa(pts)
             if fit is not None and fit[2] <= tolerance:
                 return [CircleSeg(center=fit[0], radius=fit[1])]
-            ring = within_ellipse_through(pts + [pts[0]], tolerance)
-            if ring is not None:
-                return [EllipseSeg(center=ring[0], major_axis=ring[1], ratio=ring[2],
+            ring = within_conic_through(pts + [pts[0]], tolerance)
+            if ring is not None and ring[0] == "ellipse":      # un anello chiuso: un'iperbole non si chiude
+                return [EllipseSeg(center=ring[1], major_axis=ring[2], ratio=ring[3],
                                    start_param=0.0, end_param=2 * math.pi)]
         # nessuno spigolo: si apre il giro nel punto più lontano dal primo
         far = max(range(len(pts)), key=lambda k: math.dist(pts[0], pts[k]))
