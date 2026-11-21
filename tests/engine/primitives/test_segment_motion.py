@@ -14,6 +14,7 @@ import unittest
 
 from topo.core.primitives.segments import LineSeg, BSplineSeg, segment_endpoints
 from topo.core.primitives.conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg
+from topo.core.primitives.formula import FormulaSeg
 
 # spostamenti: nullo, quasi nullo, negativo, lontano dall'origine nei due sensi
 OFFSETS = [(0.0, 0.0), (1e-9, -1e-9), (-37.25, 12.5), (1e5, -1e5), (-3e6, 2.5e6)]
@@ -45,6 +46,8 @@ def _segments() -> list:
         ("hyperbola", HyperbolaSeg(center=(4.0, 4.0), major_axis=(1.5, -2.0), ratio=1.3, start_param=-1.1, end_param=0.9)),
         ("hyperbola backwards", HyperbolaSeg(center=(0.0, 0.0), major_axis=(-3.0, 0.5), ratio=0.4,
                                              start_param=1.4, end_param=0.2)),
+        ("formula involute", FormulaSeg("r*(cos(t) + t*sin(t))", "r*(sin(t) - t*cos(t))", 0.2, 2.0, params={"r": 4.0})),
+        ("formula backwards", FormulaSeg("t", "t**3 / 9 - exp(-t)", 2.5, -1.5)),
     ]
 
 

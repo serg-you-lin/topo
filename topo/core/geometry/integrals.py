@@ -23,7 +23,7 @@ from typing import Callable, List, Sequence, Tuple
 
 import numpy as np
 
-from ..primitives.segments import BSplineSeg, LineSeg, _deboor, _derivative_points
+from ..primitives.segments import BSplineSeg, LineSeg, MathSeg, _deboor, _derivative_points
 from ..primitives.conics import HyperbolaSeg, ParabolaSeg, CircleSeg, EllipseSeg, is_arc, is_full_circle
 from .rings import ring_jumps
 
@@ -67,6 +67,8 @@ def segment_moments(segment) -> Moments:
     if isinstance(segment, (ParabolaSeg, HyperbolaSeg)):
         # la stessa curva, esatta, come spline razionale quadratica (D288)
         return _spline_moments(segment.to_bspline())
+    if isinstance(segment, MathSeg):
+        return _curve_moments(segment)
     raise TypeError(f"unsupported primitive: {type(segment).__name__}")
 
 
@@ -222,6 +224,34 @@ def _spline_moments(seg: BSplineSeg) -> Moments:
             part = _gauss(integrand, a, b, 2 * p)
         total = tuple(u + v for u, v in zip(total, part))
     return Moments(*total)
+
+
+def _curve_moments(seg) -> Moments:
+    """Una curva qualunque (D289): `point_at` e `derivative_at` esatti,
+    Gauss a 16 punti su 16 tratti, ognuno dimezzato finché due livelli
+    coincidono alla precisione della macchina."""
+    def integrand(t: float) -> Vec:
+        x, y = seg.point_at(t)
+        dx, dy = seg.derivative_at(t)
+        return (0.5 * (x * dy - y * dx), 0.5 * x * x * dy, -0.5 * y * y * dx)
+
+    t0, t1 = seg.t_range
+    total = (0.0, 0.0, 0.0)
+    for k in range(16):
+        part = _adaptive_gauss(integrand, t0 + (t1 - t0) * k / 16, t0 + (t1 - t0) * (k + 1) / 16, 16)
+        total = tuple(u + v for u, v in zip(total, part))
+    return Moments(*total)
+
+
+def curve_length(seg) -> float:
+    """∫|P'(t)| dt sulla derivata esatta (D289): Gauss a 16 punti su 16 tratti,
+    ognuno dimezzato finché due livelli coincidono alla precisione della macchina."""
+    def speed(t: float) -> Vec:
+        return (math.hypot(*seg.derivative_at(t)),)
+
+    t0, t1 = seg.t_range
+    return sum(_adaptive_gauss(speed, t0 + (t1 - t0) * k / 16, t0 + (t1 - t0) * (k + 1) / 16, 16)[0]
+               for k in range(16))
 
 
 @lru_cache(maxsize=None)

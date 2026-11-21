@@ -17,6 +17,7 @@ from typing import List, Optional, Tuple
 from ..geometry.measure import FLOAT_NOISE
 from .segments import LineSeg, Point, BSplineSeg, _bspline_find_span
 from .conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg, is_arc, is_full_circle
+from .formula import FormulaSeg
 
 _TWO_PI = 2 * math.pi
 _SAMPLES = 64          # campioni per il primo aggancio di un punto sulla spline
@@ -39,7 +40,18 @@ def sub_segment(seg, a: Point, b: Point, via: Point):
         return _sub_spline(seg, a, b, via)
     if isinstance(seg, (ParabolaSeg, HyperbolaSeg)):
         return _sub_open_conic(seg, a, b)
+    if isinstance(seg, FormulaSeg):
+        return _sub_formula(seg, a, b)
     return None
+
+
+def _sub_formula(seg, a: Point, b: Point):
+    """La stessa formula su un intervallo più corto: dal parametro di `a` a quello di `b`."""
+    t0, t1 = seg.t_range
+    sign = 1.0 if seg.end_param >= seg.start_param else -1.0
+    ta, tb = (_nearest_param(seg.point_at, p, t0, t1) for p in (a, b))
+    return FormulaSeg(seg.x, seg.y, seg.start_param + sign * ta, seg.start_param + sign * tb,
+                      params=seg.params, affine=seg.affine)
 
 
 def _sub_open_conic(seg, a: Point, b: Point):
@@ -189,21 +201,26 @@ def _on_seam(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> bool:
 
 
 def _spline_param(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> float:
-    """Parametro del punto della spline più vicino a `pt`: campioni, poi
-    ricerca ternaria fra i due vicini del migliore."""
+    """Parametro del punto della spline più vicino a `pt`."""
+    return _nearest_param(seg._evaluate, pt, lo, hi)
+
+
+def _nearest_param(at, pt: Point, lo: float, hi: float) -> float:
+    """Parametro in [lo, hi] del punto della curva `at(t)` più vicino a `pt`:
+    campioni, poi ricerca ternaria fra i due vicini del migliore."""
     step = (hi - lo) / _SAMPLES
     ts = [lo + i * step for i in range(_SAMPLES)] + [hi]
-    best = min(range(len(ts)), key=lambda i: math.dist(seg._evaluate(ts[i]), pt))
+    best = min(range(len(ts)), key=lambda i: math.dist(at(ts[i]), pt))
     left, right = ts[max(best - 1, 0)], ts[min(best + 1, len(ts) - 1)]
     for _ in range(_REFINE_STEPS):
         m1, m2 = left + (right - left) / 3, right - (right - left) / 3
-        if math.dist(seg._evaluate(m1), pt) <= math.dist(seg._evaluate(m2), pt):
+        if math.dist(at(m1), pt) <= math.dist(at(m2), pt):
             right = m2
         else:
             left = m1
     t = (left + right) / 2
     for end in (lo, hi):
-        if math.dist(seg._evaluate(end), pt) <= math.dist(seg._evaluate(t), pt):
+        if math.dist(at(end), pt) <= math.dist(at(t), pt):
             t = end
     return t
 

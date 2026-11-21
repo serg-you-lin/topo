@@ -20,7 +20,7 @@ import math
 from ..model import Result
 from ..model.document import Document
 from ..model.diagnostic import Diagnostic, plural
-from ..core.primitives.segments import BSplineSeg
+from ..core.primitives.segments import BSplineSeg, LineSeg
 from ..core.primitives.conics import CircleSeg, EllipseSeg
 from ..core.primitives.polygon_builder import curve_polygon
 from ..core.geometry.measure import FLOAT_NOISE
@@ -62,7 +62,7 @@ def validate_document(doc: Document) -> Result:
         return result
 
     zero_len = [e for e in edges
-                if e.start == e.end and not isinstance(e.segment, (CircleSeg, BSplineSeg, EllipseSeg))]
+                if e.start == e.end and isinstance(e.segment, LineSeg)]
     if zero_len and len(zero_len) == len(edges):
         result.errors.append(Diagnostic(
             "empty", "every edge has zero length", points=[e.start for e in zero_len], level="error"))

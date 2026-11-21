@@ -33,7 +33,7 @@ from ..geometry.measure import FLOAT_NOISE, node_point
 from ..geometry.intersections import (_distance, _line_intersection, _circle_line_intersections, _circle_circle_intersections, _closest_to)
 from ..geometry.intersections import intersections
 from ..geometry.regions import _tangent, nearest_point
-from ..primitives.segments import DEFAULT_TOLERANCE, LineSeg, BSplineSeg, segment_endpoints
+from ..primitives.segments import MathSeg, DEFAULT_TOLERANCE, LineSeg, BSplineSeg, segment_endpoints
 from ..primitives.conics import CircleSeg, EllipseSeg, is_arc
 from ..topology.noding import GRAPH_EPSILON, edge_geometry
 from ..topology.edge import Edge
@@ -475,14 +475,15 @@ def free_endpoints_from_edges(edges: List[Edge], graph) -> List[GapEndpoint]:
 
 
 def _gap_endpoints(edges: List[Edge], keep: Callable[[Point2D], bool]) -> List[GapEndpoint]:
-    """GapEndpoint per gli estremi di linee, archi, spline ed ellissi il cui nodo (arrotondato)
+    """GapEndpoint per gli estremi di ogni curva il cui nodo (arrotondato)
     soddisfa `keep`. `pt` resta la coordinata reale non arrotondata: il solver
     ne ha bisogno per calcolare l'intersezione."""
     out: List[GapEndpoint] = []
     for edge in edges:
         if edge.start == edge.end:
             continue
-        kind = _KIND_BY_SEGMENT.get(type(edge.segment))
+        # parabola, iperbole, formula: un capo come quello di una spline (D289)
+        kind = _KIND_BY_SEGMENT.get(type(edge.segment)) or ("spline" if isinstance(edge.segment, MathSeg) else None)
         if kind is None:
             continue
         meta = _endpoint_meta(edge.segment)

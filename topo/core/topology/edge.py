@@ -72,7 +72,7 @@ class Edge:
         """
         start, end = segment_endpoints(segment)
         start = node_point(start)
-        if isinstance(segment, (CircleSeg, BSplineSeg, EllipseSeg)) and segment_is_closed(segment):
+        if not isinstance(segment, LineSeg) and segment_is_closed(segment):
             end = start
         else:
             end = node_point(end)

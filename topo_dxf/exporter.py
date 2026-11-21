@@ -11,7 +11,8 @@ from topo.precision import FLOAT_NOISE
 import math
 from typing import List, Optional, Tuple
 
-from topo.primitives import LineSeg, BSplineSeg, CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg, segment_endpoints
+from topo.primitives import (LineSeg, BSplineSeg, CircleSeg, EllipseSeg, FormulaSeg, HyperbolaSeg, ParabolaSeg,
+                             segment_endpoints)
 from topo.model import EdgeStyle
 
 _STANDARD_LINETYPES = frozenset({"BYLAYER", "BYBLOCK", "CONTINUOUS"})
@@ -199,9 +200,10 @@ def _add_ellipse(ellipse: EllipseSeg, msp, layer: str,
 
 
 def _as_dxf(segments: List) -> List:
-    """Parabola e iperbole: il DXF non le ha, si scrivono come la loro spline
-    razionale quadratica, esatta (`to_bspline`)."""
-    return [s.to_bspline() if isinstance(s, (ParabolaSeg, HyperbolaSeg)) else s for s in segments]
+    """Il DXF non ha parabole, iperboli né formule: parabola e iperbole come la
+    loro spline razionale quadratica, esatta; una formula come una spline
+    cubica entro SAME_POINT, approssimata (`to_bspline`)."""
+    return [s.to_bspline() if isinstance(s, (ParabolaSeg, HyperbolaSeg, FormulaSeg)) else s for s in segments]
 
 
 def write_segments(segments: List, msp, layer: str, styles: Optional[List] = None) -> Optional[object]:
