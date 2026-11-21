@@ -21,7 +21,7 @@ from shapely.geometry import LineString, Polygon
 from shapely.ops import nearest_points
 
 from ..primitives.segments import LineSeg
-from ..primitives.conics import CircleSeg, is_arc
+from ..primitives.conics import CircleSeg
 from .intersections import CURVE_TOLERANCE, intersections
 from .regions import (
     _JOIN, _at, _ends, _param, _polygon, _polyline, _side, _signed_area, _span, _split,
@@ -124,8 +124,7 @@ def _tangent_at(ring: Sequence, point: Point) -> Point:
         return _unit((seg.end[0] - seg.start[0], seg.end[1] - seg.start[1]))
     if isinstance(seg, CircleSeg):
         r = _unit((point[0] - seg.center[0], point[1] - seg.center[1]))
-        ccw = seg.ccw if is_arc(seg) else True
-        return (-r[1], r[0]) if ccw else (r[1], -r[0])
+        return (-r[1], r[0]) if seg.ccw else (r[1], -r[0])
     span = _span(seg)
     s = max(0.0, min(span, _param(seg, point)))
     h = span * 1e-4

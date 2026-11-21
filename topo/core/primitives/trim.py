@@ -2,7 +2,7 @@
 topo/core/primitives/trim.py
 -----------------------------
 Il tratto di una primitiva fra due suoi punti: la stessa curva, accorciata —
-stesso centro e raggio per un arco, stessi assi per un'ellisse, gli stessi
+stessi centro e assi per un cerchio o un'ellisse, gli stessi
 pezzi polinomiali per una B-spline (inserimento di nodi, Piegl & Tiller
 A5.1), non un'approssimazione.
 
@@ -97,14 +97,12 @@ def _on_line(seg: LineSeg, pt: Point) -> Point:
 
 
 # ---------------------------------------------------------------------------
-# Arco, cerchio, ellisse: un angolo (o parametro angolare) percorso in un verso
+# Cerchio ed ellisse (un cerchio è un'ellisse): un parametro angolare percorso in un verso
 # ---------------------------------------------------------------------------
 
 def _sub_angular(seg, a: Point, b: Point, via: Point):
-    if isinstance(seg, CircleSeg):
-        start, sweep, ccw = seg.start_angle, seg._sweep(), seg.ccw
-    else:
-        start, sweep, ccw = seg.start_param, seg._sweep(), seg.ccw
+    # il parametro del cerchio è il suo angolo (D287): una formula per tutti e due
+    start, sweep, ccw = seg.start_param, seg._sweep(), seg.ccw
     sign = 1.0 if ccw else -1.0
     closed = sweep >= _TWO_PI - 1e-9
 

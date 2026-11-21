@@ -24,7 +24,7 @@ from typing import Callable, Sequence, Tuple
 import numpy as np
 
 from ..primitives.segments import BSplineSeg, LineSeg, MathSeg, _deboor, _derivative_points
-from ..primitives.conics import HyperbolaSeg, ParabolaSeg, CircleSeg, EllipseSeg
+from ..primitives.conics import HyperbolaSeg, ParabolaSeg, EllipseSeg
 from .rings import ring_jumps
 
 Point = Tuple[float, float]
@@ -51,12 +51,7 @@ def segment_moments(segment) -> Moments:
     """
     if isinstance(segment, LineSeg):
         return _line_moments(segment.start, segment.end)
-    if isinstance(segment, CircleSeg):
-        sign = 1.0 if segment.ccw else -1.0
-        t0 = segment.start_angle
-        return _trig_moments(segment.center, (segment.radius, 0.0), (0.0, segment.radius),
-                             t0, t0 + sign * segment._sweep())
-    if isinstance(segment, EllipseSeg):
+    if isinstance(segment, EllipseSeg):     # anche il cerchio: asse (r, 0), rapporto 1 (D287)
         mx, my = segment.major_axis
         minor = (-my * segment.ratio, mx * segment.ratio)
         sign = 1.0 if segment.ccw else -1.0

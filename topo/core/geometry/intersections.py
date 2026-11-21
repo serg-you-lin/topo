@@ -11,7 +11,7 @@ import math
 from typing import Optional, Tuple, List
 
 from ..primitives.segments import LineSeg, angle_from_start
-from ..primitives.conics import CircleSeg, ConicSeg, HyperbolaSeg, ParabolaSeg, is_full_circle
+from ..primitives.conics import CircleSeg, ConicSeg, HyperbolaSeg, ParabolaSeg
 from .measure import FLOAT_NOISE
 
 Point = Tuple[float, float]
@@ -138,8 +138,6 @@ def _on_line(seg: LineSeg, pt: Point) -> bool:
 
 
 def _on_arc(seg, pt: Point) -> bool:
-    if is_full_circle(seg):
-        return True
     s = angle_from_start(seg.center, seg.start_angle, seg.ccw, pt)
     slack = FLOAT_NOISE / seg.radius   # lo stesso sforamento in mm, come angolo
     return s <= seg._sweep() + slack or s >= 2 * math.pi - slack

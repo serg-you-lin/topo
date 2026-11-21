@@ -14,7 +14,7 @@ from shapely.geometry import LineString, box
 from ..primitives.segments import LineSeg, BSplineSeg, MathSeg
 from ..primitives.clothoid import ClothoidSeg
 from ..primitives.formula import FormulaSeg
-from ..primitives.conics import HyperbolaSeg, ParabolaSeg, CircleSeg, EllipseSeg, is_arc, is_full_circle
+from ..primitives.conics import HyperbolaSeg, ParabolaSeg, CircleSeg, EllipseSeg
 
 Point = Tuple[float, float]
 
@@ -175,20 +175,8 @@ class Reach:
         if isinstance(segment, LineSeg):
             a, b = dot(segment.start), dot(segment.end)
             return min(a, b), max(a, b)
-        if is_full_circle(segment):
-            c = dot(segment.center)
-            return c - segment.radius, c + segment.radius
-        if is_arc(segment):
-            # p·d = c·d + r·cos(θ − φ): estremi a θ = φ e φ + π, se l'arco ci passa
-            phi = math.atan2(dy, dx)
-            sweep = segment._sweep()
-            values = [dot(segment._point_at(segment.start_angle)),
-                      dot(segment._point_at(segment.end_angle))]
-            values += [dot(segment._point_at(t)) for t in (phi, phi + math.pi)
-                       if _on_sweep(segment.start_angle, segment.ccw, sweep, t)]
-            return min(values), max(values)
         if isinstance(segment, EllipseSeg):
-            # p·d = c·d + A·cos t + B·sin t: estremi a t = atan2(B, A) e + π
+            # anche il cerchio (D287): p·d = c·d + A·cos t + B·sin t, estremi a t = atan2(B, A) e + π
             mx, my = segment.major_axis
             a_coef = mx * dx + my * dy
             b_coef = segment.ratio * (-my * dx + mx * dy)
