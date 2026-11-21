@@ -17,7 +17,6 @@ import math
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Tuple
 
-from ...precision import FLOAT_NOISE
 from .segments import (
     DEFAULT_TOLERANCE, MathSeg, Point, _check_factor, _point_to_segment_distance, _real,
 )

@@ -11,7 +11,7 @@ import math
 from typing import Optional, Tuple, List
 
 from ..primitives.segments import LineSeg, angle_from_start
-from ..primitives.conics import CircleSeg, ConicSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg, is_full_circle
+from ..primitives.conics import CircleSeg, ConicSeg, HyperbolaSeg, ParabolaSeg, is_full_circle
 from .measure import FLOAT_NOISE
 
 Point = Tuple[float, float]

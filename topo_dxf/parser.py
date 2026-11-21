@@ -8,7 +8,6 @@ Unico file che conosce ezdxf e il formato bulge DXF per il parsing.
 from __future__ import annotations
 
 import math
-from typing import List
 
 from topo.primitives import LineSeg, BSplineSeg, CircleSeg, EllipseSeg
 

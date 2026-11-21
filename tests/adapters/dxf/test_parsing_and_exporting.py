@@ -492,7 +492,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
 # TESTS: arc_seg_to_bulge
 # ===========================================================================
 
-class TestArcSegToBulge(unittest.TestCase):
+class TestArcToBulge(unittest.TestCase):
     """Test conversione CircleSeg → bulge DXF."""
 
     def test_001_bulge_90_ccw(self):

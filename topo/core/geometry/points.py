@@ -13,8 +13,6 @@ import math
 from typing import Optional, Tuple, List
 import numpy as np
 
-from ..primitives.segments import LineSeg
-from ..primitives.conics import CircleSeg
 from .measure import FLOAT_NOISE
 
 Point = Tuple[float, float]

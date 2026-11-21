@@ -33,7 +33,7 @@ class TestLineSegRotated(unittest.TestCase):
         self.assertAlmostEqual(length, 10.0, places=9)
 
 
-class TestArcSegRotated(unittest.TestCase):
+class TestArcRotated(unittest.TestCase):
 
     def test_center_and_angles_shift(self):
         seg = CircleSeg(center=(5, 0), radius=3, start_angle=0.0, end_angle=math.pi / 2, ccw=True)

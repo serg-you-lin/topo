@@ -22,8 +22,8 @@ from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Tuple
 
 from ..topology.edge import Edge
-from ..primitives.segments import MathSeg, angle_from_start, point_on_circle, LineSeg, BSplineSeg, DEFAULT_TOLERANCE
-from ..primitives.conics import CircleSeg, EllipseSeg, is_arc, is_full_circle
+from ..primitives.segments import MathSeg, angle_from_start, point_on_circle, LineSeg, DEFAULT_TOLERANCE
+from ..primitives.conics import CircleSeg
 
 Point = Tuple[float, float]
 

@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import math
 from collections import Counter
-from typing import Optional, Sequence
+from typing import Optional
 
 from topo.core.geometry.measure import track_points
 from topo.core.primitives.polygon_builder import curve_polygon
@@ -112,7 +112,7 @@ def inspect_document(doc, *, graph: bool = True, limit: Optional[int] = 60) -> N
 
 def _describe_segment(seg) -> str:
     from .core.primitives.segments import LineSeg, BSplineSeg
-    from .core.primitives.conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg, is_arc, is_full_circle
+    from .core.primitives.conics import EllipseSeg, HyperbolaSeg, ParabolaSeg, is_arc, is_full_circle
     from .core.primitives.clothoid import ClothoidSeg
     from .core.primitives.formula import FormulaSeg
 

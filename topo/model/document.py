@@ -24,7 +24,7 @@ prodotti dall'adapter, source_meta è un dizionario di primitivi.
 from __future__ import annotations
 
 from dataclasses import KW_ONLY, dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from .text import Text
 

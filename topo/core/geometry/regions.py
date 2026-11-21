@@ -30,7 +30,7 @@ from shapely.prepared import prep
 from .measure import SAME_POINT, segment_length
 from ..primitives.polygon_builder import build_polygon
 from ..primitives.segments import BSplineSeg, LineSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle
-from ..primitives.conics import CircleSeg, EllipseSeg, is_arc, is_full_circle
+from ..primitives.conics import CircleSeg, is_arc, is_full_circle
 from ..primitives.trim import sub_segment
 from .integrals import ring_moments
 from .intersections import CURVE_TOLERANCE, intersections

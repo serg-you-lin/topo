@@ -17,7 +17,7 @@ from typing import List, Optional, Tuple
 
 from ..geometry.measure import FLOAT_NOISE
 from .segments import LineSeg, Point, BSplineSeg, _bspline_find_span
-from .conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg, is_arc, is_full_circle
+from .conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg
 from .clothoid import ClothoidSeg
 from .formula import FormulaSeg
 

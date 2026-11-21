@@ -31,7 +31,7 @@ parola finale su cosa resta nel grafo la dice comunque heal() stesso.
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List
 
 from ..model.document import Document
 from ..precision import SAME_POINT

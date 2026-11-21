@@ -19,12 +19,12 @@ macchina. Funzioni pure su primitive, un ramo per tipo (D167).
 import math
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Callable, List, Sequence, Tuple
+from typing import Callable, Sequence, Tuple
 
 import numpy as np
 
 from ..primitives.segments import BSplineSeg, LineSeg, MathSeg, _deboor, _derivative_points
-from ..primitives.conics import HyperbolaSeg, ParabolaSeg, CircleSeg, EllipseSeg, is_arc, is_full_circle
+from ..primitives.conics import HyperbolaSeg, ParabolaSeg, CircleSeg, EllipseSeg
 from .rings import ring_jumps
 
 Point = Tuple[float, float]

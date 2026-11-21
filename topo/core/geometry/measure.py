@@ -45,16 +45,6 @@ def noise_runs(items: list, together) -> list:
 
 
 # ---------------------------------------------------------------------------
-# Archi e bulge
-# ---------------------------------------------------------------------------
-
-def num_segments_for_bulge(bulge: float) -> int:
-    """Numero di segmenti per discretizzare un arco dato il suo bulge."""
-    angle = 4 * math.atan(abs(bulge))
-    return max(8, int(angle / math.pi * 32))
-
-
-# ---------------------------------------------------------------------------
 # Tracce aperte — vertici / lunghezza / tipo da segmenti nativi
 # ---------------------------------------------------------------------------
 # Una traccia aperta (bending line, incisione, frammento non chiuso) nel modello

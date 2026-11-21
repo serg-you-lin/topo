@@ -24,7 +24,7 @@ from shapely.geometry import Polygon
 
 from .measure import FLOAT_NOISE, Reach, chord_angle_deg, golden_max, noise_runs, SAME_POINT
 from ..primitives.segments import LineSeg, segment_endpoints, segment_is_closed
-from ..primitives.conics import CircleSeg, EllipseSeg, is_arc, is_full_circle
+from ..primitives.conics import CircleSeg, EllipseSeg, is_arc
 
 Point = Tuple[float, float]
 

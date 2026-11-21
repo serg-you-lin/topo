@@ -11,7 +11,7 @@ Funzioni pure su primitive, un ramo per tipo.
 import math
 from typing import Iterator, List, Sequence, Tuple
 
-from ..primitives.segments import MathSeg, BSplineSeg, DEFAULT_TOLERANCE, LineSeg, segment_endpoints
+from ..primitives.segments import MathSeg, DEFAULT_TOLERANCE, LineSeg, segment_endpoints
 from ..primitives.conics import CircleSeg, EllipseSeg, is_full_circle
 from .measure import Reach, segment_length, SAME_POINT
 
