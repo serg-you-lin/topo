@@ -195,6 +195,69 @@ def within_circle_through(points: List[Point], tolerance: float) -> Optional[Tup
     return circle
 
 
+def _ellipse_distance(p: Point, center: Point, axis: Point, a: float, b: float) -> Tuple[float, float]:
+    """(distanza, parametro) del punto dell'ellisse più vicino a `p`: Newton sul
+    parametro, partendo dall'angolo di `p` nel cerchio unitario dell'ellisse."""
+    dx, dy = p[0] - center[0], p[1] - center[1]
+    x, y = dx * axis[0] + dy * axis[1], -dx * axis[1] + dy * axis[0]
+    t = math.atan2(y * a, x * b)
+    for _ in range(30):
+        c, s = math.cos(t), math.sin(t)
+        # derivata (a meno di 2) della distanza al quadrato, e la sua derivata
+        g = (a * a - b * b) * s * c - x * a * s + y * b * c
+        h = (a * a - b * b) * (c * c - s * s) - x * a * c - y * b * s
+        if h == 0:
+            break
+        step = g / h
+        t -= step
+        if abs(step) <= FLOAT_NOISE / a:
+            break
+    return math.hypot(x - a * math.cos(t), y - b * math.sin(t)), t
+
+
+def within_ellipse_through(points: List[Point], tolerance: float) -> Optional[Tuple[Point, Point, float, List[float]]]:
+    """(centro, vettore del semiasse maggiore, rapporto, parametro di ogni punto)
+    dell'ellisse che passa esatta per il primo e l'ultimo punto, se tutti i punti
+    stanno entro `tolerance` da lei; None altrimenti. La conica ai minimi quadrati
+    algebrici col vincolo dei capi; più punti dei 5 che fissano una conica, se no
+    il test non dice nulla."""
+    if len(points) < 6:
+        return None
+    pts = np.asarray(points, dtype=np.float64)
+    origin = pts.mean(axis=0)
+    size = float(np.ptp(pts, axis=0).max())
+    if size <= 0:
+        return None
+    # nel riferimento dei punti, a misura dei punti: x² su coordinate grandi cancella le cifre
+    x, y = (pts[:, 0] - origin[0]) / size, (pts[:, 1] - origin[1]) / size
+    rows = np.column_stack([x * x, x * y, y * y, x, y, np.ones_like(x)])
+    ends = rows[[0]] if math.dist(points[0], points[-1]) <= FLOAT_NOISE else rows[[0, -1]]
+    _, sv, vt = np.linalg.svd(ends)
+    free = vt[np.count_nonzero(sv > FLOAT_NOISE * sv[0]):].T
+    _, _, wt = np.linalg.svd(rows @ free)
+    A, B, C, D, E, F = free @ wt[-1]
+    det = 4 * A * C - B * B
+    if det <= 0:
+        return None
+    cx, cy = (B * E - 2 * C * D) / det, (B * D - 2 * A * E) / det
+    value = A * cx * cx + B * cx * cy + C * cy * cy + D * cx + E * cy + F
+    w, v = np.linalg.eigh(np.array([[A, B / 2], [B / 2, C]]))
+    if not (-value / w[0] > 0 and -value / w[1] > 0):
+        return None
+    # il semiasse maggiore va col valore proprio più piccolo in modulo
+    major = int(np.argmin(np.abs(w)))
+    a, b = (math.sqrt(-value / w[major]) * size, math.sqrt(-value / w[1 - major]) * size)
+    axis = (float(v[0, major]), float(v[1, major]))
+    center = (float(cx * size + origin[0]), float(cy * size + origin[1]))
+    params = []
+    for p in points:
+        distance, t = _ellipse_distance(p, center, axis, a, b)
+        if distance > tolerance:
+            return None
+        params.append(t)
+    return center, (axis[0] * a, axis[1] * a), b / a, params
+
+
 def within_smooth_curve(points: List[Point], tolerance: float) -> bool:
     """Una curva liscia passa entro `tolerance` da tutti i punti: la cubica a un
     tratto ai minimi quadrati coi capi fissi (`_least_squares`, il cui errore

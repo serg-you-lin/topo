@@ -28,15 +28,15 @@ import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple, Union
 
-from .segments import ArcSeg, CircleSeg, LineSeg, BSplineSeg, Point
+from .segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, BSplineSeg, Point
 from ..geometry.measure import FLOAT_NOISE
 from ..geometry.points import (
     DEFAULT_DUPLICATE_TOLERANCE, approximate_bspline, douglas_peucker, drop_duplicate_points,
     even_spacing, fit_circle_kasa, offset_from_line, turn_corners, within_chord, within_circle_through,
-    within_smooth_curve,
+    within_ellipse_through, within_smooth_curve,
 )
 
-Primitive = Union[LineSeg, ArcSeg, CircleSeg, BSplineSeg]
+Primitive = Union[LineSeg, ArcSeg, CircleSeg, EllipseSeg, BSplineSeg]
 
 DEFAULT_SPLINE_DEGREE = 3
 
@@ -72,7 +72,8 @@ def _split_stretch(points: List[Point], tolerance: float, scale: float, corner_t
     """
     if within_chord(points, tolerance):
         return [_Part("line", points)]
-    if arcs and len(points) >= 4 and _arc_through_ends(points, tolerance) is not None:
+    if arcs and len(points) >= 4 and (_arc_through_ends(points, tolerance) is not None
+                                      or within_ellipse_through(points, tolerance) is not None):
         return [_Part("curve", points)]
     dp = douglas_peucker(points, tolerance)
     sides = list(zip(dp, dp[1:]))
@@ -136,14 +137,30 @@ def _arc_through_ends(points: List[Point], tolerance: float) -> Optional[ArcSeg]
                   ccw=offset_from_line(m, a, b) < 0)
 
 
+def _ellipse_through_ends(points: List[Point], tolerance: float) -> Optional[EllipseSeg]:
+    """L'arco d'ellisse per il primo e l'ultimo punto, nel verso che passa per
+    gli altri, se tutti stanno entro `tolerance` da lui (come `_arc_through_ends`)."""
+    fit = within_ellipse_through(points, tolerance)
+    if fit is None:
+        return None
+    center, major_axis, ratio, params = fit
+    ta, tm, tb = params[0], params[len(params) // 2], params[-1]
+    ccw = (tm - ta) % (2 * math.pi) < (tb - ta) % (2 * math.pi)
+    return EllipseSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=ta, end_param=tb, ccw=ccw)
+
+
 def _fit_curve(points: List[Point], tolerance: float, arcs: bool, degree: int) -> List[Primitive]:
-    """Un pezzo curvo: arco per gli estremi se basta (e `arcs`), altrimenti spline entro `tolerance` per gli estremi."""
+    """Un pezzo curvo: la famiglia più semplice entro `tolerance` per gli estremi —
+    arco, arco d'ellisse (con `arcs`), spline."""
     if len(points) <= degree:
         return [LineSeg(start=a, end=b) for a, b in zip(points, points[1:])]
     if arcs and len(points) >= 4:
         arc = _arc_through_ends(points, tolerance)
         if arc is not None:
             return [arc]
+        ellipse = _ellipse_through_ends(points, tolerance)
+        if ellipse is not None:
+            return [ellipse]
     control, knots = approximate_bspline(points, degree, tolerance)
     return [BSplineSeg(degree=degree, control_points=control, knots=knots)]
 
@@ -274,7 +291,7 @@ def simplify_points(
     spline_degree: int = DEFAULT_SPLINE_DEGREE,
 ) -> List[Primitive]:
     """
-    Primitive (LineSeg/ArcSeg/CircleSeg/BSplineSeg) per la sequenza di punti
+    Primitive (LineSeg/ArcSeg/CircleSeg/EllipseSeg/BSplineSeg) per la sequenza di punti
     `points`, in catena testa-coda, ogni punto entro `tolerance` da esse —
     tranne quelli entro `scale` da uno spigolo che il campionamento aveva
     smussato e che qui torna vivo.
@@ -293,7 +310,7 @@ def simplify_points(
                           su `scale`; solo per punti fitti, come il rifit di
                           `heal()` (D283). Transitorio: esce quando smoother ha il
                           suo fitter
-        arcs:             False: niente archi né cerchi, solo linee e spline
+        arcs:             False: niente archi, cerchi né ellissi, solo linee e spline
         spline_degree:    grado delle spline
     """
     pts = [(float(p[0]), float(p[1])) for p in drop_duplicate_points(list(points), DEFAULT_DUPLICATE_TOLERANCE)]
@@ -311,6 +328,10 @@ def simplify_points(
             fit = fit_circle_kasa(pts)
             if fit is not None and fit[2] <= tolerance:
                 return [CircleSeg(center=fit[0], radius=fit[1])]
+            ring = within_ellipse_through(pts + [pts[0]], tolerance)
+            if ring is not None:
+                return [EllipseSeg(center=ring[0], major_axis=ring[1], ratio=ring[2],
+                                   start_param=0.0, end_param=2 * math.pi)]
         # nessuno spigolo: si apre il giro nel punto più lontano dal primo
         far = max(range(len(pts)), key=lambda k: math.dist(pts[0], pts[k]))
         loop = pts[far:] + pts[:far] + [pts[far]]

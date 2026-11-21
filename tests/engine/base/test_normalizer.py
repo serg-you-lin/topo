@@ -7,7 +7,8 @@ from topo import to_shapely
 from topo.core.base.normalizer import (merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
                                        merge_near_copies)
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg, ArcSeg, CircleSeg
+from topo.core.primitives.segments import LineSeg, ArcSeg, CircleSeg, EllipseSeg, segment_endpoints
+from topo.precision import FLOAT_NOISE, SAME_POINT
 
 
 def _line(p1, p2, role="unknown"):
@@ -545,10 +546,46 @@ class TestRefitCornerFromTolerance(unittest.TestCase):
         self.assertEqual(self._refit(pts), ["LineSeg", "ArcSeg"])
 
     def _refit(self, pts):
-        import topo
-        from topo.core.base.normalizer import refit_tessellations
-        out = refit_tessellations(topo.load_segments([LineSeg(start=a, end=b) for a, b in zip(pts, pts[1:])]).edges)
-        return [type(e.segment).__name__ for e in out]
+        return [type(s).__name__ for s in _refit_segments(pts)]
+
+
+def _refit_segments(pts):
+    import topo
+    from topo.core.base.normalizer import refit_tessellations
+    out = refit_tessellations(topo.load_segments([LineSeg(start=a, end=b) for a, b in zip(pts, pts[1:])]).edges)
+    return [e.segment for e in out]
+
+
+class TestRefitEllipse(unittest.TestCase):
+    """Il rifit prova l'ellisse prima della spline: la famiglia più semplice
+    entro la tolleranza (5 numeri contro i punti di controllo). Microcasi."""
+
+    @staticmethod
+    def _ellipse(t, angle=math.radians(30), a=4.0, b=1.6, center=(1000.0, 500.0)):
+        c, s = math.cos(angle), math.sin(angle)
+        return (center[0] + a * math.cos(t) * c - b * math.sin(t) * s,
+                center[1] + a * math.cos(t) * s + b * math.sin(t) * c)
+
+    def test_ellisse_intera_scritta_a_punti_diventa_una_ellisse(self):
+        pts = [self._ellipse(2 * math.pi * k / 300) for k in range(301)]   # lati sotto 0,1 mm
+        (seg,) = _refit_segments(pts)
+        self.assertIsInstance(seg, EllipseSeg)
+        self.assertAlmostEqual(math.hypot(*seg.major_axis), 4.0, delta=SAME_POINT)
+        self.assertAlmostEqual(seg.ratio, 0.4, delta=SAME_POINT)
+
+    def test_arco_d_ellisse_tiene_i_capi_nei_due_versi(self):
+        for sweep in (2.0, -2.0):
+            pts = [self._ellipse(0.3 + sweep * k / 100) for k in range(101)]
+            (seg,) = _refit_segments(pts)
+            self.assertIsInstance(seg, EllipseSeg)
+            start, end = segment_endpoints(seg)
+            self.assertLessEqual(math.dist(start, pts[0]), FLOAT_NOISE, sweep)
+            self.assertLessEqual(math.dist(end, pts[-1]), FLOAT_NOISE, sweep)
+            self.assertAlmostEqual(seg._sweep(), 2.0, delta=SAME_POINT, msg=sweep)
+
+    def test_curva_che_non_e_una_conica_non_diventa_ellisse(self):
+        pts = [(x * 0.05, math.sin(x / 80) + 0.12 * math.sin(x / 20)) for x in range(300)]
+        self.assertFalse(any(isinstance(s, EllipseSeg) for s in _refit_segments(pts)))
 
 
 def _polygon(center, radius, sides, start=0.3):

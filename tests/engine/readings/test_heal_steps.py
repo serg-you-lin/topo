@@ -17,7 +17,7 @@ from topo.model.document import Document
 from topo.model.curve import ClosedCurve, OpenCurve
 from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import ArcSeg, LineSeg, CircleSeg, BSplineSeg
+from topo.core.primitives.segments import ArcSeg, LineSeg, CircleSeg, BSplineSeg, EllipseSeg, segment_endpoints
 from topo import to_shapely
 from topo.precision import SAME_POINT
 from tests.paths import DATA, drawing
@@ -86,6 +86,15 @@ class TestCloseFreeGaps(unittest.TestCase):
         edges = _square(0, 0, 10)
         edges[0] = _line((0, 0), (9, 0))
         self.assertEqual(topo.experimental.close_free_gaps(edges, 0.1), edges)
+
+    def test_004_capo_di_un_arco_d_ellisse_si_chiude_come_quello_di_una_spline(self):
+        # mezza ellisse chiusa da una retta che arriva a 0,003 dal suo capo
+        # (og_04 col rifit a ellisse): il capo dell'ellisse è libero come gli altri
+        half = EllipseSeg(center=(0.0, 0.0), major_axis=(4.0, 0.0), ratio=0.5, start_param=0.0, end_param=math.pi)
+        a, b = segment_endpoints(half)
+        edges = [Edge(role=ContourRole.UNKNOWN, start=a, end=b, segment=half), _line((b[0], b[1]), (a[0] - 0.003, a[1]))]
+        self.assertEqual(topo.experimental.face_loops(edges), [])
+        self.assertEqual(len(topo.experimental.face_loops(topo.experimental.close_free_gaps(edges, 0.05))), 1)
 
     def test_003_parallele_si_chiudono_col_segmento_a_ogni_angolo(self):
         # G6e (drw_0015): due rette parallele con gli estremi a 0.004. Ruotate,

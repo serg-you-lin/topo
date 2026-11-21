@@ -33,7 +33,7 @@ from ..geometry.measure import FLOAT_NOISE, node_point
 from ..geometry.intersections import (_distance, _line_intersection, _circle_line_intersections, _circle_circle_intersections, _closest_to)
 from ..geometry.intersections import intersections
 from ..geometry.regions import _tangent, nearest_point
-from ..primitives.segments import DEFAULT_TOLERANCE, LineSeg, ArcSeg, BSplineSeg, segment_endpoints
+from ..primitives.segments import DEFAULT_TOLERANCE, LineSeg, ArcSeg, BSplineSeg, EllipseSeg, segment_endpoints
 from ..topology.noding import GRAPH_EPSILON, edge_geometry
 from ..topology.edge import Edge
 from ...model.role import ContourRole
@@ -54,7 +54,7 @@ class GapEndpoint:
         pt   : coordinate (x, y) dell'endpoint
         ref  : riferimento opaco all'entità sorgente — l'adapter sa cos'è
         role : 'start' | 'end'
-        kind : tipo geometrico — 'line' | 'arc' | 'spline' | altro
+        kind : tipo geometrico — 'line' | 'arc' | 'spline' | 'ellipse'
                usato dal solver per scegliere la strategia di fix
         meta : dati aggiuntivi che il solver può usare per il calcolo
                per LINE: {'start': pt, 'end': pt}
@@ -438,7 +438,7 @@ def _within_reach(fixes: List[GapFix], ep_a: GapEndpoint, ep_b: GapEndpoint,
 # Ponte Edge <-> GapFix — geometria pura, zero formato sorgente
 # ---------------------------------------------------------------------------
 
-_KIND_BY_SEGMENT = {LineSeg: "line", ArcSeg: "arc", BSplineSeg: "spline"}
+_KIND_BY_SEGMENT = {LineSeg: "line", ArcSeg: "arc", BSplineSeg: "spline", EllipseSeg: "ellipse"}
 
 
 def _endpoint_meta(segment) -> dict:
@@ -467,14 +467,14 @@ def free_endpoints_from_edges(edges: List[Edge], graph) -> List[GapEndpoint]:
 
     Sostituisce DxfAdapter.extract_free_endpoints: lavora su geometria pura,
     il `ref` di ogni GapEndpoint è l'Edge stesso.
-    Considera solo LINE / ARC / SPLINE — i loop degeneri (CIRCLE, SPLINE chiusa)
+    Considera solo linee, archi, spline ed ellissi aperte — i loop (cerchio, spline chiusa)
     non hanno endpoint liberi per definizione.
     """
     return _gap_endpoints(edges, lambda node: graph.degree(node) < 2)
 
 
 def _gap_endpoints(edges: List[Edge], keep: Callable[[Point2D], bool]) -> List[GapEndpoint]:
-    """GapEndpoint per gli estremi di LINE / ARC / SPLINE il cui nodo (arrotondato)
+    """GapEndpoint per gli estremi di linee, archi, spline ed ellissi il cui nodo (arrotondato)
     soddisfa `keep`. `pt` resta la coordinata reale non arrotondata: il solver
     ne ha bisogno per calcolare l'intersezione."""
     out: List[GapEndpoint] = []
