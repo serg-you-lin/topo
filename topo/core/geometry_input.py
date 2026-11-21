@@ -27,7 +27,7 @@ import math
 from typing import Any, Dict, List
 
 from .geometry.build import polygon
-from .primitives.segments import LineSeg, ArcSeg, CircleSeg, BSplineSeg, EllipseSeg
+from .primitives.segments import LineSeg, CircleSeg, BSplineSeg, EllipseSeg
 from .topology.edge import Edge
 from ..model.document import Document
 from ..model.role import normalize_role
@@ -69,7 +69,7 @@ class GeometryReader:
     espliciti prima che un consumatore li riclassifichi.
 
     Gli angoli di "arc" sono in GRADI (convenzione DXF/CAD, non i radianti di
-    ArcSeg) — più naturale per chi consegna numeri calcolati a mano.
+    CircleSeg) — più naturale per chi consegna numeri calcolati a mano.
 
     Lo schema di "spline" ricalca 1:1 i campi di BSplineSeg (control_points,
     knots, degree, weights): chi ha in mano l'oggetto
@@ -117,7 +117,7 @@ class GeometryReader:
         return Edge.of(LineSeg(start=tuple(entity["start"]), end=tuple(entity["end"])), role)
 
     def _arc_edge(self, entity: Dict[str, Any], role: str) -> Edge:
-        seg = ArcSeg(
+        seg = CircleSeg(
             center=tuple(entity["center"]),
             radius=float(entity["radius"]),
             start_angle=math.radians(float(entity["start_angle"])),
@@ -206,7 +206,7 @@ def load_segments(
     source_path: str = "",
 ) -> Document:
     """
-    A Document from topo segments (`LineSeg`, `ArcSeg`, `CircleSeg`, ...)
+    A Document from topo segments (`LineSeg`, `CircleSeg`, ...)
     or from lists of segments, as returned by the constructors of
     `topo.geometry` (`rectangle`, `regular_polygon`, `polygon`, `circle`,
     `stadium`). Every edge takes `role`.

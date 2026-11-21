@@ -7,7 +7,7 @@ from topo import to_shapely
 from topo.core.base.normalizer import (merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
                                        merge_near_copies)
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg, ArcSeg, CircleSeg, EllipseSeg, segment_endpoints
+from topo.core.primitives.segments import LineSeg, CircleSeg, EllipseSeg, segment_endpoints
 from topo.precision import FLOAT_NOISE, SAME_POINT
 
 
@@ -16,7 +16,7 @@ def _line(p1, p2, role="unknown"):
 
 
 def _arc(center, radius, start_deg, end_deg, role="unknown"):
-    seg = ArcSeg(center=center, radius=radius,
+    seg = CircleSeg(center=center, radius=radius,
                  start_angle=math.radians(start_deg), end_angle=math.radians(end_deg), ccw=True)
     start = (center[0] + radius * math.cos(seg.start_angle), center[1] + radius * math.sin(seg.start_angle))
     end = (center[0] + radius * math.cos(seg.end_angle), center[1] + radius * math.sin(seg.end_angle))
@@ -232,8 +232,8 @@ class TestSameCarrierUnderMotion(unittest.TestCase):
     def test_archi_dello_stesso_cerchio_a_cavallo_di_una_cella(self):
         # come drw_0016 per i cerchi: centro a metà fra due celle, l'altro a 2.5e-5
         self._merged_at_every_motion(
-            [ArcSeg(center=(578.1875, 20.0), radius=12.0, start_angle=0.1, end_angle=1.3, ccw=True),
-             ArcSeg(center=(578.187475, 20.0), radius=12.0, start_angle=1.2, end_angle=2.9, ccw=True)],
+            [CircleSeg(center=(578.1875, 20.0), radius=12.0, start_angle=0.1, end_angle=1.3, ccw=True),
+             CircleSeg(center=(578.187475, 20.0), radius=12.0, start_angle=1.2, end_angle=2.9, ccw=True)],
             merge_cocircular_overlaps, 1)
 
 
@@ -313,7 +313,7 @@ class TestMergeCocircularOverlaps(unittest.TestCase):
 
     def test_catena_di_frammenti_si_fonde(self):
         # golden piega_cazzuta: un arco tracciato a 4 spezzoni consecutivi
-        # che si toccano esattamente -> un solo ArcSeg da 0 a 200 gradi.
+        # che si toccano esattamente -> un solo CircleSeg da 0 a 200 gradi.
         edges = [
             _arc((0.0, 0.0), 10.0, 0.0, 50.0),
             _arc((0.0, 0.0), 10.0, 50.0, 120.0),
@@ -340,7 +340,7 @@ class TestMergeCocircularOverlaps(unittest.TestCase):
 
     def test_due_semicerchi_chiudono_il_cerchio(self):
         # golden cerchi_ciambella: un foro disegnato come 2 semicirchi ->
-        # un giro intero e' un cerchio (CircleSeg), non un ArcSeg a 360 gradi
+        # un giro intero e' un cerchio (CircleSeg), non un CircleSeg a 360 gradi
         # -- niente traccia di quale frammento fosse il primo.
         edges = [
             _arc((0.0, 0.0), 10.0, 0.0, 180.0),
@@ -543,7 +543,7 @@ class TestRefitCornerFromTolerance(unittest.TestCase):
         # 2 mm di retta, poi un quarto di cerchio di raggio 1 tangente: retta + arco, nessun pezzo in più
         pts = [(x * 0.05, 0.0) for x in range(41)]
         pts += [(2.0 + math.sin(a / 40 * math.pi / 2), 1 - math.cos(a / 40 * math.pi / 2)) for a in range(1, 41)]
-        self.assertEqual(self._refit(pts), ["LineSeg", "ArcSeg"])
+        self.assertEqual(self._refit(pts), ["LineSeg", "CircleSeg"])
 
     def _refit(self, pts):
         return [type(s).__name__ for s in _refit_segments(pts)]
@@ -596,7 +596,7 @@ def _polygon(center, radius, sides, start=0.3):
 
 def _circles(segments):
     faces = topo.heal(topo.load_segments(segments), max_gap=0.1).faces()
-    return [s for cl in faces.clusters for ct in [cl.outer, *cl.inners] for s in ct.segments if isinstance(s, CircleSeg)]
+    return [s for cl in faces.clusters for ct in [cl.outer, *cl.inners] for s in ct.segments if (isinstance(s, CircleSeg) and s.full)]
 
 
 class TestRefitCircleRings(unittest.TestCase):
@@ -631,4 +631,4 @@ class TestRefitCircleRings(unittest.TestCase):
     def test_mezzo_giro_non_diventa_cerchio(self):
         half = _polygon((0, 0), 1.0, 60)[:30]
         net = topo.heal(topo.load_segments(half + [LineSeg(start=half[-1].end, end=half[0].start)]), max_gap=0.1)
-        self.assertEqual([s for cl in net.faces().clusters for s in cl.outer.segments if isinstance(s, CircleSeg)], [])
+        self.assertEqual([s for cl in net.faces().clusters for s in cl.outer.segments if (isinstance(s, CircleSeg) and s.full)], [])

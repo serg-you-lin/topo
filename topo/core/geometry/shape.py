@@ -23,7 +23,7 @@ from typing import Optional, Tuple
 from shapely.geometry import Polygon
 
 from .measure import FLOAT_NOISE, Reach, chord_angle_deg, golden_max, noise_runs, SAME_POINT
-from ..primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, segment_endpoints, segment_is_closed
+from ..primitives.segments import CircleSeg, EllipseSeg, LineSeg, segment_endpoints, segment_is_closed, is_arc, is_full_circle
 
 Point = Tuple[float, float]
 
@@ -130,7 +130,7 @@ def _closes(segments) -> bool:
 
 def _radius(seg) -> Optional[float]:
     """Raggio di un pezzo di cerchio; un'ellisse con gli assi uguali entro SAME_POINT è un cerchio."""
-    if isinstance(seg, (ArcSeg, CircleSeg)):
+    if isinstance(seg, CircleSeg):
         return seg.radius
     if isinstance(seg, EllipseSeg) and abs(1.0 - seg.ratio) * math.hypot(*seg.major_axis) <= SAME_POINT:
         return math.hypot(*seg.major_axis)
@@ -145,7 +145,7 @@ def _circle(segments):
     if any(abs(r - r0) > SAME_POINT or math.dist(s.center, s0.center) > SAME_POINT
            for s, r in zip(segments, radii)):
         return None
-    sweep = sum(2 * math.pi if isinstance(s, CircleSeg) else s._sweep() for s in segments)
+    sweep = sum(s._sweep() for s in segments)
     if abs(sweep - 2 * math.pi) * r0 > SAME_POINT:
         return None
     d = 2 * r0
@@ -172,9 +172,9 @@ def _ellipse(segments):
 def _stadium(segments):
     if len(segments) != 4:
         return None
-    k = 0 if isinstance(segments[0], ArcSeg) else 1
+    k = 0 if is_arc(segments[0]) else 1
     a1, l1, a2, l2 = segments[k:] + segments[:k]
-    if not (isinstance(a1, ArcSeg) and isinstance(a2, ArcSeg)
+    if not (is_arc(a1) and is_arc(a2)
             and isinstance(l1, LineSeg) and isinstance(l2, LineSeg)):
         return None
     r = a1.radius
@@ -335,11 +335,11 @@ class ArcAround:
     """
     An arc concentric with a circle and larger than it.
 
-    arc:          the `ArcSeg`
+    arc:          the `CircleSeg`
     sweep:        swept angle, in degrees
     radius_ratio: arc radius / circle radius (> 1)
     """
-    arc: ArcSeg
+    arc: CircleSeg
     sweep: float
     radius_ratio: float
 
@@ -351,7 +351,7 @@ def arcs_around(center: Point, radius: float, arcs,
     larger than `radius`, from the nearest to the circle to the farthest.
     """
     out = [ArcAround(a, math.degrees(a._sweep()), a.radius / radius) for a in arcs
-           if isinstance(a, ArcSeg) and a.radius > radius and math.dist(a.center, center) <= tolerance]
+           if is_arc(a) and a.radius > radius and math.dist(a.center, center) <= tolerance]
     return sorted(out, key=lambda a: a.radius_ratio)
 
 
@@ -373,7 +373,7 @@ def merge_runs(segments: list, styles: list):
     same = [_continues(segments[i - 1], styles[i - 1], segments[i], styles[i]) for i in range(n)]
     if all(same):
         s0 = segments[0]
-        if isinstance(s0, ArcSeg):
+        if is_arc(s0):
             return [CircleSeg(center=s0.center, radius=s0.radius)], [styles[0]]
         return segments, styles
     k = same.index(False)          # il giro riparte da un inizio di tratto
@@ -395,7 +395,7 @@ def _continues(prev, prev_style, seg, style) -> bool:
     """`seg` prosegue `prev` sulla stessa curva, nello stesso verso?"""
     if style != prev_style or type(seg) is not type(prev):
         return False
-    if isinstance(seg, ArcSeg):
+    if is_arc(seg):
         return (seg.ccw == prev.ccw and abs(seg.radius - prev.radius) < _MERGE_EPS
                 and math.dist(seg.center, prev.center) < _MERGE_EPS)
     if isinstance(seg, LineSeg):
@@ -411,10 +411,10 @@ def _continues(prev, prev_style, seg, style) -> bool:
 
 
 def _joined(prev, seg):
-    if isinstance(prev, ArcSeg):
+    if is_arc(prev):
         # le ampiezze si sommano: `seg.end_angle` da solo può essere l'angolo
         # di partenza di `prev` a meno di un giro (arco che passa per lo 0)
         sweep = prev._sweep() + seg._sweep()
-        return ArcSeg(center=prev.center, radius=prev.radius, start_angle=prev.start_angle,
+        return CircleSeg(center=prev.center, radius=prev.radius, start_angle=prev.start_angle,
                       end_angle=prev.start_angle + (sweep if prev.ccw else -sweep), ccw=prev.ccw)
     return LineSeg(start=prev.start, end=seg.end)

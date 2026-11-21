@@ -77,7 +77,7 @@ def _directed(samples, lines) -> float:
 
 def _coefficients(seg):
     """Quello che nessun passo di una lettura cambia su una curva che non tocca."""
-    if isinstance(seg, (topo.primitives.ArcSeg, topo.primitives.CircleSeg)):
+    if isinstance(seg, topo.primitives.CircleSeg):
         return ("circle", (seg.center[0], seg.center[1], seg.radius))
     if isinstance(seg, topo.primitives.EllipseSeg):
         return ("ellipse", (seg.center[0], seg.center[1], seg.major_axis[0],

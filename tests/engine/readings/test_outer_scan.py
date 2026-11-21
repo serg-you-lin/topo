@@ -4,7 +4,7 @@ import math
 import unittest
 from topo.core.readings.outer_scan import outer_candidate_edges, AXIS_X, AXIS_Y
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg, ArcSeg, CircleSeg
+from topo.core.primitives.segments import LineSeg, CircleSeg
 
 
 def _line(p1, p2):
@@ -50,7 +50,7 @@ class TestOuterCandidateEdges(unittest.TestCase):
         # semicerchio in cima a un rettangolo: l'arco è il bordo superiore
         base = [_line((10, 5), (10, 0)), _line((10, 0), (0, 0)), _line((0, 0), (0, 5))]
         arc = Edge(role="unknown", start=(10, 5), end=(0, 5),
-                   segment=ArcSeg(center=(5, 5), radius=5, start_angle=0.0,
+                   segment=CircleSeg(center=(5, 5), radius=5, start_angle=0.0,
                                   end_angle=math.pi, ccw=True))
         oc = outer_candidate_edges(base + [arc])
         self.assertIn(id(arc), oc.ids)

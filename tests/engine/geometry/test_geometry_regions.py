@@ -11,7 +11,7 @@ import math
 import unittest
 
 import topo
-from topo.core.primitives import ArcSeg, CircleSeg, LineSeg, BSplineSeg
+from topo.core.primitives import CircleSeg, LineSeg, BSplineSeg
 from topo.core.primitives.polygon_builder import build_polygon
 from topo.model.contour import Contour
 from topo import to_shapely
@@ -48,10 +48,10 @@ class TestIntersections(unittest.TestCase):
         line = LineSeg((0, 0), (10, 0))
         self.assertEqual(_rounded(g.intersections(line, CircleSeg((5, 0), 2))), [(3, 0), (7, 0)])
         # semicerchio superiore da 0 a π: tocca la retta nei due capi
-        self.assertEqual(_rounded(g.intersections(line, ArcSeg((5, 0), 2, 0, math.pi, True))),
+        self.assertEqual(_rounded(g.intersections(line, CircleSeg((5, 0), 2, 0, math.pi, True))),
                          [(3, 0), (7, 0)])
         # quarto da 0 a π/2: solo il capo in (7, 0)
-        self.assertEqual(_rounded(g.intersections(line, ArcSeg((5, 0), 2, 0, math.pi / 2, True))),
+        self.assertEqual(_rounded(g.intersections(line, CircleSeg((5, 0), 2, 0, math.pi / 2, True))),
                          [(7, 0)])
 
     def test_arc_arc_exact(self):
@@ -151,7 +151,7 @@ class TestNearestPoint(unittest.TestCase):
     def test_circle_and_arc_exact(self):
         self.assertEqual(_rounded([g.nearest_point(g.circle(5), (0, 9))]), [(0, 5)])
         # quarto da 0 a π/2: un punto sotto l'asse x cade sul capo (5, 0), non oltre l'ampiezza
-        quarter = [ArcSeg((0, 0), 5, 0, math.pi / 2, True)]
+        quarter = [CircleSeg((0, 0), 5, 0, math.pi / 2, True)]
         self.assertEqual(_rounded([g.nearest_point(quarter, (6, -4))]), [(5, 0)])
 
     def test_feeds_point_on_contour(self):
@@ -186,10 +186,10 @@ class TestCutBy(unittest.TestCase):
         self.assertEqual([(s.start, s.end) for s in out], [((1.5, 0.0), (10, 0))])
 
     def test_arc_stays_an_arc(self):
-        out = g.cut_by(ArcSeg((0, 0), 5, 0, math.pi, True), g.rectangle(4, 20, center=(0, 5)))
+        out = g.cut_by(CircleSeg((0, 0), 5, 0, math.pi, True), g.rectangle(4, 20, center=(0, 5)))
         self.assertEqual(len(out), 2)
         for arc in out:
-            self.assertIsInstance(arc, ArcSeg)
+            self.assertIsInstance(arc, CircleSeg)
             self.assertEqual((arc.center, arc.radius), ((0, 0), 5))
 
     def test_piece_along_the_border_raises(self):
@@ -203,7 +203,7 @@ class TestContourMinus(unittest.TestCase):
         rings = g.contour_minus(SQUARE, g.circle(2))
         self.assertEqual(len(rings), 1)
         self.assertAlmostEqual(_area(rings[0]), 100 - math.pi, places=4)
-        self.assertEqual([type(s).__name__ for s in rings[0]].count("ArcSeg"), 1)
+        self.assertEqual([type(s).__name__ for s in rings[0]].count("CircleSeg"), 1)
 
     def test_square_on_a_corner(self):
         rings = g.contour_minus(SQUARE, g.rectangle(4, 4))
@@ -292,8 +292,8 @@ class TestContourUnion(unittest.TestCase):
         rings = g.contour_union(notched, disk)
         self.assertEqual(len(rings), 1)
         self.assertAlmostEqual(_area(rings[0]), 100 + 3 * math.pi, places=3)
-        upper = [ArcSeg((0, 0), 5, 0, math.pi, True), LineSeg((-5, 0), (5, 0))]
-        lower = [ArcSeg((0, 0), 5, math.pi, 2 * math.pi, True), LineSeg((5, 0), (-5, 0))]
+        upper = [CircleSeg((0, 0), 5, 0, math.pi, True), LineSeg((-5, 0), (5, 0))]
+        lower = [CircleSeg((0, 0), 5, math.pi, 2 * math.pi, True), LineSeg((5, 0), (-5, 0))]
         rings = g.contour_union(upper, lower)
         self.assertEqual(self._kinds(rings[0]), ["CircleSeg"])
         self.assertAlmostEqual(rings[0][0].radius, 5)

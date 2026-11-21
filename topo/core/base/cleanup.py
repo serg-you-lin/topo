@@ -22,8 +22,9 @@ from ..geometry.measure import FLOAT_NOISE, SAME_POINT, node_point, segment_leng
 from ...precision import NEAR_FULL_ARC_HINT_DEG, NEAR_FULL_ARC_MISSING_DEG
 from ..geometry.points import circle_through
 from ..geometry.regions import _tangent, nearest_point, translation_meeting
-from ..primitives.segments import (ArcSeg, CircleSeg, BSplineSeg, LineSeg, DEFAULT_TOLERANCE,
-                                   segment_endpoints, segment_is_closed)
+from ..primitives.segments import (CircleSeg, BSplineSeg, LineSeg, DEFAULT_TOLERANCE,
+                                   segment_endpoints, segment_is_closed, is_arc,
+)
 from ..topology.noding import edge_geometry
 from ..topology.edge import Edge
 from ..topology.graph import build_node_graph, connected_groups
@@ -57,11 +58,11 @@ NEAR_FULL_ARC_HINT = math.radians(NEAR_FULL_ARC_HINT_DEG)      # fin qui heal() 
 def close_near_full_arcs(edges: List[Edge], tolerance: float,
                          max_missing_angle: float = NEAR_FULL_ARC_MISSING) -> Tuple[List[Edge], int]:
     """
-    Gli ArcSeg coi due capi liberi sullo stesso cerchio (`_same_circle`, D184):
+    Gli archi coi due capi liberi sullo stesso cerchio (`_same_circle`, D184):
     un buco fra un arco e il seguente entro `tolerance` E col suo angolo entro
     `max_missing_angle` si chiude (MAP.md D112, D218) — la tolleranza dice se è
     un gap, l'angolo se l'arco prosegue. Chiusi tutti i buchi è un CircleSeg;
-    altrimenti gli archi uniti sono un ArcSeg solo, aperto sui buchi rimasti
+    altrimenti gli archi uniti sono un arco solo, aperto sui buchi rimasti
     (un capo e l'altro dello stesso arco non sono mai un gap). Un arco solo ha
     un buco solo. `tolerance=math.inf` lascia solo l'angolo. Prima fonde gli
     archi dello stesso cerchio che si toccano (`merge_cocircular_overlaps`):
@@ -71,7 +72,7 @@ def close_near_full_arcs(edges: List[Edge], tolerance: float,
     """
     edges = merge_cocircular_overlaps(edges)
     graph = build_node_graph(edges)
-    free = [k for k, e in enumerate(edges) if isinstance(e.segment, ArcSeg) and _both_ends_free(e, graph)]
+    free = [k for k, e in enumerate(edges) if is_arc(e.segment) and _both_ends_free(e, graph)]
     pairs = [(m, n) for m in range(len(free)) for n in range(m + 1, len(free))
              if _same_circle(edges[free[m]].segment, edges[free[n]].segment)]
     replaced, drop = {}, set()
@@ -88,7 +89,7 @@ def close_near_full_arcs(edges: List[Edge], tolerance: float,
 def open_near_full_arcs(edges: List[Edge], tolerance: float,
                         max_missing_angle: float = NEAR_FULL_ARC_MISSING) -> List[Tuple[Edge, float, float]]:
     """
-    Gli ArcSeg coi due capi liberi che `close_near_full_arcs` lascia aperti
+    Gli archi coi due capi liberi che `close_near_full_arcs` lascia aperti
     solo per l'angolo: la corda del buco sta in `tolerance`, l'angolo mancante
     supera `max_missing_angle` ma non `NEAR_FULL_ARC_HINT` — oltre, l'arco è
     aperto di proposito (un filetto). Ritorna (edge, angolo mancante, corda) —
@@ -97,7 +98,7 @@ def open_near_full_arcs(edges: List[Edge], tolerance: float,
     graph = build_node_graph(edges)
     found = []
     for e in edges:
-        if not isinstance(e.segment, ArcSeg) or not _both_ends_free(e, graph):
+        if not is_arc(e.segment) or not _both_ends_free(e, graph):
             continue
         start, end = segment_endpoints(e.segment)
         missing, chord = 2 * math.pi - e.segment._sweep(), math.dist(start, end)
@@ -144,7 +145,7 @@ def _joined_runs(group: List[int], edges: List[Edge], tolerance: float, max_miss
 
 def _joined_edge(edge: Edge, chain: list) -> Edge:
     """L'edge di una catena: un CircleSeg se chiude il giro (`None` in coda),
-    altrimenti l'ArcSeg ccw dal primo capo all'ultimo, coi loro nodi."""
+    altrimenti l'arco ccw dal primo capo all'ultimo, coi loro nodi."""
     seg = edge.segment
     if chain[-1] is None:
         circle = CircleSeg(center=seg.center, radius=seg.radius)
@@ -153,7 +154,7 @@ def _joined_edge(edge: Edge, chain: list) -> Edge:
     lo, _, _, _, lo_node, _ = chain[0][1]
     last_lo, last_sweep, _, _, _, hi_node = chain[-1][1]
     hi = lo + ((last_lo + last_sweep - lo) % (2 * math.pi))
-    arc = ArcSeg(center=seg.center, radius=seg.radius, start_angle=lo, end_angle=hi, ccw=True)
+    arc = CircleSeg(center=seg.center, radius=seg.radius, start_angle=lo, end_angle=hi, ccw=True)
     return replace(edge, start=lo_node, end=hi_node, segment=arc)
 
 
@@ -209,7 +210,7 @@ def bend_arcs_through_free_ends(edges: List[Edge], gap: float, bent: Optional[li
     edges = list(edges)
     geoms = [edge_geometry(e) for e in edges]
     tree = STRtree(geoms)
-    rounds = [e.segment for e in edges if isinstance(e.segment, (ArcSeg, CircleSeg))]
+    rounds = [e.segment for e in edges if isinstance(e.segment, CircleSeg)]
     graph = build_node_graph(edges)
     out, done = list(edges), set()
     for i, edge in enumerate(edges):
@@ -223,7 +224,7 @@ def bend_arcs_through_free_ends(edges: List[Edge], gap: float, bent: Optional[li
                 continue
             d, k = found
             arc = edges[k].segment
-            if not isinstance(arc, ArcSeg) or not _may_land(edge.segment, arc, rounds, gap):
+            if not is_arc(arc) or not _may_land(edge.segment, arc, rounds, gap):
                 continue
             a, b = segment_endpoints(arc)
             foot = nearest_point([arc], p)
@@ -240,7 +241,7 @@ def bend_arcs_through_free_ends(edges: List[Edge], gap: float, bent: Optional[li
             if circle is None:
                 continue
             (cx, cy), radius = circle
-            new = ArcSeg(center=(cx, cy), radius=radius, start_angle=math.atan2(a[1] - cy, a[0] - cx),
+            new = CircleSeg(center=(cx, cy), radius=radius, start_angle=math.atan2(a[1] - cy, a[0] - cx),
                          end_angle=math.atan2(b[1] - cy, b[0] - cx), ccw=arc.ccw)
             if math.dist(nearest_point([new], p), p) > FLOAT_NOISE:
                 continue        # il capo cade sull'altro arco del cerchio
@@ -270,7 +271,7 @@ def move_onto_targets(edges: List[Edge], gap: float, moved: Optional[list] = Non
     edges = list(edges)
     geoms = [edge_geometry(e) for e in edges]
     tree = STRtree(geoms)
-    rounds = [e.segment for e in edges if isinstance(e.segment, (ArcSeg, CircleSeg))]
+    rounds = [e.segment for e in edges if isinstance(e.segment, CircleSeg)]
     graph = build_node_graph(edges)
     at_node: dict = {}
     for k, edge in enumerate(edges):
@@ -410,7 +411,7 @@ def _target(p, k: int, edges: List[Edge], geoms: list, tree, gap: float):
 def _may_land(seg, target, rounds: list, gap: float) -> bool:
     """Un capo staccato può cadere su `target`: no se è un arco o cerchio con
     un altro concentrico (filetto), no se `seg` è una retta per il suo centro (asse)."""
-    if not isinstance(target, (ArcSeg, CircleSeg)):
+    if not isinstance(target, CircleSeg):
         return True
     if any(r is not target and math.dist(r.center, target.center) <= gap for r in rounds):
         return False

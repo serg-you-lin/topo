@@ -13,7 +13,7 @@ import math
 from typing import Optional, Tuple, List
 import numpy as np
 
-from ..primitives.segments import LineSeg, ArcSeg
+from ..primitives.segments import LineSeg, CircleSeg
 from .measure import FLOAT_NOISE
 
 Point = Tuple[float, float]
@@ -23,7 +23,7 @@ Point = Tuple[float, float]
 # Sequenze di punti — angolo interno, deduplica, fit a cerchio (D38)
 # ---------------------------------------------------------------------------
 # Matematica generica su una sequenza ordinata di punti (x, y): non sa nulla
-# di primitive topo (LineSeg/ArcSeg/...) né di come il chiamante la userà.
+# di primitive topo (LineSeg/CircleSeg/...) né di come il chiamante la userà.
 # Nata dentro tools/simplify_points.py (D33/D36), spostata qui perché un
 # secondo consumatore ne ha bisogno senza
 # duplicarla — `core/primitives/fitting.py` resta l'orchestratore che decide

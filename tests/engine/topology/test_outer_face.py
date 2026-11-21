@@ -246,7 +246,7 @@ class TestChordContactUnderMotion(unittest.TestCase):
     MOTIONS = [(0.0, 0.0, 0.0), (0.0, 3e-7, 0.0), (math.pi / 2, 0.0, 0.0), (0.0, 2.5e6, -1.5e6), (0.7, 0.0, 0.0)]
 
     def _segments(self):
-        from topo.core.primitives.segments import ArcSeg
+        from topo.core.primitives.segments import CircleSeg
         step = 2 * math.pi / self.N
         from topo.precision import FLOAT_NOISE, SAME_POINT
         r = SAME_POINT * (1 - 1e-8) / (1 - math.cos(step / 2))
@@ -255,7 +255,7 @@ class TestChordContactUnderMotion(unittest.TestCase):
         alpha = 48.5 * step
         d = SAME_POINT + 2 * FLOAT_NOISE
         q = ((r - d) * math.cos(alpha), (r - d) * math.sin(alpha))
-        return [ArcSeg(center=(0.0, 0.0), radius=r, start_angle=5 * a, end_angle=7 * a, ccw=True),
+        return [CircleSeg(center=(0.0, 0.0), radius=r, start_angle=5 * a, end_angle=7 * a, ccw=True),
                 LineSeg(start=p2, end=(p2[0], -r - 3)), LineSeg(start=(p2[0], -r - 3), end=(p1[0], -r - 3)),
                 LineSeg(start=(p1[0], -r - 3), end=p1),
                 LineSeg(start=q, end=(q[0] + 1, q[1] + 2)), LineSeg(start=(q[0] + 1, q[1] + 2), end=(q[0] - 1, q[1] + 2)),

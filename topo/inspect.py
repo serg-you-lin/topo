@@ -111,18 +111,18 @@ def inspect_document(doc, *, graph: bool = True, limit: Optional[int] = 60) -> N
 
 
 def _describe_segment(seg) -> str:
-    from .core.primitives.segments import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg
+    from .core.primitives.segments import LineSeg, BSplineSeg, CircleSeg, EllipseSeg, is_arc, is_full_circle
 
     if seg is None:
         return "<no segment>"
     if isinstance(seg, LineSeg):
         d = math.hypot(seg.end[0] - seg.start[0], seg.end[1] - seg.start[1])
         return f"line    len={d:.2f}"
-    if isinstance(seg, ArcSeg):
+    if is_arc(seg):
         sweep = math.degrees(seg._sweep())
         return (f"arc     c={_p(seg.center)} r={seg.radius:.2f} sweep={sweep:.1f}° "
                 f"{'ccw' if seg.ccw else 'cw'}")
-    if isinstance(seg, CircleSeg):
+    if is_full_circle(seg):
         return f"circle  c={_p(seg.center)} r={seg.radius:.2f}"
     if isinstance(seg, EllipseSeg):
         sweep = math.degrees(seg._sweep())

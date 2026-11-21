@@ -81,7 +81,7 @@ Inside `topo/`:
 ```
 topo/
 ├── core/         pure geometric ENGINE                (zero format)
-│   ├── primitives/   LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg + discretization;
+│   ├── primitives/   LineSeg, CircleSeg, BSplineSeg, EllipseSeg + discretization;
 │   │                 fitting.py: primitives from a sequence of points (simplify_points)
 │   ├── topology/     edge.py, node graph, loop search;
 │   │                 noding.py (planar network), outer_face.py (outer face)

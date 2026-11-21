@@ -5,7 +5,7 @@ import math
 import unittest
 
 import topo
-from topo.core.primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, BSplineSeg
+from topo.core.primitives.segments import CircleSeg, EllipseSeg, LineSeg, BSplineSeg
 from topo.core.geometry.shape import (
     CIRCLE, ELLIPSE, OTHER, POLYGON, RECTANGLE, STADIUM, ShapeKind, contour_shape, merge_runs,
 )
@@ -25,9 +25,9 @@ def _stadium(c1, c2, r):
     (x1, y), (x2, _) = c1, c2
     return [
         LineSeg(start=(x1, y - r), end=(x2, y - r)),
-        ArcSeg(center=c2, radius=r, start_angle=-math.pi / 2, end_angle=math.pi / 2, ccw=True),
+        CircleSeg(center=c2, radius=r, start_angle=-math.pi / 2, end_angle=math.pi / 2, ccw=True),
         LineSeg(start=(x2, y + r), end=(x1, y + r)),
-        ArcSeg(center=c1, radius=r, start_angle=math.pi / 2, end_angle=3 * math.pi / 2, ccw=True),
+        CircleSeg(center=c1, radius=r, start_angle=math.pi / 2, end_angle=3 * math.pi / 2, ccw=True),
     ]
 
 
@@ -41,7 +41,7 @@ class TestContourShape(unittest.TestCase):
         self.assertIsNone(s.angle)
 
     def test_cerchio_in_quattro_archi(self):
-        arcs = [ArcSeg(center=(0, 0), radius=5, start_angle=k * math.pi / 2,
+        arcs = [CircleSeg(center=(0, 0), radius=5, start_angle=k * math.pi / 2,
                        end_angle=(k + 1) * math.pi / 2) for k in range(4)]
         s = contour_shape(arcs)
         self.assertEqual(s.kind, CIRCLE)
@@ -83,7 +83,7 @@ class TestContourShape(unittest.TestCase):
         # rettangolo con un angolo raccordato
         segs = [LineSeg(start=(0, 0), end=(20, 0)),
                 LineSeg(start=(20, 0), end=(20, 5)),
-                ArcSeg(center=(15, 5), radius=5, start_angle=0, end_angle=math.pi / 2),
+                CircleSeg(center=(15, 5), radius=5, start_angle=0, end_angle=math.pi / 2),
                 LineSeg(start=(15, 10), end=(0, 10)),
                 LineSeg(start=(0, 10), end=(0, 0))]
         self.assertEqual(contour_shape(segs).kind, OTHER)
@@ -160,13 +160,13 @@ class TestShapeKindStabile(unittest.TestCase):
         # quattro spigoli a raggio 2: serve una misura in più del record
         r = 2
         segs = [LineSeg(start=(r, 0), end=(20 - r, 0)),
-                ArcSeg(center=(20 - r, r), radius=r, start_angle=-math.pi / 2, end_angle=0),
+                CircleSeg(center=(20 - r, r), radius=r, start_angle=-math.pi / 2, end_angle=0),
                 LineSeg(start=(20, r), end=(20, 10 - r)),
-                ArcSeg(center=(20 - r, 10 - r), radius=r, start_angle=0, end_angle=math.pi / 2),
+                CircleSeg(center=(20 - r, 10 - r), radius=r, start_angle=0, end_angle=math.pi / 2),
                 LineSeg(start=(20 - r, 10), end=(r, 10)),
-                ArcSeg(center=(r, 10 - r), radius=r, start_angle=math.pi / 2, end_angle=math.pi),
+                CircleSeg(center=(r, 10 - r), radius=r, start_angle=math.pi / 2, end_angle=math.pi),
                 LineSeg(start=(0, 10 - r), end=(0, r)),
-                ArcSeg(center=(r, r), radius=r, start_angle=math.pi, end_angle=3 * math.pi / 2)]
+                CircleSeg(center=(r, r), radius=r, start_angle=math.pi, end_angle=3 * math.pi / 2)]
         self.assertEqual(contour_shape(segs).kind, OTHER)
 
 
@@ -177,7 +177,7 @@ class TestMisureSullePrimitive(unittest.TestCase):
         # semicerchio r 10 chiuso dal diametro, ruotato di 20°: 20 × 10 esatti,
         # mentre il poligono inscritto è più corto fino a 2·tol
         a = math.radians(20)
-        arc = ArcSeg(center=(5, 7), radius=10, start_angle=a - math.pi / 2, end_angle=a + math.pi / 2)
+        arc = CircleSeg(center=(5, 7), radius=10, start_angle=a - math.pi / 2, end_angle=a + math.pi / 2)
         s = contour_shape([arc, LineSeg(start=arc._point_at(a + math.pi / 2),
                                         end=arc._point_at(a - math.pi / 2))])
         self.assertEqual(s.kind, OTHER)
@@ -188,7 +188,7 @@ class TestMisureSullePrimitive(unittest.TestCase):
         # la stessa D a r 500: la polilinea a tol 0.01 resta indietro di quasi
         # 0.01 sulla larghezza (sagitta), la misura no
         a = math.radians(20)
-        arc = ArcSeg(center=(0, 0), radius=500, start_angle=a - math.pi / 2, end_angle=a + math.pi / 2)
+        arc = CircleSeg(center=(0, 0), radius=500, start_angle=a - math.pi / 2, end_angle=a + math.pi / 2)
         s = contour_shape([arc, LineSeg(start=arc._point_at(a + math.pi / 2),
                                         end=arc._point_at(a - math.pi / 2))])
         self.assertAlmostEqual(s.length, 1000, places=7)
@@ -224,7 +224,7 @@ class TestMisureSullePrimitive(unittest.TestCase):
     def test_arco_che_non_passa_per_l_estremo(self):
         from topo.core.geometry.measure import segment_reach
         # quarto in alto a destra percorso al contrario: lungo x va da 0 a r, mai a −r
-        arc = ArcSeg(center=(0, 0), radius=4, start_angle=math.pi / 2, end_angle=0, ccw=False)
+        arc = CircleSeg(center=(0, 0), radius=4, start_angle=math.pi / 2, end_angle=0, ccw=False)
         lo, hi = segment_reach(arc, (1, 0))
         self.assertAlmostEqual(lo, 0, places=12)
         self.assertAlmostEqual(hi, 4, places=12)
@@ -266,8 +266,8 @@ class TestMergeRuns(unittest.TestCase):
 
     def test_arcs_across_angle_zero_add_their_sweeps(self):
         # da 3π/2 a 2π e da 0 a π/2: un arco solo di π, non uno di ampiezza nulla
-        ring = [ArcSeg(center=(0, 0), radius=1, start_angle=3 * math.pi / 2, end_angle=2 * math.pi, ccw=True),
-                ArcSeg(center=(0, 0), radius=1, start_angle=0.0, end_angle=math.pi / 2, ccw=True),
+        ring = [CircleSeg(center=(0, 0), radius=1, start_angle=3 * math.pi / 2, end_angle=2 * math.pi, ccw=True),
+                CircleSeg(center=(0, 0), radius=1, start_angle=0.0, end_angle=math.pi / 2, ccw=True),
                 LineSeg(start=(0, 1), end=(0, -1))]
         merged, _ = merge_runs(ring, [None] * 3)
         self.assertEqual(len(merged), 2)

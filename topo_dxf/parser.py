@@ -1,7 +1,7 @@
 """
 topo_dxf/parser.py
 ------------------
-Traduce entità ezdxf in primitive geometriche pure (LineSeg, ArcSeg, BSplineSeg).
+Traduce entità ezdxf in primitive geometriche pure (LineSeg, CircleSeg, BSplineSeg).
 Unico file che conosce ezdxf e il formato bulge DXF per il parsing.
 """
 
@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 from typing import List
 
-from topo.primitives import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg
+from topo.primitives import LineSeg, BSplineSeg, CircleSeg, EllipseSeg
 
 
 # ---------------------------------------------------------------------------
@@ -54,7 +54,7 @@ def _parse_line(entity, rev) -> tuple:
     return LineSeg(start=start, end=end), end
 
 
-def _parse_arc(entity, rev) -> ArcSeg:
+def _parse_arc(entity, rev) -> CircleSeg:
     cx = entity.dxf.center.x
     cy = entity.dxf.center.y
     r  = entity.dxf.radius
@@ -66,7 +66,7 @@ def _parse_arc(entity, rev) -> ArcSeg:
         sa, ea = ea, sa
         ccw = False
 
-    return ArcSeg(center=(cx, cy), radius=r, start_angle=sa, end_angle=ea, ccw=ccw)
+    return CircleSeg(center=(cx, cy), radius=r, start_angle=sa, end_angle=ea, ccw=ccw)
 
 
 def _parse_spline(entity, rev) -> BSplineSeg:
@@ -163,7 +163,7 @@ def _parse_polyline(entity, rev) -> list:
         # una corda nulla col bulge è un arco di raggio 0, un punto: resta il
         # tratto nullo che darebbe senza bulge (D154)
         if abs(bulge) > 1e-9 and (x1, y1) != (x2, y2):
-            primitives.append(ArcSeg.from_chord(start=(x1, y1), end=(x2, y2), bulge=bulge))
+            primitives.append(CircleSeg.from_chord(start=(x1, y1), end=(x2, y2), bulge=bulge))
         else:
             primitives.append(LineSeg(start=(x1, y1), end=(x2, y2)))
     return primitives

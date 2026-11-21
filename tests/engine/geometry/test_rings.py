@@ -17,7 +17,7 @@ from shapely.ops import split
 from topo.core.geometry.rings import (
     ring_bbox, ring_contains, ring_covers_chord, ring_perimeter, ring_points, ring_split_by_chord,
 )
-from topo.core.primitives.segments import ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, LineSeg
+from topo.core.primitives.segments import BSplineSeg, CircleSeg, EllipseSeg, LineSeg
 
 EPS = 1e-12
 
@@ -29,24 +29,24 @@ def _reversed(ring):
 def _rounded_rectangle(L=30.0, W=12.0, r=2.5):
     a, b, h = L / 2, W / 2, math.pi / 2
     return [
-        LineSeg((-a + r, -b), (a - r, -b)), ArcSeg((a - r, -b + r), r, -h, 0.0),
-        LineSeg((a, -b + r), (a, b - r)), ArcSeg((a - r, b - r), r, 0.0, h),
-        LineSeg((a - r, b), (-a + r, b)), ArcSeg((-a + r, b - r), r, h, 2 * h),
-        LineSeg((-a, b - r), (-a, -b + r)), ArcSeg((-a + r, -b + r), r, 2 * h, 3 * h),
+        LineSeg((-a + r, -b), (a - r, -b)), CircleSeg((a - r, -b + r), r, -h, 0.0),
+        LineSeg((a, -b + r), (a, b - r)), CircleSeg((a - r, b - r), r, 0.0, h),
+        LineSeg((a - r, b), (-a + r, b)), CircleSeg((-a + r, b - r), r, h, 2 * h),
+        LineSeg((-a, b - r), (-a, -b + r)), CircleSeg((-a + r, -b + r), r, 2 * h, 3 * h),
     ]
 
 
 def _concave_fillet():
     # quadrato 10×10 con un raccordo concavo r=3 sull'angolo in alto a destra
     return [LineSeg((0.0, 0.0), (10.0, 0.0)), LineSeg((10.0, 0.0), (10.0, 7.0)),
-            ArcSeg((10.0, 10.0), 3.0, 1.5 * math.pi, math.pi, ccw=False),
+            CircleSeg((10.0, 10.0), 3.0, 1.5 * math.pi, math.pi, ccw=False),
             LineSeg((7.0, 10.0), (0.0, 10.0)), LineSeg((0.0, 10.0), (0.0, 0.0))]
 
 
 def _big_arc():
     # arco di 300° chiuso dalla sua corda: il segmento di cerchio contiene il centro
     t0, t1 = math.radians(30), math.radians(330)
-    arc = ArcSeg((0.0, 0.0), 5.0, t0, t1)
+    arc = CircleSeg((0.0, 0.0), 5.0, t0, t1)
     s, e = arc._point_at(t0), arc._point_at(t1)
     return [arc, LineSeg(e, s)]
 
@@ -153,7 +153,7 @@ def test_un_punto_del_bordo_sta_dentro(name):
 
 def test_sulla_corda_dentro_il_segmento_di_cerchio():
     # il punto sta sulla retta della corda di un arco, ma la corda non è bordo
-    ring = [ArcSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),
+    ring = [CircleSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),
             LineSeg((0.0, -5.0), (5.0, 0.0))]
     assert ring_contains(ring, (1.0, 0.0))
     assert ring_contains(ring, (0.0, 4.0))
@@ -172,7 +172,7 @@ def test_sulla_corda_e_accanto_sotto_moto(motion):
     # `bridged_runs`), non `faces()` né `outlines()`.
     from tests.invariants import rigid
     move_seg, move_pt = rigid(*motion)
-    ring = [ArcSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),
+    ring = [CircleSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),
             LineSeg((0.0, -5.0), (5.0, 0.0))]
     ring = [move_seg(s) for s in ring]
     points = [(1, 0), (4.9, 0), (-4.99, 0), (1, 1e-7), (1, -1e-7), (4.9, -1e-7), (0, 5e-9), (0, -5e-9)]
@@ -192,10 +192,10 @@ def test_a_cavallo_della_guardia_sulla_corda(motion):
     # (la raggiunge snapbend, non `faces()` né `outlines()`).
     from tests.invariants import rigid
     move_seg, move_pt = rigid(*motion)
-    convex = [ArcSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),
+    convex = [CircleSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),
               LineSeg((0.0, -5.0), (5.0, 0.0))]
     bite = [LineSeg((-5.0, -10.0), (5.0, -10.0)), LineSeg((5.0, -10.0), (5.0, 0.0)),
-            ArcSeg((0.0, 0.0), 5.0, 0.0, math.pi, ccw=False), LineSeg((-5.0, 0.0), (-5.0, -10.0))]
+            CircleSeg((0.0, 0.0), 5.0, 0.0, math.pi, ccw=False), LineSeg((-5.0, 0.0), (-5.0, -10.0))]
     points = [(x, d) for x in (0.0, 3.0, -4.5)
               for d in (0.0, 1e-9, -1e-9, 2.5e-9, -2.5e-9, 3e-9, -3e-9, 1e-6, -1e-6)]
     for ring, expected in ((convex, True), (bite, False)):

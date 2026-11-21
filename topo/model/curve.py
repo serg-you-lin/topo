@@ -13,7 +13,7 @@ Tutte le entità del modello ereditano da qui:
     BendingLine(OpenCurve), Engraving(OpenCurve)
 
 Note:
-    - segments è List[LineSeg | ArcSeg | BSplineSeg] — primitive pure, zero ezdxf
+    - segments è List[LineSeg | CircleSeg | BSplineSeg] — primitive pure, zero ezdxf
     - styles è List[EdgeStyle], allineata 1:1 a segments — aspetto grezzo
       (linetype/colore) dell'entità sorgente di ogni segmento (Cluster E).
       Può essere più corta di segments o vuota (geometria sintetizzata, es.
@@ -31,7 +31,7 @@ from typing import Any, List, Optional, Tuple
 
 from topo.core.geometry.integrals import ring_area, ring_centroid
 from topo.core.geometry.rings import ON_BOUNDARY, ring_bbox, ring_contains, ring_points
-from topo.core.primitives.segments import ArcSeg, LineSeg, BSplineSeg, DEFAULT_TOLERANCE
+from topo.core.primitives.segments import LineSeg, BSplineSeg, DEFAULT_TOLERANCE, CircleSeg
 from topo.model.style import EdgeStyle
 
 
@@ -54,7 +54,7 @@ class ClosedCurve(Curve):
     Non porta `diameter` / `center`: forma e misure di un contorno si leggono
     da `topo.geometry.contour_shape`.
     """
-    segments: List[LineSeg | ArcSeg | BSplineSeg] = field(default_factory=list)
+    segments: List[LineSeg | CircleSeg | BSplineSeg] = field(default_factory=list)
     _: KW_ONLY
     styles:   List[EdgeStyle]                  = field(default_factory=list)
     cluster_ref: Optional[int]                 = None   # in result.loose: indice del cluster che la contiene (D137)
@@ -95,7 +95,7 @@ class OpenCurve(Curve):
     """
     Curva aperta: segmenti che non chiudono un giro.
     """
-    segments:    List[LineSeg | ArcSeg | BSplineSeg] = field(default_factory=list)
+    segments:    List[LineSeg | CircleSeg | BSplineSeg] = field(default_factory=list)
     _: KW_ONLY
     styles:      List[EdgeStyle]                  = field(default_factory=list)
     cluster_ref: Optional[int]                    = None   # in result.loose: indice del cluster che la contiene (D99, D137)

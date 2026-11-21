@@ -30,7 +30,7 @@ from shapely.prepared import prep
 from .measure import SAME_POINT, segment_length
 from ..primitives.polygon_builder import build_polygon
 from ..primitives.segments import (
-    ArcSeg, CircleSeg, EllipseSeg, LineSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle,
+    CircleSeg, EllipseSeg, LineSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle, is_arc, is_full_circle,
 )
 from ..primitives.trim import sub_segment
 from .integrals import ring_moments
@@ -58,10 +58,8 @@ def _polyline(seg) -> List[Point]:
 def _span(seg) -> float:
     if isinstance(seg, LineSeg):
         return 1.0
-    if isinstance(seg, ArcSeg):
-        return seg._sweep()
     if isinstance(seg, CircleSeg):
-        return 2 * math.pi
+        return seg._sweep()
     pts = _polyline(seg)
     return sum(math.dist(a, b) for a, b in zip(pts, pts[1:]))
 
@@ -71,11 +69,11 @@ def _param(seg, pt: Point) -> float:
         dx, dy = seg.end[0] - seg.start[0], seg.end[1] - seg.start[1]
         l2 = dx * dx + dy * dy
         return 0.0 if l2 == 0 else ((pt[0] - seg.start[0]) * dx + (pt[1] - seg.start[1]) * dy) / l2
-    if isinstance(seg, ArcSeg):
+    if is_full_circle(seg):
+        return angle_from_start(seg.center, seg.start_angle, seg.ccw, pt)
+    if is_arc(seg):
         s = angle_from_start(seg.center, seg.start_angle, seg.ccw, pt)
         return 0.0 if s > seg._sweep() + (2 * math.pi - seg._sweep()) / 2 else s
-    if isinstance(seg, CircleSeg):
-        return math.atan2(pt[1] - seg.center[1], pt[0] - seg.center[0]) % (2 * math.pi)
     pts, run, best = _polyline(seg), 0.0, (float("inf"), 0.0)
     for a, b in zip(pts, pts[1:]):
         L = math.dist(a, b)
@@ -92,10 +90,8 @@ def _param(seg, pt: Point) -> float:
 def _at(seg, s: float) -> Point:
     if isinstance(seg, LineSeg):
         return (seg.start[0] + s * (seg.end[0] - seg.start[0]), seg.start[1] + s * (seg.end[1] - seg.start[1]))
-    if isinstance(seg, ArcSeg):
-        return point_on_circle(seg.center, seg.radius, seg.start_angle + (s if seg.ccw else -s))
     if isinstance(seg, CircleSeg):
-        return point_on_circle(seg.center, seg.radius, s)
+        return point_on_circle(seg.center, seg.radius, seg.start_angle + (s if seg.ccw else -s))
     pts, run = _polyline(seg), 0.0
     for a, b in zip(pts, pts[1:]):
         L = math.dist(a, b)
@@ -109,7 +105,7 @@ def _at(seg, s: float) -> Point:
 def _length(seg, s0: float, s1: float) -> float:
     if isinstance(seg, LineSeg):
         return math.dist(seg.start, seg.end) * (s1 - s0)
-    if isinstance(seg, (ArcSeg, CircleSeg)):
+    if isinstance(seg, CircleSeg):
         return seg.radius * (s1 - s0)
     return s1 - s0
 
@@ -127,11 +123,10 @@ def _piece(seg, s0: float, s1: float):
     if isinstance(seg, LineSeg):
         return LineSeg(start=seg.start if s0 == 0.0 else _at(seg, s0),
                        end=seg.end if s1 == 1.0 else _at(seg, s1))
-    if isinstance(seg, (ArcSeg, CircleSeg)):
-        start, sign, ccw = ((seg.start_angle, 1.0 if seg.ccw else -1.0, seg.ccw)
-                            if isinstance(seg, ArcSeg) else (0.0, 1.0, True))
-        return ArcSeg(center=seg.center, radius=seg.radius, start_angle=start + sign * s0,
-                      end_angle=start + sign * s1, ccw=ccw)
+    if isinstance(seg, CircleSeg):
+        sign = 1.0 if seg.ccw else -1.0
+        return CircleSeg(center=seg.center, radius=seg.radius, start_angle=seg.start_angle + sign * s0,
+                         end_angle=seg.start_angle + sign * s1, ccw=seg.ccw)
     piece = sub_segment(seg, _at(seg, s0), _at(seg, s1), _at(seg, (s0 + s1) / 2))
     if piece is None:
         raise ValueError(f"{type(seg).__name__} cannot be cut exactly")
@@ -147,7 +142,7 @@ def _split(seg, points: Sequence[Point]) -> list:
         if math.dist(_at(seg, s), p) <= _JOIN:      # solo i punti che gli stanno sopra
             params.append(s)
     params.sort()
-    if isinstance(seg, CircleSeg):
+    if is_full_circle(seg):
         cuts = []
         for s in params:
             if not cuts or _length(seg, cuts[-1], s) > _MIN_PIECE:
@@ -170,7 +165,7 @@ def _tangent(seg, at_end: bool) -> Tuple[float, float]:
     curva vera: anche per spline ed ellissi la derivata, non l'ultima corda."""
     if isinstance(seg, LineSeg):
         dx, dy = seg.end[0] - seg.start[0], seg.end[1] - seg.start[1]
-    elif isinstance(seg, ArcSeg):
+    elif isinstance(seg, CircleSeg):
         a = seg.start_angle + ((seg._sweep() if seg.ccw else -seg._sweep()) if at_end else 0.0)
         dx, dy = (-math.sin(a), math.cos(a)) if seg.ccw else (math.sin(a), -math.cos(a))
     elif isinstance(seg, EllipseSeg):
@@ -197,26 +192,17 @@ def _spline_derivative(seg, at_end: bool) -> Optional[Tuple[float, float]]:
     return seg.derivative_at(seg.t_range[1] if at_end else seg.t_range[0])
 
 
-def _full_arc(seg):
-    """Un cerchio come arco di 360°: un arco si inverte, un CircleSeg no (è
-    sempre antiorario) e si discretizza senza tetto di lati."""
-    if isinstance(seg, CircleSeg):
-        return ArcSeg(center=seg.center, radius=seg.radius, start_angle=0.0,
-                      end_angle=2 * math.pi, ccw=True)
-    return seg
-
-
 def _signed_area(ring: Sequence) -> float:
     """Area con segno sulle primitive (Green, D165): positiva in senso antiorario."""
     return ring_moments(ring).area
 
 
 def _reversed(ring: Sequence) -> list:
-    return [_full_arc(s).reversed() for s in reversed(ring)]
+    return [s.reversed() for s in reversed(ring)]
 
 
 def _polygon(ring: Sequence):
-    polygon = build_polygon([_full_arc(s) for s in ring], _POLYGON_TOLERANCE)
+    polygon = build_polygon(list(ring), _POLYGON_TOLERANCE)
     if polygon is None:
         raise ValueError("the segments do not close a valid polygon")
     return polygon
@@ -307,7 +293,7 @@ def nearest_point(segments: Sequence, point: Point) -> Point:
     """
     best: Optional[Point] = None
     for seg in segments:
-        curve = None if isinstance(seg, (LineSeg, ArcSeg, CircleSeg)) else _true_curve(seg)
+        curve = None if isinstance(seg, (LineSeg, CircleSeg)) else _true_curve(seg)
         q = (_at(seg, max(0.0, min(_span(seg), _param(seg, point)))) if curve is None
              else _nearest_on_curve(seg, curve, point))
         if best is None or math.dist(q, point) < math.dist(best, point):
@@ -400,7 +386,7 @@ def translation_meeting(constraints: Sequence[Tuple[Point, object, int]]) -> Opt
 
 def _normal(seg, foot: Point) -> Point:
     """La normale unitaria di `seg` in `foot`, un suo punto."""
-    if isinstance(seg, (ArcSeg, CircleSeg)):
+    if isinstance(seg, CircleSeg):
         dx, dy = foot[0] - seg.center[0], foot[1] - seg.center[1]
     else:
         s = _param(seg, foot)
@@ -507,7 +493,7 @@ def contour_minus(contour: Sequence, region: Sequence) -> List[list]:
         if _piece_side(region_polygon, contour[0]) == 1:
             return []
         if _piece_side(contour_polygon, region[0]) == 1:
-            return [contour, _reversed(region) if same else [_full_arc(r) for r in region]]
+            return [contour, _reversed(region) if same else list(region)]
         return [contour]
     kept = []
     for c in contour:
@@ -551,7 +537,7 @@ def _same_curve(a, b) -> bool:
     """`a` e `b` sono la stessa spline o ellisse (anche girata): incrociate
     sulle loro discretizzazioni darebbero un punto a ogni vertice. Rette e
     archi sovrapposti non danno punti già da sé."""
-    if isinstance(a, (LineSeg, ArcSeg, CircleSeg)) or isinstance(b, (LineSeg, ArcSeg, CircleSeg)):
+    if isinstance(a, (LineSeg, CircleSeg)) or isinstance(b, (LineSeg, CircleSeg)):
         return False
     return _twin(a, [b])[0] is not None
 

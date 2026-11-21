@@ -19,7 +19,7 @@ identica, entità per entità, la toglie l'adapter DXF prima: D125):
                              sostituisce il gruppo, non solo confrontare due
                              valori.
 
-merge_cocircular_overlaps — stesso principio, sugli ArcSeg (e CircleSeg) co-circolari
+merge_cocircular_overlaps — stesso principio, sugli CircleSeg co-circolari
                              invece dei LineSeg collineari (v. MAP.md D52).
 
 weld_degenerate_linesegs — non sovrapposizione ma degenerazione: un LineSeg
@@ -37,7 +37,7 @@ merge_near_copies        — una retta quasi sopra un'altra entro una soglia del
 
 Funzioni pubbliche:
     merge_collinear_overlaps  — dato un iterabile di Edge, i gruppi LineSeg da fondere
-    merge_cocircular_overlaps — dato un iterabile di Edge, i gruppi ArcSeg da fondere
+    merge_cocircular_overlaps — dato un iterabile di Edge, i gruppi CircleSeg da fondere
     weld_degenerate_linesegs  — dato un iterabile di Edge, i LineSeg degeneri da saldare
     refit_tessellations       — dato un iterabile di Edge, le catene tassellate rifittate
     merge_near_copies         — dato un iterabile di Edge e una distanza, le quasi-copie fuse
@@ -52,7 +52,7 @@ from typing import Any, Callable, Iterable, List, Tuple
 
 from ..geometry.measure import FLOAT_NOISE, node_point, within_diameter, SAME_POINT
 from ..geometry.points import fit_circle_kasa
-from ..primitives.segments import LineSeg, ArcSeg, CircleSeg, Point, segment_endpoints
+from ..primitives.segments import LineSeg, CircleSeg, Point, segment_endpoints, is_full_circle
 from ..primitives.fitting import simplify_points
 from ..topology.graph import build_node_graph, connected_groups
 from ..topology.noding import _near_pairs
@@ -134,7 +134,7 @@ def merge_collinear_overlaps(edges: Iterable[Edge], keep_junctions: bool = False
     del fuso portano il punto ARROTONDATO (l'identità del nodo nel grafo,
     l'adapter li produce arrotondando `segment_endpoints(segment)`, D18 /
     adapter.py `_append_edge`) — quello serve a riagganciarsi esattamente al
-    nodo del vicino reale (un ArcSeg che chiude l'angolo, un'altra LINE): un
+    nodo del vicino reale (un CircleSeg che chiude l'angolo, un'altra LINE): un
     fuso il cui Edge.start/end fosse a piena precisione del segmento nativo
     può risultare vicinissimo ma non identico a quel nodo, e il sub-mm di
     scarto spezza il contorno. Il `LineSeg` fuso (`edge.segment`), invece,
@@ -357,7 +357,7 @@ def _same_circle(a, b) -> bool:
 
 def merge_cocircular_overlaps(edges: Iterable[Edge]) -> List[Edge]:
     """
-    `merge_collinear_overlaps` per gli ArcSeg e i CircleSeg (un giro intero):
+    `merge_collinear_overlaps` per i CircleSeg (archi e giri interi):
     fonde gruppi co-circolari
     (stesso centro+raggio, `_same_circle`) che si toccano/sovrappongono
     angolarmente in un solo Edge ciascuno, incatenando a catena sul dominio
@@ -366,12 +366,12 @@ def merge_cocircular_overlaps(edges: Iterable[Edge]) -> List[Edge]:
     Edge.start == Edge.end (loop degenere, v. MAP.md D52): due cerchi uguali
     sono un cerchio, un arco sopra un cerchio sparisce nel cerchio.
 
-    Stesse regole di `merge_collinear_overlaps`: esclude segmenti non ArcSeg
+    Stesse regole di `merge_collinear_overlaps`: esclude segmenti non CircleSeg
     e `role != UNKNOWN`; usa `edge.start`/`edge.end` (arrotondati) come
     estremi conservati, mai il punto ricalcolato a piena precisione;
     preserva l'ordine di input per tutto ciò che non fonde.
     """
-    return _merge_on_carrier(edges, (ArcSeg, CircleSeg), _same_circle, _arc_chains, _merged_arc)
+    return _merge_on_carrier(edges, CircleSeg, _same_circle, _arc_chains, _merged_arc)
 
 
 def _arc_chains(group: List[Edge]) -> List[List[_Span]]:
@@ -383,7 +383,7 @@ def _arc_chains(group: List[Edge]) -> List[List[_Span]]:
     spans = []
     for e in group:
         seg = e.segment
-        if isinstance(seg, CircleSeg):
+        if is_full_circle(seg):
             spans.append(_Span(0.0, e.start, _TWO_PI, e.end, e, (seg.center, seg.radius)))
             continue
         if seg.ccw:
@@ -412,7 +412,7 @@ def _merged_arc(lo: _Span, hi: _Span):
         circle = CircleSeg(center=center, radius=radius)
         point = segment_endpoints(circle)[0]
         return point, point, circle
-    arc = ArcSeg(center=center, radius=radius, start_angle=lo.lo, end_angle=hi.hi, ccw=True)
+    arc = CircleSeg(center=center, radius=radius, start_angle=lo.lo, end_angle=hi.hi, ccw=True)
     return lo.lo_node, hi.hi_node, arc
 
 
@@ -651,7 +651,7 @@ def refit_circle_rings(edges: Iterable[Edge], tolerance: float = RING_TO_CIRCLE)
     for group in connected_groups(len(edges), pairs):
         core = _without_free_branches([edges[k] for k in group])
         if not core or not all(
-                not isinstance(e.segment, CircleSeg) and e.role == ContourRole.UNKNOWN for e in core):
+                not is_full_circle(e.segment) and e.role == ContourRole.UNKNOWN for e in core):
             continue
         pts = [p[:2] for e in core for p in ([e.segment.start, e.segment.end, _middle(e.segment)]
                                              if isinstance(e.segment, LineSeg) else e.segment.discretize(tolerance=tolerance / 10))]
@@ -668,7 +668,7 @@ def refit_circle_rings(edges: Iterable[Edge], tolerance: float = RING_TO_CIRCLE)
         new_edges.append(replace(core[0], segment=circle, start=node, end=node))
         # un ramo libero, o un pezzo isolato, che corre anch'esso sul cerchio è un tratto doppio del giro
         on_ring = [e for e in [edges[k] for k in group] + loose
-                   if e.role == ContourRole.UNKNOWN and not isinstance(e.segment, CircleSeg)
+                   if e.role == ContourRole.UNKNOWN and not is_full_circle(e.segment)
                    and math.dist(node_point(e.start), fit[0]) <= radius + tolerance
                    and _within_band(e.segment, fit[0], radius, tolerance)]
         replaced |= {id(e) for e in core} | {id(e) for e in on_ring}

@@ -9,7 +9,7 @@ import math
 import unittest
 
 from topo.core.primitives.segments import (
-    ArcSeg, CircleSeg, EllipseSeg, LineSeg, BSplineSeg, segment_endpoints,
+    CircleSeg, EllipseSeg, LineSeg, BSplineSeg, segment_endpoints,
 )
 from topo.core.primitives.trim import sub_segment
 
@@ -34,7 +34,7 @@ class TestSubSegment(unittest.TestCase):
         self.assertEqual(segment_endpoints(piece), ((7, 0), (2, 0)))
 
     def test_arco_nei_due_versi(self):
-        arc = ArcSeg(center=(0, 0), radius=5, start_angle=0, end_angle=math.pi, ccw=True)
+        arc = CircleSeg(center=(0, 0), radius=5, start_angle=0, end_angle=math.pi, ccw=True)
         a, b = (5 * math.cos(0.5), 5 * math.sin(0.5)), (5 * math.cos(2.0), 5 * math.sin(2.0))
         for x, y in ((a, b), (b, a)):
             piece = sub_segment(arc, x, y, (0, 5))
@@ -44,7 +44,7 @@ class TestSubSegment(unittest.TestCase):
             self._assert_on(piece, lambda p: abs(math.dist(p, (0, 0)) - 5))
 
     def test_capo_appena_oltre_la_fine_dell_arco_sta_sulla_fine(self):
-        arc = ArcSeg(center=(0, 0), radius=5, start_angle=0, end_angle=math.pi / 2, ccw=True)
+        arc = CircleSeg(center=(0, 0), radius=5, start_angle=0, end_angle=math.pi / 2, ccw=True)
         beyond = (5 * math.cos(math.pi / 2 + 1e-4), 5 * math.sin(math.pi / 2 + 1e-4))
         piece = sub_segment(arc, (5, 0), beyond, (0, 5))
         self.assertAlmostEqual(piece._sweep(), math.pi / 2)

@@ -17,21 +17,21 @@ import ezdxf
 
 import topo
 import topo_dxf
-from topo.primitives import ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, LineSeg
+from topo.primitives import BSplineSeg, CircleSeg, EllipseSeg, LineSeg
 
 
 class TestDegeneratePrimitives(unittest.TestCase):
 
     def test_001_arco_di_raggio_0_rifiutato(self):
         with self.assertRaises(ValueError):
-            ArcSeg((1.0, 2.0), 0.0, 0.0, 1.0)
+            CircleSeg((1.0, 2.0), 0.0, 0.0, 1.0)
 
     def test_002_corda_nulla_rifiutata(self):
         # numpy divide 0/0 senza errore: prima ne usciva un arco NaN di raggio 0
         import numpy as np
         p = (np.float64(2.0), np.float64(2.0))
         with self.assertRaises(ValueError):
-            ArcSeg.from_chord(p, p, 0.5)
+            CircleSeg.from_chord(p, p, 0.5)
 
     def test_003_ellisse_degenere_rifiutata(self):
         with self.assertRaises(ValueError):
@@ -42,8 +42,8 @@ class TestDegeneratePrimitives(unittest.TestCase):
     def test_004_coordinata_non_finita_rifiutata(self):
         nan, inf = math.nan, math.inf
         for build in (lambda: LineSeg((nan, 0.0), (1.0, 1.0)),
-                      lambda: ArcSeg((0.0, inf), 1.0, 0.0, 1.0),
-                      lambda: ArcSeg((0.0, 0.0), 1.0, nan, 1.0),
+                      lambda: CircleSeg((0.0, inf), 1.0, 0.0, 1.0),
+                      lambda: CircleSeg((0.0, 0.0), 1.0, nan, 1.0),
                       lambda: CircleSeg((0.0, 0.0), inf),
                       lambda: EllipseSeg((0.0, 0.0), (10.0, 0.0), 0.5, 0.0, inf),
                       lambda: BSplineSeg(2, [(0.0, 0.0), (1.0, nan), (2.0, 0.0)], [0, 0, 0, 1, 1, 1]),

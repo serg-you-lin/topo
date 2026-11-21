@@ -10,7 +10,7 @@ import math
 import unittest
 
 from topo.core.primitives.segments import (
-    LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints,
+    LineSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints,
 )
 
 
@@ -37,7 +37,7 @@ class TestLineSegRotated(unittest.TestCase):
 class TestArcSegRotated(unittest.TestCase):
 
     def test_center_and_angles_shift(self):
-        seg = ArcSeg(center=(5, 0), radius=3, start_angle=0.0, end_angle=math.pi / 2, ccw=True)
+        seg = CircleSeg(center=(5, 0), radius=3, start_angle=0.0, end_angle=math.pi / 2, ccw=True)
         rotated = seg.rotated(math.pi / 2, origin=(0, 0))
         self.assertAlmostEqual(rotated.center[0], 0.0, places=9)
         self.assertAlmostEqual(rotated.center[1], 5.0, places=9)
@@ -49,7 +49,7 @@ class TestArcSegRotated(unittest.TestCase):
     def test_discretized_points_lie_on_the_rotated_arc(self):
         # D145: i vertici stanno sulla griglia del cerchio (angolo 0), quindi
         # non ruotano col pezzo; ruotano gli estremi, e ogni punto sta sull'arco
-        seg = ArcSeg(center=(0, 0), radius=4, start_angle=0.0, end_angle=math.pi, ccw=True)
+        seg = CircleSeg(center=(0, 0), radius=4, start_angle=0.0, end_angle=math.pi, ccw=True)
         angle = math.radians(30)
         rotated = seg.rotated(angle, origin=(0, 0))
         pts = rotated.discretize(tolerance=0.01)

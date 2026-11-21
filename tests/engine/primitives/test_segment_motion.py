@@ -13,7 +13,7 @@ import math
 import unittest
 
 from topo.core.primitives.segments import (
-    LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints,
+    LineSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints,
 )
 
 # spostamenti: nullo, quasi nullo, negativo, lontano dall'origine nei due sensi
@@ -27,10 +27,10 @@ def _segments() -> list:
     return [
         ("line", LineSeg(start=(-3.0, 4.0), end=(7.5, -2.25))),
         ("line near zero", LineSeg(start=(1e-12, -1e-12), end=(0.5, 0.0))),
-        ("arc ccw", ArcSeg(center=(10.0, -5.0), radius=3.0, start_angle=0.3, end_angle=2.1)),
-        ("arc cw", ArcSeg(center=(-2.0, 1.0), radius=0.75, start_angle=2.1, end_angle=0.3, ccw=False)),
-        ("arc over 0", ArcSeg(center=(0.0, 0.0), radius=50.0, start_angle=-0.4, end_angle=0.4)),
-        ("arc negative angles", ArcSeg(center=(1.0, 1.0), radius=2.0, start_angle=-2.5, end_angle=-1.0)),
+        ("arc ccw", CircleSeg(center=(10.0, -5.0), radius=3.0, start_angle=0.3, end_angle=2.1)),
+        ("arc cw", CircleSeg(center=(-2.0, 1.0), radius=0.75, start_angle=2.1, end_angle=0.3, ccw=False)),
+        ("arc over 0", CircleSeg(center=(0.0, 0.0), radius=50.0, start_angle=-0.4, end_angle=0.4)),
+        ("arc negative angles", CircleSeg(center=(1.0, 1.0), radius=2.0, start_angle=-2.5, end_angle=-1.0)),
         ("circle", CircleSeg(center=(-4.0, -6.0), radius=12.5)),
         ("circle small", CircleSeg(center=(0.0, 0.0), radius=0.02)),
         ("spline", BSplineSeg(degree=3, control_points=[(0, 0), (2, 5), (6, -3), (9, 1)],
@@ -90,7 +90,7 @@ class _OnCurve:
             self.assertLessEqual(d, 2 * FINE + RELATIVE * max(1.0, scale), f"{q} fuori di {d}")
 
     def assert_ends(self, seg, moved, forward, scale: float):
-        if isinstance(seg, CircleSeg):
+        if (isinstance(seg, CircleSeg) and seg.full):
             # un cerchio non ha un punto di partenza suo: il suo "estremo" è
             # sempre il punto all'angolo 0, non l'immagine di quello di prima
             return
@@ -126,11 +126,8 @@ class TestMirrored(unittest.TestCase):
     def test_punti_specchiati_sull_asse_x(self):
         for name, seg in _segments():
             with self.subTest(segment=name):
+                # anche il cerchio intero: uno specchio inverte il verso (D286)
                 before = seg.discretize(tolerance=0.01)
-                if isinstance(seg, CircleSeg):
-                    # un cerchio non ha verso: specchiato è percorso ancora
-                    # CCW, gli stessi vertici in ordine inverso
-                    before = before[::-1]
                 after = seg.mirrored().discretize(tolerance=0.01)
                 self.assertEqual(len(after), len(before))
                 for p, q in zip(before, after):
@@ -193,7 +190,7 @@ class TestScaled(unittest.TestCase, _OnCurve):
                     self.assert_ends(seg, moved, lambda p: _scale(p, factor, origin), scale)
 
     def test_raggio_e_assi_moltiplicati(self):
-        arc = ArcSeg(center=(1.0, 2.0), radius=3.0, start_angle=0.3, end_angle=2.1, ccw=False)
+        arc = CircleSeg(center=(1.0, 2.0), radius=3.0, start_angle=0.3, end_angle=2.1, ccw=False)
         big = arc.scaled(2.5, origin=(1.0, 2.0))
         self.assertEqual((big.center, big.radius, big.start_angle, big.end_angle, big.ccw),
                          ((1.0, 2.0), 7.5, 0.3, 2.1, False))

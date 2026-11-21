@@ -12,7 +12,7 @@ import unittest
 from shapely.geometry import Point, Polygon, box
 
 from topo.core.primitives.polygon_builder import build_polygon
-from topo.core.primitives.segments import ArcSeg, LineSeg, segment_endpoints
+from topo.core.primitives.segments import LineSeg, segment_endpoints, CircleSeg
 from topo.core.topology.edge import Edge
 from topo.core.topology import rim
 from topo.core.topology.rim import face_segments, off_rim
@@ -60,12 +60,12 @@ class TestFaceSegments(unittest.TestCase):
 
     def test_arco_tangente_a_una_retta_resta_un_arco(self):
         # mezzo disco: diametro come retta, semicerchio come arco
-        arc = ArcSeg(center=(0, 0), radius=5, start_angle=0, end_angle=math.pi, ccw=True)
+        arc = CircleSeg(center=(0, 0), radius=5, start_angle=0, end_angle=math.pi, ccw=True)
         edges = [_line((-5, 0), (5, 0)),
                  Edge(role="unknown", start=(5, 0), end=(-5, 0), segment=arc)]
         polygon = Polygon(arc.discretize(tolerance=0.01))
         segments, _, _ = face_segments(edges, polygon, BAND)
-        self.assertEqual(sorted(type(s).__name__ for s in segments), ["ArcSeg", "LineSeg"])
+        self.assertEqual(sorted(type(s).__name__ for s in segments), ["CircleSeg", "LineSeg"])
 
     def test_due_tratti_vicini_si_chiudono_con_una_retta(self):
         # D206/D209: il lato alto corre 0,01 sopra l'anello, i lati verticali

@@ -10,7 +10,7 @@ import math
 import pytest
 
 from topo.core.geometry.integrals import ring_area, ring_centroid, ring_moments, segment_moments
-from topo.core.primitives.segments import ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, LineSeg
+from topo.core.primitives.segments import BSplineSeg, CircleSeg, EllipseSeg, LineSeg
 
 EPS = 1e-12
 
@@ -67,7 +67,7 @@ def test_cerchio():
 
 
 def test_arco_intero_come_il_cerchio():
-    arc = ArcSeg((1.0, 1.0), 3.0, 0.7, 0.7 + 2 * math.pi)
+    arc = CircleSeg((1.0, 1.0), 3.0, 0.7, 0.7 + 2 * math.pi)
     assert segment_moments(arc).area == pytest.approx(math.pi * 9, rel=1e-14)
 
 
@@ -75,9 +75,9 @@ def test_arco_intero_come_il_cerchio():
 def test_mezzo_disco(ccw):
     r = 4.0
     if ccw:
-        ring = [ArcSeg((0.0, 0.0), r, 0.0, math.pi, ccw=True), LineSeg((-r, 0.0), (r, 0.0))]
+        ring = [CircleSeg((0.0, 0.0), r, 0.0, math.pi, ccw=True), LineSeg((-r, 0.0), (r, 0.0))]
     else:
-        ring = [LineSeg((r, 0.0), (-r, 0.0)), ArcSeg((0.0, 0.0), r, math.pi, 0.0, ccw=False)]
+        ring = [LineSeg((r, 0.0), (-r, 0.0)), CircleSeg((0.0, 0.0), r, math.pi, 0.0, ccw=False)]
     m = ring_moments(ring)
     assert m.area == pytest.approx((1 if ccw else -1) * math.pi * r * r / 2, rel=1e-14)
     assert ring_centroid(ring) == pytest.approx((0.0, 4 * r / (3 * math.pi)), abs=1e-12)
@@ -88,10 +88,10 @@ def test_rettangolo_raccordato():
     a, b = L / 2, W / 2
     h = math.pi / 2
     ring = [
-        LineSeg((-a + r, -b), (a - r, -b)), ArcSeg((a - r, -b + r), r, -h, 0.0),
-        LineSeg((a, -b + r), (a, b - r)), ArcSeg((a - r, b - r), r, 0.0, h),
-        LineSeg((a - r, b), (-a + r, b)), ArcSeg((-a + r, b - r), r, h, 2 * h),
-        LineSeg((-a, b - r), (-a, -b + r)), ArcSeg((-a + r, -b + r), r, 2 * h, 3 * h),
+        LineSeg((-a + r, -b), (a - r, -b)), CircleSeg((a - r, -b + r), r, -h, 0.0),
+        LineSeg((a, -b + r), (a, b - r)), CircleSeg((a - r, b - r), r, 0.0, h),
+        LineSeg((a - r, b), (-a + r, b)), CircleSeg((-a + r, b - r), r, h, 2 * h),
+        LineSeg((-a, b - r), (-a, -b + r)), CircleSeg((-a + r, -b + r), r, 2 * h, 3 * h),
     ]
     assert ring_area(ring) == pytest.approx(L * W - (4 - math.pi) * r * r, rel=1e-14)
     assert ring_centroid(ring) == pytest.approx((0.0, 0.0), abs=1e-12)
@@ -138,7 +138,7 @@ def test_spline_cubica_a_piu_intervalli_contro_la_discretizzazione_fine():
 
 
 def test_traslare_sposta_il_baricentro_non_l_area():
-    ring = [ArcSeg((0.0, 0.0), 4.0, 0.0, math.pi), LineSeg((-4.0, 0.0), (4.0, 0.0))]
+    ring = [CircleSeg((0.0, 0.0), 4.0, 0.0, math.pi), LineSeg((-4.0, 0.0), (4.0, 0.0))]
     moved = [s.translated(10.0, -3.0) for s in ring]
     assert ring_area(moved) == pytest.approx(ring_area(ring), rel=1e-13)
     cx, cy = ring_centroid(ring)

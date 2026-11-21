@@ -13,7 +13,7 @@ import unittest
 
 import topo
 intersections = topo.geometry.intersections
-from topo.core.primitives.segments import LineSeg, ArcSeg, CircleSeg
+from topo.core.primitives.segments import LineSeg, CircleSeg
 from tests.invariants import rigid
 
 # moti precisi (angolo, dx, dy) per `rigid`: nullo, solo rotazione, lontano,
@@ -51,7 +51,7 @@ class TestIntersectionsUnderMotion(unittest.TestCase):
 
     def test_003_arc_end_on_a_line_end_is_one_point(self):
         # un arco piccolo che finisce dove comincia una retta, che non gli è tangente
-        self._assert_same_meetings(ArcSeg(center=(0.0, 0.0), radius=0.05, start_angle=0.0,
+        self._assert_same_meetings(CircleSeg(center=(0.0, 0.0), radius=0.05, start_angle=0.0,
                                           end_angle=math.pi / 2),
                                    LineSeg(start=(0.0, 0.05), end=(-0.05, 0.08)), [(0.0, 0.05)])
 

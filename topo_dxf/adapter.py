@@ -16,7 +16,7 @@ from typing import Callable, List, Optional, Sequence, Tuple, Union
 from ezdxf.colors import aci2rgb, int2rgb
 
 # Solo nomi pubblici di topo: l'adapter è un consumer come un altro (MAP.md D125)
-from topo.primitives import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg
+from topo.primitives import LineSeg, BSplineSeg, CircleSeg, EllipseSeg
 from topo.model import Diagnostic, Edge, EdgeStyle, RoleRule, resolve_role
 
 from .parser import DxfEntityDispatcher
@@ -177,7 +177,7 @@ def _segment_key(segment) -> tuple:
             (round(segment.end[0], 6), round(segment.end[1], 6)),
         )))
         return ("LINE", pts)
-    if isinstance(segment, ArcSeg):
+    if (isinstance(segment, CircleSeg) and not segment.full):
         return (
             "ARC",
             round(segment.center[0], 6),
@@ -197,7 +197,7 @@ def _segment_key(segment) -> tuple:
             bool(segment.closed),
             bool(segment.periodic),
         )
-    if isinstance(segment, CircleSeg):
+    if (isinstance(segment, CircleSeg) and segment.full):
         return (
             "CIRCLE",
             round(segment.center[0], 6),
@@ -317,7 +317,7 @@ class DxfAdapter:
             # CIRCLE → CircleSeg (preservato!)
             if dtype == "CIRCLE":
                 prim = _parse(entity, dtype)
-                if isinstance(prim, CircleSeg):
+                if (isinstance(prim, CircleSeg) and prim.full):
                     edges.append(Edge.of(prim, role, style=style))
                 continue
 

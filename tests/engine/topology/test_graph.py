@@ -4,7 +4,7 @@ import math
 import unittest
 from topo.core.topology.graph import Graph, build_node_graph, cluster_points
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg, ArcSeg
+from topo.core.primitives.segments import LineSeg, CircleSeg
 from topo.model.role import ContourRole
 
 
@@ -18,7 +18,7 @@ def _make_edge(p1, p2):
 
 
 def _arc_edge(center, radius, start_deg, end_deg):
-    seg = ArcSeg(center=center, radius=radius,
+    seg = CircleSeg(center=center, radius=radius,
                  start_angle=math.radians(start_deg), end_angle=math.radians(end_deg), ccw=True)
     start = (center[0] + radius * math.cos(seg.start_angle), center[1] + radius * math.sin(seg.start_angle))
     end = (center[0] + radius * math.cos(seg.end_angle), center[1] + radius * math.sin(seg.end_angle))

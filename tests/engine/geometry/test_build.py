@@ -7,7 +7,7 @@ import unittest
 import topo
 from topo.core.geometry import contour_shape
 from topo.core.geometry.build import circle, ellipse, polygon, rectangle, regular_polygon, stadium
-from topo.core.primitives.segments import ArcSeg, CircleSeg, LineSeg
+from topo.core.primitives.segments import CircleSeg, LineSeg
 
 
 class TestBuild(unittest.TestCase):
@@ -55,7 +55,7 @@ class TestBuild(unittest.TestCase):
 
     def test_stadio_con_archi_veri(self):
         segs = stadium(60, 20, center=(10, 5), angle=30)
-        self.assertEqual(sum(isinstance(s, ArcSeg) for s in segs), 2)
+        self.assertEqual(sum((isinstance(s, CircleSeg) and not s.full) for s in segs), 2)
         s = contour_shape(segs)
         self.assertEqual(s.kind, "stadium")
         self.assertAlmostEqual(s.length, 60)

@@ -16,7 +16,7 @@ import unittest
 
 from shapely.geometry import LineString, Point as SPoint
 
-from topo.core.primitives.segments import ArcSeg, CircleSeg, LineSeg, BSplineSeg, segment_endpoints
+from topo.core.primitives.segments import CircleSeg, LineSeg, BSplineSeg, segment_endpoints
 from topo.core.primitives.fitting import simplify_points
 
 
@@ -70,7 +70,7 @@ class TestGuarantees(unittest.TestCase):
         pts += _side((20, 10), (0, 10), 40)
         pts += [(-5 * math.sin(math.pi * i / 30), 5 + 5 * math.cos(math.pi * i / 30)) for i in range(30)]
         out = simplify_points(pts, tolerance=0.01, scale=2.0, corner_turn_deg=35)
-        self.assertEqual(sorted(type(s).__name__ for s in out), ["ArcSeg", "ArcSeg", "LineSeg", "LineSeg"])
+        self.assertEqual(sorted(type(s).__name__ for s in out), ["CircleSeg", "CircleSeg", "LineSeg", "LineSeg"])
         self.assertTrue(_is_chain(out, closed=True))
         self.assertLessEqual(_max_distance(out, pts), 0.01 + 1e-6)
 
@@ -83,7 +83,7 @@ class TestGuarantees(unittest.TestCase):
         self.assertLess(math.dist(segment_endpoints(out[0])[0], pts[0]), 1e-9)
         self.assertLess(math.dist(segment_endpoints(out[-1])[1], pts[-1]), 1e-9)
         self.assertTrue(_is_chain(out, closed=False))
-        self.assertEqual([type(s) for s in out], [LineSeg, ArcSeg])
+        self.assertEqual([type(s) for s in out], [LineSeg, CircleSeg])
 
     def test_005_noisy_free_curve_is_a_spline_within_tolerance(self):
         pts = [(x / 10, math.sin(x / 20) * 3 + 0.03 * math.sin(x * 1.7)) for x in range(200)]
@@ -97,7 +97,7 @@ class TestGuarantees(unittest.TestCase):
     def test_006_without_arcs_no_arc(self):
         pts = [(10 * math.cos(2 * math.pi * i / 90), 10 * math.sin(2 * math.pi * i / 90)) for i in range(90)]
         out = simplify_points(pts, tolerance=0.01, scale=2.0, arcs=False, corner_turn_deg=35)
-        self.assertFalse(any(isinstance(s, (ArcSeg, CircleSeg)) for s in out))
+        self.assertFalse(any(isinstance(s, CircleSeg) for s in out))
         self.assertTrue(_is_chain(out, closed=True))
 
     def test_007_lower_turn_more_corners(self):
@@ -156,7 +156,7 @@ class TestFlatTopUnderMotion(unittest.TestCase):
             prims = simplify_points([move_pt(p) for p in self._bump()],
                                     tolerance=0.01, scale=0.5, closed=False, corner_turn_deg=35)
             kinds.add(tuple(type(p).__name__ for p in prims))
-        self.assertEqual(kinds, {("ArcSeg",) + ("LineSeg",) * 6 + ("ArcSeg",)})
+        self.assertEqual(kinds, {("CircleSeg",) + ("LineSeg",) * 6 + ("CircleSeg",)})
 
 
 if __name__ == "__main__":

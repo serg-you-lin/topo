@@ -8,7 +8,7 @@ import topo
 from topo.core.geometry.axis import (axis_aligned_share, axis_lines, cluster_values, covered_rectangles,
                              interval_coverage, items_inside, merge_intervals, spanning_lines)
 from topo.core.geometry.build import polygon
-from topo.core.primitives.segments import ArcSeg, LineSeg
+from topo.core.primitives.segments import LineSeg, CircleSeg
 
 
 def _rect(x0, y0, x1, y1):
@@ -110,7 +110,7 @@ class TestMeasures(unittest.TestCase):
     def test_quota_allineata_agli_assi(self):
         segs = [LineSeg(start=(0, 0), end=(30, 0)), LineSeg(start=(0, 0), end=(10, 10 * 3 ** 0.5))]
         self.assertAlmostEqual(axis_aligned_share(segs, angle_tolerance=2.0), 30 / 50)
-        self.assertIsNone(axis_aligned_share([ArcSeg(center=(0, 0), radius=1, start_angle=0, end_angle=1)], angle_tolerance=2.0))
+        self.assertIsNone(axis_aligned_share([CircleSeg(center=(0, 0), radius=1, start_angle=0, end_angle=1)], angle_tolerance=2.0))
 
     def test_orizzontali_e_verticali(self):
         horiz, vert = axis_lines(_rect(0, 0, 10, 5), eps=0.5)

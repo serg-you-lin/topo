@@ -10,7 +10,7 @@ import unittest
 
 import topo
 from topo.core.geometry.measure import FLOAT_NOISE
-from topo.core.primitives import ArcSeg, LineSeg
+from topo.core.primitives import CircleSeg, LineSeg
 
 
 class TestGap(unittest.TestCase):
@@ -45,7 +45,7 @@ class TestGap(unittest.TestCase):
 
     def test_arco_e_retta(self):
         # mezzo cerchio di raggio 5 sopra l'origine, retta a y = 8
-        arc = [ArcSeg(center=(0, 0), radius=5, start_angle=0.0, end_angle=math.pi, ccw=True)]
+        arc = [CircleSeg(center=(0, 0), radius=5, start_angle=0.0, end_angle=math.pi, ccw=True)]
         g = topo.geometry.gap(arc, [LineSeg(start=(-20, 8), end=(20, 8))])
         self.assertAlmostEqual(g.distance, 3.0, places=9)
         self.assertAlmostEqual(g.on_a[1], 5.0, places=9)

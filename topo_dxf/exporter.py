@@ -1,7 +1,7 @@
 """
 topo_dxf/exporter.py
 --------------------
-Esporta primitive geometriche pure (LineSeg, ArcSeg, BSplineSeg) in formato DXF.
+Esporta primitive geometriche pure (LineSeg, CircleSeg, BSplineSeg) in formato DXF.
 Unico file che tocca ezdxf per il write-back.
 """
 
@@ -11,7 +11,7 @@ from topo.precision import FLOAT_NOISE
 import math
 from typing import List, Optional, Tuple
 
-from topo.primitives import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints
+from topo.primitives import LineSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints
 from topo.model import EdgeStyle
 
 _STANDARD_LINETYPES = frozenset({"BYLAYER", "BYBLOCK", "CONTINUOUS"})
@@ -80,13 +80,13 @@ def _style_attribs(doc, layer: str, style: Optional[EdgeStyle] = None) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# ArcSeg → bulge DXF
+# CircleSeg → bulge DXF
 # ---------------------------------------------------------------------------
 
-def arc_seg_to_bulge(arc: ArcSeg) -> float:
+def arc_seg_to_bulge(arc: CircleSeg) -> float:
     # L'angolo spazzato dipende dal verso: per un arco CW il tratto reale è
     # start_angle → end_angle percorso in senso orario, NON il complemento a
-    # 2π. ArcSeg._sweep() è l'unica sede di questo calcolo — riusarla qui
+    # 2π. CircleSeg._sweep() è l'unica sede di questo calcolo — riusarla qui
     # evita che un arco invertito (ccw=False, prodotto da segments_from_loop
     # quando il loop viene orientato CCW) venga scritto con il bulge dell'arco
     # complementare, cioè "alla rovescia".
@@ -102,7 +102,7 @@ def arc_seg_to_bulge(arc: ArcSeg) -> float:
 def _seg_end_point(seg) -> Optional[tuple]:
     if isinstance(seg, LineSeg):
         return (seg.end[0], seg.end[1])
-    if isinstance(seg, ArcSeg):
+    if (isinstance(seg, CircleSeg) and not seg.full):
         return segment_endpoints(seg)[1]
     return None
 
@@ -133,7 +133,7 @@ def segments_to_pts_with_bulge(segments: list) -> list:
     for seg in segments:
         if isinstance(seg, LineSeg):
             pts.append((seg.start[0], seg.start[1], 0.0, 0.0, 0.0))
-        elif isinstance(seg, ArcSeg):
+        elif (isinstance(seg, CircleSeg) and not seg.full):
             start = segment_endpoints(seg)[0]
             pts.append((start[0], start[1], 0.0, 0.0, arc_seg_to_bulge(seg)))
     return pts
@@ -181,7 +181,7 @@ def _add_ellipse(ellipse: EllipseSeg, msp, layer: str,
     In DXF un'ELLIPSE è sempre percorsa CCW da `start_param` a `end_param`
     (nessun flag di verso nel formato): un'EllipseSeg CW copre lo stesso
     luogo geometrico letta CCW da `end_param` a `start_param` — stesso
-    scambio già usato per ArcSeg in `write_native_segments`.
+    scambio già usato per CircleSeg in `write_native_segments`.
     """
     if ellipse.ccw:
         sp, ep = ellipse.start_param, ellipse.end_param
@@ -209,7 +209,7 @@ def write_segments(segments: List, msp, layer: str, styles: Optional[List] = Non
       condividono gli endpoint (il loop chiuso è dato dall'insieme delle
       entità, non discretizziamo mai la spline in polilinea). Restituisce la
       lista delle entità create.
-    - LineSeg / ArcSeg → LWPOLYLINE (o POLYLINE2D per R12)
+    - LineSeg / CircleSeg → LWPOLYLINE (o POLYLINE2D per R12)
 
     `styles` (allineata a `segments`, opzionale) porta il linetype grezzo
     della sorgente: un contorno strutturale (outer/inner/hole) è una geometria
@@ -226,7 +226,7 @@ def write_segments(segments: List, msp, layer: str, styles: Optional[List] = Non
 
     style = styles[0] if styles else None
 
-    if len(segments) == 1 and isinstance(segments[0], CircleSeg):
+    if len(segments) == 1 and (isinstance(segments[0], CircleSeg) and segments[0].full):
         circle = segments[0]
         return msp.add_circle(
             center=circle.center,
@@ -280,7 +280,7 @@ def write_segments(segments: List, msp, layer: str, styles: Optional[List] = Non
 
 
 def _add_open_run(run: list, msp, layer: str, style: Optional[EdgeStyle] = None) -> object:
-    """Una catena di LineSeg/ArcSeg come polilinea aperta: i vertici sono gli
+    """Una catena di LineSeg/CircleSeg come polilinea aperta: i vertici sono gli
     inizi più la fine dell'ultimo, così ogni estremo resta dov'è."""
     pts = segments_to_pts_with_bulge(run)
     end = _seg_end_point(run[-1])
@@ -308,7 +308,7 @@ def write_native_segments(segments: List, msp, layer: str, styles: Optional[List
     una piega, un'incisione.
 
       - LineSeg    → LINE
-      - ArcSeg     → ARC
+      - CircleSeg     → ARC
       - BSplineSeg  → SPLINE nativa (mai discretizzata)
       - CircleSeg  → CIRCLE
       - EllipseSeg → ELLIPSE nativa (mai discretizzata a spline)
@@ -327,9 +327,9 @@ def write_native_segments(segments: List, msp, layer: str, styles: Optional[List
 
         if isinstance(seg, LineSeg):
             created.append(msp.add_line(seg.start, seg.end, dxfattribs=attribs))
-        elif isinstance(seg, ArcSeg):
+        elif (isinstance(seg, CircleSeg) and not seg.full):
             # In DXF un ARC è sempre percorso CCW da start_angle a end_angle.
-            # Un ArcSeg CW copre lo stesso luogo geometrico se lo si legge
+            # Un CircleSeg CW copre lo stesso luogo geometrico se lo si legge
             # CCW da end_angle a start_angle: basta scambiare gli angoli.
             if seg.ccw:
                 sa, ea = seg.start_angle, seg.end_angle
@@ -342,7 +342,7 @@ def write_native_segments(segments: List, msp, layer: str, styles: Optional[List
                 end_angle=math.degrees(ea),
                 dxfattribs=attribs,
             ))
-        elif isinstance(seg, CircleSeg):
+        elif (isinstance(seg, CircleSeg) and seg.full):
             created.append(msp.add_circle(
                 center=seg.center, radius=seg.radius, dxfattribs=attribs,
             ))
@@ -368,13 +368,13 @@ def write_open_segments(segments: List, msp, layer: str, styles: Optional[List] 
     `write_segments` per i contorni misti spline+linee. Ogni segmento resta
     fedele:
 
-      - LineSeg / ArcSeg → una LWPOLYLINE aperta con bulge
+      - LineSeg / CircleSeg → una LWPOLYLINE aperta con bulge
       - BSplineSeg        → SPLINE nativa (una per spline)
       - CircleSeg        → CIRCLE
       - EllipseSeg       → ELLIPSE nativa
 
     Il linetype (`styles`, allineata a `segments`) è sempre ripristinato — un
-    run di LineSeg/ArcSeg consecutivi diventa una sola LWPOLYLINE, quindi
+    run di LineSeg/CircleSeg consecutivi diventa una sola LWPOLYLINE, quindi
     prende lo stile del primo segmento del run come rappresentante. Il
     colore resta sempre BYLAYER, curve sciolte comprese: quella geometria non ha un
     ruolo classificato, ma il rosso di `Trash` è comunque una decisione di
@@ -410,7 +410,7 @@ def write_open_segments(segments: List, msp, layer: str, styles: Optional[List] 
 
     for i, seg in enumerate(segments):
         style = styles[i] if i < len(styles) else None
-        if isinstance(seg, (LineSeg, ArcSeg)):
+        if isinstance(seg, LineSeg) or (isinstance(seg, CircleSeg) and not seg.full):
             if poly_run and not _joined(_seg_end_point(poly_run[-1]), segment_endpoints(seg)[0]):
                 _flush_poly_run()   # un salto non si copre con un vertice (D208)
             if not poly_run:
@@ -419,7 +419,7 @@ def write_open_segments(segments: List, msp, layer: str, styles: Optional[List] 
             continue
         _flush_poly_run()
         attribs = _style_attribs(msp.doc, layer, style)
-        if isinstance(seg, CircleSeg):
+        if (isinstance(seg, CircleSeg) and seg.full):
             created.append(msp.add_circle(
                 center=seg.center, radius=seg.radius,
                 dxfattribs=attribs,

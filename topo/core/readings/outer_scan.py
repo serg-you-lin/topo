@@ -22,7 +22,8 @@ from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Tuple
 
 from ..topology.edge import Edge
-from ..primitives.segments import (angle_from_start, point_on_circle, LineSeg, ArcSeg, CircleSeg, BSplineSeg, EllipseSeg, DEFAULT_TOLERANCE)
+from ..primitives.segments import (angle_from_start, point_on_circle, LineSeg, CircleSeg, BSplineSeg, EllipseSeg, DEFAULT_TOLERANCE, is_arc, is_full_circle,
+)
 
 Point = Tuple[float, float]
 
@@ -72,7 +73,7 @@ def outer_candidate_edges(edges: Iterable[Edge]) -> OuterCandidates:
     Per ogni asse, una quota rappresentativa (punto medio) fra ogni coppia
     di quote-evento consecutive — estremi dei segmenti, estremi degli archi
     lungo l'asse — e per ciascuna il primo e l'ultimo punto d'intersezione.
-    L'Edge che li produce è candidato. LineSeg/ArcSeg/CircleSeg analitici,
+    L'Edge che li produce è candidato. LineSeg/CircleSeg analitici,
     BSplineSeg/EllipseSeg discretizzati.
     """
     edges = list(edges)
@@ -112,10 +113,8 @@ def _pieces(edge: Edge) -> list:
     seg = edge.segment
     if isinstance(seg, LineSeg):
         return [_Line(edge, seg.start, seg.end)]
-    if isinstance(seg, ArcSeg):
-        return [_Arc(edge, seg.center, seg.radius, seg.start_angle, seg._sweep(), seg.ccw)]
     if isinstance(seg, CircleSeg):
-        return [_Arc(edge, seg.center, seg.radius, 0.0, 2 * math.pi, True)]
+        return [_Arc(edge, seg.center, seg.radius, seg.start_angle, seg._sweep(), seg.ccw)]
     if isinstance(seg, (BSplineSeg, EllipseSeg)):
         pts = seg.discretize(tolerance=DEFAULT_TOLERANCE)
         return [_Line(edge, pts[i], pts[i + 1]) for i in range(len(pts) - 1)]

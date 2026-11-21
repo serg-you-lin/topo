@@ -24,7 +24,7 @@ from typing import Callable, List, Sequence, Tuple
 import numpy as np
 
 from ..primitives.segments import (
-    ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, LineSeg, _deboor, _derivative_points,
+    BSplineSeg, CircleSeg, EllipseSeg, LineSeg, _deboor, _derivative_points, is_arc, is_full_circle,
 )
 from .rings import ring_jumps
 
@@ -48,19 +48,15 @@ class Moments:
 
 def segment_moments(segment) -> Moments:
     """
-    Contributo di Green di una primitiva percorsa nel suo verso. Un
-    `CircleSeg` non ha verso: conta antiorario.
+    Contributo di Green di una primitiva percorsa nel suo verso.
     """
     if isinstance(segment, LineSeg):
         return _line_moments(segment.start, segment.end)
-    if isinstance(segment, ArcSeg):
+    if isinstance(segment, CircleSeg):
         sign = 1.0 if segment.ccw else -1.0
         t0 = segment.start_angle
         return _trig_moments(segment.center, (segment.radius, 0.0), (0.0, segment.radius),
                              t0, t0 + sign * segment._sweep())
-    if isinstance(segment, CircleSeg):
-        return _trig_moments(segment.center, (segment.radius, 0.0), (0.0, segment.radius),
-                             0.0, 2 * math.pi)
     if isinstance(segment, EllipseSeg):
         mx, my = segment.major_axis
         minor = (-my * segment.ratio, mx * segment.ratio)

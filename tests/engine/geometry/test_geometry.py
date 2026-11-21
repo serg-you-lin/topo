@@ -15,7 +15,7 @@ import math
 
 from shapely.geometry import LineString
 
-from topo.core.primitives.segments import ArcSeg, LineSeg
+from topo.core.primitives.segments import LineSeg
 from topo.core.geometry.lines import are_collinear, group_collinear_lines, dash_line
 from topo.core.geometry.measure import (
     track_points, track_length, segment_length, longest_segment,
@@ -34,8 +34,8 @@ from topo.core.primitives.segments import CircleSeg
 # ---------------------------------------------------------------------------
 
 def make_arc(cx, cy, radius, start_angle, end_angle):
-    """Crea un ArcSeg con angoli in gradi."""
-    return ArcSeg(
+    """Crea un CircleSeg con angoli in gradi."""
+    return CircleSeg(
         center=(cx, cy),
         radius=radius,
         start_angle=math.radians(start_angle),

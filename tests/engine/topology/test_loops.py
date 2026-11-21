@@ -21,7 +21,7 @@ from shapely.geometry import LinearRing, Polygon, LineString
 
 from topo.core.topology.outer_face import face_loops
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg, ArcSeg
+from topo.core.primitives.segments import LineSeg
 from topo.model.role import ContourRole
 from topo import to_shapely
 

@@ -13,7 +13,7 @@ from __future__ import annotations
 import math
 from typing import List, Sequence, Tuple
 
-from ..primitives.segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg
+from ..primitives.segments import CircleSeg, EllipseSeg, LineSeg
 
 Point = Tuple[float, float]
 
@@ -81,7 +81,7 @@ def stadium(length: float, width: float, *, center: Point = (0.0, 0.0), angle: f
     (c1, c2) = _place([(-half, 0.0), (half, 0.0)], center, angle)
     return [
         LineSeg(start=p1, end=p2),
-        ArcSeg(center=c2, radius=r, start_angle=a - math.pi / 2, end_angle=a + math.pi / 2, ccw=True),
+        CircleSeg(center=c2, radius=r, start_angle=a - math.pi / 2, end_angle=a + math.pi / 2, ccw=True),
         LineSeg(start=p3, end=p4),
-        ArcSeg(center=c1, radius=r, start_angle=a + math.pi / 2, end_angle=a + 3 * math.pi / 2, ccw=True),
+        CircleSeg(center=c1, radius=r, start_angle=a + math.pi / 2, end_angle=a + 3 * math.pi / 2, ccw=True),
     ]

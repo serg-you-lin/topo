@@ -45,7 +45,7 @@ from dataclasses import dataclass, field, replace
 from typing import Dict, Iterable, List, Optional, Tuple
 
 from ..geometry.measure import node_point
-from ..primitives.segments import ArcSeg, CircleSeg, segment_endpoints
+from ..primitives.segments import CircleSeg, segment_endpoints, is_arc
 from .edge import Edge
 
 
@@ -331,14 +331,14 @@ def connected_groups(n: int, pairs: Iterable[Tuple[int, int]]) -> List[List[int]
 # ---------------------------------------------------------------------------
 
 def _close_self_loop(edge: Edge, epsilon: float):
-    """ArcSeg il cui sviluppo (raggio*sweep) supera epsilon -> CircleSeg (loop degenere vero). Altrimenti `None` (sliver, v. MAP.md D52)."""
+    """Un arco che torna sul suo nodo, se il suo sviluppo (raggio*sweep) supera epsilon -> il cerchio intero (loop degenere vero). Altrimenti `None` (sliver, v. MAP.md D52)."""
     seg = edge.segment
-    if not isinstance(seg, ArcSeg):
+    if not is_arc(seg):
         return None
     if seg.radius * seg._sweep() <= epsilon:
         return None
 
-    # Un giro intero è un cerchio, non "un ArcSeg che riparte da dove
+    # Un giro intero è un cerchio, non "un CircleSeg che riparte da dove
     # capitava il suo estremo originale" — stesso primitivo di un CIRCLE
     # nativo, stesso punto canonico (`segment_endpoints`).
     closed_segment = CircleSeg(center=seg.center, radius=seg.radius)

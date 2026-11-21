@@ -215,7 +215,7 @@ class TestSegmentsCopiati(unittest.TestCase):
     """
 
     def setUp(self):
-        from topo.core.primitives import LineSeg, ArcSeg
+        from topo.core.primitives import LineSeg, CircleSeg
 
         self.seg_outer = [
             LineSeg(start=(0, 0),   end=(100, 0)),
@@ -224,7 +224,7 @@ class TestSegmentsCopiati(unittest.TestCase):
             LineSeg(start=(0, 100), end=(0, 0)),
         ]
         self.seg_inner = [
-            ArcSeg(center=(50, 50), radius=2.5,
+            CircleSeg(center=(50, 50), radius=2.5,
                    start_angle=0.0, end_angle=6.2831, ccw=True),
         ]
 

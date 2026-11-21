@@ -5,7 +5,7 @@ from collections import Counter
 import unittest
 from topo.core.topology.noding import split_at_crossings, renode
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg, CircleSeg, ArcSeg
+from topo.core.primitives.segments import LineSeg, CircleSeg
 
 
 def _line(p1, p2):
@@ -44,7 +44,7 @@ class TestSplitAtCrossings(unittest.TestCase):
     def test_cerchio_incrociato_diventa_archi(self):
         # un cerchio attraversato da una retta: due archi fra i due tagli
         noded = split_at_crossings([_circle((0, 0), 5), _line((-10, 0), (10, 0))], tolerance=0.05)
-        arcs = [p for p in noded.pieces if isinstance(p.segment, ArcSeg)]
+        arcs = [p for p in noded.pieces if (isinstance(p.segment, CircleSeg) and not p.segment.full)]
         self.assertEqual(len(arcs), 2)
         total = sum(p.segment.radius * p.segment._sweep() for p in arcs)
         self.assertAlmostEqual(total, 2 * math.pi * 5, places=6)
@@ -64,7 +64,7 @@ class TestSplitAtCrossings(unittest.TestCase):
         x = radius - sink
         half = math.sqrt(2 * radius * sink - sink * sink)
         arc = Edge(role="unknown", start=(0, -radius), end=(0, radius),
-                   segment=ArcSeg(center=(0, 0), radius=radius,
+                   segment=CircleSeg(center=(0, 0), radius=radius,
                                   start_angle=-math.pi / 2, end_angle=math.pi / 2, ccw=True))
         line = _line((x, -half - 1), (x, half + 1))
         noded = split_at_crossings([arc, line], tolerance=tol)
@@ -185,7 +185,7 @@ class TestNodesUnderMotion(unittest.TestCase):
         from tests.invariants import rigid
         from topo.core.topology.noding import decide_nodes
         pts = [(k * 0.004, 0.002 * math.sin(k * 0.7)) for k in range(60)]
-        arcs = [ArcSeg.from_chord(a, b, 0.02 if i % 2 else -0.02) for i, (a, b) in enumerate(zip(pts, pts[1:]))]
+        arcs = [CircleSeg.from_chord(a, b, 0.02 if i % 2 else -0.02) for i, (a, b) in enumerate(zip(pts, pts[1:]))]
         # al posto; i vertici a metà fra due celle di 1e-3; e ruotato
         for motion in [(0.0, 0.0, 0.0), (0.0, 3000000.0005, -2500000.000476336),
                        (0.1, 3000000.0001767986, -2500000.0004505813)]:
@@ -228,7 +228,7 @@ class TestEndContactsUnderMotion(unittest.TestCase):
     def test_retta_sul_capo_di_un_arco_corto(self):
         end = (0.05 * math.cos(0.15), 0.05 * math.sin(0.15))
         self._same_at_every_motion(
-            [ArcSeg(center=(0.0, 0.0), radius=0.05, start_angle=0.0, end_angle=0.15),
+            [CircleSeg(center=(0.0, 0.0), radius=0.05, start_angle=0.0, end_angle=0.15),
              LineSeg(start=end, end=(3.0, 3.0))], (2, [1, 1, 2]))
 
     def test_archi_quasi_concentrici_a_meno_di_node(self):
@@ -236,10 +236,10 @@ class TestEndContactsUnderMotion(unittest.TestCase):
             with self.subTest(offset=offset):
                 c = (offset * math.cos(0.7), offset * math.sin(0.7))
                 self._same_at_every_motion(
-                    [ArcSeg(center=(0.0, 0.0), radius=5.0, start_angle=0.2, end_angle=1.2),
-                     ArcSeg(center=c, radius=5.005, start_angle=0.0, end_angle=1.4)], self._reading(
-                        [ArcSeg(center=(0.0, 0.0), radius=5.0, start_angle=0.2, end_angle=1.2),
-                         ArcSeg(center=c, radius=5.005, start_angle=0.0, end_angle=1.4)], (0.0, 0.0, 0.0)))
+                    [CircleSeg(center=(0.0, 0.0), radius=5.0, start_angle=0.2, end_angle=1.2),
+                     CircleSeg(center=c, radius=5.005, start_angle=0.0, end_angle=1.4)], self._reading(
+                        [CircleSeg(center=(0.0, 0.0), radius=5.0, start_angle=0.2, end_angle=1.2),
+                         CircleSeg(center=c, radius=5.005, start_angle=0.0, end_angle=1.4)], (0.0, 0.0, 0.0)))
 
 
 class TestEndNodeUnderMotion(unittest.TestCase):

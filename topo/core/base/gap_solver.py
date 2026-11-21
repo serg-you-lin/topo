@@ -33,7 +33,7 @@ from ..geometry.measure import FLOAT_NOISE, node_point
 from ..geometry.intersections import (_distance, _line_intersection, _circle_line_intersections, _circle_circle_intersections, _closest_to)
 from ..geometry.intersections import intersections
 from ..geometry.regions import _tangent, nearest_point
-from ..primitives.segments import DEFAULT_TOLERANCE, LineSeg, ArcSeg, BSplineSeg, EllipseSeg, segment_endpoints
+from ..primitives.segments import DEFAULT_TOLERANCE, LineSeg, CircleSeg, BSplineSeg, EllipseSeg, segment_endpoints, is_arc
 from ..topology.noding import GRAPH_EPSILON, edge_geometry
 from ..topology.edge import Edge
 from ...model.role import ContourRole
@@ -302,13 +302,13 @@ def _continuation(ep: GapEndpoint, reach: float):
     incontra: mai con un ponte di traverso, che il disegno non suggerisce (D189).
     None se non ha una direzione (tratto nullo)."""
     seg = ep.ref.segment if isinstance(ep.ref, Edge) else None
-    if isinstance(seg, ArcSeg) and seg.radius > 0:
+    if is_arc(seg) and seg.radius > 0:
         step = min(reach / seg.radius, math.pi / 2)
         sign = 1.0 if seg.ccw else -1.0
         if ep.role == "end":
-            return ArcSeg(center=seg.center, radius=seg.radius, start_angle=seg.end_angle,
+            return CircleSeg(center=seg.center, radius=seg.radius, start_angle=seg.end_angle,
                           end_angle=seg.end_angle + sign * step, ccw=seg.ccw)
-        return ArcSeg(center=seg.center, radius=seg.radius, start_angle=seg.start_angle,
+        return CircleSeg(center=seg.center, radius=seg.radius, start_angle=seg.start_angle,
                       end_angle=seg.start_angle - sign * step, ccw=not seg.ccw)
     if isinstance(seg, LineSeg):
         far = seg.start if ep.role == "end" else seg.end
@@ -438,14 +438,14 @@ def _within_reach(fixes: List[GapFix], ep_a: GapEndpoint, ep_b: GapEndpoint,
 # Ponte Edge <-> GapFix — geometria pura, zero formato sorgente
 # ---------------------------------------------------------------------------
 
-_KIND_BY_SEGMENT = {LineSeg: "line", ArcSeg: "arc", BSplineSeg: "spline", EllipseSeg: "ellipse"}
+_KIND_BY_SEGMENT = {LineSeg: "line", CircleSeg: "arc", BSplineSeg: "spline", EllipseSeg: "ellipse"}
 
 
 def _endpoint_meta(segment) -> dict:
     """Dati che il solver usa per calcolare l'intersezione, per tipo di segmento."""
     if isinstance(segment, LineSeg):
         return {"start": segment.start, "end": segment.end}
-    if isinstance(segment, ArcSeg):
+    if is_arc(segment):
         return {"cx": segment.center[0], "cy": segment.center[1], "radius": segment.radius}
     return {}
 
@@ -500,12 +500,12 @@ def _moved_segment(segment, role: str, new_pt: Point2D):
             return LineSeg(start=(new_pt[0], new_pt[1]), end=segment.end)
         return LineSeg(start=segment.start, end=(new_pt[0], new_pt[1]))
 
-    if isinstance(segment, ArcSeg):
+    if is_arc(segment):
         angle = math.atan2(new_pt[1] - segment.center[1], new_pt[0] - segment.center[0])
         if role == "start":
-            return ArcSeg(center=segment.center, radius=segment.radius,
+            return CircleSeg(center=segment.center, radius=segment.radius,
                           start_angle=angle, end_angle=segment.end_angle, ccw=segment.ccw)
-        return ArcSeg(center=segment.center, radius=segment.radius,
+        return CircleSeg(center=segment.center, radius=segment.radius,
                       start_angle=segment.start_angle, end_angle=angle, ccw=segment.ccw)
 
     return None

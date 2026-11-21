@@ -10,7 +10,7 @@ import math
 from typing import Optional, Tuple, List
 
 from ..primitives.segments import (
-    ArcSeg, CircleSeg, LineSeg, angle_from_start,
+    CircleSeg, LineSeg, angle_from_start, is_full_circle,
 )
 from .measure import FLOAT_NOISE
 
@@ -120,7 +120,7 @@ CURVE_TOLERANCE = SAME_POINT  # discretizzazione di spline ed ellissi per incroc
 def _exact_parts(seg) -> list:
     """Retta, arco, cerchio restano se stessi; spline ed ellisse diventano
     rette fitte (`CURVE_TOLERANCE`): non hanno un'intersezione in forma chiusa."""
-    if isinstance(seg, (LineSeg, ArcSeg, CircleSeg)):
+    if isinstance(seg, (LineSeg, CircleSeg)):
         return [seg]
     pts = [tuple(q[:2]) for q in seg.discretize(tolerance=CURVE_TOLERANCE)]
     return [LineSeg(start=a, end=b) for a, b in zip(pts, pts[1:]) if a != b]
@@ -138,7 +138,7 @@ def _on_line(seg: LineSeg, pt: Point) -> bool:
 
 
 def _on_arc(seg, pt: Point) -> bool:
-    if isinstance(seg, CircleSeg):
+    if is_full_circle(seg):
         return True
     s = angle_from_start(seg.center, seg.start_angle, seg.ccw, pt)
     slack = FLOAT_NOISE / seg.radius   # lo stesso sforamento in mm, come angolo

@@ -45,8 +45,8 @@ from .edge import Edge
 from ..geometry.intersections import intersections
 from ..primitives.trim import sub_segment
 from ..primitives.segments import (
-    LineSeg, ArcSeg, CircleSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle,
-    segment_endpoints, segment_is_closed,
+    LineSeg, CircleSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle,
+    segment_endpoints, segment_is_closed, is_arc, is_full_circle,
 )
 
 from ..geometry.measure import FLOAT_NOISE, SAME_POINT, node_point, reach, within_diameter
@@ -56,14 +56,14 @@ GRAPH_EPSILON = SAME_POINT   # mm — due nodi così vicini sono uno solo per il
 
 _EPS = _FLOAT_NOISE
 _MIN_PIECE = SAME_POINT   # mm — sotto, lo spezzone non viene creato  # D268
-_EXACT = (LineSeg, ArcSeg, CircleSeg)
+_EXACT = (LineSeg, CircleSeg)
 
 
 def _is_loop(seg) -> bool:
     """La curva torna su se stessa: un cerchio, o una spline/ellisse coi capi
     entro DEFAULT_TOLERANCE. Una retta o un arco mai: un tratto corto è un
     tratto, con due capi da nodare (D56), non un anello (G6e)."""
-    return isinstance(seg, CircleSeg) or (not isinstance(seg, _EXACT) and segment_is_closed(seg))
+    return is_full_circle(seg) or (not isinstance(seg, _EXACT) and segment_is_closed(seg))
 # mm — spline ed ellissi si misurano su questa discretizzazione (il valore
 # della vecchia griglia dei nodi, D113, tenuto quando la griglia è uscita, D216)
 _FINE = SAME_POINT  # D268
@@ -235,10 +235,8 @@ class _Curve:
             seg = self.seg
             if isinstance(seg, LineSeg):
                 self._length = math.dist(seg.start, seg.end)
-            elif isinstance(seg, ArcSeg):
-                self._length = seg.radius * seg._sweep()
             elif isinstance(seg, CircleSeg):
-                self._length = 2 * math.pi * seg.radius
+                self._length = seg.radius * seg._sweep()
             else:
                 self._length = self.fine.length
         return self._length
@@ -265,17 +263,14 @@ class _Curve:
             t = ((pt[0] - seg.start[0]) * dx + (pt[1] - seg.start[1]) * dy) / (self.length ** 2)
             t = min(1.0, max(0.0, t))
             return t * self.length, math.dist(pt, (seg.start[0] + t * dx, seg.start[1] + t * dy))
-        if isinstance(seg, ArcSeg):
+        if isinstance(seg, CircleSeg):
             a = angle_from_start(seg.center, seg.start_angle, seg.ccw, pt)
-            if a <= seg._sweep():
+            if seg.full or a <= seg._sweep():
                 return seg.radius * a, abs(math.dist(pt, seg.center) - seg.radius)
             start, end = segment_endpoints(seg)
             if math.dist(pt, start) <= math.dist(pt, end):
                 return 0.0, math.dist(pt, start)
             return self.length, math.dist(pt, end)
-        if isinstance(seg, CircleSeg):
-            a = math.atan2(pt[1] - seg.center[1], pt[0] - seg.center[0]) % (2 * math.pi)
-            return seg.radius * a, abs(math.dist(pt, seg.center) - seg.radius)
         at = Point(pt)
         return self.fine.project(at), self.fine.distance(at)
 
@@ -284,11 +279,9 @@ class _Curve:
         if isinstance(seg, LineSeg):
             t = 0.0 if self.length < _EPS else s / self.length
             return (seg.start[0] + t * (seg.end[0] - seg.start[0]), seg.start[1] + t * (seg.end[1] - seg.start[1]))
-        if isinstance(seg, ArcSeg):
+        if isinstance(seg, CircleSeg):
             return point_on_circle(seg.center, seg.radius,
                                    seg.start_angle + (s if seg.ccw else -s) / seg.radius)
-        if isinstance(seg, CircleSeg):
-            return point_on_circle(seg.center, seg.radius, s / seg.radius)
         return self.fine.interpolate(s % self.length if self.closed else s).coords[0]
 
     def piece(self, s0: float, s1: float):
@@ -298,11 +291,10 @@ class _Curve:
         if isinstance(seg, LineSeg):
             return LineSeg(start=seg.start if s0 == 0.0 else self.at(s0),
                            end=seg.end if s1 == self.length else self.at(s1))
-        if isinstance(seg, (ArcSeg, CircleSeg)):
-            start, sign, ccw = ((seg.start_angle, 1.0 if seg.ccw else -1.0, seg.ccw)
-                                if isinstance(seg, ArcSeg) else (0.0, 1.0, True))
-            return ArcSeg(center=seg.center, radius=seg.radius, start_angle=start + sign * s0 / seg.radius,
-                          end_angle=start + sign * s1 / seg.radius, ccw=ccw)
+        if isinstance(seg, CircleSeg):
+            sign = 1.0 if seg.ccw else -1.0
+            return CircleSeg(center=seg.center, radius=seg.radius, start_angle=seg.start_angle + sign * s0 / seg.radius,
+                             end_angle=seg.start_angle + sign * s1 / seg.radius, ccw=seg.ccw)
         ends = segment_endpoints(seg)
         a = ends[0] if s0 == 0.0 else self.at(s0)
         b = ends[1] if s1 == self.length else self.at(s1)
@@ -763,7 +755,7 @@ def _radial(center, radius, pt):
 
 def _on_arc(seg, pt) -> bool:
     """`pt` (sul cerchio) cade dentro l'arco, lontano dagli estremi."""
-    if isinstance(seg, CircleSeg):
+    if is_full_circle(seg):
         return True
     s = angle_from_start(seg.center, seg.start_angle, seg.ccw, pt)
     return _MIN_PIECE / seg.radius < s < seg._sweep() - _MIN_PIECE / seg.radius

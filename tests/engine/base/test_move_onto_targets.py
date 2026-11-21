@@ -11,7 +11,7 @@ import math
 import unittest
 
 import topo
-from topo.primitives import ArcSeg, BSplineSeg, CircleSeg, EllipseSeg, LineSeg
+from topo.primitives import BSplineSeg, CircleSeg, EllipseSeg, LineSeg
 
 OFF = 0.004   # i raccordi disegnati qualche millesimo di fianco al lato
 
@@ -21,7 +21,7 @@ def _line(a, b):
 
 
 def _arc(center, radius, a0, a1):
-    return ArcSeg(center=center, radius=radius, start_angle=math.radians(a0), end_angle=math.radians(a1), ccw=True)
+    return CircleSeg(center=center, radius=radius, start_angle=math.radians(a0), end_angle=math.radians(a1), ccw=True)
 
 
 def _bridge(off: float) -> list:
@@ -88,7 +88,7 @@ class TestRaccordoLegatoAUnaRetta(unittest.TestCase):
             self.assertEqual(len(result.clusters), 1)
             # nessun tratto nuovo: retta, verticale allungata, arco, obliqua
             self.assertEqual(sorted(type(s).__name__ for s in result.clusters[0].outer.segments),
-                             ["ArcSeg", "LineSeg", "LineSeg", "LineSeg"])
+                             ["CircleSeg", "LineSeg", "LineSeg", "LineSeg"])
         self.assertAlmostEqual(faces.clusters[0].outer.area, outlines.clusters[0].outer.area, places=9)
         vertical = [s for s in faces.clusters[0].outer.segments if isinstance(s, LineSeg) and abs(s.start[0]) < 1e-9 and abs(s.end[0]) < 1e-9]
         self.assertGreater(max(vertical[0].start[1], vertical[0].end[1]), 9.99)   # allungata, non spostata

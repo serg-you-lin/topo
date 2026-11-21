@@ -12,7 +12,7 @@ import math
 from typing import Iterator, List, Sequence, Tuple
 
 from ..primitives.segments import (
-    ArcSeg, BSplineSeg, CircleSeg, DEFAULT_TOLERANCE, EllipseSeg, LineSeg, segment_endpoints,
+    BSplineSeg, CircleSeg, DEFAULT_TOLERANCE, EllipseSeg, LineSeg, segment_endpoints, is_full_circle,
 )
 from .measure import Reach, segment_length, SAME_POINT
 
@@ -25,11 +25,11 @@ ON_BOUNDARY = SAME_POINT   # mm: un punto più vicino di così al bordo ci sta s
 def ring_jumps(segments: Sequence) -> Iterator[Tuple[Point, Point]]:
     """
     (fine, inizio) di ogni salto fra un segmento e il successivo, nell'ordine
-    del giro. Un `CircleSeg` è un giro da sé: nessun salto da o verso lui.
+    del giro. Un cerchio intero è un giro da sé: nessun salto da o verso lui.
     """
     segments = list(segments)
     for segment, following in zip(segments, segments[1:] + segments[:1]):
-        if isinstance(segment, CircleSeg) or isinstance(following, CircleSeg):
+        if is_full_circle(segment) or is_full_circle(following):
             continue
         end, start = segment_endpoints(segment)[1], segment_endpoints(following)[0]
         if end != start:
@@ -46,7 +46,7 @@ def ring_bridges(segments: Sequence, tolerance: float, noise: float) -> List[Tup
     segments = list(segments)
     out = []
     for k, (segment, following) in enumerate(zip(segments, segments[1:] + segments[:1])):
-        if isinstance(segment, CircleSeg) or isinstance(following, CircleSeg):
+        if is_full_circle(segment) or is_full_circle(following):
             continue
         end, start = segment_endpoints(segment)[1], segment_endpoints(following)[0]
         if noise < math.dist(end, start) <= tolerance:
@@ -197,14 +197,11 @@ def _swept(segment, point: Point, tolerance: float):
         if _line_distance(point, segment.start, segment.end) <= tolerance:
             return None
         return _chord_angle(point, segment.start, segment.end)
-    if isinstance(segment, (ArcSeg, CircleSeg)):
+    if isinstance(segment, CircleSeg):
         r = segment.radius
-        if isinstance(segment, CircleSeg):
-            t0, t1 = 0.0, 2 * math.pi
-        else:
-            sign = 1.0 if segment.ccw else -1.0
-            t0 = segment.start_angle
-            t1 = t0 + sign * segment._sweep()
+        sign = 1.0 if segment.ccw else -1.0
+        t0 = segment.start_angle
+        t1 = t0 + sign * segment._sweep()
         if _arc_distance(point, segment.center, r, t0, t1) <= tolerance:
             return None
         return _conic_swept(point, segment.center, (r, 0.0), (0.0, r), t0, t1)

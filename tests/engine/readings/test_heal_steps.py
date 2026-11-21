@@ -17,7 +17,7 @@ from topo.model.document import Document
 from topo.model.curve import ClosedCurve, OpenCurve
 from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import ArcSeg, LineSeg, CircleSeg, BSplineSeg, EllipseSeg, segment_endpoints
+from topo.core.primitives.segments import LineSeg, CircleSeg, BSplineSeg, EllipseSeg, segment_endpoints
 from topo import to_shapely
 from topo.precision import SAME_POINT
 from tests.paths import DATA, drawing
@@ -177,7 +177,7 @@ class TestLooseEnds(unittest.TestCase):
 
 def _arc(radius, missing_deg, center=(0.0, 0.0)):
     half = math.radians(missing_deg) / 2
-    return ArcSeg(center, radius, half, 2 * math.pi - half)
+    return CircleSeg(center, radius, half, 2 * math.pi - half)
 
 
 class TestShortElementsAndTolerance(unittest.TestCase):
@@ -195,10 +195,10 @@ class TestShortElementsAndTolerance(unittest.TestCase):
         return topo.heal(topo.load_segments(segs), max_gap=1.0).faces()
 
     def test_001_raccordo_resta(self):
-        result = self._heal(ArcSeg((99.6, 99.6), 0.4, 0, math.pi / 2), 99.6, 99.6)
+        result = self._heal(CircleSeg((99.6, 99.6), 0.4, 0, math.pi / 2), 99.6, 99.6)
         self.assertEqual(result.cluster_count, 1)
         outer = result.clusters[0].outer
-        self.assertIn("ArcSeg", [type(s).__name__ for s in outer.segments])
+        self.assertIn("CircleSeg", [type(s).__name__ for s in outer.segments])
         self.assertAlmostEqual(outer.area, 10000 - (0.4 ** 2 - math.pi * 0.4 ** 2 / 4), places=3)
 
     def test_002_smusso_resta(self):
@@ -354,7 +354,7 @@ class TestArcLineMeetUnderMotion(unittest.TestCase):
         from topo.core.primitives.segments import segment_endpoints
         x, y = -71565.8225, -3048.0985
         move_seg, move_pt = rigid(*motion)
-        pieces = [ArcSeg(center=(x, y), radius=1.0, start_angle=0.0, end_angle=math.pi / 2, ccw=True),
+        pieces = [CircleSeg(center=(x, y), radius=1.0, start_angle=0.0, end_angle=math.pi / 2, ccw=True),
                   LineSeg(start=(x - 5, y + 0.95), end=(x + offset, y + 0.95))]
         doc = topo.load_segments([move_seg(p) for p in pieces])
         tied = []
@@ -402,11 +402,11 @@ class TestCloseNearFullArcs(unittest.TestCase):
         self.assertEqual(self._close(_arc(3.0, 0.4), 0.05), ("CircleSeg", 1))
 
     def test_002_gap_entro_tol_ma_non_e_un_cerchio(self):
-        self.assertEqual(self._close(_arc(0.4, 90), 1.0), ("ArcSeg", 0), "un tre quarti piccolo")
-        self.assertEqual(self._close(_arc(10.0, 2.9), 1.0), ("ArcSeg", 0))
+        self.assertEqual(self._close(_arc(0.4, 90), 1.0), ("CircleSeg", 0), "un tre quarti piccolo")
+        self.assertEqual(self._close(_arc(10.0, 2.9), 1.0), ("CircleSeg", 0))
 
     def test_003_quasi_cerchio_ma_gap_oltre_tol(self):
-        self.assertEqual(self._close(_arc(500.0, 1.5), 0.1), ("ArcSeg", 0))
+        self.assertEqual(self._close(_arc(500.0, 1.5), 0.1), ("CircleSeg", 0))
 
     def test_004_solo_angolo_a_scelta_del_chiamante(self):
         self.assertEqual(self._close(_arc(500.0, 1.5), math.inf), ("CircleSeg", 1))
@@ -425,13 +425,13 @@ class TestCloseNearFullArcs(unittest.TestCase):
 
     def test_008_due_archi_coi_buchi_sotto_i_2_gradi_sono_un_cerchio(self):
         # D218: ogni buco (1,72°, corda 0,15) è entro tolleranza e sotto i 2°
-        arcs = [ArcSeg((0, 0), 5, 0.015, math.pi - 0.015), ArcSeg((0, 0), 5, math.pi + 0.015, 2 * math.pi - 0.015)]
+        arcs = [CircleSeg((0, 0), 5, 0.015, math.pi - 0.015), CircleSeg((0, 0), 5, math.pi + 0.015, 2 * math.pi - 0.015)]
         self.assertEqual(self._close_all(arcs, 0.5), (["CircleSeg"], 1))
 
     def test_009_buco_da_1_si_unisce_quello_da_3_resta_aperto(self):
         # D218: il buco da 1° si chiude, gli archi sono uno solo aperto di 3°
         h = lambda deg: math.radians(deg) / 2
-        arcs = [ArcSeg((0, 0), 5, h(1), math.pi - h(3)), ArcSeg((0, 0), 5, math.pi + h(3), 2 * math.pi - h(1))]
+        arcs = [CircleSeg((0, 0), 5, h(1), math.pi - h(3)), CircleSeg((0, 0), 5, math.pi + h(3), 2 * math.pi - h(1))]
         doc = topo.load_segments(arcs)
         edges, n = topo.experimental.close_near_full_arcs(list(doc.edges), 0.5)
         self.assertEqual((len(edges), n), (1, 1))
@@ -439,8 +439,8 @@ class TestCloseNearFullArcs(unittest.TestCase):
         self.assertNotEqual(edges[0].start, edges[0].end)
 
     def test_010_due_archi_oltre_tolleranza_non_fanno_il_cerchio(self):
-        arcs = [ArcSeg((0, 0), 5, 0.015, math.pi - 0.015), ArcSeg((0, 0), 5, math.pi + 0.015, 2 * math.pi - 0.015)]
-        self.assertEqual(self._close_all(arcs, 0.1), (["ArcSeg", "ArcSeg"], 0))
+        arcs = [CircleSeg((0, 0), 5, 0.015, math.pi - 0.015), CircleSeg((0, 0), 5, math.pi + 0.015, 2 * math.pi - 0.015)]
+        self.assertEqual(self._close_all(arcs, 0.1), (["CircleSeg", "CircleSeg"], 0))
 
     def test_007_punta_di_spigolo_coi_capi_fusi_non_si_chiude(self):
         # i due capi cadono nello stesso nodo, ma a quel nodo arrivano due lati
@@ -458,8 +458,8 @@ class TestCloseNearFullArcs(unittest.TestCase):
 
     # forza bruta, seme 1468: un cerchio r 1.95 in due archi uniti in un capo,
     # buco di 5.68° (corda 0.19) dall'altra parte
-    _SPLIT = [ArcSeg((0, 0), 1.95, math.radians(31.64), math.radians(259.9)),
-              ArcSeg((0, 0), 1.95, math.radians(265.58), math.radians(391.64))]
+    _SPLIT = [CircleSeg((0, 0), 1.95, math.radians(31.64), math.radians(259.9)),
+              CircleSeg((0, 0), 1.95, math.radians(265.58), math.radians(391.64))]
 
     def test_011_due_archi_uniti_in_un_capo_si_chiudono_da_soli(self):
         # D227: chi la chiama da sé non deve fondere prima gli archi che si toccano
@@ -492,7 +492,7 @@ class TestCloseNearFullArcs(unittest.TestCase):
 
     def test_013_un_filetto_piccolo_non_avvisa(self):
         # D227: a un filetto mancano ~90°; r 0.3, corda 0.42 entro 0.5, aperto di proposito
-        thread = ArcSeg((0, 0), 0.3, 0.0, math.radians(270))
+        thread = CircleSeg((0, 0), 0.3, 0.0, math.radians(270))
         net = topo.heal(topo.load_segments([thread]), max_gap=0.5)
         self.assertFalse([w for w in net.warnings if isinstance(w, topo.Diagnostic)])
 
@@ -516,7 +516,7 @@ class TestSingleNodeGrid(unittest.TestCase):
                 self.assertEqual(result.cluster_count, 1)
                 cluster = result.clusters[0]
                 self.assertEqual(cluster.inners, [], "l'arco non Ã¨ un foro")
-                arcs = [s for s in cluster.outer.segments if isinstance(s, ArcSeg)]
+                arcs = [s for s in cluster.outer.segments if (isinstance(s, CircleSeg) and not s.full)]
                 self.assertEqual(len(arcs), 1)
                 self.assertGreater(math.degrees(arcs[0]._sweep()), 359)
 
@@ -569,7 +569,7 @@ class TestLoopsToCurves(unittest.TestCase):
     def _arc_with_chords(center=(5.0, 5.0), radius=0.64, n=15):
         # Un quarto di cerchio disegnato due volte: l'arco e la sua copia a
         # corde. Chiudono un giro largo in media meno di SAME_POINT (D279).
-        arc = ArcSeg(center=center, radius=radius, start_angle=0.0,
+        arc = CircleSeg(center=center, radius=radius, start_angle=0.0,
                      end_angle=math.pi / 2, ccw=True)
         pts = [arc._point_at(k * (math.pi / 2) / n) for k in range(n + 1)]
         return [arc] + [LineSeg(start=pts[i], end=pts[i + 1]) for i in range(n)]
@@ -600,7 +600,7 @@ class TestLoopsToCurves(unittest.TestCase):
         result = topo.heal(topo.load_segments(square + self._arc_with_chords(radius=0.2, n=8))).faces()
         self.assertEqual(result.cluster_count, 1)
         loose = [s for curve in result.loose for s in curve.segments]
-        self.assertEqual(sum(isinstance(s, ArcSeg) for s in loose), 1)
+        self.assertEqual(sum((isinstance(s, CircleSeg) and not s.full) for s in loose), 1)
         self.assertEqual(sum(isinstance(s, LineSeg) for s in loose), 8)
 
 

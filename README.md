@@ -141,7 +141,7 @@ for cluster in result.clusters:
 
 # arcs concentric to a circle and larger: sweep, radius ratio
 # (an open arc closes nothing, so it is in result.loose)
-arcs = [s for c in result.loose for s in c.segments if isinstance(s, topo.primitives.ArcSeg)]
+arcs = [s for c in result.loose for s in c.segments if isinstance(s, topo.primitives.CircleSeg) and not s.full]
 for found in topo.geometry.arcs_around((10, 20), 2.5, arcs, tolerance=0.1):
     print(found.sweep, found.radius_ratio)
 ```
@@ -186,7 +186,7 @@ Result      clusters: list[Cluster]   loose: list (curves that are no cluster's 
             source_file   source_format   cluster_count
 Cluster     outer: Contour   inners: list[Contour]   label   overlay (a consumer's reading)
             area   bbox
-Contour     segments (LineSeg / ArcSeg / CircleSeg / EllipseSeg / BSplineSeg)   role
+Contour     segments (LineSeg / CircleSeg / EllipseSeg / BSplineSeg)   role
             area   bbox   centroid   points   depth   parent   contains(...)
 ```
 

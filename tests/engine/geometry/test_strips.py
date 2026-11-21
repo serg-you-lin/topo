@@ -13,7 +13,7 @@ import unittest
 import topo
 import topo_dxf
 from topo.core.geometry import circle, rectangle
-from topo.core.primitives.segments import ArcSeg, LineSeg
+from topo.core.primitives.segments import LineSeg, CircleSeg
 from topo.tools.strips import facing_boundaries, link, open_boundaries, unconnected_regions
 from topo import to_shapely
 from tests.paths import DATA
@@ -161,7 +161,7 @@ class TestOpenBoundaries(unittest.TestCase):
         self.assertEqual(len(opened.sides), 2)
         for contour, chains in opened.boundaries:
             self.assertEqual(len(chains), 1)
-            self.assertEqual([type(s) for s in chains[0]], [ArcSeg])   # un cerchio tagliato è un arco
+            self.assertEqual([type(s) for s in chains[0]], [CircleSeg])   # un cerchio tagliato è un arco
             self.assertGreater(chains[0][0]._sweep(), math.pi)          # il tratto lungo, non quello sotto
 
     def test_002_reclosed_on_the_fixture(self):

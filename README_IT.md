@@ -143,7 +143,7 @@ for cluster in result.clusters:
 
 # archi concentrici a un cerchio e più grandi: ampiezza, rapporto dei raggi
 # (un arco aperto non chiude niente, quindi sta in result.loose)
-arcs = [s for c in result.loose for s in c.segments if isinstance(s, topo.primitives.ArcSeg)]
+arcs = [s for c in result.loose for s in c.segments if isinstance(s, topo.primitives.CircleSeg) and not s.full]
 for found in topo.geometry.arcs_around((10, 20), 2.5, arcs, tolerance=0.1):
     print(found.sweep, found.radius_ratio)
 ```
@@ -188,7 +188,7 @@ Result      clusters: list[Cluster]   loose: list (curve che non sono contorno d
             source_file   source_format   cluster_count
 Cluster     outer: Contour   inners: list[Contour]   label   overlay (la lettura di un consumatore)
             area   bbox
-Contour     segments (LineSeg / ArcSeg / CircleSeg / EllipseSeg / BSplineSeg)   role
+Contour     segments (LineSeg / CircleSeg / EllipseSeg / BSplineSeg)   role
             area   bbox   centroid   points   depth   parent   contains(...)
 ```
 

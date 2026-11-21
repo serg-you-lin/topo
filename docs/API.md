@@ -111,7 +111,7 @@ rules.append(topo.RoleRule("bending", dashed=True))   # after the names
 topo.load_segments(segments, *, role="unknown", source_path="") -> Document
 ```
 
-A `Document` from topo segments (`LineSeg`, `ArcSeg`, `CircleSeg`, …) or
+A `Document` from topo segments (`LineSeg`, `CircleSeg`, …) or
 from lists of segments — the ones the constructors of
 `topo.geometry` return. All edges take `role`. It is the way to draw with
 topo in hand; `load_geometry` remains for those who do not import topo (D96).
@@ -373,7 +373,7 @@ a recipe composed by a caller go through the same functions.
 | `merge_cocircular_overlaps` | `list[Edge]` → `list[Edge]` | the same on co-circular arcs (D52, D184). |
 | `weld_degenerate_linesegs` | `list[Edge]` → `list[Edge]` | welds `LineSeg`s under `SAME_POINT` into a single node; a wider group is a piecewise curve and stays (D56, D186). |
 | `split_labeled` | `list[Edge]` → `(kept, labelled)` | sets aside the edges with an already decided, non-structural role (D30). Without `is_structural`, only `outer`/`inner` are structural. |
-| `close_near_full_arcs` | `list[Edge]` → `(edges, n_closed)` | the `ArcSeg`s with free ends on the same circle are joined across every gap within `tolerance` **and** within `max_missing_angle` (`NEAR_FULL_ARC_MISSING` = 2°): all closed gives a `CircleSeg`, otherwise an `ArcSeg` open on the remaining gaps; `n` = edges rebuilt. `tolerance=math.inf` leaves only the angle (D112, D218). |
+| `close_near_full_arcs` | `list[Edge]` → `(edges, n_closed)` | the arcs (`CircleSeg`) with free ends on the same circle are joined across every gap within `tolerance` **and** within `max_missing_angle` (`NEAR_FULL_ARC_MISSING` = 2°): all closed gives a `CircleSeg`, otherwise an `CircleSeg` open on the remaining gaps; `n` = edges rebuilt. `tolerance=math.inf` leaves only the angle (D112, D218). |
 | `close_free_gaps` | `list[Edge]` → `list[Edge]` | every free endpoint closes onto the nearest point of the network within `tolerance`: another free endpoint (meeting or segment, each endpoint at most one gap, D112) or the point where its curve, continued, meets another edge — never with a bridge across. An endpoint whose two nearest points tie does not choose (D185, D189). |
 | `dangling_splines` | `list[Edge]` → `list[Edge]` | the open `BSplineSeg`s with one unconnected endpoint — diagnostics only. |
 | `split_at_crossings` | `list[Edge]` → `NodedEdges` | the planar network: every contact decided once on the true curves (D180). `cut_crossings`: a crossing cuts too — yes for `outlines()` (D101), no for the network of `heal()` (D132, D189: the cut is made by the reading); the crossings are in `crossings` anyway. `NodedEdges.whole(loop)` gives back the original edge where a loop runs along all its pieces. |
@@ -534,7 +534,7 @@ angle=20))` gives back 80, 30, 20 (D96):
 | `regular_polygon(sides, radius, *, center=(0, 0), angle=0)` | regular polygon inscribed in the circle of radius `radius`, first vertex at `angle` |
 | `circle(radius, *, center=(0, 0))` | a `CircleSeg` |
 | `ellipse(length, width, *, center=(0, 0), angle=0)` | a whole `EllipseSeg`, axes `length` × `width` (`length` >= `width`), long axis at `angle` |
-| `stadium(length, width, *, center=(0, 0), angle=0)` | two true semicircles (`ArcSeg`) and two parallel sides; overall `length` × `width` |
+| `stadium(length, width, *, center=(0, 0), angle=0)` | two true semicircles (`CircleSeg`) and two parallel sides; overall `length` × `width` |
 
 Rhombi, trapezoids and every other shape with straight sides are a `polygon`.
 
@@ -612,7 +612,7 @@ how to pair them is decided by the consumer (D91).
 topo.geometry.arcs_around(center, radius, arcs, *, tolerance) -> list[ArcAround]
 ```
 
-The `ArcSeg`s of `arcs` concentric to the circle (`center`, `radius`) within
+The arcs (`CircleSeg`) of `arcs` concentric to the circle (`center`, `radius`) within
 `tolerance` and larger than it, from nearest to farthest. No threshold
 on the angle: "~270°, slightly larger" is how a thread crest is drawn,
 the consumer applies it (D91).
@@ -669,7 +669,7 @@ topo.geometry.intersections(a, b) -> list[Point]
 ```
 
 The points where two primitives meet: crossings and touches, endpoints included.
-Exact between `LineSeg`, `ArcSeg`, `CircleSeg` (closed form); on `BSplineSeg` and
+Exact between `LineSeg`, `CircleSeg` (closed form); on `BSplineSeg` and
 `EllipseSeg` within `SAME_POINT` (0.001), because there is no closed
 form. Two overlapping strokes (same line, same circle) give no points: their
 meeting is a stretch (D118).
@@ -934,7 +934,7 @@ topo.geometry.chord_angle_deg(a, b) -> float
 ```
 
 - `segment_length`: the length of a native primitive. Exact for
-  `LineSeg`, `ArcSeg`, `CircleSeg`; for `BSplineSeg` and `EllipseSeg` it is the
+  `LineSeg`, `CircleSeg`; for `BSplineSeg` and `EllipseSeg` it is the
   polyline of `discretize()`.
 - `length_inside`: how much of `segment` lies inside the rectangle
   `bounds` = `(xmin, ymin, xmax, ymax)`, border included (curves on the
@@ -1266,7 +1266,7 @@ Besides the top level there are three public namespaces (MAP.md D120); what
 lies under `topo.core`, `topo.tools`, `topo.io`, `topo.rules` is internal, with no
 guarantees. The adapters are separate packages (§9, §10):
 
-- **`topo.primitives`** — the native segments `LineSeg`, `ArcSeg`, `CircleSeg`,
+- **`topo.primitives`** — the native segments `LineSeg`, `CircleSeg`,
   `BSplineSeg`, `EllipseSeg` (pure math, no role) and
   `sub_segment(seg, a, b, via)`, the stretch of `seg` from `a` to `b` (`via`, an
   interior point, is needed only on a closed curve). Every segment has

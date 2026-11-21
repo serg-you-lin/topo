@@ -10,7 +10,7 @@ What you learn
     topo_dxf.to_dxf(..., allow_invalid=False)   refuse to write an invalid result
 
 After load_dxf the DXF is gone: topo works on its own primitives (LineSeg,
-ArcSeg, CircleSeg, EllipseSeg, BSplineSeg). A source layer is not kept; lesson 09
+CircleSeg, EllipseSeg, BSplineSeg). A source layer is not kept; lesson 09
 shows how to turn a layer name into a role.
 
 Input

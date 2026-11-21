@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 import math
 from types import SimpleNamespace
 
-from topo.core.primitives import LineSeg, ArcSeg, BSplineSeg, CircleSeg, EllipseSeg
+from topo.core.primitives import LineSeg, CircleSeg, BSplineSeg, CircleSeg, EllipseSeg
 from topo.core.topology.edge import Edge
 from topo_dxf.parser import DxfEntityDispatcher
 from topo.core.topology.loop_finder import segments_from_loop
@@ -253,11 +253,11 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertEqual(parsed.end, (0.0, 0.0))
 
     def test_004_parse_arc(self):
-        """Parsing di un ARC → ArcSeg."""
+        """Parsing di un ARC → CircleSeg."""
         parsed = DxfEntityDispatcher(
             make_arc(0, 0, 10, 0, 180)
         ).parse(rev=False)
-        self.assertIsInstance(parsed, ArcSeg)
+        self.assertIsInstance(parsed, CircleSeg)
         self.assertEqual(parsed.center, (0.0, 0.0))
         self.assertEqual(parsed.radius, 10.0)
         self.assertAlmostEqual(parsed.start_angle, 0.0)
@@ -269,7 +269,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         parsed = DxfEntityDispatcher(
             make_arc(0, 0, 10, 0, 180)
         ).parse(rev=True)
-        self.assertIsInstance(parsed, ArcSeg)
+        self.assertIsInstance(parsed, CircleSeg)
         self.assertAlmostEqual(parsed.start_angle, math.pi)
         self.assertAlmostEqual(parsed.end_angle, 0.0)
         self.assertFalse(parsed.ccw)
@@ -315,7 +315,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertIsInstance(parsed[0], LineSeg)
 
     def test_008_parse_lwpolyline_con_bulge(self):
-        """LWPOLYLINE con bulge → ArcSeg."""
+        """LWPOLYLINE con bulge → CircleSeg."""
         parsed = DxfEntityDispatcher(
             make_lwpolyline([
                 (0, 0, 0),
@@ -327,7 +327,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertIsInstance(parsed, list)
         self.assertEqual(len(parsed), 2)
         self.assertIsInstance(parsed[0], LineSeg)
-        self.assertIsInstance(parsed[1], ArcSeg)
+        self.assertIsInstance(parsed[1], CircleSeg)
         
         # bulge=1, start=(10,0), end=(10,10) 
         # sweep = 4*atan(1) = π (180°)
@@ -362,7 +362,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertIsInstance(parsed, list)
         self.assertEqual(len(parsed), 2)
         self.assertIsInstance(parsed[0], LineSeg)
-        self.assertIsInstance(parsed[1], ArcSeg)
+        self.assertIsInstance(parsed[1], CircleSeg)
 
     def test_011_parse_tipo_sconosciuto_restituisce_none(self):
         """Tipo DXF sconosciuto → None."""
@@ -400,7 +400,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertEqual(primitives[0].end, (100.0, 0.0))
 
     def test_004_loop_con_arco(self):
-        """Loop con ARC → ArcSeg."""
+        """Loop con ARC → CircleSeg."""
         arc = make_arc(50, 0, 50, 0, 180)
         loop = [
             (make_edge(arc), False),
@@ -408,7 +408,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         ]
         result = segments_from_loop(loop)
         self.assertEqual(len(result), 2)
-        self.assertIsInstance(result[0], ArcSeg)
+        self.assertIsInstance(result[0], CircleSeg)
         self.assertIsInstance(result[1], LineSeg)
 
     def test_005_loop_con_lwpolyline(self):
@@ -424,7 +424,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         
         self.assertEqual(len(result), 3)  # N-1 segmenti
         self.assertIsInstance(result[0], LineSeg)
-        self.assertIsInstance(result[1], ArcSeg)  # bulge convertito
+        self.assertIsInstance(result[1], CircleSeg)  # bulge convertito
         self.assertIsInstance(result[2], LineSeg)
 
     def test_006_loop_con_lwpolyline_reversed(self):
@@ -449,8 +449,8 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertEqual(result[0].start, (10.0, 10.0))
         self.assertEqual(result[0].end, (10.0, 0.0))
         
-        # Secondo segmento: da (10,0) a (0,0) con bulge=0.5 → ArcSeg
-        self.assertIsInstance(result[1], ArcSeg)
+        # Secondo segmento: da (10,0) a (0,0) con bulge=0.5 → CircleSeg
+        self.assertIsInstance(result[1], CircleSeg)
         start1 = (
             result[1].center[0] + result[1].radius * math.cos(result[1].start_angle),
             result[1].center[1] + result[1].radius * math.sin(result[1].start_angle)
@@ -493,17 +493,17 @@ class TestSegmentsFromLoop(unittest.TestCase):
 # ===========================================================================
 
 class TestArcSegToBulge(unittest.TestCase):
-    """Test conversione ArcSeg → bulge DXF."""
+    """Test conversione CircleSeg → bulge DXF."""
 
     def test_001_bulge_90_ccw(self):
         """Arco 90° CCW → bulge = tan(π/8)."""
-        arc = ArcSeg(center=(0, 0), radius=10, start_angle=0, end_angle=math.pi/2, ccw=True)
+        arc = CircleSeg(center=(0, 0), radius=10, start_angle=0, end_angle=math.pi/2, ccw=True)
         bulge = arc_seg_to_bulge(arc)
         self.assertAlmostEqual(bulge, math.tan(math.pi/8), places=6)
 
     def test_002_bulge_90_cw(self):
         """Arco 90° CW (da π/2 a 0) → bulge = -tan(π/8)."""
-        arc = ArcSeg(center=(0, 0), radius=10, start_angle=math.pi/2, end_angle=0, ccw=False)
+        arc = CircleSeg(center=(0, 0), radius=10, start_angle=math.pi/2, end_angle=0, ccw=False)
         bulge = arc_seg_to_bulge(arc)
         self.assertAlmostEqual(bulge, -math.tan(math.pi/8), places=6)
 
@@ -516,10 +516,10 @@ class TestArcSegToBulge(unittest.TestCase):
         CCW; se arc_seg_to_bulge usasse (end-start)%2π l'arco verrebbe
         riscritto "alla rovescia" (bulge dell'arco complementare).
         """
-        ccw_arc = ArcSeg(center=(0, 0), radius=10,
+        ccw_arc = CircleSeg(center=(0, 0), radius=10,
                          start_angle=math.radians(350),
                          end_angle=math.radians(10), ccw=True)
-        cw_arc = ArcSeg(center=(0, 0), radius=10,
+        cw_arc = CircleSeg(center=(0, 0), radius=10,
                         start_angle=math.radians(10),
                         end_angle=math.radians(350), ccw=False)
         # Stesso arco fisico (sweep 20°), verso opposto → bulge opposti in segno
@@ -529,24 +529,24 @@ class TestArcSegToBulge(unittest.TestCase):
 
     def test_003_bulge_180_ccw(self):
         """Arco 180° CCW → bulge = tan(π/4)."""
-        arc = ArcSeg(center=(0, 0), radius=10, start_angle=0, end_angle=math.pi, ccw=True)
+        arc = CircleSeg(center=(0, 0), radius=10, start_angle=0, end_angle=math.pi, ccw=True)
         bulge = arc_seg_to_bulge(arc)
         self.assertAlmostEqual(bulge, math.tan(math.pi/4), places=6)
 
     def test_004_bulge_negativo_per_cw(self):
         """Arco CW produce bulge negativo."""
-        arc = ArcSeg(center=(0, 0), radius=10, start_angle=math.pi, end_angle=0, ccw=False)
+        arc = CircleSeg(center=(0, 0), radius=10, start_angle=math.pi, end_angle=0, ccw=False)
         bulge = arc_seg_to_bulge(arc)
         self.assertLess(bulge, 0)
 
     def test_005_roundtrip_arco_invertito(self):
         """
-        Un ArcSeg e la sua versione invertita (come la produce segments_from_loop
+        Un CircleSeg e la sua versione invertita (come la produce segments_from_loop
         quando il loop è orientato CCW) devono discretizzare sullo stesso
         insieme di punti e produrre bulge di modulo uguale: nessun arco
         "alla rovescia" nel write-back.
         """
-        arc = ArcSeg(center=(3, -2), radius=7.5,
+        arc = CircleSeg(center=(3, -2), radius=7.5,
                      start_angle=math.radians(20),
                      end_angle=math.radians(140), ccw=True)
         rev = arc.reversed()
@@ -582,8 +582,8 @@ class TestSegmentsToPtsWithBulge(unittest.TestCase):
             self.assertEqual(pt[4], 0.0)  # bulge=0
 
     def test_002_arc_segment(self):
-        """ArcSeg → punto di partenza + bulge calcolato."""
-        arc = ArcSeg(center=(0, 0), radius=10, start_angle=0, end_angle=math.pi/2, ccw=True)
+        """CircleSeg → punto di partenza + bulge calcolato."""
+        arc = CircleSeg(center=(0, 0), radius=10, start_angle=0, end_angle=math.pi/2, ccw=True)
         result = segments_to_pts_with_bulge([arc])
         self.assertEqual(len(result), 1)
         self.assertAlmostEqual(result[0][0], 10.0)  # x start
@@ -591,8 +591,8 @@ class TestSegmentsToPtsWithBulge(unittest.TestCase):
         self.assertAlmostEqual(result[0][4], math.tan(math.pi/8), places=6)
 
     def test_003_arc_con_start_angle_diverso(self):
-        """ArcSeg con start_angle ≠ 0."""
-        arc = ArcSeg(
+        """CircleSeg con start_angle ≠ 0."""
+        arc = CircleSeg(
             center=(5, 5), radius=10,
             start_angle=math.pi/4,
             end_angle=3*math.pi/4,
@@ -605,10 +605,10 @@ class TestSegmentsToPtsWithBulge(unittest.TestCase):
         self.assertAlmostEqual(result[0][1], expected_y)
 
     def test_004_segments_misti(self):
-        """Segmenti misti LineSeg + ArcSeg."""
+        """Segmenti misti LineSeg + CircleSeg."""
         segments = [
             LineSeg(start=(0, 0), end=(10, 0)),
-            ArcSeg(center=(10, 0), radius=10, start_angle=-math.pi/2, end_angle=0, ccw=True),
+            CircleSeg(center=(10, 0), radius=10, start_angle=-math.pi/2, end_angle=0, ccw=True),
         ]
         result = segments_to_pts_with_bulge(segments)
         self.assertEqual(len(result), 2)
@@ -680,10 +680,10 @@ class TestWriteContourToMsp(unittest.TestCase):
         self.assertEqual(len(entity['points']), 4)
 
     def test_004_con_arc_segments(self):
-        """Con ArcSeg → LWPOLYLINE con bulge."""
+        """Con CircleSeg → LWPOLYLINE con bulge."""
         contour = MagicMock()
         contour.segments = [
-            ArcSeg(center=(10, 0), radius=10, start_angle=0, end_angle=math.pi/2, ccw=True),
+            CircleSeg(center=(10, 0), radius=10, start_angle=0, end_angle=math.pi/2, ccw=True),
             LineSeg(start=(10, 10), end=(0, 10)),
             LineSeg(start=(0, 10), end=(0, 0)),
             LineSeg(start=(0, 0), end=(10, 0)),

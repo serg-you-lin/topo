@@ -16,7 +16,7 @@ from typing import List, Optional, Tuple
 
 from ..geometry.measure import FLOAT_NOISE
 from .segments import (
-    ArcSeg, CircleSeg, EllipseSeg, LineSeg, Point, BSplineSeg, _bspline_find_span,
+    CircleSeg, EllipseSeg, LineSeg, Point, BSplineSeg, _bspline_find_span, is_arc, is_full_circle,
 )
 
 _TWO_PI = 2 * math.pi
@@ -34,7 +34,7 @@ def sub_segment(seg, a: Point, b: Point, via: Point):
     """
     if isinstance(seg, LineSeg):
         return LineSeg(start=_on_line(seg, a), end=_on_line(seg, b))
-    if isinstance(seg, (ArcSeg, CircleSeg, EllipseSeg)):
+    if isinstance(seg, (CircleSeg, EllipseSeg)):
         return _sub_angular(seg, a, b, via)
     if isinstance(seg, BSplineSeg):
         return _sub_spline(seg, a, b, via)
@@ -61,8 +61,6 @@ def _on_line(seg: LineSeg, pt: Point) -> Point:
 
 def _sub_angular(seg, a: Point, b: Point, via: Point):
     if isinstance(seg, CircleSeg):
-        start, sweep, ccw = 0.0, _TWO_PI, True
-    elif isinstance(seg, ArcSeg):
         start, sweep, ccw = seg.start_angle, seg._sweep(), seg.ccw
     else:
         start, sweep, ccw = seg.start_param, seg._sweep(), seg.ccw
@@ -106,7 +104,7 @@ def _angular(seg, lo: float, hi: float, ccw: bool):
     if isinstance(seg, EllipseSeg):
         return EllipseSeg(center=seg.center, major_axis=seg.major_axis, ratio=seg.ratio,
                           start_param=lo, end_param=hi, ccw=ccw)
-    return ArcSeg(center=seg.center, radius=seg.radius, start_angle=lo, end_angle=hi, ccw=ccw)
+    return CircleSeg(center=seg.center, radius=seg.radius, start_angle=lo, end_angle=hi, ccw=ccw)
 
 
 # ---------------------------------------------------------------------------

@@ -11,7 +11,7 @@ from typing import Optional, Tuple, List
 
 from shapely.geometry import LineString, box
 
-from ..primitives.segments import LineSeg, ArcSeg, CircleSeg, EllipseSeg, BSplineSeg
+from ..primitives.segments import LineSeg, CircleSeg, EllipseSeg, BSplineSeg, is_arc, is_full_circle
 
 Point = Tuple[float, float]
 
@@ -55,7 +55,7 @@ def num_segments_for_bulge(bulge: float) -> int:
 # Tracce aperte — vertici / lunghezza / tipo da segmenti nativi
 # ---------------------------------------------------------------------------
 # Una traccia aperta (bending line, incisione, frammento non chiuso) nel modello
-# è una lista di segmenti nativi (LineSeg / ArcSeg / BSplineSeg / CircleSeg).
+# è una lista di segmenti nativi (LineSeg / CircleSeg / BSplineSeg / EllipseSeg).
 # `pts`, `length`, `shape_type` sono valori DERIVATI da quei segmenti: qui, non
 # stoccati sul modello. Chi li consuma — detect_flat(), write._write_loose,
 # inspect() — li ricava con queste funzioni.
@@ -95,18 +95,16 @@ def track_length(pts) -> float:
 
 def segment_length(segment) -> float:
     """
-    Real length of a single native primitive (`LineSeg`/`ArcSeg`/
-    `BSplineSeg`/`CircleSeg`/`EllipseSeg`). `LineSeg`/`ArcSeg`/`CircleSeg`
+    Real length of a single native primitive (`LineSeg`/`CircleSeg`/
+    `BSplineSeg`/`CircleSeg`/`EllipseSeg`). `LineSeg`/`CircleSeg`
     have a closed formula; `BSplineSeg`/`EllipseSeg` (non-constant curvature,
     no convenient closed formula) reuse the same polyline as
     `discretize()`, summed like `track_length`.
     """
     if isinstance(segment, LineSeg):
         return math.hypot(segment.end[0] - segment.start[0], segment.end[1] - segment.start[1])
-    if isinstance(segment, ArcSeg):
-        return segment.radius * segment._sweep()
     if isinstance(segment, CircleSeg):
-        return 2 * math.pi * segment.radius
+        return segment.radius * segment._sweep()
     return track_length(segment.discretize())
 
 
@@ -180,10 +178,10 @@ class Reach:
         if isinstance(segment, LineSeg):
             a, b = dot(segment.start), dot(segment.end)
             return min(a, b), max(a, b)
-        if isinstance(segment, CircleSeg):
+        if is_full_circle(segment):
             c = dot(segment.center)
             return c - segment.radius, c + segment.radius
-        if isinstance(segment, ArcSeg):
+        if is_arc(segment):
             # p·d = c·d + r·cos(θ − φ): estremi a θ = φ e φ + π, se l'arco ci passa
             phi = math.atan2(dy, dx)
             sweep = segment._sweep()

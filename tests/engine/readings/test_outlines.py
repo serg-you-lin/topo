@@ -8,7 +8,7 @@ from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
 from topo.core.primitives.segments import LineSeg, CircleSeg
 from topo.core.base.normalizer import refit_tessellations
-from topo.core.primitives.segments import ArcSeg
+from topo.core.primitives.segments import CircleSeg
 from topo import to_shapely
 from topo.precision import SAME_POINT
 
@@ -147,7 +147,7 @@ class TestRefitTessellations(unittest.TestCase):
         # 40 segmenti da ~0.39mm: sotto max_segment=0.5 → un arco r=10
         out = refit_tessellations(self._tessellated_arc(), max_segment=0.5)
         self.assertEqual(len(out), 1)
-        self.assertIsInstance(out[0].segment, ArcSeg)
+        self.assertIsInstance(out[0].segment, CircleSeg)
         self.assertAlmostEqual(out[0].segment.radius, 10.0, places=3)
 
     def test_estremi_tengono_i_nodi(self):
@@ -216,7 +216,7 @@ class TestHostOfATinyPieceUnderMotion(unittest.TestCase):
         r = SAME_POINT * (1 - 1e-8) / (1 - math.cos(step / 2))
         a = math.pi / 4
         p1, p2 = (-r * math.cos(a), -r * math.sin(a)), (r * math.cos(a), -r * math.sin(a))
-        return [ArcSeg(center=(0.0, 0.0), radius=r, start_angle=5 * a, end_angle=7 * a, ccw=True),
+        return [CircleSeg(center=(0.0, 0.0), radius=r, start_angle=5 * a, end_angle=7 * a, ccw=True),
                 LineSeg(start=p2, end=(p2[0], -r - 3)), LineSeg(start=(p2[0], -r - 3), end=(p1[0], -r - 3)),
                 LineSeg(start=(p1[0], -r - 3), end=p1),
                 CircleSeg(center=(0.0, -r + 0.0504), radius=0.0002)]

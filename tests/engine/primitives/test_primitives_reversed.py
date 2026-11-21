@@ -2,15 +2,15 @@
 tests/engine/primitives/test_primitives_reversed.py
 -------------------------------------------
 Fase 4:
-  - `.reversed()` su LineSeg / ArcSeg / CircleSeg (D6)
-  - regressione: ArcSeg.from_chord con archi maggiori (|bulge| > 1) — D7 ha
+  - `.reversed()` su LineSeg / CircleSeg / CircleSeg (D6)
+  - regressione: CircleSeg.from_chord con archi maggiori (|bulge| > 1) — D7 ha
     esposto un bug dove from_chord sceglieva sempre l'arco minore.
 """
 
 import math
 import unittest
 
-from topo.core.primitives.segments import LineSeg, ArcSeg, CircleSeg
+from topo.core.primitives.segments import LineSeg, CircleSeg
 
 
 def _arc_len(seg, tol=0.01):
@@ -27,7 +27,7 @@ class TestReversed(unittest.TestCase):
         self.assertEqual((r.start, r.end), ((4, 6), (1, 2)))
 
     def test_arc_reversed_same_locus_opposite_orientation(self):
-        s = ArcSeg(center=(3, -2), radius=7.5,
+        s = CircleSeg(center=(3, -2), radius=7.5,
                    start_angle=math.radians(20), end_angle=math.radians(140), ccw=True)
         r = s.reversed()
         self.assertFalse(r.ccw)
@@ -47,14 +47,14 @@ class TestReversed(unittest.TestCase):
 class TestFromChordMajorArc(unittest.TestCase):
 
     def test_minor_arc_bulge_below_one(self):
-        arc = ArcSeg.from_chord((0, 0), (10, 0), bulge=0.5)
+        arc = CircleSeg.from_chord((0, 0), (10, 0), bulge=0.5)
         # sweep = 4*atan(0.5) ≈ 106°, r = 6.25
         self.assertAlmostEqual(arc.radius, 6.25, places=6)
         self.assertAlmostEqual(_arc_len(arc), 6.25 * 4 * math.atan(0.5), places=2)
 
     def test_major_arc_bulge_above_one(self):
         # bulge=2 → sweep = 4*atan(2) ≈ 254° — arco MAGGIORE.
-        arc = ArcSeg.from_chord((0, 0), (10, 0), bulge=2.0)
+        arc = CircleSeg.from_chord((0, 0), (10, 0), bulge=2.0)
         self.assertAlmostEqual(arc.radius, 6.25, places=6)
         # il centro deve stare SOTTO la corda (y < 0), non sopra
         self.assertLess(arc.center[1], 0)
@@ -63,12 +63,12 @@ class TestFromChordMajorArc(unittest.TestCase):
         self.assertAlmostEqual(_arc_len(arc), expected, delta=0.05)
 
     def test_major_arc_negative_bulge(self):
-        arc = ArcSeg.from_chord((0, 0), (10, 0), bulge=-2.0)
+        arc = CircleSeg.from_chord((0, 0), (10, 0), bulge=-2.0)
         self.assertGreater(arc.center[1], 0)
         self.assertFalse(arc.ccw)
 
     def test_semicircle_bulge_one(self):
-        arc = ArcSeg.from_chord((0, 0), (10, 0), bulge=1.0)
+        arc = CircleSeg.from_chord((0, 0), (10, 0), bulge=1.0)
         self.assertAlmostEqual(arc.radius, 5.0, places=6)
         self.assertAlmostEqual(_arc_len(arc), math.pi * 5.0, delta=0.05)
 

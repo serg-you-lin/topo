@@ -228,13 +228,13 @@ def _check_factor(factor: float) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Matematica angolare condivisa (ArcSeg / EllipseSeg)
+# Matematica angolare condivisa (CircleSeg / EllipseSeg)
 # ---------------------------------------------------------------------------
 
 def _angular_sweep(start: float, end: float, ccw: bool) -> float:
     """
     Angolo spazzato in radianti, sempre positivo, percorrendo da `start` a
-    `end` nel verso indicato — stesso calcolo per un ArcSeg (`start_angle`/
+    `end` nel verso indicato — stesso calcolo per un CircleSeg (`start_angle`/
     `end_angle`) e un EllipseSeg (`start_param`/`end_param`): entrambi sono
     "percorri da un angolo/parametro a un altro, in un verso".
     """
@@ -305,24 +305,26 @@ def _grid_angles(lo: float, hi: float, radius: float, sides: int) -> List[float]
 
 
 # ---------------------------------------------------------------------------
-# ArcSeg
+# CircleSeg: arco o cerchio intero
 # ---------------------------------------------------------------------------
 
 @dataclass
-class ArcSeg(ConicSeg):
+class CircleSeg(ConicSeg):
     """A piece of the circle (`center`, `radius`) from `start_angle` to
-    `end_angle`, counter-clockwise when `ccw`. `t` is the angle walked from the
+    `end_angle`, counter-clockwise when `ccw`; with no angles the whole
+    circle from angle 0. A circle is an arc that goes all the way round
+    (`full`): one class, not two (D286). `t` is the angle walked from the
     start: t in [0, sweep]."""
     center: Point
     radius: float
-    start_angle: float  # radianti
-    end_angle: float    # radianti
+    start_angle: float = 0.0          # radianti
+    end_angle: float = 2 * math.pi    # radianti
     ccw: bool = True
 
     def __post_init__(self):
         self.center, self.radius = _plain(self.center), _real(self.radius)
         self.start_angle, self.end_angle = _real(self.start_angle), _real(self.end_angle)
-        # raggio 0 è un punto, non una curva: come CircleSeg (D154)
+        # raggio 0 è un punto, non una curva (D154)
         if not self.radius > 0:
             raise ValueError(f"the radius must be positive, got {self.radius}")
 
@@ -330,12 +332,18 @@ class ArcSeg(ConicSeg):
         """Angolo spazzato in radianti, sempre positivo."""
         return _angular_sweep(self.start_angle, self.end_angle, self.ccw)
 
+    @property
+    def full(self) -> bool:
+        """True when the piece goes all the way round: the whole circle."""
+        return self._sweep() == 2 * math.pi
+
     def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
-        Discretizza l'arco sulla griglia del suo cerchio (D145): gli estremi
-        esatti più i vertici di `CircleSeg.discretize` che cadono fra loro, così
-        l'arco si sovrappone al cerchio intero. Sagitta <= tolerance: nessun
-        tratto supera il passo della griglia, i due di testa sono più corti.
+        Discretizza sulla griglia del cerchio (`_circle_sides`, ancorata
+        all'angolo 0, D145): gli estremi esatti più i vertici della griglia
+        che cadono fra loro, così ogni arco si sovrappone al cerchio intero.
+        Sagitta <= tolerance. Anche il giro intero: un cerchio e i suoi archi
+        hanno gli stessi vertici, da qualunque angolo parta.
         """
         total_angle = self._sweep()
 
@@ -371,9 +379,9 @@ class ArcSeg(ConicSeg):
     def equation(self) -> Tuple[float, float, float, float, float, float]:
         return _ellipse_equation(self.center, (1.0, 0.0), self.radius, self.radius)
 
-    def reversed(self) -> "ArcSeg":
+    def reversed(self) -> "CircleSeg":
         """Stesso arco fisico, percorso al contrario: scambia gli angoli e nega ccw."""
-        return ArcSeg(
+        return CircleSeg(
             center=self.center,
             radius=self.radius,
             start_angle=self.end_angle,
@@ -381,13 +389,13 @@ class ArcSeg(ConicSeg):
             ccw=not self.ccw,
         )
 
-    def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "ArcSeg":
+    def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "CircleSeg":
         """
         Stesso arco fisico, ruotato di `angle` radianti attorno a `origin`:
         il centro trasla con la rotazione, `start_angle`/`end_angle` si
         spostano dello stesso `angle` (il raggio e il verso non cambiano).
         """
-        return ArcSeg(
+        return CircleSeg(
             center=_rotate_point(self.center, angle, origin),
             radius=self.radius,
             start_angle=self.start_angle + angle,
@@ -395,12 +403,12 @@ class ArcSeg(ConicSeg):
             ccw=self.ccw,
         )
 
-    def translated(self, dx: float, dy: float) -> "ArcSeg":
+    def translated(self, dx: float, dy: float) -> "CircleSeg":
         """Stesso arco, spostato di (`dx`, `dy`): si sposta solo il centro."""
-        return ArcSeg(center=_translate_point(self.center, dx, dy), radius=self.radius,
+        return CircleSeg(center=_translate_point(self.center, dx, dy), radius=self.radius,
                       start_angle=self.start_angle, end_angle=self.end_angle, ccw=self.ccw)
 
-    def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "ArcSeg":
+    def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "CircleSeg":
         """
         Stesso arco, specchiato sulla retta per `origin` a `angle` radianti
         (default: l'asse x): il punto all'angolo `a` va all'angolo
@@ -409,28 +417,28 @@ class ArcSeg(ConicSeg):
         ha i vertici specchiati; su un altro asse la curva è esatta e i
         vertici cadono sulla griglia dell'arco nuovo.
         """
-        return ArcSeg(center=_mirror_point(self.center, origin, angle), radius=self.radius,
+        return CircleSeg(center=_mirror_point(self.center, origin, angle), radius=self.radius,
                       start_angle=2 * angle - self.start_angle, end_angle=2 * angle - self.end_angle,
                       ccw=not self.ccw)
 
-    def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "ArcSeg":
+    def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "CircleSeg":
         """Stesso arco, scalato di `factor` (> 0) attorno a `origin`: il centro
         si sposta, il raggio si moltiplica, angoli e verso non cambiano."""
         factor = _check_factor(factor)
-        return ArcSeg(center=_scale_point(self.center, factor, origin), radius=self.radius * factor,
+        return CircleSeg(center=_scale_point(self.center, factor, origin), radius=self.radius * factor,
                       start_angle=self.start_angle, end_angle=self.end_angle, ccw=self.ccw)
 
     @classmethod
-    def from_chord(cls, start: Point, end: Point, bulge: float) -> "ArcSeg":
+    def from_chord(cls, start: Point, end: Point, bulge: float) -> "CircleSeg":
         """
-        Costruisce un ArcSeg da due punti e il parametro bulge DXF.
+        Costruisce un arco da due punti e il parametro bulge DXF.
 
         bulge = tan(Δθ / 4), positivo = CCW, negativo = CW.
         Questa è l'unica sede della conversione — parser DXF e altri
         adapter passano qui senza conoscere la geometria interna.
         """
         if abs(bulge) < 1e-9:
-            raise ValueError("zero bulge: use LineSeg, not ArcSeg")
+            raise ValueError("zero bulge: use LineSeg, not CircleSeg")
 
         ccw = bulge > 0
         half_chord = math.hypot(end[0] - start[0], end[1] - start[1]) / 2.0
@@ -804,20 +812,26 @@ def segment_endpoints(segment) -> Tuple[Point, Point]:
     if isinstance(segment, LineSeg):
         return segment.start, segment.end
 
-    if isinstance(segment, ArcSeg):
+    if isinstance(segment, CircleSeg):
         return segment._point_at(segment.start_angle), segment._point_at(segment.end_angle)
 
     if isinstance(segment, BSplineSeg):
         return segment.endpoints()
 
-    if isinstance(segment, CircleSeg):
-        pt = (segment.center[0] + segment.radius, segment.center[1])
-        return pt, pt
-
     if isinstance(segment, EllipseSeg):
         return segment._point_at(segment.start_param), segment._point_at(segment.end_param)
 
     return (0.0, 0.0), (0.0, 0.0)
+
+
+def is_full_circle(segment) -> bool:
+    """Un `CircleSeg` che fa tutto il giro."""
+    return isinstance(segment, CircleSeg) and segment.full
+
+
+def is_arc(segment) -> bool:
+    """Un `CircleSeg` che non fa tutto il giro: un arco."""
+    return isinstance(segment, CircleSeg) and not segment.full
 
 
 def segment_is_closed(segment, tolerance: float = DEFAULT_TOLERANCE) -> bool:
@@ -829,71 +843,6 @@ def segment_is_closed(segment, tolerance: float = DEFAULT_TOLERANCE) -> bool:
     """
     start, end = segment_endpoints(segment)
     return math.hypot(start[0] - end[0], start[1] - end[1]) < tolerance
-
-
-@dataclass
-class CircleSeg(ConicSeg):
-    """The whole circle (`center`, `radius`), counter-clockwise from angle 0:
-    t is the angle, t in [0, 2π]."""
-    center: Point
-    radius: float
-
-    def __post_init__(self):
-        self.center, self.radius = _plain(self.center), _real(self.radius)
-        if not self.radius > 0:
-            raise ValueError(f"the radius must be positive, got {self.radius}")
-
-    @property
-    def t_range(self) -> Tuple[float, float]:
-        return (0.0, 2 * math.pi)
-
-    def point_at(self, t: float) -> Point:
-        return point_on_circle(self.center, self.radius, t)
-
-    def derivative_at(self, t: float) -> Point:
-        return (-self.radius * math.sin(t), self.radius * math.cos(t))
-
-    @property
-    def equation(self) -> Tuple[float, float, float, float, float, float]:
-        return _ellipse_equation(self.center, (1.0, 0.0), self.radius, self.radius)
-
-    def reversed(self) -> "CircleSeg":
-        """Un cerchio è simmetrico: invertirlo lo lascia identico."""
-        return CircleSeg(center=self.center, radius=self.radius)
-
-    def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "CircleSeg":
-        """Stesso cerchio, ruotato di `angle` radianti attorno a `origin` (solo il centro si sposta)."""
-        return CircleSeg(center=_rotate_point(self.center, angle, origin), radius=self.radius)
-
-    def translated(self, dx: float, dy: float) -> "CircleSeg":
-        """Stesso cerchio, spostato di (`dx`, `dy`)."""
-        return CircleSeg(center=_translate_point(self.center, dx, dy), radius=self.radius)
-
-    def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "CircleSeg":
-        """Stesso cerchio, specchiato sulla retta per `origin` a `angle`
-        radianti (default: l'asse x): si sposta solo il centro."""
-        return CircleSeg(center=_mirror_point(self.center, origin, angle), radius=self.radius)
-
-    def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "CircleSeg":
-        """Stesso cerchio, scalato di `factor` (> 0) attorno a `origin`."""
-        factor = _check_factor(factor)
-        return CircleSeg(center=_scale_point(self.center, factor, origin), radius=self.radius * factor)
-
-    def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
-        """
-        Discretizza il cerchio in polilinea chiusa sulla sua griglia
-        (`_circle_sides`, ancorata all'angolo 0): sagitta <= tolerance, lati
-        che crescono con il raggio (~π·√(r/2·tol)). Ogni `ArcSeg` dello stesso
-        cerchio usa gli stessi vertici (D145).
-        """
-        n_segments = _circle_sides(self.radius, tolerance)
-
-        # Genera i punti (chiuso)
-        pts = []
-        for i in range(n_segments + 1):
-            pts.append(point_on_circle(self.center, self.radius, 2 * math.pi * i / n_segments))
-
-        return pts
 
 
 # ---------------------------------------------------------------------------
@@ -913,12 +862,10 @@ class EllipseSeg(ConicSeg):
     l'orientamento dell'ellisse. `ratio` è semiasse minore / semiasse
     maggiore (0 < ratio <= 1). Un'ellisse piena ha `start_param=0`,
     `end_param=2π` (i default DXF); un arco ellittico usa un sotto-intervallo.
-    Stesso trattamento di ArcSeg: un'unica classe copre sia il caso chiuso sia
-    quello aperto, perché è così che l'entità DXF stessa li tratta — non
-    serve una "EllipseSeg chiusa" separata come invece serve per CIRCLE (che
-    in DXF è sempre e solo chiuso).
+    Come `CircleSeg`: un'unica classe copre il giro intero e il pezzo, perché
+    matematicamente sono la stessa curva su un intervallo diverso (D286).
 
-    `ccw` esiste per lo stesso motivo di `ArcSeg.ccw`: un'ELLIPSE DXF reale è
+    `ccw` esiste per lo stesso motivo di `CircleSeg.ccw`: un'ELLIPSE DXF reale è
     sempre percorsa CCW da `start_param` a `end_param` (nessun flag di verso
     nel formato) — `ccw=False` è uno stato solo interno a topo, usato per
     percorrere il segmento al contrario quando un loop viene orientato
@@ -983,7 +930,7 @@ class EllipseSeg(ConicSeg):
         allunga nessun vettore (fattori 1 e ratio), quindi i vertici k·2π/N di
         `_circle_sides(a, tolerance)` portati sull'ellisse restano entro
         `tolerance` come sul cerchio. Gli estremi esatti più i punti di griglia
-        fra loro, come `ArcSeg`: un'ellisse tagliata in pezzi dà il poligono
+        fra loro, come `CircleSeg`: un'ellisse tagliata in pezzi dà il poligono
         dell'ellisse intera, una percorsa al contrario gli stessi punti.
         """
         total_angle = self._sweep()

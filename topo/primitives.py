@@ -11,14 +11,14 @@ e stile.
     import topo
 
     side = topo.primitives.LineSeg(start=(0, 0), end=(100, 0))
-    arc = topo.primitives.ArcSeg((50, 0), 50, 0.0, math.pi, True)
+    arc = topo.primitives.CircleSeg((50, 0), 50, 0.0, math.pi, True)   # mezzo cerchio
 
 Quello che sta sotto `topo.core` è interno, senza garanzie.
 """
 from .core.primitives.segments import (
-    MathSeg, ConicSeg, LineSeg, ArcSeg, CircleSeg, BSplineSeg, EllipseSeg, segment_endpoints,
+    MathSeg, ConicSeg, LineSeg, CircleSeg, BSplineSeg, EllipseSeg, segment_endpoints,
 )
 from .core.primitives.trim import sub_segment
 
-__all__ = ["MathSeg", "ConicSeg", "LineSeg", "ArcSeg", "CircleSeg", "BSplineSeg", "EllipseSeg", "sub_segment",
+__all__ = ["MathSeg", "ConicSeg", "LineSeg", "CircleSeg", "BSplineSeg", "EllipseSeg", "sub_segment",
            "segment_endpoints"]

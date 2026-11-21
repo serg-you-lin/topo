@@ -16,7 +16,6 @@ import math
 import unittest
 
 from topo.core.primitives.segments import (
-    ArcSeg,
     CircleSeg,
     EllipseSeg,
     _point_to_segment_distance,
@@ -60,7 +59,7 @@ class TestDiscretizeWithinTolerance(unittest.TestCase):
     def test_arc_every_radius(self):
         for r in RADII:
             with self.subTest(r=r):
-                arc = ArcSeg((0.0, 0.0), r, 0.0, 1.5 * math.pi)
+                arc = CircleSeg((0.0, 0.0), r, 0.0, 1.5 * math.pi)
                 curve = _samples(lambda t: (r * math.cos(t), r * math.sin(t)), 0.0, 1.5 * math.pi)
                 self.assertLessEqual(_deviation(arc.discretize(tolerance=TOL), curve), TOL)
 
@@ -125,7 +124,7 @@ class TestArcOnCircleGrid(unittest.TestCase):
         return CircleSeg((3.0, -2.0), self.R).discretize(tolerance=TOL)
 
     def _arc(self, a0, a1, ccw=True):
-        return ArcSeg((3.0, -2.0), self.R, a0, a1, ccw).discretize(tolerance=TOL)
+        return CircleSeg((3.0, -2.0), self.R, a0, a1, ccw).discretize(tolerance=TOL)
 
     def _same(self, pts_a, pts_b):
         self.assertEqual(len(pts_a), len(pts_b))
@@ -155,7 +154,7 @@ class TestArcOnCircleGrid(unittest.TestCase):
 
     def test_reversed_arc_gives_the_same_points_backwards(self):
         fwd = self._arc(0.37, 2.9)
-        back = ArcSeg((3.0, -2.0), self.R, 0.37, 2.9).reversed().discretize(tolerance=TOL)
+        back = CircleSeg((3.0, -2.0), self.R, 0.37, 2.9).reversed().discretize(tolerance=TOL)
         self._same(back, fwd[::-1])
 
     def test_arc_shorter_than_a_step_is_one_chord(self):
@@ -182,11 +181,11 @@ class TestGridSnapUnderMotion(unittest.TestCase):
     def test_cerchio_tagliato_vicino_a_un_vertice_della_griglia(self):
         import topo
         from tests.invariants import rigid
-        from topo.core.primitives.segments import ArcSeg, _circle_sides, DEFAULT_TOLERANCE
+        from topo.core.primitives.segments import _circle_sides, DEFAULT_TOLERANCE
         r = 10.0
         cut = 5 * 2 * math.pi / _circle_sides(r, DEFAULT_TOLERANCE) + 5e-10 / r
-        arcs = [ArcSeg(center=(0.0, 0.0), radius=r, start_angle=cut, end_angle=cut + math.pi),
-                ArcSeg(center=(0.0, 0.0), radius=r, start_angle=cut + math.pi, end_angle=cut + 2 * math.pi)]
+        arcs = [CircleSeg(center=(0.0, 0.0), radius=r, start_angle=cut, end_angle=cut + math.pi),
+                CircleSeg(center=(0.0, 0.0), radius=r, start_angle=cut + math.pi, end_angle=cut + 2 * math.pi)]
 
         def reading(motion):
             segment, _ = rigid(*motion)

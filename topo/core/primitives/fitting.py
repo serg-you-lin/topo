@@ -28,7 +28,7 @@ import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple, Union
 
-from .segments import ArcSeg, CircleSeg, EllipseSeg, LineSeg, BSplineSeg, Point
+from .segments import CircleSeg, EllipseSeg, LineSeg, BSplineSeg, Point, is_arc
 from ..geometry.measure import FLOAT_NOISE
 from ..geometry.points import (
     DEFAULT_DUPLICATE_TOLERANCE, approximate_bspline, douglas_peucker, drop_duplicate_points,
@@ -36,7 +36,7 @@ from ..geometry.points import (
     within_ellipse_through, within_smooth_curve,
 )
 
-Primitive = Union[LineSeg, ArcSeg, CircleSeg, EllipseSeg, BSplineSeg]
+Primitive = Union[LineSeg, CircleSeg, EllipseSeg, BSplineSeg]
 
 DEFAULT_SPLINE_DEGREE = 3
 
@@ -118,7 +118,7 @@ def _split_stretch(points: List[Point], tolerance: float, scale: float, corner_t
     return parts
 
 
-def _arc_through_ends(points: List[Point], tolerance: float) -> Optional[ArcSeg]:
+def _arc_through_ends(points: List[Point], tolerance: float) -> Optional[CircleSeg]:
     """
     L'arco che passa esattamente per il primo e l'ultimo punto (e per quello a
     metà), se tutti i punti stanno entro `tolerance` dal suo cerchio. Passa
@@ -131,7 +131,7 @@ def _arc_through_ends(points: List[Point], tolerance: float) -> Optional[ArcSeg]
         return None
     center, radius = circle
     # da a a b passando per m: antiorario se m sta a destra della corda a->b
-    return ArcSeg(center=center, radius=radius,
+    return CircleSeg(center=center, radius=radius,
                   start_angle=math.atan2(a[1] - center[1], a[0] - center[0]),
                   end_angle=math.atan2(b[1] - center[1], b[0] - center[0]),
                   ccw=offset_from_line(m, a, b) < 0)
@@ -260,8 +260,8 @@ def _join_seam(prims: List[Primitive], tolerance: float) -> List[Primitive]:
     if len(prims) < 2:
         return prims
     last, first = prims[-1], prims[0]
-    if isinstance(last, ArcSeg) and isinstance(first, ArcSeg) and last.ccw == first.ccw             and math.dist(last.center, first.center) <= tolerance and abs(last.radius - first.radius) <= tolerance:
-        merged = ArcSeg(center=last.center, radius=last.radius, start_angle=last.start_angle,
+    if is_arc(last) and is_arc(first) and last.ccw == first.ccw             and math.dist(last.center, first.center) <= tolerance and abs(last.radius - first.radius) <= tolerance:
+        merged = CircleSeg(center=last.center, radius=last.radius, start_angle=last.start_angle,
                         end_angle=first.end_angle, ccw=last.ccw)
         return [merged] + prims[1:-1]
     if isinstance(last, LineSeg) and isinstance(first, LineSeg)             and abs(offset_from_line(last.end, last.start, first.end)) <= tolerance:
@@ -291,7 +291,7 @@ def simplify_points(
     spline_degree: int = DEFAULT_SPLINE_DEGREE,
 ) -> List[Primitive]:
     """
-    Primitive (LineSeg/ArcSeg/CircleSeg/EllipseSeg/BSplineSeg) per la sequenza di punti
+    Primitive (LineSeg/CircleSeg/EllipseSeg/BSplineSeg) per la sequenza di punti
     `points`, in catena testa-coda, ogni punto entro `tolerance` da esse —
     tranne quelli entro `scale` da uno spigolo che il campionamento aveva
     smussato e che qui torna vivo.

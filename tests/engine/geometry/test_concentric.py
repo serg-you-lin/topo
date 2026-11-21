@@ -5,7 +5,7 @@ import math
 import unittest
 
 import topo
-from topo.core.primitives.segments import ArcSeg, CircleSeg, LineSeg
+from topo.core.primitives.segments import CircleSeg, LineSeg
 from topo.core.geometry.shape import arcs_around, concentric_groups
 
 
@@ -97,7 +97,7 @@ class TestConcentricGroupsUnderMotion(unittest.TestCase):
 class TestArcsAround(unittest.TestCase):
 
     def _arc(self, c, r, sweep_deg):
-        return ArcSeg(center=c, radius=r, start_angle=0.0, end_angle=math.radians(sweep_deg))
+        return CircleSeg(center=c, radius=r, start_angle=0.0, end_angle=math.radians(sweep_deg))
 
     def test_arco_di_tre_quarti(self):
         (found,) = arcs_around((0, 0), 2.5, [self._arc((0, 0), 3, 270)], tolerance=0.1)
@@ -116,7 +116,7 @@ class TestArcsAround(unittest.TestCase):
         self.assertEqual(arcs_around((0, 0), 1, [CircleSeg(center=(0, 0), radius=2)], tolerance=0.1), [])
 
     def test_arco_orario(self):
-        arc = ArcSeg(center=(0, 0), radius=3, start_angle=0.0, end_angle=math.radians(90), ccw=False)
+        arc = CircleSeg(center=(0, 0), radius=3, start_angle=0.0, end_angle=math.radians(90), ccw=False)
         (found,) = arcs_around((0, 0), 2, [arc], tolerance=0.1)
         self.assertAlmostEqual(found.sweep, 270)
 
