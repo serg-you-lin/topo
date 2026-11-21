@@ -234,13 +234,13 @@ def write_segments(segments: List, msp, layer: str, styles: Optional[List] = Non
             dxfattribs=_style_attribs(msp.doc, layer, style),
         )
 
-    if len(segments) == 1 and isinstance(segments[0], EllipseSeg):
+    if len(segments) == 1 and isinstance(segments[0], EllipseSeg) and not isinstance(segments[0], CircleSeg):
         return _add_ellipse(segments[0], msp, layer, style)
 
     if len(segments) == 1 and isinstance(segments[0], BSplineSeg):
         return _add_spline(segments[0], msp, layer, style)
 
-    if any(isinstance(s, (BSplineSeg, EllipseSeg)) for s in segments):
+    if any(isinstance(s, (BSplineSeg, EllipseSeg)) and not isinstance(s, CircleSeg) for s in segments):
         # Contorno misto: nessuna entità DXF singola può contenere insieme una
         # spline/ellisse e una polilinea. Lo materializziamo come più entità
         # native (SPLINE/ELLIPSE + LWPOLYLINE aperte) con endpoint coincidenti

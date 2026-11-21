@@ -305,185 +305,6 @@ def _grid_angles(lo: float, hi: float, radius: float, sides: int) -> List[float]
 
 
 # ---------------------------------------------------------------------------
-# CircleSeg: arco o cerchio intero
-# ---------------------------------------------------------------------------
-
-@dataclass
-class CircleSeg(ConicSeg):
-    """A piece of the circle (`center`, `radius`) from `start_angle` to
-    `end_angle`, counter-clockwise when `ccw`; with no angles the whole
-    circle from angle 0. A circle is an arc that goes all the way round
-    (`full`): one class, not two (D286). `t` is the angle walked from the
-    start: t in [0, sweep]."""
-    center: Point
-    radius: float
-    start_angle: float = 0.0          # radianti
-    end_angle: float = 2 * math.pi    # radianti
-    ccw: bool = True
-
-    def __post_init__(self):
-        self.center, self.radius = _plain(self.center), _real(self.radius)
-        self.start_angle, self.end_angle = _real(self.start_angle), _real(self.end_angle)
-        # raggio 0 è un punto, non una curva (D154)
-        if not self.radius > 0:
-            raise ValueError(f"the radius must be positive, got {self.radius}")
-
-    def _sweep(self) -> float:
-        """Angolo spazzato in radianti, sempre positivo."""
-        return _angular_sweep(self.start_angle, self.end_angle, self.ccw)
-
-    @property
-    def full(self) -> bool:
-        """True when the piece goes all the way round: the whole circle."""
-        return self._sweep() == 2 * math.pi
-
-    def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
-        """
-        Discretizza sulla griglia del cerchio (`_circle_sides`, ancorata
-        all'angolo 0, D145): gli estremi esatti più i vertici della griglia
-        che cadono fra loro, così ogni arco si sovrappone al cerchio intero.
-        Sagitta <= tolerance. Anche il giro intero: un cerchio e i suoi archi
-        hanno gli stessi vertici, da qualunque angolo parta.
-        """
-        total_angle = self._sweep()
-
-        if total_angle < 1e-12:
-            # Arco nullo
-            start_pt = self._point_at(self.start_angle)
-            return [start_pt, start_pt]
-
-        sides = _circle_sides(self.radius, tolerance)
-        if self.ccw:
-            angles = _grid_angles(self.start_angle, self.start_angle + total_angle, self.radius, sides)
-        else:
-            angles = _grid_angles(self.start_angle - total_angle, self.start_angle, self.radius, sides)[::-1]
-        return [self._point_at(a) for a in angles]
-
-    def _point_at(self, angle: float) -> Point:
-        """Punto sull'arco all'angolo dato (radianti)."""
-        return point_on_circle(self.center, self.radius, angle)
-
-    @property
-    def t_range(self) -> Tuple[float, float]:
-        return (0.0, self._sweep())
-
-    def point_at(self, t: float) -> Point:
-        return self._point_at(self.start_angle + (t if self.ccw else -t))
-
-    def derivative_at(self, t: float) -> Point:
-        a = self.start_angle + (t if self.ccw else -t)
-        sign = 1.0 if self.ccw else -1.0
-        return (-sign * self.radius * math.sin(a), sign * self.radius * math.cos(a))
-
-    @property
-    def equation(self) -> Tuple[float, float, float, float, float, float]:
-        return _ellipse_equation(self.center, (1.0, 0.0), self.radius, self.radius)
-
-    def reversed(self) -> "CircleSeg":
-        """Stesso arco fisico, percorso al contrario: scambia gli angoli e nega ccw."""
-        return CircleSeg(
-            center=self.center,
-            radius=self.radius,
-            start_angle=self.end_angle,
-            end_angle=self.start_angle,
-            ccw=not self.ccw,
-        )
-
-    def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "CircleSeg":
-        """
-        Stesso arco fisico, ruotato di `angle` radianti attorno a `origin`:
-        il centro trasla con la rotazione, `start_angle`/`end_angle` si
-        spostano dello stesso `angle` (il raggio e il verso non cambiano).
-        """
-        return CircleSeg(
-            center=_rotate_point(self.center, angle, origin),
-            radius=self.radius,
-            start_angle=self.start_angle + angle,
-            end_angle=self.end_angle + angle,
-            ccw=self.ccw,
-        )
-
-    def translated(self, dx: float, dy: float) -> "CircleSeg":
-        """Stesso arco, spostato di (`dx`, `dy`): si sposta solo il centro."""
-        return CircleSeg(center=_translate_point(self.center, dx, dy), radius=self.radius,
-                      start_angle=self.start_angle, end_angle=self.end_angle, ccw=self.ccw)
-
-    def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "CircleSeg":
-        """
-        Stesso arco, specchiato sulla retta per `origin` a `angle` radianti
-        (default: l'asse x): il punto all'angolo `a` va all'angolo
-        `2·angle − a`, quindi il verso si inverte. Sull'asse x la griglia del
-        cerchio (D145, ancorata all'angolo 0) è simmetrica e l'arco specchiato
-        ha i vertici specchiati; su un altro asse la curva è esatta e i
-        vertici cadono sulla griglia dell'arco nuovo.
-        """
-        return CircleSeg(center=_mirror_point(self.center, origin, angle), radius=self.radius,
-                      start_angle=2 * angle - self.start_angle, end_angle=2 * angle - self.end_angle,
-                      ccw=not self.ccw)
-
-    def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "CircleSeg":
-        """Stesso arco, scalato di `factor` (> 0) attorno a `origin`: il centro
-        si sposta, il raggio si moltiplica, angoli e verso non cambiano."""
-        factor = _check_factor(factor)
-        return CircleSeg(center=_scale_point(self.center, factor, origin), radius=self.radius * factor,
-                      start_angle=self.start_angle, end_angle=self.end_angle, ccw=self.ccw)
-
-    @classmethod
-    def from_chord(cls, start: Point, end: Point, bulge: float) -> "CircleSeg":
-        """
-        Costruisce un arco da due punti e il parametro bulge DXF.
-
-        bulge = tan(Δθ / 4), positivo = CCW, negativo = CW.
-        Questa è l'unica sede della conversione — parser DXF e altri
-        adapter passano qui senza conoscere la geometria interna.
-        """
-        if abs(bulge) < 1e-9:
-            raise ValueError("zero bulge: use LineSeg, not CircleSeg")
-
-        ccw = bulge > 0
-        half_chord = math.hypot(end[0] - start[0], end[1] - start[1]) / 2.0
-        if not half_chord > 0:
-            # corda nulla: raggio 0, con numpy un arco NaN invece di un errore (D154)
-            raise ValueError("zero chord: a point, not an arc")
-        sweep = 4.0 * math.atan(abs(bulge))          # angolo spazzato totale
-        radius = half_chord / math.sin(sweep / 2.0)
-
-        # Punto medio della corda
-        mx = (start[0] + end[0]) / 2.0
-        my = (start[1] + end[1]) / 2.0
-
-        # Versore perpendicolare alla corda (verso il centro)
-        dx = end[0] - start[0]
-        dy = end[1] - start[1]
-        chord_len = 2.0 * half_chord
-        nx = -dy / chord_len
-        ny =  dx / chord_len
-
-        # Distanza (con segno) dal midpoint al centro lungo la perpendicolare.
-        # `radius * cos(sweep/2)` è negativo per sweep > π (arco maggiore,
-        # |bulge| > 1): il centro sta dalla parte opposta della corda rispetto
-        # all'arco minore. `sqrt(r² - half_chord²)` sarebbe sempre positivo e
-        # sceglierebbe l'arco minore anche quando il bulge chiede il maggiore.
-        d = radius * math.cos(sweep / 2.0)
-
-        # CCW → centro a sinistra della corda (nx, ny positivo)
-        # CW  → centro a destra (nx, ny negativo)
-        sign = 1.0 if ccw else -1.0
-        cx = mx + sign * d * nx
-        cy = my + sign * d * ny
-
-        start_angle = math.atan2(start[1] - cy, start[0] - cx)
-        end_angle   = math.atan2(end[1]   - cy, end[0]   - cx)
-
-        return cls(
-            center=(cx, cy),
-            radius=radius,
-            start_angle=start_angle,
-            end_angle=end_angle,
-            ccw=ccw,
-        )
-
-# ---------------------------------------------------------------------------
 # BSplineSeg
 # ---------------------------------------------------------------------------
 
@@ -1006,3 +827,196 @@ class EllipseSeg(ConicSeg):
                           major_axis=(self.major_axis[0] * factor, self.major_axis[1] * factor),
                           ratio=self.ratio, start_param=self.start_param, end_param=self.end_param,
                           ccw=self.ccw)
+
+
+# ---------------------------------------------------------------------------
+# CircleSeg: arco o cerchio intero
+# ---------------------------------------------------------------------------
+
+class CircleSeg(EllipseSeg):
+    """A piece of the circle (`center`, `radius`) from `start_angle` to
+    `end_angle`, counter-clockwise when `ccw`; with no angles the whole
+    circle from angle 0. A circle is an arc that goes all the way round
+    (`full`, D286), and an ellipse with equal semi-axes (D287): its axis is
+    (radius, 0), so the ellipse's parameter is the angle. `t` is the angle
+    walked from the start: t in [0, sweep]."""
+
+    def __init__(self, center: Point, radius: float, start_angle: float = 0.0,
+                 end_angle: float = 2 * math.pi, ccw: bool = True):
+        radius = _real(radius)
+        # raggio 0 è un punto, non una curva (D154)
+        if not radius > 0:
+            raise ValueError(f"the radius must be positive, got {radius}")
+        super().__init__(center=center, major_axis=(radius, 0.0), ratio=1.0,
+                         start_param=start_angle, end_param=end_angle, ccw=ccw)
+
+    @property
+    def radius(self) -> float:
+        return self.major_axis[0]
+
+    @property
+    def start_angle(self) -> float:
+        return self.start_param
+
+    @property
+    def end_angle(self) -> float:
+        return self.end_param
+
+    def __repr__(self) -> str:
+        return (f"CircleSeg(center={self.center!r}, radius={self.radius!r}, start_angle={self.start_angle!r}, "
+                f"end_angle={self.end_angle!r}, ccw={self.ccw!r})")
+
+    def _sweep(self) -> float:
+        """Angolo spazzato in radianti, sempre positivo."""
+        return _angular_sweep(self.start_angle, self.end_angle, self.ccw)
+
+    @property
+    def full(self) -> bool:
+        """True when the piece goes all the way round: the whole circle."""
+        return self._sweep() == 2 * math.pi
+
+    def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
+        """
+        Discretizza sulla griglia del cerchio (`_circle_sides`, ancorata
+        all'angolo 0, D145): gli estremi esatti più i vertici della griglia
+        che cadono fra loro, così ogni arco si sovrappone al cerchio intero.
+        Sagitta <= tolerance. Anche il giro intero: un cerchio e i suoi archi
+        hanno gli stessi vertici, da qualunque angolo parta.
+        """
+        total_angle = self._sweep()
+
+        if total_angle < 1e-12:
+            # Arco nullo
+            start_pt = self._point_at(self.start_angle)
+            return [start_pt, start_pt]
+
+        sides = _circle_sides(self.radius, tolerance)
+        if self.ccw:
+            angles = _grid_angles(self.start_angle, self.start_angle + total_angle, self.radius, sides)
+        else:
+            angles = _grid_angles(self.start_angle - total_angle, self.start_angle, self.radius, sides)[::-1]
+        return [self._point_at(a) for a in angles]
+
+    def _point_at(self, angle: float) -> Point:
+        """Punto sull'arco all'angolo dato (radianti)."""
+        return point_on_circle(self.center, self.radius, angle)
+
+    @property
+    def t_range(self) -> Tuple[float, float]:
+        return (0.0, self._sweep())
+
+    def point_at(self, t: float) -> Point:
+        return self._point_at(self.start_angle + (t if self.ccw else -t))
+
+    def derivative_at(self, t: float) -> Point:
+        a = self.start_angle + (t if self.ccw else -t)
+        sign = 1.0 if self.ccw else -1.0
+        return (-sign * self.radius * math.sin(a), sign * self.radius * math.cos(a))
+
+    @property
+    def equation(self) -> Tuple[float, float, float, float, float, float]:
+        return _ellipse_equation(self.center, (1.0, 0.0), self.radius, self.radius)
+
+    def reversed(self) -> "CircleSeg":
+        """Stesso arco fisico, percorso al contrario: scambia gli angoli e nega ccw."""
+        return CircleSeg(
+            center=self.center,
+            radius=self.radius,
+            start_angle=self.end_angle,
+            end_angle=self.start_angle,
+            ccw=not self.ccw,
+        )
+
+    def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "CircleSeg":
+        """
+        Stesso arco fisico, ruotato di `angle` radianti attorno a `origin`:
+        il centro trasla con la rotazione, `start_angle`/`end_angle` si
+        spostano dello stesso `angle` (il raggio e il verso non cambiano).
+        """
+        return CircleSeg(
+            center=_rotate_point(self.center, angle, origin),
+            radius=self.radius,
+            start_angle=self.start_angle + angle,
+            end_angle=self.end_angle + angle,
+            ccw=self.ccw,
+        )
+
+    def translated(self, dx: float, dy: float) -> "CircleSeg":
+        """Stesso arco, spostato di (`dx`, `dy`): si sposta solo il centro."""
+        return CircleSeg(center=_translate_point(self.center, dx, dy), radius=self.radius,
+                      start_angle=self.start_angle, end_angle=self.end_angle, ccw=self.ccw)
+
+    def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "CircleSeg":
+        """
+        Stesso arco, specchiato sulla retta per `origin` a `angle` radianti
+        (default: l'asse x): il punto all'angolo `a` va all'angolo
+        `2·angle − a`, quindi il verso si inverte. Sull'asse x la griglia del
+        cerchio (D145, ancorata all'angolo 0) è simmetrica e l'arco specchiato
+        ha i vertici specchiati; su un altro asse la curva è esatta e i
+        vertici cadono sulla griglia dell'arco nuovo.
+        """
+        return CircleSeg(center=_mirror_point(self.center, origin, angle), radius=self.radius,
+                      start_angle=2 * angle - self.start_angle, end_angle=2 * angle - self.end_angle,
+                      ccw=not self.ccw)
+
+    def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "CircleSeg":
+        """Stesso arco, scalato di `factor` (> 0) attorno a `origin`: il centro
+        si sposta, il raggio si moltiplica, angoli e verso non cambiano."""
+        factor = _check_factor(factor)
+        return CircleSeg(center=_scale_point(self.center, factor, origin), radius=self.radius * factor,
+                      start_angle=self.start_angle, end_angle=self.end_angle, ccw=self.ccw)
+
+    @classmethod
+    def from_chord(cls, start: Point, end: Point, bulge: float) -> "CircleSeg":
+        """
+        Costruisce un arco da due punti e il parametro bulge DXF.
+
+        bulge = tan(Δθ / 4), positivo = CCW, negativo = CW.
+        Questa è l'unica sede della conversione — parser DXF e altri
+        adapter passano qui senza conoscere la geometria interna.
+        """
+        if abs(bulge) < 1e-9:
+            raise ValueError("zero bulge: use LineSeg, not CircleSeg")
+
+        ccw = bulge > 0
+        half_chord = math.hypot(end[0] - start[0], end[1] - start[1]) / 2.0
+        if not half_chord > 0:
+            # corda nulla: raggio 0, con numpy un arco NaN invece di un errore (D154)
+            raise ValueError("zero chord: a point, not an arc")
+        sweep = 4.0 * math.atan(abs(bulge))          # angolo spazzato totale
+        radius = half_chord / math.sin(sweep / 2.0)
+
+        # Punto medio della corda
+        mx = (start[0] + end[0]) / 2.0
+        my = (start[1] + end[1]) / 2.0
+
+        # Versore perpendicolare alla corda (verso il centro)
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        chord_len = 2.0 * half_chord
+        nx = -dy / chord_len
+        ny =  dx / chord_len
+
+        # Distanza (con segno) dal midpoint al centro lungo la perpendicolare.
+        # `radius * cos(sweep/2)` è negativo per sweep > π (arco maggiore,
+        # |bulge| > 1): il centro sta dalla parte opposta della corda rispetto
+        # all'arco minore. `sqrt(r² - half_chord²)` sarebbe sempre positivo e
+        # sceglierebbe l'arco minore anche quando il bulge chiede il maggiore.
+        d = radius * math.cos(sweep / 2.0)
+
+        # CCW → centro a sinistra della corda (nx, ny positivo)
+        # CW  → centro a destra (nx, ny negativo)
+        sign = 1.0 if ccw else -1.0
+        cx = mx + sign * d * nx
+        cy = my + sign * d * ny
+
+        start_angle = math.atan2(start[1] - cy, start[0] - cx)
+        end_angle   = math.atan2(end[1]   - cy, end[0]   - cx)
+
+        return cls(
+            center=(cx, cy),
+            radius=radius,
+            start_angle=start_angle,
+            end_angle=end_angle,
+            ccw=ccw,
+        )

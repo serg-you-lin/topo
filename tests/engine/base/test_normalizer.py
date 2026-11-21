@@ -585,7 +585,7 @@ class TestRefitEllipse(unittest.TestCase):
 
     def test_curva_che_non_e_una_conica_non_diventa_ellisse(self):
         pts = [(x * 0.05, math.sin(x / 80) + 0.12 * math.sin(x / 20)) for x in range(300)]
-        self.assertFalse(any(isinstance(s, EllipseSeg) for s in _refit_segments(pts)))
+        self.assertFalse(any(isinstance(s, EllipseSeg) and not isinstance(s, CircleSeg) for s in _refit_segments(pts)))
 
 
 def _polygon(center, radius, sides, start=0.3):

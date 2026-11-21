@@ -10,7 +10,7 @@ import math
 import unittest
 
 from topo.core.primitives.segments import (
-    BSplineSeg, ConicSeg, EllipseSeg, MathSeg, segment_endpoints,
+    BSplineSeg, CircleSeg, ConicSeg, EllipseSeg, MathSeg, segment_endpoints,
 )
 from topo.precision import FLOAT_NOISE
 from tests.engine.primitives.test_segment_motion import _segments
@@ -67,6 +67,16 @@ class TestMathSeg(unittest.TestCase):
 
 class TestConicSeg(unittest.TestCase):
 
+    def test_un_cerchio_e_un_ellisse_coi_semiassi_uguali(self):
+        # D287: le formule dell'ellisse valgono sul cerchio, esatte
+        for name, seg in _all():
+            if isinstance(seg, CircleSeg):
+                self.assertIsInstance(seg, EllipseSeg, name)
+                self.assertEqual((seg.ratio, seg.major_axis), (1.0, (seg.radius, 0.0)), name)
+                for t in _samples(seg):
+                    u = seg.start_param + (t if seg.ccw else -t)
+                    self.assertLessEqual(math.dist(seg.point_at(t), EllipseSeg._point_at(seg, u)), FLOAT_NOISE, (name, t))
+
     def test_arco_cerchio_ellisse_sono_coniche_le_altre_no(self):
         for name, seg in _all():
             self.assertEqual(isinstance(seg, ConicSeg), name.startswith(("arc", "circle", "ellipse")), name)
@@ -87,11 +97,12 @@ class TestConicSeg(unittest.TestCase):
                 self.assertLess(b * b - 4 * a * c, 0, name)
 
     def test_cerchio_ha_a_uguale_c_e_niente_xy(self):
-        for name, seg in _all():
-            if isinstance(seg, ConicSeg) and not isinstance(seg, EllipseSeg):
-                a, b, c, *_ = seg.equation
-                self.assertAlmostEqual(a, c, delta=FLOAT_NOISE * a, msg=name)
-                self.assertAlmostEqual(b, 0.0, delta=FLOAT_NOISE * a, msg=name)
+        circles = [(name, seg) for name, seg in _all() if isinstance(seg, CircleSeg)]
+        self.assertGreater(len(circles), 3)
+        for name, seg in circles:
+            a, b, c, *_ = seg.equation
+            self.assertAlmostEqual(a, c, delta=FLOAT_NOISE * a, msg=name)
+            self.assertAlmostEqual(b, 0.0, delta=FLOAT_NOISE * a, msg=name)
 
 
 if __name__ == "__main__":

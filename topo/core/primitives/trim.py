@@ -92,7 +92,7 @@ def _clamp(offset: float, sweep: float) -> float:
 def _angle_of(seg, pt: Point) -> float:
     """Angolo (o parametro dell'ellisse) di `pt` visto dal centro della curva."""
     dx, dy = pt[0] - seg.center[0], pt[1] - seg.center[1]
-    if not isinstance(seg, EllipseSeg):
+    if isinstance(seg, CircleSeg):
         return math.atan2(dy, dx)
     mx, my = seg.major_axis
     nx, ny = -my * seg.ratio, mx * seg.ratio
@@ -101,10 +101,10 @@ def _angle_of(seg, pt: Point) -> float:
 
 
 def _angular(seg, lo: float, hi: float, ccw: bool):
-    if isinstance(seg, EllipseSeg):
-        return EllipseSeg(center=seg.center, major_axis=seg.major_axis, ratio=seg.ratio,
-                          start_param=lo, end_param=hi, ccw=ccw)
-    return CircleSeg(center=seg.center, radius=seg.radius, start_angle=lo, end_angle=hi, ccw=ccw)
+    if isinstance(seg, CircleSeg):
+        return CircleSeg(center=seg.center, radius=seg.radius, start_angle=lo, end_angle=hi, ccw=ccw)
+    return EllipseSeg(center=seg.center, major_axis=seg.major_axis, ratio=seg.ratio,
+                      start_param=lo, end_param=hi, ccw=ccw)
 
 
 # ---------------------------------------------------------------------------
