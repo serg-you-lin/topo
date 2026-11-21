@@ -942,9 +942,9 @@ topo.geometry.length_inside(segment, bounds) -> float
 topo.geometry.chord_angle_deg(a, b) -> float
 ```
 
-- `segment_length`: the length of a native primitive. Exact for
-  `LineSeg`, `CircleSeg`; for `BSplineSeg` and `EllipseSeg` it is the
-  polyline of `discretize()`.
+- `segment_length`: the length of a native primitive. A closed formula for
+  `LineSeg`, `CircleSeg`, the parameter for `ClothoidSeg`; for every other
+  curve the integral of its exact speed |P'(t)| (D293).
 - `length_inside`: how much of `segment` lies inside the rectangle
   `bounds` = `(xmin, ymin, xmax, ymax)`, border included (curves on the
   polyline of `discretize()`).

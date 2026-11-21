@@ -114,11 +114,11 @@ def _closest_to(candidates: List[Point], ref: Point, other: Point) -> Optional[P
 # ---------------------------------------------------------------------------
 
 _SAME_ROOT = FLOAT_NOISE    # due radici più vicine di così sono lo stesso punto calcolato
-CURVE_TOLERANCE = SAME_POINT  # discretizzazione di spline ed ellissi per incrociarle  # D275
+CURVE_TOLERANCE = SAME_POINT  # discretizzazione delle curve senza forma chiusa per incrociarle  # D275
 
 
 def _exact_parts(seg) -> list:
-    """Retta, arco, cerchio restano se stessi; spline ed ellisse diventano
+    """Retta, arco, cerchio restano se stessi; le altre curve diventano
     rette fitte (`CURVE_TOLERANCE`): non hanno un'intersezione in forma chiusa."""
     if isinstance(seg, (LineSeg, CircleSeg)):
         return [seg]

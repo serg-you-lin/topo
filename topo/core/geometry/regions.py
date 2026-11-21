@@ -47,7 +47,7 @@ _ONTO_STEPS = 8                  # passi di Newton al più, in `translation_meet
 
 # ---------------------------------------------------------------------------
 # Parametro lungo una primitiva: retta 0..1, arco 0..ampiezza, cerchio 0..2π,
-# spline ed ellisse lunghezza lungo la loro discretizzazione
+# le altre curve lunghezza lungo la loro discretizzazione
 # ---------------------------------------------------------------------------
 
 def _polyline(seg) -> List[Point]:
@@ -268,7 +268,7 @@ def nearest_point(segments: Sequence, point: Point) -> Point:
     """
     The point of the primitives `segments` nearest to `point`: also in the
     middle of a side, not only on a vertex. Exact on lines, arcs and circles;
-    on splines and ellipses refined on the true curve, to float precision.
+    on every other curve refined on the true curve, to float precision.
     To know where it falls on the contour (vertex, blend, side) pass it to
     `point_on_contour`.
     """
@@ -337,7 +337,7 @@ def translation_meeting(constraints: Sequence[Tuple[Point, object, int]]) -> Opt
     più vicina a zero: verso +1, il punto spostato cade sulla curva ferma; verso
     -1, il punto fermo cade sulla curva spostata. None se la traslazione non è
     unica (vincoli tutti paralleli) o se non ce n'è una che li soddisfi tutti.
-    Esatta su rette, archi e cerchi; su spline ed ellissi entro
+    Esatta su rette, archi e cerchi; sulle altre curve entro
     `CURVE_TOLERANCE` (D271).
     """
     t = (0.0, 0.0)

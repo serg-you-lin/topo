@@ -162,7 +162,7 @@ def _chord_cuts(segments: Sequence, start: Point, end: Point,
     """(t, sul bordo) lungo `start`→`end`, t in [0, 1]: i due capi e i punti
     dove la corda incontra il bordo (salti compresi), in ordine, senza
     doppioni. Un capo è sul bordo se ci sta entro `tolerance`; un incontro
-    lo è per costruzione (su spline ed ellissi entro `CURVE_TOLERANCE`)."""
+    lo è per costruzione (sulle altre curve entro `CURVE_TOLERANCE`)."""
     from .intersections import intersections
     length = math.dist(start, end)
     if length == 0:

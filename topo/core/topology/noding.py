@@ -21,7 +21,7 @@ gruppo è un estremo d'ingresso, se ne contiene (il più piccolo, come
 del gruppo ricevono la stessa tupla, e il grafo non rigiudica nulla.
 `tolerance` non allarga l'identità di nodo: su tutta la rete percola (D101).
 
-Rette, archi e cerchi si misurano in forma chiusa; spline ed ellissi sulla
+Rette, archi e cerchi si misurano in forma chiusa; le altre curve sulla
 loro discretizzazione a `_FINE`, e si tagliano esatte
 (`sub_segment`); una spline che non si taglia (periodica) resta intera.
 
@@ -58,11 +58,11 @@ _EXACT = (LineSeg, CircleSeg)
 
 
 def _is_loop(seg) -> bool:
-    """La curva torna su se stessa: un cerchio, o una spline/ellisse coi capi
+    """La curva torna su se stessa: un cerchio, o un'altra curva coi capi
     entro DEFAULT_TOLERANCE. Una retta o un arco mai: un tratto corto è un
     tratto, con due capi da nodare (D56), non un anello (G6e)."""
     return is_full_circle(seg) or (not isinstance(seg, _EXACT) and segment_is_closed(seg))
-# mm — spline ed ellissi si misurano su questa discretizzazione (il valore
+# mm — le altre curve si misurano su questa discretizzazione (il valore
 # della vecchia griglia dei nodi, D113, tenuto quando la griglia è uscita, D216)
 _FINE = SAME_POINT  # D268
 
@@ -227,7 +227,7 @@ class _Curve:
 
     @property
     def length(self) -> float:
-        """Su spline ed ellissi la lunghezza della discretizzazione fine: si
+        """Sulle altre curve la lunghezza della discretizzazione fine: si
         calcola solo se serve (un edge senza contatti non la chiede)."""
         if self._length is None:
             seg = self.seg
