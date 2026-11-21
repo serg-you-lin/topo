@@ -20,8 +20,8 @@ from .style import VALID_DASH_KINDS, EdgeStyle
 RGB = Tuple[int, int, int]
 
 # I colori di base per nome, con i valori RGB che un CAD dà ai suoi colori
-# indicizzati (MAP.md D126). Il nero è il nero: una linea "bianca/nera" di un
-# DXF (indice 7) è bianca, la legge così l'adapter.
+# indicizzati (MAP.md D126). Il nero è il nero: un colore "bianco o nero
+# secondo lo sfondo" di un formato lo traduce il suo adapter.
 _COLOR_NAMES: Dict[str, RGB] = {
     "red": (255, 0, 0), "yellow": (255, 255, 0), "green": (0, 255, 0),
     "cyan": (0, 255, 255), "blue": (0, 0, 255), "magenta": (255, 0, 255),

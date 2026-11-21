@@ -12,7 +12,7 @@ stesso significato per ogni formato.
 
 Divisione dei compiti:
     - adapter → read/write formato ↔ modello, solo conoscenza di formato (dove
-      sta il testo, come si appiattisce il blocco di una quota DXF).
+      sta il testo, come si appiattisce il blocco di una quota).
     - ``anchor_texts()`` → ``cluster_ref`` (indice della parte che lo
       contiene).
     - agente → legge e modifica questi oggetti; un writer li riemette.
@@ -63,9 +63,9 @@ class RenderedGeometry:
     L'immagine che la sorgente disegna attorno a una stringa (linee, frecce,
     altri testi), già appiattita in primitive pure.
 
-    Serve all'output fedele: in un DXF la geometria di una DIMENSION o di un
-    LEADER sta in un blocco anonimo, non nei campi dell'entità; la si conserva
-    qui e un writer la ri-materializza.
+    Serve all'output fedele: in certi formati la geometria di una quota o di
+    un richiamo sta in un blocco a parte, non nei campi dell'entità; la si
+    conserva qui e un writer la ri-materializza.
     """
     _: KW_ONLY
     strokes: List[List[Point]]  = field(default_factory=list)  # polilinee aperte
@@ -155,7 +155,7 @@ class Text:
     source does not say. Unknown value → ``ValueError``.
 
     ``rendered``: the strokes, fills and strings the source draws with it
-    (a DXF dimension's or leader's own block), empty for a plain text and
+    (a dimension's or leader's own block), empty for a plain text and
     for a source that does not group them; never built by topo (D262).
     Where a pointer lands is a reading (D259).
 

@@ -38,7 +38,7 @@ def to_json(result: Result, *, indent: int = 2,
     `clusters`. Each cluster: `label`, `area`, `outer_perimeter`,
     `inner_perimeter`, `inner_count`, `bbox`, `overlay` (items per
     collection). In mm, exact on the primitives, no coordinates
-    (`topo_dxf.to_dxf` carries the curves).
+    (an adapter's writer carries the curves).
 
     `extra(cluster) -> dict` adds a consumer's fields (material, a part code,
     anything topo cannot know) to each cluster. A key topo already writes

@@ -3,37 +3,25 @@ topo
 ----
 Deterministic 2D geometry engine: it repairs vector geometry and reads its
 structure - closed contours, what lies inside what, what is connected.
-Geometry and roles, no file format (MAP.md D123). DXF and PDF come in and go out through the
-adapters, sibling packages in the same distribution: `topo_dxf`
-(`pip install g-topo[dxf]`) and `topo_pdf` (`g-topo[pdf]`) - D124, D129.
+Geometry and roles, no file format (MAP.md D123): files come in and go out
+through the adapters, sibling packages in the same distribution (D124, D129;
+the README shows them).
 
 Public API - everything you need is here.
 You do not have to import the internal modules directly.
 
-Recommended workflow (single file):
-    import topo, topo_dxf
+    import topo
 
-    rules = [
-        topo.RoleRule("construction", name_contains="constr", dashed=True),
-    ]
-    doc = topo_dxf.load_dxf("part.dxf", role_rules=rules)
-    # rules in order, the first one that matches wins (D63);
-    # topo.name_rules({"Construction": "construction"}) for name-only rules
+    plate = topo.geometry.rectangle(100, 60)
+    hole = topo.geometry.circle(8, center=(20, 15))
+    doc = topo.load_segments(plate + hole)    # or a Document from an adapter
 
     network = topo.heal(doc, label="part")    # the repair, once (D202)
     result = network.faces()                  # or network.outlines() for a sheet of views
     # holes, bends, engravings: a process reading, in snapbend (MAP.md D88)
 
-    topo_dxf.to_dxf(result, doc).saveas("part_healed.dxf")
     topo.save_json(result, "part.json")
-
-One Result per part, for every format:
-    parts = topo.split(result)                      # pure, no format
-    for part in parts:
-        topo_dxf.to_dxf(part, doc).saveas(f"{part.clusters[0].label}.dxf")
-
-Without a file: `topo.load_geometry` / `topo.load_segments` build a
-Document from geometry.
+    parts = topo.split(result)                # one Result per part, no format
 """
 
 from .core.geometry_input import load_geometry, load_segments
@@ -98,7 +86,7 @@ except ImportError:  # pragma: no cover
     __version__ = "0.0.0+dev"
 
 __all__ = [
-    # Geometria in ingresso (i file entrano dagli adapter: topo_dxf, topo_pdf)
+    # Geometria in ingresso (i file entrano dagli adapter)
     "load_geometry",
     "load_segments",
     # Validazione
@@ -119,7 +107,7 @@ __all__ = [
     "save_json",
     "to_shapely",
     # Utilità
-    # Ispezione / debug (Document → Result; il file grezzo: topo_dxf.inspect_dxf)
+    # Ispezione / debug (Document → Result; il file grezzo lo ispeziona il suo adapter)
     "inspect_document",
     "inspect_result",
     # Modelli

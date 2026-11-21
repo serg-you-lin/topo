@@ -10,8 +10,8 @@ I due livelli di topo, in ordine di pipeline:
     inspect_document(doc)    → edge + primitive + grafo — "cosa ha capito l'adapter"
     inspect_result(result)   → il modello                 — "cosa ha prodotto topo"
 
-Il livello del file (le entità grezze) è di un formato: `topo_dxf.inspect_dxf`,
-e `topo_dxf.inspect_file` stampa i tre livelli in fila su un file (D129).
+Il livello del file (le entità grezze) è di un formato: lo ispeziona il suo
+adapter, che stampa anche i tre livelli in fila su un file (D129).
 
 Tutto stampa su stdout con `print`. Nessun logger da configurare.
 """
@@ -56,9 +56,9 @@ def _role(r) -> str:
 
 def inspect_document(doc, *, graph: bool = True, limit: Optional[int] = 60) -> None:
     """
-    Prints a Document produced by an adapter (`topo_dxf.load_dxf`, …) or by
-    `topo.load_geometry`: what it extracted and translated. To start from a
-    file: `topo_dxf.inspect_file`.
+    Prints a Document produced by an adapter or by `topo.load_geometry`: what
+    it extracted and translated. To start from a file, the adapter has its own
+    inspector.
     """
 
     _h("LEVEL 2 — Document (adapter → domain)")

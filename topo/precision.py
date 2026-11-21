@@ -24,7 +24,7 @@ import types
 # diventano un punto solo (contorni che si chiudono, lati corti che spariscono);
 # più piccola, capi scritti con pochi decimali restano staccati (contorni aperti
 # senza max_gap) e le spline si tagliano più fini (più lento). Misurata sui 631
-# DXF di tests/: sotto 0,001 i contatti sulle spline, oggi calcolati sulla loro
+# disegni di tests/: sotto 0,001 i contatti sulle spline, oggi calcolati sulla loro
 # discretizzazione, rompono i contorni.
 SAME_POINT = 1e-3
 # È anche la sagitta di ogni poligono di una curva (D275): calcolo, disegno, testi.

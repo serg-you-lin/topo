@@ -39,10 +39,7 @@ def segments_from_loop(loop) -> list:
     NON parsa niente: ogni Edge porta già la sua primitiva (`edge.segment`,
     tradotta dall'adapter al load). Qui la si prende, la si inverte con
     `.reversed()` se l'Edge è percorso al contrario nel loop, e la si
-    concatena. Logica di dominio pura — nessuna dipendenza da ezdxf.
-
-    (Ex `adapters/dxf/parser.py::parse_loop` — spostata qui e rinominata,
-    MAP.md D6: non apparteneva all'adapter e il nome era fuorviante.)
+    concatena. Logica di dominio pura (MAP.md D6).
     """
     out = []
     for edge, rev in loop:

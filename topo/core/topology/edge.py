@@ -9,7 +9,7 @@ math puro senza semantica): `Edge` ne avvolge una con ruolo, provenienza e
 stile — dati di dominio, zero riferimento all'entità sorgente di alcun formato.
 
 Vive in core/ (non più in adapters/bridge/, D18) perché è core il suo
-consumatore principale: ogni adapter (DXF, PDF, ...) costruisce Edge, ma è
+consumatore principale: ogni adapter costruisce Edge, ma è
 il core a definirne la forma, esattamente come per le primitive.
 """
 
@@ -34,7 +34,7 @@ class Edge:
     Campi:
         role       : ruolo semantico (stringa: costante ContourRole o slug di un
                      consumatore) — assegnato dall'adapter prima di costruire
-                     l'Edge, mai derivato dal layer DXF qui dentro
+                     l'Edge, mai derivato da un layer qui dentro
         start      : endpoint arrotondato alla tolerance
         end        : endpoint arrotondato alla tolerance
         segment    : primitiva geometrica nativa — mai discretizzata qui,

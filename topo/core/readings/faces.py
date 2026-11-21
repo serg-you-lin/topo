@@ -102,7 +102,7 @@ def read_faces(net: Network) -> Result:
     if not clusters:
         # La geometria non compone nessun contorno esterno chiuso: il
         # risultato non è un pezzo, è un file non lavorabile. `loose` resta
-        # per la diagnostica, ma to_dxf() si rifiuta di scrivere solo quella.
+        # per la diagnostica, ma un writer si rifiuta di scrivere solo quella.
         result.errors.append(Diagnostic(
             "no-closed-outer", "no closed outer contour, so no part",
             points=[p for p, _ in net.free_ends],

@@ -21,7 +21,7 @@ Note:
       write() tratta un indice mancante come "nessuno stile noto".
     - nessun tipo shapely nel modello (D166): il poligono per le domande fra
       più curve è una cache privata, `core.primitives.polygon_builder.curve_polygon`
-    - role è l'unico canale semantico interno — mai leggere layer DXF nel core
+    - role è l'unico canale semantico interno — mai leggere un layer nel core
 """
 
 from __future__ import annotations

@@ -3,7 +3,7 @@ topo/core/base/gap_solver.py
 ----------------------------
 Calcolo geometrico puro della chiusura dei gap tra segmenti.
 
-Zero dipendenze da ezdxf, PDF, SVG o qualsiasi formato.
+Nessun formato: solo coordinate.
 Lavora su coordinate Python e restituisce istruzioni di correzione (GapFix).
 
 Il chiamante (adapter) è responsabile di:
@@ -466,10 +466,9 @@ def free_endpoints_from_edges(edges: List[Edge], graph) -> List[GapEndpoint]:
     """
     Estrae gli endpoint liberi (grado < 2 nel grafo) dagli Edge.
 
-    Sostituisce DxfAdapter.extract_free_endpoints: lavora su geometria pura,
-    il `ref` di ogni GapEndpoint è l'Edge stesso.
-    Considera solo linee, archi, spline ed ellissi aperte — i loop (cerchio, spline chiusa)
-    non hanno endpoint liberi per definizione.
+    Lavora su geometria pura: il `ref` di ogni GapEndpoint è l'Edge stesso.
+    Ogni curva aperta — i loop (cerchio intero, curva chiusa) non hanno
+    endpoint liberi per definizione.
     """
     return _gap_endpoints(edges, lambda node: graph.degree(node) < 2)
 
@@ -517,8 +516,7 @@ def apply_gap_fixes(edges: List[Edge], fixes: List[GapFix]) -> List[Edge]:
     """
     Applica i GapFix restituendo una NUOVA lista di Edge — `edges` non viene mutata.
 
-    Sostituisce DxfAdapter.apply_gap_fixes: invece di mutare entità ezdxf,
-    ricostruisce gli Edge coinvolti (MoveEndpoint) e ne aggiunge di nuovi
+    Ricostruisce gli Edge coinvolti (MoveEndpoint) e ne aggiunge di nuovi
     (AddSegment, sempre una LINE di congiunzione).
     """
     replacements: dict = {}   # id(edge_originale) -> Edge aggiornato

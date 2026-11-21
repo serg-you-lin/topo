@@ -5,7 +5,6 @@ graph.py
 --------
 Costruisce il grafo topologico.
 
-Questo modulo non importa ezdxf e non accede a entity.dxf.
 Tutta la geometria viene letta da edge.geometry (LineString shapely).
 
 Tipi pubblici:

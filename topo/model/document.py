@@ -1,7 +1,7 @@
 """
 model/document.py
 -----------------
-Il Document — output di topo_dxf.load_dxf() (o di qualunque altro adapter) e unico input di topo.heal().
+Il Document — output di un adapter (o di `topo.load_geometry`) e unico input di topo.heal().
 
 il loader restituisce questo oggetto di
 
@@ -10,14 +10,14 @@ il loader restituisce questo oggetto di
     source_meta : header rilevanti del file sorgente ($INSUNITS, $MEASUREMENT, …)
     source_path : percorso del file aperto
     source_format: da che cosa arriva la geometria, detto dall'adapter
-                  (`dxf`, `dwg`, `pdf`, `geometry`, …; stringa aperta, D231)
+                  (il nome che l'adapter sceglie, es. `pdf` o `geometry`; stringa aperta, D231)
     notes       : cosa l'adapter ha fatto da sé sul file (INSERT esplosi,
                   duplicati tolti, Z riportate sul piano), `Diagnostic` (D233)
-    warnings    : diagnostica raccolta da load_dxf() sul file grezzo — audit,
+    warnings    : diagnostica raccolta dall'adapter sul file grezzo — audit,
                   INSERT non esplosi, entità con Z != 0 riportate sul piano,
                   duplicati rimossi. topo.validate_document(doc) le rilancia.
 
-Nessun campo porta un riferimento a ezdxf: edges e texts sono dati puri
+Nessun campo porta un oggetto di una libreria di formato: edges e texts sono dati puri
 prodotti dall'adapter, source_meta è un dizionario di primitivi.
 """
 
@@ -36,11 +36,11 @@ if TYPE_CHECKING:
 @dataclass
 class Document:
     """
-    Domain document produced by an adapter (`topo_dxf.load_dxf`, …) or by
+    Domain document produced by an adapter or by
     `topo.load_geometry` / `topo.load_segments`.
 
     Contract: `heal()` works only on this object and on the Result derived
-    from it — never on ezdxf entities.
+    from it — never on a format library's objects.
     """
     edges:       List["Edge"]        = field(default_factory=list)
     _: KW_ONLY

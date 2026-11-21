@@ -2,7 +2,7 @@
 topo/core/geometry_input.py
 ---------------------------
 Punto di ingresso per costruire un Document da geometria già nota — non da
-un file. Stesso contratto di load_dxf/load_pdf (produce un Document, non
+un file. Stesso contratto di un adapter (produce un Document, non
 tipi interni), ma la "sorgente" è chi chiama: un generatore parametrico (es. uno
 sviluppo di cono/cilindro calcolato altrove) o un ricostruttore di geometria da
 punti (es. un contorno da computer vision già vettorializzato).
@@ -13,8 +13,8 @@ a quella di ogni adapter (`Edge.of`) — cambia
 solo la sorgente da tradurre. Non è un formato, quindi non sta tra gli
 adapter: è un ingresso di topo (MAP.md D123, D125).
 
-Pubblico da MAP.md D32 — provato da un caso reale (`bendly`, che lo usa in
-`io/dxf.py` per portare uno sviluppo generato a `Document`).
+Pubblico da MAP.md D32 — provato da un caso reale (`bendly`, che lo usa
+per portare uno sviluppo generato a `Document`).
 
 Funzioni pubbliche:
     load_geometry — traduce una lista di descrizioni geometriche in Document
@@ -69,8 +69,9 @@ class GeometryReader:
     nell'albero di contenimento — serve solo per far riconoscere fori/inner
     espliciti prima che un consumatore li riclassifichi.
 
-    Gli angoli di "arc" sono in GRADI (convenzione DXF/CAD, non i radianti di
-    CircleSeg) — più naturale per chi consegna numeri calcolati a mano.
+    Gli angoli di "arc" sono in GRADI, non i radianti di CircleSeg: più
+    naturale per chi consegna numeri calcolati a mano, come i costruttori di
+    `topo.geometry`.
 
     Lo schema di "spline" ricalca 1:1 i campi di BSplineSeg (control_points,
     knots, degree, weights): chi ha in mano l'oggetto
@@ -78,11 +79,10 @@ class GeometryReader:
     topo.core.primitives.fitting. Solo "control_points"/"knots"/"degree" sono
     obbligatori, il resto è opzionale.
 
-    Lo schema di "ellipse" ricalca 1:1 i campi di EllipseSeg — stessa
-    parametrizzazione del gruppo DXF ELLIPSE (center, major_axis come
-    VETTORE dal centro, ratio, start_param/end_param in radianti). Solo
-    "center"/"major_axis" sono obbligatori: "ratio"/"start_param"/
-    "end_param" hanno gli stessi default DXF di un'ellisse piena
+    Lo schema di "ellipse" ricalca 1:1 i campi di EllipseSeg (center,
+    major_axis come VETTORE dal centro, ratio, start_param/end_param in
+    radianti). Solo "center"/"major_axis" sono obbligatori: "ratio"/
+    "start_param"/"end_param" valgono di default un'ellisse piena
     (1.0 / 0.0 / 2π).
     """
 
@@ -165,7 +165,7 @@ def load_geometry(
 ) -> Document:
     """
     Builds a Document from a list of pure geometric descriptions — same
-    contract as load_dxf, but the source is not a file: it is geometry already
+    contract as an adapter's loader, but the source is not a file: it is geometry already
     computed or reconstructed elsewhere (parametric generators, contours
     vectorized from an image, ...).
 
@@ -182,7 +182,7 @@ def load_geometry(
             {"type": "line", "start": p_int_2, "end": p_est_2, "role": "outer"},
         ])
         result = topo.heal(doc, label="sviluppo_cono").faces()
-        topo_dxf.to_dxf(result)
+        topo.save_json(result, "sviluppo_cono.json")
 
     Args:
         entities:    list of geometric dicts (see GeometryReader)

@@ -81,14 +81,14 @@ def to_svg(
                              laser 1:1 (`width="…mm" height="…mm"`, padding e
                              sfondo forzati a 0/None). Ignora `size` e `padding`.
                              NB: archi/cerchi/spline restano discretizzati (D12) —
-                             per il taglio ad alta fedeltà usa `to_dxf`, non
-                             l'SVG. `None` = SVG per visualizzazione.
+                             per il taglio ad alta fedeltà il writer di un
+                             adapter, che scrive le curve, non l'SVG. `None` = SVG per visualizzazione.
         role_styles:         `{ruolo: RoleStyle}` del chiamante: il colore
-                             di ogni ruolo (D128), come in `to_dxf`.
+                             di ogni ruolo (D128), come in ogni exporter.
 
     Un `result` non valido viene disegnato lo stesso (vuoto o con la sola
     `loose`); `allow_invalid=False` → `ValueError`, per chi consegna a una
-    macchina (D83, stesso contratto di `to_dxf`).
+    macchina (D83, stesso contratto di ogni exporter).
     """
     if not result.is_valid and not allow_invalid:
         raise ValueError(

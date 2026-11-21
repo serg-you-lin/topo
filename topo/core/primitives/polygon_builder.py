@@ -3,8 +3,6 @@ core/primitives/polygon_builder.py
 -----------------------------------
 Funzione pura per costruire un Polygon shapely da una lista di primitive.
 
-Zero dipendenze da ezdxf o qualsiasi formato specifico.
-Chiamata dall'adapter DXF (e futuri adapter) — non la possiede.
 """
 
 from __future__ import annotations

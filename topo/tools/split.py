@@ -5,8 +5,8 @@ Un Result per parte (MAP.md D124, D129). Scegliere le parti è una decisione
 sul modello, non su un formato: quali cluster tenere (`min_area`), come si
 chiamano (`namer` → `cluster.label`), quali curve sciolte e quali testi
 viaggiano con ognuna. Ogni exporter scrive poi una parte nel suo formato
-(`topo_dxf.to_dxf`, `topo.experimental.to_svg`): lo stesso split esporta
-parti in DXF, SVG o PDF.
+(il writer di un adapter, `topo.experimental.to_svg`): lo stesso split
+esporta parti in ogni formato.
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ def split(
 
     `namer(i, cluster)` — if given — returns the `label` of the part's
     cluster, so a file name can be derived downstream
-    (`f"{cluster.label}.dxf"`); without it, the i-th part is
+    (`f"{cluster.label}.svg"`); without it, the i-th part is
     `f"{label}_P{i + 1}"`. By default it discards nothing (D232): a part
     below `min_area` (mm²; `<= 0`: no filter) is discarded
     with a warning in `result.warnings` and in those of every part: even if

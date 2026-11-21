@@ -3,10 +3,8 @@ topo/core/base/normalizer.py
 ----------------------------
 Normalizzazione geometrica format-agnostic.
 
-Zero dipendenze da ezdxf, PDF, SVG o qualsiasi formato.
-
 Normalizzazioni sotto "due entità non dovrebbero contare come due" (la copia
-identica, entità per entità, la toglie l'adapter DXF prima: D125):
+identica, entità per entità, la toglie l'adapter prima: D125):
     merge_collinear_overlaps — sovrapposizione geometrica reale: due o più
                              LineSeg sulla stessa retta infinita che si
                              coprono almeno in parte (anche a catena — il

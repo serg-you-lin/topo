@@ -4,8 +4,8 @@ model/style.py
 Aspetto visivo grezzo di un'entità sorgente — tipo di linea, tratto e colore.
 
 Dato di dominio puro, in un vocabolario che nessun formato possiede (MAP.md
-D126): niente indici colore ACI, niente BYLAYER/BYBLOCK, niente pattern nella
-forma della tabella DXF. Ogni adapter traduce il suo formato in questi campi
+D126): niente indici colore, niente stile ereditato "dal layer" o "dal blocco",
+niente pattern nella forma di un formato. Ogni adapter traduce il suo formato in questi campi
 al load, risolvendo l'ereditarietà (uno stile "del layer" è lo stile che la
 linea ha davvero) e lo ritraduce in uscita. Captato al load (`Edge.style`),
 sopravvive nel modello come `styles` — lista parallela a `segments` su
@@ -86,13 +86,13 @@ class EdgeStyle:
 class RoleStyle:
     """
     How the caller wants an output role drawn (D37, D128). The caller keeps
-    a `{role: RoleStyle}` dict and passes it to every exporter (`to_dxf`,
-    `split`, `to_svg`, `to_view_model`): topo keeps none, each exporter has
+    a `{role: RoleStyle}` dict and passes it to every exporter (an adapter's
+    writer, `split`, `to_svg`, `to_view_model`): topo keeps none, each exporter has
     its own default for the fields left at `None`.
 
-    Same vocabulary as `EdgeStyle`, no format. Where a role ends up (a DXF
-    layer, an SVG group) is not decided here: the exporter decides, with its
-    own parameters (`to_dxf(layers=...)`).
+    Same vocabulary as `EdgeStyle`, no format. Where a role ends up (a layer,
+    an SVG group) is not decided here: the exporter decides, with its own
+    parameters.
 
     Fields (all optional):
         color      : (r, g, b) 0–255

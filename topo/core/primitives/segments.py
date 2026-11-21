@@ -4,7 +4,7 @@ topo/core/primitives/segments.py
 Primitive geometriche pure con discretizzazione centralizzata.
 
 Questa è l'UNICA sede della discretizzazione.
-Ogni adapter (DXF, PDF, SVG, ...) deve convertire le sue entità in queste
+Ogni adapter deve convertire le sue entità in queste
 primitive e poi usare SOLO i metodi qui definiti.
 
 La tolleranza è SEMPRE passata come parametro, mai hardcoded.
@@ -31,7 +31,7 @@ def _real(x) -> float:
 
 
 def _plain(p) -> Point:
-    """Un punto come tupla di float Python finiti: chi passa numpy o ezdxf non
+    """Un punto come tupla di float Python finiti: chi passa numpy o i tipi di un'altra libreria non
     lo ritrova nei campi pubblici (D169)."""
     return tuple(_real(c) for c in p)
 
@@ -456,7 +456,7 @@ class BSplineSeg(MathSeg):
         va invertito anche il vettore dei nodi e rimappato sul dominio
         originale ``U'[i] = a + b - U[m-i]`` (con ``a = U[0]``, ``b = U[-1]``),
         e vanno invertiti i pesi. Invertire i soli control point lascia la
-        curva accoppiata a un vettore nodi sbagliato: la curva emessa in DXF
+        curva accoppiata a un vettore nodi sbagliato: la curva
         risulta deformata all'interno (gli endpoint combaciano lo stesso
         perché una spline clamped interpola il primo e l'ultimo CP).
         """

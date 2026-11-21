@@ -22,8 +22,8 @@ class Result:
                     from and how it was read, copied from the network (D231).
         texts     : the source's texts (list[Text], D138), copied here by
                     heal() from the Document. They are format-independent
-                    domain data: every renderer (to_dxf, a future
-                    to_svg/to_pdf) draws them from the model, without
+                    domain data: every renderer (an adapter's writer,
+                    to_svg) draws them from the model, without
                     re-reading the source.
         loose     : every curve that is no cluster's contour (MAP.md
                     D137): chains that close nothing, open traces, closed
@@ -98,7 +98,7 @@ class Result:
         Il `Result` come dati semplici, solo geometria (D230, D231): da dove
         arriva, come è stato letto, se è valido, gli avvisi, e i fatti di ogni
         cluster (`Cluster.to_dict`). Nessuna coordinata: le curve esatte le
-        porta il DXF. È la sola fonte di `topo.to_json`.
+        porta il writer di un adapter. È la sola fonte di `topo.to_json`.
         """
         return {
             "source_file":   self.source_file,
