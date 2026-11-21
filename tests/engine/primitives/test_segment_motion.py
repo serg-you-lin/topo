@@ -14,6 +14,7 @@ import unittest
 
 from topo.core.primitives.segments import LineSeg, BSplineSeg, segment_endpoints
 from topo.core.primitives.conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg
+from topo.core.primitives.clothoid import ClothoidSeg
 from topo.core.primitives.formula import FormulaSeg
 
 # spostamenti: nullo, quasi nullo, negativo, lontano dall'origine nei due sensi
@@ -48,6 +49,9 @@ def _segments() -> list:
                                              start_param=1.4, end_param=0.2)),
         ("formula involute", FormulaSeg("r*(cos(t) + t*sin(t))", "r*(sin(t) - t*cos(t))", 0.2, 2.0, params={"r": 4.0})),
         ("formula backwards", FormulaSeg("t", "t**3 / 9 - exp(-t)", 2.5, -1.5)),
+        ("clothoid", ClothoidSeg(origin=(1.0, -2.0), angle=0.4, a=5.0, start_param=-3.0, end_param=8.0)),
+        ("clothoid right backwards", ClothoidSeg(origin=(-4.0, 6.0), angle=2.0, a=1.5, start_param=2.5,
+                                                 end_param=0.5, left=False)),
     ]
 
 

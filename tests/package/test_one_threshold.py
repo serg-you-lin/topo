@@ -29,6 +29,8 @@ PRECISION_NAMES = {
 # (file, nome): numeri che non sono soglie, col perché
 NOT_THRESHOLDS = {
     ("topo_pdf/geometry_adapter.py", "PT_TO_MM"): "conversione di unità",
+    ("topo/core/primitives/clothoid.py", "_SERIES_UP_TO"):
+        "dove Fresnel passa dalla serie alla frazione continua: esatte tutte e due, cambia solo la velocità (D290)",
 }
 PRECISION = "topo/precision.py"
 

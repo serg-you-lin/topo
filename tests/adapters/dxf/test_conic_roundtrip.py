@@ -4,7 +4,8 @@ tests/adapters/dxf/test_conic_roundtrip.py
 D288: il DXF non ha parabole né iperboli. `to_dxf` le scrive come la loro
 spline razionale quadratica, esatta: riletta, è la stessa curva (ogni suo
 punto sta sull'equazione della conica) e chiude la stessa area. D289: una
-formula non ha una spline esatta: riletta sta entro SAME_POINT dalla curva.
+formula non ha una spline esatta: riletta sta entro SAME_POINT dalla curva;
+D290: la clotoide neanche, lo stesso.
 """
 
 import math
@@ -14,7 +15,7 @@ import warnings
 import topo
 import topo_dxf
 from topo.precision import SAME_POINT
-from topo.primitives import BSplineSeg, FormulaSeg, HyperbolaSeg, LineSeg, ParabolaSeg
+from topo.primitives import BSplineSeg, ClothoidSeg, FormulaSeg, HyperbolaSeg, LineSeg, ParabolaSeg
 
 CONICS = [
     ParabolaSeg(vertex=(0.0, 0.0), focus=(0.0, 1.0), start_param=-4.0, end_param=4.0),
@@ -53,14 +54,17 @@ class TestConicRoundTrip(unittest.TestCase):
                 (before,), (after,) = result.clusters, topo.heal(back).faces().clusters
                 self.assertAlmostEqual(after.area, before.area, delta=1e-9 * before.area)
 
-    def test_formula_riletta_entro_same_point(self):
-        involute = FormulaSeg("r*(cos(t) + t*sin(t))", "r*(sin(t) - t*cos(t))", 0.0, 1.2, params={"r": 10.0})
-        _, back = _round_trip(involute)
-        (spline,) = [e.segment for e in back.edges if isinstance(e.segment, BSplineSeg)]
-        t0, t1 = spline.t_range
-        worst = max(math.dist(q, topo.geometry.nearest_point([involute], q))
-                    for q in (spline.point_at(t0 + (t1 - t0) * u / 200) for u in range(201)))
-        self.assertLessEqual(worst, SAME_POINT)
+    def test_formula_e_clotoide_rilette_entro_same_point(self):
+        curves = [FormulaSeg("r*(cos(t) + t*sin(t))", "r*(sin(t) - t*cos(t))", 0.0, 1.2, params={"r": 10.0}),
+                  ClothoidSeg(origin=(0.0, 0.0), angle=0.0, a=4.0, start_param=0.0, end_param=7.0)]
+        for curve in curves:
+            with self.subTest(curve=type(curve).__name__):
+                _, back = _round_trip(curve)
+                (spline,) = [e.segment for e in back.edges if isinstance(e.segment, BSplineSeg)]
+                t0, t1 = spline.t_range
+                worst = max(math.dist(q, topo.geometry.nearest_point([curve], q))
+                            for q in (spline.point_at(t0 + (t1 - t0) * u / 200) for u in range(201)))
+                self.assertLessEqual(worst, SAME_POINT)
 
 
 if __name__ == "__main__":

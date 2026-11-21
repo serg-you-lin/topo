@@ -12,11 +12,13 @@ Puro: solo primitive, nessun formato.
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 from typing import List, Optional, Tuple
 
 from ..geometry.measure import FLOAT_NOISE
 from .segments import LineSeg, Point, BSplineSeg, _bspline_find_span
 from .conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg, is_arc, is_full_circle
+from .clothoid import ClothoidSeg
 from .formula import FormulaSeg
 
 _TWO_PI = 2 * math.pi
@@ -40,18 +42,17 @@ def sub_segment(seg, a: Point, b: Point, via: Point):
         return _sub_spline(seg, a, b, via)
     if isinstance(seg, (ParabolaSeg, HyperbolaSeg)):
         return _sub_open_conic(seg, a, b)
-    if isinstance(seg, FormulaSeg):
-        return _sub_formula(seg, a, b)
+    if isinstance(seg, (FormulaSeg, ClothoidSeg)):
+        return _sub_interval(seg, a, b)
     return None
 
 
-def _sub_formula(seg, a: Point, b: Point):
-    """La stessa formula su un intervallo più corto: dal parametro di `a` a quello di `b`."""
+def _sub_interval(seg, a: Point, b: Point):
+    """La stessa curva su un intervallo più corto: dal parametro di `a` a quello di `b`."""
     t0, t1 = seg.t_range
     sign = 1.0 if seg.end_param >= seg.start_param else -1.0
     ta, tb = (_nearest_param(seg.point_at, p, t0, t1) for p in (a, b))
-    return FormulaSeg(seg.x, seg.y, seg.start_param + sign * ta, seg.start_param + sign * tb,
-                      params=seg.params, affine=seg.affine)
+    return replace(seg, start_param=seg.start_param + sign * ta, end_param=seg.start_param + sign * tb)
 
 
 def _sub_open_conic(seg, a: Point, b: Point):

@@ -113,6 +113,7 @@ def inspect_document(doc, *, graph: bool = True, limit: Optional[int] = 60) -> N
 def _describe_segment(seg) -> str:
     from .core.primitives.segments import LineSeg, BSplineSeg
     from .core.primitives.conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg, is_arc, is_full_circle
+    from .core.primitives.clothoid import ClothoidSeg
     from .core.primitives.formula import FormulaSeg
 
     if seg is None:
@@ -137,6 +138,9 @@ def _describe_segment(seg) -> str:
     if isinstance(seg, ParabolaSeg):
         return (f"parabola vertex={_p(seg.vertex)} focus={_p(seg.focus)} "
                 f"s={seg.start_param:.2f}..{seg.end_param:.2f}")
+    if isinstance(seg, ClothoidSeg):
+        return (f"clothoid origin={_p(seg.origin)} a={seg.a:.2f} s={seg.start_param:.2f}..{seg.end_param:.2f} "
+                f"{'left' if seg.left else 'right'}")
     if isinstance(seg, FormulaSeg):
         return f"formula x={seg.x} y={seg.y} s={seg.start_param:.2f}..{seg.end_param:.2f}"
     if isinstance(seg, HyperbolaSeg):

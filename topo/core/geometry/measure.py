@@ -12,6 +12,7 @@ from typing import Optional, Tuple, List
 from shapely.geometry import LineString, box
 
 from ..primitives.segments import LineSeg, BSplineSeg, MathSeg
+from ..primitives.clothoid import ClothoidSeg
 from ..primitives.formula import FormulaSeg
 from ..primitives.conics import HyperbolaSeg, ParabolaSeg, CircleSeg, EllipseSeg, is_arc, is_full_circle
 
@@ -98,7 +99,7 @@ def track_length(pts) -> float:
 def segment_length(segment) -> float:
     """
     Real length of a single native primitive. A line and a circle have a
-    closed formula; a parabola, a hyperbola and a formula curve the integral of
+    closed formula, a clothoid its arc-length parameter; a parabola, a hyperbola and a formula curve the integral of
     the exact speed |P'(t)|; a spline and an ellipse reuse the polyline of
     `discretize()`, summed like `track_length`.
     """
@@ -106,6 +107,8 @@ def segment_length(segment) -> float:
         return math.hypot(segment.end[0] - segment.start[0], segment.end[1] - segment.start[1])
     if isinstance(segment, CircleSeg):
         return segment.radius * segment._sweep()
+    if isinstance(segment, ClothoidSeg):
+        return abs(segment.end_param - segment.start_param)   # il parametro è la lunghezza d'arco
     if isinstance(segment, (ParabolaSeg, HyperbolaSeg, FormulaSeg)):
         from .integrals import curve_length   # integrals sta sopra measure
         return curve_length(segment)
