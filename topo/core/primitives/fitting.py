@@ -26,9 +26,9 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple
 
-from .segments import LineSeg, BSplineSeg, Point
+from .segments import LineSeg, BSplineSeg, MathSeg, Point
 from .conics import CircleSeg, EllipseSeg, is_arc
 from ..geometry.measure import FLOAT_NOISE
 from ..geometry.points import (
@@ -37,7 +37,7 @@ from ..geometry.points import (
     within_ellipse_through, within_smooth_curve,
 )
 
-Primitive = Union[LineSeg, CircleSeg, EllipseSeg, BSplineSeg]
+Primitive = MathSeg
 
 DEFAULT_SPLINE_DEGREE = 3
 
@@ -292,7 +292,7 @@ def simplify_points(
     spline_degree: int = DEFAULT_SPLINE_DEGREE,
 ) -> List[Primitive]:
     """
-    Primitive (LineSeg/CircleSeg/EllipseSeg/BSplineSeg) per la sequenza di punti
+    Primitive (rette, archi, cerchi, ellissi, spline) per la sequenza di punti
     `points`, in catena testa-coda, ogni punto entro `tolerance` da esse —
     tranne quelli entro `scale` da uno spigolo che il campionamento aveva
     smussato e che qui torna vivo.

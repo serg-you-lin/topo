@@ -16,14 +16,13 @@ il core a definirne la forma, esattamente come per le primitive.
 from __future__ import annotations
 
 from dataclasses import KW_ONLY, dataclass, field
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
-from ..primitives.segments import LineSeg, BSplineSeg, segment_endpoints, segment_is_closed
-from ..primitives.conics import CircleSeg, EllipseSeg
+from ..primitives.segments import LineSeg, MathSeg, segment_endpoints, segment_is_closed
 from ..geometry.measure import node_point
 from ...model.style import EdgeStyle
 
-Segment = Union[LineSeg, CircleSeg, BSplineSeg, EllipseSeg]
+Segment = MathSeg
 
 
 @dataclass

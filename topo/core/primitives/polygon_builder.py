@@ -13,19 +13,17 @@ from typing import List, Optional
 
 from shapely.geometry import Polygon
 
-from . import LineSeg, BSplineSeg, CircleSeg, EllipseSeg
-from .segments import DEFAULT_TOLERANCE
+from .segments import DEFAULT_TOLERANCE, MathSeg
 
 
 def build_polygon(
-    primitives: List[LineSeg | CircleSeg | BSplineSeg | EllipseSeg],
+    primitives: List[MathSeg],
     tolerance:  float = DEFAULT_TOLERANCE,   # = topo.precision.SAME_POINT (D275)
 ) -> Optional[Polygon]:
     """
     Costruisce un Polygon shapely da una lista di primitive geometriche.
 
-    Ogni primitiva di topo si discretizza da sé (LineSeg, CircleSeg,
-    BSplineSeg, EllipseSeg).
+    Ogni primitiva di topo si discretizza da sé (`MathSeg.discretize`).
     Restituisce None se la geometria non è valida o ha meno di 3 punti.
     """
     if not primitives:
