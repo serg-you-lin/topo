@@ -22,8 +22,8 @@ from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Tuple
 
 from ..topology.edge import Edge
-from ..primitives.segments import (angle_from_start, point_on_circle, LineSeg, CircleSeg, BSplineSeg, EllipseSeg, DEFAULT_TOLERANCE, is_arc, is_full_circle,
-)
+from ..primitives.segments import MathSeg, angle_from_start, point_on_circle, LineSeg, BSplineSeg, DEFAULT_TOLERANCE
+from ..primitives.conics import CircleSeg, EllipseSeg, is_arc, is_full_circle
 
 Point = Tuple[float, float]
 
@@ -115,7 +115,8 @@ def _pieces(edge: Edge) -> list:
         return [_Line(edge, seg.start, seg.end)]
     if isinstance(seg, CircleSeg):
         return [_Arc(edge, seg.center, seg.radius, seg.start_angle, seg._sweep(), seg.ccw)]
-    if isinstance(seg, (BSplineSeg, EllipseSeg)):
+    if isinstance(seg, MathSeg):
+        # spline e coniche non circolari: sul poligono
         pts = seg.discretize(tolerance=DEFAULT_TOLERANCE)
         return [_Line(edge, pts[i], pts[i + 1]) for i in range(len(pts) - 1)]
     return []

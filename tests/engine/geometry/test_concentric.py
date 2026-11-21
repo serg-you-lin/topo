@@ -5,7 +5,8 @@ import math
 import unittest
 
 import topo
-from topo.core.primitives.segments import CircleSeg, LineSeg
+from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.conics import CircleSeg
 from topo.core.geometry.shape import arcs_around, concentric_groups
 
 

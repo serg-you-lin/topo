@@ -11,7 +11,8 @@ zero ezdxf.
 import math
 import unittest
 
-from topo.core.primitives.segments import EllipseSeg, CircleSeg, segment_is_closed, segment_endpoints
+from topo.core.primitives.segments import segment_is_closed, segment_endpoints
+from topo.core.primitives.conics import EllipseSeg, CircleSeg
 
 
 def _max_deviation_from_ellipse(seg: EllipseSeg, pts) -> float:

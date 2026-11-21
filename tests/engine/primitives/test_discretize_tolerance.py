@@ -15,11 +15,8 @@ della polilinea più vicino; i vertici stanno sulla curva, quindi il massimo
 import math
 import unittest
 
-from topo.core.primitives.segments import (
-    CircleSeg,
-    EllipseSeg,
-    _point_to_segment_distance,
-)
+from topo.core.primitives.segments import _point_to_segment_distance
+from topo.core.primitives.conics import CircleSeg, EllipseSeg
 
 TOL = 0.01
 RADII = (0.005, 1.0, 10.0, 33.0, 100.0, 500.0, 2000.0)

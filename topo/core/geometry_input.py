@@ -27,7 +27,8 @@ import math
 from typing import Any, Dict, List
 
 from .geometry.build import polygon
-from .primitives.segments import LineSeg, CircleSeg, BSplineSeg, EllipseSeg
+from .primitives.segments import LineSeg, BSplineSeg
+from .primitives.conics import CircleSeg, EllipseSeg
 from .topology.edge import Edge
 from ..model.document import Document
 from ..model.role import normalize_role

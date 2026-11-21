@@ -163,7 +163,8 @@ def _parse_polyline(entity, rev) -> list:
         # una corda nulla col bulge è un arco di raggio 0, un punto: resta il
         # tratto nullo che darebbe senza bulge (D154)
         if abs(bulge) > 1e-9 and (x1, y1) != (x2, y2):
-            primitives.append(CircleSeg.from_chord(start=(x1, y1), end=(x2, y2), bulge=bulge))
+            # bulge = tan(angolo spazzato / 4), col segno del verso
+            primitives.append(CircleSeg.from_ends((x1, y1), (x2, y2), 4.0 * math.atan(bulge)))
         else:
             primitives.append(LineSeg(start=(x1, y1), end=(x2, y2)))
     return primitives

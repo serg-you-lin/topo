@@ -28,7 +28,8 @@ import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple, Union
 
-from .segments import CircleSeg, EllipseSeg, LineSeg, BSplineSeg, Point, is_arc
+from .segments import LineSeg, BSplineSeg, Point
+from .conics import CircleSeg, EllipseSeg, is_arc
 from ..geometry.measure import FLOAT_NOISE
 from ..geometry.points import (
     DEFAULT_DUPLICATE_TOLERANCE, approximate_bspline, douglas_peucker, drop_duplicate_points,

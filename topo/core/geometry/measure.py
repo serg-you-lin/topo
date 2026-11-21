@@ -11,7 +11,8 @@ from typing import Optional, Tuple, List
 
 from shapely.geometry import LineString, box
 
-from ..primitives.segments import LineSeg, CircleSeg, EllipseSeg, BSplineSeg, is_arc, is_full_circle
+from ..primitives.segments import LineSeg, BSplineSeg
+from ..primitives.conics import HyperbolaSeg, ParabolaSeg, CircleSeg, EllipseSeg, is_arc, is_full_circle
 
 Point = Tuple[float, float]
 
@@ -204,7 +205,25 @@ class Reach:
             return min(values), max(values)
         if isinstance(segment, BSplineSeg):
             return self._spline(dot)
+        if isinstance(segment, (ParabolaSeg, HyperbolaSeg)):
+            return self._conic(dot, dx, dy)
         raise TypeError(f"unsupported primitive: {type(segment).__name__}")
+
+    def _conic(self, dot, dx: float, dy: float) -> Tuple[float, float]:
+        """Parabola: p·d = V·d + s·(n·d) + s²/(4f)·(u·d), estremo a s = −2f·(n·d)/(u·d).
+        Iperbole: p·d = C·d + cosh s·A + sinh s·B, estremo dove tanh s = −B/A (se |B| < |A|)."""
+        seg = self.segment
+        lo, hi = sorted((seg.start_param, seg.end_param))
+        if isinstance(seg, ParabolaSeg):
+            f, u, n = seg._frame()
+            ud, nd = u[0] * dx + u[1] * dy, n[0] * dx + n[1] * dy
+            inner = [-2 * f * nd / ud] if ud != 0 else []
+        else:
+            (mx, my), (px, py) = seg.major_axis, seg._minor()
+            a_coef, b_coef = mx * dx + my * dy, px * dx + py * dy
+            inner = [math.atanh(-b_coef / a_coef)] if abs(b_coef) < abs(a_coef) else []
+        values = [dot(seg._point(lo)), dot(seg._point(hi))] + [dot(seg._point(s)) for s in inner if lo < s < hi]
+        return min(values), max(values)
 
     def _spline(self, dot) -> Tuple[float, float]:
         """

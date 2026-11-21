@@ -1,17 +1,17 @@
 """
 topo/core/geometry/intersections.py
 ------------------------------------
-Intersezioni pure: retta/retta, cerchio/retta, cerchio/cerchio
-e `intersections(a, b)` fra due primitive qualunque.
+Intersezioni pure: retta/retta, cerchio/retta, cerchio/cerchio, retta/conica
+(ellisse, parabola, iperbole: un'equazione di secondo grado nel riferimento
+della conica) e `intersections(a, b)` fra due primitive qualunque.
 """
 
 from ...precision import FLOAT_NOISE, SAME_POINT
 import math
 from typing import Optional, Tuple, List
 
-from ..primitives.segments import (
-    CircleSeg, LineSeg, angle_from_start, is_full_circle,
-)
+from ..primitives.segments import LineSeg, angle_from_start
+from ..primitives.conics import CircleSeg, ConicSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg, is_full_circle
 from .measure import FLOAT_NOISE
 
 Point = Tuple[float, float]
@@ -158,15 +158,98 @@ def _meet(a, b) -> List[Point]:
     return [p for p in pts if _on_arc(a, p) and _on_arc(b, p)]
 
 
+def _conic_frame(conic):
+    """(origine, versore x, versore y) del riferimento in cui la conica ha la
+    sua equazione semplice: x²/a² ± y²/b² = 1 (centro e asse), x² = 4f·y
+    (vertice, x lungo la tangente al vertice, y verso il fuoco)."""
+    if isinstance(conic, ParabolaSeg):
+        _, u, n = conic._frame()
+        return conic.vertex, n, u
+    a = math.hypot(*conic.major_axis)
+    u = (conic.major_axis[0] / a, conic.major_axis[1] / a)
+    return conic.center, u, (-u[1], u[0])
+
+
+def _line_conic(line: LineSeg, conic) -> List[Point]:
+    """I punti dove il tratto `line` incontra il pezzo `conic`: la retta
+    A + λ·(B − A) nell'equazione della conica dà α·λ² + β·λ + γ = 0."""
+    origin, ex, ey = _conic_frame(conic)
+    ax, ay = line.start[0] - origin[0], line.start[1] - origin[1]
+    dx, dy = line.end[0] - line.start[0], line.end[1] - line.start[1]
+    x0, y0 = ax * ex[0] + ay * ex[1], ax * ey[0] + ay * ey[1]
+    x1, y1 = dx * ex[0] + dy * ex[1], dx * ey[0] + dy * ey[1]
+    if isinstance(conic, ParabolaSeg):
+        f = conic._frame()[0]
+        alpha, beta, gamma = x1 * x1, 2 * x0 * x1 - 4 * f * y1, x0 * x0 - 4 * f * y0
+    else:
+        a = math.hypot(*conic.major_axis)
+        b = a * conic.ratio
+        sign = -1.0 if isinstance(conic, HyperbolaSeg) else 1.0
+        alpha = (x1 / a) ** 2 + sign * (y1 / b) ** 2
+        beta = 2 * (x0 * x1 / (a * a) + sign * y0 * y1 / (b * b))
+        gamma = (x0 / a) ** 2 + sign * (y0 / b) ** 2 - 1
+    scale = max(abs(alpha), abs(beta), abs(gamma))
+    if scale == 0:
+        return []
+    if abs(alpha) <= FLOAT_NOISE * scale:
+        roots = [-gamma / beta] if abs(beta) > FLOAT_NOISE * scale else []
+    else:
+        disc = beta * beta - 4 * alpha * gamma
+        if disc < -FLOAT_NOISE * beta * beta:
+            roots = []
+        else:
+            # radice stabile (niente sottrazione fra due numeri vicini), l'altra dal prodotto
+            q = -0.5 * (beta + math.copysign(math.sqrt(max(disc, 0.0)), beta))
+            roots = [q / alpha] + ([gamma / q] if q != 0 else [])
+    length = math.hypot(dx, dy)
+    out = []
+    for lam in roots:
+        if not -FLOAT_NOISE / length <= lam <= 1 + FLOAT_NOISE / length:
+            continue
+        x, y = x0 + lam * x1, y0 + lam * y1
+        if _on_conic_piece(conic, x, y):
+            out.append((line.start[0] + lam * dx, line.start[1] + lam * dy))
+    return out
+
+
+def _on_conic_piece(conic, x: float, y: float) -> bool:
+    """Il punto (x, y), sulla conica nel suo riferimento, cade sul pezzo."""
+    if isinstance(conic, ParabolaSeg):
+        lo, hi = sorted((conic.start_param, conic.end_param))
+        return lo - FLOAT_NOISE <= x <= hi + FLOAT_NOISE
+    a = math.hypot(*conic.major_axis)
+    b = a * conic.ratio
+    if isinstance(conic, HyperbolaSeg):
+        lo, hi = sorted((conic.start_param, conic.end_param))
+        s = math.asinh(y / b)
+        return x > 0 and lo - FLOAT_NOISE / b <= s <= hi + FLOAT_NOISE / b
+    s = math.atan2(y / b, x / a)
+    off = ((s - conic.start_param) if conic.ccw else (conic.start_param - s)) % (2 * math.pi)
+    slack = FLOAT_NOISE / b
+    return off <= conic._sweep() + slack or off >= 2 * math.pi - slack
+
+
+def _exact_conic(seg) -> bool:
+    """Una conica che non è un cerchio: con una retta si incrocia in forma chiusa."""
+    return isinstance(seg, ConicSeg) and not isinstance(seg, CircleSeg)
+
+
 def intersections(a, b) -> List[Point]:
     """
     The points where two primitives meet: crossings and touches, ends
-    included. Exact between lines, arcs and circles (closed form); on splines
-    and ellipses within `CURVE_TOLERANCE`, because there is no closed form.
+    included. Exact between lines, arcs and circles, and between a line and
+    any conic (closed form); elsewhere (two non-circular conics, splines)
+    within `CURVE_TOLERANCE`.
     Two overlapping stretches (same line, same circle) give no points: their
     meeting is a stretch, not a point.
     """
     out: List[Point] = []
+    if isinstance(a, LineSeg) and _exact_conic(b) or isinstance(b, LineSeg) and _exact_conic(a):
+        line, conic = (a, b) if isinstance(a, LineSeg) else (b, a)
+        for p in _line_conic(line, conic):
+            if all(_distance(p, q) > _SAME_ROOT for q in out):
+                out.append(p)
+        return out
     for pa in _exact_parts(a):
         for pb in _exact_parts(b):
             for p in _meet(pa, pb):

@@ -13,7 +13,8 @@ import unittest
 
 import topo
 intersections = topo.geometry.intersections
-from topo.core.primitives.segments import LineSeg, CircleSeg
+from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.conics import CircleSeg
 from tests.invariants import rigid
 
 # moti precisi (angolo, dx, dy) per `rigid`: nullo, solo rotazione, lontano,

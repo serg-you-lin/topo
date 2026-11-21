@@ -9,9 +9,8 @@ matematica pura di topo, zero ezdxf.
 import math
 import unittest
 
-from topo.core.primitives.segments import (
-    LineSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints,
-)
+from topo.core.primitives.segments import LineSeg, BSplineSeg, segment_endpoints
+from topo.core.primitives.conics import CircleSeg, EllipseSeg
 
 
 class TestLineSegRotated(unittest.TestCase):

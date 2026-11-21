@@ -12,7 +12,8 @@ import unittest
 from shapely.geometry import Point, Polygon, box
 
 from topo.core.primitives.polygon_builder import build_polygon
-from topo.core.primitives.segments import LineSeg, segment_endpoints, CircleSeg
+from topo.core.primitives.segments import LineSeg, segment_endpoints
+from topo.core.primitives.conics import CircleSeg
 from topo.core.topology.edge import Edge
 from topo.core.topology import rim
 from topo.core.topology.rim import face_segments, off_rim

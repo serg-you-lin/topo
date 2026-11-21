@@ -111,7 +111,8 @@ def inspect_document(doc, *, graph: bool = True, limit: Optional[int] = 60) -> N
 
 
 def _describe_segment(seg) -> str:
-    from .core.primitives.segments import LineSeg, BSplineSeg, CircleSeg, EllipseSeg, is_arc, is_full_circle
+    from .core.primitives.segments import LineSeg, BSplineSeg
+    from .core.primitives.conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg, is_arc, is_full_circle
 
     if seg is None:
         return "<no segment>"
@@ -132,6 +133,12 @@ def _describe_segment(seg) -> str:
     if isinstance(seg, BSplineSeg):
         return (f"spline  deg={seg.degree} cp={len(seg.control_points)} "
                 f"closed={seg.closed} periodic={seg.periodic}")
+    if isinstance(seg, ParabolaSeg):
+        return (f"parabola vertex={_p(seg.vertex)} focus={_p(seg.focus)} "
+                f"s={seg.start_param:.2f}..{seg.end_param:.2f}")
+    if isinstance(seg, HyperbolaSeg):
+        return (f"hyperbola c={_p(seg.center)} a={math.hypot(*seg.major_axis):.2f} ratio={seg.ratio:.3f} "
+                f"s={seg.start_param:.2f}..{seg.end_param:.2f}")
     return type(seg).__name__
 
 

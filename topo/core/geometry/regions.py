@@ -29,9 +29,8 @@ from shapely.prepared import prep
 
 from .measure import SAME_POINT, segment_length
 from ..primitives.polygon_builder import build_polygon
-from ..primitives.segments import (
-    CircleSeg, EllipseSeg, LineSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle, is_arc, is_full_circle,
-)
+from ..primitives.segments import BSplineSeg, LineSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle
+from ..primitives.conics import CircleSeg, EllipseSeg, is_arc, is_full_circle
 from ..primitives.trim import sub_segment
 from .integrals import ring_moments
 from .intersections import CURVE_TOLERANCE, intersections
@@ -161,35 +160,17 @@ def _split(seg, points: Sequence[Point]) -> list:
 
 
 def _tangent(seg, at_end: bool) -> Tuple[float, float]:
-    """Direzione di percorrenza di `seg` nel suo capo iniziale o finale, sulla
-    curva vera: anche per spline ed ellissi la derivata, non l'ultima corda."""
-    if isinstance(seg, LineSeg):
-        dx, dy = seg.end[0] - seg.start[0], seg.end[1] - seg.start[1]
-    elif isinstance(seg, CircleSeg):
-        a = seg.start_angle + ((seg._sweep() if seg.ccw else -seg._sweep()) if at_end else 0.0)
-        dx, dy = (-math.sin(a), math.cos(a)) if seg.ccw else (math.sin(a), -math.cos(a))
-    elif isinstance(seg, EllipseSeg):
-        sign = 1.0 if seg.ccw else -1.0
-        t = seg.start_param + (sign * seg._sweep() if at_end else 0.0)
-        (mx, my), r = seg.major_axis, seg.ratio
-        dx = sign * (-math.sin(t) * mx - math.cos(t) * my * r)
-        dy = sign * (-math.sin(t) * my + math.cos(t) * mx * r)
-    else:
-        dx, dy = _spline_derivative(seg, at_end) or (0.0, 0.0)
-        if math.hypot(dx, dy) <= FLOAT_NOISE:   # derivata nulla al capo (punti di controllo doppi): la corda
-            pts = _polyline(seg)
-            (ax, ay), (bx, by) = (pts[-2], pts[-1]) if at_end else (pts[0], pts[1])
-            dx, dy = bx - ax, by - ay
+    """Direzione di percorrenza di `seg` nel suo capo iniziale o finale: la
+    derivata esatta della curva (D285). Una spline coi punti di controllo
+    doppi al capo ha derivata nulla lì: allora la prima corda."""
+    t0, t1 = seg.t_range
+    dx, dy = seg.derivative_at(t1 if at_end else t0)
+    if math.hypot(dx, dy) <= FLOAT_NOISE:
+        pts = _polyline(seg)
+        (ax, ay), (bx, by) = (pts[-2], pts[-1]) if at_end else (pts[0], pts[1])
+        dx, dy = bx - ax, by - ay
     n = math.hypot(dx, dy) or 1.0
     return dx / n, dy / n
-
-
-def _spline_derivative(seg, at_end: bool) -> Optional[Tuple[float, float]]:
-    """Derivata di una B-spline al bordo del suo dominio. None se i nodi non la definiscono."""
-    p, knots = seg.degree, seg.knots
-    if p < 1 or len(knots) != len(seg.control_points) + p + 1 or knots[-(p + 1)] <= knots[p]:
-        return None
-    return seg.derivative_at(seg.t_range[1] if at_end else seg.t_range[0])
 
 
 def _signed_area(ring: Sequence) -> float:
@@ -304,11 +285,10 @@ def nearest_point(segments: Sequence, point: Point) -> Point:
 
 
 def _true_curve(seg):
-    """(punto al parametro, inizio, fine) della spline o ellisse vera; None
-    se la spline non ha un vettore dei nodi completo (resta la discretizzazione)."""
-    if isinstance(seg, EllipseSeg):
-        sign = 1.0 if seg.ccw else -1.0
-        return (lambda u: seg._point_at(seg.start_param + sign * u)), 0.0, seg._sweep()
+    """(punto al parametro, inizio, fine) della curva vera (D285); None se la
+    spline non ha un vettore dei nodi completo (resta la discretizzazione)."""
+    if not isinstance(seg, BSplineSeg):
+        return (seg.point_at, *seg.t_range)
     p, knots = seg.degree, seg.knots
     if len(knots) != len(seg.control_points) + p + 1 or knots[-(p + 1)] <= knots[p]:
         return None

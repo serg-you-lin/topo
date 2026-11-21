@@ -4,7 +4,8 @@ import math
 import unittest
 from topo.core.readings.outer_scan import outer_candidate_edges, AXIS_X, AXIS_Y
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg, CircleSeg
+from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.conics import CircleSeg
 
 
 def _line(p1, p2):

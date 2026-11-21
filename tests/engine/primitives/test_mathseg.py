@@ -9,9 +9,8 @@ Microcasi: le primitive di test_segment_motion più due spline a più tratti.
 import math
 import unittest
 
-from topo.core.primitives.segments import (
-    BSplineSeg, CircleSeg, ConicSeg, EllipseSeg, MathSeg, segment_endpoints,
-)
+from topo.core.primitives.segments import BSplineSeg, MathSeg, segment_endpoints
+from topo.core.primitives.conics import CircleSeg, ConicSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg
 from topo.precision import FLOAT_NOISE
 from tests.engine.primitives.test_segment_motion import _segments
 
@@ -79,7 +78,7 @@ class TestConicSeg(unittest.TestCase):
 
     def test_arco_cerchio_ellisse_sono_coniche_le_altre_no(self):
         for name, seg in _all():
-            self.assertEqual(isinstance(seg, ConicSeg), name.startswith(("arc", "circle", "ellipse")), name)
+            self.assertEqual(isinstance(seg, ConicSeg), name.startswith(("arc", "circle", "ellipse", "parabola", "hyperbola")), name)
 
     def test_la_curva_sta_sulla_sua_equazione(self):
         for name, seg in _all():
@@ -90,11 +89,19 @@ class TestConicSeg(unittest.TestCase):
                 x, y = seg.point_at(t)
                 self.assertAlmostEqual(a * x * x + b * x * y + c * y * y + d * x + e * y + f, 0.0, delta=1e-9, msg=(name, t))
 
-    def test_il_discriminante_dice_ellisse(self):
+    def test_il_discriminante_dice_quale_conica(self):
+        # B² − 4AC: < 0 ellisse (e cerchio), = 0 parabola, > 0 iperbole; a meno
+        # del fattore comune, si confronta col quadrato dei coefficienti
         for name, seg in _all():
             if isinstance(seg, ConicSeg):
                 a, b, c, *_ = seg.equation
-                self.assertLess(b * b - 4 * a * c, 0, name)
+                disc, size = b * b - 4 * a * c, max(a * a, b * b, c * c)
+                if isinstance(seg, ParabolaSeg):
+                    self.assertLessEqual(abs(disc), 1e-12 * size, name)
+                elif isinstance(seg, HyperbolaSeg):
+                    self.assertGreater(disc, 0, name)
+                else:
+                    self.assertLess(disc, 0, name)
 
     def test_cerchio_ha_a_uguale_c_e_niente_xy(self):
         circles = [(name, seg) for name, seg in _all() if isinstance(seg, CircleSeg)]

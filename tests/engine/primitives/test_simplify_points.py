@@ -16,7 +16,8 @@ import unittest
 
 from shapely.geometry import LineString, Point as SPoint
 
-from topo.core.primitives.segments import CircleSeg, LineSeg, BSplineSeg, segment_endpoints
+from topo.core.primitives.segments import LineSeg, BSplineSeg, segment_endpoints
+from topo.core.primitives.conics import CircleSeg
 from topo.core.primitives.fitting import simplify_points
 
 

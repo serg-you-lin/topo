@@ -23,9 +23,8 @@ from typing import Callable, List, Sequence, Tuple
 
 import numpy as np
 
-from ..primitives.segments import (
-    BSplineSeg, CircleSeg, EllipseSeg, LineSeg, _deboor, _derivative_points, is_arc, is_full_circle,
-)
+from ..primitives.segments import BSplineSeg, LineSeg, _deboor, _derivative_points
+from ..primitives.conics import HyperbolaSeg, ParabolaSeg, CircleSeg, EllipseSeg, is_arc, is_full_circle
 from .rings import ring_jumps
 
 Point = Tuple[float, float]
@@ -65,6 +64,9 @@ def segment_moments(segment) -> Moments:
         return _trig_moments(segment.center, (mx, my), minor, t0, t0 + sign * segment._sweep())
     if isinstance(segment, BSplineSeg):
         return _spline_moments(segment)
+    if isinstance(segment, (ParabolaSeg, HyperbolaSeg)):
+        # la stessa curva, esatta, come spline razionale quadratica (D288)
+        return _spline_moments(segment.to_bspline())
     raise TypeError(f"unsupported primitive: {type(segment).__name__}")
 
 

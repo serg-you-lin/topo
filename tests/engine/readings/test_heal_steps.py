@@ -17,7 +17,8 @@ from topo.model.document import Document
 from topo.model.curve import ClosedCurve, OpenCurve
 from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg, CircleSeg, BSplineSeg, EllipseSeg, segment_endpoints
+from topo.core.primitives.segments import LineSeg, BSplineSeg, segment_endpoints
+from topo.core.primitives.conics import CircleSeg, EllipseSeg
 from topo import to_shapely
 from topo.precision import SAME_POINT
 from tests.paths import DATA, drawing

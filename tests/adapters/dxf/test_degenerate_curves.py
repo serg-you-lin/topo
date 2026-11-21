@@ -31,7 +31,7 @@ class TestDegeneratePrimitives(unittest.TestCase):
         import numpy as np
         p = (np.float64(2.0), np.float64(2.0))
         with self.assertRaises(ValueError):
-            CircleSeg.from_chord(p, p, 0.5)
+            CircleSeg.from_ends(p, p, 4 * math.atan(0.5))
 
     def test_003_ellisse_degenere_rifiutata(self):
         with self.assertRaises(ValueError):

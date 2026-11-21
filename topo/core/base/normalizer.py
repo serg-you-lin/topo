@@ -52,7 +52,8 @@ from typing import Any, Callable, Iterable, List, Tuple
 
 from ..geometry.measure import FLOAT_NOISE, node_point, within_diameter, SAME_POINT
 from ..geometry.points import fit_circle_kasa
-from ..primitives.segments import LineSeg, CircleSeg, Point, segment_endpoints, is_full_circle
+from ..primitives.segments import LineSeg, Point, segment_endpoints
+from ..primitives.conics import CircleSeg, is_full_circle
 from ..primitives.fitting import simplify_points
 from ..topology.graph import build_node_graph, connected_groups
 from ..topology.noding import _near_pairs

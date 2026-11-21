@@ -26,7 +26,7 @@ from topo.core.geometry.points import (
     approximate_bspline, even_spacing,
 )
 from topo.core.primitives.segments import BSplineSeg
-from topo.core.primitives.segments import CircleSeg
+from topo.core.primitives.conics import CircleSeg
 
 
 # ---------------------------------------------------------------------------

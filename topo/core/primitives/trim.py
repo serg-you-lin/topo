@@ -15,9 +15,8 @@ import math
 from typing import List, Optional, Tuple
 
 from ..geometry.measure import FLOAT_NOISE
-from .segments import (
-    CircleSeg, EllipseSeg, LineSeg, Point, BSplineSeg, _bspline_find_span, is_arc, is_full_circle,
-)
+from .segments import LineSeg, Point, BSplineSeg, _bspline_find_span
+from .conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg, is_arc, is_full_circle
 
 _TWO_PI = 2 * math.pi
 _SAMPLES = 64          # campioni per il primo aggancio di un punto sulla spline
@@ -38,7 +37,36 @@ def sub_segment(seg, a: Point, b: Point, via: Point):
         return _sub_angular(seg, a, b, via)
     if isinstance(seg, BSplineSeg):
         return _sub_spline(seg, a, b, via)
+    if isinstance(seg, (ParabolaSeg, HyperbolaSeg)):
+        return _sub_open_conic(seg, a, b)
     return None
+
+
+def _sub_open_conic(seg, a: Point, b: Point):
+    """Parabola e iperbole sono aperte: il tratto va dal parametro di `a` a
+    quello di `b`, dentro il pezzo. Parabola: s = (p − V)·n; iperbole:
+    s = asinh((p − C)·N / |N|²), N il secondo asse."""
+    lo, hi = sorted((seg.start_param, seg.end_param))
+
+    def param(pt: Point) -> float:
+        if isinstance(seg, ParabolaSeg):
+            _, _, n = seg._frame()
+            s = (pt[0] - seg.vertex[0]) * n[0] + (pt[1] - seg.vertex[1]) * n[1]
+        else:
+            nx, ny = seg._minor()
+            b2 = nx * nx + ny * ny
+            # (p − C)·N = sinh(s)·|N|², perché M ⟂ N
+            s = math.asinh(((pt[0] - seg.center[0]) * nx + (pt[1] - seg.center[1]) * ny) / b2)
+        return min(max(s, lo), hi)
+
+    return type(seg)(*_fields_before_params(seg), param(a), param(b))
+
+
+def _fields_before_params(seg) -> tuple:
+    """I campi che fissano la curva, senza l'intervallo del parametro."""
+    if isinstance(seg, ParabolaSeg):
+        return (seg.vertex, seg.focus)
+    return (seg.center, seg.major_axis, seg.ratio)
 
 
 # ---------------------------------------------------------------------------

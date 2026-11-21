@@ -12,9 +12,8 @@ e a cavallo dell'angolo 0. Ogni caso è un `subTest` (MAP.md D158).
 import math
 import unittest
 
-from topo.core.primitives.segments import (
-    LineSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints,
-)
+from topo.core.primitives.segments import LineSeg, BSplineSeg, segment_endpoints
+from topo.core.primitives.conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg
 
 # spostamenti: nullo, quasi nullo, negativo, lontano dall'origine nei due sensi
 OFFSETS = [(0.0, 0.0), (1e-9, -1e-9), (-37.25, 12.5), (1e5, -1e5), (-3e6, 2.5e6)]
@@ -41,6 +40,11 @@ def _segments() -> list:
                                start_param=0.0, end_param=2 * math.pi)),
         ("ellipse arc cw", EllipseSeg(center=(-1.0, 2.0), major_axis=(-2.0, 5.0), ratio=0.7,
                                       start_param=2.0, end_param=-0.5, ccw=False)),
+        ("parabola", ParabolaSeg(vertex=(2.0, -1.0), focus=(2.6, -0.2), start_param=-3.0, end_param=4.5)),
+        ("parabola backwards", ParabolaSeg(vertex=(-5.0, 3.0), focus=(-5.0, 2.5), start_param=2.0, end_param=-1.0)),
+        ("hyperbola", HyperbolaSeg(center=(4.0, 4.0), major_axis=(1.5, -2.0), ratio=1.3, start_param=-1.1, end_param=0.9)),
+        ("hyperbola backwards", HyperbolaSeg(center=(0.0, 0.0), major_axis=(-3.0, 0.5), ratio=0.4,
+                                             start_param=1.4, end_param=0.2)),
     ]
 
 

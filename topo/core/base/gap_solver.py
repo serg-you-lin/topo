@@ -33,7 +33,8 @@ from ..geometry.measure import FLOAT_NOISE, node_point
 from ..geometry.intersections import (_distance, _line_intersection, _circle_line_intersections, _circle_circle_intersections, _closest_to)
 from ..geometry.intersections import intersections
 from ..geometry.regions import _tangent, nearest_point
-from ..primitives.segments import DEFAULT_TOLERANCE, LineSeg, CircleSeg, BSplineSeg, EllipseSeg, segment_endpoints, is_arc
+from ..primitives.segments import DEFAULT_TOLERANCE, LineSeg, BSplineSeg, segment_endpoints
+from ..primitives.conics import CircleSeg, EllipseSeg, is_arc
 from ..topology.noding import GRAPH_EPSILON, edge_geometry
 from ..topology.edge import Edge
 from ...model.role import ContourRole

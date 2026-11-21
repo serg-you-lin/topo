@@ -22,7 +22,8 @@ from tests.invariants import (along_contours, uncovered, known_defect, contours,
                               shape_differences, unscrambled)
 from tests.readings import geometry_key, outline_reading, outline_scrambled
 from topo.core.topology.noding import GRAPH_EPSILON
-from topo.core.primitives.segments import DEFAULT_TOLERANCE, CircleSeg, LineSeg
+from topo.core.primitives.segments import DEFAULT_TOLERANCE, LineSeg
+from topo.core.primitives.conics import CircleSeg
 from topo import to_shapely
 
 MAX_GAP = 0.5

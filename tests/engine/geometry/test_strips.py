@@ -13,7 +13,8 @@ import unittest
 import topo
 import topo_dxf
 from topo.core.geometry import circle, rectangle
-from topo.core.primitives.segments import LineSeg, CircleSeg
+from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.conics import CircleSeg
 from topo.tools.strips import facing_boundaries, link, open_boundaries, unconnected_regions
 from topo import to_shapely
 from tests.paths import DATA

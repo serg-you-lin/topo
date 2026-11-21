@@ -5,7 +5,8 @@ from collections import Counter
 import unittest
 from topo.core.topology.noding import split_at_crossings, renode
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg, CircleSeg
+from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.conics import CircleSeg
 
 
 def _line(p1, p2):
@@ -185,7 +186,7 @@ class TestNodesUnderMotion(unittest.TestCase):
         from tests.invariants import rigid
         from topo.core.topology.noding import decide_nodes
         pts = [(k * 0.004, 0.002 * math.sin(k * 0.7)) for k in range(60)]
-        arcs = [CircleSeg.from_chord(a, b, 0.02 if i % 2 else -0.02) for i, (a, b) in enumerate(zip(pts, pts[1:]))]
+        arcs = [CircleSeg.from_ends(a, b, 4 * math.atan(0.02 if i % 2 else -0.02)) for i, (a, b) in enumerate(zip(pts, pts[1:]))]
         # al posto; i vertici a metà fra due celle di 1e-3; e ruotato
         for motion in [(0.0, 0.0, 0.0), (0.0, 3000000.0005, -2500000.000476336),
                        (0.1, 3000000.0001767986, -2500000.0004505813)]:

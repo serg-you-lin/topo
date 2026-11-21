@@ -7,7 +7,8 @@ from topo.core.topology.outer_face import _network, outer_face
 from topo.core.topology.noding import split_at_crossings
 from topo.core.topology.edge import Edge
 from topo.core.geometry.measure import node_point
-from topo.core.primitives.segments import BSplineSeg, LineSeg, CircleSeg, segment_endpoints
+from topo.core.primitives.segments import BSplineSeg, LineSeg, segment_endpoints
+from topo.core.primitives.conics import CircleSeg
 from topo import to_shapely
 
 
@@ -246,7 +247,7 @@ class TestChordContactUnderMotion(unittest.TestCase):
     MOTIONS = [(0.0, 0.0, 0.0), (0.0, 3e-7, 0.0), (math.pi / 2, 0.0, 0.0), (0.0, 2.5e6, -1.5e6), (0.7, 0.0, 0.0)]
 
     def _segments(self):
-        from topo.core.primitives.segments import CircleSeg
+        from topo.core.primitives.conics import CircleSeg
         step = 2 * math.pi / self.N
         from topo.precision import FLOAT_NOISE, SAME_POINT
         r = SAME_POINT * (1 - 1e-8) / (1 - math.cos(step / 2))

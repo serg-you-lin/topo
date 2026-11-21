@@ -13,7 +13,8 @@ from __future__ import annotations
 import math
 from typing import List, Sequence, Tuple
 
-from ..primitives.segments import CircleSeg, EllipseSeg, LineSeg
+from ..primitives.segments import LineSeg
+from ..primitives.conics import CircleSeg, EllipseSeg
 
 Point = Tuple[float, float]
 

@@ -190,7 +190,8 @@ they do not import `topo.core`/`tools`/`io`/`rules` (D129). What it needs:
 | name | what it is for |
 |---|---|
 | `topo.primitives.LineSeg` … `EllipseSeg` | the geometry read from the source, native (never discretised by the adapter) |
-| `topo.primitives.MathSeg`, `ConicSeg` | the mothers (D285): every segment has `t_range`, `point_at(t)`, `derivative_at(t)`; arcs, circles and ellipses are `ConicSeg` with `equation` (A..F) |
+| `topo.primitives.MathSeg`, `ConicSeg` | the mothers (D285): every segment has `t_range`, `point_at(t)`, `derivative_at(t)`, `endpoints()`; circles, ellipses, parabolas and hyperbolas are `ConicSeg` with `equation` (A..F) |
+| `topo.primitives.ParabolaSeg`, `HyperbolaSeg` | the other conics (D288); `to_bspline()` is the same curve as an exact rational quadratic spline, for a format that has no conics |
 | `topo.model.Edge.of(segment, role, *, style=None) -> Edge` | the `Edge` of a segment: endpoints on the segment's true points (no grid, D216); a closed circle, spline or ellipse has a single node |
 | `topo.model.EdgeStyle(*, linetype="", linetype_desc="", dash=None, color=None, filled=False)` | the effective look of the source entity, with no words of any format (D126): `dash` are signed marks (`> 0` dash, `0` dot, `< 0` gap; `()` continuous, `None` unknown — a dash-array `[3, 1]` is `(3, -1)`), `color` is `(r, g, b)`, `filled` the line is a side of a filled area (D255); `to_dxf` writes each ring of filled sides back as a solid fill. The adapter resolves inheritance (a "by layer" style) before handing it over |
 | `topo.model.RoleRule`, `topo.model.resolve_role(rules, name, style) -> str` | the role of an entity from the caller's rules: the first that matches, otherwise `unknown` |
@@ -669,7 +670,7 @@ topo.geometry.intersections(a, b) -> list[Point]
 ```
 
 The points where two primitives meet: crossings and touches, endpoints included.
-Exact between `LineSeg`, `CircleSeg` (closed form); on `BSplineSeg` and
+Exact between `LineSeg`, `CircleSeg`, and between a line and any conic (closed form); on `BSplineSeg` and
 `EllipseSeg` within `SAME_POINT` (0.001), because there is no closed
 form. Two overlapping strokes (same line, same circle) give no points: their
 meeting is a stretch (D118).

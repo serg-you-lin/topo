@@ -8,7 +8,8 @@ import topo
 from topo.core.geometry.axis import (axis_aligned_share, axis_lines, cluster_values, covered_rectangles,
                              interval_coverage, items_inside, merge_intervals, spanning_lines)
 from topo.core.geometry.build import polygon
-from topo.core.primitives.segments import LineSeg, CircleSeg
+from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.conics import CircleSeg
 
 
 def _rect(x0, y0, x1, y1):

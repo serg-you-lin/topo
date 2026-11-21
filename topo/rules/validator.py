@@ -20,7 +20,8 @@ import math
 from ..model import Result
 from ..model.document import Document
 from ..model.diagnostic import Diagnostic, plural
-from ..core.primitives.segments import BSplineSeg, CircleSeg, EllipseSeg
+from ..core.primitives.segments import BSplineSeg
+from ..core.primitives.conics import CircleSeg, EllipseSeg
 from ..core.primitives.polygon_builder import curve_polygon
 from ..core.geometry.measure import FLOAT_NOISE
 from ..core.geometry.rings import ring_jumps

@@ -18,9 +18,8 @@ from __future__ import annotations
 from dataclasses import KW_ONLY, dataclass, field
 from typing import Optional, Tuple, Union
 
-from ..primitives.segments import (
-    LineSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints, segment_is_closed,
-)
+from ..primitives.segments import LineSeg, BSplineSeg, segment_endpoints, segment_is_closed
+from ..primitives.conics import CircleSeg, EllipseSeg
 from ..geometry.measure import node_point
 from ...model.style import EdgeStyle
 

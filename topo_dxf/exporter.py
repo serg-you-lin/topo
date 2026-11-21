@@ -11,7 +11,7 @@ from topo.precision import FLOAT_NOISE
 import math
 from typing import List, Optional, Tuple
 
-from topo.primitives import LineSeg, BSplineSeg, CircleSeg, EllipseSeg, segment_endpoints
+from topo.primitives import LineSeg, BSplineSeg, CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg, segment_endpoints
 from topo.model import EdgeStyle
 
 _STANDARD_LINETYPES = frozenset({"BYLAYER", "BYBLOCK", "CONTINUOUS"})
@@ -198,6 +198,12 @@ def _add_ellipse(ellipse: EllipseSeg, msp, layer: str,
     )
 
 
+def _as_dxf(segments: List) -> List:
+    """Parabola e iperbole: il DXF non le ha, si scrivono come la loro spline
+    razionale quadratica, esatta (`to_bspline`)."""
+    return [s.to_bspline() if isinstance(s, (ParabolaSeg, HyperbolaSeg)) else s for s in segments]
+
+
 def write_segments(segments: List, msp, layer: str, styles: Optional[List] = None) -> Optional[object]:
     """
     Materializza una lista di segmenti puri su msp.
@@ -221,6 +227,7 @@ def write_segments(segments: List, msp, layer: str, styles: Optional[List] = Non
     Restituisce l'entità creata (o la lista, per i contorni misti), o None se
     non c'è nulla da scrivere.
     """
+    segments = _as_dxf(segments)
     if not segments:
         return None
 
@@ -318,6 +325,7 @@ def write_native_segments(segments: List, msp, layer: str, styles: Optional[List
 
     Restituisce la lista delle entità create.
     """
+    segments = _as_dxf(segments)
     created: List[object] = []
     styles = styles or []
 
@@ -383,6 +391,7 @@ def write_open_segments(segments: List, msp, layer: str, styles: Optional[List] 
     Restituisce la lista delle entità create (vuota se non c'è nulla da
     scrivere).
     """
+    segments = _as_dxf(segments)
     if not segments:
         return []
 

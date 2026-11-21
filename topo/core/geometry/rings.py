@@ -11,9 +11,8 @@ Funzioni pure su primitive, un ramo per tipo.
 import math
 from typing import Iterator, List, Sequence, Tuple
 
-from ..primitives.segments import (
-    BSplineSeg, CircleSeg, DEFAULT_TOLERANCE, EllipseSeg, LineSeg, segment_endpoints, is_full_circle,
-)
+from ..primitives.segments import MathSeg, BSplineSeg, DEFAULT_TOLERANCE, LineSeg, segment_endpoints
+from ..primitives.conics import CircleSeg, EllipseSeg, is_full_circle
 from .measure import Reach, segment_length, SAME_POINT
 
 Point = Tuple[float, float]
@@ -213,7 +212,8 @@ def _swept(segment, point: Point, tolerance: float):
         sign = 1.0 if segment.ccw else -1.0
         t0 = segment.start_param
         return _conic_swept(point, segment.center, (mx, my), minor, t0, t0 + sign * segment._sweep())
-    if isinstance(segment, BSplineSeg):
+    if isinstance(segment, MathSeg):
+        # spline, parabola, iperbole: sul poligono entro tolerance
         pts = _clear_polyline(segment, point, tolerance)
         if pts is None:
             return None

@@ -31,7 +31,8 @@ from typing import Any, List, Optional, Tuple
 
 from topo.core.geometry.integrals import ring_area, ring_centroid
 from topo.core.geometry.rings import ON_BOUNDARY, ring_bbox, ring_contains, ring_points
-from topo.core.primitives.segments import LineSeg, BSplineSeg, DEFAULT_TOLERANCE, CircleSeg
+from topo.core.primitives.segments import LineSeg, BSplineSeg, DEFAULT_TOLERANCE
+from topo.core.primitives.conics import CircleSeg
 from topo.model.style import EdgeStyle
 
 
