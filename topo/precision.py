@@ -56,7 +56,7 @@ NEAR_GAP_FACTOR = 2.0          # un buco fino a questo multiplo di max_gap "c'è
 # Come il CAD scrive una curva a punti (misurate: D279) e l'adattatore PDF
 # ---------------------------------------------------------------------------
 
-RING_TO_CIRCLE = 0.02          # mm: un anello scritto a punti entro così da un cerchio è quel cerchio (D236); errore di corda del CAD, non SAME_POINT (D279)
+POINTS_NOISE = 0.02            # mm: quanto possono sbagliare i punti di una curva scritta a punti (rifit e anelli, D60, D236): un'ipotesi sui file misurata su regr_01, non derivata (D305)
 TESSELLATION_SIDE = 0.1        # mm: lati più corti possono essere punti di una curva scritta a punti (refit_tessellations)
 TESSELLATION_RUN = 10          # lati corti di fila: da tanti in su sono una curva scritta a punti; sotto, il rifit arrotonda spigoli (D303)
 PDF_SNAP = 0.15                # mm: adattatore PDF sperimentale, congelato (D10)

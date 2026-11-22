@@ -47,7 +47,7 @@ Funzioni pubbliche:
 """
 
 from __future__ import annotations
-from ...precision import RING_TO_CIRCLE, TESSELLATION_RUN, TESSELLATION_SIDE
+from ...precision import POINTS_NOISE, TESSELLATION_RUN, TESSELLATION_SIDE
 import math
 from collections import Counter
 from dataclasses import dataclass, replace
@@ -588,7 +588,7 @@ def refit_tessellations(
     edges: Iterable[Edge],
     max_segment: float = TESSELLATION_SIDE,
     min_run: int = TESSELLATION_RUN,
-    tolerance: float = RING_TO_CIRCLE,
+    tolerance: float = POINTS_NOISE,
 ) -> List[Edge]:
     """
     Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di
@@ -661,7 +661,7 @@ def _circle_of(s: EllipseSeg) -> CircleSeg:
                      end_angle=s.end_param + phi, ccw=s.ccw)
 
 
-def refit_circle_rings(edges: Iterable[Edge], tolerance: float = RING_TO_CIRCLE) -> List[Edge]:
+def refit_circle_rings(edges: Iterable[Edge], tolerance: float = POINTS_NOISE) -> List[Edge]:
     """
     Un gruppo connesso di pezzi `role == UNKNOWN` (niente CircleSeg) il cui
     nucleo (il gruppo senza i rami a capo libero) sta tutto entro `tolerance`
