@@ -287,6 +287,10 @@ def _fit_curve(points: List[Point], tolerance: float, arcs: bool, degree: int) -
         if conic is not None:
             return [conic]
     control, knots = approximate_bspline(points, degree, tolerance)
+    if len(control) >= len(points):
+        # la spline che passa per tutti i punti non è stata messa alla prova da
+        # nessuno: ci passa sempre, anche su uno spigolo. Restano i lati (D304)
+        return [LineSeg(start=a, end=b) for a, b in zip(points, points[1:])]
     return [BSplineSeg(degree=degree, control_points=control, knots=knots)]
 
 
