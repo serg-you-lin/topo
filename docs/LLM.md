@@ -404,7 +404,7 @@ topo/core/       pure geometry engine (+ geometry_input: load_geometry / load_se
                   base/ (the foundation of every reading: prepare, normalize, gaps, hierarchy, D187), readings/ (heal() → Network, faces(), outlines() and their own steps)
 topo/model/      the domain: Document, Result, Cluster, Text, role.py, overlay.py (overlay)
 topo/tools/      optional Result stages: split, anchor, rotate, strips, non_contour
-topo/io/         renderers with no format dependency: svg.py, view_model.py, exporter.py (json)
+topo/io/         renderers with no format dependency: svg.py, view_model.py, json_export.py (json)
 topo/rules/      validator
 topo/inspect.py  debug levels 2-3
 ```

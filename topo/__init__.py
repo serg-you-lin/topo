@@ -31,7 +31,7 @@ from .tools.anchor       import anchor_texts
 # Un Result per parte, senza formato: ogni exporter ne scrive una (D124, D129)
 from .tools.split        import split
 from .rules.validator     import validate_document, validate_result
-from .io.exporter         import to_json, save_json
+from .io.json_export      import to_json, save_json
 # Conversione esplicita a shapely per overlay, buffer, WKT: il modello non
 # espone tipi shapely (MAP.md D166).
 from .io.shapes           import to_shapely

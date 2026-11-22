@@ -1,6 +1,6 @@
 """
-topo/io/exporter.py
--------------------
+topo/io/json_export.py
+----------------------
 Il `Result` come JSON, solo geometria (D230). La sola fonte dei campi è
 `Result.to_dict()`; qui si aggiungono i campi di un consumatore e si scrive.
 """

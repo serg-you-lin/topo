@@ -135,7 +135,7 @@ topo/
 ├── io/           RENDERERS of the model with no format dependencies
 │   ├── svg.py        to_svg(), save_svg()  (outside the stable 1.0, D133)
 │   ├── view_model.py to_view_model()  (outside the stable 1.0, D133)
-│   └── exporter.py   to_json / save_json (geometry only, D230)
+│   └── json_export.py to_json / save_json (geometry only, D230)
 │
 ├── rules/        domain RULES                          (validation)
 ├── inspect.py    inspection: inspect_document, inspect_result (the file

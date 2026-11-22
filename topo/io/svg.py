@@ -2,6 +2,7 @@
 io/svg.py
 ---------
 `to_svg(result)` — renderer SVG del modello topo (MAP.md D12).
+Fuori dalla 1.0 stabile: il viewer è `topo.experimental` (D133).
 
 SVG **solo in uscita**: è una rappresentazione visiva del `Result`, per una
 UI, un report, un'anteprima rapida. Non serve al taglio — archi, cerchi e spline

@@ -4,6 +4,7 @@ io/view_model.py
 `to_view_model(result)` — serializza un `Result` in un dizionario JSON
 **orientato al rendering**: coordinate di OGNI feature (outer, inner, overlay
 di un consumatore, curve sciolte) + ruolo + colore, pronto da disegnare.
+Fuori dalla 1.0 stabile: il viewer è `topo.experimental` (D133).
 
 È il pendant di `to_json` (che dà solo i fatti, zero coordinate). Lo consumano `to_svg`
 e qualunque front-end esterno (una dashboard JS che renderizza con SVG/Canvas).
