@@ -24,8 +24,8 @@ from .clothoid import ClothoidSeg
 from .formula import FormulaSeg
 
 _TWO_PI = 2 * math.pi
-_SAMPLES = 64          # campioni per il primo aggancio di un punto sulla spline
-_REFINE_STEPS = 60     # passi di ricerca ternaria sul parametro della spline
+_SAMPLES = 64          # campioni per il primo aggancio su una formula o una clotoide (nessun inviluppo)
+_REFINE_STEPS = 60     # passi di ricerca ternaria sul parametro
 
 
 def sub_segment(seg, a: Point, b: Point, via: Point):
@@ -106,7 +106,7 @@ def _sub_angular(seg, a: Point, b: Point, via: Point):
     # il parametro del cerchio è il suo angolo (D287): una formula per tutti e due
     start, sweep, ccw = seg.start_param, seg._sweep(), seg.ccw
     sign = 1.0 if ccw else -1.0
-    closed = sweep >= _TWO_PI - 1e-9
+    closed = sweep == _TWO_PI   # il giro intero, come `.full` (D296)
 
     def offset(pt: Point) -> float:
         """Quanto si percorre da `start`, nel verso della curva, fino a `pt`."""
@@ -202,8 +202,19 @@ def _on_seam(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> bool:
 
 
 def _spline_param(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> float:
-    """Parametro del punto della spline più vicino a `pt`."""
-    return _nearest_param(seg._evaluate, pt, lo, hi)
+    """Parametro del punto della spline più vicino a `pt`: il ramo giusto per
+    certificato sui pezzi di Bézier (D300), poi rifinito."""
+    def gap(q: Point) -> float:
+        return math.dist(q, pt)
+
+    def to_box(ctrl: List[Point]) -> float:
+        # la curva sta nell'inviluppo dei punti di controllo, quindi nel loro rettangolo
+        xs, ys = [q[0] for q in ctrl], [q[1] for q in ctrl]
+        return math.hypot(max(min(xs) - pt[0], 0.0, pt[0] - max(xs)),
+                          max(min(ys) - pt[1], 0.0, pt[1] - max(ys)))
+
+    t, left, right = seg._minimize(gap, to_box)
+    return _refine(seg._evaluate, pt, t, left, right, lo, hi)
 
 
 def _nearest_param(at, pt: Point, lo: float, hi: float) -> float:
@@ -212,15 +223,19 @@ def _nearest_param(at, pt: Point, lo: float, hi: float) -> float:
     step = (hi - lo) / _SAMPLES
     ts = [lo + i * step for i in range(_SAMPLES)] + [hi]
     best = min(range(len(ts)), key=lambda i: math.dist(at(ts[i]), pt))
-    left, right = ts[max(best - 1, 0)], ts[min(best + 1, len(ts) - 1)]
+    return _refine(at, pt, ts[best], ts[max(best - 1, 0)], ts[min(best + 1, len(ts) - 1)], lo, hi)
+
+
+def _refine(at, pt: Point, t: float, left: float, right: float, lo: float, hi: float) -> float:
+    """Ricerca ternaria su [left, right], attorno al migliore `t`: mai peggio
+    di lui, né dei due capi della curva."""
     for _ in range(_REFINE_STEPS):
         m1, m2 = left + (right - left) / 3, right - (right - left) / 3
         if math.dist(at(m1), pt) <= math.dist(at(m2), pt):
             right = m2
         else:
             left = m1
-    t = (left + right) / 2
-    for end in (lo, hi):
-        if math.dist(at(end), pt) <= math.dist(at(t), pt):
-            t = end
+    for cand in ((left + right) / 2, lo, hi):
+        if math.dist(at(cand), pt) <= math.dist(at(t), pt):
+            t = cand
     return t

@@ -167,7 +167,32 @@ def _conic_through_ends(points: List[Point], tolerance: float):
     return EllipseSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=ta, end_param=tb, ccw=ccw)
 
 
-_SPLINE_SAMPLES = 64     # punti al minimo su una spline da riconoscere: più dei 6 che una conica chiede
+def _chords_within(pts: List[Point], feet: List[Point], radius_between, polygon: float, tolerance: float) -> bool:
+    """Ogni punto della curva entro `tolerance` dalla conica, non solo i
+    vertici: la curva sta entro `polygon` dalle corde (D299), una corda entro
+    lo scarto dei suoi capi dalla corda fra i loro piedi sulla conica, e
+    quella entro la freccia del cerchio del raggio di curvatura più piccolo
+    sull'arco fra i piedi (`radius_between(i)`): una curva meno curva di un
+    cerchio si scosta meno dalla corda (D300)."""
+    for i in range(len(pts) - 1):
+        rho = radius_between(i)
+        half = math.dist(feet[i], feet[i + 1]) / 2
+        if half > rho:
+            return False
+        gap = max(math.dist(pts[i], feet[i]), math.dist(pts[i + 1], feet[i + 1]))
+        if gap + rho - math.sqrt(rho * rho - half * half) + polygon > tolerance:
+            return False
+    return True
+
+
+def _ellipse_curvature_radius(a: float, b: float, t0: float, t1: float) -> float:
+    """Raggio di curvatura più piccolo dell'ellisse fra i parametri vicini `t0`
+    e `t1`: (a²sin²t + b²cos²t)^(3/2)/(ab) cresce con sin²t, che è minimo a un
+    multiplo di π se il tratto lo contiene, se no a un capo."""
+    d = (t1 - t0 + math.pi) % (2 * math.pi) - math.pi
+    lo, hi = min(t0, t0 + d), max(t0, t0 + d)
+    s2 = 0.0 if math.floor(hi / math.pi) >= math.ceil(lo / math.pi) else min(math.sin(lo) ** 2, math.sin(hi) ** 2)
+    return (a * a * s2 + b * b * (1 - s2)) ** 1.5 / (a * b)
 
 
 def _walked(params: Sequence[float], ccw: bool, closed: bool) -> Optional[List[float]]:
@@ -190,10 +215,8 @@ def conic_of_spline(spline: BSplineSeg, tolerance: float) -> Optional[EllipseSeg
     lui, percorso una volta sola nel verso della spline. Prima il cerchio,
     più semplice; mai l'iperbole (D296). None se nessuno dei due.
     """
-    pts = spline.discretize(tolerance=tolerance / 10)
-    if len(pts) < _SPLINE_SAMPLES:
-        t0, t1 = spline.t_range
-        pts = [spline.point_at(t0 + (t1 - t0) * k / (_SPLINE_SAMPLES - 1)) for k in range(_SPLINE_SAMPLES)]
+    polygon = tolerance / 10
+    pts = spline.discretize(tolerance=polygon)
     start, end = spline.endpoints()
     pts[0], pts[-1] = start, end
     closed = math.dist(start, end) <= FLOAT_NOISE
@@ -209,7 +232,8 @@ def conic_of_spline(spline: BSplineSeg, tolerance: float) -> Optional[EllipseSeg
     if circle is not None:
         center, radius = circle
         angles = [math.atan2(p[1] - center[1], p[0] - center[0]) for p in pts]
-        if (all(abs(math.dist(center, p) - radius) <= tolerance for p in pts)
+        feet = [(center[0] + radius * math.cos(a), center[1] + radius * math.sin(a)) for a in angles]
+        if (_chords_within(pts, feet, lambda i: radius, polygon, tolerance)
                 and _walked(angles, ccw, closed) is not None):
             a0 = angles[0]
             a1 = a0 + (2 * math.pi if ccw else -2 * math.pi) if closed else angles[-1]
@@ -222,7 +246,13 @@ def conic_of_spline(spline: BSplineSeg, tolerance: float) -> Optional[EllipseSeg
         return None
     p0 = params[0]
     p1 = p0 + (2 * math.pi if ccw else -2 * math.pi) if closed else params[-1]
-    return EllipseSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=p0, end_param=p1, ccw=ccw)
+    ellipse = EllipseSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=p0, end_param=p1, ccw=ccw)
+    a = math.hypot(*major_axis)
+    feet = [ellipse._point_at(t) for t in params]
+    if not _chords_within(pts, feet, lambda i: _ellipse_curvature_radius(a, a * ratio, params[i], params[i + 1]),
+                          polygon, tolerance):
+        return None
+    return ellipse
 
 
 def _fit_curve(points: List[Point], tolerance: float, arcs: bool, degree: int) -> List[Primitive]:

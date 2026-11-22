@@ -13,6 +13,7 @@ from topo.core.primitives.spline import BSplineSeg
 from topo.core.primitives.mathseg import segment_endpoints
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
 from topo.core.primitives.trim import sub_segment
+from topo.core.geometry.measure import Reach, segment_length
 
 
 def _close(p, q, tol=1e-6):
@@ -163,3 +164,33 @@ class TestClosedSplineSeamUnderMotion(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestHairpinBranch(unittest.TestCase):
+    """Una forcina: andata e ritorno a 0,01 l'una dall'altra, nodi non
+    uniformi. Il ramo del taglio si sceglie per certificato sui pezzi di
+    Bézier (D300): con 64 campioni metà dei tagli finiva sull'altro ramo."""
+
+    SPLINE = BSplineSeg(degree=3,
+                        control_points=[(0, 0), (25, 0), (50, 0), (50.5, 0.005), (50, 0.01), (25, 0.01), (0, 0.01)],
+                        knots=[0.0] * 4 + [0.3, 0.5, 0.6] + [1.0] * 4)
+
+    def test_il_taglio_resta_sul_suo_ramo(self):
+        s = self.SPLINE
+        for k in range(1, 40):
+            t0, t1 = k / 41, (k + 1) / 41
+            with self.subTest(t0=t0):
+                a, b, via = s._evaluate(t0), s._evaluate(t1), s._evaluate((t0 + t1) / 2)
+                piece = sub_segment(s, a, b, via)
+                pa, pb = segment_endpoints(piece)
+                self.assertTrue(_close(pa, a) and _close(pb, b))
+                # il tratto è corto quanto la curva fra i due punti, non il giro della forcina
+                self.assertLess(segment_length(piece), 1.5 * math.dist(a, b) + 1e-6)
+
+    def test_reach_vede_la_punta(self):
+        # la punta della forcina sta oltre x = 50: la portata la trova, esatta
+        lo, hi = Reach(self.SPLINE)((1.0, 0.0))
+        tip = max(self.SPLINE._evaluate(i / 20000)[0] for i in range(20001))
+        self.assertEqual(lo, 0.0)
+        self.assertGreaterEqual(hi, tip)
+        self.assertLess(hi - tip, 1e-6)

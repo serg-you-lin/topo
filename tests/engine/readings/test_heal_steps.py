@@ -569,9 +569,11 @@ class TestLoopsToCurves(unittest.TestCase):
         self.assertEqual([round(to_shapely(f).area) for f in curves], [100])
 
     @staticmethod
-    def _arc_with_chords(center=(5.0, 5.0), radius=0.64, n=15):
+    def _arc_with_chords(center=(5.0, 5.0), radius=0.64, n=16):
         # Un quarto di cerchio disegnato due volte: l'arco e la sua copia a
         # corde. Chiudono un giro largo in media meno di SAME_POINT (D279).
+        # n diverso dai 15 lati del quarto sulla griglia dell'arco: con n uguale
+        # le corde sono il poligono dell'arco e il giro non c'è (D300).
         arc = CircleSeg(center=center, radius=radius, start_angle=0.0,
                      end_angle=math.pi / 2, ccw=True)
         pts = [arc._point_at(k * (math.pi / 2) / n) for k in range(n + 1)]
@@ -582,7 +584,7 @@ class TestLoopsToCurves(unittest.TestCase):
         loops = topo.experimental.face_loops(doc.edges)
         self.assertEqual(len(loops), 1)
         curves = topo.experimental.loops_to_curves(loops)
-        self.assertEqual(len(curves), 16)
+        self.assertEqual(len(curves), 17)
         self.assertTrue(all(isinstance(c, OpenCurve) for c in curves))
 
     def test_003_micro_cerchio_torna_come_curva_aperta(self):

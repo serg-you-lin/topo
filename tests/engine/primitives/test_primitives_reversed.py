@@ -12,12 +12,12 @@ import unittest
 
 from topo.core.primitives.line import LineSeg
 from topo.core.primitives.conics import CircleSeg
+from topo.core.geometry.measure import segment_length
 
 
-def _arc_len(seg, tol=0.01):
-    pts = seg.discretize(tolerance=tol)
-    return sum(math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1])
-               for i in range(len(pts) - 1))
+def _arc_len(seg):
+    # la lunghezza vera (D293): le corde del poligono la accorciano
+    return segment_length(seg)
 
 
 class TestReversed(unittest.TestCase):

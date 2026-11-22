@@ -150,9 +150,9 @@ def segment_reach(segment, direction: Point) -> Tuple[float, float]:
     """
     (min, max) della proiezione dei punti di `segment` sul versore
     `direction`. Esatta per retta, arco, cerchio, ellisse (estremi in forma
-    chiusa); per la B-spline estremi locali dei campioni raffinati sul
-    parametro fino alla precisione di macchina. Per molte direzioni sullo
-    stesso segmento usa `Reach`, che campiona la spline una volta sola.
+    chiusa); per la B-spline per certificato sui pezzi di Bézier, rifiniti
+    alla precisione di macchina (D300). Per molte direzioni sullo stesso
+    segmento usa `Reach`: i pezzi si calcolano una volta sola.
     """
     return Reach(segment)(direction)
 
@@ -162,7 +162,6 @@ class Reach:
 
     def __init__(self, segment):
         self.segment = segment
-        self._samples = _spline_samples(segment) if isinstance(segment, BSplineSeg) else None
 
     def __call__(self, direction: Point) -> Tuple[float, float]:
         dx, dy = direction
@@ -216,53 +215,24 @@ class Reach:
 
     def _spline(self, dot) -> Tuple[float, float]:
         """
-        Estremi dei campioni, poi ogni estremo locale che può ancora vincere
-        raffinato per sezione aurea fra i due campioni vicini. Fra due campioni
-        la curva non si allontana dalla loro proiezione più della sua
-        lunghezza lì, stimata dalle due corde: un estremo locale più indietro
-        di così non può superare quello dei campioni.
+        Gli estremi per certificato sui pezzi di Bézier (D300): una funzione
+        lineare sull'inviluppo dei punti di controllo ha l'estremo su uno di
+        loro, quindi nessun pezzo più indietro del migliore può vincere. Poi la
+        sezione aurea attorno al vincitore, alla precisione di macchina.
         """
-        ts, pts, reach = self._samples
-        values = [dot(p) for p in pts]
-        lo_v, hi_v = min(values), max(values)
-        best = {1.0: hi_v, -1.0: -lo_v}
-        last = len(ts) - 1
+        seg = self.segment
+        out = []
         for sign in (1.0, -1.0):
-            for i in range(len(ts)):
-                a, b = max(i - 1, 0), min(i + 1, last)
-                v = sign * values[i]
-                if v < sign * values[a] or v < sign * values[b] or v + reach[i] < best[sign]:
-                    continue
-                _t, refined = golden_max(lambda t: sign * dot(self.segment._evaluate(t)), ts[a], ts[b])
-                best[sign] = max(best[sign], refined)
-        return -best[-1.0], best[1.0]
+            t, lo, hi = seg._minimize(lambda q: -sign * dot(q), lambda ctrl: min(-sign * dot(q) for q in ctrl))
+            _t, refined = golden_max(lambda u: sign * dot(seg._evaluate(u)), lo, hi)
+            out.append(sign * max(sign * dot(seg._evaluate(t)), refined))
+        return out[1], out[0]
 
 
 def _on_sweep(start: float, ccw: bool, sweep: float, t: float) -> bool:
     """True se l'angolo `t` cade nell'intervallo percorso da `start` per `sweep`."""
     offset = ((t - start) if ccw else (start - t)) % (2 * math.pi)
     return offset <= sweep + 1e-12
-
-
-_SPLINE_SAMPLES_PER_SPAN = 16
-
-
-def _spline_samples(segment: BSplineSeg):
-    """
-    (parametri, punti, portata di ciascun campione): campioni regolari su ogni
-    intervallo di nodi (uno span è un polinomio di grado basso, 16 campioni
-    separano i suoi estremi); la portata è la somma delle due corde vicine.
-    """
-    k, p = segment.knots, segment.degree
-    breaks = sorted(set(k[p:len(k) - p]))
-    ts = [breaks[0]]
-    for lo, hi in zip(breaks, breaks[1:]):
-        ts += [lo + (hi - lo) * i / _SPLINE_SAMPLES_PER_SPAN for i in range(1, _SPLINE_SAMPLES_PER_SPAN + 1)]
-    pts = [segment._evaluate(t) for t in ts]
-    chords = [math.dist(pts[i], pts[i + 1]) for i in range(len(pts) - 1)]
-    reach = [(chords[i - 1] if i > 0 else 0.0) + (chords[i] if i < len(chords) else 0.0)
-             for i in range(len(pts))]
-    return ts, pts, reach
 
 
 def golden_max(f, a: float, b: float, iterations: int = 40) -> Tuple[float, float]:

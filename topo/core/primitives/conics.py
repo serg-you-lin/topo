@@ -29,9 +29,6 @@ from .motion import _check_factor, _mirror_point, _rotate_point, _scale_point, _
 # Angoli e griglia di archi ed ellissi (D145)
 # ---------------------------------------------------------------------------
 
-# Lati minimi della griglia di un cerchio; un arco ne prende la sua parte (D145)
-MIN_SEGMENTS_CIRCLE = 64
-
 # Un punto della griglia più vicino di così a un estremo dell'arco coincide
 # con l'estremo e si salta: eviterebbe solo un tratto degenere
 _GRID_SNAP = FLOAT_NOISE
@@ -83,15 +80,14 @@ def _sagitta_step(radius: float, tolerance: float) -> Optional[float]:
 def _circle_sides(radius: float, tolerance: float) -> int:
     """
     Lati della griglia del cerchio di raggio `radius`: sagitta <= tolerance,
-    almeno MIN_SEGMENTS_CIRCLE, nessun tetto (la freccia è assoluta, i lati
-    crescono con il raggio). Multiplo di 4: la griglia è simmetrica rispetto
-    ai due assi, quindi i quarti cadono sui vertici e un pezzo specchiato dà
-    il poligono specchiato.
+    nessun minimo e nessun tetto (la freccia è assoluta, i lati crescono con
+    il raggio). Multiplo di 4: la griglia è simmetrica rispetto ai due assi,
+    quindi i quarti cadono sui vertici e un pezzo specchiato dà il poligono
+    specchiato. Un raggio entro la tolleranza ne ha 4: ogni poligono
+    inscritto dista al più il raggio dal cerchio (D300).
     """
     step = _sagitta_step(radius, tolerance)
-    if step is None:
-        return MIN_SEGMENTS_CIRCLE
-    sides = max(MIN_SEGMENTS_CIRCLE, int(math.ceil(2 * math.pi / step)))
+    sides = 4 if step is None else math.ceil(2 * math.pi / step)
     return -(-sides // 4) * 4
 
 

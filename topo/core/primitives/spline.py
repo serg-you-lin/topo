@@ -8,10 +8,13 @@ la ricerca dell'intervallo dei nodi. Il nome è il termine matematico
 
 from __future__ import annotations
 
+import heapq
+import itertools
 import math
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
+from ...precision import FLOAT_NOISE
 from .mathseg import Algebra, DEFAULT_TOLERANCE, MathSeg, Point, _plain, _real
 from .motion import _check_factor, _mirror_point, _rotate_point, _scale_point, _translate_point
 from .polyline import _point_to_segment_distance
@@ -145,6 +148,7 @@ class BSplineSeg(MathSeg):
         # più volte. Non è un campo (fuori da eq/repr/fields); vale perché una
         # spline non si modifica sul posto — reversed/rotated ne fanno una nuova.
         self._points: dict = {}
+        self._pieces_cache: Optional[list] = None
 
     @property
     def algebra(self) -> Algebra:
@@ -343,13 +347,56 @@ class BSplineSeg(MathSeg):
         if t_max <= t_min:
             return list(self.control_points)
 
-        if self.weights and min(self.weights) <= 0:
-            raise ValueError("a spline's weights must be positive to be discretized")
-        weights = self.weights or [1.0] * len(self.control_points)
-        cpw = [(x * w, y * w, w) for (x, y), w in zip(self.control_points, weights)]
         start, end = self.endpoints()
         out: List[Point] = [start]
-        for piece in _bezier_pieces(self.degree, list(self.knots), cpw):
+        for _, _, piece in self._pieces():
             _flat_polygon(piece, tolerance, out)
         out[-1] = end
         return out
+
+    def _pieces(self) -> List[Tuple[float, float, list]]:
+        """(t0, t1, pezzo di Bézier omogeneo) da un nodo al successivo (D299).
+        Pesi positivi: solo così la curva sta nell'inviluppo dei punti di controllo."""
+        if self._pieces_cache is None:
+            if self.weights and min(self.weights) <= 0:
+                raise ValueError("a spline's weights must be positive to be discretized")
+            weights = self.weights or [1.0] * len(self.control_points)
+            cpw = [(x * w, y * w, w) for (x, y), w in zip(self.control_points, weights)]
+            p, knots = self.degree, list(self.knots)
+            ks = sorted({k for k in knots if knots[p] <= k <= knots[-(p + 1)]})
+            self._pieces_cache = list(zip(ks, ks[1:], _bezier_pieces(p, knots, cpw)))
+        return self._pieces_cache
+
+    def _minimize(self, value: Callable[[Point], float],
+                  bound: Callable[[List[Point]], float]) -> Tuple[float, float, float]:
+        """(t, lo, hi): il parametro dove `value(punto)` è minimo sulla curva,
+        entro FLOAT_NOISE, e il tratto [lo, hi] attorno a lui da rifinire.
+        `bound(punti di controllo)` minora `value` su tutto il pezzo (la curva
+        sta nel loro inviluppo): un pezzo che non scende sotto il migliore di
+        FLOAT_NOISE si scarta, gli altri si dimezzano. Certificato, nessun
+        campionamento: un ramo vicino non può vincere per sbaglio (D300)."""
+        best = (math.inf, 0.0, 0.0, 0.0)
+        heap: list = []
+        order = itertools.count()   # a pari minorante, nell'ordine di arrivo
+        for t0, t1, c in self._pieces():
+            for t, q in ((t0, c[0]), (t1, c[-1])):
+                v = value((q[0] / q[2], q[1] / q[2]))
+                if v < best[0]:
+                    best = (v, t, t0, t1)
+            heap.append((bound([(x / w, y / w) for x, y, w in c]), next(order), t0, t1, c))
+        heapq.heapify(heap)
+        while heap:
+            b, _, t0, t1, c = heapq.heappop(heap)
+            if b >= best[0] - FLOAT_NOISE:
+                break
+            tm = (t0 + t1) / 2
+            if not t0 < tm < t1:
+                continue
+            left, right = _halves(c)
+            q = left[-1]
+            v = value((q[0] / q[2], q[1] / q[2]))
+            if v < best[0]:
+                best = (v, tm, t0, t1)
+            for a, z, half in ((t0, tm, left), (tm, t1, right)):
+                heapq.heappush(heap, (bound([(x / w, y / w) for x, y, w in half]), next(order), a, z, half))
+        return best[1], best[2], best[3]

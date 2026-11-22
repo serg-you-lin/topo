@@ -216,7 +216,7 @@ class TestUnionGridUnderMotion(unittest.TestCase):
         lines = _on_nodes(edges, build_node_graph(edges, sliver=0.01))
         on_grid = len(shapely.unary_union(lines, grid_size=UNION_GRID).geoms)
         exact = len(shapely.unary_union(lines).geoms)
-        self.assertEqual(on_grid, 64)   # i due poligoni coincidono vertice per vertice
+        self.assertEqual(on_grid, len(lines[0].coords) - 1)   # i due poligoni coincidono vertice per vertice
         self.assertLess(exact, 10)      # senza griglia: pochi incroci all'ultimo bit
 
     def test_la_lettura_non_dipende_dalla_griglia_ne_dal_moto(self):
