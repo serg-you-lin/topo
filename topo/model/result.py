@@ -1,3 +1,9 @@
+"""
+model/result.py
+
+Il Result: ciò che una lettura (`faces()`, `outlines()`) restituisce — i cluster
+trovati, le curve sciolte, i testi e la diagnostica.
+"""
 from __future__ import annotations
 
 from dataclasses import KW_ONLY, dataclass

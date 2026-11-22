@@ -1,5 +1,8 @@
 """
 model/cluster.py
+
+Il Cluster: una parte, un contorno esterno con i suoi contorni interni e l'overlay
+di un consumatore.
 """
 from __future__ import annotations
 
