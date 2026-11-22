@@ -52,8 +52,6 @@ CONVERGENCE = {
 # da togliere (TODO "Numeri delle primitive sfuggiti a precision", punti b e c):
 # quando il numero sparisce, test_le_eccezioni_esistono_ancora chiede di togliere la riga
 PENDING = {
-    ("topo/core/primitives/spline.py", "MAX_SEGMENTS_SPLINE"): "punto b",
-    ("topo/core/primitives/polyline.py", "max_depth"): "punto b",
     ("topo/core/primitives/conics.py", "MIN_SEGMENTS_CIRCLE"): "punto c",
     ("topo/core/primitives/trim.py", "_SAMPLES"): "punto c",
     ("topo/core/geometry/fitting.py", "_SPLINE_SAMPLES"): "punto c (D296)",

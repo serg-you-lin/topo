@@ -18,7 +18,7 @@ from typing import List, Optional, Tuple
 from ...precision import FLOAT_NOISE
 from .line import LineSeg
 from .mathseg import Point
-from .spline import BSplineSeg, _bspline_find_span
+from .spline import BSplineSeg, _insert_to_degree
 from .conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg
 from .clothoid import ClothoidSeg
 from .formula import FormulaSeg
@@ -224,26 +224,3 @@ def _nearest_param(at, pt: Point, lo: float, hi: float) -> float:
         if math.dist(at(end), pt) <= math.dist(at(t), pt):
             t = end
     return t
-
-
-def _insert_to_degree(p: int, knots: List[float], cpw: List[Tuple[float, float, float]],
-                      t: float):
-    """Inserisce `t` nel vettore dei nodi finché compare `p` volte (agli
-    estremi, già bloccati, non serve): lì la curva passa per un punto di
-    controllo e si separa in due tratti indipendenti."""
-    if t <= knots[p] or t >= knots[-(p + 1)]:
-        return knots, cpw
-    while sum(1 for k in knots if k == t) < p:
-        span = _bspline_find_span(t, p, knots, len(cpw) - 1)
-        new = []
-        for i in range(len(cpw) + 1):
-            if i <= span - p:
-                new.append(cpw[i])
-            elif i > span:
-                new.append(cpw[i - 1])
-            else:
-                alpha = (t - knots[i]) / (knots[i + p] - knots[i])
-                new.append(tuple(alpha * cpw[i][c] + (1 - alpha) * cpw[i - 1][c] for c in range(3)))
-        knots = knots[:span + 1] + [t] + knots[span + 1:]
-        cpw = new
-    return knots, cpw

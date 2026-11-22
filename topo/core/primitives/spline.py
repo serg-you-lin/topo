@@ -14,10 +14,7 @@ from typing import List, Optional, Tuple
 
 from .mathseg import Algebra, DEFAULT_TOLERANCE, MathSeg, Point, _plain, _real
 from .motion import _check_factor, _mirror_point, _rotate_point, _scale_point, _translate_point
-from .polyline import _adaptive_polyline
-
-# Numero massimo di segmenti per tratto di spline (evita esplosione di punti)
-MAX_SEGMENTS_SPLINE = 100
+from .polyline import _point_to_segment_distance
 
 
 def _bspline_find_span(t: float, degree: int, knots: List[float], n: int) -> int:
@@ -36,6 +33,70 @@ def _bspline_find_span(t: float, degree: int, knots: List[float], n: int) -> int
             lo = mid
         mid = (lo + hi) // 2
     return mid
+
+
+def _insert_to_degree(p: int, knots: List[float], cpw: List[Tuple[float, float, float]],
+                      t: float):
+    """Inserisce `t` nel vettore dei nodi finché compare `p` volte: lì la curva
+    passa per un punto di controllo e si separa in due tratti indipendenti.
+    Anche agli estremi del tratto, dove una spline non bloccata non passa
+    per un punto di controllo; fuori dal tratto nulla."""
+    if t < knots[p] or t > knots[-(p + 1)]:
+        return knots, cpw
+    while sum(1 for k in knots if k == t) < p:
+        span = _bspline_find_span(t, p, knots, len(cpw) - 1)
+        new = []
+        for i in range(len(cpw) + 1):
+            if i <= span - p:
+                new.append(cpw[i])
+            elif i > span:
+                new.append(cpw[i - 1])
+            else:
+                alpha = (t - knots[i]) / (knots[i + p] - knots[i])
+                new.append(tuple(alpha * cpw[i][c] + (1 - alpha) * cpw[i - 1][c] for c in range(3)))
+        knots = knots[:span + 1] + [t] + knots[span + 1:]
+        cpw = new
+    return knots, cpw
+
+
+def _bezier_pieces(p: int, knots: List[float], cpw: List[Tuple[float, float, float]]) -> List[list]:
+    """I pezzi di Bézier della curva fra `knots[p]` e `knots[-(p + 1)]`, in
+    coordinate omogenee: ogni nodo del tratto inserito fino a molteplicità `p`,
+    così la curva passa per un punto di controllo a ogni nodo."""
+    lo, hi = knots[p], knots[-(p + 1)]
+    for t in sorted({k for k in knots if lo <= k <= hi}):
+        knots, cpw = _insert_to_degree(p, knots, cpw, t)
+    first = max(i for i, k in enumerate(knots) if k == lo) - p
+    count = len({k for k in knots if lo <= k <= hi}) - 1
+    return [cpw[first + i * p:first + i * p + p + 1] for i in range(count)]
+
+
+def _halves(c: list) -> Tuple[list, list]:
+    """de Casteljau a metà del pezzo `c` (omogeneo): le due metà, stessa curva."""
+    left, right, cur = [c[0]], [c[-1]], list(c)
+    while len(cur) > 1:
+        cur = [((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2) for a, b in zip(cur, cur[1:])]
+        left.append(cur[0])
+        right.append(cur[-1])
+    return left, right[::-1]
+
+
+def _flat_polygon(piece: list, tolerance: float, out: List[Point]) -> None:
+    """Aggiunge a `out` i vertici del pezzo dopo il primo: si dimezza finché i
+    punti di controllo stanno entro `tolerance` dalla corda. La curva sta
+    nel loro inviluppo convesso (pesi positivi), quindi entro `tolerance`
+    dalla corda: dimostrato, non stimato (D299)."""
+    stack = [piece]
+    while stack:
+        c = stack.pop()
+        pts = [(x / w, y / w) for x, y, w in c]
+        a, b = pts[0], pts[-1]
+        if all(_point_to_segment_distance(q, a, b) <= tolerance for q in pts[1:-1]):
+            out.append(b)
+        else:
+            left, right = _halves(c)
+            stack.append(right)
+            stack.append(left)
 
 
 def _derivative_points(points: List[tuple], knots: List[float], p: int) -> List[tuple]:
@@ -259,9 +320,9 @@ class BSplineSeg(MathSeg):
 
     def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """
-        Discretizza la spline in polilinea valutando la curva vera (non il
-        poligono di controllo) via `_evaluate()`, con suddivisione adattiva
-        finché la deviazione dalla corda resta entro `tolerance`.
+        Discretizza la spline in polilinea entro `tolerance` dalla curva vera,
+        per dimostrazione: pezzi di Bézier dimezzati finché i loro punti di
+        controllo stanno entro `tolerance` dalla corda (D299). Capi esatti.
         """
         cached = self._points.get(tolerance)
         if cached is None:
@@ -282,11 +343,13 @@ class BSplineSeg(MathSeg):
         if t_max <= t_min:
             return list(self.control_points)
 
-        approx_length = sum(
-            math.hypot(b[0] - a[0], b[1] - a[1])
-            for a, b in zip(self.control_points, self.control_points[1:])
-        )
-        n_initial = max(1, int(math.ceil(approx_length / tolerance))) if tolerance > 0 else MAX_SEGMENTS_SPLINE
-        n_initial = min(n_initial, MAX_SEGMENTS_SPLINE)
-
-        return _adaptive_polyline(self._evaluate, t_min, t_max, n_initial, tolerance)
+        if self.weights and min(self.weights) <= 0:
+            raise ValueError("a spline's weights must be positive to be discretized")
+        weights = self.weights or [1.0] * len(self.control_points)
+        cpw = [(x * w, y * w, w) for (x, y), w in zip(self.control_points, weights)]
+        start, end = self.endpoints()
+        out: List[Point] = [start]
+        for piece in _bezier_pieces(self.degree, list(self.knots), cpw):
+            _flat_polygon(piece, tolerance, out)
+        out[-1] = end
+        return out

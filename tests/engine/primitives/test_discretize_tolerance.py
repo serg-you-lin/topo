@@ -17,6 +17,7 @@ import unittest
 
 from topo.core.primitives.polyline import _point_to_segment_distance
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
+from topo.core.primitives.spline import BSplineSeg
 
 TOL = 0.01
 RADII = (0.005, 1.0, 10.0, 33.0, 100.0, 500.0, 2000.0)
@@ -81,6 +82,73 @@ class TestDiscretizeWithinTolerance(unittest.TestCase):
         curve = _samples(e._point_at, 2.0, -1.5, 20000)
         self.assertLessEqual(_deviation(e.discretize(tolerance=TOL), curve), TOL)
 
+
+
+def _deviation_along(poly, curve_pts, window: int = 64) -> float:
+    """Come `_deviation`, ma i campioni e il poligono vanno nello stesso verso:
+    ogni campione guarda i lati da quello dell'ultimo campione in avanti. Un
+    sottoinsieme dei lati dà una distanza mai più piccola: il test non passa
+    per errore. Serve dove i lati sono lunghi (spline, D299)."""
+    worst, j = 0.0, 0
+    for p in curve_pts:
+        ks = range(max(j - 1, 0), min(j + window, len(poly) - 1))
+        d, j = min((_point_to_segment_distance(p, poly[k], poly[k + 1]), k) for k in ks)
+        worst = max(worst, d)
+    return worst
+
+
+def _spline(degree, n, clamped, rational, seed):
+    """Una spline pseudo-casuale ma fissa: nodi bloccati o no, pesi o no."""
+    import random
+    rnd = random.Random(seed)
+    cps = [(rnd.uniform(-50, 50), rnd.uniform(-50, 50)) for _ in range(n)]
+    if clamped:
+        inner = sorted(rnd.uniform(0, 10) for _ in range(n - degree - 1))
+        knots = [0.0] * (degree + 1) + inner + [10.0] * (degree + 1)
+    else:
+        knots = sorted(rnd.uniform(-3, 13) for _ in range(n + degree + 1))
+    weights = [rnd.uniform(0.2, 5) for _ in range(n)] if rational else None
+    return BSplineSeg(degree=degree, control_points=cps, knots=knots, weights=weights)
+
+
+class TestSplinePolygon(unittest.TestCase):
+    """Il poligono della spline sta entro `tol` per dimostrazione (D299): pezzi
+    di Bézier, dimezzati finché i punti di controllo stanno entro `tol` dalla
+    corda. Il controllo sul solo punto di mezzo (0.40.2) usciva di 2,5·tol
+    su una spline corta con molti intervalli di nodi (236 delle 9612 spline
+    dei 631 DXF di tests/)."""
+
+    def _check(self, s, tol, n=4000):
+        lo, hi = s.knots[s.degree], s.knots[-(s.degree + 1)]
+        poly = s.discretize(tolerance=tol)
+        self.assertEqual((poly[0], poly[-1]), s.endpoints())
+        self.assertLessEqual(_deviation_along(poly, _samples(s._evaluate, lo, hi, n)), tol)
+
+    def test_molti_intervalli_su_una_spline_corta(self):
+        # 191 punti di controllo a zig-zag su 4,75 mm, 188 intervalli: la forma
+        # della peggiore dei 631 (prima 0,0023 dalla curva a tol 0,001)
+        cps = [(0.025 * i, 0.003 * (-1) ** i) for i in range(191)]
+        knots = [0.0] * 4 + [i / 188 for i in range(1, 188)] + [1.0] * 4
+        self._check(BSplineSeg(degree=3, control_points=cps, knots=knots), 1e-3, 20000)
+
+    def test_gradi_nodi_e_pesi(self):
+        for degree in (1, 2, 3, 5):
+            for clamped in (True, False):
+                for rational in (False, True):
+                    with self.subTest(degree=degree, clamped=clamped, rational=rational):
+                        s = _spline(degree, degree + 8, clamped, rational, seed=degree * 4 + clamped * 2 + rational)
+                        self._check(s, 1e-3)
+
+    def test_nodi_multipli(self):
+        cps = [(0.0, 0.0), (10.0, 20.0), (20.0, -5.0), (30.0, 15.0), (40.0, 0.0), (50.0, 30.0), (60.0, 0.0)]
+        knots = [0.0] * 4 + [0.5, 0.5, 0.5] + [1.0] * 4
+        self._check(BSplineSeg(degree=3, control_points=cps, knots=knots), 1e-3)
+
+    def test_un_peso_non_positivo_si_rifiuta(self):
+        s = BSplineSeg(degree=2, control_points=[(0.0, 0.0), (1.0, 1.0), (2.0, 0.0)],
+                       knots=[0.0, 0.0, 0.0, 1.0, 1.0, 1.0], weights=[1.0, -0.5, 1.0])
+        with self.assertRaises(ValueError):
+            s.discretize(tolerance=1e-3)
 
 class TestEllipseOnParameterGrid(unittest.TestCase):
     """
