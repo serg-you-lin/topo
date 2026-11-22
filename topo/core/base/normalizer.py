@@ -47,7 +47,7 @@ Funzioni pubbliche:
 """
 
 from __future__ import annotations
-from ...precision import RING_TO_CIRCLE, TESSELLATION_SIDE
+from ...precision import RING_TO_CIRCLE, TESSELLATION_RUN, TESSELLATION_SIDE
 import math
 from collections import Counter
 from dataclasses import dataclass, replace
@@ -587,7 +587,7 @@ def weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]:
 def refit_tessellations(
     edges: Iterable[Edge],
     max_segment: float = TESSELLATION_SIDE,
-    min_run: int = 10,
+    min_run: int = TESSELLATION_RUN,
     tolerance: float = RING_TO_CIRCLE,
 ) -> List[Edge]:
     """
