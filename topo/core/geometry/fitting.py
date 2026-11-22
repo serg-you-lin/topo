@@ -211,11 +211,24 @@ def _walked(params: Sequence[float], ccw: bool, closed: bool) -> Optional[List[f
 def conic_of_spline(spline: BSplineSeg, tolerance: float) -> Optional[EllipseSeg]:
     """
     L'arco (o cerchio) o l'arco d'ellisse (o ellisse) che è la spline: per i
-    suoi capi esatti, ogni punto fitto della curva vera entro `tolerance` da
-    lui, percorso una volta sola nel verso della spline. Prima il cerchio,
-    più semplice; mai l'iperbole (D296). None se nessuno dei due.
+    suoi capi esatti, ogni punto della curva vera entro `tolerance` da lui,
+    dimostrato sulle corde del suo poligono (D300), percorso una volta sola
+    nel verso della spline. Prima il cerchio, più semplice; mai l'iperbole
+    (D296). None se nessuno dei due. Il poligono si infittisce di dieci in
+    dieci, fino a FLOAT_NOISE, solo finché la risposta può ancora cambiare:
+    vertici entro `tolerance` e corde non ancora dimostrate, o punti troppo pochi (D302).
     """
     polygon = tolerance / 10
+    while True:
+        conic, finer = _conic_on(spline, polygon, tolerance)
+        if conic is not None or not finer or polygon <= FLOAT_NOISE:
+            return conic
+        polygon /= 10
+
+
+def _conic_on(spline: BSplineSeg, polygon: float, tolerance: float) -> Tuple[Optional[EllipseSeg], bool]:
+    """(conica, un poligono più fitto può cambiare la risposta) sul poligono
+    della spline entro `polygon`."""
     pts = spline.discretize(tolerance=polygon)
     start, end = spline.endpoints()
     pts[0], pts[-1] = start, end
@@ -231,19 +244,25 @@ def conic_of_spline(spline: BSplineSeg, tolerance: float) -> Optional[EllipseSeg
         circle = circle_through(start, pts[len(pts) // 2], end)
     if circle is not None:
         center, radius = circle
-        angles = [math.atan2(p[1] - center[1], p[0] - center[0]) for p in pts]
-        feet = [(center[0] + radius * math.cos(a), center[1] + radius * math.sin(a)) for a in angles]
-        if (_chords_within(pts, feet, lambda i: radius, polygon, tolerance)
-                and _walked(angles, ccw, closed) is not None):
-            a0 = angles[0]
-            a1 = a0 + (2 * math.pi if ccw else -2 * math.pi) if closed else angles[-1]
-            return CircleSeg(center=center, radius=radius, start_angle=a0, end_angle=a1, ccw=ccw)
+        if all(abs(math.dist(center, p) - radius) <= tolerance for p in pts):
+            angles = [math.atan2(p[1] - center[1], p[0] - center[0]) for p in pts]
+            if _walked(angles, ccw, closed) is not None:
+                feet = [(center[0] + radius * math.cos(a), center[1] + radius * math.sin(a)) for a in angles]
+                if not _chords_within(pts, feet, lambda i: radius, polygon, tolerance):
+                    # i vertici sul cerchio, le corde non ancora: più fitto, non l'ellisse
+                    return None, True
+                a0 = angles[0]
+                a1 = a0 + (2 * math.pi if ccw else -2 * math.pi) if closed else angles[-1]
+                return CircleSeg(center=center, radius=radius, start_angle=a0, end_angle=a1, ccw=ccw), False
+    # una conica la fissano 5 punti: con meno di 6 il test non dice nulla
+    if len(pts) < 6:
+        return None, True
     fit = within_conic_through(pts, tolerance)
     if fit is None or fit[0] != "ellipse":
-        return None
+        return None, False
     _, center, major_axis, ratio, params = fit
     if _walked(params, ccw, closed) is None:
-        return None
+        return None, False
     p0 = params[0]
     p1 = p0 + (2 * math.pi if ccw else -2 * math.pi) if closed else params[-1]
     ellipse = EllipseSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=p0, end_param=p1, ccw=ccw)
@@ -251,8 +270,8 @@ def conic_of_spline(spline: BSplineSeg, tolerance: float) -> Optional[EllipseSeg
     feet = [ellipse._point_at(t) for t in params]
     if not _chords_within(pts, feet, lambda i: _ellipse_curvature_radius(a, a * ratio, params[i], params[i + 1]),
                           polygon, tolerance):
-        return None
-    return ellipse
+        return None, True
+    return ellipse, False
 
 
 def _fit_curve(points: List[Point], tolerance: float, arcs: bool, degree: int) -> List[Primitive]:

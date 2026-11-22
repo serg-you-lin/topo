@@ -597,16 +597,16 @@ class TestLoopsToCurves(unittest.TestCase):
 
     def test_004_heal_non_perde_il_giro_senza_area(self):
         # D137: l'arco e le corde non sono contorno, stanno in loose (D151).
-        # Otto corde: troppo poche per essere una curva scritta a punti, che
-        # heal rifitterebbe e fonderebbe con l'arco (D189); il giro resta
-        # senza area: freccia delle corde 0,2·(1-cos(π/32)) < SAME_POINT, D279
+        # Corde da 0,112, più di TESSELLATION_SIDE: non una curva scritta a
+        # punti, che heal rifitterebbe e fonderebbe con l'arco (D189, D301); il
+        # giro resta senza area: freccia delle corde 0,112²/(8·2) < SAME_POINT, D279
         square = [LineSeg(start=a, end=b) for a, b in
                   [((0, 0), (10, 0)), ((10, 0), (10, 10)), ((10, 10), (0, 10)), ((0, 10), (0, 0))]]
-        result = topo.heal(topo.load_segments(square + self._arc_with_chords(radius=0.2, n=8))).faces()
+        result = topo.heal(topo.load_segments(square + self._arc_with_chords(radius=2.0, n=28))).faces()
         self.assertEqual(result.cluster_count, 1)
         loose = [s for curve in result.loose for s in curve.segments]
         self.assertEqual(sum((isinstance(s, CircleSeg) and not s.full) for s in loose), 1)
-        self.assertEqual(sum(isinstance(s, LineSeg) for s in loose), 8)
+        self.assertEqual(sum(isinstance(s, LineSeg) for s in loose), 28)
 
 
 class TestLabeledAndHierarchy(unittest.TestCase):

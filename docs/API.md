@@ -468,7 +468,7 @@ topo.experimental.read_outline(edges, tolerance, max_gap) -> OutlineReading
 topo.experimental.touching_groups(edges, gap_tolerance) -> list[TouchingGroup]
 topo.experimental.split_at_crossings(edges, tolerance, cut_crossings=True) -> NodedEdges
 topo.experimental.outer_face(edges, epsilon=0.0) -> OuterFace | None
-topo.experimental.refit_tessellations(edges, max_segment=0.1, min_run=10,
+topo.experimental.refit_tessellations(edges, max_segment=0.1, min_run=3,
                           tolerance=0.02) -> list[Edge]
 ```
 
