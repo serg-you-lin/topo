@@ -85,7 +85,7 @@ topo/
 │   │                 mathseg.py (MathSeg, the mother), line.py, spline.py,
 │   │                 conics.py (Conic, Ellipse, Circle, Parabola, Hyperbola + the
 │   │                 arc grid), formula.py, clothoid.py; motion.py (moving a point),
-│   │                 polyline.py (adaptive discretization), trim.py (sub_segment)
+│   │                 polyline.py (the chord check), trim.py (sub_segment)
 │   ├── topology/     edge.py, node graph, loop search;
 │   │                 noding.py (planar network), outer_face.py (outer face)
 │   ├── base/         THE FOUNDATIONS OF EVERY READING (D187, D188): prepare.py (nodes decided
@@ -402,6 +402,28 @@ second is the consumer's, D88):
   at least one gap — a fact of the pattern, not of the linetype's name.
 - **geometric inference**: the consumer recognizes the feature by its shape
   (`source="geometric"`, `confidence < 1.0`).
+
+---
+
+## Exact, or through the polygon
+
+The primitive is the truth and the polygon a view (D167). Today the view still
+carries part of the computation; this is where, and with what guarantee:
+
+| computation | how | guarantee |
+|---|---|---|
+| polygon of a circle, ellipse, parabola, hyperbola, clothoid | step from the curvature | every chord within `tolerance`, by formula |
+| polygon of a spline | Bézier pieces halved on their control points (D299) | within `tolerance`, by proof |
+| polygon of a `FormulaSeg` | adaptive (D289) | checked on samples, not proved |
+| length, area | ∫ on the exact derivative (D293) | machine precision |
+| line × line, line × circle, circle × circle, line × any conic | closed form (D288) | exact |
+| conic × conic, anything × spline, formula, clothoid | polygons at `CURVE_TOLERANCE` | within `SAME_POINT` (D275) |
+| trim (`sub_segment`) | exact sub-curve (angle, knot insertion) | exact, except the search of the parameter of the cut point |
+| spline → arc / ellipse (D296) | the spline's points checked against the conic | on its polygon, not on the curve |
+
+The direction: the missing intersection pairs in closed form or certified by the
+control-point hulls, an intersection that carries its parameters, then the
+polygon only for drawing and noding (TODO, "Dopo la 1.0").
 
 ---
 
