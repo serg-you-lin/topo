@@ -87,7 +87,8 @@ topo/
 │   │                 arc grid), formula.py, clothoid.py; motion.py (moving a point),
 │   │                 polyline.py (the chord check), trim.py (sub_segment)
 │   ├── topology/     edge.py, node graph, loop search;
-│   │                 noding.py (planar network), outer_face.py (outer face)
+│   │                 noding.py (planar network), outer_face.py (outer face),
+│   │                 touching.py (groups of edges that touch)
 │   ├── base/         THE FOUNDATIONS OF EVERY READING (D187, D188): prepare.py (nodes decided
 │   │                 once, normalization), cleanup.py, normalizer.py,
 │   │                 gap_solver.py, hierarchy.py — heal, the readings and every caller
@@ -95,7 +96,7 @@ topo/
 │   ├── readings/     THE READINGS: network.py (the repair and `Network`),
 │   │                 heal.py (`heal()`), faces.py (`faces()`), outline.py
 │   │                 (`outlines()`) and their own steps (heal_steps.py,
-│   │                 touching.py, outer_scan.py) — each reading chooses only
+│   │                 outer_scan.py) — each reading chooses only
 │   │                 how it looks for the contour
 │   ├── geometry/     THE GEOMETRY, `topo.geometry` (D95): facts with geometric names
 │   │                 — shape (shape, concentric circles, arcs around), lines

@@ -1,8 +1,8 @@
-# tests/engine/readings/test_touching.py
+# tests/engine/topology/test_touching.py
 
 import math
 import unittest
-from topo.core.readings.touching import touching_groups
+from topo.core.topology.touching import touching_groups
 from topo.core.topology.edge import Edge
 from topo.core.primitives.line import LineSeg
 from topo.core.primitives.mathseg import segment_endpoints

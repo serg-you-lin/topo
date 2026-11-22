@@ -38,7 +38,7 @@ from ..topology.outer_face import OuterFace, outer_face
 from ..base.hierarchy import assign_cluster_refs, sort_clusters
 from ..base.curves import loose_curves
 from ..topology.non_contour_edges import non_contour_pieces
-from .touching import touching_groups
+from ..topology.touching import touching_groups
 from .network import repair_edges
 from .heal_steps import close_contour_jumps
 

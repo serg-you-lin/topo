@@ -1,5 +1,5 @@
 """
-topo/core/readings/touching.py
+topo/core/topology/touching.py
 ------------------------------
 Raggruppa gli Edge che si toccano: due edge stanno nello stesso gruppo se la
 distanza vera fra i loro segmenti è al massimo `gap_tolerance` (a catena).
@@ -32,9 +32,9 @@ from shapely import STRtree
 from ..geometry.measure import reach
 from ..geometry.strips import refine_gap
 from ..primitives.mathseg import DEFAULT_TOLERANCE
-from ..topology.edge import Edge
-from ..topology.graph import connected_groups
-from ..topology.noding import edge_geometry
+from .edge import Edge
+from .graph import connected_groups
+from .noding import edge_geometry
 
 BBox = Tuple[float, float, float, float]   # xmin, ymin, xmax, ymax
 
