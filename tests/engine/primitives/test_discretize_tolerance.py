@@ -15,7 +15,7 @@ della polilinea più vicino; i vertici stanno sulla curva, quindi il massimo
 import math
 import unittest
 
-from topo.core.primitives.segments import _point_to_segment_distance
+from topo.core.primitives.polyline import _point_to_segment_distance
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
 
 TOL = 0.01
@@ -178,7 +178,8 @@ class TestGridSnapUnderMotion(unittest.TestCase):
     def test_cerchio_tagliato_vicino_a_un_vertice_della_griglia(self):
         import topo
         from tests.invariants import rigid
-        from topo.core.primitives.segments import _circle_sides, DEFAULT_TOLERANCE
+        from topo.core.primitives.conics import _circle_sides
+        from topo.core.primitives.mathseg import DEFAULT_TOLERANCE
         r = 10.0
         cut = 5 * 2 * math.pi / _circle_sides(r, DEFAULT_TOLERANCE) + 5e-10 / r
         arcs = [CircleSeg(center=(0.0, 0.0), radius=r, start_angle=cut, end_angle=cut + math.pi),

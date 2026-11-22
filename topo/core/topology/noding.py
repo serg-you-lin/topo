@@ -44,7 +44,9 @@ from shapely.geometry import LineString, Point
 from .edge import Edge
 from ..geometry.intersections import intersections
 from ..primitives.trim import sub_segment
-from ..primitives.segments import LineSeg, DEFAULT_TOLERANCE, angle_from_start, point_on_circle, segment_endpoints, segment_is_closed
+from ..primitives.line import LineSeg
+from ..primitives.mathseg import DEFAULT_TOLERANCE, segment_endpoints, segment_is_closed
+from ..primitives.conics import angle_from_start, point_on_circle
 from ..primitives.conics import CircleSeg, is_full_circle
 
 from ..geometry.measure import FLOAT_NOISE, SAME_POINT, node_point, reach, within_diameter

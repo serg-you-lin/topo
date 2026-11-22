@@ -100,7 +100,7 @@ def check_one(path: Path) -> dict:
     import topo
     import topo_dxf
     from topo.core.topology.noding import GRAPH_EPSILON
-    from topo.core.primitives.segments import DEFAULT_TOLERANCE
+    from topo.core.primitives.mathseg import DEFAULT_TOLERANCE
     report = {}
     try:
         heal_doc = topo_dxf.load_dxf(str(path), upgrade=True, explode_inserts=True, flatten_z=True)

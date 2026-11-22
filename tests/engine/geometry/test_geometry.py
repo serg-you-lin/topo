@@ -15,7 +15,7 @@ import math
 
 from shapely.geometry import LineString
 
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 from topo.core.geometry.lines import are_collinear, group_collinear_lines, dash_line
 from topo.core.geometry.measure import (
     track_points, track_length, segment_length, longest_segment,
@@ -25,7 +25,7 @@ from topo.core.geometry.points import (
     drop_duplicate_points, fit_circle_kasa, douglas_peucker, turn_corners, circle_through,
     approximate_bspline, even_spacing,
 )
-from topo.core.primitives.segments import BSplineSeg
+from topo.core.primitives.spline import BSplineSeg
 from topo.core.primitives.conics import CircleSeg
 
 
@@ -274,7 +274,7 @@ class TestPointSequenceMath(unittest.TestCase):
         # la stessa S fino alle primitive: la sequenza retta/arco/spline non
         # cambia con la rotazione né lontano dall'origine
         from tests.invariants import rigid
-        from topo.core.primitives.fitting import simplify_points
+        from topo.core.geometry.fitting import simplify_points
         pts = [(x * 0.05, 0.3 * math.sin(x * 0.05 * math.pi)) for x in range(81)]
         for corner in (35, None):
             kinds = lambda ps: [type(q).__name__ for q in simplify_points(ps, tolerance=0.02, scale=0.1, closed=False,
@@ -289,7 +289,7 @@ class TestPointSequenceMath(unittest.TestCase):
         # G6e, `points.py:282`: tre punti allineati danno un cerchio dal rumore
         # (enorme, la corda stessa); retta e quasi-retta restano una retta
         from tests.invariants import rigid
-        from topo.core.primitives.fitting import simplify_points
+        from topo.core.geometry.fitting import simplify_points
         for name, pts in (("retta", [(x * 0.05, 0.0) for x in range(81)]),
                           ("quasi retta", [(x * 0.05, 0.015 * math.sin(x * 0.05 * math.pi)) for x in range(81)])):
             for motion in ((0.0, 0.0, 0.0), (0.7, 0.0, 0.0), (0.031, 3e6, -2.5e6), (2.294, 3e6, -2.5e6)):
@@ -314,7 +314,7 @@ class TestPointSequenceMath(unittest.TestCase):
         # `scale` quello che svolta di più" lo decideva l'ultimo bit
         # (14 insiemi di spigoli in 200 rotazioni, lati dritti fatti spline)
         from tests.invariants import rigid
-        from topo.core.primitives.fitting import simplify_points
+        from topo.core.geometry.fitting import simplify_points
         square = [(0, 0), (10, 0), (10, 10), (0, 10)]
         pts = []
         for i in range(4):
@@ -446,7 +446,7 @@ class TestInterpolateBspline(unittest.TestCase):
 
     def _check_passes_through(self, pts, degree):
         from topo.core.geometry.points import interpolate_bspline
-        from topo.core.primitives.segments import BSplineSeg
+        from topo.core.primitives.spline import BSplineSeg
         ctrl, knots = interpolate_bspline(pts, degree)
         self.assertEqual(len(ctrl), len(pts))
         self.assertEqual(len(knots), len(pts) + degree + 1)

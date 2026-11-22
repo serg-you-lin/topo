@@ -22,7 +22,9 @@ from ..geometry.measure import FLOAT_NOISE, SAME_POINT, node_point, segment_leng
 from ...precision import NEAR_FULL_ARC_HINT_DEG, NEAR_FULL_ARC_MISSING_DEG
 from ..geometry.points import circle_through
 from ..geometry.regions import _tangent, nearest_point, translation_meeting
-from ..primitives.segments import BSplineSeg, LineSeg, DEFAULT_TOLERANCE, segment_endpoints, segment_is_closed
+from ..primitives.spline import BSplineSeg
+from ..primitives.line import LineSeg
+from ..primitives.mathseg import DEFAULT_TOLERANCE, segment_endpoints, segment_is_closed
 from ..primitives.conics import CircleSeg, is_arc
 from ..topology.noding import edge_geometry
 from ..topology.edge import Edge
@@ -468,7 +470,7 @@ def closed_touches(edges: List[Edge], tolerance: float) -> List[Tuple[float, flo
     """I nodi di una curva chiusa che stanno su un'altra curva chiusa."""
     from shapely.geometry import LineString, Point
     from shapely.strtree import STRtree
-    from ..primitives.segments import segment_is_closed
+    from ..primitives.mathseg import segment_is_closed
     closed = [e for e in edges if segment_is_closed(e.segment)]
     if len(closed) < 2:
         return []

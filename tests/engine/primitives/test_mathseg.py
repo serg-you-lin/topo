@@ -10,11 +10,12 @@ import math
 import unittest
 
 import topo
-from topo.core.primitives.segments import BSplineSeg, MathSeg, segment_endpoints
+from topo.core.primitives.spline import BSplineSeg
+from topo.core.primitives.mathseg import MathSeg, segment_endpoints
 from topo.core.primitives.clothoid import ClothoidSeg
 from topo.core.primitives.conics import CircleSeg, ConicSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg
 from topo.core.primitives.formula import FormulaSeg
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 from topo.precision import FLOAT_NOISE
 from tests.engine.primitives.test_segment_motion import _segments
 

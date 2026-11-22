@@ -7,7 +7,8 @@ from topo import to_shapely
 from topo.core.base.normalizer import (merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
                                        merge_near_copies)
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg, segment_endpoints
+from topo.core.primitives.line import LineSeg
+from topo.core.primitives.mathseg import segment_endpoints
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
 from topo.precision import FLOAT_NOISE, SAME_POINT
 

@@ -15,7 +15,7 @@ import math
 import unittest
 from shapely.geometry import Polygon
 
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 from topo.model.curve import ClosedCurve, OpenCurve
 from topo.model.role import ContourRole
 from topo.core.base.hierarchy import HierarchyBuilder

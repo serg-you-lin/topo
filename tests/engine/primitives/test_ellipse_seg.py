@@ -1,7 +1,7 @@
 """
 tests/engine/primitives/test_ellipse_seg.py
 ------------------------------------
-`EllipseSeg` (core/primitives/segments.py): parametrizzazione, chiusura,
+`EllipseSeg` (core/primitives/conics.py): parametrizzazione, chiusura,
 `.reversed()`, discretizzazione adattiva. Stessa parametrizzazione del
 gruppo DXF ELLIPSE, verificata contro `ezdxf.math.ellipse` (vedi docstring
 della classe) — questi test verificano solo la matematica pura di topo,
@@ -11,7 +11,7 @@ zero ezdxf.
 import math
 import unittest
 
-from topo.core.primitives.segments import segment_is_closed, segment_endpoints
+from topo.core.primitives.mathseg import segment_is_closed, segment_endpoints
 from topo.core.primitives.conics import EllipseSeg, CircleSeg
 
 

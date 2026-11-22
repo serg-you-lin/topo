@@ -25,7 +25,7 @@ Point = Tuple[float, float]
 # di primitive topo (LineSeg/CircleSeg/...) né di come il chiamante la userà.
 # Nata dentro tools/simplify_points.py (D33/D36), spostata qui perché un
 # secondo consumatore ne ha bisogno senza
-# duplicarla — `core/primitives/fitting.py` resta l'orchestratore che decide
+# duplicarla — `core/geometry/fitting.py` resta l'orchestratore che decide
 # quando/come usarla per ricostruire linee/archi/spline.
 
 DEFAULT_DUPLICATE_TOLERANCE = FLOAT_NOISE  # D269

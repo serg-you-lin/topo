@@ -27,7 +27,7 @@ from ..base.cleanup import (NEAR_FULL_ARC_MISSING, closed_touches, dangling_spli
 from ..base.normalizer import near_copies
 from ..base.prepare import normalize, prepare
 from ..geometry.measure import FLOAT_NOISE, reach
-from ..primitives.segments import segment_is_closed
+from ..primitives.mathseg import segment_is_closed
 from ..topology.edge import Edge
 from ..topology.noding import GRAPH_EPSILON, NodedEdges, decide_nodes, split_at_crossings
 from .heal_steps import free_ends

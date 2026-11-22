@@ -1,6 +1,6 @@
 """
-topo/core/primitives/fitting.py
---------------------------------
+topo/core/geometry/fitting.py
+------------------------------
 Da una sequenza di punti ordinata e densa (un contorno tracciato da un
 raster, una curva scritta a punti da un CAD) a primitive pulite: linee dove
 è dritta, archi dove è a raggio costante, spline solo per il resto, spigoli
@@ -28,10 +28,12 @@ import math
 from dataclasses import dataclass
 from typing import List, Optional, Sequence, Tuple
 
-from .segments import LineSeg, BSplineSeg, MathSeg, Point
-from .conics import CircleSeg, EllipseSeg, HyperbolaSeg, is_arc
-from ..geometry.measure import FLOAT_NOISE
-from ..geometry.points import (
+from ..primitives.line import LineSeg
+from ..primitives.spline import BSplineSeg
+from ..primitives.mathseg import MathSeg, Point
+from ..primitives.conics import CircleSeg, EllipseSeg, HyperbolaSeg, is_arc
+from .measure import FLOAT_NOISE
+from .points import (
     DEFAULT_DUPLICATE_TOLERANCE, approximate_bspline, circle_through, douglas_peucker, drop_duplicate_points,
     even_spacing, fit_circle_kasa, offset_from_line, turn_corners, within_chord, within_circle_through,
     within_conic_through, within_smooth_curve,

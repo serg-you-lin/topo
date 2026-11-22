@@ -5,7 +5,8 @@ import math
 import unittest
 
 import topo
-from topo.core.primitives.segments import LineSeg, BSplineSeg
+from topo.core.primitives.line import LineSeg
+from topo.core.primitives.spline import BSplineSeg
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
 from topo.core.geometry.shape import (
     CIRCLE, ELLIPSE, OTHER, POLYGON, RECTANGLE, STADIUM, ShapeKind, contour_shape, merge_runs,

@@ -23,7 +23,7 @@ from collections import Counter
 from typing import Optional
 
 from topo.core.geometry.measure import track_points
-from topo.core.primitives.polygon_builder import curve_polygon
+from topo.core.geometry.polygons import curve_polygon
 
 __all__ = [
     "inspect_document",
@@ -111,7 +111,8 @@ def inspect_document(doc, *, graph: bool = True, limit: Optional[int] = 60) -> N
 
 
 def _describe_segment(seg) -> str:
-    from .core.primitives.segments import LineSeg, BSplineSeg
+    from .core.primitives.line import LineSeg
+    from .core.primitives.spline import BSplineSeg
     from .core.primitives.conics import EllipseSeg, HyperbolaSeg, ParabolaSeg, is_arc, is_full_circle
     from .core.primitives.clothoid import ClothoidSeg
     from .core.primitives.formula import FormulaSeg

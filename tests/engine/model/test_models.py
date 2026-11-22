@@ -23,7 +23,7 @@ from topo.model import Overlay
 import topo
 
 from topo.model.role import ContourRole
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 
 # ---------------------------------------------------------------------------
 # Fake entity minimale — isola i test da ezdxf

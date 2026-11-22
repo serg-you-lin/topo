@@ -11,7 +11,7 @@ import math
 import unittest
 
 import topo
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 from topo.core.primitives.conics import HyperbolaSeg, ParabolaSeg
 from topo.precision import FLOAT_NOISE
 

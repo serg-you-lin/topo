@@ -10,7 +10,7 @@ Fase 4:
 import math
 import unittest
 
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 from topo.core.primitives.conics import CircleSeg
 
 

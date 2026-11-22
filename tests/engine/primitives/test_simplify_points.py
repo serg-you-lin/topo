@@ -1,7 +1,7 @@
 """
 test_simplify_points.py
 ------------------------
-Test unitari per topo.core.primitives.fitting.simplify_points (MAP.md D141).
+Test unitari per topo.core.geometry.fitting.simplify_points (MAP.md D141).
 
 Le tre garanzie, su casi che vengono da un contorno tracciato (smoother D21):
   - ogni punto dato sta entro `tolerance` dalle primitive;
@@ -16,9 +16,11 @@ import unittest
 
 from shapely.geometry import LineString, Point as SPoint
 
-from topo.core.primitives.segments import LineSeg, BSplineSeg, segment_endpoints
+from topo.core.primitives.line import LineSeg
+from topo.core.primitives.spline import BSplineSeg
+from topo.core.primitives.mathseg import segment_endpoints
 from topo.core.primitives.conics import CircleSeg
-from topo.core.primitives.fitting import simplify_points
+from topo.core.geometry.fitting import simplify_points
 
 
 def _side(a, b, n):

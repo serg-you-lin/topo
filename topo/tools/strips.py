@@ -29,7 +29,8 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Sequence, Tuple
 
 from ..core.geometry.strips import Strip, open_ring, strip_between
-from ..core.primitives.segments import LineSeg, Point
+from ..core.primitives.line import LineSeg
+from ..core.primitives.mathseg import Point
 
 __all__ = [
     "facing_boundaries", "Facing", "link", "Link", "Strip",

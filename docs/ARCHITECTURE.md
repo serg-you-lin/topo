@@ -81,10 +81,11 @@ Inside `topo/`:
 ```
 topo/
 ├── core/         pure geometric ENGINE                (zero format)
-│   ├── primitives/   MathSeg and its children (D285-D290): LineSeg, the conics
-│   │                 (conics.py: Ellipse, Circle, Parabola, Hyperbola), BSplineSeg,
-│   │                 FormulaSeg, ClothoidSeg + discretization;
-│   │                 fitting.py: primitives from a sequence of points (simplify_points)
+│   ├── primitives/   one module per primitive, named for what it is (D297):
+│   │                 mathseg.py (MathSeg, the mother), line.py, spline.py,
+│   │                 conics.py (Conic, Ellipse, Circle, Parabola, Hyperbola + the
+│   │                 arc grid), formula.py, clothoid.py; motion.py (moving a point),
+│   │                 polyline.py (adaptive discretization), trim.py (sub_segment)
 │   ├── topology/     edge.py, node graph, loop search;
 │   │                 noding.py (planar network), outer_face.py (outer face)
 │   ├── base/         THE FOUNDATIONS OF EVERY READING (D187, D188): prepare.py (nodes decided
@@ -99,7 +100,9 @@ topo/
 │   ├── geometry/     THE GEOMETRY, `topo.geometry` (D95): facts with geometric names
 │   │                 — shape (shape, concentric circles, arcs around), lines
 │   │                 (chords, collinear rows), axis (covered rectangles) — and the
-│   │                 building blocks measure / points / intersections
+│   │                 building blocks measure / points / intersections;
+│   │                 fitting.py: primitives from a sequence of points (simplify_points),
+│   │                 polygons.py: the shapely polygon of a list of curves
 │   ├── geometry_input.py load_geometry / load_segments — pure geometry, not a
 │   │                 format: an input of topo, not an adapter (D123, D125)
 │

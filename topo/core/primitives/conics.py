@@ -18,14 +18,99 @@ from __future__ import annotations
 import math
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from ...precision import FLOAT_NOISE
-from .segments import (
-    DEFAULT_TOLERANCE, Algebra, BSplineSeg, MathSeg, Point, _angular_sweep, _check_factor, _circle_sides,
-    _grid_angles, _mirror_point, _plain, _real, _rotate_point, _scale_point, _translate_point,
-    point_on_circle,
-)
+from .mathseg import DEFAULT_TOLERANCE, Algebra, MathSeg, Point, _plain, _real
+from .spline import BSplineSeg
+from .motion import _check_factor, _mirror_point, _rotate_point, _scale_point, _translate_point
+
+# ---------------------------------------------------------------------------
+# Angoli e griglia di archi ed ellissi (D145)
+# ---------------------------------------------------------------------------
+
+# Lati minimi della griglia di un cerchio; un arco ne prende la sua parte (D145)
+MIN_SEGMENTS_CIRCLE = 64
+
+# Un punto della griglia più vicino di così a un estremo dell'arco coincide
+# con l'estremo e si salta: eviterebbe solo un tratto degenere
+_GRID_SNAP = FLOAT_NOISE
+
+
+def _angular_sweep(start: float, end: float, ccw: bool) -> float:
+    """
+    Angolo spazzato in radianti, sempre positivo, percorrendo da `start` a
+    `end` nel verso indicato — stesso calcolo per un CircleSeg (`start_angle`/
+    `end_angle`) e un EllipseSeg (`start_param`/`end_param`): entrambi sono
+    "percorri da un angolo/parametro a un altro, in un verso".
+    """
+    raw = (end - start) if ccw else (start - end)
+    sweep = raw % (2 * math.pi)
+    # un giro intero da un angolo qualunque: (a + 2π) − a cade a un ulp da 2π,
+    # sopra (resto ~0) o sotto (resto ~2π); tutti e due sono il giro intero
+    if (sweep < 1e-12 or 2 * math.pi - sweep < 1e-12) and abs(raw) > 1e-12:
+        sweep = 2 * math.pi
+    return sweep
+
+
+def point_on_circle(center: Point, radius: float, angle: float) -> Point:
+    """Punto della circonferenza (`center`, `radius`) all'angolo dato (radianti)."""
+    return (center[0] + radius * math.cos(angle), center[1] + radius * math.sin(angle))
+
+
+def angle_from_start(center: Point, start_angle: float, ccw: bool, pt: Point) -> float:
+    """
+    Angolo, in [0, 2π), da percorrere partendo da `start_angle` nel verso
+    `ccw` per arrivare alla direzione di `pt` vista da `center`.
+    """
+    phi = math.atan2(pt[1] - center[1], pt[0] - center[0])
+    delta = (phi - start_angle) if ccw else (start_angle - phi)
+    return delta % (2 * math.pi)
+
+
+def _sagitta_step(radius: float, tolerance: float) -> Optional[float]:
+    """
+    Angolo massimo di una corda che dista al più `tolerance` dall'arco di
+    raggio `radius`. None se il raggio non supera la tolleranza: lì la formula
+    non ha senso e il chiamante sceglie il suo ripiego.
+    """
+    if radius <= tolerance:
+        return None
+    ratio = max(-1.0, min(1.0, 1.0 - tolerance / radius))
+    return 2.0 * math.acos(ratio)
+
+
+def _circle_sides(radius: float, tolerance: float) -> int:
+    """
+    Lati della griglia del cerchio di raggio `radius`: sagitta <= tolerance,
+    almeno MIN_SEGMENTS_CIRCLE, nessun tetto (la freccia è assoluta, i lati
+    crescono con il raggio). Multiplo di 4: la griglia è simmetrica rispetto
+    ai due assi, quindi i quarti cadono sui vertici e un pezzo specchiato dà
+    il poligono specchiato.
+    """
+    step = _sagitta_step(radius, tolerance)
+    if step is None:
+        return MIN_SEGMENTS_CIRCLE
+    sides = max(MIN_SEGMENTS_CIRCLE, int(math.ceil(2 * math.pi / step)))
+    return -(-sides // 4) * 4
+
+
+def _grid_angles(lo: float, hi: float, radius: float, sides: int) -> List[float]:
+    """
+    Angoli da `lo` a `hi` (lo < hi): i due estremi esatti e, fra loro, i punti
+    della griglia k·2π/sides ancorata all'angolo 0 (D145). Così ogni arco di un
+    cerchio è un pezzo del poligono del cerchio intero, comunque sia tagliato.
+    """
+    step = 2 * math.pi / sides
+    snap = _GRID_SNAP / radius
+    angles = [lo]
+    for k in range(math.floor(lo / step) + 1, math.ceil(hi / step)):
+        a = k * step
+        if a - lo > snap and hi - a > snap:
+            angles.append(a)
+    angles.append(hi)
+    return angles
+
 
 _Equation = Tuple[float, float, float, float, float, float]
 

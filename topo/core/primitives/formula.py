@@ -17,9 +17,9 @@ import math
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Tuple
 
-from .segments import (
-    DEFAULT_TOLERANCE, Algebra, MathSeg, Point, _check_factor, _point_to_segment_distance, _real,
-)
+from .mathseg import DEFAULT_TOLERANCE, Algebra, MathSeg, Point, _real
+from .motion import _check_factor
+from .polyline import _point_to_segment_distance
 
 # funzione -> derivata (come formula nella stessa grammatica, in `u`)
 _FUNCTIONS: Dict[str, Tuple[Callable[[float], float], str]] = {
@@ -267,7 +267,7 @@ class FormulaSeg(MathSeg):
         ends: an approximation (a formula has no exact spline in general), for a
         format that cannot hold a formula."""
         from ..geometry.points import approximate_bspline   # geometry sta sopra primitives
-        from .segments import BSplineSeg
+        from .spline import BSplineSeg
         control, knots = approximate_bspline(self.discretize(tolerance=tolerance / 2), 3, tolerance / 2)
         return BSplineSeg(degree=3, control_points=[tuple(p) for p in control], knots=list(knots))
 

@@ -5,7 +5,7 @@ from collections import Counter
 import unittest
 from topo.core.topology.noding import split_at_crossings, renode
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 from topo.core.primitives.conics import CircleSeg
 
 
@@ -90,7 +90,7 @@ class TestContattoDecisoUnaVolta(unittest.TestCase):
         self.assertEqual(cuts, {stem.start})
 
     def test_t_su_una_spline_la_taglia(self):
-        from topo.core.primitives.segments import BSplineSeg
+        from topo.core.primitives.spline import BSplineSeg
         spline = BSplineSeg(degree=2, control_points=[(0, 0), (5, 2), (10, 0)],
                             knots=[0, 0, 0, 1, 1, 1])
         top = spline._evaluate(0.5)
@@ -144,7 +144,7 @@ class TestRenode(unittest.TestCase):
              (100, 0), (100, 100), (0, 100), (0, 0)]
 
     def _curl_edge(self, end_shift):
-        from topo.core.primitives.segments import BSplineSeg
+        from topo.core.primitives.spline import BSplineSeg
         n = len(self._CURL)
         knots = [0.0, 0.0] + [k / (n - 1) for k in range(1, n - 1)] + [1.0, 1.0]
         seg = BSplineSeg(degree=1, control_points=self._CURL, knots=knots)

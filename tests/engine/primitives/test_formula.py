@@ -13,7 +13,7 @@ import unittest
 
 import topo
 from topo.core.primitives.formula import FormulaSeg
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 
 # evolvente del cerchio di raggio 10: lunghezza r·T²/2, area spazzata dal centro r²·T³/6
 INVOLUTE = FormulaSeg("r*(cos(t) + t*sin(t))", "r*(sin(t) - t*cos(t))", 0.0, 1.2, params={"r": 10.0})

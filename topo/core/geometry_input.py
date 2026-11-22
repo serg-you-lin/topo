@@ -27,7 +27,8 @@ import math
 from typing import Any, Dict, List
 
 from .geometry.build import polygon
-from .primitives.segments import LineSeg, BSplineSeg
+from .primitives.line import LineSeg
+from .primitives.spline import BSplineSeg
 from .primitives.conics import CircleSeg, EllipseSeg
 from .topology.edge import Edge
 from ..model.document import Document
@@ -76,7 +77,7 @@ class GeometryReader:
     Lo schema di "spline" ricalca 1:1 i campi di BSplineSeg (control_points,
     knots, degree, weights): chi ha in mano l'oggetto
     restituito da simplify_points() lo passa quasi senza toccarlo — vedi
-    topo.core.primitives.fitting. Solo "control_points"/"knots"/"degree" sono
+    topo.core.geometry.fitting. Solo "control_points"/"knots"/"degree" sono
     obbligatori, il resto è opzionale.
 
     Lo schema di "ellipse" ricalca 1:1 i campi di EllipseSeg (center,

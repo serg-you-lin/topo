@@ -10,7 +10,8 @@ import math
 import pytest
 
 from topo.core.geometry.integrals import ring_area, ring_centroid, ring_moments, segment_moments
-from topo.core.primitives.segments import BSplineSeg, LineSeg
+from topo.core.primitives.spline import BSplineSeg
+from topo.core.primitives.line import LineSeg
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
 
 EPS = 1e-12

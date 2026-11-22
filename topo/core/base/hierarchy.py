@@ -7,7 +7,7 @@ from ...model.curve import ClosedCurve
 from ...model.cluster import Cluster
 from ...model.contour import Contour
 from ...model.role import ContourRole, is_structural_role
-from ..primitives.polygon_builder import curve_polygon, with_polygon
+from ..geometry.polygons import curve_polygon, with_polygon
 from ..geometry.integrals import ring_area
 from ..geometry.measure import FLOAT_NOISE, noise_runs, track_length, track_points, SAME_POINT
 from ..geometry.rings import ring_points

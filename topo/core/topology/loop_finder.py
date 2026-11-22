@@ -10,8 +10,8 @@ from typing import Optional, Tuple
 
 from shapely.geometry import Polygon
 
-from ..primitives.polygon_builder import build_polygon
-from ..primitives.segments import DEFAULT_TOLERANCE
+from ..geometry.polygons import build_polygon
+from ..primitives.mathseg import DEFAULT_TOLERANCE
 from .graph import _edge_coords
 
 

@@ -5,10 +5,10 @@
 import unittest
 
 import topo
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 from topo.core.topology.noding import decide_nodes
 from tests.invariants import MOTIONS, contours, moved, shape_differences
-from topo.core.primitives.segments import DEFAULT_TOLERANCE
+from topo.core.primitives.mathseg import DEFAULT_TOLERANCE
 
 
 def _square_with_split_corner():

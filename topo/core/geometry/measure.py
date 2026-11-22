@@ -11,7 +11,9 @@ from typing import Optional, Tuple, List
 
 from shapely.geometry import LineString, box
 
-from ..primitives.segments import LineSeg, BSplineSeg, MathSeg
+from ..primitives.line import LineSeg
+from ..primitives.spline import BSplineSeg
+from ..primitives.mathseg import MathSeg
 from ..primitives.clothoid import ClothoidSeg
 from ..primitives.conics import HyperbolaSeg, ParabolaSeg, CircleSeg, EllipseSeg
 

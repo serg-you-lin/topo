@@ -37,7 +37,7 @@ from .noding import GRAPH_EPSILON, edge_geometry
 from .graph import Graph, build_node_graph
 from .loop_finder import loop_geometry, segments_from_loop
 from .rim import face_segments, off_rim
-from ..primitives.segments import DEFAULT_TOLERANCE
+from ..primitives.mathseg import DEFAULT_TOLERANCE
 
 
 UNION_GRID = SAME_POINT        # mm — griglia dell'unione delle facce (D100): sotto quella dei nodi, decide solo l'aritmetica  # D268

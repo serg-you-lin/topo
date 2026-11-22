@@ -17,7 +17,8 @@ from shapely.ops import split
 from topo.core.geometry.rings import (
     ring_bbox, ring_contains, ring_covers_chord, ring_perimeter, ring_points, ring_split_by_chord,
 )
-from topo.core.primitives.segments import BSplineSeg, LineSeg
+from topo.core.primitives.spline import BSplineSeg
+from topo.core.primitives.line import LineSeg
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
 
 EPS = 1e-12

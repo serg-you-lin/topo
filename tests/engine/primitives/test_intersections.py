@@ -13,7 +13,7 @@ import unittest
 
 import topo
 intersections = topo.geometry.intersections
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 from topo.core.primitives.conics import CircleSeg
 from tests.invariants import rigid
 

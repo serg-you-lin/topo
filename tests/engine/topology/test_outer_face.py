@@ -7,7 +7,9 @@ from topo.core.topology.outer_face import _network, outer_face
 from topo.core.topology.noding import split_at_crossings
 from topo.core.topology.edge import Edge
 from topo.core.geometry.measure import node_point
-from topo.core.primitives.segments import BSplineSeg, LineSeg, segment_endpoints
+from topo.core.primitives.spline import BSplineSeg
+from topo.core.primitives.line import LineSeg
+from topo.core.primitives.mathseg import segment_endpoints
 from topo.core.primitives.conics import CircleSeg
 from topo import to_shapely
 
@@ -126,7 +128,7 @@ class TestOverlapFromANodeUnderMotion(unittest.TestCase):
     def test_faces_e_outlines_non_dipendono_dal_moto(self):
         import topo
         from tests.invariants import rigid
-        from topo.core.primitives.segments import LineSeg
+        from topo.core.primitives.line import LineSeg
         # triangolo con il lato di base doppio dal nodo (0, 0): 10 mm e 20 mm sovrapposti
         segs = [LineSeg(start=(0.0, 0.0), end=(10.0, 0.0)), LineSeg(start=(0.0, 0.0), end=(20.0, 0.0)),
                 LineSeg(start=(20.0, 0.0), end=(10.0, 10.0)), LineSeg(start=(10.0, 10.0), end=(0.0, 0.0)),

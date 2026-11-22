@@ -40,7 +40,7 @@ from .core.base.cleanup import (split_labeled, close_free_gaps, dangling_splines
 from .core.readings.heal_steps import (find_non_contour_edges, find_joining_edges, free_ends, structural_loops, build_hierarchy)
 from .core.base.curves import loops_to_curves, loose_curves
 from .core.readings.outline import read_outlines, read_outline, OutlineReading
-from .core.primitives.fitting import simplify_points
+from .core.geometry.fitting import simplify_points
 from .tools.rotate import rotate_result, rotate_cluster, rotate_document, rotate_to_longest
 from .io.view_model import to_view_model
 from .io.svg import to_svg, save_svg

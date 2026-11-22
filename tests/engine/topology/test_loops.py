@@ -21,7 +21,7 @@ from shapely.geometry import LinearRing, Polygon, LineString
 
 from topo.core.topology.outer_face import face_loops
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 from topo.model.role import ContourRole
 from topo import to_shapely
 
@@ -42,7 +42,7 @@ def _edge(start, end):
 def _arc_edge(start, end, arc_pts):
     """Crea un Edge che discretizza un arco (arc_pts da start a end)."""
     # Usiamo BSplineSeg per rappresentare la discretizzazione dell'arco
-    from topo.core.primitives.segments import BSplineSeg
+    from topo.core.primitives.spline import BSplineSeg
     return Edge(
         role=ContourRole.UNKNOWN,
         start=start,

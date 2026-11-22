@@ -6,7 +6,7 @@ import topo
 from topo.model.document import Document
 from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 from topo.core.primitives.conics import CircleSeg
 from topo.core.base.normalizer import refit_tessellations
 from topo.core.primitives.conics import CircleSeg

@@ -15,8 +15,10 @@ import math
 from dataclasses import replace
 from typing import List, Optional, Tuple
 
-from ..geometry.measure import FLOAT_NOISE
-from .segments import LineSeg, Point, BSplineSeg, _bspline_find_span
+from ...precision import FLOAT_NOISE
+from .line import LineSeg
+from .mathseg import Point
+from .spline import BSplineSeg, _bspline_find_span
 from .conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg
 from .clothoid import ClothoidSeg
 from .formula import FormulaSeg

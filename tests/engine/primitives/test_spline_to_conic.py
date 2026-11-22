@@ -14,8 +14,9 @@ import unittest
 from topo.core.base.normalizer import refit_native_curves
 from topo.core.geometry.points import _ellipse_distance, approximate_bspline
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
-from topo.core.primitives.fitting import conic_of_spline
-from topo.core.primitives.segments import BSplineSeg, LineSeg
+from topo.core.geometry.fitting import conic_of_spline
+from topo.core.primitives.spline import BSplineSeg
+from topo.core.primitives.line import LineSeg
 from topo.core.topology.edge import Edge
 from topo.model.role import ContourRole
 from topo.precision import FLOAT_NOISE, SAME_POINT

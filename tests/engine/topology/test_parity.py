@@ -3,7 +3,7 @@
 import random
 import unittest
 
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 from topo.core.topology.edge import Edge
 from topo.core.topology.noding import split_at_crossings
 from topo.core.topology.parity import parity_rings

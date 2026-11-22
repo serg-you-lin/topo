@@ -20,8 +20,8 @@ import topo
 
 from tests.readings import outline_reading
 from topo.core.topology.noding import GRAPH_EPSILON
-from topo.core.primitives.polygon_builder import build_polygon
-from topo.core.primitives.segments import DEFAULT_TOLERANCE
+from topo.core.geometry.polygons import build_polygon
+from topo.core.primitives.mathseg import DEFAULT_TOLERANCE
 from topo import to_shapely
 from tests.paths import DATA
 

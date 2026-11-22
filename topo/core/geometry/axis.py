@@ -17,7 +17,7 @@ import math
 from dataclasses import dataclass
 from typing import Iterable, List, Optional, Sequence, Tuple
 
-from ..primitives.segments import LineSeg
+from ..primitives.line import LineSeg
 
 Interval = Tuple[float, float]
 Bounds = Tuple[float, float, float, float]

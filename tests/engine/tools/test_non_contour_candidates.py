@@ -5,7 +5,7 @@ import unittest
 import topo
 from topo.model.document import Document
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 
 
 def _make_edge(p1, p2):

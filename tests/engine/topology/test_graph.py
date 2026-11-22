@@ -4,7 +4,7 @@ import math
 import unittest
 from topo.core.topology.graph import Graph, build_node_graph, cluster_points
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 from topo.core.primitives.conics import CircleSeg
 from topo.model.role import ContourRole
 

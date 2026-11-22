@@ -31,7 +31,7 @@ from shapely import STRtree
 
 from ..geometry.measure import reach
 from ..geometry.strips import refine_gap
-from ..primitives.segments import DEFAULT_TOLERANCE
+from ..primitives.mathseg import DEFAULT_TOLERANCE
 from ..topology.edge import Edge
 from ..topology.graph import connected_groups
 from ..topology.noding import edge_geometry

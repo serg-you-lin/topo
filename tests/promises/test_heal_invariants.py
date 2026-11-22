@@ -25,7 +25,7 @@ from shapely.geometry import LineString, MultiPoint, Point
 import topo
 import topo_dxf
 from topo.core.primitives import LineSeg
-from topo.core.primitives.segments import DEFAULT_TOLERANCE
+from topo.core.primitives.mathseg import DEFAULT_TOLERANCE
 from topo.model.document import Document
 
 from tests.drawings import case_name, drawing_key, drawings_for
@@ -149,7 +149,7 @@ class TestContoursAreRings(unittest.TestCase):
 
 def _make_ring_test(dxf: Path):
     def test(self):
-        from topo.core.primitives.segments import segment_endpoints
+        from topo.core.primitives.mathseg import segment_endpoints
         _, result = _read(dxf)
         for ci, cluster in enumerate(result.clusters):
             for name, contour in [("outer", cluster.outer)] + [(f"inner[{i}]", c) for i, c in

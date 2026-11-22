@@ -15,7 +15,9 @@ e stile.
 
 Quello che sta sotto `topo.core` è interno, senza garanzie.
 """
-from .core.primitives.segments import MathSeg, LineSeg, BSplineSeg, segment_endpoints
+from .core.primitives.mathseg import MathSeg, segment_endpoints
+from .core.primitives.line import LineSeg
+from .core.primitives.spline import BSplineSeg
 from .core.primitives.conics import ConicSeg, CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg
 from .core.primitives.clothoid import ClothoidSeg
 from .core.primitives.formula import FormulaSeg

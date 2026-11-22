@@ -55,9 +55,11 @@ from typing import Any, Callable, Iterable, List, Tuple
 
 from ..geometry.measure import FLOAT_NOISE, node_point, within_diameter, SAME_POINT
 from ..geometry.points import fit_circle_kasa
-from ..primitives.segments import BSplineSeg, LineSeg, Point, segment_endpoints
+from ..primitives.spline import BSplineSeg
+from ..primitives.line import LineSeg
+from ..primitives.mathseg import Point, segment_endpoints
 from ..primitives.conics import CircleSeg, EllipseSeg, is_full_circle
-from ..primitives.fitting import conic_of_spline, simplify_points
+from ..geometry.fitting import conic_of_spline, simplify_points
 from ..topology.graph import build_node_graph, connected_groups
 from ..topology.noding import _near_pairs
 from ..topology.edge import Edge

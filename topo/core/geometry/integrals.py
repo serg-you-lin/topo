@@ -23,7 +23,9 @@ from typing import Callable, Sequence, Tuple
 
 import numpy as np
 
-from ..primitives.segments import BSplineSeg, LineSeg, MathSeg, _deboor, _derivative_points
+from ..primitives.spline import BSplineSeg, _deboor, _derivative_points
+from ..primitives.line import LineSeg
+from ..primitives.mathseg import MathSeg
 from ..primitives.conics import HyperbolaSeg, ParabolaSeg, EllipseSeg
 from .rings import ring_jumps
 

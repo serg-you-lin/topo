@@ -1,7 +1,7 @@
 """
 tests/engine/primitives/test_segment_rotation.py
 ------------------------------------------
-`.rotated(angle, origin)` su ogni primitiva nativa (core/primitives/segments.py)
+`.rotated(angle, origin)` su ogni primitiva nativa (core/primitives/)
 — stesso pattern di `.reversed()`: stessa geometria, trasformata. Verifica la
 matematica pura di topo, zero ezdxf.
 """
@@ -9,7 +9,9 @@ matematica pura di topo, zero ezdxf.
 import math
 import unittest
 
-from topo.core.primitives.segments import LineSeg, BSplineSeg, segment_endpoints
+from topo.core.primitives.line import LineSeg
+from topo.core.primitives.spline import BSplineSeg
+from topo.core.primitives.mathseg import segment_endpoints
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
 
 

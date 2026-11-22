@@ -20,7 +20,7 @@ from typing import List, Sequence, Tuple
 from shapely.geometry import LineString, Polygon
 from shapely.ops import nearest_points
 
-from ..primitives.segments import LineSeg
+from ..primitives.line import LineSeg
 from ..primitives.conics import CircleSeg
 from .intersections import CURVE_TOLERANCE, intersections
 from .regions import (

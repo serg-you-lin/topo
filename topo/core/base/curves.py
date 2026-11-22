@@ -15,7 +15,7 @@ from typing import List
 
 from ..geometry.measure import segment_length
 from ..primitives import LineSeg
-from ..primitives.segments import segment_is_closed
+from ..primitives.mathseg import segment_is_closed
 from ..topology.edge import Edge
 from ..topology.loop_finder import loop_geometry
 from ...model.curve import ClosedCurve, OpenCurve

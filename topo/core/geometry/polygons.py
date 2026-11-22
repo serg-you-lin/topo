@@ -1,6 +1,6 @@
 """
-core/primitives/polygon_builder.py
------------------------------------
+topo/core/geometry/polygons.py
+-------------------------------
 Funzione pura per costruire un Polygon shapely da una lista di primitive.
 
 """
@@ -11,7 +11,7 @@ from typing import List, Optional
 
 from shapely.geometry import Polygon
 
-from .segments import DEFAULT_TOLERANCE, MathSeg
+from ..primitives.mathseg import DEFAULT_TOLERANCE, MathSeg
 
 
 def build_polygon(

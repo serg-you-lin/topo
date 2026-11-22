@@ -12,7 +12,7 @@ import unittest
 
 import topo
 from topo.core.primitives.clothoid import ClothoidSeg, fresnel
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 
 CLOTHOID = ClothoidSeg(origin=(0.0, 0.0), angle=0.0, a=4.0, start_param=0.0, end_param=7.0)
 

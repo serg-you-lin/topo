@@ -10,7 +10,8 @@ from ...precision import FLOAT_NOISE, SAME_POINT
 import math
 from typing import Optional, Tuple, List
 
-from ..primitives.segments import LineSeg, angle_from_start
+from ..primitives.line import LineSeg
+from ..primitives.conics import angle_from_start
 from ..primitives.conics import CircleSeg, ConicSeg, HyperbolaSeg, ParabolaSeg
 from .measure import FLOAT_NOISE
 

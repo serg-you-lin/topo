@@ -26,7 +26,8 @@ from .edge import Edge
 from .noding import edge_geometry
 from ..geometry.measure import FLOAT_NOISE, reach
 from ..geometry.rings import ring_bridges
-from ..primitives.segments import LineSeg, segment_endpoints, segment_is_closed
+from ..primitives.line import LineSeg
+from ..primitives.mathseg import segment_endpoints, segment_is_closed
 from ..primitives.trim import sub_segment
 
 

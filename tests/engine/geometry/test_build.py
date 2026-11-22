@@ -7,7 +7,7 @@ import unittest
 import topo
 from topo.core.geometry import contour_shape
 from topo.core.geometry.build import circle, ellipse, polygon, rectangle, regular_polygon, stadium
-from topo.core.primitives.segments import LineSeg
+from topo.core.primitives.line import LineSeg
 from topo.core.primitives.conics import CircleSeg
 
 

@@ -14,8 +14,8 @@ from shapely.geometry import LineString, MultiPolygon, Polygon
 from shapely.ops import unary_union
 
 from ..core.geometry.measure import track_points
-from ..core.primitives.polygon_builder import build_polygon, curve_polygon
-from ..core.primitives.segments import DEFAULT_TOLERANCE
+from ..core.geometry.polygons import build_polygon, curve_polygon
+from ..core.primitives.mathseg import DEFAULT_TOLERANCE
 from ..model import Cluster, OpenCurve
 
 

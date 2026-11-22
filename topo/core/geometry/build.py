@@ -15,7 +15,8 @@ from __future__ import annotations
 import math
 from typing import List, Sequence, Tuple
 
-from ..primitives.segments import BSplineSeg, LineSeg
+from ..primitives.spline import BSplineSeg
+from ..primitives.line import LineSeg
 from ..primitives.conics import CircleSeg, EllipseSeg
 from ..primitives.clothoid import ClothoidSeg
 from ..primitives.formula import FormulaSeg

@@ -20,10 +20,8 @@ from dataclasses import dataclass, field
 from typing import List, Tuple
 
 from .conics import _grid
-from .segments import (
-    DEFAULT_TOLERANCE, Algebra, MathSeg, Point, _check_factor, _mirror_point, _plain, _real, _rotate_point,
-    _scale_point, _translate_point,
-)
+from .mathseg import DEFAULT_TOLERANCE, Algebra, MathSeg, Point, _plain, _real
+from .motion import _check_factor, _mirror_point, _rotate_point, _scale_point, _translate_point
 
 _EPS = sys.float_info.epsilon   # precisione della macchina: le serie si fermano qui
 # sotto, la serie di potenze; sopra, la frazione continua: esatte entrambe, cambia solo quanti termini servono
@@ -170,7 +168,7 @@ class ClothoidSeg(MathSeg):
         ends: an approximation (a clothoid has no exact spline), for a format
         that cannot hold one."""
         from ..geometry.points import approximate_bspline   # geometry sta sopra primitives
-        from .segments import BSplineSeg
+        from .spline import BSplineSeg
         control, knots = approximate_bspline(self.discretize(tolerance=tolerance / 2), 3, tolerance / 2)
         return BSplineSeg(degree=3, control_points=[tuple(p) for p in control], knots=list(knots))
 

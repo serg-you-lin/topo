@@ -12,7 +12,9 @@ e a cavallo dell'angolo 0. Ogni caso è un `subTest` (MAP.md D158).
 import math
 import unittest
 
-from topo.core.primitives.segments import LineSeg, BSplineSeg, segment_endpoints
+from topo.core.primitives.line import LineSeg
+from topo.core.primitives.spline import BSplineSeg
+from topo.core.primitives.mathseg import segment_endpoints
 from topo.core.primitives.conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg
 from topo.core.primitives.clothoid import ClothoidSeg
 from topo.core.primitives.formula import FormulaSeg

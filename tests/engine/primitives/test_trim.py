@@ -8,7 +8,9 @@ curva accorciata — stessi capi, ogni punto sulla curva originale.
 import math
 import unittest
 
-from topo.core.primitives.segments import LineSeg, BSplineSeg, segment_endpoints
+from topo.core.primitives.line import LineSeg
+from topo.core.primitives.spline import BSplineSeg
+from topo.core.primitives.mathseg import segment_endpoints
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
 from topo.core.primitives.trim import sub_segment
 

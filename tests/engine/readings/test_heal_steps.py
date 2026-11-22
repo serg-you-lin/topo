@@ -17,7 +17,9 @@ from topo.model.document import Document
 from topo.model.curve import ClosedCurve, OpenCurve
 from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
-from topo.core.primitives.segments import LineSeg, BSplineSeg, segment_endpoints
+from topo.core.primitives.line import LineSeg
+from topo.core.primitives.spline import BSplineSeg
+from topo.core.primitives.mathseg import segment_endpoints
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
 from topo import to_shapely
 from topo.precision import SAME_POINT
@@ -352,7 +354,7 @@ class TestArcLineMeetUnderMotion(unittest.TestCase):
         from tests.invariants import rigid
         from topo.core.base import gap_solver
         from topo.core.geometry.measure import FLOAT_NOISE
-        from topo.core.primitives.segments import segment_endpoints
+        from topo.core.primitives.mathseg import segment_endpoints
         x, y = -71565.8225, -3048.0985
         move_seg, move_pt = rigid(*motion)
         pieces = [CircleSeg(center=(x, y), radius=1.0, start_angle=0.0, end_angle=math.pi / 2, ccw=True),
