@@ -1,6 +1,6 @@
 """
-non_contour_edges.py
---------------------
+core/topology/non_contour_edges.py
+----------------------------------
 Individua gli edge che NON fanno parte di un contorno e vanno esclusi dal
 grafo prima della ricerca dei loop.
 

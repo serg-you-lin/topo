@@ -35,7 +35,7 @@ from ..geometry.integrals import ring_area, ring_moments
 from ..geometry.regions import _tangent
 from .noding import GRAPH_EPSILON, edge_geometry
 from .graph import Graph, build_node_graph
-from .loop_finder import loop_geometry, segments_from_loop
+from .loops import loop_geometry, segments_from_loop
 from .rim import face_segments, off_rim
 from ..primitives.mathseg import DEFAULT_TOLERANCE
 

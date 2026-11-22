@@ -1,8 +1,6 @@
-# topo/core/topology/parity.py
-
 """
-parity.py
----------
+core/topology/parity.py
+-----------------------
 I contorni di una rete piana per parità: le facce si colorano dentro/fuori
 in modo che ogni lato separi due colori diversi.
 
@@ -30,7 +28,7 @@ from typing import Dict, List, Set, Tuple
 
 from .edge import Edge
 from .graph import Graph, build_node_graph
-from .loop_finder import segments_from_loop
+from .loops import segments_from_loop
 from .matching import min_t_join
 from .noding import GRAPH_EPSILON, edge_geometry
 from .outer_face import face_walks, outer_face_passes, simple_rings

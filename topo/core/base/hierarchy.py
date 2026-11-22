@@ -33,7 +33,7 @@ def loop_to_closed_curve(
     segments: list = None,
     styles: list = None,
 ) -> Optional[ClosedCurve]:
-    from ..topology.loop_finder import loop_points
+    from ..topology.loops import loop_points
 
     if polygon is not None:
         poly = polygon

@@ -1,8 +1,6 @@
-# topo/core/topology/matching.py
-
 """
-matching.py
------------
+core/topology/matching.py
+-------------------------
 Accoppiamento perfetto di peso minimo e T-join di peso minimo su un grafo
 qualsiasi, coi pesi interi: nessuna geometria.
 

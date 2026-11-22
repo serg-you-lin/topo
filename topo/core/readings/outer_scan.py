@@ -4,7 +4,7 @@ topo/core/readings/outer_scan.py
 Classificazione dei bordi esterni per ray casting: quali Edge sono, ad
 almeno una quota, il primo o l'ultimo punto incontrato da un raggio che
 attraversa il disegno. Non ricostruisce il contorno — lo cuciono dopo
-gap_solver e loop_finder, sugli Edge originali.
+gap_solver e loops, sugli Edge originali.
 
 Proprietà globale (min/max su tutta la quota), non connettività locale:
 funziona anche dove il grafo è ambiguo (edge quasi coincidenti che

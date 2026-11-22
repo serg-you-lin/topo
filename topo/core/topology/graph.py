@@ -1,8 +1,6 @@
-# topo/core/topology/graph.py
-
 """
-graph.py
---------
+core/topology/graph.py
+----------------------
 Costruisce il grafo topologico.
 
 Tutta la geometria viene letta da edge.geometry (LineString shapely).
@@ -15,9 +13,9 @@ Tipi pubblici:
     cluster_points     — clustering di punti 2D entro epsilon (union-find)
 
 Utility geometriche interne:
-    _edge_coords       — punti dell'edge come lista (x, y)   [loop_finder.py]
-    _arrival_direction — vettore di arrivo                   [loop_finder.py]
-    _angular_deviation — deviazione angolare tra direzioni   [loop_finder.py]
+    _edge_coords       — punti dell'edge come lista (x, y)   [loops.py]
+    _arrival_direction — vettore di arrivo                   [loops.py]
+    _angular_deviation — deviazione angolare tra direzioni   [loops.py]
     _first_coord       — primo punto della geometry (helper generico)
 
 Identità dei nodi
@@ -72,7 +70,7 @@ class Graph:
 
         Identità se `node_map` è vuoto (grafo non clusterizzato). Altrimenti
         traduce il punto arrotondato dell'edge nel rappresentante del suo
-        cluster — è così che loop_finder confronta gli edge con i nodi.
+        cluster — è così che loops confronta gli edge con i nodi.
         """
         return self.node_map.get(pt, pt)
 
@@ -399,7 +397,7 @@ def build_node_graph(edges: list, epsilon: float = 0.0, *, sliver: Optional[floa
 
 
 # ---------------------------------------------------------------------------
-# Utility geometriche (usate da loop_finder.py)
+# Utility geometriche (usate da loops.py)
 # ---------------------------------------------------------------------------
 
 def _edge_coords(edge: Edge, reversed_flag: bool) -> list:

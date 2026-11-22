@@ -17,7 +17,7 @@ from ..geometry.measure import segment_length
 from ..primitives import LineSeg
 from ..primitives.mathseg import segment_is_closed
 from ..topology.edge import Edge
-from ..topology.loop_finder import loop_geometry
+from ..topology.loops import loop_geometry
 from ...model.curve import ClosedCurve, OpenCurve
 from ...model.role import ContourRole
 from .hierarchy import loop_to_closed_curve

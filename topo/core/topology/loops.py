@@ -1,6 +1,6 @@
 """
-topo/core/topology/loop_finder.py
----------------------------------
+core/topology/loops.py
+----------------------
 Da un giro [(edge, al contrario)] ai suoi segmenti, stili, punti e poligono,
 e gli Edge che nessun giro prende in curve aperte. I giri li trovano le facce
 della rete piana (`outer_face.face_loops`, D189).
