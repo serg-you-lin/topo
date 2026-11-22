@@ -30,8 +30,8 @@ from ..topology.noding import edge_geometry
 from ..topology.edge import Edge
 from ..topology.graph import build_node_graph, connected_groups
 from ...model.role import ContourRole, is_structural_role
-from .normalizer import _same_circle, merge_cocircular_overlaps
-from .gap_solver import (free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, ambiguous_gap_ends, near_gaps,
+from .merge import _same_circle, merge_cocircular_overlaps
+from .gaps import (free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes, ambiguous_gap_ends, near_gaps,
                          tied_facing_ends, _moved_segment)
 
 

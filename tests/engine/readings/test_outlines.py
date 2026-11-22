@@ -8,7 +8,7 @@ from topo.model.role import ContourRole
 from topo.core.topology.edge import Edge
 from topo.core.primitives.line import LineSeg
 from topo.core.primitives.conics import CircleSeg
-from topo.core.base.normalizer import refit_tessellations
+from topo.core.base.refit import refit_tessellations
 from topo.core.primitives.conics import CircleSeg
 from topo import to_shapely
 from topo.precision import SAME_POINT

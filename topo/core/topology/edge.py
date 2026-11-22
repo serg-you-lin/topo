@@ -2,7 +2,7 @@
 core/topology/edge.py
 ---------------------
 Rappresentazione topologica di una entità geometrica lineare — l'unità che
-graph.py / loops.py / non_contour_edges.py / gap_solver.py usano per
+graph.py / loops.py / non_contour_edges.py / gaps.py usano per
 costruire e percorrere il grafo. Non è una primitiva geometrica (quelle sono
 LineSeg/CircleSeg/BSplineSeg/EllipseSeg in core/primitives/,
 math puro senza semantica): `Edge` ne avvolge una con ruolo, provenienza e

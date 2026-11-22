@@ -34,7 +34,7 @@ from shapely.geometry import LineString, box
 
 import topo
 import topo_dxf
-from topo.core.base.normalizer import refit_native_curves
+from topo.core.base.refit import refit_native_curves
 from topo.core.primitives.mathseg import segment_endpoints
 from tests.drawings import case_name, tracked_drawings
 from tests.invariants import contour_jumps

@@ -291,7 +291,7 @@ class TestGapOntoCurve(unittest.TestCase):
         self.assertAlmostEqual(min(stem[1], stem[3]), y, places=6)
 
     def test_due_incontri_sulla_continuazione_vince_il_primo(self):
-        # G6e, gruppo D, `gap_solver.py:250` (`min` sugli incontri): la retta
+        # G6e, gruppo D, `gaps.py:250` (`min` sugli incontri): la retta
         # proseguita taglia il cerchio a 0.2 e a 0.4, il capo va a 0.2 a ogni
         # moto. Prova: la riga sceglie fra due incontri (contati al posto) e la
         # scelta non cambia. Non c'è un pari merito fra punti distinti da
@@ -304,12 +304,12 @@ class TestGapOntoCurve(unittest.TestCase):
         from unittest import mock
         from shapely.geometry import Point
         from tests.invariants import MOTIONS, moved
-        from topo.core.base import gap_solver
+        from topo.core.base import gaps
         x, y = -71565.8225, -3048.0985
         doc = topo.load_segments([LineSeg(start=(x - 5, y), end=(x, y)),
                                   CircleSeg(center=(x + 0.3, y), radius=0.1)])
         counts = []
-        real = gap_solver.intersections
+        real = gaps.intersections
 
         def counted(a, b, *args, **kwargs):
             hits = real(a, b, *args, **kwargs)
@@ -318,7 +318,7 @@ class TestGapOntoCurve(unittest.TestCase):
 
         for name, move, back, _ in [("al posto", lambda d: d, lambda g: g, None)] + list(MOTIONS):
             counts.clear()
-            with mock.patch.object(gap_solver, "intersections", counted):
+            with mock.patch.object(gaps, "intersections", counted):
                 healed = topo.experimental.close_free_gaps(list(moved(doc, move).edges), 0.5)
             self.assertIn(2, counts, name)
             ends = [back(Point(e.segment.end)).coords[0] for e in healed if isinstance(e.segment, LineSeg)]
@@ -352,7 +352,7 @@ class TestArcLineMeetUnderMotion(unittest.TestCase):
     def _closed(self, motion, offset):
         from unittest import mock
         from tests.invariants import rigid
-        from topo.core.base import gap_solver
+        from topo.core.base import gaps
         from topo.core.geometry.measure import FLOAT_NOISE
         from topo.core.primitives.mathseg import segment_endpoints
         x, y = -71565.8225, -3048.0985
@@ -361,14 +361,14 @@ class TestArcLineMeetUnderMotion(unittest.TestCase):
                   LineSeg(start=(x - 5, y + 0.95), end=(x + offset, y + 0.95))]
         doc = topo.load_segments([move_seg(p) for p in pieces])
         tied = []
-        real = gap_solver._closest_to
+        real = gaps._closest_to
 
         def counted(candidates, ref, *rest):
             d = [math.dist(q, ref) for q in candidates]
             tied.append(len(d) == 2 and abs(d[0] - d[1]) <= FLOAT_NOISE)
             return real(candidates, ref, *rest)
 
-        with mock.patch.object(gap_solver, "_closest_to", counted):
+        with mock.patch.object(gaps, "_closest_to", counted):
             healed = topo.experimental.close_free_gaps(list(doc.edges), 0.5)
         self.assertEqual(tied, [True], motion)
         a, tx, ty = motion

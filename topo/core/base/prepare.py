@@ -23,8 +23,9 @@ from typing import Callable, List, Optional
 
 from ..topology.edge import Edge
 from ..topology.noding import decide_nodes
-from .normalizer import (merge_cocircular_overlaps, merge_collinear_overlaps, refit_circle_rings,
-                         refit_native_curves, refit_tessellations)
+from .merge import merge_cocircular_overlaps, merge_collinear_overlaps
+from .refit import (refit_circle_rings,
+                    refit_native_curves, refit_tessellations)
 from .cleanup import (ambiguous_free_ends, bend_arcs_through_free_ends, close_free_gaps, close_near_full_arcs,
                       join_tied_facing_ends, move_onto_targets, split_labeled)
 

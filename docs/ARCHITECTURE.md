@@ -90,8 +90,8 @@ topo/
 │   │                 noding.py (planar network), outer_face.py (outer face),
 │   │                 touching.py (groups of edges that touch)
 │   ├── base/         THE FOUNDATIONS OF EVERY READING (D187, D188): prepare.py (nodes decided
-│   │                 once, normalization), cleanup.py, normalizer.py,
-│   │                 gap_solver.py, hierarchy.py — heal, the readings and every caller
+│   │                 once, normalization), cleanup.py, merge.py, refit.py,
+│   │                 gaps.py, hierarchy.py — heal, the readings and every caller
 │   │                 recipe start from here
 │   ├── readings/     THE READINGS: network.py (the repair and `Network`),
 │   │                 heal.py (`heal()`), faces.py (`faces()`), outline.py

@@ -19,7 +19,7 @@ Point = Tuple[float, float]
 
 
 # ---------------------------------------------------------------------------
-# Intersezioni geometriche pure — usate da core/base/gap_solver.py
+# Intersezioni geometriche pure — usate da core/base/gaps.py
 # ---------------------------------------------------------------------------
 
 def _line_intersection(p1: Point, p2: Point,

@@ -30,11 +30,11 @@ che quel nome non ha la promessa (D119).
 from .core.topology.touching import touching_groups, TouchingGroup
 from .core.topology.noding import split_at_crossings, NodedEdges
 from .core.topology.outer_face import outer_face, OuterFace, face_loops
-from .core.base.normalizer import refit_tessellations
+from .core.base.refit import refit_tessellations
 # le basi di ogni lettura (D187, D189) e i passi di heal() (D62)
 from .core.base.prepare import prepare, Prepared, normalize, Normalized
 from .core.topology.non_contour_edges import non_contour_pieces
-from .core.base.normalizer import (merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
+from .core.base.merge import (merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
                                    merge_near_copies, near_copies, NearCopy)
 from .core.base.cleanup import (split_labeled, close_free_gaps, dangling_splines, close_near_full_arcs, NEAR_FULL_ARC_MISSING)
 from .core.readings.heal_steps import (find_non_contour_edges, find_joining_edges, free_ends, structural_loops, build_hierarchy)

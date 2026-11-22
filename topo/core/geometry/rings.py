@@ -14,7 +14,7 @@ from typing import Iterator, List, Sequence, Tuple
 from ..primitives.mathseg import MathSeg, DEFAULT_TOLERANCE, segment_endpoints
 from ..primitives.line import LineSeg
 from ..primitives.conics import CircleSeg, EllipseSeg, is_full_circle
-from .measure import Reach, segment_length, SAME_POINT
+from .measure import Reach, segment_length, track_length, SAME_POINT
 
 Point = Tuple[float, float]
 Bounds = Tuple[float, float, float, float]
@@ -100,6 +100,14 @@ def ring_points(segments: Sequence, tolerance: float = DEFAULT_TOLERANCE) -> Lis
     if len(pts) > 1 and pts[0] == pts[-1]:
         pts.pop()
     return pts
+
+
+def ring_scale(segments: Sequence) -> float:
+    """La lunghezza del poligono del giro: la scala di una soglia (D195, D279),
+    non una misura. Il poligono sta entro SAME_POINT dalla curva e una spline lo
+    tiene già; il perimetro esatto (`ring_perimeter`, D293) costa un integrale."""
+    pts = ring_points(segments)
+    return track_length(pts + pts[:1])
 
 
 def ring_contains(segments: Sequence, point: Point, tolerance: float = ON_BOUNDARY) -> bool:

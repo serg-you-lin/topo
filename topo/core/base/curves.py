@@ -11,17 +11,53 @@ Puro: solo Edge, primitive e modello, nessun formato.
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
-from ..geometry.measure import segment_length
+from shapely.geometry import Polygon
+
+from ..geometry.integrals import ring_area
+from ..geometry.measure import SAME_POINT, segment_length
+from ..geometry.polygons import with_polygon
+from ..geometry.rings import ring_scale
 from ..primitives import LineSeg
 from ..primitives.mathseg import segment_is_closed
 from ..topology.edge import Edge
 from ..topology.loops import loop_geometry
 from ...model.curve import ClosedCurve, OpenCurve
 from ...model.role import ContourRole
-from .hierarchy import loop_to_closed_curve
-from .normalizer import chain_runs
+from .refit import chain_runs
+
+
+def loop_to_closed_curve(
+    loop,
+    role: ContourRole = ContourRole.UNKNOWN,
+    polygon=None,
+    segments: list = None,
+    styles: list = None,
+) -> Optional[ClosedCurve]:
+    from ..topology.loops import loop_points
+
+    if polygon is not None:
+        poly = polygon
+    else:
+        pts = loop_points(loop)
+        if len(pts) < 3:
+            return None
+        poly = Polygon(pts)
+
+    try:
+        if not poly.is_valid:
+            poly = poly.buffer(0)
+        if poly.is_empty:
+            return None
+        # largo in media meno di SAME_POINT (2·area/perimetro): i due lati
+        # sono lo stesso tratto, non c'è un contorno (D279)
+        if not segments or 2 * ring_area(segments) <= SAME_POINT * ring_scale(segments):
+            return None
+
+        return with_polygon(ClosedCurve(role=role, segments=segments, styles=styles or []), poly)
+    except Exception:
+        return None
 
 
 def loops_to_curves(loops: List[list]) -> List[ClosedCurve | OpenCurve]:

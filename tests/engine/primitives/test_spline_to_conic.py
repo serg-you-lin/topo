@@ -11,7 +11,7 @@ import math
 import random
 import unittest
 
-from topo.core.base.normalizer import refit_native_curves
+from topo.core.base.refit import refit_native_curves
 from topo.core.geometry.points import _ellipse_distance, approximate_bspline
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
 from topo.core.geometry.fitting import conic_of_spline

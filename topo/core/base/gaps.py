@@ -1,6 +1,6 @@
 """
-topo/core/base/gap_solver.py
-----------------------------
+topo/core/base/gaps.py
+------------------------
 Calcolo geometrico puro della chiusura dei gap tra segmenti.
 
 Nessun formato: solo coordinate.

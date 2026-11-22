@@ -24,7 +24,7 @@ from ...model.role import is_structural_role
 from ...model.diagnostic import Diagnostic, plural as _plural
 from ..base.cleanup import (NEAR_FULL_ARC_MISSING, closed_touches, dangling_splines, near_free_gaps,
                             open_near_full_arcs, self_crossings)
-from ..base.normalizer import near_copies
+from ..base.merge import near_copies
 from ..base.prepare import normalize, prepare
 from ..geometry.measure import FLOAT_NOISE, reach
 from ..primitives.mathseg import segment_is_closed
