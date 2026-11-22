@@ -1,8 +1,8 @@
 """
-topo/core/geometry/polygons.py
--------------------------------
-Funzione pura per costruire un Polygon shapely da una lista di primitive.
-
+topo/core/geometry/shapely_polygons.py
+--------------------------------------
+Il ponte verso shapely: il Polygon di una lista di primitive o di una curva
+chiusa, e la sua cache sulla curva (D169). Finché shapely resta, vive qui.
 """
 
 from __future__ import annotations

@@ -18,7 +18,8 @@ from typing import Callable, List, Optional, Tuple
 from shapely import STRtree
 from shapely.geometry import Point
 
-from ..geometry.measure import FLOAT_NOISE, SAME_POINT, node_point, segment_length
+from ..geometry.measure import FLOAT_NOISE, SAME_POINT, segment_length
+from ..topology.edge import node_point
 from ...precision import NEAR_FULL_ARC_HINT_DEG, NEAR_FULL_ARC_MISSING_DEG
 from ..geometry.points import circle_through
 from ..geometry.regions import _tangent, nearest_point, translation_meeting

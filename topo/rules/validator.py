@@ -21,7 +21,7 @@ from ..model import Result
 from ..model.document import Document
 from ..model.diagnostic import Diagnostic, plural
 from ..core.primitives.line import LineSeg
-from ..core.geometry.polygons import curve_polygon
+from ..core.geometry.shapely_polygons import curve_polygon
 from ..core.geometry.measure import FLOAT_NOISE
 from ..core.geometry.rings import ring_jumps
 

@@ -8,7 +8,8 @@ decided by the consumer.
 Public (below):
     build.py          build shapes and curves as segments: polygon, rectangle, regular_polygon, circle, ellipse,
                       stadium, triangle, right_triangle; blend, polynomial, involute, clothoid
-    shape.py          shape of a closed contour; concentric circles; arcs around a circle
+    shape.py          shape of a closed contour
+    concentric.py     concentric circles; arcs around a circle
     lines.py          a chord that splits a contour; runs of collinear strokes joined across contours; hatching of a segment
     regions.py        point on a contour (vertex, fillet, side); stroke cut by a region; contour minus region
     strips.py         distance between two boundaries and the closest pair (`gap`, `Gap`)
@@ -19,7 +20,9 @@ Public (below):
     lines.py          also: strokes grouped by line
 
 Building blocks (imported from the submodule, internal):
-    measure.py        rounding of nodes, "is it circular?" (bounding box: for a measure use contour_shape)
+    measure.py        "is it circular?" (bounding box: for a measure use contour_shape)
+    numeric.py        golden-section search (maximum, minimum)
+    shapely_polygons.py  the bridge to shapely: a contour as a Polygon (D169)
     points.py         point sequences: corners, duplicates, circle fit, b-spline
     strips.py         a strip between two contours, an open contour where the strips cover it
                       (D142; the facts on the hierarchy are in topo.tools.strips)
@@ -31,8 +34,8 @@ Building blocks (imported from the submodule, internal):
 from .build import (polygon, rectangle, regular_polygon, circle, ellipse, stadium, triangle, right_triangle,
                     blend, polynomial,
                     involute, clothoid)
-from .shape import (
-    contour_shape, ContourShape, ShapeKind,
+from .shape import contour_shape, ContourShape, ShapeKind
+from .concentric import (
     concentric_groups, ConcentricGroup,
     arcs_around, ArcAround,
 )

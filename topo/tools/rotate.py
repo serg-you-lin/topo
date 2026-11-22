@@ -39,9 +39,10 @@ from typing import List, Optional, Tuple
 
 from shapely.affinity import rotate as _shapely_rotate
 
-from ..core.geometry.measure import longest_segment, chord_angle_deg, node_point
+from ..core.geometry.measure import longest_segment, chord_angle_deg
+from ..core.topology.edge import node_point
 from ..core.primitives.mathseg import segment_endpoints
-from ..core.geometry.polygons import curve_polygon, with_polygon
+from ..core.geometry.shapely_polygons import curve_polygon, with_polygon
 from ..model.cluster import Cluster
 from ..model.contour import Contour
 from ..model.diagnostic import Diagnostic, plural

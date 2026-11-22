@@ -41,7 +41,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field, replace
 from typing import Dict, Iterable, List, Optional, Tuple
 
-from ..geometry.measure import node_point
+from .edge import node_point
 from ..primitives.mathseg import segment_endpoints
 from ..primitives.conics import CircleSeg, is_arc
 from .edge import Edge

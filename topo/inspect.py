@@ -23,7 +23,7 @@ from collections import Counter
 from typing import Optional
 
 from topo.core.geometry.measure import track_points
-from topo.core.geometry.polygons import curve_polygon
+from topo.core.geometry.shapely_polygons import curve_polygon
 
 __all__ = [
     "inspect_document",

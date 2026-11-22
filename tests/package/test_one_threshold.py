@@ -43,7 +43,7 @@ NOT_THRESHOLDS = {
 # tetti di un metodo che converge: la precisione la dà il metodo, il tetto ferma solo un caso che non converge
 CONVERGENCE = {
     ("topo/core/primitives/trim.py", "_REFINE_STEPS"): "ricerca ternaria: (2/3)^60 ≈ 3e-11 della forchetta",
-    ("topo/core/geometry/measure.py", "iterations"): "sezione aurea: 0,618^40 ≈ 4e-9 della forchetta",
+    ("topo/core/geometry/numeric.py", "iterations"): "sezione aurea: 0,618^40 ≈ 4e-9 della forchetta",
     ("topo/core/geometry/regions.py", "_ONTO_STEPS"): "Newton, si ferma prima a FLOAT_NOISE",
     ("topo/core/primitives/clothoid.py", "_MAX_TERMS"): "serie di Fresnel, si ferma prima al termine sotto l'epsilon",
     ("topo/core/primitives/formula.py", "_MAX_DEPTH"): "dimezzamenti di un tratto: 2^-30 del tratto",

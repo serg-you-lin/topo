@@ -20,7 +20,7 @@ from typing import Optional
 
 from shapely.geometry import Point
 
-from ..core.geometry.polygons import curve_polygon
+from ..core.geometry.shapely_polygons import curve_polygon
 from ..model.result import Result
 
 

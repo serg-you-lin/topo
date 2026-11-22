@@ -49,7 +49,8 @@ from ..primitives.mathseg import DEFAULT_TOLERANCE, segment_endpoints, segment_i
 from ..primitives.conics import angle_from_start, point_on_circle
 from ..primitives.conics import CircleSeg, is_full_circle
 
-from ..geometry.measure import FLOAT_NOISE, SAME_POINT, node_point, reach, within_diameter
+from ..geometry.measure import FLOAT_NOISE, SAME_POINT, reach, within_diameter
+from .edge import node_point
 from .graph import cluster_points, connected_groups
 
 GRAPH_EPSILON = SAME_POINT   # mm — due nodi così vicini sono uno solo per il grafo (heal, ripiego D100)  # D268

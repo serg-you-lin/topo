@@ -10,7 +10,7 @@ from typing import Optional, Tuple
 
 from shapely.geometry import Polygon
 
-from ..geometry.polygons import build_polygon
+from ..geometry.shapely_polygons import build_polygon
 from ..primitives.mathseg import DEFAULT_TOLERANCE
 from .graph import _edge_coords
 

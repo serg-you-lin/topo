@@ -20,7 +20,7 @@ Note:
       ponti di gap-closing o il fallback polygonize): chi la consuma in
       write() tratta un indice mancante come "nessuno stile noto".
     - nessun tipo shapely nel modello (D166): il poligono per le domande fra
-      più curve è una cache privata, `core.geometry.polygons.curve_polygon`
+      più curve è una cache privata, `core.geometry.shapely_polygons.curve_polygon`
     - role è l'unico canale semantico interno — mai leggere un layer nel core
 """
 

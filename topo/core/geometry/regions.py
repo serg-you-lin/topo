@@ -28,7 +28,8 @@ from shapely.geometry import LineString, Point as SPoint, Polygon
 from shapely.prepared import prep
 
 from .measure import SAME_POINT, segment_length
-from .polygons import build_polygon
+from .numeric import golden_min
+from .shapely_polygons import build_polygon
 from ..primitives.spline import BSplineSeg
 from ..primitives.line import LineSeg
 from ..primitives.mathseg import DEFAULT_TOLERANCE
@@ -308,30 +309,11 @@ def _nearest_on_curve(seg, curve, point: Point) -> Point:
     far = [math.dist(at(t), point) for t in ts]
     best: Optional[Point] = None
     for i in sorted(range(n + 1), key=far.__getitem__)[:3]:
-        t = _golden_min(lambda s: math.dist(at(s), point), ts[max(i - 1, 0)], ts[min(i + 1, n)])
+        t = golden_min(lambda s: math.dist(at(s), point), ts[max(i - 1, 0)], ts[min(i + 1, n)])
         q = at(t)
         if best is None or math.dist(q, point) < math.dist(best, point):
             best = q
     return best
-
-
-def _golden_min(f, a: float, b: float) -> float:
-    """Il minimo di `f` su [a, b] (sezione aurea), fino a che i double
-    separano i punti interni."""
-    r = (math.sqrt(5) - 1) / 2
-    c, d = b - r * (b - a), a + r * (b - a)
-    fc, fd = f(c), f(d)
-    while a < c < d < b:
-        if fc <= fd:
-            b, d, fd = d, c, fc
-            c = b - r * (b - a)
-            fc = f(c)
-        else:
-            a, c, fc = c, d, fd
-            d = a + r * (b - a)
-            fd = f(d)
-    candidates = [(f(a), a), (fc, c), (fd, d), (f(b), b)]
-    return min(candidates)[1]
 
 
 def translation_meeting(constraints: Sequence[Tuple[Point, object, int]]) -> Optional[Point]:

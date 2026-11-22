@@ -7,7 +7,7 @@ import unittest
 import topo
 from topo.core.primitives.line import LineSeg
 from topo.core.primitives.conics import CircleSeg
-from topo.core.geometry.shape import arcs_around, concentric_groups
+from topo.core.geometry.concentric import arcs_around, concentric_groups
 
 
 def _circle(c, r):

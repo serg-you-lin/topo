@@ -29,7 +29,8 @@ from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 from shapely import STRtree
 from shapely.geometry import Point
 
-from ..geometry.measure import FLOAT_NOISE, node_point
+from ..geometry.measure import FLOAT_NOISE
+from ..topology.edge import node_point
 from ..geometry.intersections import (_distance, _line_intersection, _circle_line_intersections, _circle_circle_intersections, _closest_to)
 from ..geometry.intersections import intersections
 from ..geometry.regions import _tangent, nearest_point

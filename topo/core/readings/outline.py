@@ -27,7 +27,7 @@ from ...model.contour import Contour
 from ...model.diagnostic import Diagnostic
 from ...model.result import Result
 from ...model.role import ContourRole
-from ..geometry.polygons import curve_polygon, with_polygon
+from ..geometry.shapely_polygons import curve_polygon, with_polygon
 from ..primitives.mathseg import segment_endpoints
 from ..topology.edge import Edge
 from ..geometry.integrals import ring_area

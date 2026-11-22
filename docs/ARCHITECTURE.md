@@ -99,11 +99,11 @@ topo/
 │   │                 outer_scan.py) — each reading chooses only
 │   │                 how it looks for the contour
 │   ├── geometry/     THE GEOMETRY, `topo.geometry` (D95): facts with geometric names
-│   │                 — shape (shape, concentric circles, arcs around), lines
+│   │                 — shape, concentric (concentric circles, arcs around), lines
 │   │                 (chords, collinear rows), axis (covered rectangles) — and the
-│   │                 building blocks measure / points / intersections;
+│   │                 building blocks measure / numeric / points / intersections;
 │   │                 fitting.py: primitives from a sequence of points (simplify_points),
-│   │                 polygons.py: the shapely polygon of a list of curves
+│   │                 shapely_polygons.py: the shapely polygon of a list of curves
 │   ├── geometry_input.py load_geometry / load_segments — pure geometry, not a
 │   │                 format: an input of topo, not an adapter (D123, D125)
 │

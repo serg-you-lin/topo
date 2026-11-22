@@ -17,7 +17,7 @@ from shapely.geometry import Polygon
 
 from ..geometry.integrals import ring_area
 from ..geometry.measure import SAME_POINT, segment_length
-from ..geometry.polygons import with_polygon
+from ..geometry.shapely_polygons import with_polygon
 from ..geometry.rings import ring_scale
 from ..primitives import LineSeg
 from ..primitives.mathseg import segment_is_closed

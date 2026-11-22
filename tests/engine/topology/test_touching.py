@@ -7,7 +7,7 @@ from topo.core.topology.edge import Edge
 from topo.core.primitives.line import LineSeg
 from topo.core.primitives.mathseg import segment_endpoints
 from topo.core.primitives.conics import CircleSeg
-from topo.core.geometry.measure import node_point
+from topo.core.topology.edge import node_point
 from topo.core.topology.noding import edge_geometry
 from topo.precision import SAME_POINT
 

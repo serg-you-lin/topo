@@ -20,10 +20,14 @@ from typing import Optional, Tuple
 
 from ..primitives.line import LineSeg
 from ..primitives.mathseg import MathSeg, segment_endpoints, segment_is_closed
-from ..geometry.measure import node_point
 from ...model.style import EdgeStyle
 
 Segment = MathSeg
+
+
+def node_point(pt) -> Tuple:
+    """Il nodo di un punto: il punto vero, in float; nessuna griglia (D216)."""
+    return (float(pt[0]), float(pt[1]))
 
 
 @dataclass

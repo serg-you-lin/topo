@@ -12,7 +12,7 @@ import unittest
 
 import topo
 from topo.core.primitives import CircleSeg, LineSeg, BSplineSeg
-from topo.core.geometry.polygons import build_polygon
+from topo.core.geometry.shapely_polygons import build_polygon
 from topo.model.contour import Contour
 from topo import to_shapely
 

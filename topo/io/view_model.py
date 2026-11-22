@@ -27,7 +27,7 @@ from ..model import Result, RoleStyle, feature_closed, role_style
 from ..model.overlay import _feature_contours
 from ..model.role import ContourRole, feature_role, role_str as _role_str
 from ..core.geometry.measure import track_points
-from ..core.geometry.polygons import build_polygon, curve_polygon
+from ..core.geometry.shapely_polygons import build_polygon, curve_polygon
 from ..core.primitives.mathseg import DEFAULT_TOLERANCE
 
 def _color(role, role_styles: Mapping[str, RoleStyle]) -> str:

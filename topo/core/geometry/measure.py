@@ -1,7 +1,7 @@
 """
 topo/core/geometry/measure.py
 ------------------------------
-Misure di primitive e tracce: arrotondamento dei nodi, lunghezza e angolo di
+Misure di primitive e tracce: lunghezza e angolo di
 un segmento, vertici e tipo di una traccia aperta.
 """
 
@@ -16,20 +16,12 @@ from ..primitives.spline import BSplineSeg
 from ..primitives.mathseg import MathSeg
 from ..primitives.clothoid import ClothoidSeg
 from ..primitives.conics import HyperbolaSeg, ParabolaSeg, CircleSeg, EllipseSeg
+from .numeric import golden_max
 
 Point = Tuple[float, float]
 
 
-# ---------------------------------------------------------------------------
-# Arrotondamento
-# ---------------------------------------------------------------------------
-
 # FLOAT_NOISE e SAME_POINT vivono in topo/precision.py (D268, D269)
-
-
-def node_point(pt) -> Tuple:
-    """Il nodo di un punto: il punto vero, in float; nessuna griglia (D216)."""
-    return (float(pt[0]), float(pt[1]))
 
 
 def noise_runs(items: list, together) -> list:
@@ -233,23 +225,6 @@ def _on_sweep(start: float, ccw: bool, sweep: float, t: float) -> bool:
     """True se l'angolo `t` cade nell'intervallo percorso da `start` per `sweep`."""
     offset = ((t - start) if ccw else (start - t)) % (2 * math.pi)
     return offset <= sweep + 1e-12
-
-
-def golden_max(f, a: float, b: float, iterations: int = 40) -> Tuple[float, float]:
-    """(x, f(x)) del massimo di `f` unimodale su [a, b], per sezione aurea."""
-    g = (math.sqrt(5) - 1) / 2
-    c, d = b - g * (b - a), a + g * (b - a)
-    fc, fd = f(c), f(d)
-    for _ in range(iterations):
-        if fc > fd:
-            b, d, fd = d, c, fc
-            c = b - g * (b - a)
-            fc = f(c)
-        else:
-            a, c, fc = c, d, fd
-            d = a + g * (b - a)
-            fd = f(d)
-    return (c, fc) if fc > fd else (d, fd)
 
 
 def within_diameter(points, limit: float) -> bool:

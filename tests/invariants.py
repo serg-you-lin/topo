@@ -24,7 +24,8 @@ from shapely import STRtree, prepare
 from shapely.geometry import LineString, Point
 from shapely.ops import unary_union
 
-from topo.core.geometry.measure import FLOAT_NOISE, node_point
+from topo.core.geometry.measure import FLOAT_NOISE
+from topo.core.topology.edge import node_point
 from topo.core.geometry.rings import ring_jumps
 from topo.core.primitives.mathseg import DEFAULT_TOLERANCE, segment_endpoints
 from topo.core.primitives.motion import _rotate_point, _translate_point

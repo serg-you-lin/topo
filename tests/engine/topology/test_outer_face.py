@@ -6,7 +6,7 @@ from shapely.ops import polygonize, unary_union
 from topo.core.topology.outer_face import _network, outer_face
 from topo.core.topology.noding import split_at_crossings
 from topo.core.topology.edge import Edge
-from topo.core.geometry.measure import node_point
+from topo.core.topology.edge import node_point
 from topo.core.primitives.spline import BSplineSeg
 from topo.core.primitives.line import LineSeg
 from topo.core.primitives.mathseg import segment_endpoints

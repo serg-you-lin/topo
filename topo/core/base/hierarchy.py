@@ -12,7 +12,7 @@ from ...model.curve import ClosedCurve
 from ...model.cluster import Cluster
 from ...model.contour import Contour
 from ...model.role import ContourRole, is_structural_role
-from ..geometry.polygons import curve_polygon, with_polygon
+from ..geometry.shapely_polygons import curve_polygon, with_polygon
 from ..geometry.measure import FLOAT_NOISE, noise_runs, track_points
 from ..geometry.rings import ring_scale
 from ..geometry.regions import enclosing

@@ -18,7 +18,7 @@ from typing import Callable, List, Optional
 from shapely.geometry import Point
 
 from ..core.geometry.measure import track_points
-from ..core.geometry.polygons import curve_polygon
+from ..core.geometry.shapely_polygons import curve_polygon
 from ..model import Cluster, Result
 from ..model.diagnostic import Diagnostic, plural
 

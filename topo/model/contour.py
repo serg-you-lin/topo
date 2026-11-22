@@ -27,7 +27,7 @@ import math
 from dataclasses import KW_ONLY, dataclass, field
 from typing import Optional, Sequence
 
-from topo.core.geometry.polygons import build_polygon, with_polygon
+from topo.core.geometry.shapely_polygons import build_polygon, with_polygon
 from topo.core.primitives.mathseg import DEFAULT_TOLERANCE, segment_endpoints
 from topo.model.curve import ClosedCurve
 

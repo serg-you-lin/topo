@@ -27,7 +27,8 @@ from typing import Iterable, List, Tuple
 from ...precision import POINTS_NOISE, TESSELLATION_RUN, TESSELLATION_SIDE
 from ...model.role import ContourRole
 from ..geometry.fitting import conic_of_spline, simplify_points
-from ..geometry.measure import SAME_POINT, node_point
+from ..geometry.measure import SAME_POINT
+from ..topology.edge import node_point
 from ..geometry.points import fit_circle_kasa
 from ..primitives.conics import CircleSeg, EllipseSeg, is_full_circle
 from ..primitives.line import LineSeg
