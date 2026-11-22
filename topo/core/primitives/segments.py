@@ -241,7 +241,9 @@ def _angular_sweep(start: float, end: float, ccw: bool) -> float:
     """
     raw = (end - start) if ccw else (start - end)
     sweep = raw % (2 * math.pi)
-    if sweep < 1e-12 and abs(raw) > 1e-12:
+    # un giro intero da un angolo qualunque: (a + 2π) − a cade a un ulp da 2π,
+    # sopra (resto ~0) o sotto (resto ~2π); tutti e due sono il giro intero
+    if (sweep < 1e-12 or 2 * math.pi - sweep < 1e-12) and abs(raw) > 1e-12:
         sweep = 2 * math.pi
     return sweep
 

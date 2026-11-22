@@ -29,6 +29,10 @@ refit_tessellations      — una catena di tanti LineSeg corti è una curva scri
                              a punti: rifittata come arco/cerchio/spline
                              (fitting.simplify_points).
 
+refit_native_curves      — una spline entro SAME_POINT da un arco o da
+                             un'ellisse diventa quello (fitting.conic_of_spline);
+                             un'ellisse coi semiassi uguali, il suo cerchio.
+
 merge_near_copies        — una retta quasi sopra un'altra entro una soglia del
                              chiamante: mai dentro una lettura, `heal()` ne
                              avvisa soltanto (`near_copies`, D226).
@@ -38,6 +42,7 @@ Funzioni pubbliche:
     merge_cocircular_overlaps — dato un iterabile di Edge, i gruppi CircleSeg da fondere
     weld_degenerate_linesegs  — dato un iterabile di Edge, i LineSeg degeneri da saldare
     refit_tessellations       — dato un iterabile di Edge, le catene tassellate rifittate
+    refit_native_curves       — dato un iterabile di Edge, le curve che sono primitive più semplici
     merge_near_copies         — dato un iterabile di Edge e una distanza, le quasi-copie fuse
 """
 
@@ -50,9 +55,9 @@ from typing import Any, Callable, Iterable, List, Tuple
 
 from ..geometry.measure import FLOAT_NOISE, node_point, within_diameter, SAME_POINT
 from ..geometry.points import fit_circle_kasa
-from ..primitives.segments import LineSeg, Point, segment_endpoints
-from ..primitives.conics import CircleSeg, is_full_circle
-from ..primitives.fitting import simplify_points
+from ..primitives.segments import BSplineSeg, LineSeg, Point, segment_endpoints
+from ..primitives.conics import CircleSeg, EllipseSeg, is_full_circle
+from ..primitives.fitting import conic_of_spline, simplify_points
 from ..topology.graph import build_node_graph, connected_groups
 from ..topology.noding import _near_pairs
 from ..topology.edge import Edge
@@ -627,6 +632,31 @@ def refit_tessellations(
     if not replaced:
         return edges
     return [e for e in edges if id(e) not in replaced] + new_edges
+
+
+def refit_native_curves(edges: Iterable[Edge], tolerance: float = SAME_POINT) -> List[Edge]:
+    """
+    Una curva del file che è una primitiva più semplice diventa quella (D296),
+    stessi capi e stessi nodi: una spline entro `tolerance` da un arco o da
+    un'ellisse (`conic_of_spline`); un'ellisse coi semiassi uguali, il suo
+    cerchio (esatto). Le altre restano come sono.
+    """
+    out = []
+    for e in edges:
+        s, simpler = e.segment, None
+        if isinstance(s, BSplineSeg):
+            simpler = conic_of_spline(s, tolerance)
+        elif type(s) is EllipseSeg and s.ratio == 1.0:
+            simpler = _circle_of(s)
+        out.append(e if simpler is None else replace(e, segment=simpler))
+    return out
+
+
+def _circle_of(s: EllipseSeg) -> CircleSeg:
+    """L'ellisse coi semiassi uguali come cerchio: il suo parametro più l'angolo dell'asse è l'angolo."""
+    phi = math.atan2(s.major_axis[1], s.major_axis[0])
+    return CircleSeg(center=s.center, radius=math.hypot(*s.major_axis), start_angle=s.start_param + phi,
+                     end_angle=s.end_param + phi, ccw=s.ccw)
 
 
 def refit_circle_rings(edges: Iterable[Edge], tolerance: float = RING_TO_CIRCLE) -> List[Edge]:

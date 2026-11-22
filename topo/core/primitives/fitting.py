@@ -32,7 +32,7 @@ from .segments import LineSeg, BSplineSeg, MathSeg, Point
 from .conics import CircleSeg, EllipseSeg, HyperbolaSeg, is_arc
 from ..geometry.measure import FLOAT_NOISE
 from ..geometry.points import (
-    DEFAULT_DUPLICATE_TOLERANCE, approximate_bspline, douglas_peucker, drop_duplicate_points,
+    DEFAULT_DUPLICATE_TOLERANCE, approximate_bspline, circle_through, douglas_peucker, drop_duplicate_points,
     even_spacing, fit_circle_kasa, offset_from_line, turn_corners, within_chord, within_circle_through,
     within_conic_through, within_smooth_curve,
 )
@@ -163,6 +163,64 @@ def _conic_through_ends(points: List[Point], tolerance: float):
         return HyperbolaSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=ta, end_param=tb)
     ccw = (tm - ta) % (2 * math.pi) < (tb - ta) % (2 * math.pi)
     return EllipseSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=ta, end_param=tb, ccw=ccw)
+
+
+_SPLINE_SAMPLES = 64     # punti al minimo su una spline da riconoscere: più dei 6 che una conica chiede
+
+
+def _walked(params: Sequence[float], ccw: bool, closed: bool) -> Optional[List[float]]:
+    """Il parametro (angolo) percorso dal primo punto, nel verso `ccw`; None se
+    torna indietro: allora la curva non percorre la conica una volta sola."""
+    sign = 1.0 if ccw else -1.0
+    walked = [(sign * (p - params[0])) % (2 * math.pi) for p in params]
+    walked[0] = 0.0
+    if closed:
+        walked[-1] = 2 * math.pi
+    if any(b < a - FLOAT_NOISE for a, b in zip(walked, walked[1:])):
+        return None
+    return walked
+
+
+def conic_of_spline(spline: BSplineSeg, tolerance: float) -> Optional[EllipseSeg]:
+    """
+    L'arco (o cerchio) o l'arco d'ellisse (o ellisse) che è la spline: per i
+    suoi capi esatti, ogni punto fitto della curva vera entro `tolerance` da
+    lui, percorso una volta sola nel verso della spline. Prima il cerchio,
+    più semplice; mai l'iperbole (D296). None se nessuno dei due.
+    """
+    pts = spline.discretize(tolerance=tolerance / 10)
+    if len(pts) < _SPLINE_SAMPLES:
+        t0, t1 = spline.t_range
+        pts = [spline.point_at(t0 + (t1 - t0) * k / (_SPLINE_SAMPLES - 1)) for k in range(_SPLINE_SAMPLES)]
+    start, end = spline.endpoints()
+    pts[0], pts[-1] = start, end
+    closed = math.dist(start, end) <= FLOAT_NOISE
+    if closed:
+        pts[-1] = start
+        # nel verso in cui la curva gira: l'area con segno del suo poligono
+        ccw = sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:])) > 0
+        n = len(pts)
+        circle = circle_through(start, pts[n // 3], pts[2 * n // 3])
+    else:
+        ccw = offset_from_line(pts[len(pts) // 2], start, end) < 0
+        circle = circle_through(start, pts[len(pts) // 2], end)
+    if circle is not None:
+        center, radius = circle
+        angles = [math.atan2(p[1] - center[1], p[0] - center[0]) for p in pts]
+        if (all(abs(math.dist(center, p) - radius) <= tolerance for p in pts)
+                and _walked(angles, ccw, closed) is not None):
+            a0 = angles[0]
+            a1 = a0 + (2 * math.pi if ccw else -2 * math.pi) if closed else angles[-1]
+            return CircleSeg(center=center, radius=radius, start_angle=a0, end_angle=a1, ccw=ccw)
+    fit = within_conic_through(pts, tolerance)
+    if fit is None or fit[0] != "ellipse":
+        return None
+    _, center, major_axis, ratio, params = fit
+    if _walked(params, ccw, closed) is None:
+        return None
+    p0 = params[0]
+    p1 = p0 + (2 * math.pi if ccw else -2 * math.pi) if closed else params[-1]
+    return EllipseSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=p0, end_param=p1, ccw=ccw)
 
 
 def _fit_curve(points: List[Point], tolerance: float, arcs: bool, degree: int) -> List[Primitive]:

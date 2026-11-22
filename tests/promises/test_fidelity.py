@@ -8,7 +8,8 @@ risultato scritto in DXF e riletto si sovrappone al sorgente.
    per `heal()`, `max_gap` per `outlines()` (l'unica cosa che sposta geometria
    in una vista sono le chiusure dei gap).
 2. Coefficienti identici (centro e raggio, ellisse, punti di controllo) per
-   ogni curva che la lettura non ha toccato: entrambi i capi coincidono con
+   ogni curva che la lettura non ha toccato — presa dopo `refit_native_curves`:
+   una spline che è un arco o un'ellisse esce come quello (D296): entrambi i capi coincidono con
    quelli di un altro edge del sorgente e la curva non ha un doppione quasi
    coincidente. Un capo che non tocca niente può essere stato chiuso entro la
    tolleranza, e allora l'arco riletto da un bulge ha centro e raggio
@@ -33,6 +34,7 @@ from shapely.geometry import LineString, box
 
 import topo
 import topo_dxf
+from topo.core.base.normalizer import refit_native_curves
 from topo.core.primitives.segments import segment_endpoints
 from tests.drawings import case_name, tracked_drawings
 from tests.invariants import contour_jumps
@@ -191,11 +193,13 @@ def _make_fidelity_test(rel: str, reading: str):
         self.assertLessEqual(_directed(out_samples, src_lines), bound,
                              "un punto del risultato non è nel sorgente")
         written = [c for c in map(_coefficients, (e.segment for e in back.edges)) if c]
-        missing = [c for c in _untouched_curves(doc.edges)
+        # una curva del file che è una primitiva più semplice esce come quella (D296)
+        source = refit_native_curves(doc.edges)
+        missing = [c for c in _untouched_curves(source)
                    if not any(_same(c, w, COEFF_EPS) for w in written)]
         if missing:
             written_splines = _written_splines(back.edges)
-            missing = [c for c in missing if not _cut_in_pieces(c, doc.edges, written_splines)]
+            missing = [c for c in missing if not _cut_in_pieces(c, source, written_splines)]
         self.assertEqual(missing, [], "curve non toccate riscritte con altri coefficienti")
     return test
 
