@@ -21,7 +21,7 @@ from typing import List, Tuple
 
 from .conics import _grid
 from .segments import (
-    DEFAULT_TOLERANCE, MathSeg, Point, _check_factor, _mirror_point, _plain, _real, _rotate_point,
+    DEFAULT_TOLERANCE, Algebra, MathSeg, Point, _check_factor, _mirror_point, _plain, _real, _rotate_point,
     _scale_point, _translate_point,
 )
 
@@ -119,6 +119,11 @@ class ClothoidSeg(MathSeg):
     @property
     def t_range(self) -> Tuple[float, float]:
         return (0.0, abs(self.end_param - self.start_param))
+
+    @property
+    def algebra(self) -> Algebra:
+        """Trascendente: il punto è un integrale di Fresnel."""
+        return "transcendental"
 
     def point_at(self, t: float) -> Point:
         return self._at(self.start_param + self._sign() * t)

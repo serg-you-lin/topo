@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Tuple
 
 from .segments import (
-    DEFAULT_TOLERANCE, MathSeg, Point, _check_factor, _point_to_segment_distance, _real,
+    DEFAULT_TOLERANCE, Algebra, MathSeg, Point, _check_factor, _point_to_segment_distance, _real,
 )
 
 # funzione -> derivata (come formula nella stessa grammatica, in `u`)
@@ -110,6 +110,37 @@ def _diff(node: ast.expr) -> ast.expr:
     return ast.BinOp(node, ast.Mult(), inner)
 
 
+_ORDER = ("polynomial", "rational", "transcendental")
+
+
+def _algebra(node: ast.expr, env: dict) -> Algebra:
+    """Che cosa dimostra l'albero: polinomio in t (+ − · e potenze intere ≥ 0),
+    frazione di polinomi (anche / e potenze intere negative), altrimenti
+    trascendente — che qui vuol dire "nessuna forma razionale dimostrata":
+    cos(t), sin(t) è un cerchio, razionale, ma l'albero non lo dimostra."""
+    if not _depends(node):
+        return "polynomial"                 # una costante
+    if isinstance(node, ast.Name):          # è t
+        return "polynomial"
+    if isinstance(node, ast.UnaryOp):
+        return _algebra(node.operand, env)
+    if isinstance(node, ast.Call):
+        return "transcendental"
+    left = _algebra(node.left, env)
+    if isinstance(node.op, ast.Pow):
+        if _depends(node.right):
+            return "transcendental"
+        n = eval(_compile(node.right), env)
+        if not float(n).is_integer():
+            return "transcendental"
+        return left if n >= 0 else max(left, "rational", key=_ORDER.index)
+    right = _algebra(node.right, env)
+    worst = max(left, right, key=_ORDER.index)
+    if isinstance(node.op, ast.Div) and _depends(node.right):
+        return max(worst, "rational", key=_ORDER.index)
+    return worst
+
+
 class _Substitute(ast.NodeTransformer):
     def __init__(self, values: Dict[str, ast.expr]):
         self.values = values
@@ -186,6 +217,14 @@ class FormulaSeg(MathSeg):
     @property
     def t_range(self) -> Tuple[float, float]:
         return (0.0, abs(self.end_param - self.start_param))
+
+    @property
+    def algebra(self) -> Algebra:
+        """Letta dall'albero della formula (`_algebra`): la peggiore di x e y;
+        la mappa affine non cambia il gruppo."""
+        names = {"t"} | {k for k, _ in self.params}
+        env = self._env(0.0)
+        return max((_algebra(_parse(text, names), env) for text in (self.x, self.y)), key=_ORDER.index)
 
     def _at(self, s: float) -> Point:
         return self._map(self._raw(s))

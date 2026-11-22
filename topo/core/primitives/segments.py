@@ -16,7 +16,7 @@ from ...precision import FLOAT_NOISE, SAME_POINT
 import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 Point = Tuple[float, float]
 
@@ -58,6 +58,10 @@ DEFAULT_TOLERANCE = SAME_POINT  # sagitta dei poligoni, D275
 # Le madri: ogni primitiva è una curva matematica (D285)
 # ---------------------------------------------------------------------------
 
+# che matematica scrive esatta una curva (MathSeg.algebra)
+Algebra = Literal["polynomial", "rational", "transcendental"]
+
+
 class MathSeg(ABC):
     """
     A curve given by its mathematics: one point for every parameter `t` in
@@ -78,6 +82,15 @@ class MathSeg(ABC):
     @abstractmethod
     def derivative_at(self, t: float) -> Point:
         """dP/dt at parameter `t`: the direction of travel, exact."""
+
+    @property
+    @abstractmethod
+    def algebra(self) -> Algebra:
+        """
+        "polynomial" when x(t), y(t) are polynomials, "rational" when they are
+        ratios of polynomials, "transcendental" otherwise: what kind of
+        mathematics writes this curve exactly, read from the curve itself.
+        """
 
     def endpoints(self) -> Tuple[Point, Point]:
         """(start, end): the points at the two ends of `t_range`."""
@@ -122,6 +135,10 @@ class LineSeg(MathSeg):
     @property
     def t_range(self) -> Tuple[float, float]:
         return (0.0, 1.0)
+
+    @property
+    def algebra(self) -> Algebra:
+        return "polynomial"
 
     def point_at(self, t: float) -> Point:
         return (self.start[0] + t * (self.end[0] - self.start[0]), self.start[1] + t * (self.end[1] - self.start[1]))
@@ -413,6 +430,13 @@ class BSplineSeg(MathSeg):
         # più volte. Non è un campo (fuori da eq/repr/fields); vale perché una
         # spline non si modifica sul posto — reversed/rotated ne fanno una nuova.
         self._points: dict = {}
+
+    @property
+    def algebra(self) -> Algebra:
+        """Polinomiale senza pesi o coi pesi tutti uguali (il fattore comune si
+        semplifica), razionale altrimenti."""
+        w = self.weights
+        return "polynomial" if not w or all(v == w[0] for v in w) else "rational"
 
     @property
     def clamped(self) -> bool:

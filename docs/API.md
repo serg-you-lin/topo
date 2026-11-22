@@ -190,7 +190,7 @@ they do not import `topo.core`/`tools`/`io`/`rules` (D129). What it needs:
 | name | what it is for |
 |---|---|
 | `topo.primitives.LineSeg` … `EllipseSeg` | the geometry read from the source, native (never discretised by the adapter) |
-| `topo.primitives.MathSeg`, `ConicSeg` | the mothers (D285): every segment has `t_range`, `point_at(t)`, `derivative_at(t)`, `endpoints()`; circles, ellipses, parabolas and hyperbolas are `ConicSeg` with `equation` (A..F) |
+| `topo.primitives.MathSeg`, `ConicSeg` | the mothers (D285): every segment has `t_range`, `point_at(t)`, `derivative_at(t)`, `endpoints()`, `algebra` ("polynomial" / "rational" / "transcendental", D295); circles, ellipses, parabolas and hyperbolas are `ConicSeg` with `equation` (A..F) |
 | `topo.primitives.ParabolaSeg`, `HyperbolaSeg` | the other conics (D288); `to_bspline()` is the same curve as an exact rational quadratic spline, for a format that has no conics |
 | `topo.primitives.FormulaSeg` | a curve given by `x` and `y` formulas in `t` (text, closed grammar, named `params`), exact symbolic derivative; `to_bspline(tolerance=)` approximates it for a format without formulas (D289) |
 | `topo.primitives.ClothoidSeg` | the Euler spiral, curvature growing with arc length (κ = s/a²); exact length, tangent and `curvature_at`; `to_bspline(tolerance=)` approximates it (D290) |

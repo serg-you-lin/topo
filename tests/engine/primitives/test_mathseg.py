@@ -11,7 +11,10 @@ import unittest
 
 import topo
 from topo.core.primitives.segments import BSplineSeg, MathSeg, segment_endpoints
+from topo.core.primitives.clothoid import ClothoidSeg
 from topo.core.primitives.conics import CircleSeg, ConicSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg
+from topo.core.primitives.formula import FormulaSeg
+from topo.core.primitives.segments import LineSeg
 from topo.precision import FLOAT_NOISE
 from tests.engine.primitives.test_segment_motion import _segments
 
@@ -125,6 +128,44 @@ def _ellipse_perimeter(a: float, b: float) -> float:
         weight *= 2
         total += weight * c * c
     return 2 * math.pi * (a * a - total) / x
+
+
+class TestAlgebra(unittest.TestCase):
+    """`algebra` dice che matematica scrive esatta la curva, letta dalla curva."""
+
+    def test_ogni_primitiva_ha_il_suo_gruppo(self):
+        expected = {LineSeg: "polynomial", ParabolaSeg: "polynomial", CircleSeg: "rational", EllipseSeg: "rational",
+                    HyperbolaSeg: "rational", ClothoidSeg: "transcendental"}
+        for name, seg in _all():
+            if type(seg) in expected:
+                self.assertEqual(seg.algebra, expected[type(seg)], name)
+
+    def test_spline_polinomiale_senza_pesi_o_coi_pesi_uguali(self):
+        cp, knots = [(0, 0), (1, 2), (3, 1)], [0, 0, 0, 1, 1, 1]
+        self.assertEqual(BSplineSeg(2, cp, knots).algebra, "polynomial")
+        self.assertEqual(BSplineSeg(2, cp, knots, weights=[2.5, 2.5, 2.5]).algebra, "polynomial")
+        self.assertEqual(BSplineSeg(2, cp, knots, weights=[1, math.sqrt(0.5), 1]).algebra, "rational")
+
+    def test_spline_coi_pesi_uguali_e_la_stessa_curva_senza_pesi(self):
+        # il fattore comune si semplifica: è davvero un polinomio
+        cp, knots = [(0, 0), (1, 2), (3, 1)], [0, 0, 0, 1, 1, 1]
+        a, b = BSplineSeg(2, cp, knots), BSplineSeg(2, cp, knots, weights=[2.5, 2.5, 2.5])
+        for t in (0.0, 0.3, 0.71, 1.0):
+            self.assertAlmostEqual(math.dist(a.point_at(t), b.point_at(t)), 0.0, delta=FLOAT_NOISE)
+
+    def test_la_formula_dal_suo_albero(self):
+        cases = [("t", "t**2", "polynomial"), ("t", "t / 2 + sqrt(2) * t", "polynomial"),
+                 ("t", "t**n", "polynomial"), ("t", "1 / (1 + t**2)", "rational"), ("t", "t**-2", "rational"),
+                 ("t", "t**0.5", "transcendental"), ("t", "2**t", "transcendental"),
+                 ("r*cos(t)", "r*sin(t)", "transcendental")]   # un cerchio, ma l'albero non lo dimostra
+        for x, y, algebra in cases:
+            with self.subTest(x=x, y=y):
+                self.assertEqual(FormulaSeg(x, y, 1.0, 2.0, params={"n": 3.0, "r": 2.0}).algebra, algebra)
+
+    def test_il_moto_non_cambia_il_gruppo(self):
+        for name, seg in _all():
+            for moved in (seg.reversed(), seg.rotated(0.7), seg.mirrored(angle=0.3), seg.scaled(2.0)):
+                self.assertEqual(moved.algebra, seg.algebra, name)
 
 
 class TestExactLength(unittest.TestCase):

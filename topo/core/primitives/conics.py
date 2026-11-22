@@ -22,7 +22,7 @@ from typing import List, Tuple
 
 from ...precision import FLOAT_NOISE
 from .segments import (
-    DEFAULT_TOLERANCE, BSplineSeg, MathSeg, Point, _angular_sweep, _check_factor, _circle_sides,
+    DEFAULT_TOLERANCE, Algebra, BSplineSeg, MathSeg, Point, _angular_sweep, _check_factor, _circle_sides,
     _grid_angles, _mirror_point, _plain, _real, _rotate_point, _scale_point, _translate_point,
     point_on_circle,
 )
@@ -41,6 +41,10 @@ class ConicSeg(MathSeg):
     @abstractmethod
     def equation(self) -> Tuple[float, float, float, float, float, float]:
         """(A, B, C, D, E, F) of the conic the piece lies on, up to a common factor."""
+
+    @property
+    def algebra(self) -> Algebra:
+        return "rational"
 
 
 def _ellipse_equation(center: Point, axis: Point, a: float, b: float) -> Tuple[float, float, float, float, float, float]:
@@ -427,6 +431,11 @@ class ParabolaSeg(ConicSeg):
         f, u, n = self._frame()
         q = s * s / (4 * f)
         return (self.vertex[0] + s * n[0] + q * u[0], self.vertex[1] + s * n[1] + q * u[1])
+
+    @property
+    def algebra(self) -> Algebra:
+        """Polinomiale: s e s² nel suo riferimento (ellisse e iperbole no)."""
+        return "polynomial"
 
     @property
     def t_range(self) -> Tuple[float, float]:
