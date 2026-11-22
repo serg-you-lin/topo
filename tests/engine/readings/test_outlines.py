@@ -157,16 +157,8 @@ class TestRefitTessellations(unittest.TestCase):
         self.assertEqual(out[0].start, chain[0].start)
         self.assertEqual(out[0].end, chain[-1].end)
 
-    def test_tre_lati_bastano(self):
-        # quattro punti: tre fissano l'arco, il quarto lo prova (D301)
-        out = refit_tessellations(self._tessellated_arc(n=3), max_segment=6.0)
-        self.assertEqual(len(out), 1)
-        self.assertIsInstance(out[0].segment, CircleSeg)
-        self.assertAlmostEqual(out[0].segment.radius, 10.0, places=6)
-
     def test_catena_troppo_corta_non_si_tocca(self):
-        # due lati, tre punti: un arco ci passa sempre, nessuna prova (D301)
-        chain = self._tessellated_arc(n=2)
+        chain = self._tessellated_arc(n=5)
         self.assertEqual(refit_tessellations(chain, max_segment=5.0), chain)
 
 

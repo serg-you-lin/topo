@@ -58,7 +58,7 @@ NEAR_GAP_FACTOR = 2.0          # un buco fino a questo multiplo di max_gap "c'è
 
 RING_TO_CIRCLE = 0.02          # mm: un anello scritto a punti entro così da un cerchio è quel cerchio (D236); errore di corda del CAD, non SAME_POINT (D279)
 TESSELLATION_SIDE = 0.1        # mm: lati più corti possono essere punti di una curva scritta a punti (refit_tessellations)
-TESSELLATION_RUN = 3           # lati corti di fila da rifittare: 4 punti, il minimo che mette alla prova un arco (3 lo fissano); il resto lo giudica simplify_points (D301)
+TESSELLATION_RUN = 10          # lati corti di fila: da tanti in su sono una curva scritta a punti; sotto, il rifit arrotonda spigoli (D303)
 PDF_SNAP = 0.15                # mm: adattatore PDF sperimentale, congelato (D10)
 
 
