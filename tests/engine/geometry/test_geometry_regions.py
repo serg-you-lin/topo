@@ -380,15 +380,15 @@ class TestTangentOnTheTrueCurve(unittest.TestCase):
     coincidono con la differenza finita sulla curva."""
 
     def test_quarto_di_cerchio_razionale(self):
-        from topo.core.geometry.regions import _tangent
+        from topo.core.geometry.regions import end_tangent
         quarter = BSplineSeg(degree=2, control_points=[(1, 0), (1, 1), (0, 1)],
                              knots=[0, 0, 0, 1, 1, 1], weights=[1, 2 ** -0.5, 1])
         for at_end, expected in ((False, (0.0, 1.0)), (True, (-1.0, 0.0))):
-            for got, want in zip(_tangent(quarter, at_end), expected):
+            for got, want in zip(end_tangent(quarter, at_end), expected):
                 self.assertAlmostEqual(got, want, places=12)
 
     def test_spline_ed_ellisse_come_la_curva(self):
-        from topo.core.geometry.regions import _tangent
+        from topo.core.geometry.regions import end_tangent
         from topo.core.primitives import EllipseSeg
         spline = BSplineSeg(degree=3, control_points=[(0, 0), (1, 2), (3, 3), (4, 1), (6, 0)],
                             knots=[0, 0, 0, 0, 0.4, 1, 1, 1, 1])
@@ -401,7 +401,7 @@ class TestTangentOnTheTrueCurve(unittest.TestCase):
         for seg, at_end, a, b in cases:
             n = math.dist(a, b)
             with self.subTest(seg=type(seg).__name__, at_end=at_end):
-                for got, want in zip(_tangent(seg, at_end), ((b[0] - a[0]) / n, (b[1] - a[1]) / n)):
+                for got, want in zip(end_tangent(seg, at_end), ((b[0] - a[0]) / n, (b[1] - a[1]) / n)):
                     self.assertAlmostEqual(got, want, places=6)
 
 

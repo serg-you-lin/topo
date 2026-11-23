@@ -32,7 +32,7 @@ from shapely.ops import polygonize, unary_union
 from ..geometry.measure import SAME_POINT
 from .edge import Edge
 from ..geometry.integrals import ring_area, ring_moments
-from ..geometry.regions import _tangent
+from ..geometry.regions import end_tangent
 from .noding import GRAPH_EPSILON, edge_geometry
 from .graph import Graph, build_node_graph
 from .loops import loop_geometry, segments_from_loop
@@ -262,7 +262,7 @@ def _leaving_angle(edge: Edge, node, graph: Graph) -> float:
     backwards = graph.canonical(edge.start) != node
     if backwards:
         pts = list(reversed(pts))
-    tx, ty = _tangent(edge.segment, at_end=backwards)
+    tx, ty = end_tangent(edge.segment, at_end=backwards)
     if backwards:
         tx, ty = -tx, -ty
     norm = math.hypot(tx, ty)

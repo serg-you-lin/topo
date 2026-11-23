@@ -3,9 +3,9 @@ model/document.py
 -----------------
 Il Document — output di un adapter (o di `topo.load_geometry`) e unico input di topo.heal().
 
-il loader restituisce questo oggetto di
+Campi:
 
-    edges       : geometria parsata (Edge puri) — input per heal()
+    edges      : geometria parsata (Edge puri) — input per heal()
     texts       : i testi della sorgente (D138) — dati puri, input per write()
     source_meta : header rilevanti del file sorgente ($INSUNITS, $MEASUREMENT, …)
     source_path : percorso del file aperto

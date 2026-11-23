@@ -31,9 +31,10 @@ from shapely.geometry import Point
 
 from ..geometry.measure import FLOAT_NOISE
 from ..topology.edge import node_point
-from ..geometry.intersections import (_distance, _line_intersection, _circle_line_intersections, _circle_circle_intersections, _closest_to)
-from ..geometry.intersections import intersections
-from ..geometry.regions import _tangent, nearest_point
+from ..geometry.intersections import (
+    circle_circle_intersections, circle_line_intersections, closest_to, intersections, line_intersection,
+)
+from ..geometry.regions import end_tangent, nearest_point
 from ..primitives.mathseg import MathSeg, DEFAULT_TOLERANCE, segment_endpoints
 from ..primitives.line import LineSeg
 from ..primitives.spline import BSplineSeg
@@ -116,7 +117,7 @@ def _solve_line_line(
     e_a = ep_a.meta['end']
     s_b = ep_b.meta['start']
     e_b = ep_b.meta['end']
-    ix = _line_intersection(s_a, e_a, s_b, e_b)
+    ix = line_intersection(s_a, e_a, s_b, e_b)
     return _meet_or_bridge(ix, ep_a, ep_b)
 
 
@@ -129,8 +130,8 @@ def _solve_arc_line(
     radius = ep_arc.meta['radius']
     s_l    = ep_line.meta['start']
     e_l    = ep_line.meta['end']
-    candidates = _circle_line_intersections(cx, cy, radius, s_l, e_l)
-    ix = _closest_to(candidates, ep_arc.pt, ep_line.pt)
+    candidates = circle_line_intersections(cx, cy, radius, s_l, e_l)
+    ix = closest_to(candidates, ep_arc.pt, ep_line.pt)
     return _meet_or_bridge(ix, ep_arc, ep_line)
 
 
@@ -138,11 +139,11 @@ def _solve_arc_arc(
     ep_a: GapEndpoint,
     ep_b: GapEndpoint,
 ) -> List[GapFix]:
-    candidates = _circle_circle_intersections(
+    candidates = circle_circle_intersections(
         ep_a.meta['cx'], ep_a.meta['cy'], ep_a.meta['radius'],
         ep_b.meta['cx'], ep_b.meta['cy'], ep_b.meta['radius'],
     )
-    ix = _closest_to(candidates, ep_a.pt, ep_b.pt)
+    ix = closest_to(candidates, ep_a.pt, ep_b.pt)
     return _meet_or_bridge(ix, ep_a, ep_b)
 
 
@@ -284,15 +285,15 @@ def _candidates(endpoints: List[GapEndpoint], tolerance: float, edges: Sequence[
             edge = edges[int(k)]
             if edge is ep.ref:
                 continue
-            hits = [q for q in intersections(ahead, edge.segment) if _distance(q, ep.pt) > GRAPH_EPSILON]
+            hits = [q for q in intersections(ahead, edge.segment) if math.dist(q, ep.pt) > GRAPH_EPSILON]
             if not hits:
                 continue
-            meet = min(hits, key=lambda q: _distance(q, ep.pt))
-            d = _distance(ep.pt, meet)
+            meet = min(hits, key=lambda q: math.dist(q, ep.pt))
+            d = math.dist(ep.pt, meet)
             if d > tolerance:
                 continue
             node = next((n for n, q in zip((edge.start, edge.end), segment_endpoints(edge.segment))
-                         if _distance(meet, q) <= GRAPH_EPSILON), None)
+                         if math.dist(meet, q) <= GRAPH_EPSILON), None)
             if node is not None and node in free:
                 continue
             out.append((d, (tuple(ep.pt), tuple(meet)), i, ("curve", edge, meet, node)))
@@ -316,13 +317,13 @@ def _continuation(ep: GapEndpoint, reach: float):
                       end_angle=seg.start_angle - sign * step, ccw=not seg.ccw)
     if isinstance(seg, LineSeg):
         far = seg.start if ep.role == "end" else seg.end
-        length = _distance(far, ep.pt)
+        length = math.dist(far, ep.pt)
         if length <= 0:
             return None
         ux, uy = (ep.pt[0] - far[0]) / length, (ep.pt[1] - far[1]) / length
     elif seg is not None:
         # la tangente vera al capo, verso fuori (D278)
-        tx, ty = _tangent(seg, at_end=ep.role == "end")
+        tx, ty = end_tangent(seg, at_end=ep.role == "end")
         ux, uy = (tx, ty) if ep.role == "end" else (-tx, -ty)
     else:
         return None
@@ -349,7 +350,7 @@ def tied_facing_ends(edges: Sequence[Edge], graph, tolerance: float) -> List[Tup
             other = ends[j]
             if j <= i or other.ref is ep.ref or _node(other) == _node(ep):
                 continue
-            d = _distance(ep.pt, other.pt)
+            d = math.dist(ep.pt, other.pt)
             if GRAPH_EPSILON < d <= tolerance and _ahead(ep, other.pt, tolerance) and _ahead(other, ep.pt, tolerance):
                 candidates.append((d, tuple(sorted((tuple(ep.pt), tuple(other.pt)))), i, j))
     lengths: dict = {}
@@ -370,7 +371,7 @@ def tied_facing_ends(edges: Sequence[Edge], graph, tolerance: float) -> List[Tup
 def _ahead(ep: GapEndpoint, q: Point2D, reach: float) -> bool:
     """`q` sta sul prolungamento della curva di `ep`, entro GRAPH_EPSILON."""
     ahead = _continuation(ep, reach)
-    return ahead is not None and _distance(nearest_point([ahead], q), q) <= GRAPH_EPSILON
+    return ahead is not None and math.dist(nearest_point([ahead], q), q) <= GRAPH_EPSILON
 
 
 def _ambiguous_from(candidates: list, endpoints: List[GapEndpoint]) -> set:
@@ -385,7 +386,7 @@ def _ambiguous_from(candidates: list, endpoints: List[GapEndpoint]) -> set:
         places = []
         for d, target in items:
             point = target[2] if target[0] == "curve" else endpoints[target[1]].pt
-            if all(_distance(point, q) > GRAPH_EPSILON for _, q in places):
+            if all(math.dist(point, q) > GRAPH_EPSILON for _, q in places):
                 places.append((d, point))
             if len(places) == 2:
                 break
@@ -418,7 +419,7 @@ def _gap_pairs(endpoints: List[GapEndpoint], tolerance: float) -> list:
             ep_b = endpoints[j]
             if ep_a.ref is ep_b.ref:
                 continue
-            d = _distance(ep_a.pt, ep_b.pt)
+            d = math.dist(ep_a.pt, ep_b.pt)
             if d <= tolerance:
                 # a parità di distanza decidono le coordinate, mai l'ordine del file
                 pairs.append((d, tuple(sorted((tuple(ep_a.pt), tuple(ep_b.pt)))), i, j))
@@ -432,7 +433,7 @@ def _within_reach(fixes: List[GapFix], ep_a: GapEndpoint, ep_b: GapEndpoint,
     l'ultimo bit dei double (D60, G6e). Al suo posto il segmento fra i due."""
     origin = {(id(ep.ref), ep.role): ep.pt for ep in (ep_a, ep_b)}
     for fix in fixes:
-        if isinstance(fix, MoveEndpoint) and _distance(origin[(id(fix.ref), fix.role)],
+        if isinstance(fix, MoveEndpoint) and math.dist(origin[(id(fix.ref), fix.role)],
                                                        fix.new_pt) > reach:
             return [_bridge(ep_a, ep_b)]
     return fixes

@@ -163,7 +163,7 @@ def _split(seg, points: Sequence[Point]) -> list:
     return [_piece(seg, a, b) for a, b in zip(bounds, bounds[1:])]
 
 
-def _tangent(seg, at_end: bool) -> Tuple[float, float]:
+def end_tangent(seg, at_end: bool) -> Tuple[float, float]:
     """Direzione di percorrenza di `seg` nel suo capo iniziale o finale: la
     derivata esatta della curva (D285). Una spline coi punti di controllo
     doppi al capo ha derivata nulla lì: allora la prima corda."""
@@ -253,7 +253,7 @@ def point_on_contour(segments: Sequence, point: Point, *,
     if n > 1:
         for k in range(n):
             if math.dist(_ends(segs[k])[0], point) <= tolerance:
-                t_in, t_out = _tangent(segs[k - 1], at_end=True), _tangent(segs[k], at_end=False)
+                t_in, t_out = end_tangent(segs[k - 1], at_end=True), end_tangent(segs[k], at_end=False)
                 cross = t_in[0] * t_out[1] - t_in[1] * t_out[0]
                 turn = abs(math.atan2(cross, t_in[0] * t_out[0] + t_in[1] * t_out[1]))
                 side = max(segment_length(segs[k - 1]), segment_length(segs[k]))
@@ -412,12 +412,12 @@ def _chain(pieces: list, inside_left: Optional[bool] = None) -> List[list]:
             if inside_left is not None and len(nexts) > 1:
                 # angolo dalla direzione da cui si arriva, girata, a quella in
                 # uscita: la regione sta in quello spicchio, il più stretto vince
-                tx, ty = _tangent(ring[-1], at_end=True)
+                tx, ty = end_tangent(ring[-1], at_end=True)
                 back = math.atan2(-ty, -tx)
                 sign = 1.0 if inside_left else -1.0
 
                 def wedge(i):
-                    ox, oy = _tangent(left[i], at_end=False)
+                    ox, oy = end_tangent(left[i], at_end=False)
                     w = (sign * (back - math.atan2(oy, ox))) % (2 * math.pi)
                     # riparte tangente all'indietro (due curve che si toccano):
                     # la sua regione gira tutto attorno, lo spicchio è il giro intero

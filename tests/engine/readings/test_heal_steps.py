@@ -337,7 +337,7 @@ class TestGapOntoCurve(unittest.TestCase):
 
 
 class TestArcLineMeetUnderMotion(unittest.TestCase):
-    """G6e, gruppo D, `intersections._closest_to`: un arco che finisce nel suo
+    """G6e, gruppo D, `intersections.closest_to`: un arco che finisce nel suo
     culmine e una retta che taglia il cerchio 0.05 sotto. I due incontri stanno
     alla stessa distanza dal capo dell'arco: prima vinceva l'ultimo bit (±0.312
     secondo il moto). Ora decide la distanza dal capo della retta, e se anche
@@ -361,14 +361,14 @@ class TestArcLineMeetUnderMotion(unittest.TestCase):
                   LineSeg(start=(x - 5, y + 0.95), end=(x + offset, y + 0.95))]
         doc = topo.load_segments([move_seg(p) for p in pieces])
         tied = []
-        real = gaps._closest_to
+        real = gaps.closest_to
 
         def counted(candidates, ref, *rest):
             d = [math.dist(q, ref) for q in candidates]
             tied.append(len(d) == 2 and abs(d[0] - d[1]) <= FLOAT_NOISE)
             return real(candidates, ref, *rest)
 
-        with mock.patch.object(gaps, "_closest_to", counted):
+        with mock.patch.object(gaps, "closest_to", counted):
             healed = topo.experimental.close_free_gaps(list(doc.edges), 0.5)
         self.assertEqual(tied, [True], motion)
         a, tx, ty = motion

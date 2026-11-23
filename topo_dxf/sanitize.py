@@ -446,21 +446,14 @@ def _explode_failed(sink, dxftype: str, failed: list) -> None:
         print(msg)
 
 
-"""
-adapters/dxf/dedup_adapter.py
-------------------------------
-Normalizzazione entità DXF — traduzione formato → normalizer.
-
-Due entità DXF con la stessa geometria sono una copia: si tiene la prima.
-La chiave la calcola questo modulo dal formato nativo; il confronto è suo
-anche lui (era in core/healing/normalizer, D125: un adapter usa solo i nomi
-pubblici di topo).
-
-Funzioni pubbliche:
-    extract_keyed_entities — msp → List[(key, entity)]
-    delete_entities        — elimina entità dal msp
-    deduplicate            — shortcut: extract + find + delete → int
-"""
+# ---------------------------------------------------------------------------
+# Copie esatte: due entità DXF con la stessa geometria sono una copia, si
+# tiene la prima. La chiave si calcola dal formato nativo e il confronto è
+# dell'adapter (D125: un adapter usa solo i nomi pubblici di topo).
+#   extract_keyed_entities — msp → List[(key, entity)]
+#   delete_entities        — elimina entità dal msp
+#   deduplicate            — extract + confronto + delete → int
+# ---------------------------------------------------------------------------
 
 from typing import Any, Hashable, Iterable, List, Optional, Tuple
 
