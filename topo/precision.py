@@ -36,13 +36,17 @@ FLOAT_NOISE = 1e-6
 # Angles: not lengths
 
 NEAR_FULL_ARC_MISSING_DEG = 2.0  # degrees: an arc missing more than this is not a circle
-NEAR_FULL_ARC_HINT_DEG = 8.0     # degrees: up to here heal() warns that little is missing; a thread (~90°) never
-ANGLE_BRACKET_DEG = 1.0        # degrees: around the angle found, the minimum-area box is searched (contour_shape)
+# degrees: contour_shape searches the minimum-area box of the curves within this of
+# the inscribed polygon's box angle. Without the search the sides miss SAME_POINT
+# (by up to 1.5e-5); the shifts measured stay under 0.82°, and a search over the
+# whole quarter turn never finds a smaller box. The window decides no reading: it
+# only has to be wider than the shifts.
+ANGLE_BRACKET_DEG = 1.0
 
 # Fractions and ratios: not lengths
 
 MARK_FRACTION = 0.05           # of the length of a stretch of dashed line
-NEAR_GAP_FACTOR = 2.0          # a hole up to this multiple of max_gap "is nearly there"
+NEAR_GAP_FACTOR = 2.0          # a hole up to this multiple of its threshold "is nearly there": max_gap, the missing angle of an arc
 
 # How a CAD writes a curve as points, and the PDF adapter
 

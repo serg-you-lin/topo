@@ -20,7 +20,7 @@ from shapely.geometry import Point
 
 from ..geometry.measure import FLOAT_NOISE, SAME_POINT, segment_length
 from ..topology.edge import node_point
-from ...precision import NEAR_FULL_ARC_HINT_DEG, NEAR_FULL_ARC_MISSING_DEG
+from ...precision import NEAR_FULL_ARC_MISSING_DEG, NEAR_GAP_FACTOR
 from ..geometry.points import circle_through
 from ..geometry.regions import end_tangent, nearest_point, translation_meeting
 from ..primitives.spline import BSplineSeg
@@ -52,7 +52,6 @@ def split_labeled(edges: List[Edge],
 
 
 NEAR_FULL_ARC_MISSING = math.radians(NEAR_FULL_ARC_MISSING_DEG)   # missing angle beyond which an arc is not a circle
-NEAR_FULL_ARC_HINT = math.radians(NEAR_FULL_ARC_HINT_DEG)      # up to here heal() warns that little is missing; a thread (~90°) never
 
 
 def close_near_full_arcs(edges: List[Edge], tolerance: float,
@@ -87,9 +86,9 @@ def open_near_full_arcs(edges: List[Edge], tolerance: float,
                         max_missing_angle: float = NEAR_FULL_ARC_MISSING) -> List[Tuple[Edge, float, float]]:
     """The arcs with both ends free that `close_near_full_arcs` leaves open only
     for the angle: the chord of the hole is within `tolerance`, the missing angle
-    exceeds `max_missing_angle` but not `NEAR_FULL_ARC_HINT` — beyond, the arc is
-    open on purpose (a thread). Returns (edges, missing angle, chord) — what the
-    warning tells the caller."""
+    exceeds `max_missing_angle` but not `NEAR_GAP_FACTOR` times it — the same
+    "nearly" as a gap; beyond, the arc is open on purpose. Returns (edges,
+    missing angle, chord) — what the warning tells the caller."""
     graph = build_node_graph(edges)
     found = []
     for e in edges:
@@ -97,7 +96,7 @@ def open_near_full_arcs(edges: List[Edge], tolerance: float,
             continue
         start, end = segment_endpoints(e.segment)
         missing, chord = 2 * math.pi - e.segment._sweep(), math.dist(start, end)
-        if max_missing_angle < missing <= NEAR_FULL_ARC_HINT and chord <= tolerance:
+        if max_missing_angle < missing <= NEAR_GAP_FACTOR * max_missing_angle and chord <= tolerance:
             found.append((e, missing, chord))
     return found
 

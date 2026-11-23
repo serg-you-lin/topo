@@ -25,7 +25,7 @@ COUNT_NAME = ("samples", "steps", "depth", "terms", "pieces", "segments", "sides
 # the names of topo/precision.py
 PRECISION_NAMES = {
     "ANGLE_BRACKET_DEG", "FLOAT_NOISE", "MARK_FRACTION",
-    "NEAR_FULL_ARC_HINT_DEG", "NEAR_FULL_ARC_MISSING_DEG", "NEAR_GAP_FACTOR",
+    "NEAR_FULL_ARC_MISSING_DEG", "NEAR_GAP_FACTOR",
     "PDF_SNAP", "POINTS_NOISE", "SAME_POINT", "TESSELLATION_RUN", "TESSELLATION_SIDE",
 }
 

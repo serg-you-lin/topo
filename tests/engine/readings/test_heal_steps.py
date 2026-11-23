@@ -453,10 +453,11 @@ class TestCloseNearFullArcs(unittest.TestCase):
         _, n = topo.experimental.close_near_full_arcs(edges, 0.1)
         self.assertEqual(n, 0)
 
-    # brute force, seed 1468: a circle r 1.95 in two arcs joined at one end, a
-    # 5.68° hole (chord 0.19) on the other side
+    # from a brute force (seed 1468): a circle r 1.95 in two arcs joined at one
+    # end, a 3.5° hole (chord 0.12) on the other side: over the 2° that close,
+    # within the 4° that warn
     _SPLIT = [CircleSeg((0, 0), 1.95, math.radians(31.64), math.radians(259.9)),
-              CircleSeg((0, 0), 1.95, math.radians(265.58), math.radians(391.64))]
+              CircleSeg((0, 0), 1.95, math.radians(263.4), math.radians(391.64))]
 
     def test_011_two_arcs_joined_at_one_end_close_by_themselves(self):
         # whoever calls it by itself must not first merge the arcs that touch
@@ -468,8 +469,8 @@ class TestCloseNearFullArcs(unittest.TestCase):
         doc = topo.load_segments(self._SPLIT)
         [d] = [w for w in topo.heal(doc, max_gap=0.5).warnings if isinstance(w, topo.Diagnostic)]
         self.assertEqual((d.code, d.param, d.at), ("open-arc", "max_missing_angle", (0.0, 0.0)))
-        self.assertAlmostEqual(math.degrees(d.value), 5.68, places=2)
-        self.assertIn("math.radians(5.7)", d.help)
+        self.assertAlmostEqual(math.degrees(d.value), 3.5, places=2)
+        self.assertIn("math.radians(3.5)", d.help)
         doc.edges, _ = topo.experimental.close_near_full_arcs(doc.edges, 0.5, max_missing_angle=math.radians(5.7))
         net = topo.heal(doc, max_gap=0.5)
         self.assertFalse([w for w in net.warnings if isinstance(w, topo.Diagnostic)])
@@ -492,6 +493,14 @@ class TestCloseNearFullArcs(unittest.TestCase):
         thread = CircleSeg((0, 0), 0.3, 0.0, math.radians(270))
         net = topo.heal(topo.load_segments([thread]), max_gap=0.5)
         self.assertFalse([w for w in net.warnings if isinstance(w, topo.Diagnostic)])
+
+    def test_015_nearly_is_twice_the_angle_that_closes(self):
+        # 3.9° missing warns, 4.1° does not: the same "nearly" as a gap
+        for missing, warns in ((3.9, True), (4.1, False)):
+            arc = CircleSeg((0, 0), 1.95, 0.0, math.radians(360 - missing))
+            net = topo.heal(topo.load_segments([arc]), max_gap=0.5)
+            codes = [w.code for w in net.warnings if isinstance(w, topo.Diagnostic)]
+            self.assertEqual("open-arc" in codes, warns, missing)
 
 
 class TestSingleNodeGrid(unittest.TestCase):
