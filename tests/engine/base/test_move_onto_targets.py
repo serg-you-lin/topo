@@ -56,7 +56,7 @@ class TestFilletBesideTheSide(unittest.TestCase):
 
 
 def _png(off: float = 0.01) -> list:
-    """The case of Federico's drawing, closed: a vertical ending just below the R2
+    """A case from a real drawing, closed: a vertical ending just below the R2
     fillet, fillet `off` to the right of the vertical, bound to the oblique."""
     arc = _arc((2 + off, 10), 2, 45, 180)
     top = (2 + off + 2 * math.cos(math.radians(45)), 10 + 2 * math.sin(math.radians(45)))

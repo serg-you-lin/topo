@@ -121,7 +121,7 @@ class TestOverlapFromANodeUnderMotion(unittest.TestCase):
     """a ~0 turn (an edge that restarts along the one it arrived by) would be decided
     by the sign of the noise, and happens only with two edges overlapping from a
     node. Here they are: the two readings give the same answer in place, rotated
-    and far. Measured on 1 November with a trace: the overlap is removed before the
+    and far. Measured with a trace: the overlap is removed before the
     faces, and the line fires only on the arrival edge (36 times out of 36), never on another."""
 
     def test_faces_and_outlines_do_not_depend_on_the_motion(self):

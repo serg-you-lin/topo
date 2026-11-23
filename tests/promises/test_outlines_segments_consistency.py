@@ -3,7 +3,7 @@
 """For every contour read by `outlines()`, the polygon (`to_shapely`, the finite
 geometric shape that SVG/view_model draw) and `.segments` (the raw pieces
 `to_dxf` writes) must describe the same shape: they are two representations of
-the same contour, not two independent readings. Found on 12 October: on
+the same contour, not two independent readings. Found this way: on
 `regr_04.dxf`, an isometric view's outer contour (the union of several faces)
 had disconnected `.segments` (26 broken junctions out of 84) covering a third
 of the true area — invisible both to `test_golden_outlines.py` (it compares

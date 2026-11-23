@@ -115,7 +115,7 @@ class TestRoundtripStable(unittest.TestCase):
     """Exporting to DXF and re-reading with `outlines()` must give the same islands
     (same outer box within BOUNDS_TOLERANCE, same number of inners per island) — if
     it changes, the engine wrote or read something different from what it found the
-    first time. Found this way on 12 October on `regr_04` (two crescents in a
+    first time. Found this way on `regr_04` (two crescents in a
     single loop, solved). Known defects in KNOWN."""
 
 

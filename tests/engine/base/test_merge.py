@@ -392,7 +392,7 @@ class TestMergeCocircularOverlaps(unittest.TestCase):
         self.assertEqual(merge_cocircular_overlaps([]), [])
 
     def test_circle_written_twice_is_one_circle(self):
-        # brute force 7 November: two equal CircleSegs were two overlapping holes
+        # found by brute force: two equal CircleSegs were two overlapping holes
         edges = [Edge.of(CircleSeg((0.0, 0.0), 5.0), "unknown") for _ in range(2)]
         out = merge_cocircular_overlaps(edges)
         self.assertEqual(len(out), 1)

@@ -350,7 +350,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         return result, out_dir
 
     def test_001_two_parts_generates_two_files(self):
-        """two_parts.dxf → pipeline genera 2 file figli."""
+        """two_parts.dxf → the pipeline writes 2 child files."""
         _, out_dir = self._run("two_parts.dxf", "two_parts")
         files = list(Path(out_dir).glob("*.dxf"))
         self.assertEqual(len(files), 2,

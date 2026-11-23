@@ -9,8 +9,8 @@ Drawings in `tests/data/golden_outlines/` (`anch_NN`, `regr_NN`): anonymized
 copies of snapdraw's sheets with only the geometry `outlines()` reads in the
 framer — frame, title block and construction lines removed by snapdraw, the
 file written by topo (layer `geometry`). topo does not know what a frame is:
-it receives the sheet already cleaned. Clusters judged right by Federico on
-the islands-scale review page (5 October). Golden in `json/` alongside;
+it receives the sheet already cleaned. Clusters judged right by eye
+on a review page. Golden in `json/` alongside;
 without the drawings the test skips.
 
 Golden to be regenerated only after checking by eye that the clusters are
@@ -49,7 +49,7 @@ def snapshot(dxf_path: Path, max_gap: float = MAX_GAP, name: str = None, area: b
             "open_outside": sum(1 for t in result.loose if getattr(t, "cluster_ref", None) is None)}
 
 
-# Sheets of views and multiple parts judged right by Federico on 20 November,
+# Sheets of views and multiple parts judged right by eye,
 # read with max_gap 0.05 (the one that counts, not snapdraw's 0.5). The drawings
 # are not anonymized: they stay in tests/examples (outside git) and the map
 # og_NN -> path is there; in git only the golden, with the name og_NN. Without
@@ -126,7 +126,7 @@ def generate():
 
 
 def generate_sheets():
-    """The golden of the sheets with max_gap: only after Federico has looked at them."""
+    """The golden of the sheets with max_gap: only after they have been looked at by eye."""
     SHEETS_GOLDEN_DIR.mkdir(parents=True, exist_ok=True)
     for name, dxf in sorted(_sheets().items()):
         snap = snapshot(dxf, MAX_GAP_SHEETS, name, area=True)

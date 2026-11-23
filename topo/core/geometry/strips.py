@@ -215,8 +215,8 @@ def _refuse_crossings(strip: Strip, a: Sequence, b: Sequence, obstacles: Sequenc
             raise ValueError("a side of the strip has zero length: the two contours touch there")
         ends = (side.start, side.end)
         for name, ring in [("again one of its contours", a), ("again one of its contours", b),
-                           *(("un altro contorno", r) for r in obstacles),
-                           *(("un'altra striscia", s.outline) for s in placed)]:
+                           *(("another contour", r) for r in obstacles),
+                           *(("another strip", s.outline) for s in placed)]:
             if any(min(math.dist(p, e) for e in ends) > _TOUCH for p in _hits(ring, side)):
                 raise ValueError(f"the strip crosses {name}")
     quad = Polygon([s.start for s in strip.outline])

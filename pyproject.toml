@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "g-topo"
-# Unica fonte di verità della versione. topo.__version__ la legge da qui via
-# importlib.metadata — non duplicarla nel codice (MAP.md D11).
+# The one source of the version: topo.__version__ reads it from here through
+# importlib.metadata; never repeat it in the code.
 version = "0.40.23"
 description = "Deterministic 2D geometry engine: it repairs vector geometry and reads its structure"
 readme = "README.md"
@@ -21,8 +21,8 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python :: 3",
 ]
-# topo non ha un formato (MAP.md D123): ezdxf e PyMuPDF sono degli adapter,
-# pacchetti fratelli nella stessa distribuzione, ognuno col suo extra (D124)
+# topo has no file format: ezdxf and PyMuPDF belong to the adapters, sibling
+# packages in the same distribution, each with its own extra
 dependencies = [
     "shapely>=2.0",
     "numpy>=1.24",
@@ -32,8 +32,8 @@ dependencies = [
 dxf    = ["ezdxf>=1.1"]                 # topo_dxf
 pdf    = ["PyMuPDF"]                    # topo_pdf
 raster = ["opencv-python", "Pillow"]
-# i test leggono le fixture DXF attraverso topo_dxf
-# pytest-timeout: ogni test ha un tetto, uno che si pianta fallisce col suo nome (D160)
+# the tests read the DXF fixtures through topo_dxf
+# pytest-timeout: every test has a ceiling; one that hangs fails with its name
 dev    = ["pytest", "pytest-cov", "pytest-timeout", "ezdxf>=1.1"]
 all    = ["g-topo[dxf,pdf,raster]"]
 
@@ -41,18 +41,18 @@ all    = ["g-topo[dxf,pdf,raster]"]
 where = ["."]
 include = ["topo*"]
 
-# Regola di dipendenza controllata da scripts/gen_index.py (MAP.md D44)
+# Dependency rule checked by scripts/gen_index.py
 [tool.gen_index.layers]
 core  = ["tools", "io"]
 model = ["tools", "io"]
-# topo non sa che gli adapter esistono e non legge alcun formato (D123, D129)
+# topo does not know the adapters exist and reads no format
 topo = ["ezdxf", "fitz", "pymupdf", "topo_dxf", "topo_pdf"]
-# Un adapter è un consumer: solo i nomi pubblici di topo (D125), e non
-# conosce gli altri adapter
+# An adapter is a consumer: topo's public names only, and it does not know
+# the other adapters
 topo_dxf = ["topo.core", "topo.tools", "topo.io", "topo.rules", "topo_pdf"]
 topo_pdf = ["topo.core", "topo.tools", "topo.io", "topo.rules", "topo_dxf"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# in seriale: la suite sta sotto i 3 minuti anche su una macchina con pochi core (D160)
+# serial: the suite is meant to stay under 3 minutes even on a machine with few cores
 addopts = "--timeout=60 --durations=8"

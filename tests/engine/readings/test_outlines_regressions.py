@@ -1,7 +1,7 @@
 # tests/engine/readings/test_outlines_regressions.py
 
-"""Isolated regressions on `read_outline()`, found on 11 October by opening
-`anch_02.dxf` (golden_outlines) in a viewer and judged wrong by eye by Federico
+"""Isolated regressions on `read_outline()`, found by opening
+`anch_02.dxf` (golden_outlines) in a viewer and judging it wrong by eye
 — not caught by any existing golden. Every fixture is a minimal
 cut of the real sheet, saved with topo's own API (never ezdxf directly):
 `tests/data/regressions/*.dxf`."""
