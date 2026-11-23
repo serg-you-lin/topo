@@ -5,7 +5,7 @@ in give the same result out. What it **cannot** promise is that the same *geomet
 result wherever it sits: rotated, moved far from the origin, mirrored, written
 in another order. This page says why, in the simplest words we have. It is not
 a defect of topo; it holds for any program that decides yes or no on a measured
-number (MAP.md D215).
+number.
 
 ## 1. A yes/no rule has an edge
 
@@ -65,7 +65,7 @@ How often this happens depends on how many edges there are.
   0.00000000000001 mm of the threshold. How often that happens in real
   drawings is not measured; it is never zero.
 
-This is why topo left the grid for distance (MAP.md D216): a node is the true
+This is why topo left the grid for distance: a node is the true
 point, and two ends are one node when they are close enough.
 
 ## 5. What this means for a user

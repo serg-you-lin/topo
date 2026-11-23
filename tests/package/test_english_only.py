@@ -34,6 +34,14 @@ WORD = re.compile(r"[A-Za-zÀ-ÿ]+")
 QUOTED_NAME = re.compile(r"\S+\.[A-Za-z]{2,4}|\w+(?:_\w+)+")
 NAME_PART = re.compile(r"_|(?<=[a-z])(?=[A-Z])")
 
+# the documents a reader finds on GitHub: the decision log and the to-do list are
+# not published, so they cannot be cited there (`CLAUDE.md` is the working
+# agreement of the sessions and names them on purpose)
+PUBLISHED_DOCUMENTS = ("README.md", "README_IT.md", "SCRIPTS.md", "tutorial/README.md",
+                       "docs/API.md", "docs/ARCHITECTURE.md", "docs/LIMITS.md", "docs/LIMITS_IT.md",
+                       "docs/LLM.md", "docs/TEXTS.md")
+LOCAL_FILE = re.compile(r"\b(?:MAP|TODO)(?:_ARCHIVE)?\.md\b")
+
 
 class TestEnglishOnly(unittest.TestCase):
 
@@ -59,6 +67,15 @@ class TestEnglishOnly(unittest.TestCase):
                     bad = sorted({w for w in words if w.lower() in ITALIAN}) + DECISION.findall(text)
                     if bad:
                         found.append(f"{path.relative_to(PROJECT_ROOT).as_posix()}:{line}: {' '.join(bad)}")
+        self.assertEqual(found, [], "\n" + "\n".join(found))
+
+    def test_published_documents_cite_no_decision_and_no_local_file(self):
+        found = []
+        for path in PUBLISHED_DOCUMENTS:
+            for number, line in enumerate((PROJECT_ROOT / path).read_text(encoding="utf-8").splitlines(), 1):
+                bad = DECISION.findall(line) + LOCAL_FILE.findall(line)
+                if bad:
+                    found.append(f"{path}:{number}: {' '.join(bad)}")
         self.assertEqual(found, [], "\n" + "\n".join(found))
 
 

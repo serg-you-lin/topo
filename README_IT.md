@@ -17,7 +17,7 @@ Oggi la geometria arriva soprattutto da file CAD e disegni tecnici (DXF in
 ingresso; DXF, JSON o SVG in uscita); il motore vede solo geometria, da
 qualunque fonte arrivi.
 
-> Stato: **alpha**. In produzione, ma l'API si muove ancora. Vedi `MAP.md` per le decisioni di design correnti.
+> Stato: **alpha**. In produzione, ma l'API si muove ancora.
 
 > **Scrivi codice contro topo con un assistente AI?** Dagli anche
 > [`docs/LLM.md`](docs/LLM.md): ogni nome pubblico con la sua firma, in pochi
@@ -128,7 +128,7 @@ ordine — vedi `docs/API.md` (i passi di `heal()`).
 ## Forme: cos'è un contorno, non a cosa serve
 
 topo dà nomi alla geometria, mai al suo uso. Un cerchio è un cerchio; a cosa
-serve lo legge il consumatore (D68, D91).
+serve lo legge il consumatore.
 
 ```python
 for cluster in result.clusters:
@@ -171,7 +171,7 @@ topo.heal(doc)  ──►  Network     riparato una volta: nodi, doppioni, gap
                           ▼
    topo.split(result)                       ──►  list[Result] uno per pezzo, senza formato
    topo.save_json(result, path)                  i fatti del modello in JSON
-   topo.experimental.to_svg(result)         ──►  stringa SVG  per una UI / un report (fuori dall'API stabile 1.0, D133)
+   topo.experimental.to_svg(result)         ──►  stringa SVG  per una UI / un report (fuori dall'API stabile 1.0)
    topo.experimental.to_view_model(result)  ──►  dict (geometria completa) per un renderer esterno (fuori dall'API stabile 1.0)
    un adapter                               ──►  un file
 ```
@@ -305,7 +305,6 @@ da sistemare nella 1.x. Ognuno è stato riprodotto sul codice attuale.
 - **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — com'è fatto dentro e
   perché: gli strati, il flusso, "il prodotto è il modello".
 - **[`docs/LIMITS_IT.md`](docs/LIMITS_IT.md)** — cosa topo non può promettere, e perché.
-- **`MAP.md`** — le decisioni di design, in ordine cronologico.
 - **[`tutorial/`](tutorial/README.md)** — lezioni numerate (in inglese), da un pezzo disegnato in codice a una cartella di disegni tuoi.
 - **`SCRIPTS.md`** — gli strumenti di manutenzione in `scripts/`.
 

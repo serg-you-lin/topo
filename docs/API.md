@@ -1,6 +1,6 @@
 # topo — API reference
 
-One distribution (`g-topo`), three packages (MAP.md D123, D124, D129):
+One distribution (`g-topo`), three packages:
 `topo`, the engine, which knows no file format; `topo_dxf`, the DXF adapter
 (`pip install g-topo[dxf]`); `topo_pdf`, the experimental PDF adapter
 (`g-topo[pdf]`). Internal modules are not imported directly. This
@@ -24,9 +24,9 @@ write DXF), then every name with its full path: `topo.heal(...)`,
 `topo.geometry.contour_shape(...)`, `topo.experimental.face_loops(...)`. Never
 `from topo.experimental import face_loops`: a name read on its own halfway
 through a script does not say whose it is, `topo.experimental.face_loops` does.
-All the examples in this document are written this way (MAP.md D119).
+All the examples in this document are written this way.
 
-**The promise** (MAP.md D175, D176). Every name in this document is stable
+**The promise**. Every name in this document is stable
 except those of `topo.experimental`, which are meant to be used but may change in a
 minor. From 1.0 on, a stable name that changes shape arrives under the new name, the
 old one stays with a `FutureWarning` for two minors and then goes away. In every
@@ -40,7 +40,7 @@ A function that modifies its argument returns `None`.
 
 1. [Input geometry](#1-input-geometry) — `load_segments`, `load_geometry`, `RoleRule`, `name_rules`, writing an adapter
 2. [Validation](#2-validation) — `validate_document`, `validate_result`
-3. [Processing](#3-processing) — `heal` → `Network` (`faces()` / `outlines()`) and their building blocks (core), experimental `parity_faces` (a third reading, D250), `split`, `anchor_texts` (tools)
+3. [Processing](#3-processing) — `heal` → `Network` (`faces()` / `outlines()`) and their building blocks (core), experimental `parity_faces` (a third reading), `split`, `anchor_texts` (tools)
 4. [Export](#4-export) — `save_json`, `to_json`, `to_shapely`; experimental `to_view_model`, `to_svg`, `save_svg`
 5. [Removed before 1.0](#5-removed-before-10-d230) — metadata, `inject`, `custom`
 6. [Inspection / debug](#6-inspection--debug) — `inspect_document`, `inspect_result`
@@ -66,17 +66,17 @@ topo.RoleRule(role, *, name=None, name_contains=None, dashed=None, dash=None, co
 
 One rule: if **all** the given conditions are true, the line takes `role`.
 topo provides the mechanism; the content (which names, which styles, which
-role) is written by the caller (MAP.md D63).
+role) is written by the caller.
 
 | field | meaning |
 |---|---|
-| `role` | assigned role, cleaned by `normalize_role`. Open vocabulary: topo knows only `outer`, `inner`, `unknown`; `hole`, `bending`, `engrave`, … belong to snapbend (MAP.md D88); any other slug (`frame`, `title_block`, …) is preserved, treated as non-structural and written to the output on a layer of its own name (MAP.md D27 / D31). |
+| `role` | assigned role, cleaned by `normalize_role`. Open vocabulary: topo knows only `outer`, `inner`, `unknown`; `hole`, `bending`, `engrave`, … belong to snapbend; any other slug (`frame`, `title_block`, …) is preserved, treated as non-structural and written to the output on a layer of its own name. |
 | `name` | name of the source group, equal (case ignored). |
 | `name_contains` | substring of the group name (case ignored). |
 | `dashed` | `True` only dashed lines, `False` only continuous ones. Dashed = the linetype pattern has at least one gap (`EdgeStyle.is_dashed`), not the name of the linetype. Chains count too. |
 | `dash` | shape of the stroke (`EdgeStyle.dash_kind`), read from the marks of the pattern: `"continuous"` no gap; `"uniform"` a single mark repeated (all dashes equal, or only dots); `"chain"` different marks alternating (long dash + short dash or dot). Two marks are different if they differ by more than 5% of the pattern length. Unknown value → `ValueError`. |
-| `color` | effective colour in RGB: `(r, g, b)`, `"#rrggbb"` or a basic name (`red`, `yellow`, `green`, `cyan`, `blue`, `magenta`, `white`, `black`, `gray`/`grey`, `lightgray`/`lightgrey`, `pink`). Every adapter reads the colour of the source as RGB: for a DXF an ACI index becomes its canonical RGB (7 is white) (MAP.md D126). An integer is an error. |
-| `filled` | `True` only the sides of a filled area (`EdgeStyle.filled`: a DXF SOLID, TRACE, solid HATCH or polyline with width; a filled PDF/SVG path), `False` only the others (MAP.md D255). An arrowhead is such a side: a rule that gives it a non-structural role keeps it out of the contours (D210). |
+| `color` | effective colour in RGB: `(r, g, b)`, `"#rrggbb"` or a basic name (`red`, `yellow`, `green`, `cyan`, `blue`, `magenta`, `white`, `black`, `gray`/`grey`, `lightgray`/`lightgrey`, `pink`). Every adapter reads the colour of the source as RGB: for a DXF an ACI index becomes its canonical RGB (7 is white). An integer is an error. |
+| `filled` | `True` only the sides of a filled area (`EdgeStyle.filled`: a DXF SOLID, TRACE, solid HATCH or polyline with width; a filled PDF/SVG path), `False` only the others. An arrowhead is such a side: a rule that gives it a non-structural role keeps it out of the contours. |
 
 Method `matches(name, style) -> bool`. Conditions left as `None` do not
 count.
@@ -114,7 +114,7 @@ topo.load_segments(segments, *, role="unknown", source_path="") -> Document
 A `Document` from topo segments (`LineSeg`, `CircleSeg`, …) or
 from lists of segments — the ones the constructors of
 `topo.geometry` return. All edges take `role`. It is the way to draw with
-topo in hand; `load_geometry` remains for those who do not import topo (D96).
+topo in hand; `load_geometry` remains for those who do not import topo.
 
 ```python
 fg = topo.geometry
@@ -141,7 +141,7 @@ computer vision). The caller imports no internal topo type.
 
 | parameter | meaning |
 |---|---|
-| `entities` | list of dicts, one per geometric entity. Supported `type`s: `line` (`start`, `end`), `arc` (`center`, `radius`, `start_angle`/`end_angle` **in degrees**, `ccw`), `circle` (`center`, `radius`), `polygon` (`points` — always closed, D96), `spline` (`control_points`, `knots`, `degree`, plus optional `weights` — same fields as `BSplineSeg`, which carries only the geometry: `closed`/`periodic` are derived, D135), `ellipse` (`center`, `major_axis` as a **vector** from the centre, plus optional `ratio`/`start_param`/`end_param`/`ccw` — same fields as `EllipseSeg`, same parametrisation as the DXF ELLIPSE group; default = full ellipse). `role` is optional on every entity — same vocabulary as `RoleRule.role` (`outer`, `hole`, `bending`, …); a different value is preserved as a consumer slug, not an error. |
+| `entities` | list of dicts, one per geometric entity. Supported `type`s: `line` (`start`, `end`), `arc` (`center`, `radius`, `start_angle`/`end_angle` **in degrees**, `ccw`), `circle` (`center`, `radius`), `polygon` (`points` — always closed), `spline` (`control_points`, `knots`, `degree`, plus optional `weights` — same fields as `BSplineSeg`, which carries only the geometry: `closed`/`periodic` are derived), `ellipse` (`center`, `major_axis` as a **vector** from the centre, plus optional `ratio`/`start_param`/`end_param`/`ccw` — same fields as `EllipseSeg`, same parametrisation as the DXF ELLIPSE group; default = full ellipse). `role` is optional on every entity — same vocabulary as `RoleRule.role` (`outer`, `hole`, `bending`, …); a different value is preserved as a consumer slug, not an error. |
 | `tolerance` | rounding tolerance of the topological nodes — same meaning as `topo_dxf.load_dxf(tolerance=...)`. |
 | `source_path` | free label for `Document.source_path`; it is not a file, it is only for diagnostics. |
 
@@ -174,37 +174,36 @@ doc = topo.load_geometry([
 ```
 
 Tried on a real case (`snapbend`, formerly bendly, which uses it to bring the developments it
-generates into a `Document` without going through a file — see MAP.md D32; the
-`spline` type comes from `smoother`, which passes it the output of `simplify_points()` —
-see MAP.md D35). The `ellipse` type (MAP.md D45) exists because `EllipseSeg`
+generates into a `Document` without going through a file; the
+`spline` type comes from `smoother`, which passes it the output of `simplify_points()`). The `ellipse` type exists because `EllipseSeg`
 is a topo primitive like the others — it needs no real case of its own,
 it follows the same scheme as `spline`/`circle`.
 
 ### Writing an adapter
 
 An adapter (DXF, PDF, a format of your own) is a topo consumer like any other: it uses
-public names only and delivers a `Document` (MAP.md D125). `topo_dxf` and
+public names only and delivers a `Document`. `topo_dxf` and
 `topo_pdf` are written this way, and the index check enforces it:
-they do not import `topo.core`/`tools`/`io`/`rules` (D129). What it needs:
+they do not import `topo.core`/`tools`/`io`/`rules`. What it needs:
 
 | name | what it is for |
 |---|---|
 | `topo.primitives.LineSeg` … `EllipseSeg` | the geometry read from the source, native (never discretised by the adapter) |
-| `topo.primitives.MathSeg`, `ConicSeg` | the mothers (D285): every segment has `t_range`, `point_at(t)`, `derivative_at(t)`, `endpoints()`, `algebra` ("polynomial" / "rational" / "transcendental", D295); circles, ellipses, parabolas and hyperbolas are `ConicSeg` with `equation` (A..F) |
-| `topo.primitives.ParabolaSeg`, `HyperbolaSeg` | the other conics (D288); `to_bspline()` is the same curve as an exact rational quadratic spline, for a format that has no conics |
-| `topo.primitives.FormulaSeg` | a curve given by `x` and `y` formulas in `t` (text, closed grammar, named `params`), exact symbolic derivative; `to_bspline(tolerance=)` approximates it for a format without formulas (D289) |
-| `topo.primitives.ClothoidSeg` | the Euler spiral, curvature growing with arc length (κ = s/a²); exact length, tangent and `curvature_at`; `to_bspline(tolerance=)` approximates it (D290) |
-| `topo.model.Edge.of(segment, role, *, style=None) -> Edge` | the `Edge` of a segment: endpoints on the segment's true points (no grid, D216); a closed circle, spline or ellipse has a single node |
-| `topo.model.EdgeStyle(*, linetype="", linetype_desc="", dash=None, color=None, filled=False)` | the effective look of the source entity, with no words of any format (D126): `dash` are signed marks (`> 0` dash, `0` dot, `< 0` gap; `()` continuous, `None` unknown — a dash-array `[3, 1]` is `(3, -1)`), `color` is `(r, g, b)`, `filled` the line is a side of a filled area (D255); `to_dxf` writes each ring of filled sides back as a solid fill. The adapter resolves inheritance (a "by layer" style) before handing it over |
+| `topo.primitives.MathSeg`, `ConicSeg` | the mothers: every segment has `t_range`, `point_at(t)`, `derivative_at(t)`, `endpoints()`, `algebra` ("polynomial" / "rational" / "transcendental"); circles, ellipses, parabolas and hyperbolas are `ConicSeg` with `equation` (A..F) |
+| `topo.primitives.ParabolaSeg`, `HyperbolaSeg` | the other conics; `to_bspline()` is the same curve as an exact rational quadratic spline, for a format that has no conics |
+| `topo.primitives.FormulaSeg` | a curve given by `x` and `y` formulas in `t` (text, closed grammar, named `params`), exact symbolic derivative; `to_bspline(tolerance=)` approximates it for a format without formulas |
+| `topo.primitives.ClothoidSeg` | the Euler spiral, curvature growing with arc length (κ = s/a²); exact length, tangent and `curvature_at`; `to_bspline(tolerance=)` approximates it |
+| `topo.model.Edge.of(segment, role, *, style=None) -> Edge` | the `Edge` of a segment: endpoints on the segment's true points (no grid); a closed circle, spline or ellipse has a single node |
+| `topo.model.EdgeStyle(*, linetype="", linetype_desc="", dash=None, color=None, filled=False)` | the effective look of the source entity, with no words of any format: `dash` are signed marks (`> 0` dash, `0` dot, `< 0` gap; `()` continuous, `None` unknown — a dash-array `[3, 1]` is `(3, -1)`), `color` is `(r, g, b)`, `filled` the line is a side of a filled area; `to_dxf` writes each ring of filled sides back as a solid fill. The adapter resolves inheritance (a "by layer" style) before handing it over |
 | `topo.model.RoleRule`, `topo.model.resolve_role(rules, name, style) -> str` | the role of an entity from the caller's rules: the first that matches, otherwise `unknown` |
-| `topo.model.Document` | the adapter's result; two endpoints closer than `topo.precision.SAME_POINT` are one node (D268, D269) |
-| `topo.model.Text`, `RenderedGeometry`, `RenderedText`, `MeasuredDistance`/`Radius`/`Diameter`/`Angle` (also `topo.*`) | the texts read from the source, each with its `role` (D127, D138; the source group does not stay in the model, D128) |
+| `topo.model.Document` | the adapter's result; two endpoints closer than `topo.precision.SAME_POINT` are one node |
+| `topo.model.Text`, `RenderedGeometry`, `RenderedText`, `MeasuredDistance`/`Radius`/`Diameter`/`Angle` (also `topo.*`) | the texts read from the source, each with its `role` (the source group does not stay in the model) |
 
 To write out in a format: `topo.primitives.segment_endpoints(segment)` gives the
 two endpoints of a segment, `topo.model.feature_role(contour, item_role)` the
 role with which a contour of an overlay item is drawn,
 `topo.model.role_style(role, *, role_styles=None)` how it is drawn: topo's
-palette with the caller's map laid over it (D128). An exporter does not choose colours,
+palette with the caller's map laid over it. An exporter does not choose colours,
 it translates what `role_style` gives it into the encoding of its format.
 
 ```python
@@ -228,7 +227,7 @@ Validates the **input** before `heal()`. Modifies nothing. Returns a
 
 - **`is_valid = False`** — the file cannot be processed: no geometry, all
   segments degenerate. A NaN/inf coordinate does not reach the document: the
-  primitive rejects it and the loader reports it in `doc.warnings` (D190).
+  primitive rejects it and the loader reports it in `doc.warnings`.
 - **warning** — processable but to keep an eye on: zero-length edges
   (`zero-length`, `heal()` drops them). It also includes the loader's
   `doc.warnings`. Open ends and gaps are not checked here: `heal()` reports them.
@@ -250,7 +249,7 @@ topo.validate_result(result: Result) -> None
 ```
 
 Validates the **output** after `Network.faces()`. **Mutates** the `result` passed and returns
-`None` (D176): it adds `warnings` / `errors` and may set `is_valid = False`. For each cluster it checks:
+`None`: it adds `warnings` / `errors` and may set `is_valid = False`. For each cluster it checks:
 outer polygon valid and non-empty, area > 0, every inner contained in the outer.
 
 It is **already called automatically by `Network.faces()`** — you call it by hand only if
@@ -262,12 +261,12 @@ you build a `Result` by other means.
 
 `heal` repairs the drawing once and returns a `Network`; `faces()` and
 `outlines()` are its two readings (`topo/core/`), one from the inside and one
-from the outside — the caller picks the one that suits the drawing (D202);
+from the outside — the caller picks the one that suits the drawing;
 `split`, `anchor_texts` are optional stages on a
 `Result` (`topo/tools/`, the caller chooses which and in what order). Writing
 in a format belongs to an adapter: `topo_dxf.to_dxf` (§9); `to_svg`/`to_view_model`
 are in §4, experimental. Holes, bends, engravings are
-a process reading, in snapbend (`snapbend.flat`, MAP.md D88).
+a process reading, in snapbend (`snapbend.flat`).
 
 ### `heal`
 
@@ -276,7 +275,7 @@ topo.heal(doc: Document, *, max_gap=None, is_structural=None,
            source_file="", label="") -> Network
 ```
 
-The repair, one for every reading (D202): non-structural roles set
+The repair, one for every reading: non-structural roles set
 aside, nodes decided, duplicates merged, tessellations refitted, gaps closed up to
 `max_gap`. It works on `doc.edges`, zero `ezdxf`. It reads nothing yet: the
 contours are found by `faces()` and `outlines()`.
@@ -285,14 +284,14 @@ A tessellation (10 or more lines in a row, each under `TESSELLATION_SIDE` =
 0.1 mm: a curve written as points) is replaced by lines, arcs, conics and
 splines within `POINTS_NOISE` = 0.02 mm of its points. The points are not
 reproduced exactly: a detail smaller than 0.02 (a corner, a hook) can be
-smoothed away (D321).
+smoothed away.
 
 | parameter | meaning |
 |---|---|
-| `max_gap` | the widest gap that is closed between free endpoints, and the distance at which `outlines()` puts two edges in the same group. If `None`, no gap is closed (D267); each gap closed is listed in the note `ends-joined`. |
+| `max_gap` | the widest gap that is closed between free endpoints, and the distance at which `outlines()` puts two edges in the same group. If `None`, no gap is closed; each gap closed is listed in the note `ends-joined`. |
 | `is_structural` | `Callable[[str], bool] \| None` — "is this role part-contour topology?", used to decide which already-labelled `Edge`s (by `role_rules`) stay in the network. By itself it knows only `outer`/`inner`/`unknown`; without this parameter a consumer role (`"hole"`, ...) is treated as non-structural and **leaves** the network (heal reports it with a warning). The consumer passes its own (snapbend: `snapbend.flat.is_structural`). |
-| `source_file` | source file name, ends up in every `Result`. Empty: `doc.source_path` (D204). |
-| `label` | label, ends up in `cluster.label` of both readings (D204). |
+| `source_file` | source file name, ends up in every `Result`. Empty: `doc.source_path`. |
+| `label` | label, ends up in `cluster.label` of both readings. |
 
 `role_rules` is **not a parameter of `heal`** — it is passed to `topo_dxf.load_dxf()`, which
 assigns the roles to the `Edge`s.
@@ -311,23 +310,23 @@ result = net.faces()
 
 ### `Network`
 
-The repaired network (D204), built only by `heal()` (keyword-only fields).
+The repaired network, built only by `heal()` (keyword-only fields).
 The readings do not modify it.
 
 | field | type | meaning |
 |---|---|---|
 | `edges` | `list[Edge]` | the repaired edges, nodes decided |
-| `set_aside` | `list[Edge]` | the edges with a non-structural role (D30): each reading puts them in `loose` with their role |
-| `crossings` | `list` | the points where two edges cross without a node (D132) |
+| `set_aside` | `list[Edge]` | the edges with a non-structural role: each reading puts them in `loose` with their role |
+| `crossings` | `list` | the points where two edges cross without a node |
 | `free_ends` | `list[(point, mm)]` | the endpoints that no other edge touches, with the distance from the nearest node |
 | `tolerance` | `float` | the node tolerance used |
-| `max_gap` | `float` | the widest gap closed; 0 when `heal()` had none (D267) |
+| `max_gap` | `float` | the widest gap closed; 0 when `heal()` had none |
 | `source_file`, `label` | `str` | copied onto every `Result` and `Cluster` read from here |
 | `warnings`, `errors` | `list[str]` | what the repair did; with `errors` no reading finds anything |
 | `is_valid` | `bool` | `True` if the repair gave no errors |
 | method | returns | what it does |
 |---|---|---|
-| `faces()` | `Result` | reads from the inside: edges that do not close a contour are left out (`non_contour_candidates()` exposes the same criterion to a consumer, section 8), closed loops, outer / inner containment tree. **Does not classify holes** (D15): `Cluster(outer, inners=[Contour...])`; calling a circle a hole is a process reading (snapbend, D88). No closed outer contour → `is_valid=False`, `errors` populated (`loose` stays full for diagnostics). |
+| `faces()` | `Result` | reads from the inside: edges that do not close a contour are left out (`non_contour_candidates()` exposes the same criterion to a consumer, section 8), closed loops, outer / inner containment tree. **Does not classify holes**: `Cluster(outer, inners=[Contour...])`; calling a circle a hole is a process reading (snapbend). No closed outer contour → `is_valid=False`, `errors` populated (`loose` stays full for diagnostics). |
 | `outlines()` | `Result` | reads from the outside, see below. |
 
 `faces()` and `outlines()` are two readings of the same network, not two steps:
@@ -336,14 +335,14 @@ renderer work on either.
 
 #### The steps of `heal()` — experimental
 
-They live in `topo.experimental` (D175 C, D176): they are meant to be used, but making them stable
+They live in `topo.experimental`: they are meant to be used, but making them stable
 would freeze how the algorithm inside is built. A step that a real recipe
 proves solid is promoted to stable in a minor.
 
 `heal()` is a recipe: it composes these steps, in the order below, and writes the
 warnings that tell their story. Exposed for those who compose their own (snapdraw: for example
 stopping before `build_hierarchy`, until it has decided for itself what a
-contour inside another means — D62). The same pieces as `heal()`, no criterion
+contour inside another means). The same pieces as `heal()`, no criterion
 duplicated.
 
 ```python
@@ -363,7 +362,7 @@ topo.experimental.non_contour_pieces(noded, tolerance) -> set[int]
 topo.experimental.find_non_contour_edges(edges, tolerance) -> set[int]
 topo.experimental.find_joining_edges(edges, candidate_ids) -> list[Edge]
 topo.experimental.free_ends(edges, epsilon=0.0) -> list[tuple[point, float]]
-topo.experimental.face_loops(edges, epsilon=GRAPH_EPSILON) -> list[loop]   # GRAPH_EPSILON = SAME_POINT (D268)
+topo.experimental.face_loops(edges, epsilon=GRAPH_EPSILON) -> list[loop]   # GRAPH_EPSILON = SAME_POINT
 topo.experimental.structural_loops(loops, is_structural=None) -> list[loop]
 topo.experimental.loops_to_curves(loops) -> list[ClosedCurve | OpenCurve]
 topo.experimental.loose_curves(edges) -> list[ClosedCurve | OpenCurve]
@@ -371,29 +370,29 @@ topo.experimental.build_hierarchy(features, label="", source_file="", is_structu
     -> tuple[list[Cluster], list]
 ```
 
-The foundations are the same for every reading (D187, D189): `faces()`, `outlines()` and
+The foundations are the same for every reading: `faces()`, `outlines()` and
 a recipe composed by a caller go through the same functions.
 
 | step | takes → returns | what it does |
 |---|---|---|
-| `prepare` | `list[Edge]` → `Prepared` (`edges`, `labeled`, `welded`) | non-structural roles set aside (`split_labeled`), then the nodes decided once: from the real points, endpoints within `GRAPH_EPSILON` (= `SAME_POINT`, D268) are one node (D180, D187). |
-| `normalize` | `list[Edge]`, `gap` → `Normalized` (`edges` and the counts of each step) | tessellations refitted, duplicates merged, degenerate strokes welded, near-full arcs closed, gaps closed: the same cleanups for everyone (D189). `gap` already with the margin (`reach(tolerance)`, D183). `keep_junctions`: two collinear pieces that touch only at a junction are not merged (D110). |
-| `merge_collinear_overlaps` | `list[Edge]` → `list[Edge]` | merges lines drawn as overlapping pieces, judging "same line" on the true segments (D50, D184). |
-| `merge_cocircular_overlaps` | `list[Edge]` → `list[Edge]` | the same on co-circular arcs (D52, D184). |
-| `weld_degenerate_linesegs` | `list[Edge]` → `list[Edge]` | welds `LineSeg`s under `SAME_POINT` into a single node; a wider group is a piecewise curve and stays (D56, D186). |
-| `split_labeled` | `list[Edge]` → `(kept, labelled)` | sets aside the edges with an already decided, non-structural role (D30). Without `is_structural`, only `outer`/`inner` are structural. |
-| `close_near_full_arcs` | `list[Edge]` → `(edges, n_closed)` | the arcs (`CircleSeg`) with free ends on the same circle are joined across every gap within `tolerance` **and** within `max_missing_angle` (`NEAR_FULL_ARC_MISSING` = 2°): all closed gives a `CircleSeg`, otherwise an `CircleSeg` open on the remaining gaps; `n` = edges rebuilt. `tolerance=math.inf` leaves only the angle (D112, D218). |
-| `close_free_gaps` | `list[Edge]` → `list[Edge]` | every free endpoint closes onto the nearest point of the network within `tolerance`: another free endpoint (meeting or segment, each endpoint at most one gap, D112) or the point where its curve, continued, meets another edge — never with a bridge across. An endpoint whose two nearest points tie does not choose (D185, D189). |
+| `prepare` | `list[Edge]` → `Prepared` (`edges`, `labeled`, `welded`) | non-structural roles set aside (`split_labeled`), then the nodes decided once: from the real points, endpoints within `GRAPH_EPSILON` (= `SAME_POINT`) are one node. |
+| `normalize` | `list[Edge]`, `gap` → `Normalized` (`edges` and the counts of each step) | tessellations refitted, duplicates merged, degenerate strokes welded, near-full arcs closed, gaps closed: the same cleanups for everyone. `gap` already with the margin (`reach(tolerance)`). `keep_junctions`: two collinear pieces that touch only at a junction are not merged. |
+| `merge_collinear_overlaps` | `list[Edge]` → `list[Edge]` | merges lines drawn as overlapping pieces, judging "same line" on the true segments. |
+| `merge_cocircular_overlaps` | `list[Edge]` → `list[Edge]` | the same on co-circular arcs. |
+| `weld_degenerate_linesegs` | `list[Edge]` → `list[Edge]` | welds `LineSeg`s under `SAME_POINT` into a single node; a wider group is a piecewise curve and stays. |
+| `split_labeled` | `list[Edge]` → `(kept, labelled)` | sets aside the edges with an already decided, non-structural role. Without `is_structural`, only `outer`/`inner` are structural. |
+| `close_near_full_arcs` | `list[Edge]` → `(edges, n_closed)` | the arcs (`CircleSeg`) with free ends on the same circle are joined across every gap within `tolerance` **and** within `max_missing_angle` (`NEAR_FULL_ARC_MISSING` = 2°): all closed gives a `CircleSeg`, otherwise an `CircleSeg` open on the remaining gaps; `n` = edges rebuilt. `tolerance=math.inf` leaves only the angle. |
+| `close_free_gaps` | `list[Edge]` → `list[Edge]` | every free endpoint closes onto the nearest point of the network within `tolerance`: another free endpoint (meeting or segment, each endpoint at most one gap) or the point where its curve, continued, meets another edge — never with a bridge across. An endpoint whose two nearest points tie does not choose. |
 | `dangling_splines` | `list[Edge]` → `list[Edge]` | the open `BSplineSeg`s with one unconnected endpoint — diagnostics only. |
-| `split_at_crossings` | `list[Edge]` → `NodedEdges` | the planar network: every contact decided once on the true curves (D180). `cut_crossings`: a crossing cuts too — yes for `outlines()` (D101), no for the network of `heal()` (D132, D189: the cut is made by the reading); the crossings are in `crossings` anyway. `NodedEdges.whole(loop)` gives back the original edge where a loop runs along all its pieces. |
-| `non_contour_pieces` | `NodedEdges` → `set[id(piece)]` | the pieces that do not close a contour (chords and bridges, D111, D131), on the network: the same judgement for every reading. |
+| `split_at_crossings` | `list[Edge]` → `NodedEdges` | the planar network: every contact decided once on the true curves. `cut_crossings`: a crossing cuts too — yes for `outlines()`, no for the network of `heal()` (the cut is made by the reading); the crossings are in `crossings` anyway. `NodedEdges.whole(loop)` gives back the original edge where a loop runs along all its pieces. |
+| `non_contour_pieces` | `NodedEdges` → `set[id(piece)]` | the pieces that do not close a contour (chords and bridges), on the network: the same judgement for every reading. |
 | `find_non_contour_edges` | `list[Edge]` → `set[id(Edge)]` | the same, on whole edges (all their pieces non-contour). `non_contour_candidates(doc)` is the same thing on a document. |
-| `find_joining_edges` | `list[Edge]`, `set[id]` → `list[Edge]` | among the candidates, the edges that join two shapes that would otherwise be detached: heal() reports them in a warning (D111). |
+| `find_joining_edges` | `list[Edge]`, `set[id]` → `list[Edge]` | among the candidates, the edges that join two shapes that would otherwise be detached: heal() reports them in a warning. |
 | `free_ends` | `list[Edge]`, `epsilon` → `[(point, mm)]` | the endpoints that no other edge touches, with the distance from the nearest node. |
-| `face_loops` | `list[Edge]` → `list[loop]` | the loops of the bounded faces of the network, split into simple loops (two lobes touching at a point are two loops), counter-clockwise, plus the pieces closed on their own. The walk is that of the outer face, taken on each side of each edge: no choice depends on the order (D189). |
+| `face_loops` | `list[Edge]` → `list[loop]` | the loops of the bounded faces of the network, split into simple loops (two lobes touching at a point are two loops), counter-clockwise, plus the pieces closed on their own. The walk is that of the outer face, taken on each side of each edge: no choice depends on the order. |
 | `structural_loops` | loop → loop | keeps the loops with no edge of a non-structural role. |
-| `loops_to_curves` | loop → `list[ClosedCurve \| OpenCurve]` | one `ClosedCurve` per loop, native geometry; a loop that does not make a contour (zero area, micro-circle) comes back as one `OpenCurve` per edge, never lost (D151). |
-| `loose_curves` | `list[Edge]` → `list[ClosedCurve \| OpenCurve]` | the curves of `loose`, one rule for all (D162): a piece that closes on its own is a `ClosedCurve`, the rest one `OpenCurve` per edge; role intact. |
+| `loops_to_curves` | loop → `list[ClosedCurve \| OpenCurve]` | one `ClosedCurve` per loop, native geometry; a loop that does not make a contour (zero area, micro-circle) comes back as one `OpenCurve` per edge, never lost. |
+| `loose_curves` | `list[Edge]` → `list[ClosedCurve \| OpenCurve]` | the curves of `loose`, one rule for all: a piece that closes on its own is a `ClosedCurve`, the rest one `OpenCurve` per edge; role intact. |
 | `build_hierarchy` | feature → `(cluster, loose)` | containment tree: each root a `Cluster`, the descendants `inners` with `depth`/`parent`. |
 
 None **mutates** the input: they return new lists/objects.
@@ -431,9 +430,9 @@ tessellations refitted, duplicates merged); `outlines()`:
    outline;
 4. every outline that does not lie inside another is a `Cluster` with only the `outer`;
    a group that lies inside another, with its outline or without, is not a
-   cluster (D99, D161);
+   cluster;
 5. everything else — closed or open, inside or outside the outline — goes into
-   `loose`, from the repaired network (D203), with the role it had (`unknown` if
+   `loose`, from the repaired network, with the role it had (`unknown` if
    nobody decided one) and with `cluster_ref`, the index of the cluster that
    contains or touches it (`None` outside all of them).
 
@@ -442,12 +441,12 @@ sheet, projected isometric/3D views, silhouettes with nearly coincident lines
 where the graph of `faces()` is ambiguous. For a drawing of flat silhouettes (one or more
 separate parts, exact geometry to be stitched) `faces()` remains.
 
-**No `inner`** (D161): the closed loops inside an outline go into `loose`
+**No `inner`**: the closed loops inside an outline go into `loose`
 as `ClosedCurve`, without saying hole or face. Two outer outlines are two
-clusters however close they are: there is no distance between views (D99). With
+clusters however close they are: there is no distance between views. With
 the frame in the drawing, therefore, the only cluster is the frame: removing it (or giving
 a role to frame, title block, magnification circles) is the caller's
-job. What a cluster is — view, part — is decided by whoever uses it (D21).
+job. What a cluster is — view, part — is decided by whoever uses it.
 
 The numbers are those of `heal()` (`net.tolerance`, `net.max_gap`); `max_gap`
 is also the distance at which two edges belong to the same group.
@@ -483,9 +482,9 @@ topo.experimental.refit_tessellations(edges, max_segment=0.1, min_run=10,
 | `read_outlines` | `list[Edge]` → `list[OutlineReading]` | the same repair as `heal()` on loose edges, then the touching groups + `read_outline` for each + nesting (`nested_in`, also for a group with no outline lying entirely inside another). It is `outlines()` before it becomes a `Result`. |
 | `read_outline` | `list[Edge]` → `OutlineReading` | one group: the same repair as `heal()`, planar network, outer face, the rest classified. |
 | `touching_groups` | `list[Edge]` → `list[TouchingGroup]` | the groups of edges that touch: union-find on the pairs at true distance `<= gap_tolerance` (STRtree), chained. No notion of closure or of inside. `TouchingGroup`: `edges`, `bbox`, `.width`, `.height`. |
-| `split_at_crossings` | `list[Edge]` → `NodedEdges` | planar network (D180): every contact is decided once per pair of edges, on the true curves — a crossing, an endpoint within `GRAPH_EPSILON` (= `SAME_POINT`, 0.001 mm, D268) of the other curve (T or two endpoints), two curves that pass within `GRAPH_EPSILON` (= `SAME_POINT`, D268) without crossing — and gives a single node tuple for all the edges it touches (union-find; never the two endpoints of the same edge). Several meetings of the same pair within `tolerance` along one of the two edges are a single contact (D101: the two roots of a near-tangency). Every type is cut, splines and ellipses included (a periodic spline stays whole). `NodedEdges.parent_of(piece)` gives the original `Edge`, `.crossings` the interior crossings (D132). |
+| `split_at_crossings` | `list[Edge]` → `NodedEdges` | planar network: every contact is decided once per pair of edges, on the true curves — a crossing, an endpoint within `GRAPH_EPSILON` (= `SAME_POINT`, 0.001 mm) of the other curve (T or two endpoints), two curves that pass within `GRAPH_EPSILON` (= `SAME_POINT`) without crossing — and gives a single node tuple for all the edges it touches (union-find; never the two endpoints of the same edge). Several meetings of the same pair within `tolerance` along one of the two edges are a single contact (the two roots of a near-tangency). Every type is cut, splines and ellipses included (a periodic spline stays whole). `NodedEdges.parent_of(piece)` gives the original `Edge`, `.crossings` the interior crossings. |
 | `outer_face` | `list[Edge]` (planar network) → `OuterFace \| None` | border of the outer face, per component, the one of largest area; `spurs` = edges walked there and back. |
-| `refit_tessellations` | `list[Edge]` → `list[Edge]` | chains of short `LineSeg`s (a curve written as points) refitted by `simplify_points` (lines, arcs, ellipses, splines within `tolerance`, the simplest that fits, D284; a corner where no smooth curve passes within `tolerance` over `max_segment`, D283); chain endpoints on the original nodes. |
+| `refit_tessellations` | `list[Edge]` → `list[Edge]` | chains of short `LineSeg`s (a curve written as points) refitted by `simplify_points` (lines, arcs, ellipses, splines within `tolerance`, the simplest that fits; a corner where no smooth curve passes within `tolerance` over `max_segment`); chain endpoints on the original nodes. |
 
 None **mutates** the input: they return new lists/objects.
 
@@ -497,11 +496,11 @@ None **mutates** the input: they return new lists/objects.
 | `outer` | `OuterFace \| None` | outer contour (`segments`, `styles`, `edges`, `spurs`; the polygon with `topo.to_shapely(outer)`) |
 | `spurs` | `list[Edge]` | edges walked there and back from the contour |
 | `outside` | `list[Edge]` | pieces of the group left outside the contour (detached network) |
-| `non_contour` | `list[Edge]` | non-contour candidates, same criterion as `faces()` (D49) |
+| `non_contour` | `list[Edge]` | non-contour candidates, same criterion as `faces()` |
 | `unclassified` | `list[Edge]` | the rest |
 | `nested_in` | `int \| None` | index of the outermost group that contains it |
 
-### `topo.experimental.parity_faces` — a third reading, by parity (experimental, D250)
+### `topo.experimental.parity_faces` — a third reading, by parity (experimental)
 
 ```python
 topo.experimental.parity_faces(network) -> Result      # result.reading == "parity"
@@ -524,7 +523,7 @@ non-structural role take no part.
   in `tests/` do. This is why it is not `faces()`.
 
 New diagnostics: `rim-cut` (warning: part of the outer boundary had to go), `face-colour` (warning: two neighbouring
-faces read the same side, where the walk round a node does not order tangent branches, D199).
+faces read the same side, where the walk round a node does not order tangent branches).
 
 ---
 
@@ -534,7 +533,7 @@ faces read the same side, where the walk round a node does not order tangent bra
 **Constructing** (`topo.geometry.<name>`, they return a list of segments,
 a closed loop, to be passed to `topo.load_segments`). The arguments are the
 measures that `contour_shape` returns, so `contour_shape(rectangle(80, 30,
-angle=20))` gives back 80, 30, 20 (D96):
+angle=20))` gives back 80, 30, 20:
 
 | constructor | shape |
 |---|---|
@@ -546,7 +545,7 @@ angle=20))` gives back 80, 30, 20 (D96):
 | `stadium(length, width, *, center=(0, 0), angle=0)` | two true semicircles (`CircleSeg`) and two parallel sides; overall `length` × `width` |
 | `triangle(a, b, c, *, start=(0, 0), angle=0)` | the triangle with sides `a`, `b`, `c`; side `a` from `start` at `angle` degrees |
 | `right_triangle(leg_a, leg_b, *, start=(0, 0), angle=0)` | the right triangle with the right angle at `start`; `leg_a` at `angle`, `leg_b` at `angle` + 90° |
-| `blend(start, start_direction, end, end_direction, *, continuity=1)` | the polynomial curve joining two ends along their directions: cubic, tangent (G1); `continuity=2` quintic with zero curvature at the ends (G2 with lines). An exact `BSplineSeg` (D291) |
+| `blend(start, start_direction, end, end_direction, *, continuity=1)` | the polynomial curve joining two ends along their directions: cubic, tangent (G1); `continuity=2` quintic with zero curvature at the ends (G2 with lines). An exact `BSplineSeg` |
 | `polynomial(coefficients, x_from, x_to)` | the graph of y = c0 + c1·x + … as an exact Bézier `BSplineSeg` (a `LineSeg` up to degree 1) |
 | `involute(base_radius, end, *, start=0, center=(0, 0), angle=0)` | the involute of a circle, unwinding angle `start`..`end` in radians, a `FormulaSeg` |
 | `clothoid(a, length, *, start=(0, 0), angle=0, left=True)` | the Euler spiral from zero curvature, `length` along the curve, a `ClothoidSeg` |
@@ -556,11 +555,10 @@ Rhombi, trapezoids and every other shape with straight sides are a `polygon`.
 **Reading**:
 
 The geometric facts all live in `topo.geometry` (the package
-`topo/core/geometry/`, D95) and are called in full,
-`topo.geometry.<name>(...)`, without importing the name on its own (D119). Geometric
+`topo/core/geometry/`) and are called in full,
+`topo.geometry.<name>(...)`, without importing the name on its own. Geometric
 names: "circle", never "hole". The basic measures (length of a
-segment, open traces, strokes on axes, intervals) have been public since
-D122; what remains in the submodules of `topo.core.geometry` (node rounding,
+segment, open traces, strokes on axes, intervals) have been public; what remains in the submodules of `topo.core.geometry` (node rounding,
 point sequences, `circular_geometry`, …) is internal, with no
 guarantees. `python scripts/gen_index.py` writes the list with `file:line`
 to `docs/INDEX.md` (generated locally, not in git).
@@ -579,9 +577,9 @@ fact, not a feature: `circle` does not mean hole, that is decided by whoever rea
 drawing or the process. It holds equally on `faces()` and on `outlines()`. Consecutive
 segments on the same line or circumference are recomposed first.
 Every measure of the shape agrees within `SAME_POINT` (0.001 mm); there is
-no tolerance to pass: a rectangle off by more is a `polygon` (D281).
+no tolerance to pass: a rectangle off by more is a `polygon`.
 
-**Closed and stable list** (D136): `kind` is a `ShapeKind` (`str`, so
+**Closed and stable list**: `kind` is a `ShapeKind` (`str`, so
 `kind == "circle"` works) and in 1.x no other kinds are born and no
 contour changes kind. A shape has a name only if centre, length,
 width and angle determine it; a filleted rectangle, an arc slot,
@@ -611,8 +609,8 @@ appear. `tolerance` is the maximum distance between centres, in drawing
 units; among several groups within `tolerance` a circle joins the nearest.
 At equal diameter the reference of the group is the first given; groups sorted
 by centre (x, y), ties within noise: the partition does not depend on the
-reference (D197). A geometric fact: two concentric circles are not a countersink,
-how to pair them is decided by the consumer (D91).
+reference. A geometric fact: two concentric circles are not a countersink,
+how to pair them is decided by the consumer.
 
 `ConcentricGroup`: `center` (of the smallest circle), `items` and `shapes`
 (`ContourShape`) from smallest to largest radius, `diameters`.
@@ -630,7 +628,7 @@ topo.geometry.arcs_around(center, radius, arcs, *, tolerance) -> list[ArcAround]
 The arcs (`CircleSeg`) of `arcs` concentric to the circle (`center`, `radius`) within
 `tolerance` and larger than it, from nearest to farthest. No threshold
 on the angle: "~270°, slightly larger" is how a thread crest is drawn,
-the consumer applies it (D91).
+the consumer applies it.
 
 `ArcAround`: `arc`, `sweep` (degrees, in the direction of the arc), `radius_ratio`
 (radius of the arc / `radius`).
@@ -649,8 +647,8 @@ The chord `start`-`end`, extended by `reach` at both ends, divides the region
 of the contour into two or more parts: a stretch of it runs from edge to edge passing
 through the inside; a touch or a stretch along the edge does not divide. `contour` is a `Contour`,
 anything that carries a closed loop of `segments`, or the list of segments.
-Computed on the primitives (D166, D167): an arc is the true arc, not chords. A geometric fact: whether that chord is a bend
-is decided by the consumer (snapbend extends it by 1 mm, D93).
+Computed on the primitives: an arc is the true arc, not chords. A geometric fact: whether that chord is a bend
+is decided by the consumer (snapbend extends it by 1 mm).
 
 **Mutates** nothing.
 
@@ -668,7 +666,7 @@ of a part; a `Contour`, a loop of `segments` or the list of segments, border
 included, computed on the primitives). A stroke is a pair `(start, end)` or
 anything that carries `start`/`end` (a `LineSeg`, an `Edge`);
 `tolerance` (mm, chosen by the caller) is the maximum distance of a stroke's ends from the
-line: a difference of direction is in it, there is no separate angle (D282). Strokes left alone do not appear.
+line: a difference of direction is in it, there is no separate angle. Strokes left alone do not appear.
 
 `CollinearRun`: `start`, `end` (the outer ends of the row), `members` (indices into
 `segments`, in order along the line).
@@ -687,7 +685,7 @@ The points where two primitives meet: crossings and touches, endpoints included.
 Exact between `LineSeg`, `CircleSeg`, and between a line and any conic (closed form); on `BSplineSeg` and
 `EllipseSeg` within `SAME_POINT` (0.001), because there is no closed
 form. Two overlapping strokes (same line, same circle) give no points: their
-meeting is a stretch (D118).
+meeting is a stretch.
 
 **Mutates** nothing.
 
@@ -702,11 +700,11 @@ topo.geometry.point_on_contour(segments, point, *, tolerance=0.001) -> ContourPo
 Where `point` falls on the ring `segments` (head to tail, like `contour.segments`).
 `ContourPoint`: `point`, `kind` (`"vertex"` two sides with an angle, `"smooth"`
 two sides that continue into one another — a fillet: along the longer side one strays
-less than `SAME_POINT` from the other's direction (D282) —, `"edge"` in the middle of a
+less than `SAME_POINT` from the other's direction —, `"edge"` in the middle of a
 side), `segments` (indices: incoming and outgoing for a vertex, a single one for a
 side), `turn_deg`, `concave` (the interior occupies more than half a turn). The tangents
 are exact; concave or convex is told by the direction of the ring. None if `point`
-is farther than `tolerance` (D118).
+is farther than `tolerance`.
 
 **Mutates** nothing.
 
@@ -720,9 +718,9 @@ topo.geometry.nearest_point(segments, point) -> Point
 
 The point of the primitives `segments` nearest to `point`, even in the middle of a
 side. Exact on lines, arcs and circles; on splines and ellipses refined on the true
-curve, not on its polyline (D274).
+curve, not on its polyline.
 `point` may be anywhere (a click, the centre of another figure): to know
-where the result falls on the contour, pass it to `point_on_contour` (D140).
+where the result falls on the contour, pass it to `point_on_contour`.
 
 **Mutates** nothing. **Raises** `ValueError` if `segments` is empty.
 
@@ -738,7 +736,7 @@ The minimum distance between the boundaries `a` and `b`, and the closest pair of
 `b`. Each is a `Contour`, any object with `.segments`, or a list of primitives (a ring, or open pieces). Boundaries that
 touch or cross give 0 within float noise: compare with a small threshold (1e-6 mm), never with `== 0`. One
 boundary inside the other gives the distance between the two boundaries, not 0: it is about boundaries, not regions.
-Exact on lines, arcs and circles; on splines and ellipses refined on the true curve (D251, D274).
+Exact on lines, arcs and circles; on splines and ellipses refined on the true curve.
 
 ```python
 cluster = result.clusters[0]
@@ -760,7 +758,7 @@ The pieces of `segment` outside (`"outside"`) or inside (`"inside"`) the closed
 region `region`, in the direction of `segment`, cut at the points of
 `intersections`. A region is a ring of any primitives
 (`topo.geometry.circle`, `rectangle`, `polygon`, `contour.segments`). The pieces
-stay primitives of the same type: a cut arc is an arc (D118).
+stay primitives of the same type: a cut arc is an arc.
 
 **Mutates** nothing. **Raises** `ValueError` if a piece runs along the border
 of the region (neither inside nor outside).
@@ -779,7 +777,7 @@ remains, each head to tail. An outer ring has the direction of `contour`, a hole
 `[contour]` if it does not touch it. As many rings as result: a cut that
 detaches a piece gives two, and which to keep is decided by the caller. A single touch
 (tangency) does not change the shape. To be passed to `Contour.from_segments`
-(D118).
+.
 
 **Mutates** nothing. **Raises** `ValueError` if the two borders run
 along each other.
@@ -799,7 +797,7 @@ ones that touch at a single point, remain two rings. A shared border is the
 case that matters: where the two sit side by side the common stretch disappears, where they
 overlap it remains once. Where the border continues on the same line or
 the same circle the pieces become one again (two half discs give a
-`CircleSeg`). To be passed to `Contour.from_segments` (D171).
+`CircleSeg`). To be passed to `Contour.from_segments`.
 
 **Mutates** nothing. **Raises** `ValueError` if one border runs along the other
 without coinciding piece by piece (same line, same circle, same curve
@@ -818,7 +816,7 @@ The segment `start`→`end` reduced to strokes: one of length `head` attached to
 `middle` between the two, with all the gaps equal. Each stroke is `(start, end)` in the
 direction of the segment; a zero-length stroke does not appear. If the strokes cover all of
 the segment, `[(start, end)]` comes back, whole. A geometric fact: whether that segment
-is a bend is decided by the consumer (D115).
+is a bend is decided by the consumer.
 
 **Mutates** nothing. **Raises** `ValueError` on negative lengths or `n_middle`.
 
@@ -835,7 +833,7 @@ The axis-aligned rectangles whose four sides are covered at least by
 straight `Edge`s of a document), built on the coordinates of the strokes at least
 `min_side` long. It does not use `polygonize`: a border full of notches remains a
 rectangle, a double-bordered frame gives two. Whether a rectangle is a
-frame or a title block is decided by the consumer (snapdraw, D94).
+frame or a title block is decided by the consumer (snapdraw).
 
 `CoveredRectangle`: `bbox`, `items` (the strokes on its sides), `segments` (the
 four sides as `LineSeg`), `area`, `long_side`, `short_side`, `ratio`.
@@ -932,8 +930,7 @@ topo.geometry.group_collinear_lines(lines, *, tolerance) -> list[list]
 ```
 
 The strokes (`start`/`end`) grouped by line: `[[L1, L2], [L3], ...]`. A stroke
-joins a group when both its ends lie within `tolerance` (mm, chosen by the caller,
-D282) of the line of the group's first stroke, in the order given; it does not look at whether the
+joins a group when both its ends lie within `tolerance` (mm, chosen by the caller) of the line of the group's first stroke, in the order given; it does not look at whether the
 strokes touch (for rows across gaps: `bridged_runs`).
 
 **Mutates** nothing.
@@ -950,7 +947,7 @@ topo.geometry.chord_angle_deg(a, b) -> float
 
 - `segment_length`: the length of a native primitive. A closed formula for
   `LineSeg`, `CircleSeg`, the parameter for `ClothoidSeg`; for every other
-  curve the integral of its exact speed |P'(t)| (D293).
+  curve the integral of its exact speed |P'(t)|.
 - `length_inside`: how much of `segment` lies inside the rectangle
   `bounds` = `(xmin, ymin, xmax, ymax)`, border included (curves on the
   polyline of `discretize()`).
@@ -972,7 +969,7 @@ An open trace (bend, engraving, unclosed fragment) is a chain of native
 segments. `track_points` gives its vertices (the `discretize()` of each
 segment, without repeating the junction point); `track_length` the length
 of the polyline. A single straight stroke is `len(track_points(segments)) == 2`
-(`track_shape_type`, which said it as a string, is removed: D176).
+(`track_shape_type`, which said it as a string, is removed).
 
 **Mutate** nothing.
 
@@ -985,14 +982,14 @@ of the polyline. A single straight stroke is `len(track_points(segments)) == 2`
 topo.split(
     result: Result,
     *, namer=None,
-    min_area=0.0,                # no discard (D232)
+    min_area=0.0,                # no discard
 ) -> list[Result]
 ```
 
-**One `Result` per part**, with no format (D124, D129): choosing the parts is
+**One `Result` per part**, with no format: choosing the parts is
 a decision about the model, writing them is an adapter's. Each part is a
 `Result` with a single cluster, plus the loose curves and the texts that
-belong to it. A `loose` curve goes to the cluster of its `cluster_ref` (D137),
+belong to it. A `loose` curve goes to the cluster of its `cluster_ref`,
 a text to the part that contains it; those that no part contains
 go to the part nearest to its outer contour among **all** the parts (even
 those discarded by `min_area`). Nothing is duplicated, nothing lost: each
@@ -1005,9 +1002,9 @@ part goes to DXF, SVG or text in the same way.
 | parameter | meaning |
 |---|---|
 | `namer` | `callable(i, cluster) -> str` — gives the `label` of the part's cluster, so the name of a file can still be derived (`f"{cluster.label}.dxf"`). Without it, `f"{label}_P{i+1}"`. |
-| `min_area` | by default `0.0`, no discard (D232): a size threshold belongs to a process. With a value, the parts with area below it (mm²) are discarded with a warning in `result.warnings` and in those of every part. |
+| `min_area` | by default `0.0`, no discard: a size threshold belongs to a process. With a value, the parts with area below it (mm²) are discarded with a warning in `result.warnings` and in those of every part. |
 
-**Mutates** only `result.warnings` (the discard warnings: even if it discards them all, the discard can be read). The cluster of each part is a copy with its `label`; the original does not change (D176).
+**Mutates** only `result.warnings` (the discard warnings: even if it discards them all, the discard can be read). The cluster of each part is a copy with its `label`; the original does not change.
 **Returns** the parts in the order of the kept clusters.
 **Raises `ValueError`** if `result.is_valid` is `False`: a file per part
 makes no sense without parts.
@@ -1033,7 +1030,7 @@ class RoleStyle:                                          # topo.RoleStyle, topo
 ```
 
 How the caller wants a role drawn in the output, in the same vocabulary
-as `EdgeStyle` and with no format (D37, D128). It holds for an engine role
+as `EdgeStyle` and with no format. It holds for an engine role
 (`"outer"`, `"inner"`, `"unknown"`) as for a consumer's — snapbend
 (`"hole"`, ...), snapdraw (`"frame"`, `"title_block"`, ...) — none is
 privileged. The dictionary `{role: RoleStyle}` is the caller's and is passed to
@@ -1042,7 +1039,7 @@ Underneath there is always topo's palette; a `None` field
 stays that of the palette. Where a role ends up (a DXF layer) is not
 here: it is `topo_dxf.to_dxf(layers=...)`.
 
-**topo's palette** (`topo.model.DEFAULT_ROLE_STYLES`, D128) gives the colour
+**topo's palette** (`topo.model.DEFAULT_ROLE_STYLES`) gives the colour
 to the roles that `faces()` and `outlines()` produce, the same for every format: `outer` green
 (0, 255, 0), `inner` yellow (255, 255, 0), `unknown` red (255, 0, 0); every
 other role is grey (`CONSUMER_ROLE_STYLE`, (128, 128, 128)) until the
@@ -1060,7 +1057,7 @@ topo.model.role_style("outer", role_styles={"outer": topo.RoleStyle(lineweight=0
 In DXF: a palette colour becomes its exact ACI index (3, 2, 1, 8);
 the caller's `color` → true colour of the layer; `dash` → a linetype registered
 under the name `linetype` or, without it, `<ROLE>_DASH`; a `linetype` without `dash` must
-be in the document or among the standard ones, otherwise `ValueError` (D85);
+be in the document or among the standard ones, otherwise `ValueError`;
 `lineweight` → hundredths of a mm.
 
 ```python
@@ -1081,11 +1078,11 @@ topo.anchor_texts(result: Result, *, snap_distance=0.0) -> None
 
 Links every text to the part that contains it: `cluster_ref` = index of the
 cluster whose outer contour contains its position (with
-`snap_distance` > 0, also the nearest within that distance, D82). What a
+`snap_distance` > 0, also the nearest within that distance). What a
 dimension measures or where an arrow lands is a reading of whoever uses the
-drawing, not topo's (D259).
+drawing, not topo's.
 
-**Mutates** the texts of `result` and returns `None` (D176).
+**Mutates** the texts of `result` and returns `None`.
 
 ---
 
@@ -1100,7 +1097,7 @@ topo.to_json(result: Result, *, indent=2,
              extra: Callable[[Cluster], dict] = None) -> str      # returns the string
 ```
 
-`result.to_dict()` as JSON, **geometry only** (D230, D231): where it comes from
+`result.to_dict()` as JSON, **geometry only**: where it comes from
 (`source_format`, told by the adapter), how it was read (`reading`,
 `tolerance`, `max_gap`), whether it is valid, the warnings, and the facts of each part.
 No coordinates (the exact curves are carried by `topo_dxf.to_dxf`), nothing of a
@@ -1126,7 +1123,7 @@ replacement. Structure:
 }
 ```
 
-Area, perimeters and bbox are exact, measured on the primitives (D165, D166),
+Area, perimeters and bbox are exact, measured on the primitives,
 not on the discretised polygon.
 
 ### `to_shapely`
@@ -1136,13 +1133,13 @@ topo.to_shapely(item, *, tolerance=None) -> Polygon | MultiPolygon | LineString
 ```
 
 The explicit conversion to shapely, for those who need overlay, buffer or
-WKT: the model exposes no shapely types (D166).
+WKT: the model exposes no shapely types.
 
 | takes | returns |
 |---|---|
 | a closed contour (`Contour`, a `ClosedCurve` of `loose`, any object with a ring of `segments`) | `Polygon` |
 | an `OpenCurve` | `LineString` |
-| a `Cluster` | its material by even-odd, like `area` (D89): the outer with the holes at depth 1, each island at depth 2 with its holes at depth 3, …, minus the voids of the overlay. `Polygon`, or `MultiPolygon` if there are islands inside the holes |
+| a `Cluster` | its material by even-odd, like `area`: the outer with the holes at depth 1, each island at depth 2 with its holes at depth 3, …, minus the voids of the overlay. `Polygon`, or `MultiPolygon` if there are islands inside the holes |
 
 `tolerance=None`: the polygon of the reading, the same as topo's containment
 tests; a number rebuilds it from the `segments` within that
@@ -1150,13 +1147,13 @@ tolerance. **Raises** `ValueError` if the segments do not enclose a
 valid polygon, `TypeError` if `item` carries no geometry.
 
 shapely is a dependency of topo, but topo's contract does not promise it
-(D166, D168): a consumer that calls shapely itself declares it among its
+: a consumer that calls shapely itself declares it among its
 dependencies. Questions about a contour (area, bbox, centroid, `contains`,
 a chord that divides it) do not go through here: they are facts of the contour.
 
 > **The viewer** — `to_view_model`, `to_svg`, `save_svg` — is **outside the
-> stable 1.0** (MAP.md D133): it lives in `topo.experimental` (D176) and will be
-> redone (TODO.md, "Viewer"). The signatures below hold today, with no
+> stable 1.0**: it lives in `topo.experimental` and will be
+> redone. The signatures below hold today, with no
 > guarantee that they stay.
 
 ### `to_view_model`
@@ -1178,7 +1175,7 @@ metadata only). It is consumed by `to_svg` and would be consumed by an external 
 
 All the geometry is **discretised to polylines** (`points: [[x, y], …]`):
 arcs, circles, splines flattened. The overlay sits under `features`, by name
-(D90): one entry per contour, with role, colour, points, `closed` and the
+: one entry per contour, with role, colour, points, `closed` and the
 scalar fields of the element's `to_dict()` — whatever carries `center` + `diameter` can be
 drawn as a true circle. Coordinates in the source's system (Y up).
 
@@ -1212,9 +1209,9 @@ topo.experimental.to_svg(
 topo.experimental.save_svg(result, path, **kwargs) -> None
 ```
 
-SVG renderer of the model (MAP.md D12) — for visualisation (UI/report/
+SVG renderer of the model — for visualisation (UI/report/
 preview) or for a machine that imports SVG. One colour per role: topo's palette, with the caller's `role_styles` laid over it
-(D128). The
+. The
 Y is flipped (model Y-up → SVG Y-down). One part = one `<g data-cluster="…">`.
 Built on top of `to_view_model`.
 
@@ -1228,7 +1225,7 @@ at zero) for those who import SVG into software that wants 1 unit = 1 mm.
 the exact curve matters (smooth circles, toleranced dimensions) use `topo_dxf.to_dxf`, not the SVG.
 
 An invalid `result` is drawn all the same. `allow_invalid=False` →
-`ValueError`, same contract as `topo_dxf.to_dxf` (D83).
+`ValueError`, same contract as `topo_dxf.to_dxf`.
 
 ```python
 topo.experimental.save_svg(result, "pezzo.svg")
@@ -1236,7 +1233,7 @@ topo.experimental.save_svg(result, "pezzo.svg")
 
 ---
 
-## 5. Removed before 1.0 (D230)
+## 5. Removed before 1.0
 
 The JSON of topo is geometry only. These no longer exist:
 
@@ -1246,7 +1243,7 @@ The JSON of topo is geometry only. These no longer exist:
 | `save_xml`, `to_json(schema=)`, `topo/rules/metadata_schema.py` | `to_json`; renaming the fields or writing XML is the consumer's job |
 | `to_json(extra_metadata=)` | `to_json(extra=)` |
 | `inject(result, data_injector=)` | `anchor_texts(result)`, then the texts with `text.cluster_ref == i` passed to the consumer's function |
-| `Cluster.custom` | `cluster.overlay` (the overlay, D44), or the consumer's own structures |
+| `Cluster.custom` | `cluster.overlay` (the overlay), or the consumer's own structures |
 | `experimental.to_nester_input` | `to_view_model`, or the primitives of `cluster.outer.segments` |
 | `topo_dxf.write_metadata_to_dxf` / `read_metadata_from_dxf` | none: the XDATA gave a wrong DXF |
 
@@ -1277,7 +1274,7 @@ attached), custom, plus `loose` and texts. "What topo produced."
 
 ## 7. Domain types
 
-Besides the top level there are three public namespaces (MAP.md D120); what
+Besides the top level there are three public namespaces; what
 lies under `topo.core`, `topo.tools`, `topo.io`, `topo.rules` is internal, with no
 guarantees. The adapters are separate packages (§9, §10):
 
@@ -1291,13 +1288,13 @@ guarantees. The adapters are separate packages (§9, §10):
   (`factor > 0`, uniform, otherwise `ValueError`): they return a new segment
   of the same type, exact. A rigid motion is the chain
   `s.mirrored(origin=o, angle=a).rotated(t).translated(dx, dy)`. No non-uniform
-  scale nor generic affine: an arc would become an ellipse (D170).
+  scale nor generic affine: an arc would become an ellipse.
 - **`topo.model`** — the types below (`Document`, `Result`, `Cluster`,
   `Contour`), the curves (`Curve`, `ClosedCurve`, `OpenCurve`), `Edge` (a
   segment with role and style), `EdgeStyle`, the texts, the overlay
   and the roles: `ContourRole`, `role_str`, `normalize_role`,
   `is_structural_role`. The four most used are also in `topo.<Name>`.
-- **`topo.experimental`** — what is used with no promise of stability (D175 C, D176): the steps of `heal()` and the building blocks of `outlines()` (§3), the viewer (§4), `rotate_*`, `simplify_points`.
+- **`topo.experimental`** — what is used with no promise of stability: the steps of `heal()` and the building blocks of `outlines()` (§3), the viewer (§4), `rotate_*`, `simplify_points`.
 
 ```python
 import topo
@@ -1321,40 +1318,39 @@ core: after it, `ezdxf` is never touched again.
 | `warnings` | `list[str]` | loader diagnostics on the raw file |
 
 Two endpoints closer than `topo.precision.SAME_POINT` are one node; it is not a
-parameter of the document or of `heal()` (D268, D269).
+parameter of the document or of `heal()`.
 
 ### `Text`
 
-A text of the source, a single type (MAP.md D138). Whether it is a note, a
+A text of the source, a single type. Whether it is a note, a
 dimension or a callout is a reading by whoever uses it, even when the format
-already says so: the source's entity type is not in the model (D256).
+already says so: the source's entity type is not in the model.
 
 | field | content |
 |---|---|
-| `position` | `(x, y)` — the anchor point; for a text with its source drawing (`rendered`), that of its first string, with its `halign`/`valign`, `height`, `rotation` (D260) |
-| `text` | the string as it reads on the drawing (a DXF dimension's `<>` replaced by the number its block draws: `"12 H7"`; a `<>` left is where the measure goes when the source writes no number, D264) |
+| `position` | `(x, y)` — the anchor point; for a text with its source drawing (`rendered`), that of its first string, with its `halign`/`valign`, `height`, `rotation` |
+| `text` | the string as it reads on the drawing (a DXF dimension's `<>` replaced by the number its block draws: `"12 H7"`; a `<>` left is where the measure goes when the source writes no number) |
 | `height`, `rotation`, `width_factor` | how the string is written |
 | `role` | what it is for whoever uses it (see below) |
 | `cluster_ref` | index of the cluster that contains it (from `anchor_texts`) |
-| `halign`, `valign` | where `position` lies on the string: `left`/`center`/`right` and `baseline`/`bottom`/`center`/`top`, one meaning for every format; `left`/`baseline` when the source does not say; anything else → `ValueError` (D256) |
-| `rendered` | the strokes, fills and strings the source draws with the string (a DXF dimension's or leader's own block): `to_dxf` rewrites that instead of the string alone; empty when the source does not group them, never built by topo (D262) |
-| `measures` | what the text measures, with the points its source writes: `MeasuredDistance`, `MeasuredRadius`, `MeasuredDiameter`, `MeasuredAngle` (below); `None` for any other text or when the source does not say (D264). Where a pointer lands stays a reading (D259) |
+| `halign`, `valign` | where `position` lies on the string: `left`/`center`/`right` and `baseline`/`bottom`/`center`/`top`, one meaning for every format; `left`/`baseline` when the source does not say; anything else → `ValueError` |
+| `rendered` | the strokes, fills and strings the source draws with the string (a DXF dimension's or leader's own block): `to_dxf` rewrites that instead of the string alone; empty when the source does not group them, never built by topo |
+| `measures` | what the text measures, with the points its source writes: `MeasuredDistance`, `MeasuredRadius`, `MeasuredDiameter`, `MeasuredAngle` (below); `None` for any other text or when the source does not say. Where a pointer lands stays a reading |
 
 `role` says what the text is for whoever uses it (`"title_block"`, `"part_code"`,
-...), like the role of an edge (MAP.md D127). topo does not read it and does not
+...), like the role of an edge. topo does not read it and does not
 decide it: it is written by the consumer (`Text(..., role="title_block")`, cleaned by
 `normalize_role`), or by its `role_rules` at load, on the name of the source
 group (the layer of a DXF). On a text only the rules on the name count
 (`name`, `name_contains`): a rule on stroke or colour does not touch it.
 `unknown` if nobody said. The source group serves only this and does not
-stay in the model (D128): whoever wants a distinct text in the output gives it a
+stay in the model: whoever wants a distinct text in the output gives it a
 role. `topo_dxf.to_dxf` writes a text that has a role on the layer of its
 role, like an edge; without a role, on `text_layer`.
 
 ### `MeasuredDistance`, `MeasuredRadius`, `MeasuredDiameter`, `MeasuredAngle`
 
-What a text measures, with the points its source writes (`Text.measures`,
-D264): the same fields from every adapter that knows them, so a consumer reads
+What a text measures, with the points its source writes (`Text.measures`): the same fields from every adapter that knows them, so a consumer reads
 what a dimension measures without rebuilding it from the strokes. Frozen.
 
 | class | fields |
@@ -1369,8 +1365,8 @@ the three lengths also `drawn_to_real`, drawn length → real length: the number
 is the distance between the points times it (a view drawn at 1:4 has 4, a detail
 at 4:1 has 0.25). `None` when the source does not say, or writes the number by
 hand (`120` on a side drawn 100): then `Text.text` is the number, kept as written,
-and a `dxf-dimension-written-number` warning counts them (D265). They are what the text
-says, not how it looks: height and rotation are the consumer's (D265). topo
+and a `dxf-dimension-written-number` warning counts them. They are what the text
+says, not how it looks: height and rotation are the consumer's. topo
 computes no measure from them: the number, if the source writes none, is the
 consumer's (`<>` in `Text.text`).
 
@@ -1383,7 +1379,7 @@ Produced by `Network.faces()` or `Network.outlines()`, enriched by a consumer.
 | `clusters` | `list[Cluster]` | one element per closed outer contour |
 | `is_valid` | `bool` | **check it before `split` or before writing (`topo_dxf.to_dxf`)** |
 | `warnings` / `errors` | `list[str]` | diagnostics |
-| `loose` | `list[OpenCurve \| ClosedCurve]` | every curve that is the contour of no cluster: chains that close nothing, open traces, closed curves with a non-structural role (D137). `curve.cluster_ref` = index of the cluster whose outer contour contains all of it, border and holes included (a line from side to side, a cross inside a hole); `None` otherwise. With `outlines()` also the cluster that the curve touches (D99). A consumer moves it into `cluster.overlay` with `result.promote` |
+| `loose` | `list[OpenCurve \| ClosedCurve]` | every curve that is the contour of no cluster: chains that close nothing, open traces, closed curves with a non-structural role. `curve.cluster_ref` = index of the cluster whose outer contour contains all of it, border and holes included (a line from side to side, a cross inside a hole); `None` otherwise. With `outlines()` also the cluster that the curve touches. A consumer moves it into `cluster.overlay` with `result.promote` |
 | `texts` | `list[Text]` | copied from the `Network` (from the `Document`) |
 | `cluster_count` | property | `len(clusters)` |
 
@@ -1400,11 +1396,11 @@ result.promote(
 ) -> None
 ```
 
-**Loose curves become part of a cluster** (D137, D172, D173). It removes `curves`
+**Loose curves become part of a cluster**. It removes `curves`
 (a curve, or a sequence) from `result.loose` and puts **a single** `item`
 in the collection `name` of `cluster.overlay`, creating it if missing. `item` is
 what the caller made of the curves (an object of its own with `role` and
-geometry, D90); with a single curve it may be absent, and then it is the curve itself.
+geometry); with a single curve it may be absent, and then it is the curve itself.
 Several curves read as one thing — a hole and its seat — are one item.
 
 What the curves are is decided by the caller, and it does not matter where they are: a line
@@ -1415,7 +1411,7 @@ that points to a detail of it. topo promotes nothing on its own.
 `result.loose` or is given twice, if `curves` is empty, if `cluster` is not in
 `result.clusters`, if there are several curves and `item` is missing, or if
 `item` carries no geometry a renderer draws (no contour with `segments` and a
-role, D244): a curve is never in two places, nor
+role): a curve is never in two places, nor
 lost — the curves would otherwise leave `loose` and reach no file.
 
 ```python
@@ -1432,27 +1428,27 @@ result.promote([hole, seat], view, "features", item=my_counterbore)
 | field | type | content |
 |---|---|---|
 | `outer` | `Contour` | outer profile (has `segments`, `role`, `area`, `bbox`) |
-| `inners` | `list[Contour]` | closed contours inside the outer, with no reading (a circle is not a hole, D15) |
+| `inners` | `list[Contour]` | closed contours inside the outer, with no reading (a circle is not a hole) |
 | `label` | `str` | label, basis of the file name |
-| `overlay` | `Optional[Overlay]` | a consumer's overlay — `None` until someone has written to it (D44, D90) |
+| `overlay` | `Optional[Overlay]` | a consumer's overlay — `None` until someone has written to it |
 | `features(name)` | method | collection `name` from `overlay` — `[]` if `overlay` is `None` or `name` has not been written |
 | `summary` | property | **raw** count, always available: `{name}_count: len(items)` for each collection in `overlay` — `{}` if `overlay` is `None` |
-| `overlay_voids` | property | the elements of the overlay with `is_void = True` and the `segments` of a closed loop: voids of the part read by a consumer (D90) |
-| `area` | property | outer − overlay voids − inners at odd depth + inners at even depth (D89, D90) |
+| `overlay_voids` | property | the elements of the overlay with `is_void = True` and the `segments` of a closed loop: voids of the part read by a consumer |
+| `area` | property | outer − overlay voids − inners at odd depth + inners at even depth |
 | `bbox` | property | `(minx, miny, maxx, maxy)` |
-| `to_dict()` | method | the facts that `to_json` writes: `label`, `area`, perimeters, `inner_count`, `bbox`, `overlay` (D230) |
+| `to_dict()` | method | the facts that `to_json` writes: `label`, `area`, perimeters, `inner_count`, `bbox`, `overlay` |
 
 A consumer attaches its detection like this (`topo.Overlay`):
 `cluster.overlay = cluster.overlay or Overlay();
 cluster.overlay.attach("flange_view_hint", [...])`, then reads it with
-`cluster.features("flange_view_hint")`. No name is privileged (D44) and there is no contract on the elements, not even at runtime.
+`cluster.features("flange_view_hint")`. No name is privileged and there is no contract on the elements, not even at runtime.
 
 ### `Contour`
 
 `role` (`ContourRole`), `segments` (native primitives, a head-to-tail ring),
-`depth`, `parent`. No shapely type (D166): the polygon is requested from
+`depth`, `parent`. No shapely type: the polygon is requested from
 `topo.to_shapely(contour)`. Facts computed on the `segments`, not on the
-polygon (D165, D166): exact `area` and `centroid` (Green; `centroid` raises
+polygon: exact `area` and `centroid` (Green; `centroid` raises
 `ValueError` if the loop encloses no area), exact `bbox` (arcs and ellipses
 at their true extremes, not on the chords), `contains(point, tolerance=1e-6)`
 (closed region: the border within `tolerance` is inside), `points(tolerance=0.001)`
@@ -1467,22 +1463,21 @@ A contour from a ring of primitives written by a caller (for example the
 result of `geometry.contour_minus`): it checks that every segment starts where
 the previous one ends and that the last closes on the first.
 **Raises** `ValueError` if the ring does not close or does not enclose a valid
-polygon (D118).
+polygon.
 
 ### `ContourRole` (engine roles — open vocabulary)
 
-The engine knows only three roles: `unknown`, `outer`, `inner` (MAP.md D47,
-"roles out of core"; process roles belong to snapbend, D88).
+The engine knows only three roles: `unknown`, `outer`, `inner` ("roles out of core"; process roles belong to snapbend).
 **It is not a closed universe**: anyone can assign a role the engine does not know (`hole`,
 `frame`, `title_block`, `section`, …). It goes through `normalize_role()` — cleaned
 into a slug `[a-z0-9_-]` ≤ 64 chars — and topo preserves it without raising; in
 the output the DXF adapter writes it by default on a layer **named after the slug**,
 grey (`unknown` → `Trash`, red), unless the caller chooses otherwise
-(`topo_dxf.to_dxf(layers=..., role_styles=...)`, D128). `role_str(role)` gives the string value whether the role is a
-constant or a slug (MAP.md D27 / D31).
+(`topo_dxf.to_dxf(layers=..., role_styles=...)`). `role_str(role)` gives the string value whether the role is a
+constant or a slug.
 
 **`topo.normalize_role(value) -> str`** and **`topo.is_structural_role(role) ->
-bool`** are public (MAP.md D30). `is_structural_role` (the engine's
+bool`** are public. `is_structural_role` (the engine's
 predicate, only `outer`/`inner`) is what `heal()` uses by default if you do not
 pass `is_structural=...` — see `heal()` above. A consumer that marks the geometry **before
 `heal`**: keeps the references to the `Edge`s of `doc.edges`, sets
@@ -1499,7 +1494,7 @@ topo.non_contour_candidates(doc: Document) -> list[Edge]
 
 Edges of `doc.edges` that the topological criterion of `heal()` would exclude from the
 contour graph (chains between two distinct branching nodes, and not on the border
-of the outer face of their connected component, MAP.md D111, D131) — **without saying what they are**. `heal()` by itself
+of the outer face of their connected component) — **without saying what they are**. `heal()` by itself
 assigns no meaning to these edges: it just excludes them, they stay in
 `loose` with the role they had. A consumer interprets them (snapbend
 `detect_flat`: straight, endpoints on the outer contour → `"bending"`).
@@ -1510,11 +1505,10 @@ a bend) calls `non_contour_candidates(doc)` to get the same list
 of candidates that `heal()` would use, without duplicating the criterion, and decides
 for itself how to mark them — then assigns `edge.role` on the returned `Edge`s (they are
 references into `doc.edges`, mutating them is reflected there) **before** calling
-`heal()` (see `ContourRole` above, MAP.md D55).
+`heal()` (see `ContourRole` above).
 
 It works on `doc.edges` as they are, **before** `heal()` merges overlapping/co-circular
-segments and closes tiny gaps (its first internal steps,
-D50/D52): on a drawing with duplicates or gaps below tolerance the result may
+segments and closes tiny gaps (its first internal steps): on a drawing with duplicates or gaps below tolerance the result may
 differ slightly from what `heal()` would exclude in the end. This is not a
 problem for the intended use — deciding `edge.role` before `heal()` — because
 the final word on what stays in the graph is said by `heal()` itself anyway.
@@ -1575,7 +1569,7 @@ import topo, topo_dxf          # pip install g-topo[dxf]
 
 A topo consumer like any other, in the same distribution: it reads DXF/DWG
 into a `Document`, writes a `Result` into an `ezdxf` `Drawing`. It uses only the public
-names of topo (D125, D129); without `ezdxf` installed, `import topo_dxf`
+names of topo; without `ezdxf` installed, `import topo_dxf`
 says which extra is missing. Layers and colours are the caller's choices; what the
 caller does not say is this adapter's default.
 
@@ -1605,8 +1599,8 @@ function the source `ezdxf` document disappears.
 | `explode_inserts` | `True` (default): explodes the blocks into primitives. **Set `False` only if you want to ignore the blocks on purpose** — an unexploded `INSERT` is discarded and its geometry disappears. |
 | `flatten_z` | brings entities with Z ≠ 0 back onto the plane. |
 | `tolerance` | rounding tolerance of the topological nodes. It is saved in `source_meta` and read again by `heal()` if you do not pass it again. |
-| `role_rules` | list of `RoleRule` — they assign the **role** to the `Edge`s already during translation. Evaluated in order, the first that matches wins, none → `unknown`. The name evaluated by `name`/`name_contains` is the layer; `dashed` and `color` look at the **effective** look (a `ByLayer` entity is resolved to the linetype/colour of its layer). The layer does not leave the adapter: the `Edge` carries only the role (MAP.md D63). See **`RoleRule`** below. |
-| `skip_layers` | the layers whose geometry is skipped. A sequence matches by **exact name** (case ignored); a function `name -> bool` decides by itself, with the name as it is in the file: part of the name, a regex, an algorithm of your own (`skip_layers=lambda n: "quote" in n.lower()`, D176). By default `()`: every layer is read (D243). To read back a file written by topo without its `loose` and text layers, pass `skip_layers=topo_dxf.SKIP_LAYERS` (`Trash_old` is still read). The curves skipped are counted per layer in one `dxf-layer-skipped` warning in `doc.warnings` (D242). |
+| `role_rules` | list of `RoleRule` — they assign the **role** to the `Edge`s already during translation. Evaluated in order, the first that matches wins, none → `unknown`. The name evaluated by `name`/`name_contains` is the layer; `dashed` and `color` look at the **effective** look (a `ByLayer` entity is resolved to the linetype/colour of its layer). The layer does not leave the adapter: the `Edge` carries only the role. See **`RoleRule`** below. |
+| `skip_layers` | the layers whose geometry is skipped. A sequence matches by **exact name** (case ignored); a function `name -> bool` decides by itself, with the name as it is in the file: part of the name, a regex, an algorithm of your own (`skip_layers=lambda n: "quote" in n.lower()`). By default `()`: every layer is read. To read back a file written by topo without its `loose` and text layers, pass `skip_layers=topo_dxf.SKIP_LAYERS` (`Trash_old` is still read). The curves skipped are counted per layer in one `dxf-layer-skipped` warning in `doc.warnings`. |
 
 **Returns** a `Document`. The diagnostics on the raw file (audit, unexploded
 INSERTs, Z≠0, duplicates removed, types that cannot be re-materialised in output) end up
@@ -1623,7 +1617,7 @@ named in the `dxf-not-modeled` warning, never dropped in silence.
 **Raises** `FileNotFoundError`, `EnvironmentError` (DWG without `ODA_PATH`),
 `RuntimeError` (DWG conversion failed), `ValueError` (the file has entities but
 none topo models, e.g. only `3DFACE`: an empty `Document` would read as an empty
-sheet, D252; a file with no entities at all gives an empty `Document`), or the
+sheet; a file with no entities at all gives an empty `Document`), or the
 read exceptions of `ezdxf`.
 
 ```python
@@ -1733,13 +1727,13 @@ entities from the source: `source_doc` serves only to carry over the headers
 | `filter_cluster` | `callable(Cluster) -> bool` — writes only the clusters that pass; `loose` and texts are all written. For one file per part, the part comes from `topo.split` (§3), which has already divided them. |
 | `exclude_types` | set of `dxftype`s to remove from the document (e.g. `{"TEXT"}`). |
 | `include_loose` | `True` (default): the curves of `result.loose` go on the layer of their role (`Trash` for `unknown`). Whoever opens the file must be able to see every entity of the starting drawing. |
-| `allow_invalid` | `True` (default): an invalid `result` is written all the same (`loose` and texts), as `to_svg` does. `False` → `ValueError`: for the caller that hands the file to a machine (D83). |
-| `layers` | where each role goes: `{role: "Name"}`, or `{role: function(element) -> name}` to split the entities of a role over several layers by looking at the element written (the `Contour`, the element of `cluster.overlay`, the curve of `loose` or the `Text`). A role you do not name stays at the adapter's default: `OuterContour`, `InnerContour`, `Trash` for `unknown`, the slug for every other role (D31, D128). |
+| `allow_invalid` | `True` (default): an invalid `result` is written all the same (`loose` and texts), as `to_svg` does. `False` → `ValueError`: for the caller that hands the file to a machine. |
+| `layers` | where each role goes: `{role: "Name"}`, or `{role: function(element) -> name}` to split the entities of a role over several layers by looking at the element written (the `Contour`, the element of `cluster.overlay`, the curve of `loose` or the `Text`). A role you do not name stays at the adapter's default: `OuterContour`, `InnerContour`, `Trash` for `unknown`, the slug for every other role. |
 | `role_styles` | how each role is drawn: `{role: RoleStyle}` (see below). It acts on the layer — everything is written BYLAYER — and on a layer shared by several roles the first one written wins. A role with a style has its layer even without entities. Underneath there is always topo's palette (`DEFAULT_ROLE_STYLES`): the map adds the caller's roles and changes only the fields it gives. |
-| `text_layer` | the layer of the texts **without a role** (default `"Annotation"`). A text with a role goes on the layer of its role, like an edge (D127, D128). No text is ever discarded. |
+| `text_layer` | the layer of the texts **without a role** (default `"Annotation"`). A text with a role goes on the layer of its role, like an edge. No text is ever discarded. |
 
 The maps are the caller's and hold for its call: topo keeps none of them
-(D128). A consumer publishes its own (`snapbend.flat.ROLE_STYLES`,
+. A consumer publishes its own (`snapbend.flat.ROLE_STYLES`,
 `snapbend.flat.LAYERS`) and whoever exports passes them, or composes them:
 
 ```python
@@ -1752,7 +1746,7 @@ topo_dxf.to_dxf(result, doc,
 topo_dxf.to_dxf(result, doc, layers={"bending": lambda bend: "BendUp" if is_up(bend) else "BendDown"})   # is_up: the caller's
 ```
 
-**The overlay** (D70, D90): it writes every collection of `cluster.overlay`,
+**The overlay**: it writes every collection of `cluster.overlay`,
 without knowing any by name. Of an element it reads only `role` and
 geometry: `item.contours` if present (each with `segments`/`styles` and
 possibly a `role` of its own), otherwise the element itself. A contour is
@@ -1799,7 +1793,7 @@ topo_dxf.inspect_file("pezzo.dxf", role_rules=[topo.RoleRule("bending", dashed=T
 
 ### The default layers
 
-topo has no layers (D123); these are the adapter's defaults, when the
+topo has no layers; these are the adapter's defaults, when the
 caller does not pass `layers=`:
 
 | name | value | |
@@ -1809,7 +1803,7 @@ caller does not pass `layers=`:
 | `topo_dxf.TRASH_LAYER` | `"Trash"` | role `unknown` |
 | `topo_dxf.LAYER_ANNOTATION` | `"Annotation"` | texts and dimensions without a role |
 | `topo_dxf.DEFAULT_LAYERS` | `{role: layer}` | the three engine roles |
-| `topo_dxf.SKIP_LAYERS` | `("Trash", "Annotation")` | the writer's `loose` and text layers: pass them as `skip_layers` to read a topo file back without them (D243) |
+| `topo_dxf.SKIP_LAYERS` | `("Trash", "Annotation")` | the writer's `loose` and text layers: pass them as `skip_layers` to read a topo file back without them |
 
 ```python
 topo_dxf.role_to_dxf_layer(role, element=None, *, layers: LayerMap = None) -> str
@@ -1817,7 +1811,7 @@ topo_dxf.role_to_dxf_layer(role, element=None, *, layers: LayerMap = None) -> st
 
 The layer of a role as `to_dxf` chooses it: the caller's map (a
 name, or the function called with `element`), otherwise the default, otherwise
-the slug of the role (D31). `LayerMap` is the type of that map:
+the slug of the role. `LayerMap` is the type of that map:
 `Mapping[str, str | Callable[[object], str]]`.
 
 ```python
@@ -1833,8 +1827,8 @@ topo_dxf.role_to_dxf_layer("frame")                               # "frame"
 topo_pdf.load_pdf(path, snap_tolerance=0.15) -> list[Edge]     # pip install g-topo[pdf]
 ```
 
-**Experimental** (MAP.md D10): opens a PDF, extracts the vector geometry
+**Experimental**: opens a PDF, extracts the vector geometry
 of each page, brings it to mm with the Cartesian Y axis and cleans it with a
 snap of nearby nodes. Returns a list of `Edge`s, **not a `Document`**:
 it cannot yet be passed to `topo.heal()`, and the API may change or disappear. Work
-on the PDF resumes here (TODO.md, "Aperti minori").
+on the PDF resumes here.

@@ -16,7 +16,7 @@ closed contours, and nothing is silently dropped.
 Today the geometry mostly comes from CAD files and technical drawings (DXF in;
 DXF, JSON or SVG out); the engine itself sees only geometry, whatever its source.
 
-> Status: **alpha**. Used in production, but the API still moves. See `MAP.md` for the current design decisions.
+> Status: **alpha**. Used in production, but the API still moves.
 
 > **Writing code against topo with an AI assistant?** Give it
 > [`docs/LLM.md`](docs/LLM.md) too: every public name with its signature, in few
@@ -126,7 +126,7 @@ order — see `docs/API.md` (the steps of `heal()`).
 ## Shapes: what a contour is, not what it is for
 
 topo names geometry, never its use. A circle is a circle; what it is for is a
-consumer's reading (D68, D91).
+consumer's reading.
 
 ```python
 for cluster in result.clusters:
@@ -169,7 +169,7 @@ topo.heal(doc)  ──►  Network     repaired once: nodes, doubles, gaps
                           ▼
    topo.split(result)                       ──►  list[Result] one per part, no format
    topo.save_json(result, path)                  the model's facts as JSON
-   topo.experimental.to_svg(result)         ──►  SVG string   for a UI / report (outside the 1.0 stable API, D133)
+   topo.experimental.to_svg(result)         ──►  SVG string   for a UI / report (outside the 1.0 stable API)
    topo.experimental.to_view_model(result)  ──►  dict (full geometry) for an external renderer (outside the 1.0 stable API)
    an adapter                               ──►  a file
 ```
@@ -294,7 +294,6 @@ fixed in 1.x. Each was reproduced on the current code.
 - **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — how it is built and why:
   the layers, the flow, "the model is the product".
 - **[`docs/LIMITS.md`](docs/LIMITS.md)** — what topo cannot promise, and why.
-- **`MAP.md`** — the design decisions, in chronological order.
 - **[`tutorial/`](tutorial/README.md)** — numbered lessons, from a part drawn in code to a folder of your own drawings.
 - **`SCRIPTS.md`** — the maintenance tools in `scripts/`.
 

@@ -5,7 +5,7 @@ byte in ingresso danno lo stesso risultato. Quello che **non** può promettere �
 dia lo stesso risultato dovunque si trovi: ruotata, spostata lontano
 dall'origine, specchiata, scritta in un altro ordine. Questa pagina spiega
 perché, con le parole più semplici che abbiamo. Non è un difetto di topo: vale
-per qualunque programma che decide sì o no su un numero misurato (MAP.md D215).
+per qualunque programma che decide sì o no su un numero misurato.
 
 ## 1. Una regola sì/no ha un confine
 
@@ -65,7 +65,7 @@ Quanto spesso succede dipende da quanti confini ci sono.
   0,00000000000001 mm dalla soglia. Quanto spesso succeda nei disegni veri non
   è misurato; zero non è mai.
 
-Per questo topo ha lasciato la griglia per la distanza (MAP.md D216): un nodo è
+Per questo topo ha lasciato la griglia per la distanza: un nodo è
 il punto vero, e due capi sono un nodo solo quando sono abbastanza vicini.
 
 ## 5. Cosa vuol dire per chi lo usa
