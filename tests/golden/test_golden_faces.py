@@ -1,11 +1,11 @@
 """
 tests/golden/test_golden_faces.py
 -------------------------
-Test di regressione geometrica contro i golden file: solo heal(), nessuna
-lettura di processo — un foro è un contorno interno, una piega un edge non
-strutturale (MAP.md D88). Fori, pieghe e incisioni: test_golden_process.py.
+Geometric regression test against the golden files: only heal(), no process
+reading — a hole is an inner contour, a bend a non-structural edge. Holes,
+bends and engravings: test_golden_process.py.
 
-DXF sorgente: tests/data/golden_faces/
+Source DXF: tests/data/golden_faces/
 Golden JSON:  tests/data/golden_faces/json/
 """
 
@@ -26,17 +26,16 @@ EXAMPLES_DIR = DATA
 GOLDEN_DXF_DIR = EXAMPLES_DIR / "golden_faces"
 GOLDEN_JSON_DIR = GOLDEN_DXF_DIR / "json"
 
-MAX_GAP = 0.5    # i golden faces/split si leggono con questo (D267, D269)
+MAX_GAP = 0.5    # the golden faces/split are read with this
 
 TOL_AREA = 0.1
 TOL_PERIMETER = 0.5
 TOL_SHAPE = 1.0
 
-# Solo per TestGoldenFacesWriteBack: write-back DXF -> reload introduce rumore di
-# arrotondamento sub-mm indipendente da topo (v. MAP.md D52, bisect a
-# ac68da1). TOL_AREA/TOL_SHAPE restano stretti per TestGoldenFaces (output live
-# vs golden salvato) -- qui il confronto e' output vs se stesso dopo un giro
-# di scrittura/rilettura, un rumore diverso e piu' permissivo per natura.
+# Only for TestGoldenFacesWriteBack: DXF write-back -> reload introduces
+# sub-mm rounding noise independent of topo. TOL_AREA/TOL_SHAPE stay tight for
+# TestGoldenFaces (live output vs saved golden) -- here the comparison is output
+# vs itself after a write/read round, a different and more permissive noise by nature.
 TOL_AREA_ROUNDTRIP = 20.0
 TOL_SHAPE_ROUNDTRIP = 30.0
 
@@ -46,14 +45,14 @@ GLOBAL_NAME_ROLES = {
     "Signature": "engrave",
 }
 
-# I ruoli che un golden assegna al load (MARK/Signature → engrave, più quelli
-# del suo config): il round-trip li rilegge dal layer su cui to_dxf li ha scritti.
+# The roles a golden assigns at load (MARK/Signature → engrave, plus those of
+# its config): the round-trip re-reads them from the layer to_dxf wrote them on.
 def _roundtrip_name_roles(name_roles: dict) -> dict:
     return {role_to_dxf_layer(role): role for role in set(name_roles.values())}
 
-# Contorni misti BSplineSeg + linee/archi: materializzati come SPLINE native +
-# LWPOLYLINE aperte con endpoint coincidenti (mai discretizzati). Il round-trip
-# li ricuce via grafo — nessuna perdita nota al momento.
+# Mixed BSplineSeg + lines/arcs contours: materialized as native SPLINEs + open
+# LWPOLYLINEs with coincident endpoints (never discretized). The round-trip
+# sews them via the graph — no known loss at the moment.
 ROUNDTRIP_KNOWN_LOSSY = set()
 
 
@@ -245,17 +244,14 @@ for golden in _load_golden_files():
 
 
 def _make_roundtrip_test(path):
-    """
-    Round-trip dell'exporter: heal → to_dxf → reload → heal.
+    """Round-trip of the exporter: heal → to_dxf → reload → heal.
 
-    Le asserzioni di TestGoldenFaces si fermano al modello in memoria e NON
-    vedono mai la geometria scritta da to_dxf(): un bug dell'exporter
-    (es. archi materializzati invertiti, contorni persi) passa inosservato.
-    Qui la geometria SCRITTA viene ricaricata e ri-processata: deve
-    riprodurre lo stesso modello che TestGoldenFaces ha già validato contro il
-    golden. Confrontiamo quindi rt_result con result, non con il JSON —
-    così il match delle parti è indipendente dall'ordine.
-    """
+    The assertions of TestGoldenFaces stop at the in-memory model and NEVER see the
+    geometry written by to_dxf(): an exporter bug (e.g. arcs materialized
+    inverted, lost contours) goes unnoticed. Here the WRITTEN geometry is reloaded
+    and re-processed: it must reproduce the same model that TestGoldenFaces already
+    validated against the golden. So we compare rt_result with result, not with the
+    JSON — so the matching of the parts is independent of the order."""
 
     def test(self):
         golden = json.loads(path.read_text(encoding="utf-8"))
@@ -287,7 +283,7 @@ def _make_roundtrip_test(path):
         rt_result = _pipeline(
             topo_dxf.document_from_msp(
                 doc_out.modelspace(), role_rules=topo.name_rules(_roundtrip_name_roles(name_roles)),
-                skip_layers=topo_dxf.SKIP_LAYERS,  # rilegge l'uscita di topo senza loose e testi (D243)
+                skip_layers=topo_dxf.SKIP_LAYERS,  # re-reads topo's output without loose and texts
             )
         )
 

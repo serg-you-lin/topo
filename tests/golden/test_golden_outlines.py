@@ -1,20 +1,20 @@
 """
 test_golden_outlines.py
 -----------------------
-Regressione su `outlines()` (D99-D100): per ogni foglio di viste, i cluster —
-riquadro del contorno esterno e numero di contorni interni — e le linee
-aperte fuori da ogni cluster.
+Regression on `outlines()`: for every sheet of views, the clusters — outer
+contour box and number of inner contours — and the open lines outside every
+cluster.
 
-Disegni in `tests/data/golden_outlines/` (`anch_NN`, `regr_NN`): copie
-anonimizzate dei fogli di snapdraw con la sola geometria che `outlines()` legge
-nel framer — cornice, cartiglio e linee di costruzione tolti da snapdraw, il
-file scritto da topo (layer `geometry`). topo non sa cos'è una cornice:
-riceve il foglio già ripulito. Cluster giudicati giusti da Federico sulla
-pagina "Scala delle isole" (5 ottobre). Golden in `json/` accanto; senza i
-disegni il test si salta.
+Drawings in `tests/data/golden_outlines/` (`anch_NN`, `regr_NN`): anonymized
+copies of snapdraw's sheets with only the geometry `outlines()` reads in the
+framer — frame, title block and construction lines removed by snapdraw, the
+file written by topo (layer `geometry`). topo does not know what a frame is:
+it receives the sheet already cleaned. Clusters judged right by Federico on
+the "Scala delle isole" page (5 October). Golden in `json/` alongside;
+without the drawings the test skips.
 
-Golden da rigenerare solo dopo aver verificato a occhio che i cluster sono
-giusti, mai per far passare un test:
+Golden to be regenerated only after checking by eye that the clusters are
+right, never to make a test pass:
 
     python -m tests.golden.test_golden_outlines --generate
 """
@@ -30,7 +30,7 @@ from tests.readings import outline_reading
 from topo import to_shapely
 from tests.paths import DATA, PROJECT_ROOT
 
-MAX_GAP = 0.5    # quello di snapdraw (SHEET_MAX_GAP)
+MAX_GAP = 0.5    # snapdraw's (SHEET_MAX_GAP)
 TOL = 0.01       # mm
 
 SOURCE_DIR = DATA / "golden_outlines"
@@ -38,8 +38,8 @@ GOLDEN_DIR = SOURCE_DIR / "json"
 
 
 def snapshot(dxf_path: Path, max_gap: float = MAX_GAP, name: str = None, area: bool = False) -> dict:
-    """I cluster in ordine di riquadro (due cluster di area uguale non scambiano il golden).
-    `area`: anche l'area esatta di ogni pezzo, che vede un outer cambiato dentro lo stesso riquadro."""
+    """The clusters in box order (two clusters of equal area do not swap the golden).
+    `area`: also the exact area of each piece, which sees an outer changed inside the same box."""
     _, result = outline_reading(dxf_path, max_gap)
     clusters = sorted([round(float(v), 3) for v in to_shapely(c.outer).bounds] + [len(c.inners), round(c.area, 3)]
                       for c in result.clusters)
@@ -49,18 +49,18 @@ def snapshot(dxf_path: Path, max_gap: float = MAX_GAP, name: str = None, area: b
             "open_outside": sum(1 for t in result.loose if getattr(t, "cluster_ref", None) is None)}
 
 
-# Fogli di viste e pezzi multipli giudicati giusti da Federico il 20 novembre,
-# letti con max_gap 0,05 (quello che conta, non lo 0,5 di snapdraw). I disegni
-# non sono anonimizzati: restano in tests/examples (fuori da git) e la mappa
-# og_NN -> percorso sta lì; in git solo i golden, col nome og_NN. Senza la
-# mappa o il disegno il test si salta.
+# Sheets of views and multiple parts judged right by Federico on 20 November,
+# read with max_gap 0.05 (the one that counts, not snapdraw's 0.5). The drawings
+# are not anonymized: they stay in tests/examples (outside git) and the map
+# og_NN -> path is there; in git only the golden, with the name og_NN. Without
+# the map or the drawing the test skips.
 MAX_GAP_SHEETS = 0.05
 SHEETS_MAP = PROJECT_ROOT / "tests" / "examples" / "golden_outlines_max_gap.json"
 SHEETS_GOLDEN_DIR = DATA / "golden_outlines_max_gap"
 
 
 def _sheets() -> dict:
-    """{og_NN: percorso del disegno}; vuoto senza la mappa."""
+    """{og_NN: path of the drawing}; empty without the map."""
     if not SHEETS_MAP.exists():
         return {}
     return {k: PROJECT_ROOT / v for k, v in json.loads(SHEETS_MAP.read_text(encoding="utf-8")).items()}
@@ -89,9 +89,9 @@ def _make_test(dxf: Path, golden: Path):
     return test
 
 
-# golden fermi apposta: D102/D103 li hanno spostati; i dubbi su D103 sono
-# chiusi (D157) e si rigenerano tutti insieme in G7,
-# guardando prima i DXF; allora questa lista si svuota
+# golden frozen on purpose: they were moved on purpose; the doubts are closed
+# and they are regenerated all together, looking at the DXFs first; then this
+# list empties
 KNOWN_STALE: set = set()
 
 for _dxf in sorted(SOURCE_DIR.glob("*.dxf")):
@@ -126,7 +126,7 @@ def generate():
 
 
 def generate_sheets():
-    """I golden dei fogli con max_gap: solo dopo che Federico li ha guardati."""
+    """The golden of the sheets with max_gap: only after Federico has looked at them."""
     SHEETS_GOLDEN_DIR.mkdir(parents=True, exist_ok=True)
     for name, dxf in sorted(_sheets().items()):
         snap = snapshot(dxf, MAX_GAP_SHEETS, name, area=True)

@@ -1,9 +1,9 @@
 """
 tests/paths.py
 --------------
-Le due cartelle che i test usano, scritte una volta: la radice del progetto e
-i disegni di `tests/data/`. Un test non calcola percorsi da `__file__`, così
-può cambiare cartella senza cambiare niente dentro.
+The two folders the tests use, written once: the project root and the
+drawings of `tests/data/`. A test does not compute paths from `__file__`, so
+it can change folder without changing anything inside.
 """
 
 from pathlib import Path
@@ -13,11 +13,10 @@ DATA = PROJECT_ROOT / "tests" / "data"
 
 
 def drawing(name: str) -> Path:
-    """Il disegno `name` di `tests/data/`, in qualunque cartella stia: un nome,
-    una copia (lo prova `tests/package/test_one_copy.py`). Per i nomi ancora
-    doppi con contenuti diversi (`SAME_NAME_DIFFERENT_CONTENT` lì) vince la
-    radice, come prima; senza nessun file, il percorso nella radice (il test
-    che lo cerca si salta da sé)."""
+    """The drawing `name` of `tests/data/`, in whatever folder it is: one name, one
+    copy (proved by `tests/package/test_one_copy.py`). For the names still doubled
+    with different content (`SAME_NAME_DIFFERENT_CONTENT` there) the root wins, as
+    before; with no file, the path in the root (the test that looks for it skips by itself)."""
     found = sorted(p for p in DATA.rglob(name) if p.is_file())
     if len(found) == 1:
         return found[0]

@@ -1,17 +1,17 @@
 """
 tests/invariants.py
 -------------------
-Gli attrezzi comuni alle invarianti delle due letture (test_heal_invariants.py,
-test_outlines_invariants.py, MAP.md D143, D158):
+The tools common to the invariants of the two readings (test_heal_invariants.py,
+test_outlines_invariants.py):
 
-- quello che si fa a un disegno senza cambiarne la forma: i moti rigidi
-  (rotazione, traslazione lontano dall'origine, specchio) e gli ordini diversi
-  delle entità. Una lettura che dipende da uno di questi dipende da come il
-  file è stato scritto, non dalla geometria;
-- il confronto fra due letture (poligoni accoppiati uno a uno);
-- i tratti di `loose` che corrono lungo un contorno: un pezzo d'ingresso
-  uscito due volte;
-- i salti dentro un contorno consegnato (D206).
+- what is done to a drawing without changing its shape: rigid motions
+  (rotation, translation far from the origin, mirror) and different orders of
+  the entities. A reading that depends on one of these depends on how the file
+  was written, not on the geometry;
+- the comparison of two readings (polygons paired one to one);
+- the `loose` stretches running along a contour: an input piece that came out
+  twice;
+- the jumps inside a delivered contour.
 """
 
 import math
@@ -32,27 +32,27 @@ from topo.core.primitives.motion import _rotate_point, _translate_point
 from topo.model.document import Document
 from topo import to_shapely
 
-QUARTER = math.pi / 2                 # esatto sulla griglia dei nodi: nessun arrotondamento nuovo
-ROTATION = 0.7                        # radianti, un angolo qualunque: i nodi tornano sulla griglia
-# lontano dall'origine (2.5 km, 1.5 km), sulla griglia dei nodi: un double ha
-# ancora ~10 cifre sotto il millimetro, ma ogni prodotto di coordinate
-# (prodotti vettoriali, aree) perde 6-7 cifre rispetto all'origine
+QUARTER = math.pi / 2                 # exact on the node grid: no new rounding
+ROTATION = 0.7                        # radians, any angle: the nodes come back on the grid
+# far from the origin (2.5 km, 1.5 km), on the node grid: a double still has ~10
+# digits below the millimetre, but every product of coordinates (cross products,
+# areas) loses 6-7 digits relative to the origin
 FAR = (2.5e6, -1.5e6)
 SHUFFLES = 5                          # rimescolamenti per disegno, seed 0..SHUFFLES-1
 GRID = 1e-6
-# due discretizzazioni dello stesso tratto di curva distano al più così (ogni
-# corda sta entro DEFAULT_TOLERANCE dalla curva, dallo stesso lato)
+# two discretizations of the same stretch of curve are at most this far apart
+# (every chord is within DEFAULT_TOLERANCE of the curve, on the same side)
 ON_CONTOUR = DEFAULT_TOLERANCE
-# un tratto di `loose` entro ON_CONTOUR da un contorno per più di così corre
-# lungo il contorno: un incrocio ci resta solo sotto ~1° (2·ON_CONTOUR/sin θ),
-# una tangenza solo con raggio oltre ~12 mm (2·√(2·R·ON_CONTOUR))
+# a `loose` stretch within ON_CONTOUR of a contour for more than this runs along
+# the contour: a crossing stays there only below ~1° (2·ON_CONTOUR/sin θ), a
+# tangency only with radius above ~12 mm (2·√(2·R·ON_CONTOUR))
 ALONG = 1.0
-TWICE = 1.9                           # ingresso lungo il tratto, in lunghezze del tratto: due pezzi
+TWICE = 1.9                           # input along the stretch, in stretch lengths: two pieces
 
 
 def moved(doc: Document, move) -> Document:
-    """`doc` con ogni segmento passato per `move` (segmento → segmento) e i
-    nodi sulla griglia del caricamento, come `topo.experimental.rotate_document`."""
+    """`doc` with every segment passed through `move` (segment → segment) and the
+    nodes on the load grid, like `topo.experimental.rotate_document`."""
     edges = []
     for edge in doc.edges:
         seg = move(edge.segment)
@@ -62,16 +62,16 @@ def moved(doc: Document, move) -> Document:
 
 
 def rigid(angle: float, dx: float, dy: float):
-    """(moto del segmento, moto del punto) per un moto qualunque: ruota di
-    `angle` attorno all'origine, poi trasla. Il punto fa gli stessi conti del
-    segmento (`.rotated().translated()`), bit per bit: per i micro-casi G6e,
-    dove il rosso viene da un moto preciso, non da MOTIONS."""
+    """(motion of the segment, motion of the point) for any motion: rotate by `angle`
+    about the origin, then translate. The point does the same computation as the
+    segment (`.rotated().translated()`), bit for bit: for micro-cases, where the
+    red comes from a precise motion, not from MOTIONS."""
     def point(p):
         return _translate_point(_rotate_point(p, angle, (0.0, 0.0)), dx, dy)
     return (lambda s: s.rotated(angle).translated(dx, dy)), point
 
 
-# (nome, moto del segmento, moto inverso di un poligono shapely, esatto sulla griglia)
+# (name, segment motion, inverse motion of a shapely polygon, exact on the grid)
 MOTIONS = [
     ("rotation", lambda s: s.rotated(ROTATION),
      lambda p: affinity.rotate(p, -ROTATION, origin=(0, 0), use_radians=True), False),
@@ -85,27 +85,25 @@ MOTIONS = [
 
 
 def scrambled(doc: Document, angle: float = ROTATION, seed: int = 0) -> Document:
-    """`doc` scritto in un altro modo, tutto insieme: edge rimescolati (`seed`),
-    ruotati di `angle`, spostati di FAR e specchiati. Una lettura sola al
-    posto di una per moto e per ordine (D160): se la lettura dipende da una
-    qualunque di queste cose, cambia anche qui; quale sia lo dice la
-    diagnosi, che prova i moti e gli ordini uno alla volta."""
+    """`doc` written another way, all at once: edges shuffled (`seed`), rotated by
+    `angle`, moved by FAR and mirrored. One reading instead of one per motion and
+    per order: if the reading depends on any of these, it changes here too; which
+    one is told by the diagnosis, which tries the motions and orders one at a time."""
     edges = list(doc.edges)
     random.Random(seed).shuffle(edges)
     return moved(replace(doc, edges=edges), lambda s: s.rotated(angle).translated(*FAR).mirrored())
 
 
 def unscrambled(poly, angle: float = ROTATION):
-    """Il poligono shapely di una lettura di `scrambled(doc, angle)` riportato
-    nel sistema di `doc`."""
+    """The shapely polygon of a reading of `scrambled(doc, angle)` brought back to
+    the frame of `doc`."""
     poly = affinity.scale(poly, 1.0, -1.0, origin=(0, 0))
     poly = affinity.translate(poly, -FAR[0], -FAR[1])
     return affinity.rotate(poly, -angle, origin=(0, 0), use_radians=True)
 
 
 def orders(edges: list) -> list:
-    """(nome, edge) per ogni ordine provato: al contrario, più SHUFFLES
-    rimescolamenti riproducibili."""
+    """(name, edges) for every order tried: reversed, plus SHUFFLES reproducible shufflings."""
     result = [("reversed", list(reversed(edges)))]
     for seed in range(SHUFFLES):
         shuffled = list(edges)
@@ -123,10 +121,10 @@ def geometry(segment):
 
 
 def _differ_by(a, b) -> float:
-    """Area della differenza simmetrica di `a` e `b`, sulla griglia del micron:
-    GEOS, su due poligoni uguali a 1e-13 con vertici quasi allineati, può dare
-    come differenza l'unione intera. Infinita se GEOS non sa calcolarla (un
-    poligono non semplice): due forme che non si confrontano non sono gemelle."""
+    """Area of the symmetric difference of `a` and `b`, on the micron grid: GEOS, on
+    two polygons equal to 1e-13 with nearly aligned vertices, may give the whole
+    union as the difference. Infinite if GEOS cannot compute it (a non-simple
+    polygon): two shapes that cannot be compared are not twins."""
     try:
         return a.symmetric_difference(b, grid_size=GRID).area
     except GEOSException:
@@ -134,9 +132,9 @@ def _differ_by(a, b) -> float:
 
 
 def _could_be_twins(a, b, band: float) -> bool:
-    """Falso solo se la differenza simmetrica di `a` e `b` supera certo
-    `band`: con gli ingombri disgiunti è la somma delle aree. Evita il
-    confronto vero, che è il conto caro, fra i fori lontani (D160)."""
+    """False only if the symmetric difference of `a` and `b` certainly exceeds
+    `band`: with disjoint extents it is the sum of the areas. It avoids the real
+    comparison, which is the expensive computation, between distant holes."""
     ax0, ay0, ax1, ay1 = a.bounds
     bx0, by0, bx1, by1 = b.bounds
     apart = ax1 < bx0 or bx1 < ax0 or ay1 < by0 or by1 < ay0
@@ -144,8 +142,8 @@ def _could_be_twins(a, b, band: float) -> bool:
 
 
 def shape_differences(before: list, after: list, band_per_mm: float) -> list:
-    """I poligoni di `before` senza un gemello in `after` (differenza
-    simmetrica sotto `band_per_mm` per mm di perimetro), accoppiati uno a uno."""
+    """The polygons of `before` without a twin in `after` (symmetric difference below
+    `band_per_mm` per mm of perimeter), paired one to one."""
     free = list(after)
     missing = []
     for poly in before:
@@ -160,16 +158,15 @@ def shape_differences(before: list, after: list, band_per_mm: float) -> list:
 
 
 def contours(result) -> list:
-    """(outer, inner) di `result`: i poligoni degli outer e di tutti gli inner."""
+    """(outer, inner) of `result`: the polygons of the outers and of all the inners."""
     return ([to_shapely(c.outer) for c in result.clusters],
             [to_shapely(i) for c in result.clusters for i in c.inners])
 
 
 class _Bands:
-    """Le fasce larghe `distance` attorno a `geoms`, costruite una volta per
-    geometria. La fascia attorno a un'unione è l'unione delle fasce: rifare il
-    buffer dei vicini a ogni curva costava milioni di vertici su un disegno
-    con molti lati corti (D160)."""
+    """The bands of width `distance` around `geoms`, built once per geometry. The
+    band around a union is the union of the bands: redoing the neighbours' buffer
+    for every curve cost millions of vertices on a drawing with many short sides."""
 
     def __init__(self, geoms: list, distance: float):
         self.distance = distance
@@ -178,13 +175,12 @@ class _Bands:
         prepare(self.bands)
 
     def near(self, curve):
-        """La fascia attorno alle geometrie vicine a `curve`, o None se
-        nessuna è vicina. Dentro `distance` da `curve` è la fascia attorno a
-        tutte: le altre non la raggiungono."""
+        """The band around the geometries near `curve`, or None if none is near. Within
+        `distance` of `curve` it is the band around all of them: the others do not reach it."""
         near = self.tree.query(curve, predicate="dwithin", distance=self.distance)
         if len(near) == 0:
             return None
-        # il caso normale: la curva sta tutta nella fascia di un vicino solo
+        # the normal case: the curve lies wholly in the band of a single neighbour
         for i in near:
             if self.bands[i].covers(curve):
                 return self.bands[i]
@@ -196,12 +192,11 @@ def _rims(result) -> list:
 
 
 def along_contours(result, doc: Document) -> list:
-    """I tratti di `result.loose` che corrono lungo un contorno (entro
-    ON_CONTOUR per più di ALONG mm): (lunghezza, punto) per ognuno. Ogni
-    pezzo d'ingresso esce una volta — o in un contorno o in `loose` (D137) —
-    quindi la lista è vuota. Un tratto dove l'ingresso di `doc` ha due pezzi
-    (un cerchio ripassato da una polilinea) non conta: sono due pezzi, e
-    ognuno esce una volta."""
+    """The stretches of `result.loose` running along a contour (within ON_CONTOUR for
+    more than ALONG mm): (length, point) for each. Every input piece comes out once
+    — either in a contour or in `loose` — so the list is empty. A stretch where
+    the input of `doc` has two pieces (a circle retraced by a polyline) does not
+    count: they are two pieces, and each comes out once."""
     rims = _rims(result)
     if not rims:
         return []
@@ -224,8 +219,8 @@ def along_contours(result, doc: Document) -> list:
 
 
 def _twice_in_input(piece, inputs: list, tree) -> bool:
-    """Vero se l'ingresso copre `piece` almeno due volte: la sua lunghezza
-    entro ON_CONTOUR da `piece` è quasi il doppio di `piece`."""
+    """True if the input covers `piece` at least twice: its length within ON_CONTOUR
+    of `piece` is nearly double `piece`."""
     zone = piece.buffer(ON_CONTOUR)
     near = tree.query(zone, predicate="intersects")
     covered = sum(inputs[int(i)].intersection(zone).length for i in near)
@@ -233,11 +228,11 @@ def _twice_in_input(piece, inputs: list, tree) -> bool:
 
 
 def uncovered(doc: Document, result, distance: float):
-    """La geometria in ingresso di `doc` più lontana di `distance` da ogni
-    uscita di `result` (segmenti dei contorni e di `loose`)."""
+    """The input geometry of `doc` farther than `distance` from every output of
+    `result` (segments of the contours and of `loose`)."""
     outputs = _rims(result) + [geometry(s) for f in result.loose for s in f.segments]
-    # un ingresso uscito tale e quale (nei due versi) è coperto: si salta il
-    # conto della fascia, che è il caro, per quasi ogni edge (D160)
+    # an input that came out unchanged (in both directions) is covered: skip the
+    # band computation, which is the expensive one, for almost every edge
     same = {tuple(g.coords) for g in outputs} | {tuple(g.coords)[::-1] for g in outputs}
     bands = _Bands(outputs, distance)
     lost = []
@@ -251,10 +246,10 @@ def uncovered(doc: Document, result, distance: float):
 
 
 def known_defect(test, where: str, gate: str, check) -> None:
-    """Esegue `check()` per un caso di un difetto noto, aperto nel cancello
-    (`gate`, TODO.md): deve fallire, e il caso esce come skip con la voce del
-    cancello. Se passa il difetto è risolto e il test fallisce finché il caso
-    non esce dalla lista."""
+    """Run `check()` for a case of a known defect, open in the gate (`gate`,
+    TODO.md): it must fail, and the case comes out as a skip with the gate's
+    entry. If it passes the defect is solved and the test fails until the case
+    leaves the list."""
     try:
         check()
     except AssertionError:
@@ -263,8 +258,8 @@ def known_defect(test, where: str, gate: str, check) -> None:
 
 
 def contour_jumps(result) -> list:
-    """(cluster, contorno, lunghezza, punto) di ogni salto oltre FLOAT_NOISE fra
-    un segmento e il seguente nei contorni consegnati: dev'essere vuota (D206)."""
+    """(cluster, contour, length, point) of every jump beyond FLOAT_NOISE between a
+    segment and the next in the delivered contours: it must be empty."""
     found = []
     for ci, cluster in enumerate(result.clusters):
         for name, contour in [("outer", cluster.outer)] + [(f"inner[{i}]", c) for i, c in enumerate(cluster.inners)]:
@@ -275,11 +270,7 @@ def contour_jumps(result) -> list:
     return found
 
 
-# ---------------------------------------------------------------------------
-# Messaggi (D233): ogni avviso, nota ed errore di una lettura è un Diagnostic
-# del suo livello, con un codice di questa lista. Un codice nuovo si aggiunge
-# qui e in docs/LLM.md, mai per strada.
-# ---------------------------------------------------------------------------
+# --- Messages: every warning, note and error of a reading is a Diagnostic of its level, with a code from this list. A new code is added here and in docs/LLM.md, never on the way. ---
 
 DIAGNOSTIC_CODES = {
     "warning": {"set-aside", "near-copy", "open-arc", "near-gap", "tie", "crossing", "self-crossing", "closed-touch",
@@ -292,8 +283,8 @@ DIAGNOSTIC_CODES = {
 
 
 def message_problems(result) -> list:
-    """I messaggi di `result` che non rispettano D233: non un Diagnostic, nel
-    canale sbagliato, o con un codice fuori lista."""
+    """The messages of `result` that do not respect the rule: not a Diagnostic, in
+    the wrong channel, or with a code outside the list."""
     from topo.model.diagnostic import Diagnostic
     problems = []
     for channel, level in ((result.warnings, "warning"), (result.notes, "note"), (result.errors, "error")):

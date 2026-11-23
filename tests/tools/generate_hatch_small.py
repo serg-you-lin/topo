@@ -1,15 +1,16 @@
 """
 tests/tools/generate_hatch_small.py
 -----------------------------
-Genera `tests/data/tratteggio_stretto_piccolo.dxf`: il disegno del tratteggio
-stretto (G16) in piccolo, perché le invarianti ci girino in un secondo e non
-in sette minuti. Il contorno di `test_non_structural_role.py` scalato di 1/8,
-con il restringimento di 0,3 mm e il lato appena storto (0,049) tenuti alla
-misura vera; righe a 45° ogni 0,125 mm, tagliate sul bordo come un tratteggio
-esploso. Si legge come l'originale: `faces()` con il contorno a pezzi,
-`outlines()` a 15 segmenti, le righe in `loose`.
+Generates `tests/data/tratteggio_stretto_piccolo.dxf`: the narrow-hatching
+drawing at small scale, so that the invariants run on it in one second and not
+in seven minutes. The contour of `test_non_structural_role.py` scaled by 1/8,
+with the 0.3 mm narrowing and the barely crooked side (0.049) kept at the true
+measure; lines at 45° every 0.125 mm, cut on the border like an exploded
+hatching. It reads like the original: `faces()` with the contour in pieces,
+`outlines()` at 15 segments, the lines in `loose`.
 
-Uso: python tests/tools/generate_hatch_small.py
+Usage: python tests/tools/generate_hatch_small.py
+
 """
 
 import math

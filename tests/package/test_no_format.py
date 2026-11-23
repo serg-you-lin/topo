@@ -1,10 +1,10 @@
 """
 tests/package/test_no_format.py
 ----------------------------
-topo non ha un formato (MAP.md D123, D129): si importa e lavora senza ezdxf
-né PyMuPDF, e `topo.split` divide un Result in un Result per parte senza
-scrivere niente. Il confine sugli import lo controlla `test_index.py`; qui si
-prova che regge anche a runtime.
+topo has no format: it is imported and works without ezdxf or PyMuPDF, and
+`topo.split` divides a Result into one Result per part without writing
+anything. The import boundary is checked by `test_index.py`; here it is shown
+to hold at runtime too.
 """
 
 import subprocess
@@ -17,7 +17,7 @@ import ezdxf
 import topo
 import topo_dxf
 
-# Un processo nuovo in cui ezdxf, fitz e pymupdf non si possono importare
+# A fresh process in which ezdxf, fitz and pymupdf cannot be imported
 _BLOCKED = textwrap.dedent("""
     import sys
 
@@ -36,8 +36,7 @@ def _run(code: str) -> subprocess.CompletedProcess:
 
 
 def _two_squares_doc():
-    """Due quadrati 100×100 a 300 mm di distanza, un testo e un segmento
-    sciolto vicino al secondo."""
+    """Two 100×100 squares 300 mm apart, a text and a loose segment near the second."""
     doc = ezdxf.new("R2010")
     msp = doc.modelspace()
     for x0 in (0, 300):
@@ -87,8 +86,8 @@ class TestSplitIsModel(unittest.TestCase):
             self.assertEqual(part.cluster_count, 1)
 
     def test_trash_and_annotations_go_to_one_part(self):
-        # ogni testo alla parte che lo contiene o alla più vicina, il trash
-        # alla più vicina: niente duplicato, niente perso
+        # every text to the part that contains it or the nearest, the trash to the
+        # nearest: nothing duplicated, nothing lost
         parts = topo.split(self.result)
         texts = [[a.text for a in p.texts] for p in parts]
         self.assertEqual(texts, [["A"], ["B"]])

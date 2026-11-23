@@ -1,12 +1,11 @@
 """
 tests/package/test_no_shapely_surface.py
 
-Guardiano di D166 e D169: nessun tipo shapely o numpy nella superficie
-pubblica di topo.
-Due controlli: le firme e i campi dichiarati di ogni nome pubblico, e gli
-oggetti veri che escono da `faces()`, `outlines()`, `topo.experimental` e `topo.geometry`,
-percorsi campo per campo e proprietà per proprietà. Solo `to_shapely` lo
-restituisce: è la conversione esplicita.
+Guardian: no shapely or numpy type in the public surface of topo.
+Two checks: the signatures and declared fields of every public name, and the
+real objects that come out of `faces()`, `outlines()`, `topo.experimental` and
+`topo.geometry`, walked field by field and property by property. Only
+`to_shapely` returns one: it is the explicit conversion.
 """
 
 import dataclasses
@@ -42,7 +41,7 @@ def _public_names():
 
 
 def _annotations(obj) -> list:
-    """Le annotazioni scritte di una funzione, dei metodi e dei campi di una classe."""
+    """The written annotations of a function, the methods and the fields of a class."""
     out = []
     if inspect.isclass(obj):
         for klass in obj.__mro__:
@@ -72,7 +71,7 @@ def test_nessuna_firma_pubblica_nomina_shapely(qualname, obj):
 
 
 def _walk(obj, path, seen, found, depth=0):
-    """Ogni valore raggiungibile da `obj` per campi pubblici e proprietà."""
+    """Every value reachable from `obj` by public fields and properties."""
     if id(obj) in seen or depth > 8:
         return
     seen.add(id(obj))
@@ -98,7 +97,7 @@ def _walk(obj, path, seen, found, depth=0):
             continue
         try:
             value = getattr(obj, name)
-        except Exception:      # una proprietà che non ha senso su questo oggetto (centroid senza area)
+        except Exception:      # a property that makes no sense on this object (centroid without area)
             continue
         _walk(value, f"{path}.{name}", seen, found, depth + 1)
 
@@ -110,7 +109,7 @@ def _shapely_in(obj, path) -> list:
 
 
 def _plate():
-    # piastra con raccordo, foro, isola dentro un buco, e un tratto sciolto
+    # plate with a fillet, a hole, an island inside a hole, and a loose stretch
     ring = [LineSeg((0, 0), (100, 0)), LineSeg((100, 0), (100, 60)),
             LineSeg((100, 60), (0, 60)), LineSeg((0, 60), (0, 0))]
     segments = (ring + topo.geometry.circle(20, center=(40, 30)) + topo.geometry.circle(8, center=(40, 30))

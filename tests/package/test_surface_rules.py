@@ -1,16 +1,16 @@
 """
 tests/package/test_surface_rules.py
 
-Guardiano delle regole di forma di D175 verificabili a macchina (G14 passo 3).
+Guardian of the shape rules of the public surface that can be checked by machine.
 
-Regola 1 — i dati per posizione, le opzioni solo per nome (D176). Ogni
-callable pubblico (funzioni, costruttori, metodi di `topo`, `topo.geometry`,
-`topo.primitives`, `topo.model`, `topo_dxf`) dichiara qui i suoi parametri
-posizionali, che sono tutti dati. Un nome o un parametro nuovo fa fallire il
-test finché qualcuno non decide se è un dato (lo aggiunge qui) o
-un'opzione (va dopo `*`). La passata di D176 si è persa tre metodi e due
-funzioni perché guardava solo i parametri con default e non i metodi: questo
-test li guarda tutti. `topo.experimental` è fuori dalla promessa (D175 C).
+Rule 1 — data by position, options by name only. Every public callable
+(functions, constructors, methods of `topo`, `topo.geometry`,
+`topo.primitives`, `topo.model`, `topo_dxf`) declares here its positional
+parameters, which are all data. A new name or parameter fails the test until
+someone decides whether it is data (adds it here) or an option (goes after
+`*`). The earlier pass missed three methods and two functions because it only
+looked at parameters with a default and not at the methods: this test looks at
+all of them. `topo.experimental` is outside the promise.
 """
 
 import enum
@@ -29,8 +29,8 @@ MODULES = {
     "topo_dxf": topo_dxf,
 }
 
-# i parametri posizionali di ogni callable pubblico: tutti dati. Chi non è
-# qui non ne ha (o solo `self`/`cls`).
+# the positional parameters of every public callable: all data. Whoever is not
+# here has none (or only `self`/`cls`).
 DATA = {
     'topo.load_geometry': ('entities',),
     'topo.load_segments': ('segments',),
@@ -190,14 +190,14 @@ DATA = {
     'topo_dxf.role_to_dxf_layer': ('role', 'element'),
 }
 
-# eccezioni dichiarate in D176: un'opzione per posizione per un protocollo noto
+# declared exceptions: an option by position for a known protocol
 DECLARED_EXCEPTIONS = {
-    ("topo.Overlay.get", "default"),   # il protocollo di dict.get
-    ("topo.geometry.Gap", "distance"),  # un campo del risultato di gap(), non un'opzione
+    ("topo.Overlay.get", "default"),   # the dict.get protocol
+    ("topo.geometry.Gap", "distance"),  # a field of the result of gap(), not an option
 }
 
-# un parametro con questo nome è un'opzione, sempre: rete di sicurezza per
-# quando qualcuno aggiunge a DATA senza pensarci
+# a parameter with this name is an option, always: a safety net for when
+# someone adds to DATA without thinking
 OPTION_NAME = re.compile(r"(^|_)(tol|tolerance|distance|eps|epsilon|decimals|indent)$"
                          r"|^(min|max|include|allow|snap|keep)_")
 
@@ -209,7 +209,7 @@ def _positional(fn) -> tuple:
 
 
 def public_callables():
-    """(nome, callable) per ogni funzione, classe e metodo pubblico."""
+    """(name, callable) for every public function, class and method."""
     seen = set()
     for prefix, module in MODULES.items():
         for name in module.__all__:
@@ -235,7 +235,7 @@ def public_callables():
 
 
 class TestOptionsByName(unittest.TestCase):
-    """D175 regola 1, D176 punto 1."""
+    """Rule 1."""
 
     def test_posizionali_dichiarati(self):
         wrong = []

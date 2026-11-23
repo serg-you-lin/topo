@@ -1,13 +1,13 @@
 """
 tests/package/test_one_copy.py
 ------------------------------
-Un nome, una copia: ogni disegno di `tests/data/` sta in una cartella sola e
-tutti i test lo trovano con `tests.paths.drawing(nome)`. Una copia in due
-posti si modifica in uno e il test che legge l'altro non lo sa.
+One name, one copy: every drawing of `tests/data/` is in a single folder and
+all the tests find it with `tests.paths.drawing(name)`. A copy in two places
+is modified in one and the test reading the other does not know.
 
-`SAME_NAME_DIFFERENT_CONTENT`: i nomi ancora doppi con contenuti diversi,
-da risolvere uno per uno (TODO). La lista può solo accorciarsi: un nome nuovo
-doppio fa fallire il test, e anche un nome della lista che torna unico.
+`SAME_NAME_DIFFERENT_CONTENT`: the names still doubled with different
+content, to be resolved one by one (TODO). The list can only shrink: a new
+doubled name fails the test, and so does a name of the list that becomes unique again.
 """
 
 import collections
@@ -30,7 +30,7 @@ class TestOneCopy(unittest.TestCase):
     def test_un_nome_una_copia(self):
         by_name = collections.defaultdict(list)
         for p in DATA.rglob("*"):
-            # `*healed*` sono uscite locali, fuori da git (.gitignore)
+            # `*healed*` are local outputs, outside git (.gitignore)
             if p.is_file() and p.suffix.lower() == ".dxf" and "healed" not in p.name:
                 by_name[p.name].append(p.relative_to(DATA).as_posix())
         doubles = {n for n, paths in by_name.items() if len(paths) > 1}

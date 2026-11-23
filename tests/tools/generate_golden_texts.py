@@ -1,19 +1,19 @@
 """
 generate_golden_texts.py
 ------------------------
-Genera i golden file per il test di regressione sui testi (`topo.model.Text`,
-D138, letti dall'adapter DXF). Snapshot di `topo_dxf.load_dxf(...).texts`
-dopo heal() e anchor_texts(). Lo schema è quello di
+Generates the golden files for the regression test on texts (`topo.model.Text`,
+read by the DXF adapter). Snapshot of `topo_dxf.load_dxf(...).texts` after
+heal() and anchor_texts(). The schema is that of
 `tests/golden/test_golden_texts.text_dict`.
 
-DXF sorgente: tests/data/*.dxf (quelli che contengono testi)
+Source DXF: tests/data/*.dxf (those that contain texts)
 Golden JSON:  tests/data/golden_faces/texts/
 
-Runna UNA VOLTA quando sei soddisfatto della lettura corrente, e mai per far
-passare un test senza aver prima verificato che l'output è giusto.
+Run it ONCE when you are satisfied with the current reading, and never to make
+a test pass without first checking that the output is right.
 
-    python generate_golden_texts.py            # genera solo i mancanti
-    python generate_golden_texts.py --force    # rigenera tutti
+    python generate_golden_texts.py            # generates only the missing ones
+    python generate_golden_texts.py --force    # regenerates all
     python generate_golden_texts.py --only gamba_tavolo
 """
 
@@ -34,7 +34,7 @@ from tests.golden.test_golden_texts import sort_key, text_dict
 
 EXAMPLES_DIR = project_root / "tests" / "data"
 GOLDEN_DIR = EXAMPLES_DIR / "golden_faces" / "texts"
-# I DXF sorgente vivono sotto tests/data/ o tests/data/golden_faces/.
+# The source DXFs live under tests/data/ or tests/data/golden_faces/.
 _SOURCE_DIRS = [EXAMPLES_DIR, EXAMPLES_DIR / "golden_faces"]
 
 _TEXT_DXF_TYPES = {"TEXT", "MTEXT", "DIMENSION", "LEADER", "MULTILEADER"}

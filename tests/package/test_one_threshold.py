@@ -1,14 +1,14 @@
 # tests/package/test_one_threshold.py
-"""Ogni soglia fissa di topo sta in `topo/precision.py` e non si riassegna (D268, D269).
+"""Every fixed topo threshold is in `topo/precision.py` and is not reassigned.
 
-Si guardano le costanti a livello di modulo con un valore numerico (anche
-un'espressione come `math.radians(2.0)`) e i valori di default decimali dei
-parametri che sono soglie (`THRESHOLD_PARAM`: tol, gap, segment, angle, …);
-e gli interi che sono conteggi (`COUNT_NAME`: campioni, passi, profondità,
-lati minimi, …), costanti o default, da 2 in su.
-I nomi di `precision` sono un elenco fisso: aggiungerne o toglierne uno è una
-decisione (MAP), non un effetto collaterale. Le guardie dell'aritmetica scritte nei confronti (`< 1e-12`) non
-sono soglie del disegno e non si guardano (D196)."""
+The module-level constants with a numeric value are checked (even an
+expression like `math.radians(2.0)`) and the decimal default values of the
+parameters that are thresholds (`THRESHOLD_PARAM`: tol, gap, segment, angle,
+…); and the integers that are counts (`COUNT_NAME`: samples, steps, depth,
+minimum sides, …), constants or defaults, from 2 up. The names of `precision`
+are a fixed list: adding or removing one is a decision (MAP), not a side
+effect. The arithmetic guards written in comparisons (`< 1e-12`) are not
+drawing thresholds and are not checked."""
 
 import ast
 import math
@@ -22,14 +22,14 @@ THRESHOLD_PARAM = ("tol", "eps", "gap", "reach", "snap", "margin", "sagitta", "s
                    "factor", "width", "limit", "threshold")
 COUNT_NAME = ("samples", "steps", "depth", "terms", "pieces", "segments", "sides", "iter", "run", "start")
 
-# i nomi di topo/precision.py (D269, D275, D276, D277)
+# the names of topo/precision.py
 PRECISION_NAMES = {
     "ANGLE_BRACKET_DEG", "FLOAT_NOISE", "MARK_FRACTION",
     "NEAR_FULL_ARC_HINT_DEG", "NEAR_FULL_ARC_MISSING_DEG", "NEAR_GAP_FACTOR",
     "PDF_SNAP", "POINTS_NOISE", "SAME_POINT", "TESSELLATION_RUN", "TESSELLATION_SIDE",
 }
 
-# (file, nome): numeri che non sono soglie, col perché
+# (file, name): numbers that are not thresholds, with the why
 NOT_THRESHOLDS = {
     ("topo_pdf/geometry_adapter.py", "PT_TO_MM"): "conversione di unità",
     ("topo/core/primitives/clothoid.py", "_SERIES_UP_TO"):
@@ -40,7 +40,7 @@ NOT_THRESHOLDS = {
     ("topo/core/primitives/formula.py", "_INITIAL_PIECES"): "poligono adattivo di FormulaSeg, non per dimostrazione (D289)",
 }
 
-# tetti di un metodo che converge: la precisione la dà il metodo, il tetto ferma solo un caso che non converge
+# caps of a converging method: the precision is given by the method, the cap only stops a case that does not converge
 CONVERGENCE = {
     ("topo/core/primitives/trim.py", "_REFINE_STEPS"): "ricerca ternaria: (2/3)^60 ≈ 3e-11 della forchetta",
     ("topo/core/geometry/regions.py", "_ONTO_STEPS"): "Newton, si ferma prima a FLOAT_NOISE",
@@ -48,8 +48,7 @@ CONVERGENCE = {
     ("topo/core/primitives/formula.py", "_MAX_DEPTH"): "dimezzamenti di un tratto: 2^-30 del tratto",
 }
 
-# da togliere (TODO "Numeri delle primitive sfuggiti a precision", punti b e c):
-# quando il numero sparisce, test_le_eccezioni_esistono_ancora chiede di togliere la riga
+# to be removed (TODO "Numbers of the primitives that escaped precision", points b and c): when the number disappears, test_le_eccezioni_esistono_ancora asks to remove the line
 PENDING: dict = {}
 EXCEPTIONS = {**NOT_THRESHOLDS, **CONVERGENCE, **PENDING}
 PRECISION = "topo/precision.py"
@@ -72,7 +71,7 @@ def _value(node) -> float:
 
 
 def _counted(name: str, value) -> bool:
-    """Un intero da 2 in su con un nome da conteggio: campioni, passi, profondità, …"""
+    """An integer from 2 up with a count name: samples, steps, depth, …"""
     return type(value) is int and value > 1 and any(k in name.lower() for k in COUNT_NAME)
 
 

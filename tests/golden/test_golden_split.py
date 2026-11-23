@@ -3,25 +3,25 @@
 """
 tests/golden/test_golden_split.py
 -------------------------------
-Test di regressione geometrica per i file prodotti dallo splitting.
+Geometric regression test for the files produced by splitting.
 
-Per ogni golden in tests/data/golden_split/golden/:
-  1. Riprocessa il DXF padre (heal → split) in una cartella temporanea —
-     nessuna lettura di processo: un foro è un contorno interno (MAP.md D88).
-  2. Confronta area, perimetri, geometria WKT e layer di ogni parte contro il
-     golden salvato. Layer dei fori e summary: test_golden_process.py.
+For every golden in tests/data/golden_split/golden/:
+  1. Reprocess the parent DXF (heal → split) in a temporary folder —
+     no process reading: a hole is an inner contour.
+  2. Compare area, perimeters, WKT geometry and layer of every part against
+     the saved golden. Hole layers and summary: test_golden_process.py.
 
-Tolleranze:
+Tolerances:
     TOL_AREA      = 0.1  mm²
     TOL_PERIMETER = 0.5  mm
     TOL_SHAPE     = 1.0  mm²  (symmetric difference Shapely)
 
-Genera prima i golden con:
+Generate the golden first with:
     python generate_golden_split.py
 
-Lancia i test con:
+Run the tests with:
     python -m pytest tests/test_golden_split.py -v
-    oppure
+    or
     python tests/test_golden_split.py
 """
 
@@ -51,16 +51,14 @@ GOLDEN_DIR   = MULTIPLI_DIR / "golden"
 TOL_AREA      = 0.1
 TOL_PERIMETER = 0.5
 TOL_SHAPE     = 1.0
-MAX_GAP = 0.5    # i golden faces/split si leggono con questo (D267, D269)
+MAX_GAP = 0.5    # the golden faces/split are read with this
 
 _PARENT_PIPELINE_CACHE: dict[tuple[Path, float], dict] = {}
 
 
 def _match_inner_polygons(actual_wkts: list[str], expected_wkts: list[str]) -> list[tuple[int, int, float]]:
-    """
-    Restituisce un matching one-to-one (greedy) tra inner attuali/attesi
-    minimizzando il diff geometrico (area symmetric_difference).
-    """
+    """Return a one-to-one (greedy) matching between current/expected inners
+    minimizing the geometric diff (area symmetric_difference)."""
     if len(actual_wkts) != len(expected_wkts):
         raise ValueError(
             f"inner count mismatch: actual={len(actual_wkts)} expected={len(expected_wkts)}"
@@ -159,11 +157,8 @@ def _get_parent_split_cache(parent_path: Path, max_gap: float) -> dict:
 
 
 class _SplitContext:
-    """
-    Context manager che esegue la pipeline sul padre una sola volta per
-    parent+max_gap e mette a disposizione la cartella di output per tutta
-    la durata del blocco `with`.
-    """
+    """Context manager that runs the pipeline on the parent once per parent+max_gap
+    and makes the output folder available for the whole `with` block."""
 
     def __init__(self, parent_path: Path, max_gap: float):
         self._parent_path = parent_path
@@ -203,9 +198,9 @@ def _make_split_test(golden_path: Path):
 
         part_index = golden["part_index"]
 
-        # Trova il figlio per indice, non per nome: padri diversi producono
-        # figli con nomi identici (000_.dxf, 001_.dxf...), quindi il nome
-        # non è una chiave affidabile. L'indice è la fonte di verità.
+        # Find the child by index, not by name: different parents produce children
+        # with identical names (000_.dxf, 001_.dxf...), so the name is not a reliable
+        # key. The index is the source of truth.
         with _SplitContext(parent_path, max_gap) as output_folder:
             children = sorted(output_folder.glob("*.dxf"))
 
@@ -317,7 +312,7 @@ def _make_split_test(golden_path: Path):
     return test_method
 
 
-# Genera dinamicamente un test per ogni golden file
+# Dynamically generate a test for every golden file
 for _golden_path in _load_golden_files():
     setattr(TestGoldenSplit, f"test_{_golden_path.stem}", _make_split_test(_golden_path))
 

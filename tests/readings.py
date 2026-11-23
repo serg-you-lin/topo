@@ -1,15 +1,14 @@
 """
 tests/readings.py
 -----------------
-Una sola lettura `outlines()` per geometria in tutta la suite (i file gemelli contano una volta): invarianti,
-golden e ancoraggio leggono gli stessi fogli con gli
-stessi parametri. Ogni chiamata riceve una copia indipendente (documento e
-risultato), perché alcuni test li modificano (`anchor_texts` scrive
-`cluster_ref` sul posto).
+A single `outlines()` reading per geometry in the whole suite (twin files count
+once): invariants, golden and anchoring read the same sheets with the same
+parameters. Every call gets an independent copy (document and result), because
+some tests modify them (`anchor_texts` writes `cluster_ref` in place).
 
-Le invarianti leggono anche ogni disegno scritto in un altro modo
-(`scrambled`, D158): una lettura in più per disegno, una sola (D160), e
-per i disegni distinti una per ognuno degli angoli in più (D180).
+The invariants also read every drawing written another way (`scrambled`): one
+more reading per drawing, a single one, and for distinct drawings one for each
+of the extra angles.
 """
 
 import hashlib
@@ -27,19 +26,19 @@ from tests.invariants import ROTATION, scrambled
 
 @lru_cache(maxsize=None)
 def _document(path: str) -> Tuple[bytes, str]:
-    """Il documento di `path` e l'impronta di geometria e testi: due file
-    gemelli danno la stessa lettura, che si fa una volta sola."""
+    """The document of `path` and the fingerprint of geometry and texts: two twin
+    files give the same reading, which is done once."""
     doc = topo_dxf.load_dxf(path)
     key = geometry_key(doc) + hashlib.sha1(repr(doc.texts).encode()).hexdigest()
     return pickle.dumps(doc), key
 
 
-_OUTLINES: dict = {}   # (impronta, max_gap) → risultato di outlines()
+_OUTLINES: dict = {}   # (fingerprint, max_gap) → result of outlines()
 
 
 def outline_reading(path: Path, max_gap: float) -> Tuple[Document, topo.Result]:
-    """(documento, risultato) di `heal(load_dxf(path), max_gap=max_gap).outlines()`,
-    letti una volta per sessione (una per gemelli) e restituiti come copia nuova."""
+    """(document, result) of `heal(load_dxf(path), max_gap=max_gap).outlines()`, read
+    once per session (one per twins) and returned as a new copy."""
     data, key = _document(str(Path(path).resolve()))
     doc = pickle.loads(data)
     if (key, max_gap) not in _OUTLINES:
@@ -54,13 +53,13 @@ def _scrambled_bytes(path: str, max_gap: float, angle: float, seed: int) -> byte
 
 
 def outline_scrambled(path: Path, max_gap: float, angle: float = ROTATION, seed: int = 0) -> topo.Result:
-    """`outlines()` di `scrambled(load_dxf(path), angle, seed)`, letto una volta
-    per sessione e restituito come copia nuova."""
+    """`outlines()` of `scrambled(load_dxf(path), angle, seed)`, read once per
+    session and returned as a new copy."""
     return pickle.loads(_scrambled_bytes(str(Path(path).resolve()), max_gap, angle, seed))
 
 
 def geometry_key(doc: Document) -> str:
-    """Un'impronta della geometria di `doc`: due file diversi con le stesse
-    curve (disegni gemelli) hanno la stessa, e si leggono una volta (D180)."""
+    """A fingerprint of the geometry of `doc`: two different files with the same
+    curves (twin drawings) have the same one, and are read once."""
     shapes = sorted(repr((e.segment, e.role)) for e in doc.edges)
     return hashlib.sha1("\n".join(shapes).encode()).hexdigest()

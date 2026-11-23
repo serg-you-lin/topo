@@ -1,9 +1,9 @@
 """
 tests/package/test_no_format_words.py
 -------------------------------------
-D292: il pacchetto `topo` è geometria e matematica, nessun formato (D123).
-Il nome di un formato di file non compare nel suo codice né nei suoi testi:
-chi spiega come si apre un file è l'adapter, e il README.
+The `topo` package is geometry and mathematics, no format. The name of a file
+format does not appear in its code nor in its tests: whoever explains how to
+open a file is the adapter, and the README.
 """
 
 import re

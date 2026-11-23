@@ -1,5 +1,5 @@
 # tests/package/test_tutorial.py
-"""Ogni lezione di tutorial/ gira dal suo blocco CONFIG e finisce senza errori (D247)."""
+"""Every lesson of tutorial/ runs from its CONFIG block and ends without errors."""
 
 import subprocess
 import sys

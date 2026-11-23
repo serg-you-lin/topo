@@ -43,7 +43,7 @@ rings = [g.circle(5), g.circle(9), g.circle(4, center=(-25, 10)), g.circle(7, ce
 for group in g.concentric_groups(rings, tolerance=topo.precision.SAME_POINT):
     print(f"concentric group at {group.center}: radii {[s.length / 2 for s in group.shapes]}")
 
-# un layer per fatto: i ruoli sono solo nomi di layer qui
+# one layer per fact: roles are only layer names here
 doc = topo.load_segments(plate + hole + [line], role="shapes")
 for role, segments in (("cut_by_outside", outside), ("plate_minus_circle", minus[0]),
                        ("plate_plus_circle", union[0]), ("concentric", [s for r in rings for s in r])):

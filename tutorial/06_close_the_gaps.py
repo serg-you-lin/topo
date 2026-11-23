@@ -3,7 +3,7 @@
 =========================================================
 
 What you learn
-    heal(doc)                  closes no gap: without max_gap the drawing is read as it is (D267)
+    heal(doc)                  closes no gap: without max_gap the drawing is read as it is
     heal(doc, max_gap=0.5)     ends closer than 0.5 mm are joined, the gaps between them closed
     network.free_ends          the ends that found no partner
     result.loose               every curve that is no part's contour: nothing is dropped silently
