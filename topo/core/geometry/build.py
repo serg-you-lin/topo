@@ -20,6 +20,7 @@ from ..primitives.line import LineSeg
 from ..primitives.conics import CircleSeg, EllipseSeg
 from ..primitives.clothoid import ClothoidSeg
 from ..primitives.formula import FormulaSeg
+from .measure import unit_vector
 
 Point = Tuple[float, float]
 
@@ -118,11 +119,11 @@ def right_triangle(leg_a: float, leg_b: float, *, start: Point = (0.0, 0.0), ang
     return polygon([tuple(start)] + _place([(leg_a, 0.0), (0.0, leg_b)], start, angle))
 
 
-def _unit(v: Point, name: str) -> Point:
-    n = math.hypot(*v)
-    if not n > 0:
+def _direction_argument(v: Point, name: str) -> Point:
+    u = unit_vector(v)
+    if u is None:
         raise ValueError(f"blend(): {name} must be a non-zero vector")
-    return v[0] / n, v[1] / n
+    return u
 
 
 def blend(start: Point, start_direction: Point, end: Point, end_direction: Point, *,
@@ -135,7 +136,7 @@ def blend(start: Point, start_direction: Point, end: Point, end_direction: Point
     so it joins two straight lines with continuous curvature (G2). The
     handles are a fraction of the chord: a third (cubic), a fifth (quintic).
     """
-    (ux, uy), (vx, vy) = _unit(start_direction, "start_direction"), _unit(end_direction, "end_direction")
+    (ux, uy), (vx, vy) = _direction_argument(start_direction, "start_direction"), _direction_argument(end_direction, "end_direction")
     p0, p1 = tuple(start), tuple(end)
     chord = math.dist(p0, p1)
     if not chord > 0:

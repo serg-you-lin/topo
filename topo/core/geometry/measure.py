@@ -132,6 +132,13 @@ def chord_angle_deg(a: Point, b: Point) -> float:
     return math.degrees(math.atan2(b[1] - a[1], b[0] - a[0])) % 180
 
 
+def unit_vector(v: Point) -> Optional[Point]:
+    """`v` di lunghezza 1; None se è nullo o non finito (allora non ha
+    direzione). Cosa fare del None lo decide il chiamante."""
+    n = math.hypot(*v)
+    return (v[0] / n, v[1] / n) if n > 0 and math.isfinite(n) else None
+
+
 # ---------------------------------------------------------------------------
 # Portata di una primitiva lungo una direzione — sulla curva, non sul poligono
 # ---------------------------------------------------------------------------

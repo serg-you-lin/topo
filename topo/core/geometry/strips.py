@@ -23,6 +23,7 @@ from shapely.ops import nearest_points
 from ..primitives.line import LineSeg
 from ..primitives.conics import CircleSeg
 from .intersections import CURVE_TOLERANCE, intersections
+from .measure import unit_vector
 from .regions import (
     _JOIN, _at, _ends, _param, _polygon, _polyline, _side, _signed_area, _span, _split,
     nearest_point,
@@ -111,10 +112,10 @@ class Strip:
 
 
 def _unit(v: Point) -> Point:
-    n = math.hypot(*v)
-    if n < 1e-12:
+    u = unit_vector(v)
+    if u is None:
         raise ValueError("zero direction")
-    return (v[0] / n, v[1] / n)
+    return u
 
 
 def _tangent_at(ring: Sequence, point: Point) -> Point:

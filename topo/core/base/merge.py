@@ -42,7 +42,7 @@ from collections import Counter
 from dataclasses import dataclass, replace
 from typing import Any, Callable, Iterable, List, Tuple
 
-from ..geometry.measure import FLOAT_NOISE, within_diameter, SAME_POINT
+from ..geometry.measure import FLOAT_NOISE, within_diameter, SAME_POINT, unit_vector
 from ..primitives.line import LineSeg
 from ..primitives.mathseg import Point, segment_endpoints
 from ..primitives.conics import CircleSeg, is_full_circle
@@ -75,16 +75,10 @@ def _same_line(a: LineSeg, b: LineSeg) -> bool:
     poi tolto) rette parallele **reali e distinte** a 0.5 mm si fondevano —
     un pattern di denti/asole sparito in un golden (`fa_che_non_mi_incazzi`).
     """
-    da, db = _unit(a), _unit(b)
+    da, db = (unit_vector((s.end[0] - s.start[0], s.end[1] - s.start[1])) for s in (a, b))
     if da is None or db is None:
         return False
     return max(_off_line(p, a.start, da) for p in (b.start, b.end)) <= _SAME_OFFSET         and max(_off_line(p, b.start, db) for p in (a.start, a.end)) <= _SAME_OFFSET
-
-
-def _unit(seg: LineSeg):
-    dx, dy = seg.end[0] - seg.start[0], seg.end[1] - seg.start[1]
-    length = math.hypot(dx, dy)
-    return (dx / length, dy / length) if length else None
 
 
 def _off_line(p, origin, u) -> float:
