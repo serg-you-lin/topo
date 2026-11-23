@@ -27,14 +27,13 @@ from typing import Iterable, List, Tuple
 import numpy as np
 import shapely
 import shapely.ops
-from shapely import STRtree
 
 from ..geometry.measure import reach
 from ..geometry.strips import refine_gap
 from ..primitives.mathseg import DEFAULT_TOLERANCE
 from .edge import Edge
 from .graph import connected_groups
-from .noding import edge_geometry
+from .noding import edge_geometry, near_pairs
 
 BBox = Tuple[float, float, float, float]   # xmin, ymin, xmax, ymax
 
@@ -61,14 +60,14 @@ class TouchingGroup:
 def touching_groups(edges: Iterable[Edge], gap_tolerance: float) -> List[TouchingGroup]:
     """
     Union-find sulle coppie di Edge a distanza vera <= gap_tolerance
-    (`_near_pairs`). Gruppi ordinati per area di bbox, decrescente.
+    (`_judged_pairs`). Gruppi ordinati per area di bbox, decrescente.
     """
     edges = list(edges)
     if not edges:
         return []
 
     geoms = [edge_geometry(e) for e in edges]
-    groups = connected_groups(len(edges), _near_pairs(edges, geoms, gap_tolerance))
+    groups = connected_groups(len(edges), _judged_pairs(edges, geoms, gap_tolerance))
 
     groups_out = []
     for members in groups:
@@ -82,15 +81,16 @@ def touching_groups(edges: Iterable[Edge], gap_tolerance: float) -> List[Touchin
     return groups_out
 
 
-def _near_pairs(edges: List[Edge], geoms: list, gap_tolerance: float) -> List[Tuple[int, int]]:
+def _judged_pairs(edges: List[Edge], geoms: list, gap_tolerance: float) -> List[Tuple[int, int]]:
     """Le coppie di edge a distanza vera <= `gap_tolerance`. Le
     discretizzazioni sbagliano fino a DEFAULT_TOLERANCE per curva, e il loro
     errore gira col disegno (D145): fuori dalla fascia di 2·DEFAULT_TOLERANCE
     attorno alla soglia decidono loro, dentro la distanza sulle primitive."""
     band = 2 * DEFAULT_TOLERANCE
-    left, right = STRtree(geoms).query(geoms, predicate="dwithin", distance=gap_tolerance + band)
-    keep = left < right
-    left, right = left[keep], right[keep]
+    candidates = near_pairs(geoms, gap_tolerance)
+    if not candidates:
+        return []
+    left, right = (np.array(side) for side in zip(*candidates))
     measured = shapely.distance(np.array(geoms, dtype=object)[left], np.array(geoms, dtype=object)[right])
     pairs = []
     for i, j, d in zip(left.tolist(), right.tolist(), measured.tolist()):

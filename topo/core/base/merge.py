@@ -47,7 +47,7 @@ from ..primitives.line import LineSeg
 from ..primitives.mathseg import Point, segment_endpoints
 from ..primitives.conics import CircleSeg, is_full_circle
 from ..topology.graph import connected_groups
-from ..topology.noding import _near_pairs
+from ..topology.noding import edge_geometry, near_pairs
 from ..topology.edge import Edge
 from ...model.role import ContourRole
 
@@ -276,7 +276,7 @@ def _merge_on_carrier(
     typed = [e for e in edges if e.role == ContourRole.UNKNOWN and isinstance(e.segment, segment_type)]
     # solo pezzi che si toccano possono fondersi: le coppie da giudicare sono
     # le vicine, il supporto lo decide `same` sui segmenti veri
-    pairs = [(i, j) for i, j in _near_pairs(typed, _SAME_OFFSET)
+    pairs = [(i, j) for i, j in near_pairs([edge_geometry(e) for e in typed], _SAME_OFFSET)
              if same(typed[i].segment, typed[j].segment)]
     groups = connected_groups(len(typed), pairs)
     carrier = {id(typed[i]): k for k, members in enumerate(groups) for i in members}
@@ -461,7 +461,7 @@ def near_copies(edges: Iterable[Edge], distance: float) -> List[NearCopy]:
     """
     lines = [e for e in edges if isinstance(e.segment, LineSeg) and e.start != e.end]
     nearest = {}
-    for i, j in _near_pairs(lines, distance):
+    for i, j in near_pairs([edge_geometry(e) for e in lines], distance):
         a, b = lines[i], lines[j]
         if a.role != b.role or _same_line(a.segment, b.segment):
             continue

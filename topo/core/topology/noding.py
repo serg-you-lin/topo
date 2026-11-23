@@ -178,7 +178,7 @@ def split_at_crossings(edges: List[Edge], tolerance: float,
     """
     curves = [_Curve(e.segment) for e in edges]
     net = _Contacts(edges, curves, tolerance)
-    for i, j in _near_pairs(edges, tolerance):
+    for i, j in near_pairs([edge_geometry(e) for e in edges], tolerance):
         net.meet(i, j)
     net.merge_along_edges()
     nodes = net.nodes()
@@ -306,11 +306,12 @@ class _Curve:
 # Contatti
 # ---------------------------------------------------------------------------
 
-def _near_pairs(edges: List[Edge], tolerance: float) -> List[Tuple[int, int]]:
-    """Le coppie (i < j) da giudicare. Il filtro misura sulle discretizzazioni
-    (fino a DEFAULT_TOLERANCE dentro un arco): si allarga di tanto, il
-    contatto lo decide `_Contacts.meet` sulle curve."""
-    geoms = np.array([edge_geometry(e) for e in edges], dtype=object)
+def near_pairs(geoms: list, tolerance: float) -> List[Tuple[int, int]]:
+    """Le coppie (i < j), in ordine, delle geometrie (`edge_geometry`) entro
+    `tolerance` + 2·DEFAULT_TOLERANCE: le discretizzazioni sbagliano fino a
+    DEFAULT_TOLERANCE per curva, e la fascia le copre. È solo il filtro: il
+    contatto o la distanza vera li decide il chiamante sulle curve."""
+    geoms = np.array(geoms, dtype=object)
     if len(geoms) < 2:
         return []
     a, b = STRtree(geoms).query(geoms, predicate="dwithin", distance=tolerance + 2 * DEFAULT_TOLERANCE)
