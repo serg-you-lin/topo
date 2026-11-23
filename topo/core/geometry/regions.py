@@ -105,7 +105,7 @@ def _at(seg, s: float) -> Point:
     return pts[-1]
 
 
-def _length(seg, s0: float, s1: float) -> float:
+def _piece_length(seg, s0: float, s1: float) -> float:
     if isinstance(seg, LineSeg):
         return math.dist(seg.start, seg.end) * (s1 - s0)
     if isinstance(seg, CircleSeg):
@@ -148,16 +148,16 @@ def _split(seg, points: Sequence[Point]) -> list:
     if is_full_circle(seg):
         cuts = []
         for s in params:
-            if not cuts or _length(seg, cuts[-1], s) > _MIN_PIECE:
+            if not cuts or _piece_length(seg, cuts[-1], s) > _MIN_PIECE:
                 cuts.append(s)
-        if len(cuts) > 1 and _length(seg, cuts[-1], cuts[0] + span) <= _MIN_PIECE:
+        if len(cuts) > 1 and _piece_length(seg, cuts[-1], cuts[0] + span) <= _MIN_PIECE:
             cuts.pop()
         if len(cuts) < 2:
             return [seg]
         return [_piece(seg, a, b) for a, b in zip(cuts, cuts[1:] + [cuts[0] + span])]
     bounds = [0.0]
     for s in params:
-        if _length(seg, bounds[-1], s) > _MIN_PIECE and _length(seg, s, span) > _MIN_PIECE:
+        if _piece_length(seg, bounds[-1], s) > _MIN_PIECE and _piece_length(seg, s, span) > _MIN_PIECE:
             bounds.append(s)
     bounds.append(span)
     return [_piece(seg, a, b) for a, b in zip(bounds, bounds[1:])]

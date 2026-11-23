@@ -32,7 +32,7 @@ from ..primitives.line import LineSeg
 from ..primitives.spline import BSplineSeg
 from ..primitives.mathseg import MathSeg, Point
 from ..primitives.conics import CircleSeg, EllipseSeg, HyperbolaSeg, is_arc
-from .measure import FLOAT_NOISE
+from .measure import FLOAT_NOISE, track_length
 from .points import (
     DEFAULT_DUPLICATE_TOLERANCE, approximate_bspline, circle_through, douglas_peucker, drop_duplicate_points,
     even_spacing, fit_circle_kasa, offset_from_line, turn_corners, within_chord, within_circle_through,
@@ -314,8 +314,6 @@ def _crossing(l1, l2) -> Optional[Point]:
     return (p[0] + t * d[0], p[1] + t * d[1])
 
 
-def _length(points: List[Point]) -> float:
-    return sum(math.dist(a, b) for a, b in zip(points, points[1:]))
 
 
 def _line_turn(a: _Part, b: _Part) -> float:
@@ -353,7 +351,7 @@ def _restore_corners(parts: List[_Part], closed: bool, tolerance: float, scale: 
         before, after = parts[k - 1] if (closed or k > 0) else None, parts[(k + 1) % n] if (closed or k < n - 1) else None
         if (part.kind == "curve" and before is not None and after is not None and n > 2
                 and before.kind == "line" and after.kind == "line" and before is not after
-                and _length(part.points) < scale and _is_rounding(part, before, after, tolerance, corner_turn_deg)):
+                and track_length(part.points) < scale and _is_rounding(part, before, after, tolerance, corner_turn_deg)):
             continue
         kept.append(part)
     parts = kept

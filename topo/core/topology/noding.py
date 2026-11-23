@@ -723,7 +723,7 @@ def _line_circle_near(line: LineSeg, arc) -> Optional[tuple]:
         return None
     foot = (line.start[0] + t * dx, line.start[1] + t * dy)
     near = _radial(c, arc.radius, foot)
-    if near is None or not _on_arc(arc, near):
+    if near is None or not _inside_arc(arc, near):
         return None
     return foot, near
 
@@ -739,7 +739,7 @@ def _circle_circle_near(a: _Curve, b: _Curve) -> Optional[tuple]:
         q = (cb.center[0] + sign * (ca.center[0] - cb.center[0]) * cb.radius / d,
              cb.center[1] + sign * (ca.center[1] - cb.center[1]) * cb.radius / d)
         p = _radial(ca.center, ca.radius, q)
-        if p is None or not (_on_arc(ca, p) and _on_arc(cb, q)):
+        if p is None or not (_inside_arc(ca, p) and _inside_arc(cb, q)):
             continue
         if best is None or math.dist(p, q) < math.dist(*best):
             best = (p, q)
@@ -754,7 +754,7 @@ def _radial(center, radius, pt):
     return (center[0] + (pt[0] - center[0]) * radius / d, center[1] + (pt[1] - center[1]) * radius / d)
 
 
-def _on_arc(seg, pt) -> bool:
+def _inside_arc(seg, pt) -> bool:
     """`pt` (sul cerchio) cade dentro l'arco, lontano dagli estremi."""
     if is_full_circle(seg):
         return True

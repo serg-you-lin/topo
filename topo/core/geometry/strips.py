@@ -150,7 +150,7 @@ def _hits(ring: Sequence, line: LineSeg) -> List[Point]:
     return [p for seg in ring for p in intersections(line, seg)]
 
 
-def _reach(ring: Sequence, start: Point, direction: Point, length: float) -> List[Point]:
+def _ray_hits(ring: Sequence, start: Point, direction: Point, length: float) -> List[Point]:
     """Dove la semiretta da `start` verso `direction` incontra `ring`, dal più vicino."""
     line = LineSeg(start=start, end=(start[0] + direction[0] * length, start[1] + direction[1] * length))
     hits = [p for p in _hits(ring, line) if math.dist(p, start) > _TOUCH]
@@ -189,7 +189,7 @@ def strip_between(a: Sequence, b: Sequence, at: Point, width: float,
     flip = math.dist(at, on_b) < math.dist(at, on_a)
     start_ring, end_ring, start = (b, a, on_b) if flip else (a, b, on_a)
 
-    hits = _reach(end_ring, start, _normal_toward(start_ring, start, end_ring), length)
+    hits = _ray_hits(end_ring, start, _normal_toward(start_ring, start, end_ring), length)
     end = hits[0] if hits else nearest_point(end_ring, start)
     direction = _unit((end[0] - start[0], end[1] - start[1]))
     across = (-direction[1] * width / 2, direction[0] * width / 2)

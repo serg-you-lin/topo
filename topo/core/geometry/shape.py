@@ -21,7 +21,7 @@ from typing import Optional, Tuple
 
 from shapely.geometry import Polygon
 
-from .measure import Reach, chord_angle_deg, SAME_POINT
+from .measure import Reach, chord_angle_deg, segment_length, SAME_POINT
 from .numeric import golden_max
 from ..primitives.line import LineSeg
 from ..primitives.mathseg import segment_endpoints, segment_is_closed
@@ -189,9 +189,9 @@ def _stadium(segments):
         return None
     angle = chord_angle_deg(a1.center, a2.center)
     for line in (l1, l2):
-        if abs(_length(line) - axis) > SAME_POINT:
+        if abs(segment_length(line) - axis) > SAME_POINT:
             return None
-        if math.radians(_angle_diff(chord_angle_deg(line.start, line.end), angle)) * _length(line) > SAME_POINT:
+        if math.radians(_angle_diff(chord_angle_deg(line.start, line.end), angle)) * segment_length(line) > SAME_POINT:
             return None
     center = ((a1.center[0] + a2.center[0]) / 2, (a1.center[1] + a2.center[1]) / 2)
     return ContourShape(STADIUM, center, axis + 2 * r, 2 * r, angle, 4)
@@ -201,7 +201,7 @@ def _rectangle(segments):
     if len(segments) != 4 or not all(isinstance(s, LineSeg) for s in segments):
         return None
     angles = [chord_angle_deg(s.start, s.end) for s in segments]
-    lengths = [_length(s) for s in segments]
+    lengths = [segment_length(s) for s in segments]
     # scarto dall'angolo retto lungo il più lungo dei due lati
     if any(math.radians(abs(_angle_diff(angles[i], angles[i - 1]) - 90)) * max(lengths[i], lengths[i - 1]) > SAME_POINT
            for i in range(4)):
@@ -230,7 +230,7 @@ def _generic(segments):
     reaches = [Reach(s) for s in segments]
     if kind == OTHER:
         theta = _min_area_angle(reaches, theta)
-    sides = [_reach(reaches, _unit(theta)), _reach(reaches, _unit(theta + math.pi / 2))]
+    sides = [_extent_along(reaches, _angle_direction(theta)), _extent_along(reaches, _angle_direction(theta + math.pi / 2))]
     i = 0 if sides[0] >= sides[1] else 1
     angle = math.degrees(theta + i * math.pi / 2) % 180
     c = polygon.centroid
@@ -249,24 +249,22 @@ def _min_area_angle(reaches, theta: float) -> float:
     sceglie un altro minimo locale. Costa tempo, voluto (MAP.md D156).
     """
     def neg_area(t):
-        return -_reach(reaches, _unit(t)) * _reach(reaches, _unit(t + math.pi / 2))
+        return -_extent_along(reaches, _angle_direction(t)) * _extent_along(reaches, _angle_direction(t + math.pi / 2))
 
     best, value = golden_max(neg_area, theta - _ANGLE_BRACKET, theta + _ANGLE_BRACKET, iterations=30)
     return best if value > neg_area(theta) else theta
 
 
-def _unit(t: float) -> Point:
+def _angle_direction(t: float) -> Point:
     return (math.cos(t), math.sin(t))
 
 
-def _reach(reaches, direction) -> float:
+def _extent_along(reaches, direction) -> float:
     """Ampiezza dell'insieme dei segmenti lungo `direction`, sulle primitive."""
     spans = [r(direction) for r in reaches]
     return max(hi for _lo, hi in spans) - min(lo for lo, _hi in spans)
 
 
-def _length(line: LineSeg) -> float:
-    return math.dist(line.start, line.end)
 
 
 def _angle_diff(a: float, b: float) -> float:

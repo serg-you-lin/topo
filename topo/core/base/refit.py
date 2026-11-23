@@ -138,7 +138,7 @@ def refit_circle_rings(edges: Iterable[Edge], tolerance: float = POINTS_NOISE) -
         if not core or not all(
                 not is_full_circle(e.segment) and e.role == ContourRole.UNKNOWN for e in core):
             continue
-        pts = [p[:2] for e in core for p in ([e.segment.start, e.segment.end, _middle(e.segment)]
+        pts = [p[:2] for e in core for p in ([e.segment.start, e.segment.end, _chord_midpoint(e.segment)]
                                              if isinstance(e.segment, LineSeg) else e.segment.discretize(tolerance=tolerance / 10))]
         fit = fit_circle_kasa(pts)
         if fit is None:
@@ -162,7 +162,7 @@ def refit_circle_rings(edges: Iterable[Edge], tolerance: float = POINTS_NOISE) -
     return [e for e in edges if id(e) not in replaced] + new_edges
 
 
-def _middle(s: LineSeg) -> Point:
+def _chord_midpoint(s: LineSeg) -> Point:
     """Il punto di mezzo della linea: col fit sui capi e sui mezzi il cerchio sta fra i due, non sui vertici."""
     return ((s.start[0] + s.end[0]) / 2, (s.start[1] + s.end[1]) / 2)
 

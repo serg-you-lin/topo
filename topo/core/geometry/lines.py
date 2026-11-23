@@ -22,7 +22,7 @@ from .rings import ON_BOUNDARY, ring_bbox, ring_covers_chord, ring_split_by_chor
 Point = Tuple[float, float]
 
 
-def _ends(item) -> Tuple[Point, Point]:
+def _stroke_ends(item) -> Tuple[Point, Point]:
     """I due capi di un tratto: `(start, end)`, o `item.start`/`item.end`."""
     if hasattr(item, "start") and hasattr(item, "end"):
         return tuple(item.start[:2]), tuple(item.end[:2])
@@ -45,7 +45,7 @@ def are_collinear(a, b, tolerance: float) -> bool:
     entro `tolerance` (mm) dalla retta di `a`. Lo scarto di direzione è già
     lì dentro: nessun angolo a parte (D282).
     """
-    (a0, a1), (b0, b1) = _ends(a), _ends(b)
+    (a0, a1), (b0, b1) = _stroke_ends(a), _stroke_ends(b)
     return all(point_line_distance(q, a0, a1) <= tolerance for q in (b0, b1))
 
 
@@ -112,7 +112,7 @@ def bridged_runs(segments: Sequence, bridges: Sequence, *, tolerance: float) -> 
     belongs to one run at most, strokes left alone are not returned.
     """
     rings = [(r, ring_bbox(r)) for r in map(_ring, bridges) if r]
-    ends = [_ends(s) for s in segments]
+    ends = [_stroke_ends(s) for s in segments]
     runs: list[CollinearRun] = []
     used: set[int] = set()
     for i, (p0, p1) in enumerate(ends):

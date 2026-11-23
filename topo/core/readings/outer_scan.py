@@ -124,7 +124,7 @@ def _pieces(edge: Edge) -> list:
     return []
 
 
-def _on_arc(arc: _Arc, pt: Point) -> bool:
+def _within_sweep(arc: _Arc, pt: Point) -> bool:
     return angle_from_start(arc.center, arc.start, arc.ccw, pt) <= arc.sweep + _EPS / arc.radius
 
 
@@ -142,7 +142,7 @@ def _extent(piece, a: int) -> Tuple[float, float]:
     for extreme in (c - r, c + r):
         pt = list(piece.center)
         pt[a] = extreme
-        if _on_arc(piece, tuple(pt)):
+        if _within_sweep(piece, tuple(pt)):
             values.append(extreme)
     return min(values), max(values)
 
@@ -173,7 +173,7 @@ def _intersections(piece, a: int, level: float) -> List[Point]:
         pt[a] = level
         pt[b] = piece.center[b] + sign * h
         pt = tuple(pt)
-        if _on_arc(piece, pt):
+        if _within_sweep(piece, pt):
             out.append(pt)
     return out
 

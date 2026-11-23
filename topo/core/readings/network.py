@@ -173,12 +173,12 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
         net.notes.append(Diagnostic(
             "arc-bent", f"{_plural(len(clean.bent), 'arc', 'arcs')} redrawn through the free end beside it, its own ends kept",
             points=[pt for pt, _ in sorted(clean.bent, key=lambda c: -c[1])],
-            notes=[f"{_span([d for _, d in clean.bent], '.4f')} mm, max_gap {gap:g} mm (D273)"], level="note"))
+            notes=[f"{_range_text([d for _, d in clean.bent], '.4f')} mm, max_gap {gap:g} mm (D273)"], level="note"))
     if clean.tied:
         net.notes.append(Diagnostic(
             "tied-ends-joined", f"{_plural(len(clean.tied), 'gap', 'gaps')} between ends already tied, facing each other, closed",
             points=[pt for pt, _ in sorted(clean.tied, key=lambda c: -c[1])],
-            notes=[f"{_span([d for _, d in clean.tied], '.4f')} mm, max_gap {gap:g} mm (D272)"], level="note"))
+            notes=[f"{_range_text([d for _, d in clean.tied], '.4f')} mm, max_gap {gap:g} mm (D272)"], level="note"))
     if clean.ambiguous:
         net.warnings.append(Diagnostic(
             "tie", f"{_plural(len(clean.ambiguous), 'free end', 'free ends')} with two partners at the same "
@@ -237,7 +237,7 @@ def _ceil_2(x: float) -> float:
 _NEAR_GAP_REACH = NEAR_GAP_FACTOR   # un gap fino al doppio della soglia "c'è quasi"; oltre è geometria (D227)  # D269
 
 
-def _span(values, fmt: str) -> str:
+def _range_text(values, fmt: str) -> str:
     lo, hi = min(values), max(values)
     a, b = format(lo, fmt), format(hi, fmt)
     return a if a == b else f"{a} to {b}"
@@ -248,7 +248,7 @@ def _near_copy_warning(pairs: list) -> Diagnostic:
     return Diagnostic(
         "near-copy", f"{_plural(len(pairs), 'line', 'lines')} nearly on top of a longer one, not merged",
         points=[p.at for p in pairs],
-        notes=[f"{_span([p.offset for p in pairs], '.2g')} mm apart; not one line for D184 "
+        notes=[f"{_range_text([p.offset for p in pairs], '.2g')} mm apart; not one line for D184 "
                f"(parallel within 1e-7, ends within 1e-3 mm), so topo reads both"],
         help=f"doc.edges = topo.experimental.merge_near_copies(doc.edges, distance={_ceil_2(offset):g}) "
              f"before heal() keeps the longer of each pair",
@@ -261,8 +261,8 @@ def _open_arc_warning(arcs: list) -> Diagnostic:
     return Diagnostic(
         "open-arc", f"{_plural(len(arcs), 'arc', 'arcs')} nearly a full circle, left open",
         points=[e.segment.center for e, _, _ in arcs],
-        notes=[f"{_span([math.degrees(m) for _, m, _ in arcs], '.2f')}° missing "
-               f"({_span([c for _, _, c in arcs], '.3f')} mm), over the "
+        notes=[f"{_range_text([math.degrees(m) for _, m, _ in arcs], '.2f')}° missing "
+               f"({_range_text([c for _, _, c in arcs], '.3f')} mm), over the "
                f"{math.degrees(NEAR_FULL_ARC_MISSING):.0f}° that close an arc (D218)"],
         help=f"doc.edges, _ = topo.experimental.close_near_full_arcs(doc.edges, tolerance, "
              f"max_missing_angle=math.radians({_ceil_2(deg):g})) before heal() closes them",
@@ -273,7 +273,7 @@ def _ends_joined_note(closed: list, gap: float) -> Diagnostic:
     return Diagnostic(
         "ends-joined", f"{_plural(len(closed), 'gap', 'gaps')} between free ends closed",
         points=[pt for pt, _ in sorted(closed, key=lambda c: -c[1])],
-        notes=[f"{_span([d for _, d in closed], '.4f')} mm, max_gap {gap:g} mm"],
+        notes=[f"{_range_text([d for _, d in closed], '.4f')} mm, max_gap {gap:g} mm"],
         level="note")
 
 
@@ -281,7 +281,7 @@ def _curves_moved_note(moved: list, gap: float) -> Diagnostic:
     return Diagnostic(
         "curves-moved", f"{_plural(len(moved), 'curve', 'curves')} moved whole, each onto the two curves its ends reach",
         points=[pt for pt, _ in sorted(moved, key=lambda m: -m[1])],
-        notes=[f"{_span([d for _, d in moved], '.4f')} mm, max_gap {gap:g} mm (D271)"],
+        notes=[f"{_range_text([d for _, d in moved], '.4f')} mm, max_gap {gap:g} mm (D271)"],
         level="note")
 
 
@@ -290,7 +290,7 @@ def _near_gap_warning(gaps: list, gap: float) -> Diagnostic:
     return Diagnostic(
         "near-gap", f"{_plural(len(gaps), 'gap', 'gaps')} just over the gap limit, left open",
         points=[a for a, _, _ in gaps],
-        notes=[f"{_span([d for _, _, d in gaps], '.4f')} mm, limit {gap:g} mm (max_gap, default 0)"],
+        notes=[f"{_range_text([d for _, _, d in gaps], '.4f')} mm, limit {gap:g} mm (max_gap, default 0)"],
         help=f"topo.heal(doc, ..., max_gap={_ceil_2(longest):g}) closes them all, and every other gap up to that",
         param="max_gap", value=longest)
 
