@@ -281,6 +281,12 @@ aside, nodes decided, duplicates merged, tessellations refitted, gaps closed up 
 `max_gap`. It works on `doc.edges`, zero `ezdxf`. It reads nothing yet: the
 contours are found by `faces()` and `outlines()`.
 
+A tessellation (10 or more lines in a row, each under `TESSELLATION_SIDE` =
+0.1 mm: a curve written as points) is replaced by lines, arcs, conics and
+splines within `POINTS_NOISE` = 0.02 mm of its points. The points are not
+reproduced exactly: a detail smaller than 0.02 (a corner, a hook) can be
+smoothed away (D321).
+
 | parameter | meaning |
 |---|---|
 | `max_gap` | the widest gap that is closed between free endpoints, and the distance at which `outlines()` puts two edges in the same group. If `None`, no gap is closed (D267); each gap closed is listed in the note `ends-joined`. |

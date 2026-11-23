@@ -249,6 +249,10 @@ da sistemare nella 1.x. Ognuno è stato riprodotto sul codice attuale.
   rifatto in una curva aperta sola, i cui due capi non sono mai trattati come un
   gap, quindi resta in `loose` invece di chiudersi (circa il 6% di questi
   anelli in un campione a caso); lo dice la nota `open-spline`.
+- *Una curva scritta a punti perde i dettagli sotto 0,02 mm.* Dieci o più
+  rette corte di fila vengono rifatte in rette, archi, coniche e spline entro
+  0,02 mm dai loro punti; uno spigolo o un uncino più piccolo, anche su punti
+  esatti, può uscire arrotondato.
 - *Edge esclusi dal grafo.* Con un `is_structural` su misura che accetta ogni
   ruolo, `faces()` può non consegnare da nessuna parte gli edge messi da parte
   come non di contorno (nessun cluster, niente in `loose`) — un'eccezione a

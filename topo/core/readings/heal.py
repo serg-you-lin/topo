@@ -24,6 +24,11 @@ def heal(doc: Document, *, max_gap: Optional[float] = None,
     `.faces()` (from the inside: outers with their inners) or `.outlines()`
     (from the outside: one outline per group of touching edges).
 
+    A curve written as many short lines (10 or more, each under
+    `topo.precision.TESSELLATION_SIDE`) is replaced by lines, arcs, conics
+    and splines within `topo.precision.POINTS_NOISE` of its points: a detail
+    smaller than that (a corner, a hook) can be smoothed away (D321).
+
     max_gap:       the widest gap closed between free ends, and the distance
                    at which `outlines()` groups edges. None: no gap is closed
                    (D267). Two points closer than `topo.precision.SAME_POINT`

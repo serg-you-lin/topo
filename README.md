@@ -244,6 +244,10 @@ fixed in 1.x. Each was reproduced on the current code.
   one open curve whose two ends are never treated as a gap, so it stays in
   `loose` instead of closing (about 6% of such rings in a random sample); the
   note `open-spline` reports it.
+- *A curve written as points loses details under 0.02 mm.* Ten or more short
+  lines in a row are refitted into lines, arcs, conics and splines within
+  0.02 mm of their points; a corner or a hook smaller than that, even on
+  exact points, can come out smoothed.
 - *Edges excluded from the graph.* With a custom `is_structural` that accepts
   every role, `faces()` can deliver edges set aside as non-contour nowhere at
   all (no cluster, nothing in `loose`) — an exception to *complete* above. The

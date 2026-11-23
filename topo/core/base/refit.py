@@ -1,13 +1,14 @@
 """
 topo/core/base/refit.py
 -----------------------
-Rifit: una curva scritta in un'altra forma torna la primitiva che è. Nessuna
+Rifit: una curva scritta in un'altra forma torna primitive. Nessuna
 fusione di copie (quelle stanno in `merge.py`): qui un gruppo di pezzi o una
 curva diventa un'altra primitiva, entro una soglia.
 
     refit_tessellations — una catena di tanti LineSeg corti è una curva scritta
                           a punti: rifittata come arco/cerchio/spline
-                          (fitting.simplify_points).
+                          (fitting.simplify_points) entro POINTS_NOISE dai
+                          punti; un dettaglio più piccolo si perde (D321).
     refit_native_curves — una spline entro SAME_POINT da un arco o da
                           un'ellisse diventa quello (fitting.conic_of_spline);
                           un'ellisse coi semiassi uguali, il suo cerchio.
