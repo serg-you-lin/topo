@@ -1,25 +1,24 @@
 """
 model/contour.py
 
-Contorno chiuso generico — un loop con un ruolo, senza semantica di feature.
+Generic closed contour — a loop with a role, with no feature semantics.
 
-È il tipo che `heal()` produce per l'outer del cluster e per i suoi loop
-interni non ancora classificati (`cluster.inners`). `detect_flat()` promuove un
-`Contour` circolare sotto soglia a `Hole`; quello che resta è un taglio a
-contorno. Sorella di `Hole` / `Engraving`: sta in un file proprio, non annidata
-in `cluster.py` che definisce solo il contenitore.
+It is the type `heal()` produces for the cluster's outer and for its inner
+loops not yet classified (`cluster.inners`). `detect_flat()` promotes a
+circular `Contour` below a threshold to `Hole`; what remains is a contour cut.
+Sibling of `Hole` / `Engraving`: it lives in a file of its own, not nested in
+`cluster.py`, which defines only the container.
 
-`depth` e `parent` portano l'albero di contenimento che `HierarchyBuilder`
-costruisce internamente (padre → figli → nipoti, a profondità arbitraria) e
-che altrimenti verrebbe perso appiattendo tutto in `cluster.inners`: l'outer
-ha `depth=0`/`parent=None`, un figlio diretto `depth=1`, un nipote `depth=2`,
-e così via. Puramente geometrico (contenimento fra poligoni, calcolato in
-`heal()`), non semantico — `detect_flat()` può ricostruire il ruolo che vuole,
-questi due campi non cambiano.
+`depth` and `parent` carry the containment tree that `HierarchyBuilder` builds
+internally (parent → children → grandchildren, at arbitrary depth) and that
+would otherwise be lost by flattening everything into `cluster.inners`: the
+outer has `depth=0`/`parent=None`, a direct child `depth=1`, a grandchild
+`depth=2`, and so on. Purely geometric (containment between polygons,
+computed in `heal()`), not semantic — `detect_flat()` can rebuild whatever
+role it wants, these two fields do not change.
 
-`Contour.from_segments()` costruisce un contorno da un anello di
-primitive scritto da un chiamante (D118): controlla che l'anello chiuda e
-racchiuda un'area.
+`Contour.from_segments()` builds a contour from a ring of primitives written
+by a caller: it checks that the ring closes and encloses an area.
 """
 from __future__ import annotations
 
@@ -41,18 +40,15 @@ class Contour(ClosedCurve):
     """
     _: KW_ONLY
     depth:  int                        = 0
-    parent: Optional["Contour"]   = field(default=None, repr=False)   # il genitore si stampa dove sta, non dentro ogni figlio
+    parent: Optional["Contour"]   = field(default=None, repr=False)   # the parent is printed where it is, not inside every child
 
     @classmethod
     def from_segments(cls, segments: Sequence, role: str, *, depth: int = 0,
                       parent: Optional["Contour"] = None,
                       tolerance: float = DEFAULT_TOLERANCE) -> "Contour":
-        """
-        Contorno da un anello di primitive testa-coda: ogni segmento parte
-        dove finisce il precedente (entro `tolerance`), l'ultimo chiude sul
-        primo. ValueError se l'anello non chiude o non racchiude un poligono
-        valido.
-        """
+        """Contour from a head-to-tail ring of primitives: each segment starts where the
+        previous ends (within `tolerance`), the last closes on the first. ValueError
+        if the ring does not close or does not enclose a valid polygon."""
         segs = list(segments)
         for k, seg in enumerate(segs):
             end, start = segment_endpoints(seg)[1], segment_endpoints(segs[(k + 1) % len(segs)])[0]

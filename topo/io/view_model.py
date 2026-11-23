@@ -1,21 +1,22 @@
 """
 io/view_model.py
 ----------------
-`to_view_model(result)` — serializza un `Result` in un dizionario JSON
-**orientato al rendering**: coordinate di OGNI feature (outer, inner, overlay
-di un consumatore, curve sciolte) + ruolo + colore, pronto da disegnare.
-Fuori dalla 1.0 stabile: il viewer è `topo.experimental` (D133).
+`to_view_model(result)` — serializes a `Result` into a **rendering-oriented**
+JSON dictionary: coordinates of EVERY feature (outer, inner, a consumer's
+overlay, loose curves) + role + colour, ready to draw.
+Outside the stable 1.0: the viewer is `topo.experimental`.
 
-È il pendant di `to_json` (che dà solo i fatti, zero coordinate). Lo consumano `to_svg`
-e qualunque front-end esterno (una dashboard JS che renderizza con SVG/Canvas).
+It is the counterpart of `to_json` (which gives only facts, no coordinates).
+`to_svg` and any external front-end consume it (a JS dashboard that renders
+with SVG/Canvas).
 
-Tutta la geometria è **discretizzata a polilinee** (liste di punti `[x, y]`):
-archi, cerchi e spline vengono appiattiti (MAP.md D12). Un elemento
-dell'overlay che porta `center` + `diameter` nel suo `to_dict()` li riporta,
-così un renderer può disegnare un cerchio vero invece del poligono a N lati.
+All the geometry is **discretized to polylines** (lists of `[x, y]` points):
+arcs, circles and splines are flattened. An overlay element carrying `center` +
+`diameter` in its `to_dict()` brings them back, so a renderer can draw a true
+circle instead of the N-sided polygon.
 
-Sistema di coordinate: quello del modello = quello del file sorgente (Y verso
-l'alto). Un renderer SVG deve ribaltare la Y (lo fa `to_svg`).
+Coordinate system: the model's = the source file's (Y up). An SVG renderer
+must flip Y (`to_svg` does).
 """
 
 from __future__ import annotations
@@ -31,26 +32,26 @@ from ..core.geometry.shapely_polygons import build_polygon, curve_polygon
 from ..core.primitives.mathseg import DEFAULT_TOLERANCE
 
 def _color(role, role_styles: Mapping[str, RoleStyle]) -> str:
-    """Hex CSS di un ruolo: la palette di topo con sopra la mappa del
-    chiamante (`role_style`, D128) — qui solo tradotta."""
+    """CSS hex of a role: topo's palette with the caller's map on top
+    (`role_style`) — only translated here."""
     r, g, b = role_style(role, role_styles=role_styles).color
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
 def _round_points(seq) -> list:
-    """Lista di punti (2D o 3D) → lista di [x, y] arrotondati."""
+    """List of points (2D or 3D) → list of rounded [x, y]."""
     return [[round(p[0], 4), round(p[1], 4)] for p in seq]
 
 
 def _poly_points(polygon) -> list:
-    """Vertici dell'anello esterno di un polygon shapely come lista di [x, y]."""
+    """Vertices of the outer ring of a shapely polygon as a list of [x, y]."""
     if polygon is None or polygon.is_empty:
         return []
     return _round_points(polygon.exterior.coords)
 
 
 def _track(segments, tolerance: float) -> list:
-    """Traccia aperta (lista di segmenti nativi) discretizzata a lista di [x, y]."""
+    """Open trace (list of native segments) discretized to a list of [x, y]."""
     return _round_points(track_points(segments, tolerance=tolerance))
 
 
@@ -63,12 +64,9 @@ def _contour_entry(contour, tolerance: float, role_styles: Mapping[str, RoleStyl
 
 
 def _feature_entries(item, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> list:
-    """
-    Un elemento dell'overlay (MAP.md D90) → una voce per contorno: ruolo,
-    colore, punti, `closed` (`model.feature_closed`), più i campi scalari del suo
-    `to_dict()` se ne ha uno (un renderer disegna un cerchio vero se trova
-    `center` + `diameter`).
-    """
+    """An overlay element → one entry per contour: role, colour, points, `closed`
+    (`model.feature_closed`), plus the scalar fields of its `to_dict()` if it has
+    one (a renderer draws a true circle if it finds `center` + `diameter`)."""
     role = getattr(item, "role", None)
     extra = {}
     if callable(getattr(item, "to_dict", None)):
@@ -91,7 +89,7 @@ def _feature_entries(item, tolerance: float, role_styles: Mapping[str, RoleStyle
 
 
 def _features(cluster, tolerance: float, role_styles: Mapping[str, RoleStyle]) -> dict:
-    """`cluster.overlay` per nome → lista di voci disegnabili."""
+    """`cluster.overlay` by name → list of drawable entries."""
     if cluster.overlay is None:
         return {}
     return {
@@ -140,23 +138,21 @@ def to_view_model(
     include_texts: bool = True,
     role_styles: Optional[Mapping[str, RoleStyle]] = None,
 ) -> dict:
-    """
-    `Result` → dizionario JSON-ready con la geometria di ogni feature.
+    """`Result` → JSON-ready dictionary with the geometry of every feature.
 
     Args:
-        result:              il `Result` da serializzare.
-        tolerance:           tolleranza di discretizzazione per archi/cerchi/
-                             spline delle tracce aperte (le tracce chiuse usano
-                             il polygon già discretizzato al load).
-        include_loose:       includi `result.loose`.
-        include_texts: includi `result.texts`.
-        role_styles:         `{ruolo: RoleStyle}` del chiamante (D128),
-                             sopra la palette di topo: ne legge il colore.
+        result:              the `Result` to serialize.
+        tolerance:           discretization tolerance for arcs/circles/splines of
+                             open traces (closed traces use the polygon already
+                             discretized at load).
+        include_loose:       include `result.loose`.
+        include_texts: include `result.texts`.
+        role_styles:         the caller's `{role: RoleStyle}`, on top of topo's
+                             palette: it reads its colour.
 
-    Non muta `result`. Non solleva su `result` non valido — ritorna comunque il
-    dizionario con `is_valid=False` e le parti che ci sono (utile per debuggare
-    un file che non healizza).
-    """
+    It does not mutate `result`. It does not raise on an invalid `result` — it
+    returns the dictionary anyway with `is_valid=False` and the parts that exist
+    (useful for debugging a file that does not heal)."""
     role_styles = dict(role_styles or {})
     parts_out = []
     for cluster in result.clusters:
@@ -166,7 +162,7 @@ def to_view_model(
             "area":   round(cluster.area, 4),
             "outer":  _contour_entry(cluster.outer, tolerance, role_styles),
             "inners": [_contour_entry(i, tolerance, role_styles) for i in cluster.inners],
-            # l'overlay di un consumatore, per nome (MAP.md D44, D90)
+            # a consumer's overlay, by name
             "features": _features(cluster, tolerance, role_styles),
             "summary": cluster.summary,
         })
@@ -189,10 +185,8 @@ def to_view_model(
 
 
 def _palette_dict(role_styles: Mapping[str, RoleStyle]) -> dict:
-    """
-    role (stringa) → colore hex, per la legenda di un renderer: i tre ruoli
-    del motore e ogni ruolo a cui il chiamante dà un colore.
-    """
+    """role (string) → hex colour, for a renderer's legend: the three engine roles
+    and every role to which the caller gives a colour."""
     engine = [r.value for r in ContourRole]
     roles = engine + [r for r in role_styles if r not in engine]
     return {role: _color(role, role_styles) for role in roles}

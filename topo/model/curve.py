@@ -1,27 +1,27 @@
 """
 model/curve.py
 
-Gerarchia base del dominio topo: una curva è una sequenza di segmenti,
-chiusa o aperta. Nome geometrico, non di processo (MAP.md D114).
+Base hierarchy of the topo domain: a curve is a sequence of segments, closed
+or open. A geometric name, not a process one.
 
 Curve
-├── ClosedCurve   — contorno chiuso (loop): i segments chiudono un giro
-└── OpenCurve     — tracciato aperto
+├── ClosedCurve   — closed contour (loop): the segments close a loop
+└── OpenCurve     — open trace
 
-Tutte le entità del modello ereditano da qui:
+All model entities inherit from here:
     Hole(ClosedCurve), Contour(ClosedCurve)
     BendingLine(OpenCurve), Engraving(OpenCurve)
 
-Note:
-    - segments è List[MathSeg] — primitive pure
-    - styles è List[EdgeStyle], allineata 1:1 a segments — aspetto grezzo
-      (linetype/colore) dell'entità sorgente di ogni segmento (Cluster E).
-      Può essere più corta di segments o vuota (geometria sintetizzata, es.
-      ponti di gap-closing o il fallback polygonize): chi la consuma in
-      write() tratta un indice mancante come "nessuno stile noto".
-    - nessun tipo shapely nel modello (D166): il poligono per le domande fra
-      più curve è una cache privata, `core.geometry.shapely_polygons.curve_polygon`
-    - role è l'unico canale semantico interno — mai leggere un layer nel core
+Notes:
+    - segments is List[MathSeg] — pure primitives
+    - styles is List[EdgeStyle], aligned 1:1 with segments — raw appearance
+      (linetype/colour) of the source entity of each segment. It may be
+      shorter than segments or empty (synthesized geometry, e.g. gap-closing
+      bridges or the polygonize fallback): whoever consumes it in write()
+      treats a missing index as "no known style".
+    - no shapely type in the model: the polygon for questions between several
+      curves is a private cache, `core.geometry.shapely_polygons.curve_polygon`
+    - role is the only internal semantic channel — never read a layer in core
 """
 
 from __future__ import annotations
@@ -37,46 +37,42 @@ from topo.model.style import EdgeStyle
 
 @dataclass
 class Curve:
-    """
-    Radice della gerarchia. Porta solo identità semantica e traceability.
+    """Root of the hierarchy. It carries only semantic identity and traceability.
 
-    Non istanziare direttamente — usare ClosedCurve o OpenCurve.
-    """
-    role:       str          # costante ContourRole, o slug di un consumatore
+    Do not instantiate directly — use ClosedCurve or OpenCurve."""
+    role:       str          # ContourRole constant, or a consumer's slug
 
 
 @dataclass
 class ClosedCurve(Curve):
-    """
-    Curva chiusa: una lista di segmenti che chiude un giro. I suoi fatti
-    (area, bbox, baricentro, contains) sono calcolati sui segmenti (D166).
+    """Closed curve: a list of segments that closes a loop. Its facts (area, bbox,
+    centroid, contains) are computed on the segments.
 
-    Non porta `diameter` / `center`: forma e misure di un contorno si leggono
-    da `topo.geometry.contour_shape`.
-    """
+    It carries no `diameter` / `center`: shape and measures of a contour are read
+    from `topo.geometry.contour_shape`."""
     segments: List[MathSeg] = field(default_factory=list)
     _: KW_ONLY
     styles:   List[EdgeStyle]                  = field(default_factory=list)
-    cluster_ref: Optional[int]                 = None   # in result.loose: indice del cluster che la contiene (D137)
-    # poligono della lettura, solo per le domande fra più curve (curve_polygon, D166)
+    cluster_ref: Optional[int]                 = None   # in result.loose: index of the cluster that contains it
+    # the reading's polygon, only for questions between several curves (curve_polygon)
     _polygon:    Any = field(default=None, init=False, repr=False, compare=False)
 
     @property
     def area(self) -> float:
-        """Area esatta, integrata sui `segments` (Green, MAP.md D165): non
-        dipende dalla tolleranza della discretizzazione."""
+        """Exact area, integrated on the `segments` (Green): it does not depend on the
+        discretization tolerance."""
         return ring_area(self.segments) if self.segments else 0.0
 
     @property
     def bbox(self) -> Tuple[float, float, float, float]:
         """Exact (xmin, ymin, xmax, ymax) of the `segments`: arcs and ellipses
-        reach their true extremes, not their chords (MAP.md D166)."""
+        reach their true extremes, not their chords."""
         return ring_bbox(self.segments) if self.segments else (0.0, 0.0, 0.0, 0.0)
 
     @property
     def centroid(self) -> Tuple[float, float]:
         """Exact centroid of the enclosed area, integrated on the `segments`
-        (Green, MAP.md D165). `ValueError` if the ring encloses no area."""
+        (Green). `ValueError` if the ring encloses no area."""
         return ring_centroid(self.segments)
 
     def contains(self, point: Tuple[float, float], *, tolerance: float = ON_BOUNDARY) -> bool:
@@ -92,10 +88,8 @@ class ClosedCurve(Curve):
 
 @dataclass
 class OpenCurve(Curve):
-    """
-    Curva aperta: segmenti che non chiudono un giro.
-    """
+    """Open curve: segments that do not close a loop."""
     segments:    List[MathSeg] = field(default_factory=list)
     _: KW_ONLY
     styles:      List[EdgeStyle]                  = field(default_factory=list)
-    cluster_ref: Optional[int]                    = None   # in result.loose: indice del cluster che la contiene (D99, D137)
+    cluster_ref: Optional[int]                    = None   # in result.loose: index of the cluster that contains it

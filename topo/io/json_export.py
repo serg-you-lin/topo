@@ -1,8 +1,8 @@
 """
 topo/io/json_export.py
 ----------------------
-Il `Result` come JSON, solo geometria (D230). La sola fonte dei campi è
-`Result.to_dict()`; qui si aggiungono i campi di un consumatore e si scrive.
+The `Result` as JSON, geometry only. The only source of the fields is
+`Result.to_dict()`; here a consumer's fields are added and it is written.
 """
 
 import json
@@ -12,8 +12,8 @@ from ..model import Cluster, Result
 
 
 def _with_extra(result: Result, extra: Optional[Callable[[Cluster], dict]]) -> dict:
-    """`result.to_dict()` con i campi di `extra(cluster)` uniti a ogni cluster;
-    una chiave che topo scrive già è un errore, mai una sostituzione (D230)."""
+    """`result.to_dict()` with the fields of `extra(cluster)` merged into every
+    cluster; a key topo already writes is an error, never a replacement."""
     data = result.to_dict()
     if extra is None:
         return data
@@ -31,7 +31,7 @@ def _with_extra(result: Result, extra: Optional[Callable[[Cluster], dict]]) -> d
 def to_json(result: Result, *, indent: int = 2,
             extra: Optional[Callable[[Cluster], dict]] = None) -> str:
     """
-    The result as a JSON string, geometry only (D230, D231).
+    The result as a JSON string, geometry only.
 
     Top level: `source_file`, `source_format`, `reading`, `tolerance`,
     `max_gap`, `is_valid`, `warnings`, `errors`, `loose_count`, `text_count`,

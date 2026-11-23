@@ -1,25 +1,25 @@
 """
 topo/model/diagnostic.py
 ------------------------
-Un avviso di topo scritto come quelli del compilatore Rust (D227): cosa, dove,
-perché non l'ha corretto, e la chiamata con la soglia che lo correggerebbe.
-Tre livelli (D233): `warning` (un consiglio sul disegno), `note` (cosa topo ha
-fatto da sé, in `notes`), `error` (niente da leggere).
-È una `str` (il testo per chi legge, umano o LLM) con i campi per chi
-programma: le liste `warnings` restano liste di stringhe. Uno per tipo: il
-testo mostra i primi punti, `points` li ha tutti.
+A topo warning written like the Rust compiler's: what, where, why it did not
+fix it, and the call with the threshold that would fix it. Three levels:
+`warning` (advice about the drawing), `note` (what topo did by itself, in
+`notes`), `error` (nothing to read). It is a `str` (the text for whoever reads,
+human or LLM) with the fields for whoever programs: the `warnings` lists stay
+lists of strings. One per type: the text shows the first points, `points` has
+them all.
 """
 
 from __future__ import annotations
 
 from typing import Optional, Sequence, Tuple
 
-_SHOWN = 3   # punti scritti nel testo; gli altri solo in `points`
+_SHOWN = 3   # points written in the text; the others only in `points`
 LEVELS = ("warning", "note", "error")
 
 
 def plural(n: int, one: str, many: str) -> str:
-    """`n` con la parola al singolare o al plurale, per il testo di un Diagnostic."""
+    """`n` with the word in singular or plural, for the text of a Diagnostic."""
     return f"{n} {one if n == 1 else many}"
 
 
@@ -81,7 +81,7 @@ class Diagnostic(str):
         return self.points[0] if self.points else None
 
     def __reduce__(self):
-        # copy/pickle: si ricostruisce dai campi, non dal testo
+        # copy/pickle: rebuilt from the fields, not from the text
         return (_rebuild, (self.code, self.message, self.points, self.notes, self.help, self.param, self.value,
                            self.level))
 

@@ -1,32 +1,30 @@
 """
 topo/tools/non_contour.py
 ---------------------------
-Espone a un consumatore lo stesso criterio topologico che `heal()` usa
-internamente per decidere "questo edge non chiude un contorno" —
-`NonContourEdgeDetector` (catene fra due nodi di branching distinti, e non
-sul bordo della faccia esterna della loro componente connessa, MAP.md D111,
-D131).
+Exposes to a consumer the same topological criterion `heal()` uses internally
+to decide "this edge does not close a contour" — `NonContourEdgeDetector`
+(chains between two distinct branching nodes, and not on the border of the
+outer face of their connected component).
 
-`heal()` non assegna mai un significato a questi edge: li esclude dal grafo e
-basta, restano in `loose` col ruolo che avevano (`unknown` se nessuno
-l'ha già deciso). È `detect_flat()` — un consumatore a valle come un altro — a
-interpretarli (`_detect_bending`, "candidato dritto con gli estremi sul
-contorno esterno → piega, confidence 0.9").
+`heal()` never assigns a meaning to these edges: it excludes them from the
+graph and that is all, they stay in `loose` with the role they had (`unknown`
+if nobody had decided). It is `detect_flat()` — a downstream consumer like any
+other — that interprets them (`_detect_bending`, "straight candidate with the
+ends on the outer contour → bend, confidence 0.9").
 
-Un consumatore diverso da `detect_flat()` (snapdraw, l'interprete) può volere la
-stessa lista di candidati SENZA quell'interpretazione, per applicarne una
-propria (un bordo di feature in rilievo vista in pianta non è una piega) e
-assegnare `edge.role` prima di chiamare `heal()` (vedi MAP.md D30).
-`non_contour_candidates()` è il punto d'aggancio: stesso criterio, zero
-duplicazione, nessuna fonte di verità seconda che possa divergere da quella
-di `heal()`.
+A consumer other than `detect_flat()` (snapdraw, the interpreter) may want the
+same list of candidates WITHOUT that interpretation, to apply its own (the
+border of a raised feature seen in plan is not a bend) and assign `edge.role`
+before calling `heal()`. `non_contour_candidates()` is the hook: same
+criterion, no duplication, no second source of truth that could diverge from
+heal()'s.
 
-Nota: lavora su `doc.edges` così come sono, PRIMA che `heal()` fonda segmenti
-sovrapposti/cocircolari e chiuda i gap minuscoli (i suoi primi passi interni,
-D50/D52). Su un disegno con duplicati o gap sotto tolleranza il risultato può
-differire di poco da quello che `heal()` escluderebbe a conti fatti — non è un
-problema: questa funzione serve a decidere `edge.role` PRIMA di heal(), la
-parola finale su cosa resta nel grafo la dice comunque heal() stesso.
+Note: it works on `doc.edges` as they are, BEFORE `heal()` merges overlapping
+/co-circular segments and closes tiny gaps (its first internal steps). On a
+drawing with duplicates or gaps below tolerance the result may differ slightly
+from what `heal()` would exclude in the end — not a problem: this function
+serves to decide `edge.role` BEFORE heal(), the final word on what stays in
+the graph is heal()'s own.
 """
 
 from __future__ import annotations

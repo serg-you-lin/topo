@@ -3,9 +3,8 @@ topo
 ----
 Deterministic 2D geometry engine: it repairs vector geometry and reads its
 structure - closed contours, what lies inside what, what is connected.
-Geometry and roles, no file format (MAP.md D123): files come in and go out
-through the adapters, sibling packages in the same distribution (D124, D129;
-the README shows them).
+Geometry and roles, no file format: files come in and go out
+through the adapters, sibling packages in the same distribution (the README shows them).
 
 Public API - everything you need is here.
 You do not have to import the internal modules directly.
@@ -16,9 +15,9 @@ You do not have to import the internal modules directly.
     hole = topo.geometry.circle(8, center=(20, 15))
     doc = topo.load_segments(plate + hole)    # or a Document from an adapter
 
-    network = topo.heal(doc, label="part")    # the repair, once (D202)
+    network = topo.heal(doc, label="part")    # the repair, once
     result = network.faces()                  # or network.outlines() for a sheet of views
-    # holes, bends, engravings: a process reading, in snapbend (MAP.md D88)
+    # holes, bends, engravings: a process reading, in snapbend
 
     topo.save_json(result, "part.json")
     parts = topo.split(result)                # one Result per part, no format
@@ -28,51 +27,49 @@ from .core.geometry_input import load_geometry, load_segments
 from .core.readings.heal import heal
 from .core.readings.network import Network
 from .tools.anchor       import anchor_texts
-# Un Result per parte, senza formato: ogni exporter ne scrive una (D124, D129)
+# One Result per part, no format: every exporter writes one.
 from .tools.split        import split
 from .rules.validator     import validate_document, validate_result
 from .io.json_export      import to_json, save_json
-# Conversione esplicita a shapely per overlay, buffer, WKT: il modello non
-# espone tipi shapely (MAP.md D166).
+# Explicit conversion to shapely for overlay, buffer, WKT: the model does not
+# expose shapely types.
 from .io.shapes           import to_shapely
 from .model         import (
     Result, Cluster, Contour, Document,
     Text,
-    # cosa misura un testo, coi punti della sorgente (D264)
+    # what a text measures, with the source's points
     MeasuredDistance, MeasuredRadius, MeasuredDiameter, MeasuredAngle,
     Overlay,
-    # un avviso come in Rust: testo + campi, con la soglia che lo corregge (D227)
+    # a warning as in Rust: text + fields, with the threshold that fixes it
     Diagnostic,
 )
-# Un consumatore che marca la geometria prima di heal() (snapdraw: cornice /
-# cartiglio) setta `edge.role` sugli Edge di `doc.edges` con uno slug ripulito
-# da normalize_role, e is_structural_role dice se quel ruolo è contorno di
-# pezzo o arredo che heal terrà fuori dal grafo. Vedi MAP.md D30.
+# A consumer that marks the geometry before heal() (snapdraw: frame / title
+# block) sets `edge.role` on the Edges of `doc.edges` with a slug cleaned by
+# normalize_role, and is_structural_role says whether that role is a part
+# contour or furniture that heal keeps out of the graph.
 from .model.role      import normalize_role, is_structural_role
-# Regole del chiamante che assegnano il ruolo al load (D63).
+# The caller's rules that assign the role at load.
 from .model.role_rule import RoleRule, name_rules
-# RoleStyle (D37, D128): come il chiamante vuole disegnato un ruolo, senza
-# formato. Il dizionario {ruolo: RoleStyle} è suo e lo passa a ogni exporter.
+# RoleStyle: how the caller wants a role drawn, with no format. The
+# {role: RoleStyle} dictionary is theirs and they pass it to every exporter.
 from .model.style     import RoleStyle
-# Stesso criterio che heal() usa internamente per escludere un edge dal grafo
-# dei contorni (catene fra due nodi di branching, non sul bordo esterno, D111,
-# D131) — senza dire cosa
-# sia quell'edge. Un consumatore che vuole decidere `edge.role` prima di
-# heal() con un'interpretazione propria (non "bending" come fa detect_flat()) lo
-# chiama su doc.edges. Vedi MAP.md D55.
+# The same criterion heal() uses internally to exclude an edge from the contour
+# graph (chains between two branching nodes, not on the outer border) — without
+# saying what that edge is. A consumer that wants to decide `edge.role` before
+# heal() with an interpretation of its own (not "bending" as detect_flat() does)
+# calls it on doc.edges.
 from .tools.non_contour import non_contour_candidates
-# La geometria: fatti con nomi geometrici (forma di un contorno, cerchi
-# concentrici, corde, rettangoli coperti, ...), tutti in `topo.geometry`.
-# MAP.md D68, D91, D93-D95.
+# The geometry: facts with geometric names (shape of a contour, concentric
+# circles, chords, covered rectangles, ...), all in `topo.geometry`.
 from .core import geometry
-# Ogni soglia fissa di topo, in un file solo e non riassegnabile (D269).
+# Every fixed topo threshold, in one file and not reassignable.
 from . import precision
-# Tutto ciò che è esposto senza promessa di stabilità: i passi di faces() e di
-# outlines(), il viewer, la lettura testuale, rotate_*, simplify_points
-# (MAP.md D175 C, D176). Si scrive per intero: `topo.experimental.<nome>`.
+# Everything exposed with no stability promise: the steps of faces() and
+# outlines(), the viewer, the text reading, rotate_*, simplify_points. Written in
+# full: `topo.experimental.<name>`.
 from . import experimental
-# Le primitive geometriche e i tipi del modello, pubblici: `topo.primitives`,
-# `topo.model`. Sotto `topo.core` è interno (MAP.md D120).
+# The geometric primitives and the model types, public: `topo.primitives`,
+# `topo.model`. What is under `topo.core` is internal.
 from . import primitives, model
 from .inspect             import inspect_document, inspect_result
 
@@ -106,8 +103,8 @@ __all__ = [
     "to_json",
     "save_json",
     "to_shapely",
-    # Utilità
-    # Ispezione / debug (Document → Result; il file grezzo lo ispeziona il suo adapter)
+    # Utilities
+    # Inspection / debug (Document → Result; the raw file is inspected by its adapter)
     "inspect_document",
     "inspect_result",
     # Modelli
@@ -122,7 +119,7 @@ __all__ = [
     "MeasuredAngle",
     "Overlay",
     "Diagnostic",
-    # Ruoli — aggancio per un consumatore che marca la geometria pre-heal
+    # Roles — hook for a consumer that marks the geometry pre-heal
     "normalize_role",
     "is_structural_role",
     "RoleRule",

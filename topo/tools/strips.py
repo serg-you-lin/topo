@@ -1,26 +1,26 @@
 """
 topo/tools/strips.py
 ---------------------
-Unire regioni piene annidate con strisce (MAP.md D134, D142). topo dà i fatti
-e la costruzione, il chiamante la politica (quante strisce, dove, quale
-regione con quale):
+Joining nested solid regions with strips. topo gives the facts and the
+construction, the caller the policy (how many strips, where, which region
+with which):
 
-1. `facing_boundaries`: per ogni regione vuota di un cluster, il suo bordo e
-   quelli delle regioni piene direttamente dentro. Solo fra questi passa una
-   striscia: due regioni dentro regioni vuote diverse hanno materiale in
-   mezzo, e sono escluse per costruzione.
-2. la distanza fra due bordi è `topo.geometry.gap` (D251).
-3. `link`: la striscia fra due bordi affacciati (genitore–figlio e
-   fratello–fratello) in un punto e con una larghezza; rifiutata se
-   attraversa un altro bordo o un'altra striscia.
-4. `unconnected_regions`: le regioni piene che, date le strisce, non sono
-   collegate alla regione piena più esterna.
+1. `facing_boundaries`: for every empty region of a cluster, its boundary and
+   those of the solid regions directly inside. A strip passes only between
+   these: two regions inside different empty regions have material in
+   between, and are excluded by construction.
+2. the distance between two boundaries is `topo.geometry.gap`.
+3. `link`: the strip between two facing boundaries (parent–child and
+   sibling–sibling) at a point and with a width; rejected if it crosses
+   another boundary or another strip.
+4. `unconnected_regions`: the solid regions that, given the strips, are not
+   connected to the outermost solid region.
 
-`open_boundaries` è la costruzione: i bordi toccati dalle strisce, aperti in
-catene di primitive, e i fianchi delle strisce.
+`open_boundaries` is the construction: the boundaries touched by strips,
+opened into chains of primitives, and the strips' sides.
 
-Sperimentale (D140): non è in `topo.*` né nella superficie stabile; si
-importa da `topo.tools.strips`.
+Experimental: not in `topo.*` nor in the stable surface; imported from
+`topo.tools.strips`.
 """
 
 from __future__ import annotations
@@ -40,10 +40,8 @@ __all__ = [
 
 @dataclass
 class Facing:
-    """
-    Una regione vuota (`region`, un contorno di profondità dispari) e le
-    regioni piene direttamente dentro (`inside`): i bordi che si guardano.
-    """
+    """An empty region (`region`, a contour of odd depth) and the solid regions
+    directly inside (`inside`): the boundaries that face each other."""
     region: "Contour"
     inside: List["Contour"] = field(default_factory=list)
 
@@ -53,7 +51,7 @@ class Facing:
 
 
 def facing_boundaries(cluster) -> List[Facing]:
-    """Fatto 1: un `Facing` per ogni regione vuota di `cluster`, nell'ordine di `cluster.inners`."""
+    """Fact 1: a `Facing` for every empty region of `cluster`, in the order of `cluster.inners`."""
     groups = [Facing(region=c) for c in cluster.inners if c.depth % 2 == 1]
     by_region = {id(g.region): g for g in groups}
     for c in cluster.inners:
@@ -64,7 +62,7 @@ def facing_boundaries(cluster) -> List[Facing]:
 
 @dataclass(frozen=True)
 class Link:
-    """Una striscia (`strip`) fra i bordi `a` e `b` di un `Facing`."""
+    """A strip (`strip`) between the boundaries `a` and `b` of a `Facing`."""
     a:     "Contour"
     b:     "Contour"
     strip: Strip
@@ -72,13 +70,11 @@ class Link:
 
 def link(facing: Facing, a: "Contour", b: "Contour", at: Point, width: float,
          placed: Sequence[Link] = ()) -> Link:
-    """
-    Fatto 3: la striscia larga `width` fra `a` e `b`, due bordi di `facing`,
-    nel punto `at` (vedi `topo.core.geometry.strips.strip_between` per la
-    direzione). Ostacoli: gli altri bordi di `facing` e le strisce di
-    `placed`. `ValueError` col perché se è rifiutata, o se `a` e `b` non
-    sono due bordi distinti di `facing`.
-    """
+    """Fact 3: the strip of width `width` between `a` and `b`, two boundaries of
+    `facing`, at the point `at` (see `topo.core.geometry.strips.strip_between` for
+    the direction). Obstacles: the other boundaries of `facing` and the strips of
+    `placed`. `ValueError` with the reason if it is rejected, or if `a` and `b`
+    are not two distinct boundaries of `facing`."""
     ids = [id(c) for c in facing.boundaries]
     if a is b or id(a) not in ids or id(b) not in ids:
         raise ValueError("link(): `a` and `b` must be two distinct boundaries of `facing`")
@@ -89,18 +85,16 @@ def link(facing: Facing, a: "Contour", b: "Contour", at: Point, width: float,
 
 
 def _region_of(contour, cluster) -> "Contour":
-    """La regione piena a cui appartiene un bordo: lui se è pieno, la regione che contiene il vuoto se è vuoto."""
+    """The solid region a boundary belongs to: itself if solid, the region containing the void if it is a void."""
     if contour.depth % 2 == 0:
         return contour
     return contour.parent if contour.parent is not None else cluster.outer
 
 
 def unconnected_regions(cluster, links: Sequence[Link]) -> List["Contour"]:
-    """
-    Fatto 4: le regioni piene di `cluster` (contorni di profondità pari
-    dentro `cluster.outer`) che nessuna catena di `links` collega a
-    `cluster.outer`, nell'ordine di `cluster.inners`.
-    """
+    """Fact 4: the solid regions of `cluster` (contours of even depth inside
+    `cluster.outer`) that no chain of `links` connects to `cluster.outer`, in the
+    order of `cluster.inners`."""
     root: Dict[int, int] = {}
 
     def find(k: int) -> int:
@@ -117,22 +111,18 @@ def unconnected_regions(cluster, links: Sequence[Link]) -> List["Contour"]:
 
 @dataclass
 class Opened:
-    """
-    `boundaries`: ogni bordo toccato da una striscia, con le catene aperte di
-    primitive che ne restano. `sides`: i fianchi delle strisce, due per
-    striscia nell'ordine di `links`. I bordi che nessuna striscia tocca non
-    ci sono: restano interi.
-    """
+    """`boundaries`: every boundary touched by a strip, with the open chains of
+    primitives that remain of it. `sides`: the strips' sides, two per strip in
+    the order of `links`. The boundaries no strip touches are not there: they stay whole."""
     boundaries: List[Tuple["Contour", List[list]]]
     sides:      List[LineSeg]
 
 
 def open_boundaries(links: Sequence[Link]) -> Opened:
-    """
-    La costruzione: ogni bordo toccato si apre una volta sola, sui tagli di
-    tutte le sue strisce insieme (aprirlo una striscia alla volta darebbe
-    tratti sovrapposti che non chiudono più). `ValueError` se due strisce si
-    sovrappongono sullo stesso bordo.
+    """The construction: every touched boundary is opened once, on the cuts of all
+    its strips together (opening it one strip at a time would give overlapping
+    stretches that no longer close). `ValueError` if two strips overlap on the
+    same boundary.
     """
     covered: Dict[int, Tuple["Contour", list]] = {}
     sides: List[LineSeg] = []

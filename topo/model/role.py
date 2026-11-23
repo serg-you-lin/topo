@@ -1,30 +1,29 @@
 """
 model/role.py
 
-Ruolo topologico di una forma — il minimo che il motore (core/) deve sapere
-per costruire l'albero di contenimento: è un contorno esterno, un contorno
-interno, o non ha ancora un ruolo deciso. Punto. **Non vive qui nessuna
-tassonomia manifatturiera** (foro, foro filettato, svasatura, piega,
-incisione, marcatura, ...) — quella è vocabolario di un consumatore
-(snapbend, MAP.md D88): topo non sa cosa sia un foro, sa solo distinguere un
-contorno da un altro (MAP.md, "roles out of core").
+Topological role of a shape — the minimum the engine (core/) must know to
+build the containment tree: is it an outer contour, an inner contour, or has it
+no role decided yet. Full stop. **No manufacturing taxonomy lives here** (hole,
+threaded hole, countersink, bend, engraving, marking, ...) — that is a
+consumer's vocabulary (snapbend): topo does not know what a hole is, it only
+distinguishes one contour from another.
 
-``ContourRole`` NON è un universo chiuso: un consumatore (una libreria sopra
-topo, snapbend, snapdraw, un agente — nessuno è privilegiato) può assegnare un ruolo che core non conosce —
-``"hole"``, ``"frame"``, ``"title_block"``, qualunque slug — e topo lo
-conserva e lo tratta come non strutturale di default. Come si disegna in
-uscita lo decide un exporter dal ruolo, con la mappa del chiamante (MAP.md
-D123) — non come spazzatura: quella geometria non è trash. Chi vuole che un ruolo che core non conosce sia trattato come
-strutturale (un foro è un vero contorno di pezzo, non decorazione) passa il
-proprio predicato a ``heal(doc, is_structural=...)``. Vedi MAP.md D27 e D31.
+``ContourRole`` is NOT a closed universe: a consumer (a library above topo,
+snapbend, snapdraw, an agent — none is privileged) can assign a role core does
+not know — ``"hole"``, ``"frame"``, ``"title_block"``, any slug — and topo
+keeps it and treats it as non-structural by default. How it is drawn on output
+is decided by an exporter from the role, with the caller's map — not as
+garbage: that geometry is not trash. Whoever wants a role core does not know to
+be treated as structural (a hole is a true part contour, not decoration)
+passes their own predicate to ``heal(doc, is_structural=...)``.
 
-``normalize_role()`` è l'unico punto in cui una stringa-ruolo che arriva dal
-chiamante entra nel modello: la ripulisce una volta sola in uno slug sicuro,
-così tutto il codice a valle (chiavi e valori serializzati, nomi e attributi
-di qualunque formato in uscita) se ne può fidare senza ri-validarla.
+``normalize_role()`` is the only point where a role string coming from the
+caller enters the model: it cleans it once into a safe slug, so all the
+downstream code (keys and serialized values, names and attributes of any
+output format) can trust it without re-validating.
 
-Le regole con cui il chiamante assegna un ruolo al load vivono in
-``model/role_rule.py`` (D63).
+The rules with which the caller assigns a role at load live in
+``model/role_rule.py``.
 """
 
 from __future__ import annotations
@@ -33,43 +32,37 @@ import re
 from enum import Enum
 from typing import Dict
 
-# Slug ruolo: minuscole, cifre, _ e -. Tutto il resto viene collassato in "_"
-# da normalize_role — è quello che neutralizza i payload di injection
-# (`"</cluster>"`, newline, caratteri che un formato in uscita non accetta in
-# un nome): una scelta di sicurezza, non di un formato (D126).
+# Role slug: lowercase, digits, _ and -. Everything else is collapsed to "_" by
+# normalize_role — it neutralizes injection payloads (`"</cluster>"`, newlines,
+# characters an output format does not accept in a name): a security choice, not
+# a format's.
 _MAX_ROLE_LEN = 64
 _ROLE_SLUG_RE = re.compile(r"[^a-z0-9_-]+")
 
 
 class ContourRole(str, Enum):
-    """
-    I tre ruoli che il motore topologico conosce. **Non esaustivo** — un
-    consumatore assegna
-    qualunque altra stringa a un edge/contorno, vedi ``normalize_role``.
+    """The three roles the topology engine knows. **Not exhaustive** — a consumer
+    assigns any other string to an edge/contour, see ``normalize_role``.
 
-    Eredita da str: il valore è già una stringa normale, quindi JSON/repr
-    scrivono ``"outer"`` invece di ``<ContourRole.OUTER: 'outer'>`` e le
-    comparazioni con stringhe funzionano senza ``.value``.
-    """
-    UNKNOWN = "unknown"   # default — nessun ruolo deciso
-    OUTER   = "outer"     # profilo esterno della parte, trovato da heal()
+    It inherits from str: the value is already a plain string, so JSON/repr write
+    ``"outer"`` instead of ``<ContourRole.OUTER: 'outer'>`` and comparisons with
+    strings work without ``.value``."""
+    UNKNOWN = "unknown"   # default — no role decided
+    OUTER   = "outer"     # outer profile of the part, found by heal()
     INNER   = "inner"     # loop interno, trovato da heal()
-    # Non c'è altro qui. `hole`/`bending`/`engrave`/... sono vocabolario di
-    # processo (snapbend), `frame`/`title_block`/... di snapdraw: slug di un
-    # consumatore, fuori da questo enum, stesso trattamento.
+    # Nothing else here. `hole`/`bending`/`engrave`/... are process vocabulary
+    # (snapbend), `frame`/`title_block`/... snapdraw's: a consumer's slugs, outside
+    # this enum, same treatment.
 
 
-# ---------------------------------------------------------------------------
-# Tassonomia: quali ruoli sono topologia di contorno (motore puro)
-# ---------------------------------------------------------------------------
-# Unico punto di verità per la domanda "questo edge/loop/proxy è OUTER o INNER
-# per come l'ha costruito heal(), a prescindere da qualunque significato
-# manifatturiero?". Chi vuole che heal() tratti come strutturale anche un
-# ruolo che core non conosce (un foro assegnato da role_rules, per esempio)
-# passa il proprio predicato a `heal(doc, is_structural=...)`. Senza quel
-# predicato, heal()
-# tratta qualunque ruolo fuori da qui come non strutturale di default (esce
-# dal grafo, resta in `loose` col ruolo intatto — MAP.md, "roles out of core").
+# --- Taxonomy: which roles are contour topology (pure engine) ---
+# The single point of truth for the question "is this edge/loop/proxy OUTER or
+# INNER by how heal() built it, regardless of any manufacturing meaning?".
+# Whoever wants heal() to treat as structural also a role core does not know (a
+# hole assigned by role_rules, say) passes their own predicate to
+# `heal(doc, is_structural=...)`. Without that predicate, heal() treats any role
+# outside here as non-structural by default (it leaves the graph, stays in
+# `loose` with its role intact).
 STRUCTURAL_ROLES = frozenset({
     ContourRole.OUTER,
     ContourRole.INNER,
@@ -77,33 +70,26 @@ STRUCTURAL_ROLES = frozenset({
 
 
 def is_structural_role(role) -> bool:
-    """
-    True if ``role`` is OUTER or INNER for the engine (see ``STRUCTURAL_ROLES``).
+    """True if ``role`` is OUTER or INNER for the engine (see ``STRUCTURAL_ROLES``).
 
     The engine's minimal predicate — it knows nothing about holes, bends or
     engravings. A pure membership test — it accepts both a ``ContourRole``
     constant and the equivalent string slug (``ContourRole`` inherits from
-    ``str``). No reverse lookup on the enum (D27 rule A).
-    """
+    ``str``). No reverse lookup on the enum."""
     return role in STRUCTURAL_ROLES
 
 
 def feature_role(contour, item_role):
-    """
-    Il ruolo con cui si disegna un contorno di un elemento dell'overlay (D90):
-    il suo, se è di un consumatore; quello dell'elemento, se il contorno porta
-    solo un ruolo del motore (outer/inner/unknown: da dove viene la geometria,
-    non cosa significa).
-    """
+    """The role with which a contour of an overlay element is drawn: its own, if it
+    is a consumer's; the element's, if the contour carries only an engine role
+    (outer/inner/unknown: where the geometry comes from, not what it means)."""
     own = getattr(contour, "role", None)
     if own and own != ContourRole.UNKNOWN and not is_structural_role(own):
         return own
     return item_role or own
 
 
-# ---------------------------------------------------------------------------
-# work_type stringa → ContourRole — mappatura pura, zero dipendenze di formato
-# ---------------------------------------------------------------------------
+# --- work_type string → ContourRole — pure mapping, no format dependencies ---
 WORK_TYPE_TO_ROLE: Dict[str, ContourRole] = {
     "outer": ContourRole.OUTER,
     "inner": ContourRole.INNER,
@@ -141,10 +127,7 @@ def normalize_role(value) -> str:
 
 
 def role_str(role) -> str:
-    """
-    Valore stringa di un ruolo, che sia una costante ``ContourRole`` o una
-    stringa già pura. Da usare al posto di ``role.value``, che esplode su una
-    ``str`` semplice.
-    """
+    """String value of a role, whether a ``ContourRole`` constant or an already pure
+    string. Use it in place of ``role.value``, which blows up on a plain ``str``."""
     return role.value if isinstance(role, ContourRole) else str(role)
 

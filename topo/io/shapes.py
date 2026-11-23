@@ -1,9 +1,9 @@
 """
 topo/io/shapes.py
 -----------------
-`to_shapely`: la geometria di topo come oggetti shapely, per chi ha bisogno di
-overlay, buffer o WKT (MAP.md D166). Una conversione esplicita, come un
-formato: il modello non espone tipi shapely, li costruisce questa funzione.
+`to_shapely`: topo's geometry as shapely objects, for whoever needs overlay,
+buffer or WKT. An explicit conversion, like a format: the model exposes no
+shapely types, this function builds them.
 """
 
 from __future__ import annotations
@@ -21,12 +21,12 @@ from ..model import Cluster, OpenCurve
 
 def to_shapely(item, *, tolerance: Optional[float] = None):
     """
-    Convert topo geometry to a shapely object (MAP.md D166).
+    Convert topo geometry to a shapely object.
 
     - a closed curve (`Contour`, a `ClosedCurve` in `loose`, or anything
       with a closed ring of `segments`) → `Polygon`;
     - an `OpenCurve` → `LineString`;
-    - a `Cluster` → its material by the even-odd rule of `area` (D89): the
+    - a `Cluster` → its material by the even-odd rule of `area`: the
       outer with its depth-1 holes, every depth-2 island with its depth-3
       holes, and so on, minus the overlay voids → `Polygon`, or
       `MultiPolygon` when islands sit inside holes.
@@ -56,8 +56,8 @@ def _ring(item, tolerance: Optional[float]) -> Polygon:
 
 
 def _cluster(cluster: Cluster, tolerance: Optional[float]):
-    """Pari-dispari sulla gerarchia: ogni contorno a depth pari è un guscio,
-    i suoi figli a depth dispari i suoi buchi."""
+    """Even-odd on the hierarchy: every contour at even depth is a shell, its
+    children at odd depth its holes."""
     contours = [cluster.outer] + list(cluster.inners)
     pieces = []
     for shell in contours:

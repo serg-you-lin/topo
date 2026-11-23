@@ -1,19 +1,18 @@
 """
 topo/primitives.py
 ------------------
-Le primitive geometriche native, pubbliche (MAP.md D120): le madri `MathSeg` e
-`ConicSeg` (D285), la retta, le coniche (cerchio, ellisse, parabola, iperbole,
-D286-D288), la spline, la curva da formula (D289) e la clotoide (D290), `sub_segment` (il tratto di una di loro) e
-`segment_endpoints` (i suoi due estremi).
-Math puro, nessun ruolo: un `Edge` (in `topo.model`) ne avvolge uno con ruolo
-e stile.
+The native geometric primitives, public: the parents `MathSeg` and
+`ConicSeg`, the line, the conics (circle, ellipse, parabola, hyperbola), the
+spline, the formula curve and the clothoid, `sub_segment` (the stretch of one
+of them) and `segment_endpoints` (its two ends).
+Pure maths, no role: an `Edge` (in `topo.model`) wraps one with role and style.
 
     import topo
 
     side = topo.primitives.LineSeg(start=(0, 0), end=(100, 0))
-    arc = topo.primitives.CircleSeg((50, 0), 50, 0.0, math.pi, True)   # mezzo cerchio
+    arc = topo.primitives.CircleSeg((50, 0), 50, 0.0, math.pi, True)   # half circle
 
-Quello che sta sotto `topo.core` è interno, senza garanzie.
+What is under `topo.core` is internal, with no guarantees.
 """
 from .core.primitives.mathseg import MathSeg, segment_endpoints
 from .core.primitives.line import LineSeg

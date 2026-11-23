@@ -1,12 +1,12 @@
 """
 model/role_rule.py
 -------------------
-Regole con cui il chiamante assegna un ruolo alle linee in ingresso.
+Rules with which the caller assigns a role to the incoming lines.
 
-topo fornisce solo il meccanismo: il contenuto delle regole (quali nomi,
-quali stili, quale ruolo) lo scrive chi chiama. L'adapter le valuta al load
-su segnali neutri — il nome del gruppo sorgente e l'aspetto (`EdgeStyle`) —
-e consegna al core solo il ruolo risultante (MAP.md D63).
+topo provides only the mechanism: the content of the rules (which names, which
+styles, which role) is written by the caller. The adapter evaluates them at
+load on neutral signals — the source group's name and the appearance
+(`EdgeStyle`) — and hands the core only the resulting role.
 """
 
 from __future__ import annotations
@@ -19,9 +19,9 @@ from .style import VALID_DASH_KINDS, EdgeStyle
 
 RGB = Tuple[int, int, int]
 
-# I colori di base per nome, con i valori RGB che un CAD dà ai suoi colori
-# indicizzati (MAP.md D126). Il nero è il nero: un colore "bianco o nero
-# secondo lo sfondo" di un formato lo traduce il suo adapter.
+# The basic colours by name, with the RGB values a CAD gives its indexed
+# colours. Black is black: a "white or black depending on the background" colour
+# of a format is translated by its adapter.
 _COLOR_NAMES: Dict[str, RGB] = {
     "red": (255, 0, 0), "yellow": (255, 255, 0), "green": (0, 255, 0),
     "cyan": (0, 255, 255), "blue": (0, 0, 255), "magenta": (255, 0, 255),
@@ -39,8 +39,7 @@ _COLOR_NAMES: Dict[str, RGB] = {
 
 @dataclass
 class RoleRule:
-    """
-    A rule: if ALL the given conditions are true, the line takes `role`.
+    """A rule: if ALL the given conditions are true, the line takes `role`.
     Conditions left as None do not count; at least one is required.
 
     Fields:
@@ -52,8 +51,7 @@ class RoleRule:
         color         : effective color, (r, g, b), "#rrggbb" or a basic
                         name ("cyan", "red", ...)
         filled        : True = sides of a filled area only, False = the
-                        others (`EdgeStyle.filled`, D255)
-    """
+                        others (`EdgeStyle.filled`)"""
     role:          str
     _: KW_ONLY
     name:          Optional[str]              = None
@@ -82,16 +80,14 @@ class RoleRule:
 
     @property
     def reads_style(self) -> bool:
-        """True se la regola guarda l'aspetto (tratto, colore, pieno), non solo il nome."""
+        """True if the rule looks at the appearance (stroke, colour, fill), not only the name."""
         return (self.dashed is not None or self.dash is not None or self.color is not None
                 or self.filled is not None)
 
     def matches(self, name: str, *, style: Optional[EdgeStyle] = None) -> bool:
-        """
-        True se l'elemento (nome del gruppo sorgente + aspetto) soddisfa la
-        regola. `style=None` = la sorgente non ha un aspetto da confrontare
-        (un testo, D127): una regola che guarda l'aspetto non matcha.
-        """
+        """True if the element (source group name + appearance) satisfies the rule.
+        `style=None` = the source has no appearance to compare (a text): a rule that
+        looks at the appearance does not match."""
         if style is None and self.reads_style:
             return False
         name = (name or "").lower()
@@ -111,7 +107,7 @@ class RoleRule:
 
 
 def resolve_role(rules: Sequence[RoleRule], name: str, style: Optional[EdgeStyle] = None) -> str:
-    """Ruolo della prima regola che matcha, in ordine; `unknown` se nessuna."""
+    """Role of the first rule that matches, in order; `unknown` if none."""
     for rule in rules:
         if rule.matches(name, style=style):
             return rule.role
@@ -128,7 +124,7 @@ def name_rules(mapping: Dict[str, str]) -> List[RoleRule]:
 # ---------------------------------------------------------------------------
 
 def _color_rgb(value: Union[RGB, str]) -> RGB:
-    """(r, g, b) da una tupla, da "#rrggbb" o da un nome di base ("cyan")."""
+    """(r, g, b) from a tuple, from "#rrggbb" or from a basic name ("cyan")."""
     if isinstance(value, (tuple, list)) and len(value) == 3:
         return tuple(int(c) for c in value)
     key = str(value).strip().lower()

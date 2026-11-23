@@ -1,17 +1,16 @@
 """
 topo/tools/anchor.py
 ---------------------------
-Ancoraggio dei testi: collega ogni testo del modello alla parte che lo
-contiene (MAP.md D43, D138). Pura ricostruzione geometrica, zero giudizio,
-niente a che fare col significato del disegno.
+Text anchoring: links every text of the model to the part that contains it.
+Pure geometric reconstruction, no judgment, nothing to do with the meaning of
+the drawing.
 
-Fase separata e opzionale — NON viene chiamata da heal(): il chiamante la
-attiva quando gli serve (es. prima di split(), per sapere quale
-testo va con quale pezzo).
+A separate, optional phase — NOT called by heal(): the caller turns it on when
+needed (e.g. before split(), to know which text goes with which part).
 
-``anchor_texts`` popola ``Text.cluster_ref`` (indice della parte
-contenitrice). Su cosa cade la punta di un richiamo o cosa misura una quota
-è una lettura del consumer (D259).
+``anchor_texts`` fills ``Text.cluster_ref`` (index of the containing part).
+What a callout's tip lands on or what a dimension measures is the consumer's
+reading.
 """
 
 from __future__ import annotations
@@ -31,9 +30,9 @@ def anchor_texts(result: Result, *, snap_distance: float = 0.0) -> None:
     ``cluster_ref`` is the index in ``result.clusters`` of the part whose
     outer contour covers the text's position; a text outside every part (a
     title block) keeps ``None``. With ``snap_distance`` > 0 a text covered by
-    no part goes to the nearest one within that distance of its outer (D82).
+    no part goes to the nearest one within that distance of its outer.
 
-    **Mutates** the texts of ``result`` and returns ``None`` (D176).
+    **Mutates** the texts of ``result`` and returns ``None``.
     """
     refs = _outer_polygons(result)
     if not refs:
@@ -43,7 +42,7 @@ def anchor_texts(result: Result, *, snap_distance: float = 0.0) -> None:
 
 
 def _outer_polygons(result: Result) -> list:
-    """(indice, poligono dell'outer) per ogni parte che ne ha uno."""
+    """(index, polygon of the outer) for every part that has one."""
     return [
         (i, poly)
         for i, p in enumerate(result.clusters)
@@ -63,7 +62,7 @@ def _assign(position, refs, snap_distance: float) -> Optional[int]:
 
 
 def _nearest_within(probe: Point, refs, snap_distance: float) -> Optional[int]:
-    """L'indice della parte più vicina a ``probe``, se entro ``snap_distance`` (> 0)."""
+    """The index of the part nearest ``probe``, if within ``snap_distance`` (> 0)."""
     if snap_distance <= 0.0 or not refs:
         return None
     idx, dist = min(

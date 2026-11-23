@@ -1,34 +1,31 @@
 """
 topo/tools/rotate.py
 -----------------------
-Ruota la geometria di un Result (o di un singolo Cluster) attorno a
-un centro — allineando opzionalmente il segmento strutturale più lungo
-all'orizzontale.
+Rotate the geometry of a Result (or of a single Cluster) about a centre —
+optionally aligning the longest structural segment to the horizontal.
 
-Un solo heal(), non due: una rotazione rigida NON cambia la topologia (chi
-contiene chi, quali loop esistono restano identici — solo le coordinate
-cambiano), quindi non c'è bisogno di ricostruire l'albero di contenimento
-dopo aver ruotato. `rotate_result`/`rotate_cluster` trasformano DIRETTAMENTE
-le strutture che `heal()` ha già prodotto (poligoni, segmenti) — non tornano
-alla geometria grezza pre-heal e non richiamano `heal()`. Per lo stesso motivo `rotate_cluster` è economico e
-ripetibile: un futuro nester può chiamarlo in un ciclo per provare molti
-angoli su una singola parte, senza pagare il costo di un `heal()` ad ogni
-tentativo.
+One heal(), not two: a rigid rotation does NOT change the topology (who
+contains whom, which loops exist stay identical — only the coordinates
+change), so there is no need to rebuild the containment tree after rotating.
+`rotate_result`/`rotate_cluster` transform DIRECTLY the structures `heal()`
+already produced (polygons, segments) — they do not go back to the raw
+pre-heal geometry and do not call `heal()` again. For the same reason
+`rotate_cluster` is cheap and repeatable: a future nester can call it in a loop
+to try many angles on a single part, without paying the cost of a `heal()` at
+each attempt.
 
-Cosa NON viene ruotato, di proposito, non per svista:
-- `cluster.overlay` — overlay a schema libero (D44), topo
-  non sa cosa contengono; se hai già fatto `detect_flat()`, quei dati (bending
-  line, fori tipizzati, ...) restano nelle coordinate vecchie dopo una
-  rotazione. Fai `detect_flat()` DOPO aver ruotato, non prima.
-- `result.texts` — stesso limite di `rotate_document`: nessun caso
-  reale le ha ancora richieste. Se presenti, viene aggiunto un warning
-  invece di lasciarli silenziosamente nel posto sbagliato.
+What is NOT rotated, on purpose, not by oversight:
+- `cluster.overlay` — free-schema overlay, topo does not know what it
+  contains; if you already did `detect_flat()`, that data (bend lines, typed
+  holes, ...) stays in the old coordinates after a rotation. Do
+  `detect_flat()` AFTER rotating, not before.
+- `result.texts` — same limit as `rotate_document`: no real case has asked
+  for them yet. If present, a warning is added instead of silently leaving
+  them in the wrong place.
 
-Nato dalla discussione "funzioni geometriche" (TODO.md) — orientamento
-canonico per un futuro nester: la meccanica sta qui (`rotate_cluster`,
-pensato per essere richiamato molte volte con angoli diversi), la decisione
-di quanti gradi provare / l'ottimizzazione di impacchettamento restano fuori
-scope (nesting resta fuori da topo).
+The mechanics are here (`rotate_cluster`, meant to be called many times with
+different angles); deciding how many degrees to try / the packing
+optimization stay out of scope (nesting stays out of topo).
 """
 
 from __future__ import annotations
@@ -53,32 +50,23 @@ from ..model.result import Result
 Point = Tuple[float, float]
 
 
-# ---------------------------------------------------------------------------
-# Selezione del segmento — "quale entità allineare"
-# ---------------------------------------------------------------------------
-# Filtro STRUTTURALE (cluster.outer vs cluster.inners), non su `contour.role`:
-# `role` non distingue in modo affidabile outer/inner. `cluster.outer` è
-# sempre inequivocabilmente l'outer (`hierarchy._build_parts` glielo assegna
-# così, indipendentemente da come l'input era etichettato) — ma un `inner`
-# senza ruolo proprio EREDITA il ruolo del padre se il padre ne aveva uno
-# esplicito (`hierarchy._make_inner`, verificato leggendo il codice): un
-# outer etichettato "outer" produce fori interni anch'essi "outer" se non
-# hanno un ruolo loro. Filtrare per stringa sarebbe quindi ambiguo proprio
-# nel caso comune (input senza role_rules dedicate ai fori).
+# Segment selection — "which entity to align"
+# STRUCTURAL filter (cluster.outer vs cluster.inners), not on `contour.role`:
+# `role` does not reliably tell outer from inner. `cluster.outer` is always
+# unambiguously the outer, but an `inner` with no role of its own INHERITS the
+# parent's role if the parent had an explicit one: an outer labelled "outer"
+# produces inner holes also "outer" if they have none of their own. Filtering by
+# string would be ambiguous in the common case.
 #
-# Per un criterio più fine di "outer" / "outer+inner" (es. solo certi ruoli
-# dopo un detect_flat(), o qualunque altra logica) componi la lista da solo:
-# `cluster.outer.segments`/`cluster.inners[i].segments` sono già pubblici, e
-# `longest_segment()`/`chord_angle_deg()` (core/geometry.py) sono già
-# generici — non serve altra API qui, topo dà i mattoncini.
+# For a finer criterion than "outer" / "outer+inner" compose the list yourself:
+# `cluster.outer.segments`/`cluster.inners[i].segments` are already public, and
+# `longest_segment()`/`chord_angle_deg()` are already generic.
 
 def structural_segments(result: Result, include_inners: bool = False) -> list:
-    """
-    Segmenti nativi dei contorni strutturali di ogni cluster: sempre
-    `cluster.outer`; anche `cluster.inners` (fori/loop interni non ancora
-    tipizzati — la tipizzazione hole/countersink/... vive in `detect_flat()`,
-    un overlay separato, vedi il modulo) se `include_inners=True`.
-    """
+    """Native segments of the structural contours of every cluster: always
+    `cluster.outer`; also `cluster.inners` (inner holes/loops not yet typed — the
+    hole/countersink/... typing lives in `detect_flat()`, a separate overlay) if
+    `include_inners=True`."""
     segments = []
     for cluster in result.clusters:
         segments.extend(cluster.outer.segments)
@@ -91,11 +79,9 @@ def structural_segments(result: Result, include_inners: bool = False) -> list:
 def longest_structural_segment(
     result: Result, include_inners: bool = False
 ) -> Tuple[Optional[object], float, Optional[float]]:
-    """
-    `(segment, length, angle_deg)` del segmento più lungo fra
-    `structural_segments(result, include_inners)`. `(None, 0.0, None)` se
-    non c'è nessun cluster.
-    """
+    """`(segment, length, angle_deg)` of the longest segment among
+    `structural_segments(result, include_inners)`. `(None, 0.0, None)` if there
+    is no cluster."""
     seg, length = longest_segment(structural_segments(result, include_inners))
     if seg is None:
         return None, 0.0, None
@@ -116,19 +102,16 @@ def _rotate_contour(contour: ClosedCurve, angle_rad: float, origin: Point) -> Cl
 
 
 def rotate_cluster(cluster: Cluster, angle_rad: float, origin: Point = (0.0, 0.0)) -> Cluster:
-    """
-    Nuovo `Cluster` con `outer`/`inners` ruotati di `angle_rad` (radianti,
-    CCW) attorno a `origin` — segmenti nativi (`.rotated()`) e poligono
-    (`shapely.affinity.rotate`) in un colpo solo, nessun `heal()`.
+    """New `Cluster` with `outer`/`inners` rotated by `angle_rad` (radians, CCW) about
+    `origin` — native segments (`.rotated()`) and polygon
+    (`shapely.affinity.rotate`) at once, no `heal()`.
 
-    `cluster.overlay` NON è toccato — vedi il modulo.
-    L'albero `depth`/`parent` fra outer e inner è preservato (i nuovi
-    `Contour` puntano ai NUOVI oggetti ruotati, non a quelli vecchi).
+    `cluster.overlay` is NOT touched — see the module. The `depth`/`parent` tree
+    between outer and inners is preserved (the new `Contour`s point to the NEW
+    rotated objects, not the old ones).
 
-    Primitiva pensata per un ciclo: economica (solo trasformazioni
-    geometriche, zero ricostruzione di topologia), quindi adatta a provare
-    molti angoli sulla stessa parte (nester).
-    """
+    Meant for a loop: cheap (geometric transformations only, no topology
+    rebuilding), so suited to trying many angles on the same part (nester)."""
     new_outer = _rotate_contour(cluster.outer, angle_rad, origin)
     id_map = {id(cluster.outer): new_outer}
 
@@ -146,16 +129,14 @@ def rotate_cluster(cluster: Cluster, angle_rad: float, origin: Point = (0.0, 0.0
 
 
 def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) -> Result:
-    """
-    Nuovo `Result` con ogni cluster (`rotate_cluster`) e `loose` ruotati di
-    `angle_rad` attorno a `origin`. Nessun `heal()` richiamato: una
-    rotazione rigida non cambia la topologia, solo le coordinate.
+    """New `Result` with every cluster (`rotate_cluster`) and `loose` rotated by
+    `angle_rad` about `origin`. No `heal()` called again: a rigid rotation does not
+    change the topology, only the coordinates.
 
-    `result.texts` non sono ruotate (vedi il modulo) — se presenti,
-    aggiunge un warning invece di lasciarle ferme senza avvisare.
-    `cluster.overlay` non è toccato — se presente su qualche cluster, un
-    warning ricorda di rifare `detect_flat()` dopo la rotazione.
-    """
+    `result.texts` are not rotated — if present, a warning is added instead of
+    leaving them still without notice. `cluster.overlay` is not touched — if
+    present on some cluster, a warning reminds to redo `detect_flat()` after the
+    rotation."""
     new_clusters = [rotate_cluster(c, angle_rad, origin) for c in result.clusters]
     new_loose = [
         replace(t, segments=[s.rotated(angle_rad, origin=origin) for s in t.segments])
@@ -185,19 +166,16 @@ def rotate_document(
     angle_rad: float,
     origin: Point = (0.0, 0.0),
 ) -> Document:
-    """
-    Nuovo `Document` con ogni `edge.segment` ruotato di `angle_rad`
-    (radianti, CCW) attorno a `origin`, coi nodi sui punti veri
-    ruotati (`node_point`, D216).
+    """New `Document` with every `edge.segment` rotated by `angle_rad` (radians, CCW)
+    about `origin`, with the nodes on the rotated true points (`node_point`).
 
-    Primitiva pre-heal: utile quando l'angolo è già noto da altrove (non
-    serve misurarlo su questo stesso documento) e si vuole ruotare prima di
-    passare a `heal()` la prima volta. Per "misura l'angolo sull'outer più
-    lungo E ruota", vedi `rotate_to_longest` — che lavora su un
-    `Result` già sano, un solo `heal()` in tutto.
+    Pre-heal primitive: useful when the angle is already known from elsewhere (no
+    need to measure it on this same document) and you want to rotate before
+    passing to `heal()` the first time. For "measure the angle on the longest outer
+    AND rotate", see `rotate_to_longest` — which works on an already sound
+    `Result`, a single `heal()` in all.
 
-    I testi non sono ruotati — stesso limite di `rotate_result`.
-    """
+    Texts are not rotated — same limit as `rotate_result`."""
     new_edges: List = []
     for edge in doc.edges:
         seg = edge.segment.rotated(angle_rad, origin=origin)
@@ -217,12 +195,10 @@ def _texts_not_rotated(where: str, texts) -> Diagnostic:
         points=[t.position for t in texts])
 
 
-# ---------------------------------------------------------------------------
-# Orchestratore — "allinea il segmento più lungo", un solo heal() a monte
-# ---------------------------------------------------------------------------
+# Orchestrator — "align the longest segment", a single heal() upstream
 
 def _result_bbox_center(result: Result) -> Point:
-    """Centro del bbox unito degli outer di tutti i cluster — vedi `rotate_to_longest`."""
+    """Centre of the joined bbox of the outers of all the clusters — see `rotate_to_longest`."""
     boxes = [c.outer.bbox for c in result.clusters if c.outer.segments]
     if not boxes:
         return (0.0, 0.0)
@@ -239,19 +215,17 @@ def rotate_to_longest(
     target_angle_deg: float = 0.0,
     origin: Optional[Point] = None,
 ) -> Tuple[Result, float]:
-    """
-    Ruota `result` (già sano, da un `heal()` già fatto dal chiamante) in modo
-    che il suo segmento strutturale più lungo — vedi `structural_segments`:
-    solo gli outer per default, anche gli inner se `include_inners=True` —
-    diventi orizzontale (o `target_angle_deg`, se dato). Un solo `heal()` in
-    tutto: quello che il chiamante ha già fatto per produrre `result`.
+    """Rotate `result` (already sound, from a `heal()` the caller already did) so
+    that its longest structural segment — see `structural_segments`: only the
+    outers by default, also the inners if `include_inners=True` — becomes
+    horizontal (or `target_angle_deg`, if given). A single `heal()` in all: the
+    one the caller already did to produce `result`.
 
-    `origin` di default è il centro del bbox unito degli outer (la forma non
-    cambia con `origin`, solo dove finisce nel piano).
+    `origin` defaults to the centre of the joined bbox of the outers (the shape
+    does not change with `origin`, only where it ends up in the plane).
 
-    Ritorna `(result_ruotato, angle_deg_applicato)`. Se non c'è nessun
-    cluster, ritorna `result` invariato e `0.0`.
-    """
+    Returns `(rotated_result, angle_deg_applied)`. If there is no cluster, returns
+    `result` unchanged and `0.0`."""
     _, _, angle_deg = longest_structural_segment(result, include_inners)
     if angle_deg is None:
         return result, 0.0

@@ -1,8 +1,8 @@
 """
 model/cluster.py
 
-Il Cluster: una parte, un contorno esterno con i suoi contorni interni e l'overlay
-di un consumatore.
+The Cluster: a part, an outer contour with its inner contours and a consumer's
+overlay.
 """
 from __future__ import annotations
 
@@ -26,35 +26,28 @@ class Cluster:
     inners:        List[Contour]                      = field(default_factory=list)
     label:         str                                     = ""
     source_file:   str                                     = ""
-    # Overlay di un consumatore (snapbend, snapdraw, un tool custom), di
-    # norma un `model.overlay.Overlay` (D44, D90). `None` finché
-    # nessuno ci ha scritto: distingue "nessuno ha ancora letto il cluster"
-    # da "letto e nessun elemento", cosa che i vecchi campi fissi (sempre
-    # liste vuote) non permettevano di distinguere. Il solo contratto richiesto, mai imposto
-    # a runtime, è duck-typed: `.get(name, default)` e `.items()`.
+    # A consumer's overlay (snapbend, snapdraw, a custom tool), normally a
+    # `model.overlay.Overlay`. `None` until someone has written to it: it tells
+    # "nobody has read the cluster yet" from "read and no element", which the old
+    # fixed fields (always empty lists) could not. The only contract required,
+    # never enforced at runtime, is duck-typed: `.get(name, default)` and `.items()`.
     overlay:       Optional[Any]                           = None
 
     def features(self, name: str) -> list:
-        """
-        Collezione `name` attaccata a `self.overlay`, o `[]` se `overlay` è
-        `None` o quel nome non è stato scritto — accesso sicuro per un
-        consumatore che non vuole gestire `None` a mano. Generico: non ha
-        bisogno di sapere quali nomi esistono (`"holes"`, `"flange_view_hint"`,
-        qualunque altro).
-        """
+        """Collection `name` attached to `self.overlay`, or `[]` if `overlay` is `None`
+        or that name was not written — safe access for a consumer that does not want
+        to handle `None` by hand. Generic: it does not need to know which names exist
+        (`"holes"`, `"flange_view_hint"`, any other)."""
         if self.overlay is None:
             return []
         return self.overlay.get(name, [])
 
     @property
     def overlay_voids(self) -> list:
-        """
-        Gli elementi dell'overlay che sono vuoti del pezzo: chi li ha letti
-        dichiara `is_void = True` e porta i `segments` di un giro chiuso
-        (MAP.md D90). Un
-        consumatore che toglie un contorno da `inners` per farne un suo
-        elemento (un foro di snapbend) non cambia l'area del pezzo.
-        """
+        """The overlay elements that are voids of the part: whoever read them declares
+        `is_void = True` and carries the `segments` of a closed loop. A consumer that
+        takes a contour out of `inners` to make an element of its own (a snapbend
+        hole) does not change the part's area."""
         if self.overlay is None:
             return []
         return [
@@ -68,10 +61,8 @@ class Cluster:
 
     @property
     def area(self) -> float:
-        """
-        Area netta: depth dispari è vuoto, depth pari è materiale (isola nel
-        vuoto del padre) — i segni alternano col livello (MAP.md D89).
-        """
+        """Net area: odd depth is void, even depth is material (an island in the
+        parent's void) — the signs alternate with the level."""
         return (
             self.outer.area
             - sum(_void_area(v) for v in self.overlay_voids)
@@ -80,29 +71,23 @@ class Cluster:
 
     @property
     def summary(self) -> dict:
-        """
-        Conteggio grezzo per nome — `{nome}_count: len(items)` per ogni
-        collezione attaccata a `self.overlay` (`{}` se `overlay is None`).
+        """Raw count by name — `{name}_count: len(items)` for every collection attached
+        to `self.overlay` (`{}` if `overlay is None`).
 
-        Generico e sempre disponibile, zero import a runtime: funziona
-        identico per chi ha fatto solo `heal()` (oggi: sempre `{}`, come
-        prima di questo refactor) e per qualunque nome custom attaccato da un
-        tool esterno — topo non ha bisogno di sapere cosa sia.
+        Generic and always available, no runtime import: it works the same for whoever
+        only did `heal()` (today: always `{}`) and for any custom name attached by an
+        external tool — topo does not need to know what it is.
 
-        Il conteggio ricco per tipo (fori per tipo, pieghe raggruppate) è del
-        consumatore che li ha letti (snapbend `describe_features`, D88).
-        """
+        The rich count by type (holes by type, grouped bends) belongs to the consumer
+        that read them (snapbend `describe_features`)."""
         if self.overlay is None:
             return {}
         return {f"{name}_count": len(items) for name, items in self.overlay.items()}
 
     def to_dict(self) -> dict:
-        """
-        I fatti geometrici della parte, senza coordinate (D230): `label`,
-        `area` (D89), perimetri esatti sulle primitive (D165), numero di
-        contorni interni, `bbox`, e quanti elementi ha ogni collezione di
-        `overlay`. In mm, nessun arrotondamento.
-        """
+        """The geometric facts of the part, without coordinates: `label`, `area`, exact
+        perimeters on the primitives, number of inner contours, `bbox`, and how many
+        elements each `overlay` collection has. In mm, no rounding."""
         outer_perimeter = ring_perimeter(self.outer.segments)
         inner_perimeter = sum(ring_perimeter(i.segments) for i in self.inners)
         minx, miny, maxx, maxy = self.bbox
@@ -119,6 +104,6 @@ class Cluster:
 
 
 def _void_area(item) -> float:
-    """Area di un vuoto dell'overlay, esatta sui suoi `segments` (D165)."""
+    """Area of an overlay void, exact on its `segments`."""
     return ring_area(item.segments)
 

@@ -1,8 +1,8 @@
 """
 model/result.py
 
-Il Result: ciò che una lettura (`faces()`, `outlines()`) restituisce — i cluster
-trovati, le curve sciolte, i testi e la diagnostica.
+The Result: what a reading (`faces()`, `outlines()`) returns — the clusters
+found, the loose curves, the texts and the diagnostics.
 """
 from __future__ import annotations
 
@@ -17,27 +17,24 @@ from .text import Text
 
 @dataclass
 class Result:
-    """
-    What a reading (`Network.faces()`, `Network.outlines()`) hands to the
+    """What a reading (`Network.faces()`, `Network.outlines()`) hands to the
     caller: the pieces found + validation info.
 
     Fields:
         warnings  : advice about the drawing; notes : what topo did on its
-                    own; errors : nothing to read — all `Diagnostic` (D233).
+                    own; errors : nothing to read — all `Diagnostic`.
         source_format, reading, tolerance, max_gap : where the geometry comes
-                    from and how it was read, copied from the network (D231).
-        texts     : the source's texts (list[Text], D138), copied here by
+                    from and how it was read, copied from the network.
+        texts     : the source's texts (list[Text]), copied here by
                     heal() from the Document. They are format-independent
                     domain data: every renderer (an adapter's writer,
                     to_svg) draws them from the model, without
                     re-reading the source.
-        loose     : every curve that is no cluster's contour (MAP.md
-                    D137): chains that close nothing, open traces, closed
-                    curves with a non-structural role. What they are is
-                    decided by the consumer, who moves them into
-                    `cluster.overlay` with `promote()`. `cluster_ref` says
-                    which cluster contains them.
-    """
+        loose     : every curve that is no cluster's contour: chains that
+                    close nothing, open traces, closed curves with a
+                    non-structural role. What they are is decided by the
+                    consumer, who moves them into `cluster.overlay` with
+                    `promote()`. `cluster_ref` says which cluster contains them."""
     clusters:               List[Cluster]        = field(default_factory=list)
     _: KW_ONLY
     source_file:         str                    = ""
@@ -62,22 +59,19 @@ class Result:
 
     def promote(self, curves: OpenCurve | ClosedCurve | Sequence[OpenCurve | ClosedCurve],
                 cluster: Cluster, name: str, *, item: Optional[Any] = None) -> None:
-        """
-        Toglie `curves` (una curva o più) da `loose` e mette un solo `item`
-        nella collezione `name` di `cluster.overlay`, creandolo se manca
-        (D137, D172, D173). `item` è l'oggetto che il chiamante ne ha fatto;
-        con una curva sola può mancare e allora è la curva stessa.
+        """Remove `curves` (one curve or more) from `loose` and put a single `item` in
+        the collection `name` of `cluster.overlay`, creating it if missing. `item` is
+        the object the caller made of them; with a single curve it may be missing and
+        then it is the curve itself.
 
-        Non conta dove stanno le curve: anche una curva fuori da ogni cluster
-        (`cluster_ref is None`) si attacca a quello che il chiamante sceglie.
+        It does not matter where the curves are: even a curve outside every cluster
+        (`cluster_ref is None`) attaches to the one the caller chooses.
 
-        Solleva `ValueError`, senza toccare niente, se una curva non è in
-        `loose` o è data due volte, se `curves` è vuoto, se `cluster` non è
-        in `clusters`, se le curve sono più d'una e `item` manca, o se `item`
-        non porta geometria da disegnare: le curve
-        uscirebbero da `loose` senza arrivare in nessun file (D244). Niente
-        viene scritto due volte né perso.
-        """
+        Raises `ValueError`, touching nothing, if a curve is not in `loose` or is
+        given twice, if `curves` is empty, if `cluster` is not in `clusters`, if there
+        are several curves and `item` is missing, or if `item` carries no geometry to
+        draw: the curves would leave `loose` without reaching any file. Nothing is
+        written twice or lost."""
         group = [curves] if isinstance(curves, (OpenCurve, ClosedCurve)) else list(curves)
         if not group:
             raise ValueError("promote(): no curve")
@@ -100,12 +94,10 @@ class Result:
             del self.loose[k]
 
     def to_dict(self) -> dict:
-        """
-        Il `Result` come dati semplici, solo geometria (D230, D231): da dove
-        arriva, come è stato letto, se è valido, gli avvisi, e i fatti di ogni
-        cluster (`Cluster.to_dict`). Nessuna coordinata: le curve esatte le
-        porta il writer di un adapter. È la sola fonte di `topo.to_json`.
-        """
+        """The `Result` as plain data, geometry only: where it comes from, how it was
+        read, whether it is valid, the warnings, and the facts of every cluster
+        (`Cluster.to_dict`). No coordinates: the exact curves are carried by an
+        adapter's writer. It is the only source of `topo.to_json`."""
         return {
             "source_file":   self.source_file,
             "source_format": self.source_format,

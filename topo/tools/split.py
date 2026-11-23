@@ -1,12 +1,11 @@
 """
 topo/tools/split.py
 -------------------
-Un Result per parte (MAP.md D124, D129). Scegliere le parti è una decisione
-sul modello, non su un formato: quali cluster tenere (`min_area`), come si
-chiamano (`namer` → `cluster.label`), quali curve sciolte e quali testi
-viaggiano con ognuna. Ogni exporter scrive poi una parte nel suo formato
-(il writer di un adapter, `topo.experimental.to_svg`): lo stesso split
-esporta parti in ogni formato.
+One Result per part. Choosing the parts is a decision on the model, not on a
+format: which clusters to keep (`min_area`), what they are called (`namer` →
+`cluster.label`), which loose curves and which texts travel with each. Every
+exporter then writes a part in its format (an adapter's writer,
+`topo.experimental.to_svg`): the same split exports parts in every format.
 """
 
 from __future__ import annotations
@@ -32,7 +31,7 @@ def split(
 
     Each part is a `Result` with a single cluster, the loose curves and the
     texts that belong to it. A curve goes to the cluster of its
-    `cluster_ref` (D137); a text goes to the part that contains it. Those
+    `cluster_ref`; a text goes to the part that contains it. Those
     that no part contains go to the part closest to its outer contour among
     ALL the parts (including those discarded by `min_area`). Nothing is
     duplicated: every element lives in one part only, copied with
@@ -43,16 +42,16 @@ def split(
     `namer(i, cluster)` — if given — returns the `label` of the part's
     cluster, so a file name can be derived downstream
     (`f"{cluster.label}.svg"`); without it, the i-th part is
-    `f"{label}_P{i + 1}"`. By default it discards nothing (D232): a part
+    `f"{label}_P{i + 1}"`. By default it discards nothing: a part
     below `min_area` (mm²; `<= 0`: no filter) is discarded
     with a warning in `result.warnings` and in those of every part: even if
     it discards them all, the discard can be read.
 
-    **Mutates** only `result.warnings` (D176): a part's cluster is a copy
+    **Mutates** only `result.warnings`: a part's cluster is a copy
     with its own `label`, the original does not change.
 
     Raises `ValueError` if `result` is not valid: one file per part makes no
-    sense without parts (D83).
+    sense without parts.
     """
     if not result.is_valid:
         raise ValueError(
@@ -90,17 +89,14 @@ def split(
 
 
 def cluster_passes_min_area(cluster: Cluster, min_area: float) -> bool:
-    """True se la parte supera la soglia di area minima (min_area <= 0 = nessun filtro)."""
+    """True if the part exceeds the minimum area threshold (min_area <= 0 = no filter)."""
     return not (min_area > 0 and cluster.outer.area < min_area)
 
 
 def _assign(items, outers, probe_of, covering: bool) -> dict[int, list]:
-    """
-    id(cluster) → gli elementi che gli appartengono. Con `covering` vince la
-    prima parte che contiene il punto, altrimenti la più vicina; senza, la
-    più vicina e basta.
-    Un elemento senza un punto rappresentativo va alla prima parte.
-    """
+    """id(cluster) → the elements that belong to it. With `covering` the first part
+    containing the point wins, otherwise the nearest; without, the nearest only.
+    An element with no representative point goes to the first part."""
     owned: dict[int, list] = {}
     if not outers:
         return owned
@@ -118,9 +114,9 @@ def _assign(items, outers, probe_of, covering: bool) -> dict[int, list]:
 
 
 def _assign_loose(result: Result, outers) -> dict[int, list]:
-    """id(cluster) → le curve sciolte che gli vanno, nell'ordine di
-    `result.loose`: quelle col suo `cluster_ref`, e quelle che nessun
-    cluster contiene se è la parte più vicina."""
+    """id(cluster) → the loose curves that go to it, in the order of `result.loose`:
+    those with its `cluster_ref`, and those no cluster contains if it is the
+    nearest part."""
     free = _assign([c for c in result.loose if c.cluster_ref is None],
                    outers, _probe_point, covering=False)
     target = {id(c): key for key, curves in free.items() for c in curves}
@@ -134,7 +130,7 @@ def _assign_loose(result: Result, outers) -> dict[int, list]:
 
 
 def _local(items: list, i: int) -> list:
-    """Copie di `items` con `cluster_ref` riferito al Result di una parte sola."""
+    """Copies of `items` with `cluster_ref` referring to the Result of a single part."""
     out = []
     for item in items:
         local = copy.copy(item)
@@ -144,7 +140,7 @@ def _local(items: list, i: int) -> list:
 
 
 def _probe_point(curve) -> Optional[tuple]:
-    """Punto rappresentativo di una curva, per darla alla parte più vicina."""
+    """Representative point of a curve, to give it to the nearest part."""
     poly = curve_polygon(curve)
     if poly is not None:
         c = poly.representative_point()
@@ -158,7 +154,7 @@ def _probe_point(curve) -> Optional[tuple]:
 
 
 def _outer_polygons(clusters) -> list:
-    """(cluster, poligono dell'outer) per ogni cluster che ne ha uno."""
+    """(cluster, polygon of the outer) for every cluster that has one."""
     return [
         (c, poly)
         for c in clusters

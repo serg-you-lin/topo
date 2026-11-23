@@ -1,11 +1,10 @@
 """
 topo/model/__init__.py
 ----------------------
-I tipi del modello, pubblici (MAP.md D120): documento, risultato, cluster,
-contorni, curve, testi, stili, overlay, ruoli, regole di ruolo
-e `Edge` — quello che serve a un adapter per costruire un `Document` (D125).
-Si scrive `topo.model.<Nome>`; i quattro più usati (`Document`, `Result`,
-`Cluster`, `Contour`) stanno anche in `topo.<Nome>`.
+The public model types: document, result, cluster, contours, curves, texts,
+styles, overlay, roles, role rules and `Edge` — what an adapter needs to build
+a `Document`. Written `topo.model.<Name>`; the four most used (`Document`,
+`Result`, `Cluster`, `Contour`) are also in `topo.<Name>`.
 """
 from .text import (
     Text, RenderedGeometry, RenderedText,
@@ -58,8 +57,8 @@ __all__ = [
 
 
 def __getattr__(name):
-    # Edge vive in core/topology (lo usa il grafo) e importa model.style:
-    # caricato al primo accesso per non chiudere un import circolare.
+    # Edge lives in core/topology (the graph uses it) and imports model.style:
+    # loaded on first access so as not to close a circular import.
     if name == "Edge":
         from ..core.topology.edge import Edge
         return Edge

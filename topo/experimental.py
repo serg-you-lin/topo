@@ -1,37 +1,35 @@
 """
 topo/experimental.py
 --------------------
-Tutto ciò che topo espone senza promessa di stabilità (MAP.md D175 C, D176):
-si usa, ma può cambiare in una minor. Un nome che diventa stabile si promuove
-in una minor; qui resta come alias con avviso per due minor.
+Everything topo exposes with no stability promise: it can be used, but may
+change in a minor. A name that becomes stable is promoted in a minor; here it
+stays as an alias with a warning for two minors.
 
-- i passi di `heal()` e delle sue letture, uno per funzione (D117):
-  `topo.heal()`, `Network.faces()` e `Network.outlines()` sono le
-  composizioni di default; chi
-  compone la sua ricetta (D58, D62) prende i mattoni da qui, per esempio
-  senza `build_hierarchy` finché non ha deciso da sé cosa significa un
-  contorno dentro un altro;
-- `read_outlines` / `read_outline` / `OutlineReading`: `outlines()` prima di
-  diventare un `Result` (D58);
-- `merge_near_copies` / `near_copies`: le rette quasi una sopra l'altra,
-  fuse con la soglia del chiamante, dove vuole lui (D226);
-- `simplify_points` (D33, D141), `rotate_*` (D46),
-  `to_view_model` / `to_svg` / `save_svg` (D133);
-- le strisce fra bordi affacciati: `facing_boundaries`, `link`,
-  `unconnected_regions`, `open_boundaries` (D134, D142; la distanza fra due
-  bordi è pubblica, `topo.geometry.gap`, D251);
-- `parity_faces`: una terza lettura della rete, per parità (D250). Il limite
-  è dichiarato: dove la scelta ha pareggi dipende dalle coordinate.
+- the steps of `heal()` and its readings, one per function: `topo.heal()`,
+  `Network.faces()` and `Network.outlines()` are the default compositions;
+  whoever composes a recipe takes the bricks from here, for example without
+  `build_hierarchy` until they have decided for themselves what a contour
+  inside another means;
+- `read_outlines` / `read_outline` / `OutlineReading`: `outlines()` before it
+  becomes a `Result`;
+- `merge_near_copies` / `near_copies`: lines nearly on top of one another,
+  merged with the caller's threshold, where they want;
+- `simplify_points`, `rotate_*`, `to_view_model` / `to_svg` / `save_svg`;
+- the strips between facing boundaries: `facing_boundaries`, `link`,
+  `unconnected_regions`, `open_boundaries` (the distance between two boundaries
+  is public, `topo.geometry.gap`);
+- `parity_faces`: a third reading of the network, by parity. The limit is
+  declared: where the choice has ties it depends on the coordinates.
 
-Si scrive per intero, `topo.experimental.<nome>`: chi legge lo script vede
-che quel nome non ha la promessa (D119).
+Written in full, `topo.experimental.<name>`: whoever reads the script sees that
+that name has no promise.
 """
-# gruppi per contatto, rete piana, faccia esterna, tassellature (D58)
+# gruppi per contatto, rete piana, faccia esterna, tassellature
 from .core.topology.touching import touching_groups, TouchingGroup
 from .core.topology.noding import split_at_crossings, NodedEdges
 from .core.topology.outer_face import outer_face, OuterFace, face_loops
 from .core.base.refit import refit_tessellations
-# le basi di ogni lettura (D187, D189) e i passi di heal() (D62)
+# the foundations of every reading and the steps of heal()
 from .core.base.prepare import prepare, Prepared, normalize, Normalized
 from .core.topology.non_contour_edges import non_contour_pieces
 from .core.base.merge import (merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,

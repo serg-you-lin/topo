@@ -1,24 +1,24 @@
 """
 model/document.py
 -----------------
-Il Document — output di un adapter (o di `topo.load_geometry`) e unico input di topo.heal().
+The Document — output of an adapter (or of `topo.load_geometry`) and the only input of topo.heal().
 
-Campi:
+Fields:
 
-    edges      : geometria parsata (Edge puri) — input per heal()
-    texts       : i testi della sorgente (D138) — dati puri, input per write()
-    source_meta : header rilevanti del file sorgente ($INSUNITS, $MEASUREMENT, …)
-    source_path : percorso del file aperto
-    source_format: da che cosa arriva la geometria, detto dall'adapter
-                  (il nome che l'adapter sceglie, es. `pdf` o `geometry`; stringa aperta, D231)
-    notes       : cosa l'adapter ha fatto da sé sul file (INSERT esplosi,
-                  duplicati tolti, Z riportate sul piano), `Diagnostic` (D233)
-    warnings    : diagnostica raccolta dall'adapter sul file grezzo — audit,
-                  INSERT non esplosi, entità con Z != 0 riportate sul piano,
-                  duplicati rimossi. topo.validate_document(doc) le rilancia.
+    edges      : parsed geometry (pure Edges) — input for heal()
+    texts       : the source's texts — pure data, input for write()
+    source_meta : relevant headers of the source file ($INSUNITS, $MEASUREMENT, …)
+    source_path : path of the opened file
+    source_format: what the geometry comes from, told by the adapter
+                  (the name the adapter chooses, e.g. `pdf` or `geometry`; open string)
+    notes       : what the adapter did by itself on the file (exploded
+                  INSERTs, duplicates removed, Z brought onto the plane), `Diagnostic`
+    warnings    : diagnostics collected by the adapter on the raw file — audit,
+                  unexploded INSERTs, entities with Z != 0 brought onto the
+                  plane, duplicates removed. topo.validate_document(doc) re-raises them.
 
-Nessun campo porta un oggetto di una libreria di formato: edges e texts sono dati puri
-prodotti dall'adapter, source_meta è un dizionario di primitivi.
+No field carries an object of a format library: edges and texts are pure data
+produced by the adapter, source_meta is a dictionary of primitives.
 """
 
 from __future__ import annotations

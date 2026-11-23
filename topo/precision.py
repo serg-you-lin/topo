@@ -1,69 +1,61 @@
 """
 topo/precision.py
 -----------------
-Every fixed threshold of topo, in one place (D269). Nothing else in the
+Every fixed threshold of topo, in one place. Nothing else in the
 package writes a threshold as a number: it imports it from here
 (`tests/package/test_one_threshold.py` checks it). The values cannot be
 reassigned: `topo.precision.SAME_POINT = 0.1` raises `AttributeError`.
 A caller that needs another value for one operation passes it explicitly
 (for gaps: `heal(doc, max_gap=...)`).
 
-All lengths are millimetres (D245).
+All lengths are millimetres.
 """
 
 import sys
 import types
 
 # ---------------------------------------------------------------------------
-# La soglia (D268)
+# La soglia
 # ---------------------------------------------------------------------------
 
-# Due punti più vicini di così sono lo stesso punto: nodi, contatti, stessa
-# retta/cerchio, lato degenere, salti in un contorno, taglio delle spline.
-# CAMBIARLA cambia le letture: più grande, capi e curve lontane fino a lei
-# diventano un punto solo (contorni che si chiudono, lati corti che spariscono);
-# più piccola, capi scritti con pochi decimali restano staccati (contorni aperti
-# senza max_gap) e le spline si tagliano più fini (più lento). Misurata sui 631
-# disegni di tests/: sotto 0,001 i contatti sulle spline, oggi calcolati sulla loro
-# discretizzazione, rompono i contorni.
+# Two points closer than this are the same point: nodes, contacts, same
+# line/circle, degenerate side, jumps in a contour, spline cutting. CHANGING IT
+# changes the readings: larger, ends and curves up to that far apart become a
+# single point (contours that close, short sides that vanish); smaller, ends
+# written with few decimals stay detached (open contours without max_gap) and
+# splines are cut finer (slower). Measured on the 631 drawings of tests/: below
+# 0.001 the contacts on splines, today computed on their discretization, break
+# the contours.
 SAME_POINT = 1e-3
-# È anche la sagitta di ogni poligono di una curva (D275): calcolo, disegno, testi.
+# It is also the sagitta of every curve's polygon: computation, drawing, texts.
 
-# ---------------------------------------------------------------------------
-# Aritmetica: il rumore dei calcoli, non il disegno
-# ---------------------------------------------------------------------------
+# Arithmetic: the noise of the computations, not the drawing
 
-# rumore dei double: il margine di ogni soglia ("entro" la comprende, D183);
-# sopra quello di un moto (~1e-11), sotto ogni soglia di contatto
+# double noise: the margin of every threshold ("within" includes it); above that
+# of a motion (~1e-11), below every contact threshold
 FLOAT_NOISE = 1e-6
 
-# ---------------------------------------------------------------------------
-# Angoli: non lunghezze
-# ---------------------------------------------------------------------------
+# Angles: not lengths
 
-NEAR_FULL_ARC_MISSING_DEG = 2.0  # gradi: un arco cui manca di più non è un cerchio (D112)
-NEAR_FULL_ARC_HINT_DEG = 8.0     # gradi: fin qui heal() avvisa che manca poco; un filetto (~90°) mai (D227)
-ANGLE_BRACKET_DEG = 1.0        # gradi: attorno all'angolo trovato si cerca il riquadro d'area minima (contour_shape)
+NEAR_FULL_ARC_MISSING_DEG = 2.0  # degrees: an arc missing more than this is not a circle
+NEAR_FULL_ARC_HINT_DEG = 8.0     # degrees: up to here heal() warns that little is missing; a thread (~90°) never
+ANGLE_BRACKET_DEG = 1.0        # degrees: around the angle found, the minimum-area box is searched (contour_shape)
 
-# ---------------------------------------------------------------------------
-# Frazioni e rapporti: non lunghezze
-# ---------------------------------------------------------------------------
+# Fractions and ratios: not lengths
 
-MARK_FRACTION = 0.05           # della lunghezza di un tratto di linea a tratti
-NEAR_GAP_FACTOR = 2.0          # un buco fino a questo multiplo di max_gap "c'è quasi" (D227)
+MARK_FRACTION = 0.05           # of the length of a stretch of dashed line
+NEAR_GAP_FACTOR = 2.0          # a hole up to this multiple of max_gap "is nearly there"
 
-# ---------------------------------------------------------------------------
-# Come il CAD scrive una curva a punti (misurate: D279) e l'adattatore PDF
-# ---------------------------------------------------------------------------
+# How a CAD writes a curve as points, and the PDF adapter
 
-POINTS_NOISE = 0.02            # mm: quanto possono sbagliare i punti di una curva scritta a punti (rifit e anelli, D60, D236): un'ipotesi sui file misurata su regr_01, non derivata (D305)
-TESSELLATION_SIDE = 0.1        # mm: lati più corti possono essere punti di una curva scritta a punti (refit_tessellations)
-TESSELLATION_RUN = 10          # lati corti di fila: da tanti in su sono una curva scritta a punti; sotto, il rifit arrotonda spigoli (D303)
-PDF_SNAP = 0.15                # mm: adattatore PDF sperimentale, congelato (D10)
+POINTS_NOISE = 0.02            # mm: how much the points of a curve written as points can be off (refit and rings): an assumption about the files, measured on regr_01, not derived
+TESSELLATION_SIDE = 0.1        # mm: shorter sides may be points of a curve written as points (refit_tessellations)
+TESSELLATION_RUN = 10          # short sides in a row: from this many up they are a curve written as points; below, the refit rounds corners
+PDF_SNAP = 0.15                # mm: adattatore PDF sperimentale, congelato
 
 
 class _Frozen(types.ModuleType):
-    """Il modulo non si riassegna: una soglia si cambia solo qui, con una decisione."""
+    """The module is not reassigned: a threshold is changed only here, with a decision."""
 
     def __setattr__(self, name, value):
         raise AttributeError(f"topo.precision.{name} is fixed (D269); pass a value to the call instead")

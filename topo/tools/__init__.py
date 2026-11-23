@@ -1,14 +1,14 @@
 """
 topo/tools/
 ------------
-Stadi opzionali e componibili su un ``Result`` già prodotto da
-``topo.heal``. Ognuno lo arricchisce in-place e lo ritorna; il chiamante
-sceglie quali eseguire e in che ordine.
+Optional, composable stages on a ``Result`` already produced by
+``topo.heal``. Each enriches it in place and returns it; the caller chooses
+which to run and in what order.
 
-- ``anchor_texts`` — àncora ogni testo al cluster che lo contiene
+- ``anchor_texts`` — anchors every text to the cluster that contains it
 
-È il pattern che un interprete di disegno (progetto separato) generalizza e
-orchestra dall'alto.
+It is the pattern that a drawing interpreter (a separate project)
+generalizes and orchestrates from above.
 """
 
 from .anchor import anchor_texts

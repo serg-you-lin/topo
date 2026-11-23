@@ -1,17 +1,17 @@
 """
 rules/validator.py
 ------------------
-Validazione della salute geometrica: legge e restituisce i fatti come
-`Diagnostic` dentro un Result (D233), mai un'ipotesi su cosa farà heal().
+Validation of geometric health: it reads and returns facts as `Diagnostic`
+inside a Result, never a guess about what heal() will do.
 
-Due validazioni distinte, entrambe utili:
+Two distinct validations, both useful:
 
-    validate_document(doc) — INPUT, prima di heal(): i fatti sul Document
-                           (vuoto, tratti di lunghezza nulla) e quello che
-                           l'adapter ha detto del file.
-    validate_result(res) — OUTPUT, dopo heal(). Controlla che i cluster prodotti
-                           siano sani (poligono valido, fori contenuti, area).
-                           Chiamata da faces() e outlines().
+    validate_document(doc) — INPUT, before heal(): the facts about the Document
+                           (empty, zero-length strokes) and what the adapter
+                           said about the file.
+    validate_result(res) — OUTPUT, after heal(). Checks that the clusters
+                           produced are sound (valid polygon, contained holes,
+                           area). Called by faces() and outlines().
 """
 
 
@@ -26,16 +26,14 @@ from ..core.geometry.measure import FLOAT_NOISE
 from ..core.geometry.rings import ring_jumps
 
 
-# ---------------------------------------------------------------------------
-# INPUT — prima di heal()
-# ---------------------------------------------------------------------------
+# INPUT — before heal()
 
 def validate_document(doc: Document) -> Result:
     """
     Check a `Document` before `heal()`, without changing it.
 
     Returns a `Result` with only `warnings` / `notes` / `errors` / `is_valid`
-    (no clusters), all `topo.Diagnostic` (D233): what the adapter said about
+    (no clusters), all `topo.Diagnostic`: what the adapter said about
     the source, plus
 
     - error `empty`: no edges (only texts, or nothing), or every edge has zero length;
@@ -48,8 +46,8 @@ def validate_document(doc: Document) -> Result:
 
     result = Result(source_file=doc.source_path, source_format=doc.source_format)
     edges = doc.edges
-    # quello che l'adapter ha detto sul file grezzo: validate_document() è
-    # l'unico punto da guardare prima di heal()
+    # what the adapter said about the raw file: validate_document() is the only
+    # point to look at before heal()
     result.warnings.extend(doc.warnings)
     result.notes.extend(doc.notes)
 
@@ -75,18 +73,16 @@ def validate_document(doc: Document) -> Result:
     return result
 
 
-# ---------------------------------------------------------------------------
-# OUTPUT — dopo heal()
-# ---------------------------------------------------------------------------
+# OUTPUT — after heal()
 
 def validate_result(result: Result) -> None:
     """
     Check the clusters of a `Result` a reading produced. **Mutates** `result`:
     adds `topo.Diagnostic` warnings and errors and lowers `is_valid`; returns
-    `None` (D176). Called by `Network.faces()` and `Network.outlines()`.
+    `None`. Called by `Network.faces()` and `Network.outlines()`.
 
     - error `open-contour`: an outer or inner that does not close head to tail
-      beyond float noise (D206);
+      beyond float noise;
     - error `no-area`: an outer with no polygon or zero area;
     - warning `self-intersecting`: an outer polygon that crosses itself;
     - warning `inner-outside`: an inner not wholly inside its outer.

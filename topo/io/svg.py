@@ -1,16 +1,15 @@
 """
 io/svg.py
 ---------
-`to_svg(result)` — renderer SVG del modello topo (MAP.md D12).
-Fuori dalla 1.0 stabile: il viewer è `topo.experimental` (D133).
+`to_svg(result)` — SVG renderer of the topo model.
+Outside the stable 1.0: the viewer is `topo.experimental`.
 
-SVG **solo in uscita**: è una rappresentazione visiva del `Result`, per una
-UI, un report, un'anteprima rapida. Non serve al taglio — archi, cerchi e spline
-sono discretizzati a polilinea (via `to_view_model`).
+SVG **output only**: a visual representation of the `Result`, for a UI, a
+report, a quick preview. Not for cutting — arcs, circles and splines are
+discretized to polylines (via `to_view_model`).
 
-Un colore per ruolo: la palette di topo, con sopra `role_styles` del
-chiamante (D128). La Y viene
-ribaltata (il modello ha Y verso l'alto, SVG verso il basso).
+One colour per role: topo's palette, with the caller's `role_styles` on top.
+Y is flipped (the model has Y up, SVG down).
 """
 
 from __future__ import annotations
@@ -24,7 +23,7 @@ from .view_model import to_view_model
 
 
 def _fmt(pts) -> str:
-    """Lista di [x, y] → stringa 'x0,y0 x1,y1 …' per points= di polyline/polygon."""
+    """List of [x, y] → string 'x0,y0 x1,y1 …' for points= of polyline/polygon."""
     return " ".join(f"{x:.4f},{y:.4f}" for x, y in pts)
 
 
@@ -59,38 +58,37 @@ def to_svg(
     allow_invalid: bool = True,
     role_styles: Optional[Mapping[str, RoleStyle]] = None,
 ) -> str:
-    """
-    `Result` → stringa SVG completa (`<svg>…</svg>`).
+    """`Result` → complete SVG string (`<svg>…</svg>`).
 
     Args:
-        tolerance:           discretizzazione di archi/spline nelle tracce aperte.
-        include_loose:       disegna anche `result.loose` (rosso).
-        include_texts: disegna i testi della sorgente.
-        padding:             margine attorno al disegno, frazione del lato bbox.
-        background:          colore di sfondo (`None` = trasparente).
-        true_circles:        disegna come `<circle>` vero una voce dell'overlay
-                             che porta Ø/centro, invece del poligono a N lati.
-        stroke_width:        spessore linea in unità disegno; `None` = auto
-                             (diagonale bbox / 400).
-        size:                attributi `width`/`height` dell'`<svg>`. `None`
-                             (default) li OMETTE: l'SVG scala a riempire il
-                             contenitore (o la finestra del browser) — è
-                             vettoriale, lo zoomi quanto vuoi. Passa una stringa
-                             come `"800"` per fissare la larghezza in px
-                             (l'altezza segue il rapporto del `viewBox`).
-        units:               `"mm"` → SVG **in scala reale** per un import CAM/
-                             laser 1:1 (`width="…mm" height="…mm"`, padding e
-                             sfondo forzati a 0/None). Ignora `size` e `padding`.
-                             NB: archi/cerchi/spline restano discretizzati (D12) —
-                             per il taglio ad alta fedeltà il writer di un
-                             adapter, che scrive le curve, non l'SVG. `None` = SVG per visualizzazione.
-        role_styles:         `{ruolo: RoleStyle}` del chiamante: il colore
-                             di ogni ruolo (D128), come in ogni exporter.
+        tolerance:           discretization of arcs/splines in open traces.
+        include_loose:       also draw `result.loose` (red).
+        include_texts: draw the source's texts.
+        padding:             margin around the drawing, fraction of the bbox side.
+        background:          background colour (`None` = transparent).
+        true_circles:        draw as a real `<circle>` an overlay entry that
+                             carries Ø/centre, instead of the N-sided polygon.
+        stroke_width:        line thickness in drawing units; `None` = auto
+                             (bbox diagonal / 400).
+        size:                `width`/`height` attributes of the `<svg>`. `None`
+                             (default) OMITS them: the SVG scales to fill the
+                             container (or the browser window) — it is vector,
+                             zoom as much as you like. Pass a string like `"800"`
+                             to fix the width in px (the height follows the
+                             `viewBox` ratio).
+        units:               `"mm"` → SVG **in real scale** for a 1:1 CAM/laser
+                             import (`width="…mm" height="…mm"`, padding and
+                             background forced to 0/None). Ignores `size` and
+                             `padding`. NB: arcs/circles/splines stay
+                             discretized — for high-fidelity cutting use an
+                             adapter's writer, which writes the curves, not the
+                             SVG. `None` = SVG for viewing.
+        role_styles:         the caller's `{role: RoleStyle}`: the colour of
+                             every role, as in every exporter.
 
-    Un `result` non valido viene disegnato lo stesso (vuoto o con la sola
-    `loose`); `allow_invalid=False` → `ValueError`, per chi consegna a una
-    macchina (D83, stesso contratto di ogni exporter).
-    """
+    An invalid `result` is drawn anyway (empty or with `loose` only);
+    `allow_invalid=False` → `ValueError`, for whoever delivers to a machine (same
+    contract as every exporter)."""
     if not result.is_valid and not allow_invalid:
         raise ValueError(
             "to_svg(): the Result is not valid, no output. "
@@ -133,7 +131,7 @@ def to_svg(
         out.append(f'<rect x="{vminx:.4f}" y="{vminy:.4f}" width="{vw:.4f}" '
                    f'height="{vh:.4f}" fill="{background}"/>')
 
-    # Y-flip: (x, y) → (x, miny+maxy - y), resta dentro [miny, maxy]
+    # Y-flip: (x, y) → (x, miny+maxy - y), stays inside [miny, maxy]
     flip = miny + maxy
     out.append(f'<g transform="matrix(1 0 0 -1 0 {flip:.4f})" '
                f'stroke-linejoin="round" stroke-linecap="round">')
@@ -153,7 +151,7 @@ def to_svg(
 
     out.append("</g>")  # end flipped group
 
-    # Testi: fuori dal gruppo ribaltato (altrimenti sarebbero speculari)
+    # Texts: outside the flipped group (otherwise they would be mirrored)
     for ann in vm.get("texts", []):
         txt = (ann.get("text") or "").strip()
         if not txt:
@@ -179,7 +177,7 @@ def save_svg(result: Result, path: str, **kwargs) -> None:
 
 
 def _scan_bbox(vm: dict) -> Optional[list]:
-    """bbox da tutti i punti del view model — fallback quando vm['bbox'] è None."""
+    """bbox from all the points of the view model — fallback when vm['bbox'] is None."""
     xs, ys = [], []
 
     def _collect(entry):

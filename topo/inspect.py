@@ -1,19 +1,18 @@
 """
 topo/inspect.py
 ----------------
-Strumento di ispezione a tre livelli. Serve a *vedere* cosa succede a un file
-reale senza leggere il codice — pensato per il debug quando si lavora su file
-veri.
+Three-level inspection tool. It serves to *see* what happens to a real file
+without reading the code — meant for debugging when working on real files.
 
-I due livelli di topo, in ordine di pipeline:
+The two topo levels, in pipeline order:
 
-    inspect_document(doc)    → edge + primitive + grafo — "cosa ha capito l'adapter"
-    inspect_result(result)   → il modello                 — "cosa ha prodotto topo"
+    inspect_document(doc)    → edge + primitive + graph — "what the adapter understood"
+    inspect_result(result)   → the model                 — "what topo produced"
 
-Il livello del file (le entità grezze) è di un formato: lo ispeziona il suo
-adapter, che stampa anche i tre livelli in fila su un file (D129).
+The file level (the raw entities) belongs to a format: its adapter inspects
+it, and also prints the three levels in a row on a file.
 
-Tutto stampa su stdout con `print`. Nessun logger da configurare.
+Everything prints to stdout with `print`. No logger to configure.
 """
 
 from __future__ import annotations
@@ -39,14 +38,14 @@ def _h(title: str) -> None:
 
 
 def _p(x, nd: int = 2) -> str:
-    """Formatta un punto (x, y) con nd decimali."""
+    """Format a point (x, y) with nd decimals."""
     if x is None:
         return "None"
     return f"({x[0]:.{nd}f}, {x[1]:.{nd}f})"
 
 
 def _role(r) -> str:
-    """Nome del ruolo come stringa piatta ('outer'), non 'ContourRole.OUTER'."""
+    """Name of the role as a flat string ('outer'), not 'ContourRole.OUTER'."""
     return getattr(r, "value", str(r))
 
 
@@ -150,9 +149,7 @@ def _describe_segment(seg) -> str:
     return type(seg).__name__
 
 
-# ===========================================================================
-# LIVELLO 3 — Result: il modello
-# ===========================================================================
+# LEVEL 3 — Result: the model
 
 def inspect_result(result, *, coords: bool = False) -> None:
     """
@@ -196,8 +193,8 @@ def inspect_result(result, *, coords: bool = False) -> None:
 
 
 def _text_kind(text) -> str:
-    """Cosa porta un testo, dai campi del modello: la sola stringa o anche
-    il disegno della sorgente (D256, D259)."""
+    """What a text carries, from the model's fields: the string alone or also the
+    source's drawing."""
     return "drawn" if not text.rendered.is_empty() else "string"
 
 

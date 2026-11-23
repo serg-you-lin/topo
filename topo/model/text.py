@@ -1,24 +1,22 @@
 """
 topo/model/text.py
 ------------------
-I testi della sorgente come dati di dominio (MAP.md D20, D138): un tipo solo,
-`Text`. Una stringa posata nel piano (D257); con, se la sorgente lo dà, il
-disegno che la sorgente le traccia attorno (`rendered`) e cosa misura coi
-punti che la sorgente scrive (`measures`, D264). Che sia una nota, una quota o
-un richiamo e dove punta è una lettura del consumatore (D259); il tipo
-d'entità della sorgente non entra nel modello (D256).
-`halign`/`valign` dicono come la stringa sta attorno a `position`, con lo
-stesso significato per ogni formato.
+The source's texts as domain data: a single type, `Text`. A string laid on the
+plane; with, if the source gives it, the drawing the source traces around it
+(`rendered`) and what it measures with the points the source writes
+(`measures`). Whether it is a note, a dimension or a callout and where it
+points is a consumer's reading; the source's entity type does not enter the
+model. `halign`/`valign` say how the string sits around `position`, with the
+same meaning for every format.
 
-Divisione dei compiti:
-    - adapter → read/write formato ↔ modello, solo conoscenza di formato (dove
-      sta il testo, come si appiattisce il blocco di una quota).
-    - ``anchor_texts()`` → ``cluster_ref`` (indice della parte che lo
-      contiene).
-    - agente → legge e modifica questi oggetti; un writer li riemette.
+Division of tasks:
+    - adapter → read/write format ↔ model, format knowledge only (where the
+      text is, how a dimension's block is flattened).
+    - ``anchor_texts()`` → ``cluster_ref`` (index of the part that contains it).
+    - agent → reads and edits these objects; a writer re-emits them.
 
-``cluster_ref`` è l'indice in ``result.clusters``, non un ``id()`` — così resta
-valido dopo serializzazione.
+``cluster_ref`` is the index in ``result.clusters``, not an ``id()`` — so it
+stays valid after serialization.
 """
 
 from __future__ import annotations
@@ -30,7 +28,7 @@ from .role import ContourRole, normalize_role
 
 Point = Tuple[float, float]
 
-# Come la stringa sta attorno al suo punto (D256): orizzontale e verticale.
+# How the string sits around its point: horizontal and vertical.
 HALIGNS = ("left", "center", "right")
 VALIGNS = ("baseline", "bottom", "center", "top")
 
@@ -44,7 +42,7 @@ def _check_align(halign: str, valign: str) -> None:
 
 @dataclass
 class RenderedText:
-    """Una stringa dentro l'immagine appiattita di un testo (`Text.rendered`)."""
+    """A string inside the flattened image of a text (`Text.rendered`)."""
     content:  str
     position: Point
     _: KW_ONLY
@@ -59,14 +57,12 @@ class RenderedText:
 
 @dataclass
 class RenderedGeometry:
-    """
-    L'immagine che la sorgente disegna attorno a una stringa (linee, frecce,
-    altri testi), già appiattita in primitive pure.
+    """The image the source draws around a string (lines, arrows, other texts),
+    already flattened into pure primitives.
 
-    Serve all'output fedele: in certi formati la geometria di una quota o di
-    un richiamo sta in un blocco a parte, non nei campi dell'entità; la si
-    conserva qui e un writer la ri-materializza.
-    """
+    It serves faithful output: in some formats the geometry of a dimension or a
+    callout is in a separate block, not in the entity's fields; it is kept here
+    and a writer re-materializes it."""
     _: KW_ONLY
     strokes: List[List[Point]]  = field(default_factory=list)  # polilinee aperte
     fills:   List[List[Point]]  = field(default_factory=list)  # polilinee chiuse
@@ -140,8 +136,7 @@ Measure = Union[MeasuredDistance, MeasuredRadius, MeasuredDiameter, MeasuredAngl
 
 @dataclass
 class Text:
-    """
-    A text of the source. ``position`` is the anchor point — where a writer
+    """A text of the source. ``position`` is the anchor point — where a writer
     places the string and on which containment works. ``text`` is the string
     as it reads on the drawing.
 
@@ -156,19 +151,18 @@ class Text:
 
     ``rendered``: the strokes, fills and strings the source draws with it
     (a dimension's or leader's own block), empty for a plain text and
-    for a source that does not group them; never built by topo (D262).
-    Where a pointer lands is a reading (D259).
+    for a source that does not group them; never built by topo.
+    Where a pointer lands is a reading.
 
     ``measures``: what the text measures, with the points its source writes
     (``MeasuredDistance``, ``MeasuredRadius``, ``MeasuredDiameter``,
     ``MeasuredAngle``), ``None`` for any other text or when the source does
     not say. A ``<>`` in ``text`` is where the measure goes when the source
-    writes no number (D264).
+    writes no number.
 
     ``role``: what the text is for a consumer (``"title_block"``,
     ``"part_code"``, ...), as for an edge: topo does not read it and does not
-    decide it (D127); ``unknown`` if nobody said.
-    """
+    decide it; ``unknown`` if nobody said."""
     position:         Point
     text:             str              = ""
     _: KW_ONLY
@@ -176,8 +170,9 @@ class Text:
     rotation:         float            = 0.0
     width_factor:     float            = 1.0
     role:             str              = ContourRole.UNKNOWN.value
-    origin:           Optional[str]    = None   # provenienza nella sorgente — diagnostica
-    cluster_ref:      Optional[int]    = None   # indice in result.clusters della parte che lo contiene
+    origin:           Optional[str]    = None   # provenance in the source — diagnostics
+    cluster_ref:      Optional[int]    = None   # index in result.clusters of the part that contains it
+
     halign:           str              = "left"
     valign:           str              = "baseline"
     rendered:         RenderedGeometry = field(default_factory=RenderedGeometry)
