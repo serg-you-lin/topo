@@ -1,9 +1,8 @@
 """
 topo/core/geometry/concentric.py
 --------------------------------
-Fatti geometrici fra più contorni (MAP.md D91): cerchi concentrici, archi
-attorno a un cerchio. Cosa siano (svasatura, sede, cresta di un filetto) e con
-che soglie lo decide il consumatore.
+Geometric facts between several contours: concentric circles, arcs around a
+circle. What they are and with which thresholds is the consumer's call.
 """
 
 from __future__ import annotations
@@ -39,16 +38,14 @@ class ConcentricGroup:
 
 
 def concentric_groups(items, *, tolerance: float) -> list[ConcentricGroup]:
-    """
-    Partition of the circular contours of `items` by center: every circle is
-    in exactly one group, even alone. A circle joins, among the groups whose
-    center is at most `tolerance` from its own, the nearest one; non-circular
-    ones do not appear. Groups sorted by center (x, y), ties within noise.
-    """
+    """Partition of the circular contours of `items` by centre: every circle is in
+    exactly one group, even alone. A circle joins, among the groups whose centre
+    is at most `tolerance` from its own, the nearest one; non-circular ones do
+    not appear. Groups sorted by centre (x, y), ties within noise."""
     circles = sorted(((k, item, shape) for k, item in enumerate(items)
                       if (shape := contour_shape(item)) is not None and shape.kind == CIRCLE),
                      key=lambda c: c[2].length)
-    # a pari diametro entro il rumore decide l'ordine dato, che un moto non cambia (G6e)
+    # equal diameter within the noise: the given order decides, which a motion does not change
     circles = [c for run in noise_runs(circles, lambda a, b: b[2].length - a[2].length <= FLOAT_NOISE)
                for c in sorted(run, key=lambda c: c[0])]
     groups: list[list] = []
@@ -59,7 +56,7 @@ def concentric_groups(items, *, tolerance: float) -> list[ConcentricGroup]:
             groups.append([(item, shape)])
             continue
         closest = min(d for d, _ in near)
-        # equidistante entro il rumore: il gruppo nato prima
+        # equidistant within the noise: the group born first
         next(g for d, g in near if d - closest <= FLOAT_NOISE).append((item, shape))
     out = [ConcentricGroup(tuple(g[0][1].center), tuple(i for i, _ in g), tuple(s for _, s in g))
            for g in groups]

@@ -1,9 +1,9 @@
 """
 topo/core/geometry/intersections.py
 ------------------------------------
-Intersezioni pure: retta/retta, cerchio/retta, cerchio/cerchio, retta/conica
-(ellisse, parabola, iperbole: un'equazione di secondo grado nel riferimento
-della conica) e `intersections(a, b)` fra due primitive qualunque.
+Pure intersections: line/line, circle/line, circle/circle, line/conic
+(ellipse, parabola, hyperbola: a second-degree equation in the conic's frame)
+and `intersections(a, b)` between any two primitives.
 """
 
 from ...precision import FLOAT_NOISE, SAME_POINT
@@ -24,14 +24,14 @@ Point = Tuple[float, float]
 
 def line_intersection(p1: Point, p2: Point,
                        p3: Point, p4: Point) -> Optional[Point]:
-    """Intersezione tra retta (p1,p2) e retta (p3,p4). None se parallele."""
+    """Intersection of line (p1,p2) and line (p3,p4). None if parallel."""
     x1, y1 = p1
     x2, y2 = p2
     x3, y3 = p3
     x4, y4 = p4
     denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
-    # parallele: lungo il tratto più lungo le due direzioni si scostano meno
-    # del rumore dei double (G6e: una soglia fissa in mm² la decide il moto)
+    # parallel: along the longer stretch the two directions differ by less than
+    # the double noise (a fixed threshold in mm² would be decided by the motion)
     shorter = min(math.hypot(x1 - x2, y1 - y2), math.hypot(x3 - x4, y3 - y4))
     if abs(denom) <= FLOAT_NOISE * shorter:
         return None
@@ -41,21 +41,19 @@ def line_intersection(p1: Point, p2: Point,
 
 def circle_line_intersections(cx: float, cy: float, r: float,
                                 p1: Point, p2: Point) -> List[Point]:
-    """
-    Intersezioni tra la circonferenza (cx, cy, r) e la retta infinita (p1, p2).
-    Restituisce lista di 0, 1 o 2 punti.
-    """
+    """Intersections of the circle (cx, cy, r) and the infinite line (p1, p2).
+    Returns a list of 0, 1 or 2 points."""
     dx, dy = p2[0] - p1[0], p2[1] - p1[1]
     length = math.hypot(dx, dy)
     if length <= FLOAT_NOISE:
         return []
     ux, uy = dx / length, dy / length
-    # il piede della perpendicolare dal centro, nel riferimento del centro
+    # the foot of the perpendicular from the centre, in the centre's frame
     fx, fy = p1[0] - cx, p1[1] - cy
     along = -(fx * ux + fy * uy)
     footx, footy = fx + along * ux, fy + along * uy
-    # tangenza decisa sulla distanza dalla circonferenza (mm), non sul
-    # discriminante: la semicorda amplifica il rumore con la radice (G6e)
+    # tangency decided on the distance from the circle (mm), not on the
+    # discriminant: the half-chord amplifies the noise by the square root
     h = math.hypot(footx, footy)
     if h > r + FLOAT_NOISE:
         return []
@@ -68,13 +66,13 @@ def circle_line_intersections(cx: float, cy: float, r: float,
 
 def circle_circle_intersections(cx1: float, cy1: float, r1: float,
                                   cx2: float, cy2: float, r2: float) -> List[Point]:
-    """Intersezioni tra due circonferenze. Restituisce 0, 1 o 2 punti."""
+    """Intersections of two circles. Returns 0, 1 or 2 points."""
     d = math.dist((cx1, cy1), (cx2, cy2))
-    # concentriche (nessun punto isolato), lontane o una dentro l'altra
+    # concentric (no isolated point), far apart or one inside the other
     if d <= FLOAT_NOISE or d > r1 + r2 + FLOAT_NOISE or d < abs(r1 - r2) - FLOAT_NOISE:
         return []
     ux, uy = (cx2 - cx1) / d, (cy2 - cy1) / d
-    # tangenza sulla distanza dei centri (mm), come per la retta (G6e)
+    # tangency on the distance of the centres (mm), as for the line
     outside = d >= r1 + r2 - FLOAT_NOISE
     if outside or d <= abs(r1 - r2) + FLOAT_NOISE:
         side = r1 if outside or r1 >= r2 else -r1
@@ -88,9 +86,9 @@ def circle_circle_intersections(cx1: float, cy1: float, r1: float,
 
 
 def closest_to(candidates: List[Point], ref: Point, other: Point) -> Optional[Point]:
-    """Il candidato più vicino a `ref`; a pari merito entro FLOAT_NOISE quello più
-    vicino a `other`; ancora pari, None: due punti simmetrici rispetto a tutti e
-    due i capi, e sceglierne uno lo deciderebbe l'ultimo bit (G6e)."""
+    """The candidate nearest `ref`; on a tie within FLOAT_NOISE the one nearest
+    `other`; still a tie, None: two points symmetric with respect to both ends,
+    and picking one would be decided by the last bit."""
     def tied(p, q, at):
         return abs(math.dist(p, at) - math.dist(q, at)) <= FLOAT_NOISE
 
@@ -110,13 +108,13 @@ def closest_to(candidates: List[Point], ref: Point, other: Point) -> Optional[Po
 # Due primitive qualunque
 # ---------------------------------------------------------------------------
 
-_SAME_ROOT = FLOAT_NOISE    # due radici più vicine di così sono lo stesso punto calcolato
-CURVE_TOLERANCE = SAME_POINT  # discretizzazione delle curve senza forma chiusa per incrociarle  # D275
+_SAME_ROOT = FLOAT_NOISE    # two roots closer than this are the same point computed twice
+CURVE_TOLERANCE = SAME_POINT  # curves without a closed form are discretized to cross them
 
 
 def _exact_parts(seg) -> list:
-    """Retta, arco, cerchio restano se stessi; le altre curve diventano
-    rette fitte (`CURVE_TOLERANCE`): non hanno un'intersezione in forma chiusa."""
+    """Line, arc, circle stay themselves; the other curves become dense lines
+    (`CURVE_TOLERANCE`): they have no closed-form intersection."""
     if isinstance(seg, (LineSeg, CircleSeg)):
         return [seg]
     pts = [tuple(q[:2]) for q in seg.discretize(tolerance=CURVE_TOLERANCE)]
@@ -129,14 +127,14 @@ def _on_line(seg: LineSeg, pt: Point) -> bool:
     if l2 == 0:
         return False
     t = ((pt[0] - seg.start[0]) * dx + (pt[1] - seg.start[1]) * dy) / l2
-    # sul tratto se sfora un capo al più del rumore dei double, in mm (G6e)
+    # on the stretch if it overshoots an end by at most the double noise, in mm
     slack = FLOAT_NOISE / math.sqrt(l2)
     return -slack <= t <= 1 + slack
 
 
 def _on_arc(seg, pt: Point) -> bool:
     s = angle_from_start(seg.center, seg.start_angle, seg.ccw, pt)
-    slack = FLOAT_NOISE / seg.radius   # lo stesso sforamento in mm, come angolo
+    slack = FLOAT_NOISE / seg.radius   # the same overshoot in mm, as an angle
     return s <= seg._sweep() + slack or s >= 2 * math.pi - slack
 
 
@@ -154,9 +152,9 @@ def _meet(a, b) -> List[Point]:
 
 
 def _conic_frame(conic):
-    """(origine, versore x, versore y) del riferimento in cui la conica ha la
-    sua equazione semplice: x²/a² ± y²/b² = 1 (centro e asse), x² = 4f·y
-    (vertice, x lungo la tangente al vertice, y verso il fuoco)."""
+    """(origin, unit x, unit y) of the frame in which the conic has its simple
+    equation: x²/a² ± y²/b² = 1 (centre and axis), x² = 4f·y (vertex, x along the
+    tangent at the vertex, y towards the focus)."""
     if isinstance(conic, ParabolaSeg):
         _, u, n = conic._frame()
         return conic.vertex, n, u
@@ -166,8 +164,8 @@ def _conic_frame(conic):
 
 
 def _line_conic(line: LineSeg, conic) -> List[Point]:
-    """I punti dove il tratto `line` incontra il pezzo `conic`: la retta
-    A + λ·(B − A) nell'equazione della conica dà α·λ² + β·λ + γ = 0."""
+    """The points where the stretch `line` meets the piece `conic`: the line
+    A + λ·(B − A) in the conic's equation gives α·λ² + β·λ + γ = 0."""
     origin, ex, ey = _conic_frame(conic)
     ax, ay = line.start[0] - origin[0], line.start[1] - origin[1]
     dx, dy = line.end[0] - line.start[0], line.end[1] - line.start[1]
@@ -193,7 +191,7 @@ def _line_conic(line: LineSeg, conic) -> List[Point]:
         if disc < -FLOAT_NOISE * beta * beta:
             roots = []
         else:
-            # radice stabile (niente sottrazione fra due numeri vicini), l'altra dal prodotto
+            # stable root (no subtraction of two close numbers), the other from the product
             q = -0.5 * (beta + math.copysign(math.sqrt(max(disc, 0.0)), beta))
             roots = [q / alpha] + ([gamma / q] if q != 0 else [])
     length = math.hypot(dx, dy)
@@ -208,7 +206,7 @@ def _line_conic(line: LineSeg, conic) -> List[Point]:
 
 
 def _on_conic_piece(conic, x: float, y: float) -> bool:
-    """Il punto (x, y), sulla conica nel suo riferimento, cade sul pezzo."""
+    """The point (x, y), on the conic in its frame, falls on the piece."""
     if isinstance(conic, ParabolaSeg):
         lo, hi = sorted((conic.start_param, conic.end_param))
         return lo - FLOAT_NOISE <= x <= hi + FLOAT_NOISE
@@ -225,7 +223,7 @@ def _on_conic_piece(conic, x: float, y: float) -> bool:
 
 
 def _exact_conic(seg) -> bool:
-    """Una conica che non è un cerchio: con una retta si incrocia in forma chiusa."""
+    """A conic that is not a circle: it meets a line in closed form."""
     return isinstance(seg, ConicSeg) and not isinstance(seg, CircleSeg)
 
 

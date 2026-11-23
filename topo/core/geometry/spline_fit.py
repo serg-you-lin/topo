@@ -1,8 +1,8 @@
 """
 topo/core/geometry/spline_fit.py
 ---------------------------------
-B-spline per una sequenza ordinata di punti: interpolante (passa per tutti)
-e approssimante (la meno ricca che resta entro una tolleranza) (MAP.md D141).
+B-splines for an ordered sequence of points: interpolating (through all of
+them) and approximating (the least rich that stays within a tolerance).
 """
 
 import math
@@ -13,12 +13,10 @@ from .points import Point
 
 
 def interpolate_bspline(points: List[Point], degree: int = 3) -> Tuple[List[Point], List[float]]:
-    """
-    B-spline di grado `degree` che passa per tutti i `points` (interpolazione
-    globale, Piegl & Tiller cap. 9.2.1): parametri per lunghezza di corda,
-    nodi "natural" per grado dispari e mediati per grado pari. Ritorna
-    `(control_points, knots)`, nodi normalizzati in [0, 1].
-    """
+    """B-spline of degree `degree` through all the `points` (global interpolation,
+    Piegl & Tiller 9.2.1): chord-length parameters, "natural" knots for odd
+    degree and averaged for even degree. Returns `(control_points, knots)`,
+    knots normalized in [0, 1]."""
     n = len(points) - 1
     p = degree
     if n < p:
@@ -47,7 +45,7 @@ def interpolate_bspline(points: List[Point], degree: int = 3) -> Tuple[List[Poin
 
 
 def _bspline_basis_row(u: float, p: int, knots: List[float], n: int) -> List[float]:
-    """Le n+1 funzioni di base N_i,p(u) (Cox-de Boor, Piegl & Tiller A2.2)."""
+    """The n+1 basis functions N_i,p(u) (Cox-de Boor, Piegl & Tiller A2.2)."""
     row = [0.0] * (n + 1)
     if u >= knots[n + 1]:
         row[n] = 1.0
@@ -85,13 +83,11 @@ def _chord_params(points: List[Point]) -> List[float]:
 
 
 def _least_squares(points: np.ndarray, t: List[float], degree: int, count: int):
-    """
-    Spline di grado `degree` con `count` punti di controllo ai minimi quadrati
-    sui punti, primo e ultimo fissati (Piegl & Tiller 9.4.1, nodi per media,
-    eq. 9.68-9.69). Ritorna `(control, knots, max_error)`: l'errore è la
-    distanza di ogni punto dalla curva al suo parametro, che maggiora la
-    distanza vera dalla curva.
-    """
+    """Spline of degree `degree` with `count` control points, least squares on the
+    points, first and last fixed (Piegl & Tiller 9.4.1, knots by averaging, eq.
+    9.68-9.69). Returns `(control, knots, max_error)`: the error is the distance
+    of each point from the curve at its parameter, which bounds the true
+    distance from the curve from above."""
     m, n, p = len(points) - 1, count - 1, degree
     d = (m + 1) / (n - p + 1)
     inner = []
@@ -110,21 +106,19 @@ def _least_squares(points: np.ndarray, t: List[float], degree: int, count: int):
 
 
 def approximate_bspline(points: List[Point], degree: int, tolerance: float) -> Tuple[List[Point], List[float]]:
-    """
-    La B-spline di grado `degree` con meno punti di controllo che passa per il
-    primo e l'ultimo punto e resta entro `tolerance` da tutti gli altri
-    (minimi quadrati, Piegl & Tiller 9.4.1). Su punti rumorosi o a passo
-    irregolare non oscilla come quella che li interpola tutti; quando nessuna
-    approssimazione basta è l'interpolazione stessa (`interpolate_bspline`).
-    Ritorna `(control_points, knots)`, nodi in [0, 1].
-    """
+    """The degree-`degree` B-spline with fewer control points that passes through
+    the first and last point and stays within `tolerance` of all the others
+    (least squares, Piegl & Tiller 9.4.1). On noisy or irregularly spaced points
+    it does not oscillate like the one interpolating them all; when no
+    approximation is enough it is the interpolation itself (`interpolate_bspline`).
+    Returns `(control_points, knots)`, knots in [0, 1]."""
     if len(points) <= degree + 1:
         return interpolate_bspline(points, degree)
     pts = np.array(points, dtype=np.float64)
     t = _chord_params(points)
-    lo, hi = degree, len(points)   # `lo` non basta mai (meno di degree+1 controlli), `hi` è l'interpolazione
+    lo, hi = degree, len(points)   # `lo` is never enough (fewer than degree+1 controls), `hi` is the interpolation
     best = None
-    # raddoppia finché basta, poi bisezione fra l'ultimo che non basta e il primo che basta
+    # double until enough, then bisect between the last that is not enough and the first that is
     count = degree + 1
     while count < hi:
         control, knots, error = _least_squares(pts, t, degree, count)

@@ -1,8 +1,8 @@
 """
 topo/core/geometry/shapely_polygons.py
 --------------------------------------
-Il ponte verso shapely: il Polygon di una lista di primitive o di una curva
-chiusa, e la sua cache sulla curva (D169). Finché shapely resta, vive qui.
+The bridge to shapely: the Polygon of a list of primitives or of a closed
+curve, and its cache on the curve. While shapely stays, it lives here.
 """
 
 from __future__ import annotations
@@ -16,14 +16,12 @@ from ..primitives.mathseg import DEFAULT_TOLERANCE, MathSeg
 
 def build_polygon(
     primitives: List[MathSeg],
-    tolerance:  float = DEFAULT_TOLERANCE,   # = topo.precision.SAME_POINT (D275)
+    tolerance:  float = DEFAULT_TOLERANCE,   # = topo.precision.SAME_POINT
 ) -> Optional[Polygon]:
-    """
-    Costruisce un Polygon shapely da una lista di primitive geometriche.
+    """Build a shapely Polygon from a list of geometric primitives.
 
-    Ogni primitiva di topo si discretizza da sé (`MathSeg.discretize`).
-    Restituisce None se la geometria non è valida o ha meno di 3 punti.
-    """
+    Every topo primitive discretizes itself (`MathSeg.discretize`). Returns None
+    if the geometry is not valid or has fewer than 3 points."""
     if not primitives:
         return None
 
@@ -57,37 +55,33 @@ def _make_polygon(pts: list) -> Optional[Polygon]:
 
 
 
-# ---------------------------------------------------------------------------
-# Il poligono di una curva chiusa, per le operazioni fra curve
-# ---------------------------------------------------------------------------
+# --- The polygon of a closed curve, for operations between curves ---
 
 def curve_polygon(item) -> Optional[Polygon]:
-    """
-    Il poligono shapely di `item` per le domande fra più curve (contenimento,
-    vicinanza, unioni — D166, D167): quello che la lettura gli ha dato, se
-    c'è; per una curva chiusa senza, costruito una volta dai `segments` e
-    tenuto sull'oggetto. None per una curva aperta. Solo uso interno: fuori
-    da topo si passa da `topo.to_shapely`.
-    """
+    """The shapely polygon of `item` for questions between several curves
+    (containment, proximity, unions): the one the reading gave it, if any; for a
+    closed curve without one, built once from the `segments` and kept on the
+    object. None for an open curve. Internal use only: outside topo go through
+    `topo.to_shapely`."""
     polygon = getattr(item, "_polygon", None)
     if polygon is not None:
         return polygon
     from ...model.curve import ClosedCurve
-    # una curva chiusa, o un vuoto dell'overlay (D90): i segments chiudono un giro
+    # a closed curve, or an empty of the overlay: the segments close a loop
     closed = isinstance(item, ClosedCurve) or getattr(item, "is_void", False)
     if not closed or not getattr(item, "segments", None):
         return None
     polygon = build_polygon(list(item.segments), DEFAULT_TOLERANCE)
     try:
         item._polygon = polygon
-    except AttributeError:      # un elemento di overlay immutabile: niente cache
+    except AttributeError:      # an immutable overlay element: no cache
         pass
     return polygon
 
 
 def with_polygon(curve, polygon):
-    """`curve` col poligono che la lettura le ha costruito (fuso con la rete
-    piana, o col buffer(0) di un anello sporco): `curve_polygon` darà quello,
-    invece di ricostruirlo dai `segments`. Restituisce `curve`."""
+    """`curve` with the polygon the reading built for it (merged with the planar
+    network, or with the buffer(0) of a dirty ring): `curve_polygon` will give
+    that, instead of rebuilding from the `segments`. Returns `curve`."""
     curve._polygon = polygon
     return curve

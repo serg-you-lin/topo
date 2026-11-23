@@ -1,26 +1,23 @@
 """
 topo/core/geometry/fitting.py
 ------------------------------
-Da una sequenza di punti ordinata e densa (un contorno tracciato da un
-raster, una curva scritta a punti da un CAD) a primitive pulite: linee dove
-è dritta, archi dove è a raggio costante, spline solo per il resto, spigoli
-vivi dove svolta — l'inverso della discretizzazione (MAP.md D141).
+From an ordered, dense sequence of points (a contour traced from a raster, a
+curve written as points by a CAD) to clean primitives: lines where it is
+straight, arcs where the radius is constant, splines only for the rest,
+sharp corners where it turns — the inverse of discretization.
 
-    simplify_points — l'unico ingresso
+    simplify_points — the only entry
 
-Tre garanzie, tutte geometriche: ogni punto dato sta entro `tolerance` dalle
-primitive; le primitive sono una catena testa-coda (una sequenza aperta
-parte e finisce esattamente nei suoi estremi, una chiusa si richiude); una
-primitiva è una linea o un arco solo se i suoi punti lo sono entro
-`tolerance`. Le soglie sono sempre del chiamante.
+Three guarantees, all geometric: every given point is within `tolerance` of
+the primitives; the primitives are a head-to-tail chain (an open sequence
+starts and ends exactly at its ends, a closed one closes); a primitive is a
+line or an arc only if its points are one within `tolerance`. Thresholds are
+always the caller's.
 
-La matematica sui punti (Douglas-Peucker, spigoli per svolta, cerchio per tre
-punti, b-spline approssimante) vive in `points.py`, `corners.py`,
-`curve_tests.py` e `spline_fit.py` accanto; qui c'è
-l'orchestrazione: spezzare sugli spigoli, decidere linea, arco o spline.
-Nata in smoother (`smoother/fitting.py`, smoother D21), provata sulle lettere
-di un'insegna tracciata, portata qui perché è ricostruzione geometrica
-generica (D33, D36).
+The maths on points (Douglas-Peucker, corners by turn, circle through three
+points, approximating b-spline) lives in `points.py`, `corners.py`,
+`curve_tests.py` and `spline_fit.py` alongside; here is the orchestration:
+split on corners, decide line, arc or spline.
 """
 
 from __future__ import annotations
@@ -49,14 +46,14 @@ DEFAULT_SPLINE_DEGREE = 3
 
 @dataclass
 class _Part:
-    """Un pezzo della sequenza: `kind` "line" o "curve", coi punti che copre (estremi condivisi coi vicini)."""
+    """A piece of the sequence: `kind` "line" or "curve", with the points it covers (ends shared with the neighbours)."""
     kind: str
     points: List[Point]
 
 
 def _signed_turn(a: Point, b: Point, c: Point) -> float:
-    """Svolta con segno (gradi) in `b` andando da `a` a `c`: positiva a sinistra.
-    0 se `b` sta sulla retta `a`-`c` entro il rumore: il segno lì è dell'ultimo bit."""
+    """Signed turn (degrees) at `b` going from `a` to `c`: positive to the left.
+    0 if `b` is on the line `a`-`c` within the noise: the sign there is the last bit's."""
     if abs(offset_from_line(b, a, c)) <= FLOAT_NOISE:
         return 0.0
     v1, v2 = (b[0] - a[0], b[1] - a[1]), (c[0] - b[0], c[1] - b[1])
@@ -65,17 +62,15 @@ def _signed_turn(a: Point, b: Point, c: Point) -> float:
 
 def _split_stretch(points: List[Point], tolerance: float, scale: float, corner_turn_deg: Optional[float],
                    arcs: bool) -> List[_Part]:
-    """
-    Un tratto senza spigoli: tutto entro `tolerance` dalla corda -> una linea;
-    tutto entro `tolerance` da un arco per i suoi estremi (con `arcs`) -> un
-    arco. Altrimenti i lati Douglas-Peucker lunghi almeno `scale` diventano
-    linee, tranne quelli che stanno DENTRO una curva — svolta piccola e nello
-    stesso verso ai capi che hanno un vicino, e non molto più lunghi dei
-    vicini: sono faccette di una curva, non un lato dritto (il lato dritto di
-    una O squadrata è lungo più del doppio dei vicini). Svolta piccola: sotto
-    `corner_turn_deg`, o con `None` il lato, con `scale` di qua e di là, entro
-    `tolerance` da una curva liscia (D283).
-    """
+    """A stretch with no corners: all within `tolerance` of the chord -> a line;
+    all within `tolerance` of an arc through its ends (with `arcs`) -> an arc.
+    Otherwise the Douglas-Peucker sides at least `scale` long become lines,
+    except those INSIDE a curve — small turn and in the same direction at the
+    ends that have a neighbour, and not much longer than the neighbours: they
+    are facets of a curve, not a straight side (the straight side of a squared O
+    is more than twice as long as its neighbours). Small turn: below
+    `corner_turn_deg`, or with `None` the side, with `scale` on each side, within
+    `tolerance` of a smooth curve."""
     if within_chord(points, tolerance) and _chord_in_order(points, tolerance):
         return [_Part("line", points)]
     if arcs and len(points) >= 4 and (_arc_through_ends(points, tolerance) is not None
@@ -100,7 +95,7 @@ def _split_stretch(points: List[Point], tolerance: float, scale: float, corner_t
             return True
         same_way = all(t > 0 for t in turns) or all(t < 0 for t in turns)
         if corner_turn_deg is None:
-            # il lato più `scale` di qua e di là: un vicino lungo e dritto non c'entra
+            # the side plus `scale` on each side: a long straight neighbour does not count
             first, last = i, j
             while first > 0 and math.dist(points[first - 1], points[i]) <= scale:
                 first -= 1
@@ -125,18 +120,16 @@ def _split_stretch(points: List[Point], tolerance: float, scale: float, corner_t
 
 
 def _arc_through_ends(points: List[Point], tolerance: float) -> Optional[CircleSeg]:
-    """
-    L'arco che passa esattamente per il primo e l'ultimo punto (e per quello a
-    metà), se tutti i punti stanno entro `tolerance` dal suo cerchio. Passa
-    per gli estremi e non ai minimi quadrati: un arco che li sposta lascia un
-    buco con la primitiva accanto.
-    """
+    """The arc passing exactly through the first and last point (and the middle
+    one), if all points are within `tolerance` of its circle. It goes through
+    the ends rather than by least squares: an arc that moves them leaves a gap
+    with the adjacent primitive."""
     a, m, b = points[0], points[len(points) // 2], points[-1]
     circle = within_circle_through(points, tolerance)
     if circle is None:
         return None
     center, radius = circle
-    # da a a b passando per m: antiorario se m sta a destra della corda a->b
+    # from a to b through m: counter-clockwise if m is to the right of the chord a->b
     ccw = offset_from_line(m, a, b) < 0
     sign, start = (1.0 if ccw else -1.0), math.atan2(a[1] - center[1], a[0] - center[0])
     walked = [(sign * (math.atan2(p[1] - center[1], p[0] - center[0]) - start)) % (2 * math.pi) for p in points]
@@ -152,24 +145,24 @@ def _arc_through_ends(points: List[Point], tolerance: float) -> Optional[CircleS
 
 
 def _ellipse_fits(points: List[Point], tolerance: float) -> bool:
-    """Il tratto intero sta su un'ellisse per i capi. Non un'iperbole: i suoi rami
-    stanno vicini ai loro asintoti, e una stretta passa entro `tolerance` da due
-    rette che si incontrano. I lati dritti si separano prima; l'iperbole si prova
-    poi sul pezzo curvo che resta (`_fit_curve`)."""
+    """The whole stretch lies on an ellipse through its ends. Not a hyperbola: its
+    branches stay close to their asymptotes, and a narrow one passes within
+    `tolerance` of two lines that meet. The straight sides separate first; the
+    hyperbola is tried afterwards on the curved piece that remains (`_fit_curve`)."""
     return isinstance(_conic_through_ends(points, tolerance), EllipseSeg)
 
 
 def _conic_through_ends(points: List[Point], tolerance: float):
-    """L'arco d'ellisse o d'iperbole per il primo e l'ultimo punto, nel verso
-    che passa per gli altri, se tutti stanno entro `tolerance` da lui (come
-    `_arc_through_ends`); quale delle due lo dice la conica (D294)."""
+    """The ellipse or hyperbola arc through the first and last point, in the
+    direction that passes through the others, if all are within `tolerance` of
+    it (like `_arc_through_ends`); which of the two is told by the conic."""
     fit = within_conic_through(points, tolerance)
     if fit is None:
         return None
     kind, center, major_axis, ratio, params = fit
     ta, tm, tb = params[0], params[len(params) // 2], params[-1]
     if kind == "hyperbola":
-        # su un ramo il parametro va dritto da un capo all'altro: il punto di mezzo sta fra loro
+        # on a branch the parameter runs straight from one end to the other: the middle point lies between them
         if not min(ta, tb) < tm < max(ta, tb):
             return None
         seg = HyperbolaSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=ta, end_param=tb)
@@ -189,14 +182,14 @@ def _conic_through_ends(points: List[Point], tolerance: float):
 
 
 def _one_pass(points: List[Point], walked: List[float], foot, total: float, tolerance: float) -> bool:
-    """I punti percorrono il pezzo una volta sola, in ordine, come la sequenza
-    che lo ha dato. `walked[k]`: il parametro del piede del punto k contato dal
-    primo nel verso del pezzo, `total` quello dell'ultimo, `foot(w)` il punto
-    del pezzo lì. Un piede fuori dal pezzo è un punto oltre un capo: va bene
-    entro `tolerance` da quel capo. Un passo indietro è rumore solo se i due
-    piedi stanno entro `tolerance`; più lungo, il pezzo ripasserebbe dove è
-    già stato, o farebbe il giro dall'altra parte (D320). Come `_walked`, ma
-    per punti noti entro `tolerance` invece che esatti."""
+    """The points walk the piece once, in order, like the sequence that gave it.
+    `walked[k]`: the parameter of the foot of point k counted from the first in
+    the piece's direction, `total` that of the last, `foot(w)` the point of the
+    piece there. A foot outside the piece is a point beyond an end: fine within
+    `tolerance` of that end. A step back is noise only if the two feet are
+    within `tolerance`; longer, the piece would pass again where it has been, or
+    go round the other way. Like `_walked`, but for points known within
+    `tolerance` instead of exact."""
     start, end = foot(0.0), foot(total)
     reached = 0.0
     for p, w in zip(points, walked):
@@ -212,7 +205,7 @@ def _one_pass(points: List[Point], walked: List[float], foot, total: float, tole
 
 
 def _chord_in_order(points: List[Point], tolerance: float) -> bool:
-    """La corda primo-ultimo percorsa una volta sola dai punti (`_one_pass`)."""
+    """The first-last chord walked once by the points (`_one_pass`)."""
     a, b = points[0], points[-1]
     length = math.dist(a, b)
     if length == 0:
@@ -223,12 +216,12 @@ def _chord_in_order(points: List[Point], tolerance: float) -> bool:
 
 
 def _chords_within(pts: List[Point], feet: List[Point], radius_between, polygon: float, tolerance: float) -> bool:
-    """Ogni punto della curva entro `tolerance` dalla conica, non solo i
-    vertici: la curva sta entro `polygon` dalle corde (D299), una corda entro
-    lo scarto dei suoi capi dalla corda fra i loro piedi sulla conica, e
-    quella entro la freccia del cerchio del raggio di curvatura più piccolo
-    sull'arco fra i piedi (`radius_between(i)`): una curva meno curva di un
-    cerchio si scosta meno dalla corda (D300)."""
+    """Every point of the curve within `tolerance` of the conic, not only the
+    vertices: the curve is within `polygon` of the chords, a chord within the
+    deviation of its ends from the chord between their feet on the conic, and
+    that within the sagitta of the circle of the smallest curvature radius on
+    the arc between the feet (`radius_between(i)`): a less curved curve than a
+    circle deviates less from the chord."""
     for i in range(len(pts) - 1):
         rho = radius_between(i)
         half = math.dist(feet[i], feet[i + 1]) / 2
@@ -241,9 +234,9 @@ def _chords_within(pts: List[Point], feet: List[Point], radius_between, polygon:
 
 
 def _ellipse_curvature_radius(a: float, b: float, t0: float, t1: float) -> float:
-    """Raggio di curvatura più piccolo dell'ellisse fra i parametri vicini `t0`
-    e `t1`: (a²sin²t + b²cos²t)^(3/2)/(ab) cresce con sin²t, che è minimo a un
-    multiplo di π se il tratto lo contiene, se no a un capo."""
+    """Smallest curvature radius of the ellipse between the nearby parameters `t0`
+    and `t1`: (a²sin²t + b²cos²t)^(3/2)/(ab) grows with sin²t, which is minimal
+    at a multiple of π if the span contains one, otherwise at an end."""
     d = (t1 - t0 + math.pi) % (2 * math.pi) - math.pi
     lo, hi = min(t0, t0 + d), max(t0, t0 + d)
     s2 = 0.0 if math.floor(hi / math.pi) >= math.ceil(lo / math.pi) else min(math.sin(lo) ** 2, math.sin(hi) ** 2)
@@ -251,8 +244,8 @@ def _ellipse_curvature_radius(a: float, b: float, t0: float, t1: float) -> float
 
 
 def _walked(params: Sequence[float], ccw: bool, closed: bool) -> Optional[List[float]]:
-    """Il parametro (angolo) percorso dal primo punto, nel verso `ccw`; None se
-    torna indietro: allora la curva non percorre la conica una volta sola."""
+    """The parameter (angle) walked from the first point, the `ccw` way; None if it
+    goes back: then the curve does not walk the conic once."""
     sign = 1.0 if ccw else -1.0
     walked = [(sign * (p - params[0])) % (2 * math.pi) for p in params]
     walked[0] = 0.0
@@ -264,15 +257,13 @@ def _walked(params: Sequence[float], ccw: bool, closed: bool) -> Optional[List[f
 
 
 def conic_of_spline(spline: BSplineSeg, tolerance: float) -> Optional[EllipseSeg]:
-    """
-    L'arco (o cerchio) o l'arco d'ellisse (o ellisse) che è la spline: per i
-    suoi capi esatti, ogni punto della curva vera entro `tolerance` da lui,
-    dimostrato sulle corde del suo poligono (D300), percorso una volta sola
-    nel verso della spline. Prima il cerchio, più semplice; mai l'iperbole
-    (D296). None se nessuno dei due. Il poligono si infittisce di dieci in
-    dieci, fino a FLOAT_NOISE, solo finché la risposta può ancora cambiare:
-    vertici entro `tolerance` e corde non ancora dimostrate, o punti troppo pochi (D302).
-    """
+    """The arc (or circle) or ellipse arc (or ellipse) that the spline is: through
+    its exact ends, every point of the true curve within `tolerance` of it,
+    proved on the chords of its polygon, walked once in the spline's direction.
+    The circle first, simpler; never the hyperbola. None if neither. The polygon
+    is refined tenfold at a time, down to FLOAT_NOISE, only while the answer can
+    still change: vertices within `tolerance` and chords not yet proved, or too
+    few points."""
     polygon = tolerance / 10
     while True:
         conic, finer = _conic_on(spline, polygon, tolerance)
@@ -282,15 +273,15 @@ def conic_of_spline(spline: BSplineSeg, tolerance: float) -> Optional[EllipseSeg
 
 
 def _conic_on(spline: BSplineSeg, polygon: float, tolerance: float) -> Tuple[Optional[EllipseSeg], bool]:
-    """(conica, un poligono più fitto può cambiare la risposta) sul poligono
-    della spline entro `polygon`."""
+    """(conic, whether a finer polygon can change the answer) on the spline's
+    polygon within `polygon`."""
     pts = spline.discretize(tolerance=polygon)
     start, end = spline.endpoints()
     pts[0], pts[-1] = start, end
     closed = math.dist(start, end) <= FLOAT_NOISE
     if closed:
         pts[-1] = start
-        # nel verso in cui la curva gira: l'area con segno del suo poligono
+        # the direction the curve turns: the signed area of its polygon
         ccw = sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(pts, pts[1:])) > 0
         n = len(pts)
         circle = circle_through(start, pts[n // 3], pts[2 * n // 3])
@@ -304,12 +295,12 @@ def _conic_on(spline: BSplineSeg, polygon: float, tolerance: float) -> Tuple[Opt
             if _walked(angles, ccw, closed) is not None:
                 feet = [(center[0] + radius * math.cos(a), center[1] + radius * math.sin(a)) for a in angles]
                 if not _chords_within(pts, feet, lambda i: radius, polygon, tolerance):
-                    # i vertici sul cerchio, le corde non ancora: più fitto, non l'ellisse
+                    # the vertices are on the circle, the chords not yet: finer, not the ellipse
                     return None, True
                 a0 = angles[0]
                 a1 = a0 + (2 * math.pi if ccw else -2 * math.pi) if closed else angles[-1]
                 return CircleSeg(center=center, radius=radius, start_angle=a0, end_angle=a1, ccw=ccw), False
-    # una conica la fissano 5 punti: con meno di 6 il test non dice nulla
+    # a conic is fixed by 5 points: with fewer than 6 the test says nothing
     if len(pts) < 6:
         return None, True
     fit = within_conic_through(pts, tolerance)
@@ -330,8 +321,8 @@ def _conic_on(spline: BSplineSeg, polygon: float, tolerance: float) -> Tuple[Opt
 
 
 def _fit_curve(points: List[Point], tolerance: float, arcs: bool, degree: int) -> List[Primitive]:
-    """Un pezzo curvo: la famiglia più semplice entro `tolerance` per gli estremi —
-    arco, arco d'ellisse o d'iperbole (con `arcs`), spline."""
+    """A curved piece: the simplest family within `tolerance` for the ends — arc,
+    ellipse or hyperbola arc (with `arcs`), spline."""
     if len(points) <= degree:
         return [LineSeg(start=a, end=b) for a, b in zip(points, points[1:])]
     if arcs and len(points) >= 4:
@@ -343,14 +334,14 @@ def _fit_curve(points: List[Point], tolerance: float, arcs: bool, degree: int) -
             return [conic]
     control, knots = approximate_bspline(points, degree, tolerance)
     if len(control) >= len(points):
-        # la spline che passa per tutti i punti non è stata messa alla prova da
-        # nessuno: ci passa sempre, anche su uno spigolo. Restano i lati (D304)
+        # the spline through all the points has not been tested by anyone: it always
+        # passes, even on a corner. The sides remain
         return [LineSeg(start=a, end=b) for a, b in zip(points, points[1:])]
     return [BSplineSeg(degree=degree, control_points=control, knots=knots)]
 
 
 def _line_fit(points: List[Point]) -> Tuple[Point, Point]:
-    """Retta ai minimi quadrati sui punti: (punto, direzione unitaria)."""
+    """Least-squares line on the points: (point, unit direction)."""
     n = len(points)
     cx, cy = sum(p[0] for p in points) / n, sum(p[1] for p in points) / n
     sxx = sum((p[0] - cx) ** 2 for p in points)
@@ -372,7 +363,7 @@ def _crossing(l1, l2) -> Optional[Point]:
 
 
 def _line_turn(a: _Part, b: _Part) -> float:
-    """Di quanti gradi svolta chi passa dalla linea `a` alla linea `b`."""
+    """By how many degrees one turns going from line `a` to line `b`."""
     (ax, ay), (bx, by) = a.points[0], a.points[-1]
     (cx, cy), (dx, dy) = b.points[0], b.points[-1]
     u, v = (bx - ax, by - ay), (dx - cx, dy - cy)
@@ -381,7 +372,7 @@ def _line_turn(a: _Part, b: _Part) -> float:
 
 def _is_rounding(part: _Part, before: _Part, after: _Part, tolerance: float,
                  corner_turn_deg: Optional[float]) -> bool:
-    """Il pezzo curvo fra le linee `before` e `after` è lo smusso di uno spigolo."""
+    """The curved piece between the lines `before` and `after` is the blunting of a corner."""
     if corner_turn_deg is not None:
         return _line_turn(before, after) >= corner_turn_deg
     lines = [(before.points[0], before.points[-1]), (after.points[0], after.points[-1])]
@@ -390,16 +381,14 @@ def _is_rounding(part: _Part, before: _Part, after: _Part, tolerance: float,
 
 def _restore_corners(parts: List[_Part], closed: bool, tolerance: float, scale: float,
                      corner_turn_deg: Optional[float]) -> List[_Part]:
-    """
-    Gli spigoli vivi che il campionamento ha smussato. Un pezzo curvo più
-    corto di `scale` fra due linee che svoltano di almeno `corner_turn_deg` (con
-    `None`: i cui punti stanno entro `tolerance` dall'una o dall'altra retta, D283)
-    è l'arrotondamento di uno spigolo: sparisce. Poi fra due linee consecutive
-    il vertice comune va nell'incrocio delle due rette ai minimi quadrati,
-    dove sta lo spigolo vero, se cade entro `scale` dal vertice campionato e
-    i punti delle due linee più lontani di `scale` da lì restano entro
-    `tolerance`. Un estremo di una sequenza aperta non si sposta mai.
-    """
+    """The sharp corners that sampling blunted. A curved piece shorter than `scale`
+    between two lines that turn by at least `corner_turn_deg` (with `None`: whose
+    points are within `tolerance` of one line or the other) is the rounding of a
+    corner: it disappears. Then between two consecutive lines the common vertex
+    goes to the least-squares intersection of the two lines, where the true
+    corner is, if it falls within `scale` of the sampled vertex and the points
+    of the two lines farther than `scale` from there stay within `tolerance`. An
+    end of an open sequence never moves."""
     kept: List[_Part] = []
     n = len(parts)
     for k, part in enumerate(parts):
@@ -419,7 +408,7 @@ def _restore_corners(parts: List[_Part], closed: bool, tolerance: float, scale: 
         joint_a, joint_b = a.points[-1], b.points[0]
         corner = _crossing(_line_fit(a.points), _line_fit(b.points))
         if corner is None or math.dist(corner, joint_a) > scale + math.dist(joint_a, joint_b):
-            if joint_a != joint_b:   # rimasto un buco dove c'era l'arrotondamento: lo chiude il punto medio
+            if joint_a != joint_b:   # a gap is left where the rounding was: the midpoint closes it
                 mid = ((joint_a[0] + joint_b[0]) / 2, (joint_a[1] + joint_b[1]) / 2)
                 a.points, b.points = a.points[:-1] + [mid], [mid] + b.points[1:]
             continue
@@ -434,11 +423,9 @@ def _restore_corners(parts: List[_Part], closed: bool, tolerance: float, scale: 
 
 
 def _join_seam(prims: List[Primitive], tolerance: float) -> List[Primitive]:
-    """
-    Un contorno senza spigoli si apre in un punto qualunque: se il primo e
-    l'ultimo pezzo sono lo stesso arco o la stessa retta, la giuntura non è
-    un punto del contorno e i due tornano uno.
-    """
+    """A contour without corners opens at any point: if the first and last piece
+    are the same arc or the same line, the seam is not a point of the contour
+    and the two become one."""
     if len(prims) < 2:
         return prims
     last, first = prims[-1], prims[0]
@@ -472,29 +459,27 @@ def simplify_points(
     arcs: bool = True,
     spline_degree: int = DEFAULT_SPLINE_DEGREE,
 ) -> List[Primitive]:
-    """
-    Primitive (rette, archi, cerchi, ellissi, spline) per la sequenza di punti
-    `points`, in catena testa-coda, ogni punto entro `tolerance` da esse —
-    tranne quelli entro `scale` da uno spigolo che il campionamento aveva
-    smussato e che qui torna vivo.
+    """Primitives (lines, arcs, circles, ellipses, splines) for the sequence of
+    points `points`, as a head-to-tail chain, every point within `tolerance` of
+    them — except those within `scale` of a corner that sampling had blunted and
+    that comes back sharp here.
 
     Args:
-        points:           punti ordinati; `closed=True` un contorno (l'ultimo
-                          torna al primo), `closed=False` un tratto aperto i cui
-                          estremi restano esattamente dove sono
-        tolerance:        scostamento massimo dai punti (unità dei punti)
-        scale:            la lunghezza su cui si misura la svolta di uno spigolo:
-                          un tratto dritto più corto resta parte di una curva,
-                          una curva più corta fra due lati è uno spigolo smussato
-        corner_turn_deg:  svolta minima (gradi) su `scale` per uno spigolo,
-                          scelta da chi chiama: più bassa, più spigoli. None:
-                          spigolo dove nessuna retta né arco sta entro `tolerance`
-                          su `scale`; solo per punti fitti, come il rifit di
-                          `heal()` (D283). Transitorio: esce quando smoother ha il
-                          suo fitter
-        arcs:             False: niente archi, cerchi né coniche, solo linee e spline
-        spline_degree:    grado delle spline
-    """
+        points:           ordered points; `closed=True` a contour (the last
+                          returns to the first), `closed=False` an open stretch
+                          whose ends stay exactly where they are
+        tolerance:        maximum deviation from the points (units of the points)
+        scale:            the length over which the turn of a corner is measured:
+                          a shorter straight stretch stays part of a curve, a
+                          curve shorter than two sides is a blunted corner
+        corner_turn_deg:  minimum turn (degrees) over `scale` for a corner,
+                          chosen by the caller: lower, more corners. None:
+                          a corner where no line or arc is within `tolerance`
+                          over `scale`; only for dense points, like the refit of
+                          `heal()`. Temporary: goes away when smoother has its
+                          own fitter
+        arcs:             False: no arcs, circles or conics, only lines and splines
+        spline_degree:    degree of the splines"""
     pts = [(float(p[0]), float(p[1])) for p in drop_duplicate_points(list(points), DEFAULT_DUPLICATE_TOLERANCE)]
     if closed and len(pts) > 1 and math.dist(pts[0], pts[-1]) <= DEFAULT_DUPLICATE_TOLERANCE:
         pts.pop()
@@ -511,10 +496,11 @@ def simplify_points(
             if fit is not None and fit[2] <= tolerance:
                 return [CircleSeg(center=fit[0], radius=fit[1])]
             ring = within_conic_through(pts + [pts[0]], tolerance)
-            if ring is not None and ring[0] == "ellipse":      # un anello chiuso: un'iperbole non si chiude
+            if ring is not None and ring[0] == "ellipse":      # a closed ring: a hyperbola does not close
                 return [EllipseSeg(center=ring[1], major_axis=ring[2], ratio=ring[3],
                                    start_param=0.0, end_param=2 * math.pi)]
-        # nessuno spigolo: si apre il giro nel punto più lontano dal primo
+        # no corner: the loop opens at the point farthest from the first
+        #
         far = max(range(len(pts)), key=lambda k: math.dist(pts[0], pts[k]))
         loop = pts[far:] + pts[:far] + [pts[far]]
         parts = _split_stretch(loop, tolerance, scale, corner_turn_deg, arcs)

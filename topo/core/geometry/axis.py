@@ -1,14 +1,14 @@
 """
 topo/core/geometry/axis.py
 ---------------------------
-Fatti su segmenti orizzontali e verticali: intervalli e loro copertura,
-rettangoli i cui quattro lati sono coperti da segmenti, linee che attraversano
-un rettangolo, quanta parte di un disegno è allineata agli assi. Geometria
-pura: che un rettangolo sia una cornice o un cartiglio, o che una vista sia
-ortogonale, lo dice il consumatore (MAP.md D94).
+Facts about horizontal and vertical segments: intervals and their coverage,
+rectangles whose four sides are covered by segments, lines crossing a
+rectangle, how much of a drawing is axis-aligned. Pure geometry: whether a
+rectangle is a frame or a title block, or a view is orthogonal, is the
+consumer's call.
 
-Un "tratto" è qualunque oggetto con `start` e `end` (un `Edge`, un `LineSeg`):
-chi chiama passa solo tratti dritti.
+A "stroke" is any object with `start` and `end` (an `Edge`, a `LineSeg`):
+the caller passes straight strokes only.
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ def merge_intervals(intervals: Iterable[Interval], *, tolerance: float = 0.0) ->
 
 
 def interval_coverage(intervals: Iterable[Interval], lo: float, hi: float) -> float:
-    """Frazione di [lo, hi] coperta dall'unione degli intervalli."""
+    """Fraction of [lo, hi] covered by the union of the intervals."""
     if hi <= lo:
         return 0.0
     clipped = [(max(lo, a), min(hi, b)) for a, b in intervals if min(hi, b) > max(lo, a)]
@@ -49,10 +49,8 @@ def interval_coverage(intervals: Iterable[Interval], lo: float, hi: float) -> fl
 
 
 def cluster_values(values: Iterable[float], tolerance: float) -> List[float]:
-    """
-    I valori ordinati, tenendo per ogni gruppo il più piccolo: un valore entro
-    `tolerance` dall'ultimo tenuto appartiene al suo gruppo.
-    """
+    """The sorted values, keeping the smallest of each group: a value within
+    `tolerance` of the last one kept belongs to its group."""
     out: List[float] = []
     for v in sorted(values):
         if out and v - out[-1] <= tolerance:
@@ -97,9 +95,7 @@ def _covered_at(lines: Sequence[AxisLine], at: float, lo: float, hi: float, tol:
     return interval_coverage([(l.lo, l.hi) for l in lines if abs(l.at - at) <= tol], lo, hi)
 
 
-# ---------------------------------------------------------------------------
-# Rettangoli coperti e linee che li attraversano
-# ---------------------------------------------------------------------------
+# Covered rectangles and lines crossing them
 
 @dataclass(frozen=True)
 class CoveredRectangle:
@@ -172,7 +168,7 @@ def covered_rectangles(items: Sequence, *, min_side: float, eps: float,
                     if any(_covered_at(horiz, y, x_lo, x_hi, tol) < coverage for y in (y_lo, y_hi)) \
                             or any(_covered_at(vert, x, y_lo, y_hi, tol) < coverage for x in (x_lo, x_hi)):
                         continue
-                    # le coordinate distano più di cluster_tolerance: ogni coppia è un rettangolo diverso
+                    # coordinates farther apart than cluster_tolerance: every pair is a different rectangle
                     out.append(CoveredRectangle(tuple(map(float, (x_lo, y_lo, x_hi, y_hi))),
                                                 tuple(_on_border(x_lo, y_lo, x_hi, y_hi, items, tol))))
     return out

@@ -1,14 +1,14 @@
 """
 topo/core/geometry/shape.py
 ----------------------------
-Fatti di forma di un contorno chiuso: cerchio, ellisse, stadio, rettangolo,
-poligono. Elenco chiuso (MAP.md D136): una forma ha un nome solo se centro,
-lunghezza, larghezza e angolo la determinano; il resto è `polygon` o `other`.
-Le regole leggono le primitive come sono: un cerchio fatto di spline resta
-`other`. Geometria pura, vale uguale su `faces()` e su `outlines()`. "circle" non vuol
-dire foro: cosa sia quel cerchio lo dice chi legge il disegno o il processo
-(MAP.md D68). I fatti fra più contorni (cerchi concentrici, archi attorno a
-un cerchio, D91) stanno in `concentric.py`.
+Shape facts of a closed contour: circle, ellipse, stadium, rectangle,
+polygon. A closed list: a shape has a name only if centre, length, width and
+angle determine it; the rest is `polygon` or `other`. The rules read the
+primitives as they are: a circle made of splines stays `other`. Pure
+geometry, equally valid on `faces()` and `outlines()`. "circle" does not mean
+hole: what that circle is is said by whoever reads the drawing or the
+process. Facts between several contours (concentric circles, arcs around a
+circle) are in `concentric.py`.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ Point = Tuple[float, float]
 
 class ShapeKind(str, Enum):
     """
-    The six shapes of `contour_shape`, a closed and stable list (MAP.md D136).
+    The six shapes of `contour_shape`, a closed and stable list.
     Inherits from str: `kind == "circle"` works and the text prints the value.
     """
     CIRCLE = "circle"
@@ -92,10 +92,10 @@ def contour_shape(item) -> Optional[ContourShape]:
     """
     Shape of a closed contour (`Contour`, or any object with `.segments`, or
     the list of segments). None if there are no segments or if, in sequence,
-    they do not close into a ring (D162).
+    they do not close into a ring.
     Consecutive segments on the same line or circle are first recomposed, so
     a side split by a node stays one side. Every measure of the shape agrees
-    within `SAME_POINT`: a rectangle off by more is a polygon (D281).
+    within `SAME_POINT`: a rectangle off by more is a polygon.
     """
     segments = list(getattr(item, "segments", item) or [])
     if not segments or not _closes(segments):
@@ -109,9 +109,9 @@ def contour_shape(item) -> Optional[ContourShape]:
 
 
 def _closes(segments) -> bool:
-    """I segmenti, in fila, fanno un anello: ognuno parte dove finisce il
-    precedente (in un verso o nell'altro) e l'ultimo torna al primo. Un pezzo
-    aperto non ha forma (D162)."""
+    """The segments, in a row, make a ring: each starts where the previous ends
+    (one way or the other) and the last returns to the first. An open piece
+    has no shape."""
     if len(segments) == 1:
         return segment_is_closed(segments[0])
     ends = [segment_endpoints(s) for s in segments]
@@ -131,7 +131,7 @@ def _closes(segments) -> bool:
 
 
 def _radius(seg) -> Optional[float]:
-    """Raggio di un pezzo di cerchio; un'ellisse con gli assi uguali entro SAME_POINT è un cerchio."""
+    """Radius of a piece of circle; an ellipse with axes equal within SAME_POINT is a circle."""
     if isinstance(seg, CircleSeg):
         return seg.radius
     if isinstance(seg, EllipseSeg) and abs(1.0 - seg.ratio) * math.hypot(*seg.major_axis) <= SAME_POINT:
@@ -155,7 +155,7 @@ def _circle(segments):
 
 
 def _ellipse(segments):
-    """Pezzi della stessa ellisse (centro, semiassi, direzione dell'asse) per un giro intero."""
+    """Pieces of the same ellipse (centre, semi-axes, axis direction) for a full turn."""
     if not all(isinstance(s, EllipseSeg) for s in segments):
         return None
     s0 = segments[0]
@@ -202,7 +202,7 @@ def _rectangle(segments):
         return None
     angles = [chord_angle_deg(s.start, s.end) for s in segments]
     lengths = [segment_length(s) for s in segments]
-    # scarto dall'angolo retto lungo il più lungo dei due lati
+    # deviation from the right angle along the longer of the two sides
     if any(math.radians(abs(_angle_diff(angles[i], angles[i - 1]) - 90)) * max(lengths[i], lengths[i - 1]) > SAME_POINT
            for i in range(4)):
         return None
@@ -222,9 +222,9 @@ def _generic(segments):
     box = polygon.minimum_rotated_rectangle
     if box.geom_type != "Polygon":
         return None
-    # il poligono dà l'orientamento di partenza del rettangolo minimo; le misure
-    # sono la portata delle primitive, e per una curva anche l'angolo si
-    # rifinisce su di loro (MAP.md D156)
+    # the polygon gives the starting orientation of the minimum rectangle; the
+    # measures are the extent of the primitives, and for a curve the angle too is
+    # refined on them
     corners = list(box.exterior.coords)[:4]
     theta = math.atan2(corners[1][1] - corners[0][1], corners[1][0] - corners[0][0])
     reaches = [Reach(s) for s in segments]
@@ -241,13 +241,11 @@ _ANGLE_BRACKET = math.radians(ANGLE_BRACKET_DEG)
 
 
 def _min_area_angle(reaches, theta: float) -> float:
-    """
-    Angolo del rettangolo d'area minima attorno alle primitive, cercato a
-    ±1° dall'angolo del poligono inscritto: i due differiscono solo per la
-    sagitta dei lati curvi. Sulle portate rifinite anche per le spline: sui
-    soli campioni una forma quasi simmetrica (area piatta con l'angolo)
-    sceglie un altro minimo locale. Costa tempo, voluto (MAP.md D156).
-    """
+    """Angle of the minimum-area rectangle around the primitives, searched within
+    ±1° of the angle of the inscribed polygon: the two differ only by the
+    sagitta of the curved sides. On the refined extents also for splines: on the
+    samples alone a nearly symmetric shape (area flat with the angle) picks
+    another local minimum. It costs time, on purpose."""
     def area(t):
         return _extent_along(reaches, _angle_direction(t)) * _extent_along(reaches, _angle_direction(t + math.pi / 2))
 
@@ -260,7 +258,7 @@ def _angle_direction(t: float) -> Point:
 
 
 def _extent_along(reaches, direction) -> float:
-    """Ampiezza dell'insieme dei segmenti lungo `direction`, sulle primitive."""
+    """Extent of the set of segments along `direction`, on the primitives."""
     spans = [r(direction) for r in reaches]
     return max(hi for _lo, hi in spans) - min(lo for lo, _hi in spans)
 
@@ -268,23 +266,19 @@ def _extent_along(reaches, direction) -> float:
 
 
 def _angle_diff(a: float, b: float) -> float:
-    """Differenza fra due direzioni modulo 180, in [0, 90]."""
+    """Difference between two directions modulo 180, in [0, 90]."""
     d = abs(a - b) % 180
     return min(d, 180 - d)
 
 
-# ---------------------------------------------------------------------------
-# Ricomposizione di un giro (usata qui e da outlines(), D95)
-# ---------------------------------------------------------------------------
+# --- Recomposing a loop (used here and by outlines()) ---
 
 def merge_runs(segments: list, styles: list):
-    """
-    Segmenti consecutivi di un giro chiuso sulla stessa circonferenza (o
-    retta), nello stesso verso e con lo stesso stile, fusi in uno: il merge
-    di `_normalize` toglie i doppioni prima del taglio, questo ricompone
-    dopo quello che `split_at_crossings` ha spezzato. Un giro fatto tutto di
-    archi dello stesso cerchio torna un CircleSeg.
-    """
+    """Consecutive segments of a closed loop on the same circle (or line), in the
+    same direction and with the same style, merged into one: the merge of
+    `_normalize` removes duplicates before the cut, this recomposes afterwards
+    what `split_at_crossings` split. A loop made wholly of arcs of the same
+    circle comes back as a CircleSeg."""
     n = len(segments)
     if n < 2 or len(styles) != n:
         return segments, styles
@@ -294,7 +288,7 @@ def merge_runs(segments: list, styles: list):
         if is_arc(s0):
             return [CircleSeg(center=s0.center, radius=s0.radius)], [styles[0]]
         return segments, styles
-    k = same.index(False)          # il giro riparte da un inizio di tratto
+    k = same.index(False)          # the loop restarts at the start of a stretch
     segments, styles, same = segments[k:] + segments[:k], styles[k:] + styles[:k], same[k:] + same[:k]
     out_s, out_st = [], []
     for seg, st, cont in zip(segments, styles, same):
@@ -306,11 +300,11 @@ def merge_runs(segments: list, styles: list):
     return out_s, out_st
 
 
-_MERGE_EPS = SAME_POINT   # mm — il passo della vecchia griglia dei nodi (D113, D216)  # D268
+_MERGE_EPS = SAME_POINT   # mm — the step of the old node grid
 
 
 def _continues(prev, prev_style, seg, style) -> bool:
-    """`seg` prosegue `prev` sulla stessa curva, nello stesso verso?"""
+    """Does `seg` continue `prev` on the same curve, in the same direction?"""
     if style != prev_style or type(seg) is not type(prev):
         return False
     if is_arc(seg):
@@ -330,8 +324,8 @@ def _continues(prev, prev_style, seg, style) -> bool:
 
 def _joined(prev, seg):
     if is_arc(prev):
-        # le ampiezze si sommano: `seg.end_angle` da solo può essere l'angolo
-        # di partenza di `prev` a meno di un giro (arco che passa per lo 0)
+        # the sweeps add up: `seg.end_angle` alone may be the start angle of `prev` up
+        # to a turn (an arc through 0)
         sweep = prev._sweep() + seg._sweep()
         return CircleSeg(center=prev.center, radius=prev.radius, start_angle=prev.start_angle,
                       end_angle=prev.start_angle + (sweep if prev.ccw else -sweep), ccw=prev.ccw)

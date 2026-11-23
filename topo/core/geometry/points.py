@@ -1,11 +1,11 @@
 """
 topo/core/geometry/points.py
 -----------------------------
-Sequenze ordinate di punti (un contorno campionato: da un raster, da una
-polilinea che scrive una curva a punti): doppioni, passo regolare, distanza
-da una retta, Douglas-Peucker, cerchio per tre punti, fit di un cerchio
-(MAP.md D141). Le spline sono in `spline_fit.py`, le prove "i punti stanno su
-una curva?" in `curve_tests.py`, gli spigoli per svolta in `corners.py`.
+Ordered sequences of points (a sampled contour: from a raster, from a
+polyline that writes a curve as points): duplicates, regular spacing,
+distance from a line, Douglas-Peucker, circle through three points, circle
+fit. Splines are in `spline_fit.py`, the "do the points lie on a curve?"
+tests in `curve_tests.py`, corners by turn in `corners.py`.
 """
 
 import math
@@ -17,20 +17,18 @@ from ...precision import FLOAT_NOISE
 Point = Tuple[float, float]
 
 
-# Matematica generica su una sequenza ordinata di punti (x, y): non sa nulla
-# di primitive topo (LineSeg/CircleSeg/...) né di come il chiamante la userà.
-# Nata dentro tools/simplify_points.py (D33/D36), spostata qui perché un
-# secondo consumatore ne ha bisogno senza
-# duplicarla — `core/geometry/fitting.py` resta l'orchestratore che decide
-# quando/come usarla per ricostruire linee/archi/spline.
+# Generic maths on an ordered sequence of points (x, y): it knows nothing of
+# topo primitives (LineSeg/CircleSeg/...) or of how the caller will use it.
+# `core/geometry/fitting.py` is the orchestrator that decides when and how to
+# use it to rebuild lines/arcs/splines.
 
-DEFAULT_DUPLICATE_TOLERANCE = FLOAT_NOISE  # D269
+DEFAULT_DUPLICATE_TOLERANCE = FLOAT_NOISE
 
 
 def drop_duplicate_points(
     points: List[Point], tolerance: float = DEFAULT_DUPLICATE_TOLERANCE
 ) -> List[Point]:
-    """Rimuove punti consecutivi coincidenti entro `tolerance`."""
+    """Remove consecutive points coinciding within `tolerance`."""
     if not points:
         return []
     cleaned = [points[0]]
@@ -42,20 +40,18 @@ def drop_duplicate_points(
 
 
 def fit_circle_kasa(points: List[Point]) -> Optional[Tuple[Point, float, float]]:
-    """
-    Fit algebrico (Kasa) ai minimi quadrati di un cerchio su `points`: minimizza
-    `x²+y²+Dx+Ey+F=0`, che è un cerchio di centro `(-D/2,-E/2)` e raggio
-    ricavabile da `D,E,F`. Ritorna `(center, radius, max_residual)` —
-    `max_residual` è lo scostamento massimo di un punto dal cerchio fittato,
-    per decidere se accettarlo. `None` se il fit è degenere (meno di 3 punti,
-    punti quasi collineari, raggio non reale).
-    """
+    """Least-squares algebraic (Kasa) fit of a circle on `points`: minimizes
+    `x²+y²+Dx+Ey+F=0`, a circle of centre `(-D/2,-E/2)` and a radius derived from
+    `D,E,F`. Returns `(center, radius, max_residual)` — `max_residual` is the
+    largest deviation of a point from the fitted circle, to decide whether to
+    accept it. `None` if the fit is degenerate (fewer than 3 points, nearly
+    collinear points, non-real radius)."""
     if len(points) < 3:
         return None
 
     pts = np.asarray(points, dtype=float)[:, :2]
-    # nel riferimento dei punti: x²+y² su coordinate grandi cancella le cifre,
-    # e il cerchio dipenderebbe da dove sta il disegno (G6e)
+    # in the frame of the points: x²+y² on large coordinates cancels digits, and
+    # the circle would depend on where the drawing sits
     origin = pts.mean(axis=0)
     x, y = pts[:, 0] - origin[0], pts[:, 1] - origin[1]
     a_matrix = np.column_stack([x, y, np.ones_like(x)])
@@ -78,9 +74,9 @@ def fit_circle_kasa(points: List[Point]) -> Optional[Tuple[Point, float, float]]
 
 
 def circle_through(a: Point, m: Point, b: Point) -> Optional[Tuple[Point, float]]:
-    """Il cerchio per tre punti: `(center, radius)`, None se sono allineati.
-    Calcolato nel riferimento di `a`: le coordinate al quadrato non perdono
-    cifre lontano dall'origine (G6e)."""
+    """The circle through three points: `(center, radius)`, None if they are
+    aligned. Computed in the frame of `a`: squared coordinates do not lose
+    digits far from the origin."""
     ox, oy = a[0], a[1]
     a, m, b = (0.0, 0.0), (m[0] - ox, m[1] - oy), (b[0] - ox, b[1] - oy)
     den = 2 * (m[0] * b[1] - b[0] * m[1])
@@ -93,12 +89,10 @@ def circle_through(a: Point, m: Point, b: Point) -> Optional[Tuple[Point, float]
 
 
 def even_spacing(points: List[Point], closed: bool) -> List[Point]:
-    """
-    I punti con altri aggiunti dove due vicini distano più del passo mediano.
-    Un lato lungo senza punti in mezzo farebbe passare per buono un arco per
-    3 punti (3 punti stanno sempre su un cerchio) e oscillare una spline a
-    passo irregolare. I punti dati restano tutti, nello stesso ordine.
-    """
+    """The points with others added where two neighbours are farther apart than the
+    median step. A long side with no points between would pass an arc through 3
+    points as good (3 points always lie on a circle) and make a spline at
+    irregular spacing oscillate. All given points stay, in the same order."""
     ring = list(points) + [points[0]] if closed else list(points)
     steps = sorted(math.dist(a, b) for a, b in zip(ring, ring[1:]))
     step = steps[len(steps) // 2] if steps else 0.0
@@ -117,7 +111,7 @@ def even_spacing(points: List[Point], closed: bool) -> List[Point]:
 
 
 def offset_from_line(p: Point, a: Point, b: Point) -> float:
-    """Distanza con segno di `p` dalla retta a->b (positiva a sinistra)."""
+    """Signed distance of `p` from the line a->b (positive to the left)."""
     length = math.dist(a, b)
     if length == 0:
         return math.dist(p, a)
@@ -125,11 +119,9 @@ def offset_from_line(p: Point, a: Point, b: Point) -> float:
 
 
 def douglas_peucker(points: List[Point], tolerance: float) -> List[int]:
-    """
-    Indici dei vertici che Douglas-Peucker tiene sulla polilinea aperta
-    `points`, estremi compresi: ogni punto scartato dista al più `tolerance`
-    dal lato che lo sostituisce.
-    """
+    """Indices of the vertices Douglas-Peucker keeps on the open polyline
+    `points`, ends included: every discarded point is at most `tolerance` from
+    the side that replaces it."""
     keep = {0, len(points) - 1}
     stack = [(0, len(points) - 1)]
     while stack:
@@ -137,8 +129,9 @@ def douglas_peucker(points: List[Point], tolerance: float) -> List[int]:
         dist = {k: abs(offset_from_line(points[k], points[i], points[j])) for k in range(i + 1, j)}
         best = max(dist.values(), default=0.0)
         if best > tolerance:
-            # i più lontani a pari merito (entro il rumore) si tengono tutti:
-            # sceglierne uno lo farebbe il verso o l'ultimo bit (G6e)
+            # the farthest points tied (within the noise) are all kept: picking one would
+            # be decided by the direction or the last bit
+            #
             cuts = [i] + [k for k, d in dist.items() if d >= best - FLOAT_NOISE] + [j]
             keep.update(cuts)
             stack.extend(zip(cuts, cuts[1:]))

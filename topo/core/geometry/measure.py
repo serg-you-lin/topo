@@ -1,8 +1,8 @@
 """
 topo/core/geometry/measure.py
 ------------------------------
-Misure di primitive e tracce: lunghezza e angolo di
-un segmento, vertici e tipo di una traccia aperta.
+Measures of primitives and traces: length and angle of a segment, vertices
+and type of an open trace.
 """
 
 from ...precision import FLOAT_NOISE, SAME_POINT
@@ -21,13 +21,13 @@ from .numeric import golden_min
 Point = Tuple[float, float]
 
 
-# FLOAT_NOISE e SAME_POINT vivono in topo/precision.py (D268, D269)
+# FLOAT_NOISE e SAME_POINT vivono in topo/precision.py
 
 
 def noise_runs(items: list, together) -> list:
-    """`items` (già ordinati) spezzati dove due vicini non stanno `together`:
-    "pari entro il rumore" si incatena lungo i valori ordinati, così non
-    dipende dall'ordine d'ingresso (D195)."""
+    """`items` (already sorted) split where two neighbours are not `together`:
+    "equal within the noise" chains along the sorted values, so it does not
+    depend on input order."""
     runs = []
     for item in items:
         if runs and together(runs[-1][-1], item):
@@ -37,14 +37,11 @@ def noise_runs(items: list, together) -> list:
     return runs
 
 
-# ---------------------------------------------------------------------------
-# Tracce aperte — vertici / lunghezza / tipo da segmenti nativi
-# ---------------------------------------------------------------------------
-# Una traccia aperta (bending line, incisione, frammento non chiuso) nel modello
-# è una lista di segmenti nativi (LineSeg / CircleSeg / BSplineSeg / EllipseSeg).
-# `pts`, `length`, `shape_type` sono valori DERIVATI da quei segmenti: qui, non
-# stoccati sul modello. Chi li consuma — detect_flat(), write._write_loose,
-# inspect() — li ricava con queste funzioni.
+# Open traces — vertices / length / type from native segments.
+# An open trace (bending line, engraving, unclosed fragment) in the model is a
+# list of native segments (LineSeg / CircleSeg / BSplineSeg / EllipseSeg).
+# `pts`, `length`, `shape_type` are values DERIVED from those segments: here,
+# not stored on the model.
 
 def track_points(segments, *, tolerance: Optional[float] = None) -> List[Point]:
     """
@@ -73,17 +70,13 @@ def track_length(pts) -> float:
     )
 
 
-# ---------------------------------------------------------------------------
-# Lunghezza e angolo di UNA primitiva nativa — mai stoccati sul modello,
-# sempre derivati (stesso principio di track_length sopra,
-# ma su un singolo segmento invece che su una catena)
-# ---------------------------------------------------------------------------
+# --- Length and angle of ONE native primitive — never stored on the model, always derived ---
 
 def segment_length(segment) -> float:
     """
     Real length of a single native primitive. A line and a circle have a
     closed formula, a clothoid its arc-length parameter; every other curve
-    the integral of its exact speed |P'(t)| (D293). A spline whose knots do
+    the integral of its exact speed |P'(t)|. A spline whose knots do
     not define it falls back to the polyline of `discretize()`.
     """
     if isinstance(segment, LineSeg):
@@ -91,10 +84,10 @@ def segment_length(segment) -> float:
     if isinstance(segment, CircleSeg):
         return segment.radius * segment._sweep()
     if isinstance(segment, ClothoidSeg):
-        return abs(segment.end_param - segment.start_param)   # il parametro è la lunghezza d'arco
+        return abs(segment.end_param - segment.start_param)   # the parameter is the arc length
     if isinstance(segment, BSplineSeg) and not segment._defined():
         return track_length(segment.discretize())
-    from .integrals import curve_length   # integrals sta sopra measure
+    from .integrals import curve_length   # integrals sits above measure
     return curve_length(segment)
 
 
@@ -111,10 +104,8 @@ def length_inside(segment, bounds: Tuple[float, float, float, float]) -> float:
 
 
 def longest_segment(segments) -> Tuple[Optional[object], float]:
-    """
-    `(segment, length)` del segmento più lungo in `segments` — `(None, 0.0)`
-    se la lista è vuota. Confronto lineare via `segment_length`.
-    """
+    """`(segment, length)` of the longest segment in `segments` — `(None, 0.0)` if
+    the list is empty. Linear comparison via `segment_length`."""
     best_seg, best_len = None, 0.0
     for seg in segments or []:
         length = segment_length(seg)
@@ -133,31 +124,27 @@ def chord_angle_deg(a: Point, b: Point) -> float:
 
 
 def unit_vector(v: Point) -> Optional[Point]:
-    """`v` di lunghezza 1; None se è nullo o non finito (allora non ha
-    direzione). Cosa fare del None lo decide il chiamante."""
+    """`v` with length 1; None if it is null or not finite (then it has no
+    direction). What to do with None is the caller's call."""
     n = math.hypot(*v)
     return (v[0] / n, v[1] / n) if n > 0 and math.isfinite(n) else None
 
 
-# ---------------------------------------------------------------------------
-# Portata di una primitiva lungo una direzione — sulla curva, non sul poligono
-# ---------------------------------------------------------------------------
-# Il poligono di discretize() è inscritto: la sua proiezione è più corta della
-# curva fino a 2·tol. Qui (min, max) di p·d sulla curva vera (MAP.md D156).
+# Extent of a primitive along a direction — on the curve, not on the polygon.
+# The polygon of discretize() is inscribed: its projection is shorter than the
+# curve by up to 2·tol. Here (min, max) of p·d on the true curve.
 
 def segment_reach(segment, direction: Point) -> Tuple[float, float]:
-    """
-    (min, max) della proiezione dei punti di `segment` sul versore
-    `direction`. Esatta per retta, arco, cerchio, ellisse (estremi in forma
-    chiusa); per la B-spline per certificato sui pezzi di Bézier, rifiniti
-    alla precisione di macchina (D300). Per molte direzioni sullo stesso
-    segmento usa `Reach`: i pezzi si calcolano una volta sola.
-    """
+    """(min, max) of the projection of the points of `segment` on the unit vector
+    `direction`. Exact for line, arc, circle, ellipse (extremes in closed form);
+    for the B-spline by certificate on the Bézier pieces, refined to machine
+    precision. For many directions on the same segment use `Reach`: the pieces
+    are computed once."""
     return Reach(segment)(direction)
 
 
 class Reach:
-    """`segment_reach` di un segmento fissato, per molte direzioni."""
+    """`segment_reach` of a fixed segment, for many directions."""
 
     def __init__(self, segment):
         self.segment = segment
@@ -175,7 +162,7 @@ class Reach:
             a, b = dot(segment.start), dot(segment.end)
             return min(a, b), max(a, b)
         if isinstance(segment, EllipseSeg):
-            # anche il cerchio (D287): p·d = c·d + A·cos t + B·sin t, estremi a t = atan2(B, A) e + π
+            # the circle too: p·d = c·d + A·cos t + B·sin t, extremes at t = atan2(B, A) and + π
             mx, my = segment.major_axis
             a_coef = mx * dx + my * dy
             b_coef = segment.ratio * (-my * dx + mx * dy)
@@ -191,14 +178,14 @@ class Reach:
         if isinstance(segment, (ParabolaSeg, HyperbolaSeg)):
             return self._conic(dot, dx, dy)
         if isinstance(segment, MathSeg):
-            # una formula: sul poligono entro SAME_POINT
+            # a formula: on the polygon within SAME_POINT
             values = [dot(p) for p in segment.discretize(tolerance=SAME_POINT)]
             return min(values), max(values)
         raise TypeError(f"unsupported primitive: {type(segment).__name__}")
 
     def _conic(self, dot, dx: float, dy: float) -> Tuple[float, float]:
-        """Parabola: p·d = V·d + s·(n·d) + s²/(4f)·(u·d), estremo a s = −2f·(n·d)/(u·d).
-        Iperbole: p·d = C·d + cosh s·A + sinh s·B, estremo dove tanh s = −B/A (se |B| < |A|)."""
+        """Parabola: p·d = V·d + s·(n·d) + s²/(4f)·(u·d), extreme at s = −2f·(n·d)/(u·d).
+        Hyperbola: p·d = C·d + cosh s·A + sinh s·B, extreme where tanh s = −B/A (if |B| < |A|)."""
         seg = self.segment
         lo, hi = sorted((seg.start_param, seg.end_param))
         if isinstance(seg, ParabolaSeg):
@@ -213,12 +200,9 @@ class Reach:
         return min(values), max(values)
 
     def _spline(self, dot) -> Tuple[float, float]:
-        """
-        Gli estremi per certificato sui pezzi di Bézier (D300): una funzione
-        lineare sull'inviluppo dei punti di controllo ha l'estremo su uno di
-        loro, quindi nessun pezzo più indietro del migliore può vincere. Poi la
-        sezione aurea attorno al vincitore, alla precisione di macchina.
-        """
+        """The extremes by certificate on the Bézier pieces: a linear function on the
+        control-point hull has its extreme at one of them, so no piece behind the
+        best can win. Then the golden section around the winner, to machine precision."""
         seg = self.segment
         out = []
         for sign in (1.0, -1.0):
@@ -229,15 +213,15 @@ class Reach:
 
 
 def _on_sweep(start: float, ccw: bool, sweep: float, t: float) -> bool:
-    """True se l'angolo `t` cade nell'intervallo percorso da `start` per `sweep`."""
+    """True if the angle `t` falls in the interval walked from `start` for `sweep`."""
     offset = ((t - start) if ccw else (start - t)) % (2 * math.pi)
     return offset <= sweep + 1e-12
 
 
 def within_diameter(points, limit: float) -> bool:
-    """True se ogni coppia di `points` dista al più `limit`: il diametro
-    dell'insieme, che non dipende dal riferimento (la diagonale della bbox sì).
-    La diagonale sta fra il diametro e il diametro per radice di due."""
+    """True if every pair of `points` is at most `limit` apart: the diameter of the
+    set, which does not depend on the frame (the bbox diagonal does). The
+    diagonal lies between the diameter and the diameter times √2."""
     xs, ys = [p[0] for p in points], [p[1] for p in points]
     diagonal = math.hypot(max(xs) - min(xs), max(ys) - min(ys))
     if diagonal <= limit:
@@ -248,8 +232,7 @@ def within_diameter(points, limit: float) -> bool:
 
 
 def reach(limit: float) -> float:
-    """Fin dove arriva una soglia di topo: `limit` compreso, a meno del rumore
-    dei double (D183). Ogni confronto con una tolleranza di una lettura passa
-    da qui."""
+    """How far a topo threshold reaches: `limit` included, up to the double noise.
+    Every comparison with a reading's tolerance goes through here."""
     return limit + FLOAT_NOISE
 

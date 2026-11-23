@@ -1,7 +1,7 @@
 """
 topo/core/geometry/__init__.py
 -------------------------------
-topo's geometry, in one place: `topo.geometry.<name>` (MAP.md D95).
+topo's geometry, in one place: `topo.geometry.<name>`.
 Facts with geometric names - "circle", never "hole": what they mean is
 decided by the consumer.
 
@@ -22,13 +22,13 @@ Public (below):
 Building blocks (imported from the submodule, internal):
     measure.py        "is it circular?" (bounding box: for a measure use contour_shape)
     numeric.py        golden-section search (maximum, minimum)
-    shapely_polygons.py  the bridge to shapely: a contour as a Polygon (D169)
+    shapely_polygons.py  the bridge to shapely: a contour as a Polygon
     points.py         point sequences: duplicates, spacing, Douglas-Peucker, circle fit
     spline_fit.py     b-spline through points / within a tolerance of them
     curve_tests.py    do the points lie on a chord, a circle, a conic, a smooth curve?
     corners.py        corners of a sampled sequence
     strips.py         a strip between two contours, an open contour where the strips cover it
-                      (D142; the facts on the hierarchy are in topo.tools.strips)
+                      (the facts on the hierarchy are in topo.tools.strips)
     intersections.py  line/line, circle/line, circle/circle
                       (public: `intersections(a, b)` between any two primitives)
     lines.py, axis.py also: distance from a line, collinearity, intervals, strokes inside a box

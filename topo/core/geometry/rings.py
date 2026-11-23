@@ -1,11 +1,11 @@
 """
 topo/core/geometry/rings.py
 ---------------------------
-Fatti di un giro chiuso di primitive, calcolati sulle primitive (MAP.md D166,
-D167): bbox, perimetro, punti discretizzati, "il punto sta dentro?". Il giro
-è quello di `ring_moments`: un salto fra la fine di un segmento e l'inizio del
-successivo (gap chiuso entro la tolleranza, D143) conta come la sua corda.
-Funzioni pure su primitive, un ramo per tipo.
+Facts of a closed ring of primitives, computed on the primitives: bbox,
+perimeter, discretized points, "is the point inside?". The ring is that of
+`ring_moments`: a jump between the end of a segment and the start of the next
+(a gap closed within the tolerance) counts as its chord. Pure functions on
+primitives, one branch per type.
 """
 
 import math
@@ -19,14 +19,12 @@ from .measure import Reach, segment_length, track_length, SAME_POINT
 Point = Tuple[float, float]
 Bounds = Tuple[float, float, float, float]
 
-ON_BOUNDARY = SAME_POINT   # mm: un punto più vicino di così al bordo ci sta sopra (FLOAT_NOISE, D183)  # D268
+ON_BOUNDARY = SAME_POINT   # mm: a point closer than this to the border is on it (FLOAT_NOISE)
 
 
 def ring_jumps(segments: Sequence) -> Iterator[Tuple[Point, Point]]:
-    """
-    (fine, inizio) di ogni salto fra un segmento e il successivo, nell'ordine
-    del giro. Un cerchio intero è un giro da sé: nessun salto da o verso lui.
-    """
+    """(end, start) of every jump between a segment and the next, in ring order. A
+    full circle is a ring of its own: no jump to or from it."""
     segments = list(segments)
     for segment, following in zip(segments, segments[1:] + segments[:1]):
         if is_full_circle(segment) or is_full_circle(following):
@@ -37,12 +35,9 @@ def ring_jumps(segments: Sequence) -> Iterator[Tuple[Point, Point]]:
 
 
 def ring_bridges(segments: Sequence, tolerance: float, noise: float) -> List[Tuple[int, LineSeg]]:
-    """
-    (indice, segmento nuovo) per ogni salto oltre `noise` ed entro `tolerance`:
-    la retta dalla fine del segmento `indice` all'inizio del successivo, da
-    inserire dopo di lui. Nessuna curva si sposta; un salto oltre `tolerance`
-    resta (D206).
-    """
+    """(index, new segment) for every jump beyond `noise` and within `tolerance`:
+    the line from the end of segment `index` to the start of the next, to insert
+    after it. No curve moves; a jump beyond `tolerance` stays."""
     segments = list(segments)
     out = []
     for k, (segment, following) in enumerate(zip(segments, segments[1:] + segments[:1])):
@@ -55,8 +50,8 @@ def ring_bridges(segments: Sequence, tolerance: float, noise: float) -> List[Tup
 
 
 def ring_closes(segments: Sequence, tolerance: float = DEFAULT_TOLERANCE) -> bool:
-    """I segmenti chiudono un giro testa-coda: ognuno parte entro `tolerance`
-    da dove finisce il precedente, l'ultimo torna al primo."""
+    """The segments close a head-to-tail loop: each starts within `tolerance` of
+    where the previous ends, the last returns to the first."""
     segments = list(segments)
     if not segments:
         return False
@@ -66,9 +61,9 @@ def ring_closes(segments: Sequence, tolerance: float = DEFAULT_TOLERANCE) -> boo
 
 
 def ring_bbox(segments: Sequence) -> Bounds:
-    """(xmin, ymin, xmax, ymax) esatto delle primitive: gli estremi di archi
-    ed ellissi dove la curva li tocca, non sulle corde. I salti stanno fra
-    estremi di segmenti, già dentro."""
+    """Exact (xmin, ymin, xmax, ymax) of the primitives: the extremes of arcs and
+    ellipses where the curve touches them, not on the chords. The jumps lie
+    between segment ends, already inside."""
     if not segments:
         raise ValueError("ring_bbox(): empty ring")
     xs, ys = [], []
@@ -80,17 +75,15 @@ def ring_bbox(segments: Sequence) -> Bounds:
 
 
 def ring_perimeter(segments: Sequence) -> float:
-    """Lunghezza del giro: le primitive più le corde dei salti."""
+    """Length of the ring: the primitives plus the chords of the jumps."""
     return (sum(segment_length(s) for s in segments)
             + sum(math.dist(a, b) for a, b in ring_jumps(segments)))
 
 
 def ring_points(segments: Sequence, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
-    """
-    I vertici del giro discretizzato entro `tolerance` (la griglia di ogni
-    primitiva, D145), in ordine, senza ripetere il primo in fondo: l'ultimo
-    lato torna al primo punto. Un salto resta, come lato fra i due capi.
-    """
+    """The vertices of the loop discretized within `tolerance` (each primitive's
+    grid), in order, without repeating the first at the end: the last side
+    returns to the first point. A jump stays, as a side between the two ends."""
     pts: List[Point] = []
     for segment in segments:
         seg_pts = [tuple(p) for p in segment.discretize(tolerance=tolerance)]
@@ -103,29 +96,27 @@ def ring_points(segments: Sequence, tolerance: float = DEFAULT_TOLERANCE) -> Lis
 
 
 def ring_scale(segments: Sequence) -> float:
-    """La lunghezza del poligono del giro: la scala di una soglia (D195, D279),
-    non una misura. Il poligono sta entro SAME_POINT dalla curva e una spline lo
-    tiene già; il perimetro esatto (`ring_perimeter`, D293) costa un integrale."""
+    """The length of the ring's polygon: the scale of a threshold, not a
+    measure. The polygon is within SAME_POINT of the curve and a spline already
+    keeps it; the exact perimeter (`ring_perimeter`) costs an integral."""
     pts = ring_points(segments)
     return track_length(pts + pts[:1])
 
 
 def ring_contains(segments: Sequence, point: Point, tolerance: float = ON_BOUNDARY) -> bool:
-    """
-    `point` sta nella regione chiusa del giro: dentro, o sul bordo entro
-    `tolerance`. Numero di avvolgimento sulle primitive: retta, arco, cerchio
-    ed ellisse in forma chiusa; la spline sulla sua polilinea entro
-    `tolerance` / 2, che lontano dal bordo dà lo stesso numero.
-    """
+    """`point` is in the closed region of the ring: inside, or on the border within
+    `tolerance`. Winding number on the primitives: line, arc, circle and ellipse
+    in closed form; the spline on its polyline within `tolerance` / 2, which
+    away from the border gives the same number."""
     winding = _winding(segments, point, tolerance)
     return winding is None or winding != 0
 
 
 def ring_covers_chord(segments: Sequence, start: Point, end: Point,
                       tolerance: float = ON_BOUNDARY) -> bool:
-    """La corda `start`→`end` sta tutta nella regione chiusa del giro: i capi
-    dentro o sul bordo, e ogni pezzo fra due incontri col bordo col punto
-    medio dentro o sul bordo."""
+    """The chord `start`→`end` lies wholly in the closed region of the loop: the
+    ends inside or on the border, and every piece between two meetings with the
+    border with its midpoint inside or on the border."""
     cuts = [t for t, _ in _chord_cuts(segments, start, end, tolerance)]
     return (ring_contains(segments, start, tolerance) and ring_contains(segments, end, tolerance)
             and all(ring_contains(segments, _lerp(start, end, (t0 + t1) / 2), tolerance)
@@ -134,12 +125,10 @@ def ring_covers_chord(segments: Sequence, start: Point, end: Point,
 
 def ring_split_by_chord(segments: Sequence, start: Point, end: Point,
                         tolerance: float = ON_BOUNDARY) -> bool:
-    """
-    La corda `start`→`end` divide la regione del giro in due o più parti:
-    un suo pezzo va da bordo a bordo passando dentro (punto medio dentro,
-    non sul bordo). Un giro è semplicemente connesso, quindi un taglio da
-    bordo a bordo lo divide sempre; un tocco o un tratto sul bordo no.
-    """
+    """The chord `start`→`end` divides the ring's region into two or more parts: a
+    piece of it runs border to border passing inside (midpoint inside, not on the
+    border). A ring is simply connected, so a border-to-border cut always divides
+    it; a touch or a stretch on the border does not."""
     meets = [t for t, on_boundary in _chord_cuts(segments, start, end, tolerance) if on_boundary]
     for t0, t1 in zip(meets, meets[1:]):
         winding = _winding(segments, _lerp(start, end, (t0 + t1) / 2), tolerance)
@@ -149,8 +138,8 @@ def ring_split_by_chord(segments: Sequence, start: Point, end: Point,
 
 
 def _winding(segments: Sequence, point: Point, tolerance: float):
-    """Numero di avvolgimento del giro attorno a `point`; None se `point` sta
-    sul bordo entro `tolerance`."""
+    """Winding number of the loop around `point`; None if `point` is on the border
+    within `tolerance`."""
     if not segments:
         raise ValueError("ring_contains(): empty ring")
     turn = 0.0
@@ -168,10 +157,10 @@ def _winding(segments: Sequence, point: Point, tolerance: float):
 
 def _chord_cuts(segments: Sequence, start: Point, end: Point,
                 tolerance: float) -> List[Tuple[float, bool]]:
-    """(t, sul bordo) lungo `start`→`end`, t in [0, 1]: i due capi e i punti
-    dove la corda incontra il bordo (salti compresi), in ordine, senza
-    doppioni. Un capo è sul bordo se ci sta entro `tolerance`; un incontro
-    lo è per costruzione (sulle altre curve entro `CURVE_TOLERANCE`)."""
+    """(t, on the border) along `start`→`end`, t in [0, 1]: the two ends and the
+    points where the chord meets the border (jumps included), in order, without
+    duplicates. An end is on the border if it is within `tolerance` of it; a
+    meeting is by construction (on other curves within `CURVE_TOLERANCE`)."""
     from .intersections import intersections
     length = math.dist(start, end)
     if length == 0:
@@ -196,9 +185,7 @@ def _lerp(a: Point, b: Point, t: float) -> Point:
     return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
 
 
-# ---------------------------------------------------------------------------
-# Angolo spazzato da una primitiva vista da `point`; None se ci passa sopra
-# ---------------------------------------------------------------------------
+# --- Angle swept by a primitive seen from `point`; None if it passes over it ---
 
 def _swept(segment, point: Point, tolerance: float):
     if isinstance(segment, LineSeg):
@@ -222,7 +209,7 @@ def _swept(segment, point: Point, tolerance: float):
         t0 = segment.start_param
         return _conic_swept(point, segment.center, (mx, my), minor, t0, t0 + sign * segment._sweep())
     if isinstance(segment, MathSeg):
-        # spline, parabola, iperbole: sul poligono entro tolerance
+        # spline, parabola, hyperbola: on the polygon within tolerance
         pts = _clear_polyline(segment, point, tolerance)
         if pts is None:
             return None
@@ -231,21 +218,19 @@ def _swept(segment, point: Point, tolerance: float):
 
 
 def _chord_angle(point: Point, a: Point, b: Point) -> float:
-    """Angolo con segno, in (−π, π], da a a b visti da `point`."""
+    """Signed angle, in (−π, π], from a to b seen from `point`."""
     ax, ay = a[0] - point[0], a[1] - point[1]
     bx, by = b[0] - point[0], b[1] - point[1]
     return math.atan2(ax * by - ay * bx, ax * bx + ay * by)
 
 
 def _conic_swept(point: Point, center: Point, m: Point, n: Point, t0: float, t1: float) -> float:
-    """
-    Angolo spazzato da c + M cos t + N sin t, t0 → t1, visto da `point`
-    (fuori dalla curva). L'arco più la corda di ritorno è un giro che avvolge
-    `point` solo se sta nel segmento di conica fra i due: allora l'arco spazza
-    la corda più un giro intero nel suo verso. Nelle coordinate (cos, sin)
-    della conica il segmento è il disco unitario dalla parte del punto medio
-    dell'arco rispetto alla corda (tutto il disco per un giro intero).
-    """
+    """Angle swept by c + M cos t + N sin t, t0 → t1, seen from `point` (off the
+    curve). The arc plus the return chord is a loop that winds `point` only if
+    it lies in the conic segment between the two: then the arc sweeps the chord
+    plus a full turn in its direction. In the (cos, sin) coordinates of the conic
+    the segment is the unit disc on the side of the arc's midpoint relative to the
+    chord (the whole disc for a full turn)."""
     det = m[0] * n[1] - m[1] * n[0]
     dx, dy = point[0] - center[0], point[1] - center[1]
     u = (dx * n[1] - dy * n[0]) / det
@@ -260,7 +245,7 @@ def _conic_swept(point: Point, center: Point, m: Point, n: Point, t0: float, t1:
     start = (center[0] + m[0] * a[0] + n[0] * a[1], center[1] + m[1] * a[0] + n[1] * a[1])
     end = (center[0] + m[0] * b[0] + n[0] * b[1], center[1] + m[1] * b[0] + n[1] * b[1])
     chord = _chord_angle(point, start, end)
-    if inside and abs(abs(chord) - math.pi) > 1e-9:   # sulla corda è dentro, chiuso
+    if inside and abs(abs(chord) - math.pi) > 1e-9:   # on the chord is inside, closed
         mid = (t0 + t1) / 2
         c = (math.cos(mid), math.sin(mid))
         cross_mid = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
@@ -268,14 +253,12 @@ def _conic_swept(point: Point, center: Point, m: Point, n: Point, t0: float, t1:
         inside = cross_pt * cross_mid > 0.0
     if not inside:
         return chord
-    # corda e arco girano in versi opposti: |arco| = 2π − |corda|, nel verso
-    # dell'arco (anche sulla corda, dove il segno della corda è rumore)
+    # chord and arc turn in opposite directions: |arc| = 2π − |chord|, in the
+    # arc's direction (also on the chord, where the chord's sign is noise)
     return math.copysign(2 * math.pi - abs(chord), turn)
 
 
-# ---------------------------------------------------------------------------
-# Distanze dal bordo
-# ---------------------------------------------------------------------------
+# --- Distances from the border ---
 
 def _line_distance(point: Point, a: Point, b: Point) -> float:
     dx, dy = b[0] - a[0], b[1] - a[1]
@@ -285,7 +268,7 @@ def _line_distance(point: Point, a: Point, b: Point) -> float:
 
 
 def _arc_distance(point: Point, center: Point, r: float, t0: float, t1: float) -> float:
-    """Distanza esatta dall'arco t0 → t1 del cerchio (centro, r)."""
+    """Exact distance from the arc t0 → t1 of the circle (centre, r)."""
     phi = math.atan2(point[1] - center[1], point[0] - center[0])
     lo, hi = min(t0, t1), max(t0, t1)
     if hi - lo >= 2 * math.pi or (phi - lo) % (2 * math.pi) <= hi - lo:
@@ -295,12 +278,10 @@ def _arc_distance(point: Point, center: Point, r: float, t0: float, t1: float) -
 
 
 def _clear_polyline(segment, point: Point, tolerance: float):
-    """
-    Una polilinea di `segment` entro δ che non passa su `point`, o None se
-    `point` sta sul bordo (entro `tolerance`). Se la polilinea dista d > 2δ
-    da `point`, anche la curva ne dista più di δ: fra le due nessun giro può
-    avvolgerlo, quindi spazzano lo stesso angolo. δ scende solo vicino al bordo.
-    """
+    """A polyline of `segment` within δ that does not pass over `point`, or None if
+    `point` is on the border (within `tolerance`). If the polyline is d > 2δ from
+    `point`, the curve is also more than δ from it: between the two no loop can
+    wind it, so they sweep the same angle. δ drops only near the border."""
     delta = max(DEFAULT_TOLERANCE, tolerance)
     while True:
         pts = segment.discretize(tolerance=delta)

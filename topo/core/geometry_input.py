@@ -1,24 +1,20 @@
 """
 topo/core/geometry_input.py
 ---------------------------
-Punto di ingresso per costruire un Document da geometria già nota — non da
-un file. Stesso contratto di un adapter (produce un Document, non
-tipi interni), ma la "sorgente" è chi chiama: un generatore parametrico (es. uno
-sviluppo di cono/cilindro calcolato altrove) o un ricostruttore di geometria da
-punti (es. un contorno da computer vision già vettorializzato).
+Entry point to build a Document from geometry already known — not from a
+file. Same contract as an adapter (it produces a Document, no internal
+types), but the "source" is the caller: a parametric generator (a cone or
+cylinder development computed elsewhere) or a geometry reconstructor from
+points (a contour already vectorized by computer vision).
 
-Chi chiama non importa NESSUN tipo interno di topo: le entità sono dict Python
-puri. La traduzione in Edge (nodi, ruolo semantico) è identica
-a quella di ogni adapter (`Edge.of`) — cambia
-solo la sorgente da tradurre. Non è un formato, quindi non sta tra gli
-adapter: è un ingresso di topo (MAP.md D123, D125).
+The caller imports NO internal topo type: the entities are plain Python
+dicts. The translation into Edges (nodes, semantic role) is the same as in
+every adapter (`Edge.of`). It is not a format, so it does not live among the
+adapters: it is an input of topo.
 
-Pubblico da MAP.md D32 — provato da un caso reale (`bendly`, che lo usa
-per portare uno sviluppo generato a `Document`).
-
-Funzioni pubbliche:
-    load_geometry — traduce una lista di descrizioni geometriche in Document
-    load_segments — lo stesso, da segmenti di topo (`topo.geometry.rectangle`, ...)
+Public functions:
+    load_geometry — translates a list of geometric descriptions into a Document
+    load_segments — the same, from topo segments (`topo.geometry.rectangle`, ...)
 """
 
 from __future__ import annotations
@@ -38,53 +34,49 @@ _SUPPORTED_TYPES = frozenset({"line", "arc", "circle", "polygon", "spline", "ell
 
 
 def _role_from(entity: Dict[str, Any]) -> str:
-    """
-    work_type stringa (stesso vocabolario di RoleRule.role) → ruolo. Un work_type
-    sconosciuto viene conservato (via normalize_role), non schiacciato a UNKNOWN.
+    """work_type string (same vocabulary as RoleRule.role) → role. An unknown
+    work_type is kept (via normalize_role), not flattened to UNKNOWN.
     """
     return normalize_role(entity.get("role"))
 
 
 class GeometryReader:
-    """
-    Traduce descrizioni geometriche pure (dict) in Edge del dominio topo.
+    """Translate pure geometric descriptions (dicts) into topo domain Edges.
 
-    Schema di ogni entità, per "type":
+    Schema of each entity, by "type":
         line:     {"type": "line", "start": (x,y), "end": (x,y), "role": "outer"}
         arc:      {"type": "arc", "center": (x,y), "radius": r,
-                   "start_angle": gradi, "end_angle": gradi,
+                   "start_angle": degrees, "end_angle": degrees,
                    "ccw": True, "role": "outer"}
         circle:   {"type": "circle", "center": (x,y), "radius": r, "role": "hole"}
         polygon:  {"type": "polygon", "points": [(x,y), ...], "role": "outer"}
-                  — sempre chiuso: l'ultimo lato torna al primo punto (D96)
+                  — always closed: the last side returns to the first point
         spline:   {"type": "spline", "control_points": [(x,y), ...], "knots": [...],
                    "degree": 3, "weights": [...], "role": "outer"}
         ellipse:  {"type": "ellipse", "center": (x,y), "major_axis": (x,y),
                    "ratio": 0.5, "start_param": 0.0, "end_param": 2*pi,
                    "ccw": True, "role": "outer"}
 
-    "role" è opzionale — stesso vocabolario di RoleRule.role (work_type stringa:
-    "outer", "hole", "inner", "bending", "engrave", ...). Se omesso resta
-    "unknown": non è un problema per il contorno più esterno di una
-    parte, a cui HierarchyBuilder assegna comunque OUTER per posizione
-    nell'albero di contenimento — serve solo per far riconoscere fori/inner
-    espliciti prima che un consumatore li riclassifichi.
+    "role" is optional — same vocabulary as RoleRule.role (a work_type string:
+    "outer", "hole", "inner", "bending", "engrave", ...). If omitted it stays
+    "unknown": no problem for a part's outermost contour, which HierarchyBuilder
+    makes OUTER anyway by its position in the containment tree; it only serves to
+    have explicit holes/inners recognized before a consumer reclassifies them.
 
-    Gli angoli di "arc" sono in GRADI, non i radianti di CircleSeg: più
-    naturale per chi consegna numeri calcolati a mano, come i costruttori di
-    `topo.geometry`.
+    The angles of "arc" are in DEGREES, not the radians of CircleSeg: more
+    natural for whoever hands over numbers computed by hand, like the builders
+    of `topo.geometry`.
 
-    Lo schema di "spline" ricalca 1:1 i campi di BSplineSeg (control_points,
-    knots, degree, weights): chi ha in mano l'oggetto
-    restituito da simplify_points() lo passa quasi senza toccarlo — vedi
-    topo.core.geometry.fitting. Solo "control_points"/"knots"/"degree" sono
-    obbligatori, il resto è opzionale.
+    The "spline" schema mirrors the BSplineSeg fields 1:1 (control_points,
+    knots, degree, weights): the object returned by simplify_points() can be
+    passed almost untouched — see topo.core.geometry.fitting. Only
+    "control_points"/"knots"/"degree" are required, the rest is optional.
 
-    Lo schema di "ellipse" ricalca 1:1 i campi di EllipseSeg (center,
-    major_axis come VETTORE dal centro, ratio, start_param/end_param in
-    radianti). Solo "center"/"major_axis" sono obbligatori: "ratio"/
-    "start_param"/"end_param" valgono di default un'ellisse piena
-    (1.0 / 0.0 / 2π).
+    The "ellipse" schema mirrors the EllipseSeg fields 1:1 (center, major_axis as
+    a VECTOR from the centre, ratio, start_param/end_param in radians). Only
+    "center"/"major_axis" are required: "ratio"/"start_param"/"end_param"
+    default to a full ellipse (1.0 / 0.0 / 2π).
+
     """
 
     def __init__(self, entities: List[Dict[str, Any]]):

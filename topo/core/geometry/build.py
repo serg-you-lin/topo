@@ -1,13 +1,13 @@
 """
 topo/core/geometry/build.py
 ----------------------------
-Costruire forme e curve come segmenti di topo. Le forme sono un giro chiuso,
-pronto per `topo.load_segments`, con gli argomenti che `contour_shape`
-restituisce (centro, lunghezza, larghezza, angolo): costruire e leggere usano
-le stesse misure, così `contour_shape(rectangle(...))` ridà i numeri passati
-(MAP.md D96). Le curve (D291) sono pezzi aperti: il raccordo fra due capi, il
-grafico di un polinomio, l'evolvente, la clotoide. Curve vere, non
-poligonali; gli angoli di posizione in gradi, come per le forme.
+Build shapes and curves as topo segments. Shapes are a closed loop, ready
+for `topo.load_segments`, with the arguments `contour_shape` returns (centre,
+length, width, angle): building and reading use the same measures, so
+`contour_shape(rectangle(...))` gives back the numbers passed. Curves are
+open pieces: the fillet between two ends, the graph of a polynomial, the
+involute, the clothoid. True curves, not polygonal; position angles in
+degrees, as for shapes.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ Point = Tuple[float, float]
 
 
 def _place(points: Sequence[Point], center: Point, angle: float) -> List[Point]:
-    """Ruota di `angle` gradi attorno all'origine e trasla in `center`."""
+    """Rotate by `angle` degrees about the origin and translate to `center`."""
     c, s = math.cos(math.radians(angle)), math.sin(math.radians(angle))
     return [(center[0] + x * c - y * s, center[1] + x * s + y * c) for x, y in points]
 
@@ -102,7 +102,7 @@ def triangle(a: float, b: float, c: float, *, start: Point = (0.0, 0.0), angle: 
     """
     if not (a > 0 and b > 0 and c > 0 and a < b + c and b < a + c and c < a + b):
         raise ValueError(f"triangle(): sides {a}, {b}, {c} do not close a triangle")
-    # il terzo vertice dal teorema del coseno, nell'angolo fra `a` e `c`
+    # the third vertex from the law of cosines, in the angle between `a` and `c`
     x = (a * a + c * c - b * b) / (2 * a)
     y = math.sqrt(max(c * c - x * x, 0.0))
     return polygon([tuple(start)] + _place([(a, 0.0), (x, y)], start, angle))
@@ -128,14 +128,12 @@ def _direction_argument(v: Point, name: str) -> Point:
 
 def blend(start: Point, start_direction: Point, end: Point, end_direction: Point, *,
           continuity: int = 1) -> List[BSplineSeg]:
-    """
-    The smooth curve from `start`, leaving along `start_direction`, to `end`,
+    """The smooth curve from `start`, leaving along `start_direction`, to `end`,
     arriving along `end_direction` (vectors, any length): a polynomial, so an
     exact B-spline. `continuity=1`: a cubic, tangent to both directions (G1).
     `continuity=2`: a quintic that also starts and ends with zero curvature,
     so it joins two straight lines with continuous curvature (G2). The
-    handles are a fraction of the chord: a third (cubic), a fifth (quintic).
-    """
+    handles are a fraction of the chord: a third (cubic), a fifth (quintic)."""
     (ux, uy), (vx, vy) = _direction_argument(start_direction, "start_direction"), _direction_argument(end_direction, "end_direction")
     p0, p1 = tuple(start), tuple(end)
     chord = math.dist(p0, p1)
@@ -145,7 +143,7 @@ def blend(start: Point, start_direction: Point, end: Point, end_direction: Point
         h = chord / 3
         control = [p0, (p0[0] + h * ux, p0[1] + h * uy), (p1[0] - h * vx, p1[1] - h * vy), p1]
     elif continuity == 2:
-        # derivata seconda nulla ai capi: P2 − 2·P1 + P0 = 0, e lo stesso all'altro capo
+        # zero second derivative at the ends: P2 − 2·P1 + P0 = 0, and the same at the other end
         h = chord / 5
         control = [p0, (p0[0] + h * ux, p0[1] + h * uy), (p0[0] + 2 * h * ux, p0[1] + 2 * h * uy),
                    (p1[0] - 2 * h * vx, p1[1] - 2 * h * vy), (p1[0] - h * vx, p1[1] - h * vy), p1]
@@ -168,12 +166,12 @@ def polynomial(coefficients: Sequence[float], x_from: float, x_to: float) -> lis
         raise ValueError("polynomial(): needs coefficients and x_from != x_to")
     w = x_to - x_from
     n = len(c) - 1
-    # y nel parametro u ∈ [0, 1] con x = x_from + w·u: b_j = Σ_k c_k · C(k, j) · x_from^(k − j) · w^j
+    # y in the parameter u ∈ [0, 1] with x = x_from + w·u: b_j = Σ_k c_k · C(k, j) · x_from^(k − j) · w^j
     b = [sum(c[k] * math.comb(k, j) * x_from ** (k - j) * w ** j for k in range(j, n + 1)) for j in range(n + 1)]
     if n <= 1:
         slope = b[1] if n == 1 else 0.0
         return [LineSeg(start=(x_from, b[0]), end=(x_to, b[0] + slope))]
-    # dalla base delle potenze a quella di Bernstein: y_i = Σ_{j ≤ i} C(i, j) / C(n, j) · b_j
+    # from the power basis to the Bernstein one: y_i = Σ_{j ≤ i} C(i, j) / C(n, j) · b_j
     ys = [sum(math.comb(i, j) / math.comb(n, j) * b[j] for j in range(i + 1)) for i in range(n + 1)]
     control = [(x_from + w * i / n, ys[i]) for i in range(n + 1)]
     return [BSplineSeg(degree=n, control_points=control, knots=[0.0] * (n + 1) + [1.0] * (n + 1))]

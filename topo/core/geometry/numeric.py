@@ -1,8 +1,8 @@
 """
 topo/core/geometry/numeric.py
 -----------------------------
-Metodi numerici senza geometria: il minimo di una funzione unimodale su un
-intervallo, per sezione aurea. Chi cerca un massimo passa `-f`.
+Numerical methods with no geometry: the minimum of a unimodal function on an
+interval, by golden section. For a maximum pass `-f`.
 """
 
 import math
@@ -10,9 +10,9 @@ from typing import Optional, Tuple
 
 
 def golden_min(f, a: float, b: float, iterations: Optional[int] = None) -> Tuple[float, float]:
-    """(x, f(x)) del minimo di `f` unimodale su [a, b], per sezione aurea:
-    `iterations` passi, o (None) finché i double separano i punti interni.
-    A parità tiene la metà sinistra; anche gli estremi sono candidati."""
+    """(x, f(x)) of the minimum of a unimodal `f` on [a, b], by golden section:
+    `iterations` steps, or (None) until the doubles separate the inner points.
+    On a tie keeps the left half; the ends are candidates too."""
     r = (math.sqrt(5) - 1) / 2
     c, d = b - r * (b - a), a + r * (b - a)
     fc, fd = f(c), f(d)

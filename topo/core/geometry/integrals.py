@@ -1,19 +1,18 @@
 """
 topo/core/geometry/integrals.py
 -------------------------------
-Area e baricentro esatti di un giro chiuso, integrati sulle sue primitive
-col teorema di Green (MAP.md D165): nessuna discretizzazione, nessuna
-tolleranza.
+Exact area and centroid of a closed loop, integrated over its primitives
+with Green's theorem: no discretization, no tolerance.
 
-Per un tratto orientato il contributo è la terna
+For an oriented stretch the contribution is the triple
 
     area = ½ ∮ (x dy − y dx)     mx = ½ ∮ x² dy     my = −½ ∮ y² dx
 
-e su un giro chiuso le tre somme danno l'area con segno (positiva in senso
-antiorario) e i momenti ∬x dA, ∬y dA. Forma chiusa per retta, arco, cerchio
-ed ellisse; per una spline polinomiale quadratura di Gauss esatta su ogni
-intervallo di nodi, per una razionale quadratura fino alla precisione della
-macchina. Funzioni pure su primitive, un ramo per tipo (D167).
+and over a closed loop the three sums give the signed area (positive
+counter-clockwise) and the moments ∬x dA, ∬y dA. Closed form for line, arc,
+circle and ellipse; for a polynomial spline, Gauss quadrature exact on every
+knot interval, for a rational one quadrature to machine precision. Pure
+functions on primitives, one branch per type.
 """
 
 import math
@@ -35,7 +34,7 @@ Vec = Tuple[float, ...]
 
 @dataclass(frozen=True)
 class Moments:
-    """Area con segno e momenti primi (∬x dA, ∬y dA) di un tratto o di un giro."""
+    """Signed area and first moments (∬x dA, ∬y dA) of a stretch or a loop."""
     area: float = 0.0
     mx: float = 0.0
     my: float = 0.0
@@ -48,12 +47,10 @@ class Moments:
 
 
 def segment_moments(segment) -> Moments:
-    """
-    Contributo di Green di una primitiva percorsa nel suo verso.
-    """
+    """Green's contribution of a primitive walked in its direction."""
     if isinstance(segment, LineSeg):
         return _line_moments(segment.start, segment.end)
-    if isinstance(segment, EllipseSeg):     # anche il cerchio: asse (r, 0), rapporto 1 (D287)
+    if isinstance(segment, EllipseSeg):     # the circle too: axis (r, 0), ratio 1
         mx, my = segment.major_axis
         minor = (-my * segment.ratio, mx * segment.ratio)
         sign = 1.0 if segment.ccw else -1.0
@@ -62,12 +59,12 @@ def segment_moments(segment) -> Moments:
     if isinstance(segment, BSplineSeg):
         return _spline_moments(segment)
     if isinstance(segment, HyperbolaSeg):
-        # in forma chiusa come l'ellisse, con cosh e sinh (D294): la sua spline razionale
-        # chiedeva un Gauss adattivo che lontano dall'origine non converge
+        # in closed form like the ellipse, with cosh and sinh: its rational spline
+        # needed an adaptive Gauss that does not converge far from the origin
         return _trig_moments(segment.center, segment.major_axis, segment._minor(),
                              segment.start_param, segment.end_param, hyperbolic=True)
     if isinstance(segment, ParabolaSeg):
-        # la stessa curva, esatta, come spline quadratica polinomiale: Gauss esatto (D288)
+        # the same curve, exact, as a polynomial quadratic spline: exact Gauss
         return _spline_moments(segment.to_bspline())
     if isinstance(segment, MathSeg):
         return _curve_moments(segment)
@@ -75,11 +72,10 @@ def segment_moments(segment) -> Moments:
 
 
 def ring_moments(segments: Sequence) -> Moments:
-    """
-    Somma dei contributi di un giro chiuso, nell'ordine e nel verso dati. Un
-    salto fra la fine di un segmento e l'inizio del successivo (un gap chiuso
-    entro la tolleranza, coefficienti del sorgente intatti, D143) conta come
-    la sua corda: senza, l'area dipenderebbe da dove sta il pezzo.
+    """Sum of the contributions of a closed loop, in the given order and direction.
+    A jump between the end of a segment and the start of the next (a gap closed
+    within the tolerance, source coefficients intact) counts as its chord:
+    without it the area would depend on where the piece sits.
     """
     total = Moments()
     for segment in segments:
@@ -90,15 +86,13 @@ def ring_moments(segments: Sequence) -> Moments:
 
 
 def ring_area(segments: Sequence) -> float:
-    """Area esatta (senza segno) racchiusa da un giro chiuso di primitive."""
+    """Exact (unsigned) area enclosed by a closed loop of primitives."""
     return abs(ring_moments(segments).area)
 
 
 def ring_centroid(segments: Sequence) -> Point:
-    """
-    Baricentro esatto dell'area racchiusa da un giro chiuso. Solleva
-    `ValueError` se il giro non racchiude area.
-    """
+    """Exact centroid of the area enclosed by a closed loop. Raises `ValueError`
+    if the loop encloses no area."""
     m = ring_moments(segments)
     if m.area == 0.0:
         raise ValueError("the ring encloses no area: no centroid")
@@ -118,21 +112,17 @@ def _line_moments(p0: Point, p1: Point) -> Moments:
     )
 
 
-# ---------------------------------------------------------------------------
-# Arco, cerchio, ellisse: P(t) = c + M cos t + N sin t
-# ---------------------------------------------------------------------------
+# --- Arc, circle, ellipse: P(t) = c + M cos t + N sin t ---
 
-# Un polinomio in (cos t, sin t) è {(i, j): coefficiente di cosⁱ·sinʲ}.
+# A polynomial in (cos t, sin t) is {(i, j): coefficient of cosⁱ·sinʲ}.
 Trig = dict
 
 
 def _trig_moments(center: Point, m: Point, n: Point, t0: float, t1: float, hyperbolic: bool = False) -> Moments:
-    """
-    Contributo del tratto t0 → t1 di c + M cos t + N sin t (arco: M, N =
-    (r, 0), (0, r); ellisse: asse maggiore e minore), o con `hyperbolic` di
-    c + M cosh t + N sinh t (un ramo d'iperbole, D294). Gli integrandi sono
-    polinomi di grado ≤ 3 nelle due funzioni, integrati in forma chiusa.
-    """
+    """Contribution of the stretch t0 → t1 of c + M cos t + N sin t (arc: M, N =
+    (r, 0), (0, r); ellipse: major and minor axis), or with `hyperbolic` of
+    c + M cosh t + N sinh t (one branch of a hyperbola). The integrands are
+    polynomials of degree ≤ 3 in the two functions, integrated in closed form."""
     x = {(0, 0): center[0], (1, 0): m[0], (0, 1): n[0]}
     y = {(0, 0): center[1], (1, 0): m[1], (0, 1): n[1]}
     # cos' = −sin, sin' = cos; cosh' = sinh, sinh' = cosh
@@ -212,12 +202,10 @@ def _cos_sin_integral(i: int, j: int, t0: float, t1: float) -> float:
 # ---------------------------------------------------------------------------
 
 def _spline_moments(seg: BSplineSeg) -> Moments:
-    """
-    Su ogni intervallo di nodi non vuoto del dominio. Polinomiale: x, y di
-    grado p, l'integrando più alto (x²·y') di grado 3p − 1, esatto con
-    Gauss a 2p punti. Razionale: Gauss a 2p + 8 punti, con l'intervallo
-    dimezzato finché due livelli coincidono alla precisione della macchina.
-    """
+    """On every non-empty knot interval of the domain. Polynomial: x, y of degree
+    p, the highest integrand (x²·y') of degree 3p − 1, exact with 2p-point
+    Gauss. Rational: (2p + 8)-point Gauss, the interval halved until two levels
+    agree to machine precision."""
     p = seg.degree
     knots = seg.knots
     if p < 1 or len(knots) != len(seg.control_points) + p + 1:
@@ -247,9 +235,8 @@ def _spline_moments(seg: BSplineSeg) -> Moments:
 
 
 def _curve_moments(seg) -> Moments:
-    """Una curva qualunque (D289): `point_at` e `derivative_at` esatti,
-    Gauss a 16 punti su 16 tratti, ognuno dimezzato finché due livelli
-    coincidono alla precisione della macchina."""
+    """Any curve: exact `point_at` and `derivative_at`, 16-point Gauss on 16
+    pieces, each halved until two levels agree to machine precision."""
     def integrand(t: float) -> Vec:
         x, y = seg.point_at(t)
         dx, dy = seg.derivative_at(t)
@@ -264,11 +251,10 @@ def _curve_moments(seg) -> Moments:
 
 
 def curve_length(seg) -> float:
-    """∫|P'(t)| dt sulla derivata esatta (D289, D293): Gauss a 16 punti, ogni
-    tratto dimezzato finché due livelli coincidono alla precisione della
-    macchina. I tratti: su una spline gli intervalli fra due nodi (su un nodo la
-    derivata può avere un ginocchio, che Gauss non deve attraversare), sulle
-    altre curve quattro parti uguali."""
+    """∫|P'(t)| dt on the exact derivative: 16-point Gauss, every piece halved
+    until two levels agree to machine precision. The pieces: on a spline the
+    intervals between two knots (at a knot the derivative may have a kink, which
+    Gauss must not cross), on other curves four equal parts."""
     def speed(t: float) -> Vec:
         return (math.hypot(*seg.derivative_at(t)),)
 

@@ -1,14 +1,14 @@
 """
 topo/core/geometry/strips.py
 -----------------------------
-Una striscia di larghezza data fra due contorni chiusi, e i contorni aperti
-dove la striscia li tocca (MAP.md D134, D142). Geometria pura: anelli di
-primitive testa-coda (`contour.segments`), nessuna gerarchia. Chi sono i
-contorni affacciati e quali regioni restano staccate lo dice
-`topo.tools.strips`, che legge la gerarchia di un cluster.
+A strip of given width between two closed contours, and the open contours
+where the strip touches them. Pure geometry: head-to-tail rings of
+primitives (`contour.segments`), no hierarchy. Which contours face each
+other and which regions stay detached is said by `topo.tools.strips`, which
+reads a cluster's hierarchy.
 
-I tagli cadono nei punti esatti di `intersections`, i pezzi restano primitive
-dello stesso tipo (un arco tagliato è un arco).
+Cuts fall on the exact points of `intersections`, the pieces stay primitives
+of the same type (a cut arc is an arc).
 """
 
 from __future__ import annotations
@@ -31,12 +31,10 @@ from .regions import (
 
 Point = Tuple[float, float]
 
-_TOUCH = 10 * CURVE_TOLERANCE   # un incontro più vicino di così a un capo del fianco è il suo attacco
+_TOUCH = 10 * CURVE_TOLERANCE   # a meeting closer than this to an end of the side is its attachment
 
 
-# ---------------------------------------------------------------------------
-# Distanza fra due contorni
-# ---------------------------------------------------------------------------
+# --- Distance between two contours ---
 
 @dataclass(frozen=True)
 class Gap:
@@ -71,9 +69,9 @@ def gap(a, b) -> Gap:
 
 
 def refine_gap(a: Sequence, b: Sequence, on_a: Point, on_b: Point) -> Gap:
-    """La coppia più vicina fra le primitive `a` e `b` (anelli o pezzi
-    aperti), partendo da `on_a`, `on_b` presi sulle discretizzazioni:
-    proiezioni alterne con `nearest_point` fino a fermarsi (D200)."""
+    """The nearest pair between the primitives `a` and `b` (rings or open pieces),
+    starting from `on_a`, `on_b` taken on the discretizations: alternating
+    projections with `nearest_point` until they stop."""
     for _ in range(20):
         new_a = nearest_point(a, on_b)
         new_b = nearest_point(b, new_a)
@@ -90,13 +88,11 @@ def refine_gap(a: Sequence, b: Sequence, on_a: Point, on_b: Point) -> Gap:
 
 @dataclass(frozen=True)
 class Strip:
-    """
-    Una striscia fra i contorni `a` e `b`. `a_at`/`b_at`: dove la sua linea
-    di mezzo tocca i due contorni. `a_cuts`/`b_cuts`: dove la toccano i due
-    fianchi, nello stesso ordine di `sides` (il fianco `i` va da `a_cuts[i]`
-    a `b_cuts[i]`). Il tratto di `a` fra i due `a_cuts` che passa per `a_at`
-    è quello coperto dalla striscia, lo stesso per `b`.
-    """
+    """A strip between the contours `a` and `b`. `a_at`/`b_at`: where its midline
+    touches the two contours. `a_cuts`/`b_cuts`: where the two sides touch them,
+    in the same order as `sides` (side `i` runs from `a_cuts[i]` to `b_cuts[i]`).
+    The stretch of `a` between the two `a_cuts` that passes through `a_at` is the
+    one covered by the strip, the same for `b`."""
     a_at:   Point
     b_at:   Point
     a_cuts: Tuple[Point, Point]
@@ -105,7 +101,7 @@ class Strip:
 
     @property
     def outline(self) -> List[LineSeg]:
-        """Il quadrilatero dei quattro tagli, come anello di lati."""
+        """The quadrilateral of the four cuts, as a ring of sides."""
         (a0, a1), (b0, b1) = self.a_cuts, self.b_cuts
         return [LineSeg(start=a0, end=b0), LineSeg(start=b0, end=b1),
                 LineSeg(start=b1, end=a1), LineSeg(start=a1, end=a0)]
@@ -119,7 +115,7 @@ def _unit(v: Point) -> Point:
 
 
 def _tangent_at(ring: Sequence, point: Point) -> Point:
-    """Direzione di percorrenza dell'anello nel suo punto più vicino a `point`."""
+    """Direction of travel of the ring at its point nearest `point`."""
     seg = min(ring, key=lambda s: math.dist(nearest_point([s], point), point))
     if isinstance(seg, LineSeg):
         return _unit((seg.end[0] - seg.start[0], seg.end[1] - seg.start[1]))
@@ -134,12 +130,10 @@ def _tangent_at(ring: Sequence, point: Point) -> Point:
 
 
 def _normal_toward(ring: Sequence, point: Point, other: Sequence) -> Point:
-    """
-    Normale all'anello `ring` nel suo punto `point`, dal lato dove sta
-    l'anello `other`: verso l'interno se `ring` lo contiene, verso l'esterno
-    altrimenti. Il lato si legge dal verso di percorrenza (area con segno),
-    esatto anche dove il contorno è sottile o concavo.
-    """
+    """Normal to the ring `ring` at its point `point`, from the side where the ring
+    `other` is: inwards if `ring` contains it, outwards otherwise. The side is
+    read from the direction of travel (signed area), exact even where the contour
+    is thin or concave."""
     t = _tangent_at(ring, point)
     right = (t[1], -t[0])
     outward = right if _signed_area(ring) > 0 else (-right[0], -right[1])
@@ -152,7 +146,7 @@ def _hits(ring: Sequence, line: LineSeg) -> List[Point]:
 
 
 def _ray_hits(ring: Sequence, start: Point, direction: Point, length: float) -> List[Point]:
-    """Dove la semiretta da `start` verso `direction` incontra `ring`, dal più vicino."""
+    """Where the ray from `start` towards `direction` meets `ring`, nearest first."""
     line = LineSeg(start=start, end=(start[0] + direction[0] * length, start[1] + direction[1] * length))
     hits = [p for p in _hits(ring, line) if math.dist(p, start) > _TOUCH]
     return sorted(hits, key=lambda p: math.dist(p, start))
@@ -166,22 +160,19 @@ def _size(*rings: Sequence) -> float:
 
 def strip_between(a: Sequence, b: Sequence, at: Point, width: float,
                   obstacles: Sequence[Sequence] = (), placed: Sequence[Strip] = ()) -> Strip:
-    """
-    La striscia di larghezza `width` fra gli anelli `a` e `b`, nel punto
-    `at` scelto dal chiamante. `at` si proietta sul più vicino dei due
-    anelli e la linea di mezzo parte lì perpendicolare all'anello, dal lato
-    dove sta l'altro; se in quella direzione l'altro non c'è, va verso il
-    suo punto più vicino. Mai il punto più vicino e basta: da un lato dritto
-    può stare di fianco, e la striscia correrebbe lungo il lato invece di
-    uscirne. I due fianchi sono le parallele a `±width/2`, tagliate dove
-    incontrano `a` e `b` vicino alla linea di mezzo.
+    """The strip of width `width` between the rings `a` and `b`, at the point `at`
+    chosen by the caller. `at` is projected on the nearer of the two rings and the
+    midline starts there perpendicular to the ring, from the side where the other
+    is; if in that direction the other is not there, it goes towards its nearest
+    point. Never just the nearest point: from a straight side it can be to one
+    side, and the strip would run along the side instead of leaving it. The two
+    sides are the parallels at `±width/2`, cut where they meet `a` and `b` near
+    the midline.
 
-    Rifiutata (`ValueError`, col perché) se un fianco non incontra `a` o
-    `b`, se un fianco attraversa un anello di `obstacles` o di nuovo `a` o
-    `b`, se un anello di `obstacles` sta dentro la striscia, se tocca una
-    striscia di `placed`. Gli ostacoli sono gli altri contorni affacciati
-    (`topo.tools.strips.facing_boundaries`).
-    """
+    Rejected (`ValueError`, with the reason) if a side does not meet `a` or `b`,
+    if a side crosses a ring of `obstacles` or `a` or `b` again, if a ring of
+    `obstacles` is inside the strip, if it touches a strip of `placed`. The
+    obstacles are the other facing contours (`topo.tools.strips.facing_boundaries`)."""
     if width <= 0:
         raise ValueError(f"width must be > 0, got {width}")
     a, b = list(a), list(b)
@@ -239,17 +230,14 @@ def _refuse_crossings(strip: Strip, a: Sequence, b: Sequence, obstacles: Sequenc
             raise ValueError("the strip overlaps another strip")
 
 
-# ---------------------------------------------------------------------------
-# Un contorno aperto dove lo toccano le strisce
-# ---------------------------------------------------------------------------
+# --- An open contour where the strips touch it ---
 
 def open_ring(ring: Sequence, covered: Sequence[Tuple[Point, Point, Point]]) -> List[list]:
-    """
-    L'anello `ring` senza i tratti coperti: ognuno è `(capo, capo, punto)`,
-    i due capi sull'anello e un punto del tratto fra loro (per una striscia:
-    `a_cuts` e `a_at`). Ritorna le catene aperte di primitive che restano,
-    nel verso dell'anello. `ValueError` se due tratti si sovrappongono o un
-    capo non sta sull'anello.
+    """The ring `ring` without the covered stretches: each is `(end, end, point)`,
+    the two ends on the ring and a point of the stretch between them (for a strip:
+    `a_cuts` and `a_at`). Returns the open chains of primitives that remain, in
+    the ring's direction. `ValueError` if two stretches overlap or an end is not
+    on the ring.
     """
     ring = list(ring)
     if not covered:
@@ -293,6 +281,7 @@ def open_ring(ring: Sequence, covered: Sequence[Tuple[Point, Point, Point]]) -> 
 
 
 def _snap(p: Point, cuts: Sequence[Point]) -> int:
-    """Indice del primo taglio che coincide con `p` (due tagli coincidenti contano come uno)."""
+    """Index of the first cut that coincides with `p` (two coinciding cuts count as one).
+    """
     k = min(range(len(cuts)), key=lambda i: math.dist(p, cuts[i]))
     return next(i for i in range(len(cuts)) if math.dist(cuts[i], cuts[k]) <= _JOIN)

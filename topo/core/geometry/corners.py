@@ -1,8 +1,8 @@
 """
 topo/core/geometry/corners.py
 ------------------------------
-Spigoli di una sequenza campionata: dove la svolta, misurata su una scala,
-non è di una curva liscia (MAP.md D141).
+Corners of a sampled sequence: where the turn, measured on a scale, is not
+that of a smooth curve.
 """
 
 import math
@@ -25,7 +25,7 @@ def _turn(back: Point, at: Point, forward: Point) -> float:
 
 
 def _point_at(points: List[Point], cum: List[float], s: float) -> Point:
-    """Punto della polilinea `points` all'ascissa curvilinea `s` (troncata agli estremi)."""
+    """Point of the polyline `points` at arc length `s` (clamped at the ends)."""
     if s <= 0:
         return points[0]
     if s >= cum[-1]:
@@ -44,23 +44,20 @@ def _point_at(points: List[Point], cum: List[float], s: float) -> Point:
 
 def turn_corners(points: List[Point], closed: bool, turn_deg: Optional[float], scale: float,
                  tolerance: float) -> List[int]:
-    """
-    Indici degli spigoli di una sequenza campionata: vertici Douglas-Peucker
-    (a `tolerance`) dove la curva svolta di almeno `turn_deg` gradi fra il
-    punto a `scale` prima e quello a `scale` dopo, lungo la curva. Con
-    `turn_deg=None` è spigolo dove nessuna curva liscia passa entro
-    `tolerance` dalla polilinea fra quei due punti (D283):
-    vale per punti fitti, la cui corda si scosta dalla curva meno di
-    `tolerance` (una curva scritta a punti da un CAD). Misurata su
-    una scala e non fra due campioni vicini, un angolo vivo smussato dal
-    campionamento conta per tutta la sua svolta. Fra spigoli più vicini di
-    `scale` resta quello che svolta di più. Su una sequenza aperta gli
-    estremi non sono mai spigoli.
-    """
+    """Indices of the corners of a sampled sequence: Douglas-Peucker vertices (at
+    `tolerance`) where the curve turns by at least `turn_deg` degrees between the
+    point `scale` before and the one `scale` after, along the curve. With
+    `turn_deg=None` a corner is where no smooth curve passes within `tolerance`
+    of the polyline between those two points: valid for dense points, whose
+    chord deviates from the curve by less than `tolerance` (a curve written as
+    points by a CAD). Measured on a scale and not between two close samples, a
+    sharp angle blunted by sampling counts for its whole turn. Among corners
+    closer than `scale` the one that turns most is kept. On an open sequence the
+    ends are never corners."""
     n = len(points)
     if n < 3:
         return []
-    # chiusa: tre giri di fila, la finestra attorno al giro centrale non si tronca mai
+    # closed: three loops in a row, so the window around the middle loop is never truncated
     ring = list(points) * 3 if closed else list(points)
     cum = [0.0]
     for a, b in zip(ring, ring[1:]):
@@ -80,7 +77,7 @@ def turn_corners(points: List[Point], closed: bool, turn_deg: Optional[float], s
         back, forward = _point_at(ring, cum, s - scale), _point_at(ring, cum, s + scale)
         turn = _turn(back, ring[k], forward)
         if turn_deg is None:
-            # la polilinea fra i punti, non solo i punti: per 3 punti passa sempre un cerchio
+            # the polyline between the points, not only the points: a circle always passes through 3 points
             window = [back] + [q for q, c in zip(ring, cum) if s - scale < c < s + scale] + [forward]
             window = [q for a, b in zip(window, window[1:]) for q in (a, ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2))] + [forward]
             corner = not within_smooth_curve(window, tolerance)
@@ -94,13 +91,13 @@ def turn_corners(points: List[Point], closed: bool, turn_deg: Optional[float], s
         return min(d, perimeter - d)
 
     def ahead(a: int, b: int) -> float:
-        """Quanto `b` viene dopo `a` lungo la curva (sul giro, se chiusa)."""
+        """How far `b` comes after `a` along the curve (around the loop, if closed)."""
         return (cum[b] - cum[a]) % perimeter
 
-    # dal più svoltato; due svolte più vicine del rumore (l'angolo che
-    # FLOAT_NOISE sottende su `scale`) e a meno di `scale` sono pari merito:
-    # vince il primo lungo la curva dentro il loro tratto, non l'ultimo bit
-    # del moto né il punto dove l'anello comincia (G6e)
+    # from the most turned; two turns closer than the noise (the angle FLOAT_NOISE
+    # subtends on `scale`) and less than `scale` apart tie: the first along the
+    # curve inside their span wins, not the last bit of motion nor the point where
+    # the ring starts
     slack = math.degrees(FLOAT_NOISE / scale)
     remaining = sorted(scored, key=lambda t: t[1])
     accepted: List[int] = []

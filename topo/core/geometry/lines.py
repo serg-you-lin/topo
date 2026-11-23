@@ -1,14 +1,14 @@
 """
 topo/core/geometry/lines.py
 ----------------------------
-Fatti fra rette e contorni: distanza da una retta, tratti sulla stessa retta,
-file di tratti unite attraverso dei contorni, una corda che divide un
-contorno, il tratteggio di un segmento. Geometria pura: che quella corda sia
-una piega lo dice il consumatore (MAP.md D93). Le domande su un contorno si
-fanno sulle sue primitive (`rings`, D166, D167).
+Facts between lines and contours: distance from a line, strokes on the same
+line, rows of strokes joined across contours, a chord that divides a
+contour, the hatching of a segment. Pure geometry: whether a chord is a bend
+is the consumer's call. Questions about a contour are asked on its
+primitives (`rings`).
 
-Un tratto è una coppia di punti `(start, end)` o qualunque cosa porti
-`start`/`end` (un `LineSeg`, un `Edge`).
+A stroke is a pair of points `(start, end)` or anything carrying
+`start`/`end` (a `LineSeg`, an `Edge`).
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ Point = Tuple[float, float]
 
 
 def _stroke_ends(item) -> Tuple[Point, Point]:
-    """I due capi di un tratto: `(start, end)`, o `item.start`/`item.end`."""
+    """The two ends of a stroke: `(start, end)`, or `item.start`/`item.end`."""
     if hasattr(item, "start") and hasattr(item, "end"):
         return tuple(item.start[:2]), tuple(item.end[:2])
     start, end = item
@@ -31,7 +31,7 @@ def _stroke_ends(item) -> Tuple[Point, Point]:
 
 
 def point_line_distance(point: Point, a: Point, b: Point) -> float:
-    """Distanza di `point` dalla retta infinita per `a`, `b`; da `a` se i due coincidono."""
+    """Distance of `point` from the infinite line through `a`, `b`; from `a` if the two coincide."""
     dx, dy = b[0] - a[0], b[1] - a[1]
     length = math.hypot(dx, dy)
     if length == 0:
@@ -40,11 +40,9 @@ def point_line_distance(point: Point, a: Point, b: Point) -> float:
 
 
 def are_collinear(a, b, tolerance: float) -> bool:
-    """
-    I tratti `a` e `b` stanno sulla stessa retta infinita: i due capi di `b`
-    entro `tolerance` (mm) dalla retta di `a`. Lo scarto di direzione è già
-    lì dentro: nessun angolo a parte (D282).
-    """
+    """The strokes `a` and `b` lie on the same infinite line: both ends of `b`
+    within `tolerance` (mm) of the line of `a`. The direction deviation is
+    already in there: no separate angle."""
     (a0, a1), (b0, b1) = _stroke_ends(a), _stroke_ends(b)
     return all(point_line_distance(q, a0, a1) <= tolerance for q in (b0, b1))
 
@@ -53,7 +51,7 @@ def group_collinear_lines(lines: list, *, tolerance: float) -> list:
     """
     Strokes grouped by line: [[L1, L2], [L3], ...]. A stroke joins a group
     when both its ends lie within `tolerance` (mm) of the line of the group's
-    first stroke, in the given order. The caller chooses `tolerance` (D282).
+    first stroke, in the given order. The caller chooses `tolerance`.
     """
     groups = []
     assigned = set()
@@ -76,7 +74,7 @@ def splits_contour(contour, start: Point, end: Point, *, reach: float = 0.0) -> 
     the region of `contour` in two or more parts: some stretch of it runs
     from boundary to boundary through the inside. A touch, or a stretch along
     the boundary, does not cut. `contour` is a `Contour`, anything with a
-    closed ring of `segments`, or the segment list itself (MAP.md D166).
+    closed ring of `segments`, or the segment list itself.
     """
     dx, dy = end[0] - start[0], end[1] - start[1]
     norm = math.hypot(dx, dy)
@@ -142,7 +140,7 @@ def bridged_runs(segments: Sequence, bridges: Sequence, *, tolerance: float) -> 
 
 
 def _bridged(a: Point, b: Point, rings: list) -> bool:
-    """Lo spazio `a`→`b` sta tutto dentro uno dei giri (bordo compreso)."""
+    """The space `a`→`b` lies wholly inside one of the loops (border included)."""
     if math.dist(a, b) == 0:
         return False
     e = ON_BOUNDARY

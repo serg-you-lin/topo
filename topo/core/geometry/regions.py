@@ -1,20 +1,19 @@
 """
 topo/core/geometry/regions.py
 ------------------------------
-Un contorno chiuso e una regione: dove cade un punto sul contorno (in mezzo a
-un lato, su uno spigolo, su un raccordo), un tratto tagliato da una regione,
-un contorno meno una regione (MAP.md D118); l'unione di due contorni, anche
-con un bordo in comune (D171); quale contorno esterno contiene per intero una
-traccia (D137).
+A closed contour and a region: where a point falls on the contour (mid-side,
+on a corner, on a fillet), a stretch cut by a region, a contour minus a
+region; the union of two contours, even with a shared edge; which outer
+contour wholly contains a trace.
 
-Contorno e regione sono anelli di primitive testa-coda (`contour.segments`,
-`topo.geometry.circle`, `topo.geometry.rectangle`, ...): una regione è un
-contorno chiuso qualunque, non una forma con un nome. I tagli cadono nei punti
-esatti di `intersections`; i pezzi restano primitive dello stesso tipo (un
-arco tagliato è un arco). Lo shapely serve solo a dire se il punto medio di un
-pezzo sta dentro o fuori.
+Contour and region are head-to-tail rings of primitives (`contour.segments`,
+`topo.geometry.circle`, `topo.geometry.rectangle`, ...): a region is any
+closed contour, not a named shape. Cuts fall on the exact points of
+`intersections`; the pieces stay primitives of the same type (a cut arc is an
+arc). Shapely is used only to say whether the midpoint of a piece is inside
+or outside.
 
-Puro: solo primitive, nessun formato.
+Pure: primitives only, no format.
 """
 
 from __future__ import annotations
@@ -42,17 +41,14 @@ from .shape import merge_runs
 
 Point = Tuple[float, float]
 
-_JOIN = SAME_POINT               # capi più vicini di così sono lo stesso nodo  # D268
-_MIN_PIECE = SAME_POINT          # pezzi più corti di così non esistono  # D268
-_POLYGON_TOLERANCE = SAME_POINT  # sagitta della discretizzazione per i test dentro/fuori  # D275
-_ON_BORDER = SAME_POINT          # un punto medio più vicino di così al bordo ci corre sopra  # D268
-_ONTO_STEPS = 8                  # passi di Newton al più, in `translation_meeting`
+_JOIN = SAME_POINT               # ends closer than this are the same node
+_MIN_PIECE = SAME_POINT          # pieces shorter than this do not exist
+_POLYGON_TOLERANCE = SAME_POINT  # sagitta of the discretization for the inside/outside tests
+_ON_BORDER = SAME_POINT          # a midpoint closer than this to the border runs along it
+_ONTO_STEPS = 8                  # Newton steps at most, in `translation_meeting`
 
 
-# ---------------------------------------------------------------------------
-# Parametro lungo una primitiva: retta 0..1, arco 0..ampiezza, cerchio 0..2π,
-# le altre curve lunghezza lungo la loro discretizzazione
-# ---------------------------------------------------------------------------
+# --- Parameter along a primitive: line 0..1, arc 0..sweep, circle 0..2π, other curves length along their discretization ---
 
 def _polyline(seg) -> List[Point]:
     return [tuple(q[:2]) for q in seg.discretize(tolerance=CURVE_TOLERANCE)]
@@ -122,7 +118,7 @@ def _middle(seg) -> Point:
 
 
 def _piece(seg, s0: float, s1: float):
-    """Il tratto di `seg` fra i parametri `s0` < `s1`, stessa primitiva."""
+    """The stretch of `seg` between the parameters `s0` < `s1`, same primitive."""
     if isinstance(seg, LineSeg):
         return LineSeg(start=seg.start if s0 == 0.0 else _at(seg, s0),
                        end=seg.end if s1 == 1.0 else _at(seg, s1))
@@ -137,12 +133,12 @@ def _piece(seg, s0: float, s1: float):
 
 
 def _split(seg, points: Sequence[Point]) -> list:
-    """`seg` spezzato nei `points` che gli stanno sopra, nel suo verso."""
+    """`seg` split at the `points` lying on it, in its direction."""
     span = _span(seg)
     params = []
     for p in points:
         s = max(0.0, min(span, _param(seg, p)))
-        if math.dist(_at(seg, s), p) <= _JOIN:      # solo i punti che gli stanno sopra
+        if math.dist(_at(seg, s), p) <= _JOIN:      # only the points lying on it
             params.append(s)
     params.sort()
     if is_full_circle(seg):
@@ -164,9 +160,9 @@ def _split(seg, points: Sequence[Point]) -> list:
 
 
 def end_tangent(seg, at_end: bool) -> Tuple[float, float]:
-    """Direzione di percorrenza di `seg` nel suo capo iniziale o finale: la
-    derivata esatta della curva (D285). Una spline coi punti di controllo
-    doppi al capo ha derivata nulla lì: allora la prima corda."""
+    """Direction of travel of `seg` at its start or end: the exact derivative of
+    the curve. A spline with doubled control points at the end has a null
+    derivative there: then the first chord."""
     t0, t1 = seg.t_range
     dx, dy = seg.derivative_at(t1 if at_end else t0)
     if math.hypot(dx, dy) <= FLOAT_NOISE:
@@ -178,7 +174,7 @@ def end_tangent(seg, at_end: bool) -> Tuple[float, float]:
 
 
 def _signed_area(ring: Sequence) -> float:
-    """Area con segno sulle primitive (Green, D165): positiva in senso antiorario."""
+    """Signed area on the primitives (Green): positive counter-clockwise."""
     return ring_moments(ring).area
 
 
@@ -194,7 +190,7 @@ def _polygon(ring: Sequence):
 
 
 def _side(polygon, pt: Point) -> int:
-    """+1 dentro, -1 fuori, 0 sul bordo."""
+    """+1 inside, -1 outside, 0 on the border."""
     p = SPoint(pt)
     if polygon.exterior.distance(p) <= _ON_BORDER:
         return 0
@@ -202,9 +198,9 @@ def _side(polygon, pt: Point) -> int:
 
 
 def _piece_side(polygon, piece) -> int:
-    """Da che parte di `polygon` sta un pezzo (fra due tagli non cambia):
-    il punto medio, e se quello cade sul bordo (un tocco proprio lì) i
-    punti a un terzo e due terzi. 0 solo se ci corre sopra."""
+    """Which side of `polygon` a piece is on (it does not change between two cuts):
+    the midpoint, and if that falls on the border (a touch right there) the
+    points at a third and two thirds. 0 only if it runs along it."""
     span = _span(piece)
     for f in (0.5, 1 / 3, 2 / 3):
         side = _side(polygon, _at(piece, span * f))
@@ -213,9 +209,7 @@ def _piece_side(polygon, piece) -> int:
     return 0
 
 
-# ---------------------------------------------------------------------------
-# Un punto sul contorno
-# ---------------------------------------------------------------------------
+# --- A point on the contour ---
 
 @dataclass(frozen=True)
 class ContourPoint:
@@ -245,7 +239,7 @@ def point_on_contour(segments: Sequence, point: Point, *,
     on a blend, in the middle of a side. None if it is farther than
     `tolerance` from the contour. A vertex is a blend if, along the longer of
     its two sides, one side strays less than `SAME_POINT` from the other's
-    direction (D282); concave or convex is told by the ring's direction, not
+    direction; concave or convex is told by the ring's direction, not
     by an inside/outside test.
     """
     segs = list(segments)
@@ -289,8 +283,8 @@ def nearest_point(segments: Sequence, point: Point) -> Point:
 
 
 def _true_curve(seg):
-    """(punto al parametro, inizio, fine) della curva vera (D285); None se la
-    spline non ha un vettore dei nodi completo (resta la discretizzazione)."""
+    """(point at the parameter, start, end) of the true curve; None if the spline
+    has no complete knot vector (the discretization remains)."""
     if not isinstance(seg, BSplineSeg):
         return (seg.point_at, *seg.t_range)
     if not seg._defined():
@@ -299,10 +293,10 @@ def _true_curve(seg):
 
 
 def _nearest_on_curve(seg, curve, point: Point) -> Point:
-    """Il punto della curva vera più vicino a `point` (D180, D200): il
-    parametro campionato fitto quanto la discretizzazione, poi sezione aurea
-    attorno ai tre campioni più vicini. La poligonale da sola sbaglia fino a
-    `CURVE_TOLERANCE`, e un contatto si decide a 1e-6."""
+    """The point of the true curve nearest `point`: the parameter sampled as finely
+    as the discretization, then golden section around the three nearest samples.
+    The polyline alone is wrong by up to `CURVE_TOLERANCE`, and a contact is
+    decided at 1e-6."""
     at, t0, t1 = curve
     n = max(len(_polyline(seg)) - 1, 1)
     ts = [t0 + (t1 - t0) * i / n for i in range(n + 1)]
@@ -317,14 +311,11 @@ def _nearest_on_curve(seg, curve, point: Point) -> Point:
 
 
 def translation_meeting(constraints: Sequence[Tuple[Point, object, int]]) -> Optional[Point]:
-    """
-    (dx, dy) che soddisfa tutti i vincoli `(punto, curva, verso)` insieme, la
-    più vicina a zero: verso +1, il punto spostato cade sulla curva ferma; verso
-    -1, il punto fermo cade sulla curva spostata. None se la traslazione non è
-    unica (vincoli tutti paralleli) o se non ce n'è una che li soddisfi tutti.
-    Esatta su rette, archi e cerchi; sulle altre curve entro
-    `CURVE_TOLERANCE` (D271).
-    """
+    """(dx, dy) satisfying all the constraints `(point, curve, direction)` together,
+    the one nearest zero: direction +1, the moved point falls on the fixed curve;
+    −1, the fixed point falls on the moved curve. None if the translation is not
+    unique (all constraints parallel) or none satisfies them all. Exact on lines,
+    arcs and circles; on other curves within `CURVE_TOLERANCE`."""
     t = (0.0, 0.0)
     for _ in range(_ONTO_STEPS):
         rows, worst = [], 0.0
@@ -349,7 +340,7 @@ def translation_meeting(constraints: Sequence[Tuple[Point, object, int]]) -> Opt
 
 
 def _normal(seg, foot: Point) -> Point:
-    """La normale unitaria di `seg` in `foot`, un suo punto."""
+    """The unit normal of `seg` at `foot`, a point of it."""
     if isinstance(seg, CircleSeg):
         dx, dy = foot[0] - seg.center[0], foot[1] - seg.center[1]
     else:
@@ -360,9 +351,7 @@ def _normal(seg, foot: Point) -> Point:
     return dx / length, dy / length
 
 
-# ---------------------------------------------------------------------------
-# Un tratto tagliato da una regione
-# ---------------------------------------------------------------------------
+# --- A stretch cut by a region ---
 
 def cut_by(segment, region: Sequence, *, keep: str = "outside") -> list:
     """
@@ -391,13 +380,10 @@ def cut_by(segment, region: Sequence, *, keep: str = "outside") -> list:
 # ---------------------------------------------------------------------------
 
 def _chain(pieces: list, inside_left: Optional[bool] = None) -> List[list]:
-    """
-    Pezzi orientati incatenati testa-coda in anelli chiusi. Con
-    `inside_left` (la regione sta a sinistra dei pezzi, o a destra se False),
-    in un nodo da cui ripartono più pezzi si prende quello che stringe di più
-    la regione: due anelli che si toccano in un punto restano due anelli, non
-    un otto.
-    """
+    """Oriented pieces chained head-to-tail into closed rings. With `inside_left`
+    (the region is to the left of the pieces, or to the right if False), at a
+    node from which several pieces restart the one that narrows the region most
+    is taken: two rings touching at a point stay two rings, not a figure eight."""
     left = list(pieces)
     rings = []
     while left:
@@ -410,8 +396,8 @@ def _chain(pieces: list, inside_left: Optional[bool] = None) -> List[list]:
                 raise ValueError("the pieces do not close into a ring")
             k = nexts[0]
             if inside_left is not None and len(nexts) > 1:
-                # angolo dalla direzione da cui si arriva, girata, a quella in
-                # uscita: la regione sta in quello spicchio, il più stretto vince
+                # angle from the direction of arrival, turned, to the outgoing one: the region
+                # lies in that wedge, the narrowest wins
                 tx, ty = end_tangent(ring[-1], at_end=True)
                 back = math.atan2(-ty, -tx)
                 sign = 1.0 if inside_left else -1.0
@@ -419,8 +405,8 @@ def _chain(pieces: list, inside_left: Optional[bool] = None) -> List[list]:
                 def wedge(i):
                     ox, oy = end_tangent(left[i], at_end=False)
                     w = (sign * (back - math.atan2(oy, ox))) % (2 * math.pi)
-                    # riparte tangente all'indietro (due curve che si toccano):
-                    # la sua regione gira tutto attorno, lo spicchio è il giro intero
+                    # restarts tangent backwards (two curves touching): its region turns all the
+                    # way round, the wedge is the full turn
                     turns_back = w < math.pi / 2 and segment_length(left[i]) * math.sin(w) <= SAME_POINT
                     return 2 * math.pi if turns_back else w
                 k = min(nexts, key=wedge)
@@ -442,8 +428,8 @@ def contour_minus(contour: Sequence, region: Sequence) -> List[list]:
     ValueError: there the result is not a cut point but a shared stretch.
     """
     contour, region = list(contour), list(region)
-    # il bordo della regione entra nel risultato al contrario del contorno:
-    # `same` dice se la regione, così com'è, gira come il contorno
+    # the region's border enters the result reversed relative to the contour:
+    # `same` says whether the region, as it is, turns like the contour
     same = _signed_area(region) * _signed_area(contour) > 0
     contour_polygon, region_polygon = _polygon(contour), _polygon(region)
     points = []
@@ -453,7 +439,7 @@ def contour_minus(contour: Sequence, region: Sequence) -> List[list]:
                 if all(math.dist(p, q) > _JOIN for q in points):
                     points.append(p)
     if len(points) < 2:
-        # nessun incrocio (un tocco solo non cambia la forma)
+        # no crossing (a single touch does not change the shape)
         if _piece_side(region_polygon, contour[0]) == 1:
             return []
         if _piece_side(contour_polygon, region[0]) == 1:
@@ -477,13 +463,11 @@ def contour_minus(contour: Sequence, region: Sequence) -> List[list]:
     return _chain(kept)
 
 
-# ---------------------------------------------------------------------------
-# Unione di due contorni
-# ---------------------------------------------------------------------------
+# --- Union of two contours ---
 
 def _twin(piece, pieces: list) -> Tuple[Optional[int], bool]:
-    """L'indice del pezzo di `pieces` che ricopre `piece` (stessi capi, stesso
-    punto medio) e se corre nello stesso verso; (None, False) se nessuno."""
+    """The index of the piece of `pieces` that covers `piece` (same ends, same
+    midpoint) and whether it runs the same way; (None, False) if none."""
     a, b = _ends(piece)
     mid = _middle(piece)
     for i, q in enumerate(pieces):
@@ -498,9 +482,9 @@ def _twin(piece, pieces: list) -> Tuple[Optional[int], bool]:
 
 
 def _same_curve(a, b) -> bool:
-    """`a` e `b` sono la stessa spline o ellisse (anche girata): incrociate
-    sulle loro discretizzazioni darebbero un punto a ogni vertice. Rette e
-    archi sovrapposti non danno punti già da sé."""
+    """`a` and `b` are the same spline or ellipse (even reversed): crossed on their
+    discretizations they would give a point at every vertex. Overlapping lines
+    and arcs give no points on their own."""
     if isinstance(a, (LineSeg, CircleSeg)) or isinstance(b, (LineSeg, CircleSeg)):
         return False
     return _twin(a, [b])[0] is not None
@@ -525,9 +509,9 @@ def contour_union(contour: Sequence, other: Sequence) -> List[list]:
     if (_signed_area(other) > 0) != ccw:
         other = _reversed(other)
     contour_polygon, other_polygon = _polygon(contour), _polygon(other)
-    # tagli: gli incroci, più i capi dei lati dell'altro anello, perché due
-    # tratti sovrapposti non si incrociano in un punto (i capi propri no: il
-    # capo di un cerchio è una convenzione, non un nodo)
+    # cuts: the crossings, plus the ends of the other ring's sides, because two
+    # overlapping stretches do not cross at a point (their own ends do not: the end
+    # of a circle is a convention, not a node)
     crossings = [p for c in contour for o in other if not _same_curve(c, o)
                  for p in intersections(c, o)]
     cuts = [crossings + [q for o in other for q in _ends(o)],
@@ -544,9 +528,9 @@ def contour_union(contour: Sequence, other: Sequence) -> List[list]:
             if k is None:
                 raise ValueError("the contour runs along the other without coinciding")
             on_border.pop(k)
-            if same:             # sovrapposti: l'interno è dalla stessa parte
+            if same:             # overlapping: the interior is on the same side
                 kept.append(piece)
-            continue             # affiancati: il tratto comune sparisce
+            continue             # side by side: the common stretch disappears
         if side == -1:
             kept.append(piece)
     if on_border:
@@ -556,18 +540,14 @@ def contour_union(contour: Sequence, other: Sequence) -> List[list]:
     return sorted(rings, key=lambda ring: -abs(_signed_area(ring)))
 
 
-# ---------------------------------------------------------------------------
-# Quale contorno contiene una traccia (D137)
-# ---------------------------------------------------------------------------
+# --- Which contour contains a trace ---
 
 def enclosing(tracks: Sequence[Sequence[Point]], outers: Sequence, tolerance: float) -> List[Optional[int]]:
-    """
-    Per ogni traccia (una sequenza di punti), l'indice in `outers` del
-    poligono più piccolo che la contiene tutta, `None` se nessuno. Conta solo
-    il bordo esterno: una traccia dentro un buco sta dentro il pezzo (una
-    croce al centro di un foro). Il bordo è dentro, entro `tolerance`: una
-    linea da lato a lato appartiene al pezzo che attraversa.
-    """
+    """For each trace (a sequence of points), the index in `outers` of the smallest
+    polygon that wholly contains it, `None` if none. Only the outer border
+    counts: a trace inside a hole is inside the part (a cross in the middle of a
+    hole). The border is inside, within `tolerance`: a line from side to side
+    belongs to the piece it crosses."""
     regions = []
     for i, outer in enumerate(outers):
         if outer is None or outer.is_empty:
