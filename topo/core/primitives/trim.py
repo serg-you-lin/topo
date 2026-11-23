@@ -22,9 +22,9 @@ from .spline import BSplineSeg, _insert_to_degree
 from .conics import CircleSeg, EllipseSeg, HyperbolaSeg, ParabolaSeg
 from .clothoid import ClothoidSeg
 from .formula import FormulaSeg
+from .minimize import certified_min, point_split
 
 _TWO_PI = 2 * math.pi
-_SAMPLES = 64          # campioni per il primo aggancio su una formula o una clotoide (nessun inviluppo)
 _REFINE_STEPS = 60     # passi di ricerca ternaria sul parametro
 
 
@@ -53,7 +53,7 @@ def _sub_interval(seg, a: Point, b: Point):
     """La stessa curva su un intervallo più corto: dal parametro di `a` a quello di `b`."""
     t0, t1 = seg.t_range
     sign = 1.0 if seg.end_param >= seg.start_param else -1.0
-    ta, tb = (_nearest_param(seg.point_at, p, t0, t1) for p in (a, b))
+    ta, tb = (_curve_param(seg, p, t0, t1) for p in (a, b))
     return replace(seg, start_param=seg.start_param + sign * ta, end_param=seg.start_param + sign * tb)
 
 
@@ -204,26 +204,39 @@ def _on_seam(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> bool:
 def _spline_param(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> float:
     """Parametro del punto della spline più vicino a `pt`: il ramo giusto per
     certificato sui pezzi di Bézier (D300), poi rifinito."""
-    def gap(q: Point) -> float:
-        return math.dist(q, pt)
-
-    def to_box(ctrl: List[Point]) -> float:
-        # la curva sta nell'inviluppo dei punti di controllo, quindi nel loro rettangolo
-        xs, ys = [q[0] for q in ctrl], [q[1] for q in ctrl]
-        return math.hypot(max(min(xs) - pt[0], 0.0, pt[0] - max(xs)),
-                          max(min(ys) - pt[1], 0.0, pt[1] - max(ys)))
-
-    t, left, right = seg._minimize(gap, to_box)
+    t, left, right = seg._minimize(lambda q: math.dist(q, pt), lambda ctrl: _to_box(ctrl, pt))
     return _refine(seg._evaluate, pt, t, left, right, lo, hi)
 
 
-def _nearest_param(at, pt: Point, lo: float, hi: float) -> float:
-    """Parametro in [lo, hi] del punto della curva `at(t)` più vicino a `pt`:
-    campioni, poi ricerca ternaria fra i due vicini del migliore."""
-    step = (hi - lo) / _SAMPLES
-    ts = [lo + i * step for i in range(_SAMPLES)] + [hi]
-    best = min(range(len(ts)), key=lambda i: math.dist(at(ts[i]), pt))
-    return _refine(at, pt, ts[best], ts[max(best - 1, 0)], ts[min(best + 1, len(ts) - 1)], lo, hi)
+def _to_box(corners: List[Point], pt: Point) -> float:
+    """Distanza da `pt` al rettangolo dei punti: minora la distanza da ogni
+    punto del loro inviluppo. Nessun punto, nessun limite: 0."""
+    if not corners:
+        return 0.0
+    xs, ys = [q[0] for q in corners], [q[1] for q in corners]
+    return math.hypot(max(min(xs) - pt[0], 0.0, pt[0] - max(xs)),
+                      max(min(ys) - pt[1], 0.0, pt[1] - max(ys)))
+
+
+def _curve_param(seg, pt: Point, lo: float, hi: float) -> float:
+    """Parametro in [lo, hi] del punto di una clotoide o di una formula più
+    vicino a `pt`, per certificato (`certified_min`), poi rifinito. Clotoide:
+    t è la lunghezza d'arco, quindi su [t0, t1] la distanza non scende sotto
+    (d0 + d1 − (t1 − t0)) / 2. Formula: il rettangolo degli intervalli (`_box`)."""
+    def gap(q: Point) -> float:
+        return math.dist(q, pt)
+
+    if isinstance(seg, ClothoidSeg):
+        def bound(piece) -> float:
+            t0, t1, p0, p1, _ = piece
+            return (gap(p0) + gap(p1) - (t1 - t0)) / 2
+    else:
+        def bound(piece) -> float:
+            return _to_box(seg._box(piece[0], piece[1]), pt)
+
+    piece = (lo, hi, seg.point_at(lo), seg.point_at(hi), None)
+    t, left, right = certified_min([piece], gap, bound, point_split(seg.point_at))
+    return _refine(seg.point_at, pt, t, left, right, lo, hi)
 
 
 def _refine(at, pt: Point, t: float, left: float, right: float, lo: float, hi: float) -> float:

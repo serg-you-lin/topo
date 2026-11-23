@@ -141,6 +141,136 @@ def _algebra(node: ast.expr, env: dict) -> Algebra:
     return worst
 
 
+Interval = Tuple[float, float]
+_WHOLE: Interval = (-math.inf, math.inf)
+
+
+def _span(*values: float) -> Interval:
+    """Il più piccolo intervallo che contiene i valori; un NaN (∞ · 0, ∞ − ∞)
+    non dice nulla, quindi tutta la retta."""
+    if any(math.isnan(v) for v in values):
+        return _WHOLE
+    return min(values), max(values)
+
+
+def _hits(lo: float, hi: float, start: float, period: float) -> bool:
+    """[lo, hi] contiene un punto start + k·period."""
+    return math.floor((hi - start) / period) >= math.ceil((lo - start) / period)
+
+
+def _call_interval(name: str, lo: float, hi: float) -> Interval:
+    """L'immagine di [lo, hi] attraverso la funzione `name`: estremi ai capi,
+    più i massimi e minimi interni (sin, cos, cosh); fuori dal dominio, tutta la retta."""
+    if math.isnan(lo) or math.isnan(hi):
+        return _WHOLE
+    if name in ("sin", "cos"):
+        if not hi - lo < 2 * math.pi:       # anche con un capo infinito
+            return -1.0, 1.0
+        f = math.sin if name == "sin" else math.cos
+        top = math.pi / 2 if name == "sin" else 0.0
+        out_lo, out_hi = _span(f(lo), f(hi))
+        if _hits(lo, hi, top, 2 * math.pi):
+            out_hi = 1.0
+        if _hits(lo, hi, top + math.pi, 2 * math.pi):
+            out_lo = -1.0
+        return out_lo, out_hi
+    if name == "tan":
+        if not hi - lo < math.pi or _hits(lo, hi, math.pi / 2, math.pi):
+            return _WHOLE
+        return math.tan(lo), math.tan(hi)
+    if name == "cosh":
+        near, far = (0.0 if lo <= 0 <= hi else min(abs(lo), abs(hi))), max(abs(lo), abs(hi))
+        return _grow(math.cosh, near), _grow(math.cosh, far)
+    if name in ("log", "sqrt") and hi <= 0 or name in ("asin", "acos") and (hi < -1 or lo > 1):
+        return _WHOLE
+    if name == "log":
+        return (math.log(lo) if lo > 0 else -math.inf), math.log(hi)
+    if name == "sqrt":
+        return math.sqrt(max(lo, 0.0)), math.sqrt(hi)
+    if name in ("asin", "acos"):
+        a, b = math.asin(max(lo, -1.0)), math.asin(min(hi, 1.0))
+        return (a, b) if name == "asin" else (math.pi / 2 - b, math.pi / 2 - a)
+    f = _FUNCTIONS[name][0]                 # exp, sinh, tanh, atan: crescenti
+    return _grow(f, lo), _grow(f, hi)
+
+
+def _grow(f: Callable[[float], float], x: float) -> float:
+    """f(x) per una funzione crescente che oltre i double va all'infinito col segno di x."""
+    try:
+        return f(x)
+    except OverflowError:
+        return math.copysign(math.inf, x)
+
+
+def _power_interval(base: Interval, n: float) -> Interval:
+    """[lo, hi] ** n con l'esponente costante."""
+    lo, hi = base
+    if n == 0:
+        return 1.0, 1.0
+    if math.isinf(n) or math.isnan(n):
+        return _WHOLE
+    if float(n).is_integer():
+        k = int(n)
+        if k < 0:
+            return _divide((1.0, 1.0), _power_interval(base, -k))
+        if k % 2 == 1:
+            return _span(_pow(lo, k), _pow(hi, k))
+        if lo <= 0 <= hi:
+            return 0.0, max(_pow(lo, k), _pow(hi, k))
+        return _span(_pow(lo, k), _pow(hi, k))
+    if hi < 0:
+        return _WHOLE
+    lo = max(lo, 0.0)
+    if n < 0:
+        return (_pow(hi, n) if hi > 0 else math.inf), (_pow(lo, n) if lo > 0 else math.inf)
+    return _pow(lo, n), _pow(hi, n)
+
+
+def _pow(x: float, n: float) -> float:
+    """x ** n (x ≥ 0 se n non è intero); oltre i double, l'infinito col segno giusto."""
+    try:
+        return x ** n
+    except OverflowError:
+        return math.inf if x > 0 or float(n).is_integer() and int(n) % 2 == 0 else -math.inf
+
+
+def _divide(a: Interval, b: Interval) -> Interval:
+    if b[0] <= 0 <= b[1]:
+        return _WHOLE
+    return _span(*(x / y for x in a for y in b))
+
+
+def _enclose(node: ast.expr, env: Dict[str, Interval]) -> Interval:
+    """Un intervallo che contiene ogni valore dell'albero quando le variabili
+    stanno nei loro intervalli di `env` (aritmetica degli intervalli: largo,
+    mai stretto; arrotondamenti dei double a parte, sotto FLOAT_NOISE)."""
+    if isinstance(node, ast.Constant):
+        return float(node.value), float(node.value)
+    if isinstance(node, ast.Name):
+        if node.id in env:
+            return env[node.id]
+        return _CONSTANTS[node.id], _CONSTANTS[node.id]
+    if isinstance(node, ast.UnaryOp):
+        lo, hi = _enclose(node.operand, env)
+        return (-hi, -lo) if isinstance(node.op, ast.USub) else (lo, hi)
+    if isinstance(node, ast.Call):
+        return _call_interval(node.func.id, *_enclose(node.args[0], env))
+    a, b = _enclose(node.left, env), _enclose(node.right, env)
+    if isinstance(node.op, ast.Add):
+        return _span(a[0] + b[0], a[1] + b[1])
+    if isinstance(node.op, ast.Sub):
+        return _span(a[0] - b[1], a[1] - b[0])
+    if isinstance(node.op, ast.Mult):
+        return _span(*(x * y for x in a for y in b))
+    if isinstance(node.op, ast.Div):
+        return _divide(a, b)
+    if b[0] == b[1]:
+        return _power_interval(a, b[0])
+    # a**b = exp(b·log a)
+    log_a = _call_interval("log", *a)
+    return _call_interval("exp", *_span(*(x * y for x in log_a for y in b)))
+
+
 class _Substitute(ast.NodeTransformer):
     def __init__(self, values: Dict[str, ast.expr]):
         self.values = values
@@ -173,6 +303,7 @@ class FormulaSeg(MathSeg):
     params: Tuple[Tuple[str, float], ...] = field(default=(), kw_only=True)
     affine: Tuple[float, float, float, float, float, float] = field(default=(1.0, 0.0, 0.0, 1.0, 0.0, 0.0), kw_only=True)
     _code: tuple = field(default=(), init=False, repr=False, compare=False)
+    _trees: tuple = field(default=(), init=False, repr=False, compare=False)
 
     def __post_init__(self):
         if isinstance(self.params, dict):
@@ -186,12 +317,13 @@ class FormulaSeg(MathSeg):
         names = {"t"} | {k for k, _ in self.params}
         x, y = _parse(self.x, names), _parse(self.y, names)
         self._code = (_compile(x), _compile(y), _compile(_diff(x)), _compile(_diff(y)))
+        self._trees = (x, y)
         p0, p1 = self.endpoints()
         if not all(map(math.isfinite, p0 + p1)):
             raise ValueError(f"the formula is not defined at the ends of [{self.start_param}, {self.end_param}]")
 
     def __getstate__(self):
-        return {k: v for k, v in self.__dict__.items() if k != "_code"}
+        return {k: v for k, v in self.__dict__.items() if k not in ("_code", "_trees")}
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -240,6 +372,18 @@ class FormulaSeg(MathSeg):
 
     def endpoints(self) -> Tuple[Point, Point]:
         return self._at(self.start_param), self._at(self.end_param)
+
+    def _box(self, t0: float, t1: float) -> List[Point]:
+        """I quattro angoli di un parallelogramma che contiene la curva per t in
+        [t0, t1]: il rettangolo di x e y dall'aritmetica degli intervalli,
+        portato dalla mappa affine. La curva sta nel loro inviluppo. Vuoto se
+        l'intervallo non è finito (un polo, un dominio superato)."""
+        s0, s1 = sorted((self.start_param + self._sign() * t0, self.start_param + self._sign() * t1))
+        env = {"t": (s0, s1), **{k: (v, v) for k, v in self.params}}
+        (xa, xb), (ya, yb) = (_enclose(tree, env) for tree in self._trees)
+        if not all(map(math.isfinite, (xa, xb, ya, yb))):
+            return []                       # nessun limite su questo tratto: si dimezza
+        return [self._map(p) for p in ((xa, ya), (xb, ya), (xb, yb), (xa, yb))]
 
     def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
         """Adattiva sulla curva vera: un tratto si dimezza finché tre suoi punti

@@ -50,9 +50,7 @@ CONVERGENCE = {
 
 # da togliere (TODO "Numeri delle primitive sfuggiti a precision", punti b e c):
 # quando il numero sparisce, test_le_eccezioni_esistono_ancora chiede di togliere la riga
-PENDING = {
-    ("topo/core/primitives/trim.py", "_SAMPLES"): "formula e clotoide: nessun inviluppo dei punti di controllo (D300)",
-}
+PENDING: dict = {}
 EXCEPTIONS = {**NOT_THRESHOLDS, **CONVERGENCE, **PENDING}
 PRECISION = "topo/precision.py"
 

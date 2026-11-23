@@ -8,13 +8,11 @@ la ricerca dell'intervallo dei nodi. Il nome è il termine matematico
 
 from __future__ import annotations
 
-import heapq
-import itertools
 import math
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
 
-from ...precision import FLOAT_NOISE
+from .minimize import certified_min
 from .mathseg import Algebra, DEFAULT_TOLERANCE, MathSeg, Point, _plain, _real
 from .motion import _check_factor, _mirror_point, _rotate_point, _scale_point, _translate_point
 from .polyline import _point_to_segment_distance
@@ -373,30 +371,16 @@ class BSplineSeg(MathSeg):
         entro FLOAT_NOISE, e il tratto [lo, hi] attorno a lui da rifinire.
         `bound(punti di controllo)` minora `value` su tutto il pezzo (la curva
         sta nel loro inviluppo): un pezzo che non scende sotto il migliore di
-        FLOAT_NOISE si scarta, gli altri si dimezzano. Certificato, nessun
-        campionamento: un ramo vicino non può vincere per sbaglio (D300)."""
-        best = (math.inf, 0.0, 0.0, 0.0)
-        heap: list = []
-        order = itertools.count()   # a pari minorante, nell'ordine di arrivo
-        for t0, t1, c in self._pieces():
-            for t, q in ((t0, c[0]), (t1, c[-1])):
-                v = value((q[0] / q[2], q[1] / q[2]))
-                if v < best[0]:
-                    best = (v, t, t0, t1)
-            heap.append((bound([(x / w, y / w) for x, y, w in c]), next(order), t0, t1, c))
-        heapq.heapify(heap)
-        while heap:
-            b, _, t0, t1, c = heapq.heappop(heap)
-            if b >= best[0] - FLOAT_NOISE:
-                break
+        FLOAT_NOISE si scarta, gli altri si dimezzano (`certified_min`, D300)."""
+        def flat(q) -> Point:
+            return q[0] / q[2], q[1] / q[2]
+
+        def halves(piece):
+            t0, t1, p0, p1, c = piece
             tm = (t0 + t1) / 2
-            if not t0 < tm < t1:
-                continue
             left, right = _halves(c)
-            q = left[-1]
-            v = value((q[0] / q[2], q[1] / q[2]))
-            if v < best[0]:
-                best = (v, tm, t0, t1)
-            for a, z, half in ((t0, tm, left), (tm, t1, right)):
-                heapq.heappush(heap, (bound([(x / w, y / w) for x, y, w in half]), next(order), a, z, half))
-        return best[1], best[2], best[3]
+            pm = flat(left[-1])
+            return (t0, tm, p0, pm, left), (tm, t1, pm, p1, right)
+
+        pieces = [(t0, t1, flat(c[0]), flat(c[-1]), c) for t0, t1, c in self._pieces()]
+        return certified_min(pieces, value, lambda piece: bound([flat(q) for q in piece[4]]), halves)

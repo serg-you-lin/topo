@@ -12,6 +12,8 @@ from topo.core.primitives.line import LineSeg
 from topo.core.primitives.spline import BSplineSeg
 from topo.core.primitives.mathseg import segment_endpoints
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
+from topo.core.primitives.clothoid import ClothoidSeg
+from topo.core.primitives.formula import FormulaSeg
 from topo.core.primitives.trim import sub_segment
 from topo.core.geometry.measure import Reach, segment_length
 
@@ -194,3 +196,26 @@ class TestHairpinBranch(unittest.TestCase):
         self.assertEqual(lo, 0.0)
         self.assertGreaterEqual(hi, tip)
         self.assertLess(hi - tip, 1e-6)
+
+
+class TestCurveBranch(unittest.TestCase):
+    """Clotoide e formula non hanno punti di controllo: il ramo del taglio si
+    sceglie per certificato (velocità 1 della clotoide, aritmetica degli
+    intervalli della formula). Con 64 campioni la spirale finiva su un'altra
+    spira in 180 tagli su 199, l'evolvente fino a 144 mm lontano."""
+
+    CURVES = {
+        "clotoide a spirale": ClothoidSeg(origin=(0, 0), angle=0, a=1.0, start_param=0, end_param=30),
+        "evolvente lunga": FormulaSeg(x="cos(t) + t*sin(t)", y="sin(t) - t*cos(t)", start_param=0, end_param=200),
+        "forcina non uniforme": FormulaSeg(x="50 * sin(pi * t**3)", y="0.01 * t", start_param=0, end_param=1),
+    }
+
+    def test_i_capi_del_taglio_sono_quelli_chiesti(self):
+        for name, seg in self.CURVES.items():
+            total = seg.t_range[1]
+            for k in range(1, 60):
+                ta, tb = total * k / 61, total * (k + 1) / 61
+                a, b = seg.point_at(ta), seg.point_at(tb)
+                with self.subTest(curve=name, k=k):
+                    pa, pb = segment_endpoints(sub_segment(seg, a, b, seg.point_at((ta + tb) / 2)))
+                    self.assertTrue(_close(pa, a) and _close(pb, b))
