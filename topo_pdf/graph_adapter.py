@@ -1,10 +1,10 @@
 """
 topo_pdf/graph_adapter.py
 -------------------------
-Traduce entità vettoriali sanificate del PDF in Edge topologici per il core.
+Translates sanitized PDF vector entities into topological Edges for the core.
 """
 
-# Solo nomi pubblici di topo: l'adapter è un consumer come un altro (MAP.md D125)
+# Only public topo names: the adapter is a consumer like any other
 from topo.model import ContourRole, Edge
 from topo.primitives import LineSeg, BSplineSeg
 

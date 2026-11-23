@@ -1,8 +1,8 @@
 """
 topo_dxf/exporter.py
 --------------------
-Esporta primitive geometriche pure (LineSeg, CircleSeg, BSplineSeg) in formato DXF.
-Unico file che tocca ezdxf per il write-back.
+Exports pure geometric primitives (LineSeg, CircleSeg, BSplineSeg) in DXF
+format. The only file that touches ezdxf for write-back.
 """
 
 from __future__ import annotations
@@ -28,12 +28,10 @@ def ensure_linetype(
     pattern: Optional[Tuple[float, ...]] = None,
     description: str = "",
 ) -> Optional[str]:
-    """
-    Garantisce che il linetype `name` esista in `doc` e ne ritorna il nome;
-    None se nessuno sa dirne la forma. Ordine: già nel documento → `pattern`
-    dato dal chiamante (catturato dalla sorgente, vince) → tabella standard
-    ezdxf per nome. Cosa fare con None lo decide il chiamante (MAP.md D85).
-    """
+    """Ensure the linetype `name` exists in `doc` and return its name; None if
+    nobody can tell its shape. Order: already in the document → `pattern` given
+    by the caller (captured from the source, wins) → ezdxf standard table by name.
+    What to do with None is the caller's call."""
     if name.upper() in _STANDARD_LINETYPES or name in doc.linetypes:
         return name
     if pattern:
@@ -49,28 +47,25 @@ def ensure_linetype(
 
 
 def dxf_pattern(dash: Optional[Tuple[float, ...]]) -> Optional[Tuple[float, ...]]:
-    """Il tratto di topo (segni con segno) nel pattern della tabella DXF, che
-    apre con la lunghezza totale (MAP.md D126)."""
+    """topo's stroke (signed marks) as the pattern of the DXF table, which opens
+    with the total length."""
     if not dash:
         return None
     return (sum(abs(e) for e in dash), *dash)
 
 
 def _style_attribs(doc, layer: str, style: Optional[EdgeStyle] = None) -> dict:
-    """
-    dxfattribs per una entità in output: layer + linetype della sorgente, se
-    noto. Il colore resta SEMPRE BYLAYER (256) — anche per le curve sciolte: il
-    colore lo decide il ruolo, sul layer (la mappa del chiamante o il default
-    di `layers.py`, D128), mai quello, eventualmente diverso, della
-    sorgente. Solo l'aspetto del tratto (continuo/tratteggiato/...) va
-    ripristinato fedele.
-    """
+    """dxfattribs for an output entity: layer + the source's linetype, if known. The
+    colour stays ALWAYS BYLAYER (256) — loose curves too: the colour is decided by
+    the role, on the layer (the caller's map or the default of `layers.py`), never
+    the source's, possibly different. Only the stroke appearance
+    (continuous/dashed/...) is restored faithfully."""
     attribs = {"layer": layer, "color": 256}
     if style is None:
         return attribs
 
-    # Forma ignota: si ripiega sul tratto del layer — la sorgente non la
-    # portava, non è un errore di nessuno.
+    # Unknown shape: fall back on the layer's stroke — the source did not carry it,
+    # it is nobody's error.
     name = style.linetype or "BYLAYER"
     linetype = None if doc is None else ensure_linetype(
         doc, name, dxf_pattern(style.dash), style.linetype_desc or "")
@@ -85,12 +80,12 @@ def _style_attribs(doc, layer: str, style: Optional[EdgeStyle] = None) -> dict:
 # ---------------------------------------------------------------------------
 
 def arc_seg_to_bulge(arc: CircleSeg) -> float:
-    # L'angolo spazzato dipende dal verso: per un arco CW il tratto reale è
-    # start_angle → end_angle percorso in senso orario, NON il complemento a
-    # 2π. CircleSeg._sweep() è l'unica sede di questo calcolo — riusarla qui
-    # evita che un arco invertito (ccw=False, prodotto da segments_from_loop
-    # quando il loop viene orientato CCW) venga scritto con il bulge dell'arco
-    # complementare, cioè "alla rovescia".
+    # The swept angle depends on the direction: for a CW arc the real stretch is
+    # start_angle → end_angle walked clockwise, NOT the complement to 2π.
+    # CircleSeg._sweep() is the only place of this computation — reusing it here
+    # avoids an inverted arc (ccw=False, produced by segments_from_loop when the
+    # loop is oriented CCW) being written with the bulge of the complementary arc,
+    # that is "upside down".
     sweep = arc._sweep()
     if sweep <= 1e-12:
         sweep = 2 * math.pi
@@ -108,9 +103,8 @@ def _seg_end_point(seg) -> Optional[tuple]:
     return None
 
 
-# un estremo che dista dal successivo più del rumore dei double è un salto
-# (D208): lo stesso 1e-6 mm di FLOAT_NOISE in topo (D183), che non è pubblico
-JUMP = FLOAT_NOISE  # D269
+# an end farther from the next than the double noise is a jump: the same 1e-6 mm as FLOAT_NOISE in topo, which is not public
+JUMP = FLOAT_NOISE
 
 
 def _joined(a, b) -> bool:
@@ -118,8 +112,8 @@ def _joined(a, b) -> bool:
 
 
 def _head_to_tail_runs(segments: list) -> List[list]:
-    """`segments` spezzati dove uno non parte esattamente dalla fine del
-    precedente (D17, D208): ogni run è una catena senza salti."""
+    """`segments` split where one does not start exactly at the end of the previous:
+    every run is a chain with no jumps."""
     runs: List[list] = []
     for seg in segments:
         if runs and _joined(segment_endpoints(runs[-1][-1])[1], segment_endpoints(seg)[0]):
@@ -140,18 +134,13 @@ def segments_to_pts_with_bulge(segments: list) -> list:
     return pts
 
 
-# ---------------------------------------------------------------------------
-# Write-back — unico punto che tocca ezdxf per le forme chiuse
-# ---------------------------------------------------------------------------
+# --- Write-back — the only point that touches ezdxf for closed shapes ---
 
 def _add_spline(spline: BSplineSeg, msp, layer: str,
                  style: Optional[EdgeStyle] = None) -> object:
-    """
-    Materializza una BSplineSeg come SPLINE nativa, ricostruita dalla primitiva
-    (control points / knots / weights / degree) — non è una copia
-    dell'entità sorgente, è la stessa curva riespressa. Identico trattamento a
-    quello della spline chiusa singola.
-    """
+    """Materialize a BSplineSeg as a native SPLINE, rebuilt from the primitive
+    (control points / knots / weights / degree) — not a copy of the source
+    entity, the same curve re-expressed. Same treatment as the single closed spline."""
     attribs = _style_attribs(msp.doc, layer, style)
     entity = msp.add_spline(dxfattribs=attribs)
     entity.dxf.degree = int(spline.degree)
@@ -174,16 +163,14 @@ def _add_spline(spline: BSplineSeg, msp, layer: str,
 
 def _add_ellipse(ellipse: EllipseSeg, msp, layer: str,
                   style: Optional[EdgeStyle] = None) -> object:
-    """
-    Materializza una EllipseSeg come ELLIPSE nativa — mai una spline: topo
-    non converte una conica esatta in un'approssimazione (stesso principio di
-    "mai discretizzare una spline in output", vedi MAP.md).
+    """Materialize an EllipseSeg as a native ELLIPSE — never a spline: topo does not
+    convert an exact conic into an approximation (same principle as "never
+    discretize a spline on output").
 
-    In DXF un'ELLIPSE è sempre percorsa CCW da `start_param` a `end_param`
-    (nessun flag di verso nel formato): un'EllipseSeg CW copre lo stesso
-    luogo geometrico letta CCW da `end_param` a `start_param` — stesso
-    scambio già usato per CircleSeg in `write_native_segments`.
-    """
+    In DXF an ELLIPSE is always walked CCW from `start_param` to `end_param` (no
+    direction flag in the format): a CW EllipseSeg covers the same locus read CCW
+    from `end_param` to `start_param` — the same swap already used for CircleSeg
+    in `write_native_segments`."""
     if ellipse.ccw:
         sp, ep = ellipse.start_param, ellipse.end_param
     else:
@@ -200,36 +187,33 @@ def _add_ellipse(ellipse: EllipseSeg, msp, layer: str,
 
 
 def _as_dxf(segments: List) -> List:
-    """Il DXF non ha parabole, iperboli, formule né clotoidi: parabola e iperbole
-    come la loro spline razionale quadratica, esatta; formula e clotoide come una
-    spline cubica entro SAME_POINT, approssimata (`to_bspline`)."""
+    """DXF has no parabolas, hyperbolas, formulas or clothoids: parabola and
+    hyperbola as their exact rational quadratic spline; formula and clothoid as a
+    cubic spline within SAME_POINT, approximated (`to_bspline`)."""
     return [s.to_bspline() if isinstance(s, (ParabolaSeg, HyperbolaSeg, FormulaSeg, ClothoidSeg)) else s
             for s in segments]
 
 
 def write_segments(segments: List, msp, layer: str, styles: Optional[List] = None) -> Optional[object]:
-    """
-    Materializza una lista di segmenti puri su msp.
+    """Materialize a list of pure segments on msp.
 
     - CircleSeg → CIRCLE
-    - EllipseSeg → ELLIPSE nativa
-    - BSplineSeg singola → SPLINE nativa
-    - BSplineSeg mista a linee/archi → SPLINE native + LWPOLYLINE aperte che
-      condividono gli endpoint (il loop chiuso è dato dall'insieme delle
-      entità, non discretizziamo mai la spline in polilinea). Restituisce la
-      lista delle entità create.
-    - LineSeg / CircleSeg → LWPOLYLINE (o POLYLINE2D per R12)
+    - EllipseSeg → native ELLIPSE
+    - single BSplineSeg → native SPLINE
+    - BSplineSeg mixed with lines/arcs → native SPLINEs + open LWPOLYLINEs
+      sharing the endpoints (the closed loop is given by the set of entities, we
+      never discretize the spline into a polyline). Returns the list of entities
+      created.
+    - LineSeg / CircleSeg → LWPOLYLINE (or POLYLINE2D for R12)
 
-    `styles` (allineata a `segments`, opzionale) porta il linetype grezzo
-    della sorgente: un contorno strutturale (outer/inner/hole) è una geometria
-    già classificata, quindi il colore resta sempre BYLAYER (colore semantico
-    del ruolo, sul layer) — solo il linetype viene ripristinato, preso
-    dal primo segmento come rappresentante dell'intero contorno (un contorno
-    di taglio reale non mischia mai tratteggi diversi al suo interno).
+    `styles` (aligned to `segments`, optional) carries the source's raw linetype:
+    a structural contour (outer/inner/hole) is already classified geometry, so the
+    colour always stays BYLAYER (the role's semantic colour, on the layer) — only
+    the linetype is restored, taken from the first segment as representative of
+    the whole contour (a real cutting contour never mixes different dashings).
 
-    Restituisce l'entità creata (o la lista, per i contorni misti), o None se
-    non c'è nulla da scrivere.
-    """
+    Returns the entity created (or the list, for mixed contours), or None if there
+    is nothing to write."""
     segments = _as_dxf(segments)
     if not segments:
         return None
@@ -251,17 +235,17 @@ def write_segments(segments: List, msp, layer: str, styles: Optional[List] = Non
         return _add_spline(segments[0], msp, layer, style)
 
     if any(isinstance(s, (BSplineSeg, EllipseSeg)) and not isinstance(s, CircleSeg) for s in segments):
-        # Contorno misto: nessuna entità DXF singola può contenere insieme una
-        # spline/ellisse e una polilinea. Lo materializziamo come più entità
-        # native (SPLINE/ELLIPSE + LWPOLYLINE aperte) con endpoint coincidenti
-        # — il grafo di reload ricuce il loop. Mai discretizzare.
+        # Mixed contour: no single DXF entity can hold a spline/ellipse and a polyline
+        # together. It is materialized as several native entities (SPLINE/ELLIPSE + open
+        # LWPOLYLINEs) with coincident endpoints — the reload graph sews the loop.
+        # Never discretize.
         created = write_open_segments(segments, msp, layer, styles)
         return created or None
 
     runs = _head_to_tail_runs(segments)
     if len(runs) > 1 or not _joined(segment_endpoints(segments[-1])[1], segment_endpoints(segments[0])[0]):
-        # un salto (D208): chiusa, la polilinea tirerebbe un lato sopra il
-        # buco e il DXF mostrerebbe un contorno che il Result non ha
+        # a jump: closed, the polyline would draw a side over the hole and the DXF would
+        # show a contour the Result does not have
         return [_add_open_run(run, msp, layer, style) for run in runs]
 
     pts = segments_to_pts_with_bulge(segments)
@@ -290,8 +274,8 @@ def write_segments(segments: List, msp, layer: str, styles: Optional[List] = Non
 
 
 def _add_open_run(run: list, msp, layer: str, style: Optional[EdgeStyle] = None) -> object:
-    """Una catena di LineSeg/CircleSeg come polilinea aperta: i vertici sono gli
-    inizi più la fine dell'ultimo, così ogni estremo resta dov'è."""
+    """A chain of LineSeg/CircleSeg as an open polyline: the vertices are the starts
+    plus the end of the last, so every end stays where it is."""
     pts = segments_to_pts_with_bulge(run)
     end = _seg_end_point(run[-1])
     pts.append((end[0], end[1], 0.0, 0.0, 0.0))
@@ -310,24 +294,20 @@ def _add_open_run(run: list, msp, layer: str, style: Optional[EdgeStyle] = None)
 # ---------------------------------------------------------------------------
 
 def write_native_segments(segments: List, msp, layer: str, styles: Optional[List] = None) -> List[object]:
-    """
-    Materializza segmenti aperti come geometria NATIVA, una entità DXF per
-    primitiva — mai LWPOLYLINE, nemmeno per un run di linee/archi contigui.
-    È come si disegna un elemento dell'overlay che non è un contorno chiuso
-    (MAP.md D90):
-    una piega, un'incisione.
+    """Materialize open segments as NATIVE geometry, one DXF entity per primitive —
+    never LWPOLYLINE, not even for a run of contiguous lines/arcs. It is how an
+    overlay element that is not a closed contour is drawn: a bend, an engraving.
 
       - LineSeg    → LINE
-      - CircleSeg     → ARC
-      - BSplineSeg  → SPLINE nativa (mai discretizzata)
+      - CircleSeg  → ARC
+      - BSplineSeg → native SPLINE (never discretized)
       - CircleSeg  → CIRCLE
-      - EllipseSeg → ELLIPSE nativa (mai discretizzata a spline)
+      - EllipseSeg → native ELLIPSE (never discretized to a spline)
 
-    Il linetype della sorgente (`styles`, allineata a `segments`) è
-    ripristinato per ogni primitiva. Il colore resta BYLAYER.
+    The source's linetype (`styles`, aligned to `segments`) is restored for every
+    primitive. The colour stays BYLAYER.
 
-    Restituisce la lista delle entità create.
-    """
+    Returns the list of entities created."""
     segments = _as_dxf(segments)
     created: List[object] = []
     styles = styles or []
@@ -339,9 +319,9 @@ def write_native_segments(segments: List, msp, layer: str, styles: Optional[List
         if isinstance(seg, LineSeg):
             created.append(msp.add_line(seg.start, seg.end, dxfattribs=attribs))
         elif (isinstance(seg, CircleSeg) and not seg.full):
-            # In DXF un ARC è sempre percorso CCW da start_angle a end_angle.
-            # Un CircleSeg CW copre lo stesso luogo geometrico se lo si legge
-            # CCW da end_angle a start_angle: basta scambiare gli angoli.
+            # In DXF an ARC is always walked CCW from start_angle to end_angle. A CW
+            # CircleSeg covers the same locus if read CCW from end_angle to start_angle:
+            # just swap the angles.
             if seg.ccw:
                 sa, ea = seg.start_angle, seg.end_angle
             else:
@@ -365,35 +345,28 @@ def write_native_segments(segments: List, msp, layer: str, styles: Optional[List
     return created
 
 
-# ---------------------------------------------------------------------------
-# Write-back — tracce APERTE (curve sciolte, frammenti di profilo, centerline, ...)
-# ---------------------------------------------------------------------------
+# --- Write-back — OPEN traces (loose curves, profile fragments, centerlines, ...) ---
 
 def write_open_segments(segments: List, msp, layer: str, styles: Optional[List] = None) -> List[object]:
-    """
-    Materializza una lista di segmenti puri come geometria APERTA su msp.
+    """Materialize a list of pure segments as OPEN geometry on msp.
 
-    A differenza di `write_segments` non chiude il contorno: serve per le
-    entità che il pipeline lascia non classificate (`result.loose`),
-    dove chiudere il loop falserebbe la forma, e come fallback di
-    `write_segments` per i contorni misti spline+linee. Ogni segmento resta
-    fedele:
+    Unlike `write_segments` it does not close the contour: it serves for the
+    entities the pipeline leaves unclassified (`result.loose`), where closing the
+    loop would falsify the shape, and as fallback of `write_segments` for mixed
+    spline+line contours. Every segment stays faithful:
 
-      - LineSeg / CircleSeg → una LWPOLYLINE aperta con bulge
-      - BSplineSeg        → SPLINE nativa (una per spline)
+      - LineSeg / CircleSeg → an open LWPOLYLINE with bulge
+      - BSplineSeg        → native SPLINE (one per spline)
       - CircleSeg        → CIRCLE
-      - EllipseSeg       → ELLIPSE nativa
+      - EllipseSeg       → native ELLIPSE
 
-    Il linetype (`styles`, allineata a `segments`) è sempre ripristinato — un
-    run di LineSeg/CircleSeg consecutivi diventa una sola LWPOLYLINE, quindi
-    prende lo stile del primo segmento del run come rappresentante. Il
-    colore resta sempre BYLAYER, curve sciolte comprese: quella geometria non ha un
-    ruolo classificato, ma il rosso di `Trash` è comunque una decisione di
-    layer, non un colore da ripristinare entità per entità.
+    The linetype (`styles`, aligned to `segments`) is always restored — a run of
+    consecutive LineSeg/CircleSeg becomes a single LWPOLYLINE, so it takes the
+    style of the run's first segment as representative. The colour always stays
+    BYLAYER, loose curves included: that geometry has no classified role, but the
+    red of `Trash` is still a layer decision, not a colour to restore entity by entity.
 
-    Restituisce la lista delle entità create (vuota se non c'è nulla da
-    scrivere).
-    """
+    Returns the list of entities created (empty if there is nothing to write)."""
     segments = _as_dxf(segments)
     if not segments:
         return []
@@ -424,7 +397,7 @@ def write_open_segments(segments: List, msp, layer: str, styles: Optional[List] 
         style = styles[i] if i < len(styles) else None
         if isinstance(seg, LineSeg) or (isinstance(seg, CircleSeg) and not seg.full):
             if poly_run and not _joined(_seg_end_point(poly_run[-1]), segment_endpoints(seg)[0]):
-                _flush_poly_run()   # un salto non si copre con un vertice (D208)
+                _flush_poly_run()   # a jump is not covered by a vertex
             if not poly_run:
                 poly_run_style = style
             poly_run.append(seg)

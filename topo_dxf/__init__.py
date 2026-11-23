@@ -3,7 +3,7 @@ topo_dxf/__init__.py
 --------------------
 topo's DXF adapter: a consumer of topo like any other, in the same repo and
 the same distribution (`pip install g-topo[dxf]`), using only topo's public
-names (MAP.md D123, D124, D129). topo does not know it exists.
+names. topo does not know it exists.
 
     import topo, topo_dxf
 

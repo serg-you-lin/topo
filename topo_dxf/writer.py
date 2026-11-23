@@ -1,13 +1,12 @@
 """
 topo_dxf/writer.py
 ------------------
-Materializza un Result in un documento DXF NUOVO, lavorando esclusivamente
-sui segmenti del modello. Zero accesso a source_ref, entity_ids, msp sorgente.
+Materializes a Result into a NEW DXF document, working exclusively on the
+model's segments. No access to source_ref, entity_ids, source msp.
 
-`to_dxf(result, ...)` → un Drawing con tutto quello che il Result contiene.
-Un file per parte: `topo.split(result)` dà un Result per parte, e ognuno
-passa da `to_dxf` (D124, D129); il ciclo è del chiamante (`split_to_files`
-rimosso, D176).
+`to_dxf(result, ...)` → a Drawing with everything the Result contains. One
+file per part: `topo.split(result)` gives a Result per part, and each goes
+through `to_dxf`; the loop is the caller's.
 """
 
 from __future__ import annotations
@@ -59,7 +58,7 @@ def to_dxf(
     spurious arcs, profile fragments, centerlines. Silently omitting them is
     a regression.
 
-    Layer and appearance are the caller's (D123, D128); what it does not say
+    Layer and appearance are the caller's; what it does not say
     is the adapter's default (`topo_dxf/layers.py`):
       - `layers` → `{role: "Name"}` or `{role: function(element) -> name}`:
         with a function the entities of a role are split over several layers
@@ -72,7 +71,7 @@ def to_dxf(
         by several roles the first one written wins. A field at `None` stays
         the default.
       - `text_layer` → the layer of texts and dimensions without a role; one
-        with a role goes on its role's layer, like an edge (D127, D128).
+        with a role goes on its role's layer, like an edge.
     No text is discarded: those not covered by any part are written anyway
     (`topo.split()` assigns them to the nearest part, like loose curves).
 
@@ -87,7 +86,7 @@ def to_dxf(
     An invalid `result` (e.g. no closed outer contour → zero parts) is
     written anyway, with what there is (`loose`, texts): like `to_svg`, it
     serves to see what topo understood. `allow_invalid=False` → `ValueError`
-    instead: the caller who delivers to a machine (D83).
+    instead: the caller who delivers to a machine.
     """
     if not result.is_valid and not allow_invalid:
         raise ValueError(
@@ -95,10 +94,10 @@ def to_dxf(
             + " ".join(result.errors)
         )
     doc_out = ezdxf.new(dxfversion="R2010")
-    # ezdxf.new() di default dichiara $INSUNITS=6 (metri): topo lavora sempre
-    # in millimetri, quindi il default va forzato a 4 anche senza source_doc
-    # (es. geometria generata, non caricata da un DXF esistente) — altrimenti
-    # un importatore che rispetta $INSUNITS scala il pezzo di 1000x.
+    # ezdxf.new() declares $INSUNITS=6 (metres) by default: topo always works in
+    # millimetres, so the default must be forced to 4 even without source_doc (e.g.
+    # generated geometry, not loaded from an existing DXF) — otherwise an importer
+    # that respects $INSUNITS scales the part by 1000x.
     doc_out.header["$INSUNITS"]    = 4
     doc_out.header["$MEASUREMENT"] = 1
     if source_doc is not None:
@@ -113,8 +112,8 @@ def to_dxf(
         if filter_cluster is not None and not filter_cluster(cluster):
             continue
 
-        # Contorno esterno e interni: un contorno si scrive col ruolo di
-        # contorno che ha nel grafo (outer o inner), anche se ne porta un altro
+        # Outer and inner contours: a contour is written with the contour role it has
+        # in the graph (outer or inner), even if it carries another
         write_segments(
             cluster.outer.segments, msp,
             book.for_role(_contour_role(cluster.outer, ContourRole.OUTER), cluster.outer),
@@ -127,7 +126,7 @@ def to_dxf(
                 styles=inner.styles,
             )
 
-        # L'overlay di un consumatore (fori, pieghe, ...: D70, D90)
+        # A consumer's overlay (holes, bends, ...)
         _write_attached_features(msp, cluster, book)
 
     if include_loose and result.loose:
@@ -154,13 +153,10 @@ def _write_texts(
     book: "_Layers",
     text_layer: str,
 ) -> None:
-    """
-    Riscrive i testi della sorgente nel documento di output, tutti: quale
-    parte ne porta quali lo decide `topo.split()`.
+    """Rewrite the source's texts into the output document, all of them: which part
+    carries which is decided by `topo.split()`.
 
-    Un testo con un ruolo va sul layer del suo ruolo, uno senza su
-    `text_layer` (D128).
-    """
+    A text with a role goes on the layer of its role, one without on `text_layer`."""
     for text in texts:
         if text.role != ContourRole.UNKNOWN:
             layer = book.for_role(text.role, text)
@@ -170,8 +166,8 @@ def _write_texts(
 
 
 def _emit_text(msp, text: Text, layer: str) -> None:
-    """Con un'immagine (`rendered`: quote e richiami della sorgente) si
-    riscrive l'immagine, altrimenti la stringa."""
+    """With an image (`rendered`: the source's dimensions and callouts) the image is
+    rewritten, otherwise the string."""
     attribs = {"layer": layer, "color": 256}
 
     if text.rendered.is_empty():
@@ -180,8 +176,8 @@ def _emit_text(msp, text: Text, layer: str) -> None:
         _emit_rendered(msp, text, attribs)
 
 
-# (halign, valign) del modello (D256) → attacco MTEXT / allineamento TEXT.
-# MTEXT non ha linea di base: `baseline` vi diventa `bottom`.
+# (halign, valign) of the model → MTEXT attachment / TEXT alignment. MTEXT has
+# no baseline: `baseline` becomes `bottom` there.
 _MTEXT_ATTACH = {
     ("left", "top"): 1, ("center", "top"): 2, ("right", "top"): 3,
     ("left", "center"): 4, ("center", "center"): 5, ("right", "center"): 6,
@@ -201,13 +197,13 @@ _TEXT_ALIGN = {
 
 def _add_string(msp, content: str, position, *, height: float, rotation: float,
                 halign: str, valign: str, width: float, attribs: dict) -> None:
-    """Una stringa nel punto e con l'allineamento del modello: TEXT se sta
-    su una riga, MTEXT se ne ha più d'una (TEXT non va a capo)."""
+    """A string at the model's point and alignment: TEXT if it is on one line, MTEXT
+    if it has more than one (TEXT does not wrap)."""
     if "\n" in content:
-        # MTEXT non ha un attributo per-entità per lo stretch dei glifi (il suo
-        # gruppo 41 è la larghezza di colonna, un'altra cosa): si ottiene con
-        # un codice di formattazione inline, non con uno stile dedicato — resta
-        # un override numerico, niente stili con nome da inventare o mappare.
+        # MTEXT has no per-entity attribute for the glyph stretch (its group 41 is the
+        # column width, another thing): it is obtained with an inline formatting code,
+        # not with a dedicated style — it stays a numeric override, no named styles to
+        # invent or map.
         body = content.replace("\n", "\\P")
         body = body if width == 1.0 else f"\\W{width:.4g};{body}"
         v = "bottom" if valign == "baseline" else valign
@@ -234,11 +230,9 @@ def _emit_string(msp, note: Text, attribs: dict) -> None:
 
 
 def _emit_rendered(msp, ann, attribs: dict) -> None:
-    """
-    Ri-materializza l'immagine appiattita (DIMENSION / LEADER di un DXF). I testi in
-    `rendered.texts` sono già il testo visualizzato finale (il blocco DXF lo
-    incorpora risolto).
-    """
+    """Re-materialize the flattened image (DIMENSION / LEADER of a DXF). The texts
+    in `rendered.texts` are already the final displayed text (the DXF block embeds
+    it resolved)."""
     rendered = ann.rendered
     for pts in rendered.strokes:
         if len(pts) >= 2:
@@ -254,37 +248,30 @@ def _emit_rendered(msp, ann, attribs: dict) -> None:
                     width=1.0, attribs=attribs)
 
 
-# ---------------------------------------------------------------------------
-# Curve sciolte (`result.loose`). Sul layer Trash se non hanno un ruolo;
-# su un layer col nome del ruolo se un consumatore ne ha assegnato uno (D31).
-# ---------------------------------------------------------------------------
+# --- Loose curves (`result.loose`). On the Trash layer if they have no role; on a layer named after the role if a consumer assigned one. ---
 
 def _write_loose(msp, result: Result, book: "_Layers") -> None:
-    """
-    Materializza `result.loose`, tutte: in un file per parte le ha
-    già divise `topo.split()`.
+    """Materialize `result.loose`, all of it: in a file per part `topo.split()` has
+    already divided them.
 
-    Ogni entità va sul layer del suo ruolo (`book.for_role`): di default
-    `Trash` se il ruolo è `unknown`, un layer col nome dello slug se un
-    consumatore l'ha marcata (`frame`, `title_block`, ...) — D31.
-    """
+    Every entity goes on the layer of its role (`book.for_role`): by default
+    `Trash` if the role is `unknown`, a layer named after the slug if a consumer
+    marked it (`frame`, `title_block`, ...)."""
     for curve in result.loose:
         segments = list(getattr(curve, "segments", []) or [])
         if segments:
             styles = list(getattr(curve, "styles", []) or [])
             layer = book.for_role(getattr(curve, "role", ContourRole.UNKNOWN), curve)
-            # Il colore resta quello del layer — solo il linetype (tratteggio)
-            # della sorgente viene ripristinato fedele.
+            # The colour stays the layer's — only the source's linetype (dashing) is
+            # restored faithfully.
             write_open_segments(segments, msp, layer, styles)
 
 
 def _write_fills(msp, result: Result, book: "_Layers", include_loose: bool) -> None:
-    """
-    Le aree piene tornano piene (D255): i lati con `EdgeStyle.filled`, già
-    scritti come linee, si rimettono in giri (`face_loops`, layer per layer) e
-    ogni giro diventa un HATCH pieno sul layer dei suoi lati. Il bordo del
-    riempimento segue le curve discretizzate; le curve scritte restano esatte.
-    """
+    """Filled areas come back filled: the sides with `EdgeStyle.filled`, already
+    written as lines, are put back into loops (`face_loops`, layer by layer) and
+    every loop becomes a solid HATCH on the layer of its sides. The fill's border
+    follows the discretized curves; the written curves stay exact."""
     import topo
     from topo.model import Edge
 
@@ -317,16 +304,13 @@ def _write_fills(msp, result: Result, book: "_Layers", include_loose: bool) -> N
 # ---------------------------------------------------------------------------
 
 def _write_attached_features(msp, cluster: Cluster, book: "_Layers") -> None:
-    """
-    Ogni collezione di `cluster.overlay` (D70, D90): topo non sa cosa siano.
-    Di un elemento legge solo `role` e geometria — i suoi `contours`, se li
-    ha, altrimenti l'elemento stesso. Un contorno con `polygon` si scrive
-    chiuso, uno senza come una entità per primitiva. Il ruolo di un contorno
-    vince su quello dell'elemento solo se non è un ruolo del motore
-    (`feature_role`). Un elemento senza ruolo o senza segmenti si salta.
-    La scelta del layer riceve l'elemento, non il suo contorno: è l'elemento
-    che porta l'informazione (una piega "up" o "down").
-    """
+    """Every collection of `cluster.overlay`: topo does not know what they are. Of an
+    element it reads only `role` and geometry — its `contours`, if it has them,
+    otherwise the element itself. A contour with `polygon` is written closed, one
+    without as one entity per primitive. A contour's role wins over the element's
+    only if it is not an engine role (`feature_role`). An element with no role or
+    no segments is skipped. The layer choice receives the element, not its
+    contour: it is the element that carries the information (an "up" or "down" bend)."""
     if cluster.overlay is None:
         return
     for _name, items in cluster.overlay.items():
@@ -355,20 +339,17 @@ def _remove_excluded_entities(msp, excluded_upper: Set[str]) -> None:
 
 
 def _contour_role(contour, default: ContourRole):
-    """Il ruolo di contorno nel grafo: outer/inner se lo porta, `default` se
-    il contorno ha un ruolo di consumatore."""
+    """The contour role in the graph: outer/inner if it carries it, `default` if the
+    contour has a consumer's role."""
     role = getattr(contour, "role", None)
     return role if role in (ContourRole.OUTER, ContourRole.INNER) else default
 
 
 class _Layers:
-    """
-    I layer di un documento in scrittura (D128): il nome viene dalla scelta
-    del chiamante (`layers`) o dal default dell'adapter; un layer nuovo
-    nasce col colore della palette di topo per il ruolo e prende il
-    `RoleStyle` del chiamante una volta sola — su un layer di più ruoli vince
-    il primo.
-    """
+    """The layers of a document being written: the name comes from the caller's
+    choice (`layers`) or from the adapter's default; a new layer is born with
+    topo's palette colour for the role and takes the caller's `RoleStyle` once —
+    on a layer of several roles the first wins."""
 
     def __init__(self, doc, layers: Optional[LayerMap], role_styles: Optional[Mapping[str, RoleStyle]]):
         self.doc = doc
@@ -377,10 +358,10 @@ class _Layers:
         self._ready: Set[str] = set()
 
     def setup(self, text_layer: str) -> None:
-        """I layer di ogni documento: quelli dei ruoli del motore e delle
-        testi, poi quelli di ogni ruolo con un `RoleStyle` (anche senza
-        entità, così il chiamante ci scrive sopra a mano). Un ruolo il cui
-        layer è una funzione dell'elemento nasce solo quando si scrive."""
+        """The layers of every document: those of the engine roles and of the texts, then
+        those of every role with a `RoleStyle` (even with no entities, so the caller
+        can write on them by hand). A role whose layer is a function of the element
+        is born only when written."""
         for role in (ContourRole.OUTER, ContourRole.INNER):
             self._setup_role(role)
         self.ensure(text_layer, color=COLOR_ANNOTATION)
@@ -393,7 +374,7 @@ class _Layers:
             self.for_role(role)
 
     def for_role(self, role, element: object = None) -> str:
-        """Il layer di `role` per `element`, creato se serve."""
+        """The layer of `role` for `element`, created if needed."""
         name = role_to_dxf_layer(role, element, layers=self.layers)
         self.ensure(name, role)
         return name
@@ -404,9 +385,8 @@ class _Layers:
         self._ready.add(name)
         if name not in self.doc.layers:
             layer = self.doc.layers.new(name)
-            # la palette di topo (D128): indice ACI se ne ha uno esatto, così
-            # il default resta un colore DXF "di serie"; il colore del
-            # chiamante arriva sotto, in true color
+            # topo's palette: ACI index if it has an exact one, so the default stays a
+            # "stock" DXF colour; the caller's colour arrives below, in true colour
             aci = color if color is not None else color_for_role(role)
             if aci is not None:
                 layer.color = aci
@@ -418,11 +398,10 @@ class _Layers:
 
 
 def _apply_role_style(doc, layer, role, style: RoleStyle) -> None:
-    """
-    Un `RoleStyle` (D37, D128) sul layer: colore in true color (l'ACI non ha
-    un nero puro), tratto registrato al volo, spessore in centesimi di mm.
-    Un tratto senza nome prende il nome del ruolo; un nome senza tratto è un
-    tipo standard. Un campo a `None` non si tocca.
+    """A `RoleStyle` on the layer: colour in true colour (ACI has no pure black),
+    stroke registered on the fly, thickness in hundredths of a mm. A stroke with
+    no name takes the role's name; a name with no stroke is a standard type. A
+    field at `None` is not touched.
     """
     if style.color is not None:
         layer.rgb = style.color

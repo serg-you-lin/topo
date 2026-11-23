@@ -1,14 +1,14 @@
 """
 topo_dxf/sanitize.py
 --------------------
-Corregge dati DXF corrotti prima di qualsiasi processing geometrico.
+Fixes corrupted DXF data before any geometric processing.
 
-Questo modulo opera su entità ezdxf grezze — non conosce il core.
-Il chiamante è responsabile di aprire il documento e passare msp.
-Le funzioni lavorano in-place e stampano messaggi per ogni fix applicato.
+This module works on raw ezdxf entities — it does not know the core. The
+caller is responsible for opening the document and passing msp. The functions
+work in place and print messages for each fix applied.
 
-Funzioni pubbliche:
-    sanitize — esegue tutti i sanitizer in sequenza
+Public functions:
+    sanitize — runs all the sanitizers in sequence
 """
 
 from topo.precision import FLOAT_NOISE
@@ -19,23 +19,19 @@ _FLATTENABLE_TYPES = frozenset({'LINE', 'ARC', 'CIRCLE', 'LWPOLYLINE', 'ELLIPSE'
 
 
 def normalize_ocs(msp, verbose: bool = False) -> None:
-    """
-    Normalizza il vettore di estrusione di tutte le entità OCS nel modelspace.
-    Converte (0,0,-1) → (0,0,1) senza alterare la geometria in WCS.
-    """
+    """Normalize the extrusion vector of all the OCS entities in the modelspace.
+    Converts (0,0,-1) → (0,0,1) without altering the geometry in WCS."""
     _upright.upright_all(msp)
     if verbose:
         print("[sanitize] normalize_ocs: vettori di estrusione normalizzati")
 
 
 def flatten_z(msp, verbose: bool = False) -> int:
-    """
-    Porta a 0 tutte le coordinate Z != 0 per LINE, ARC, CIRCLE,
-    LWPOLYLINE e ELLIPSE.
+    """Bring to 0 all the Z != 0 coordinates for LINE, ARC, CIRCLE, LWPOLYLINE and
+    ELLIPSE.
 
-    Restituisce il numero di entità corrette — il chiamante decide se
-    stamparlo o metterlo nel canale warnings del Document.
-    """
+    Returns the number of entities fixed — the caller decides whether to print it
+    or put it in the Document's warnings channel."""
     fixed = 0
     skipped_types = set()
 
@@ -88,31 +84,26 @@ def flatten_z(msp, verbose: bool = False) -> int:
 
 
 def sanitize(msp, flatten_z_flag: bool = True, verbose: bool = False) -> int:
-    """
-    Esegue tutti i sanitizer in sequenza sul modelspace ricevuto.
-    Il chiamante è responsabile di aprire e salvare il documento.
+    """Run all the sanitizers in sequence on the received modelspace. The caller is
+    responsible for opening and saving the document.
 
     Args:
-        msp:            modelspace ezdxf
-        flatten_z_flag: se True, esegue flatten_z
-        verbose:        se True, stampa dettaglio per ogni entità corretta
+        msp:            ezdxf modelspace
+        flatten_z_flag: if True, runs flatten_z
+        verbose:        if True, prints detail for every entity fixed
 
-    Restituisce il numero di entità con Z != 0 riportate sul piano
-    (0 se flatten_z_flag è False).
-    """
+    Returns the number of entities with Z != 0 brought onto the plane (0 if
+    flatten_z_flag is False)."""
     normalize_ocs(msp, verbose=verbose)
     if flatten_z_flag:
         return flatten_z(msp, verbose=verbose)
     return 0
 
 def _explode_inserts(msp, sink: list = None) -> int:
-    """
-    Esplode tutti gli INSERT (blocchi) nel modelspace in entità primitive.
-    Restituisce il numero di INSERT esplosi.
+    """Explode all the INSERTs (blocks) in the modelspace into primitive entities.
+    Returns the number of INSERTs exploded.
 
-    Se `sink` è una lista, i fallimenti di esplosione ci vengono aggiunti
-    invece di essere stampati.
-    """
+    If `sink` is a list, explosion failures are added to it instead of being printed."""
     inserts = list(msp.query('INSERT'))
     if not inserts:
         return 0
@@ -129,16 +120,14 @@ def _explode_inserts(msp, sink: list = None) -> int:
 
 
 def _explode_hatches(msp, sink: list = None, tolerance: float = FLOAT_NOISE) -> int:
-    """
-    Sostituisce ogni HATCH a pattern con le LINE del suo pattern, tagliate
-    sul bordo, con layer/colore/tipo linea dell'HATCH. Un riempimento pieno
-    non ha righe: resta e finisce negli avvisi. Restituisce gli HATCH esplosi.
+    """Replace every pattern HATCH with the LINEs of its pattern, cut on the border,
+    with the HATCH's layer/colour/linetype. A solid fill has no lines: it stays
+    and ends in the warnings. Returns the HATCHes exploded.
 
-    Un bordo salvato a pezzi (percorsi aperti, lati fuori fila) si rimette in
-    anelli chiusi coi soli lati del file (D253). `tolerance` è quasi zero: dentro
-    un HATCH i capi in comune sono scritti uguali, e la tolleranza dei nodi
-    renderebbe ambiguo un lato corto quanto lei.
-    """
+    A border saved in pieces (open paths, sides out of order) is put back into
+    closed rings with the file's sides only. `tolerance` is almost zero: inside a
+    HATCH the shared ends are written equal, and the node tolerance would make a
+    side as short as it ambiguous."""
     from ezdxf.render.hatching import hatch_entity
 
     hatches = [h for h in msp.query("HATCH") if not h.dxf.solid_fill]
@@ -157,8 +146,8 @@ def _explode_hatches(msp, sink: list = None, tolerance: float = FLOAT_NOISE) -> 
                 if rings is None:
                     open_left.append(hatch.dxf.get("pattern_name", "?"))
             if rings is None:
-                # jiggle_origin di ezdxf sposta l'origine del pattern a caso: le
-                # righe devono essere quelle del file, uguali a ogni lettura
+                # ezdxf's jiggle_origin moves the pattern origin at random: the lines must be
+                # those of the file, the same at every reading
                 segments = list(hatch_entity(hatch, jiggle_origin=False))
             else:
                 segments = list(_pattern_lines(hatch, rings))
@@ -178,12 +167,10 @@ def _explode_hatches(msp, sink: list = None, tolerance: float = FLOAT_NOISE) -> 
 
 
 def _explode_leaders(msp, sink: list = None) -> int:
-    """
-    Esplode nelle sue entità ogni LEADER/MULTILEADER senza una stringa sua
-    (D258): la direttrice e la punta sono geometria come un blocco esploso, e
-    mettere insieme una freccia e la lettera vicina è una lettura. Le punte a
-    blocco escono come INSERT e si esplodono qui. Restituisce i richiami esplosi.
-    """
+    """Explode into its entities every LEADER/MULTILEADER with no string of its own:
+    the leader line and the tip are geometry like an exploded block, and putting
+    an arrow and the nearby letter together is a reading. Block tips come out as
+    INSERTs and are exploded here. Returns the callouts exploded."""
     from .text_extractor import carries_string
 
     leaders = [e for e in msp.query("LEADER MULTILEADER") if not carries_string(e)]
@@ -205,16 +192,14 @@ def _explode_leaders(msp, sink: list = None) -> int:
 
 
 def _explode_fills(msp, sink: list = None) -> set:
-    """
-    Sostituisce ogni area piena col suo bordo in entità normali (D255): SOLID e
-    TRACE coi loro lati, un HATCH pieno coi lati del suo bordo, una polilinea
-    con larghezza con la sagoma che disegna. Restituisce gli handle delle
-    entità nuove: i loro lati sono `EdgeStyle.filled`.
+    """Replace every filled area with its border in normal entities: SOLID and TRACE
+    with their sides, a solid HATCH with the sides of its border, a polyline with
+    width with the outline it draws. Returns the handles of the new entities:
+    their sides are `EdgeStyle.filled`.
 
-    Il bordo di un HATCH esce lato per lato, così com'è nel file (lo stesso
-    principio di D253): le giunzioni le fa il grafo di topo dai capi, e un
-    bordo salvato a pezzi non viene mai chiuso su una corda.
-    """
+    The border of a HATCH comes out side by side, as it is in the file (the same
+    principle as the pattern HATCH): the joins are made by topo's graph from the
+    ends, and a border saved in pieces is never closed on a chord."""
     from .text_extractor import _solid_points
 
     filled: set = set()
@@ -272,7 +257,7 @@ def _explode_fills(msp, sink: list = None) -> set:
 
 
 def _has_width(poly) -> bool:
-    """Una polilinea disegnata con una larghezza (costante o per vertice)."""
+    """A polyline drawn with a width (constant or per vertex)."""
     if poly.dxftype() == "LWPOLYLINE":
         if (poly.dxf.get("const_width", 0) or 0) > 0:
             return True
@@ -284,12 +269,9 @@ def _has_width(poly) -> bool:
 
 
 def _hatch_boundary_entities(msp, hatch, attribs: dict) -> list:
-    """
-    I lati del bordo di un HATCH come entità del modelspace, uno per lato:
-    LINE, ARC, ELLIPSE, SPLINE; un percorso polilinea come LWPOLYLINE chiusa.
-    Gli archi e le ellissi orari ezdxf li ha già girati antiorari al
-    caricamento: escono esatti.
-    """
+    """The sides of a HATCH border as modelspace entities, one per side: LINE, ARC,
+    ELLIPSE, SPLINE; a polyline path as a closed LWPOLYLINE. Clockwise arcs and
+    ellipses ezdxf already turned counter-clockwise at load: they come out exact."""
     from ezdxf.lldxf.const import BOUNDARY_PATH_TEXTBOX
     from ezdxf.math import OCS, Vec3
 
@@ -339,7 +321,7 @@ def _hatch_boundary_entities(msp, hatch, attribs: dict) -> list:
 
 
 def _edge_ends(edge):
-    """I due capi di un lato di un EdgePath, come Vec2."""
+    """The two ends of a side of an EdgePath, as Vec2."""
     from ezdxf.math import Vec2
     if edge.type.name == "LINE":
         return Vec2(edge.start), Vec2(edge.end)
@@ -347,7 +329,7 @@ def _edge_ends(edge):
 
 
 def _boundary_in_pieces(hatch, tolerance: float) -> bool:
-    """Il bordo ha un EdgePath i cui lati non vanno testa-coda fino a tornare al primo."""
+    """The border has an EdgePath whose sides do not go head-to-tail until they return to the first."""
     for path in hatch.paths.rendering_paths(hatch.dxf.hatch_style):
         if not hasattr(path, "edges") or not path.edges:
             continue
@@ -359,11 +341,9 @@ def _boundary_in_pieces(hatch, tolerance: float) -> bool:
 
 
 def _boundary_rings(hatch, tolerance: float):
-    """
-    I lati del bordo di `hatch` incatenati in anelli chiusi (ezdxf `Path`),
-    in tutti e due i versi; i percorsi polilinea restano come sono. None se un
-    lato non si chiude o un capo ha più di un seguito: allora non si sceglie.
-    """
+    """The sides of the border of `hatch` chained into closed rings (ezdxf `Path`),
+    in both directions; polyline paths stay as they are. None if a side does not
+    close or an end has more than one continuation: then nothing is chosen."""
     from ezdxf.lldxf.const import BOUNDARY_PATH_TEXTBOX
     from ezdxf.path import from_hatch_boundary_path
 
@@ -394,7 +374,7 @@ def _boundary_rings(hatch, tolerance: float):
 
 
 def _edge_piece(edge):
-    """Un lato di un EdgePath come `Path` aperto, dal suo inizio alla sua fine."""
+    """A side of an EdgePath as an open `Path`, from its start to its end."""
     from ezdxf.entities.boundary_paths import EdgePath
     from ezdxf.path import Command, Path, from_hatch_boundary_path
 
@@ -404,7 +384,7 @@ def _edge_piece(edge):
         return piece
     one = EdgePath()
     one.edges.append(edge)
-    # ezdxf chiude ogni percorso tornando all'inizio: quel lato non è del file
+    # ezdxf closes every path by returning to the start: that side is not the file's
     closed = from_hatch_boundary_path(one)
     piece = Path(closed.start)
     for cmd in list(closed.commands())[:-1]:
@@ -418,7 +398,7 @@ def _edge_piece(edge):
 
 
 def _pattern_lines(hatch, rings):
-    """Le righe del pattern di `hatch` dentro `rings`, come `hatch_entity` (senza jiggle)."""
+    """The pattern lines of `hatch` inside `rings`, like `hatch_entity` (without jiggle)."""
     from ezdxf.math import Vec3
     from ezdxf.render.hatching import hatch_paths, pattern_baselines
 
@@ -434,8 +414,7 @@ def _pattern_lines(hatch, rings):
 
 
 def _explode_failed(sink, dxftype: str, failed: list) -> None:
-    """Un `Diagnostic` per tipo con tutte le esplosioni fallite (D233); senza
-    `sink` lo stampa."""
+    """One `Diagnostic` per type with all the failed explosions; without `sink` it prints it."""
     if not failed:
         return
     msg = Diagnostic("dxf-explode-failed", f"{len(failed)} {dxftype} could not be exploded, left out",
@@ -446,14 +425,12 @@ def _explode_failed(sink, dxftype: str, failed: list) -> None:
         print(msg)
 
 
-# ---------------------------------------------------------------------------
-# Copie esatte: due entità DXF con la stessa geometria sono una copia, si
-# tiene la prima. La chiave si calcola dal formato nativo e il confronto è
-# dell'adapter (D125: un adapter usa solo i nomi pubblici di topo).
+# Exact copies: two DXF entities with the same geometry are a copy, the first is
+# kept. The key is computed from the native format and the comparison is the
+# adapter's (an adapter uses only topo's public names).
 #   extract_keyed_entities — msp → List[(key, entity)]
-#   delete_entities        — elimina entità dal msp
-#   deduplicate            — extract + confronto + delete → int
-# ---------------------------------------------------------------------------
+#   delete_entities        — deletes entities from the msp
+#   deduplicate            — extract + comparison + delete → int
 
 from typing import Any, Hashable, Iterable, List, Optional, Tuple
 
@@ -463,11 +440,8 @@ from typing import Any, Hashable, Iterable, List, Optional, Tuple
 # ---------------------------------------------------------------------------
 
 def _key_for(entity) -> Optional[Hashable]:
-    """
-    Restituisce una chiave hashable che identifica univocamente
-    la geometria dell'entità, indipendente dall'handle DXF.
-    Restituisce None per tipi non gestiti o in caso di errore.
-    """
+    """Return a hashable key that uniquely identifies the entity's geometry,
+    independent of the DXF handle. Returns None for unhandled types or on error."""
     t     = entity.dxftype()
     layer = entity.dxf.get('layer', '0')
 
@@ -510,16 +484,13 @@ def _key_for(entity) -> Optional[Hashable]:
 # ---------------------------------------------------------------------------
 
 def extract_keyed_entities(msp) -> List[Tuple[Hashable, Any]]:
-    """
-    Produce la lista (key, entity) per tutte le entità del msp.
-    Le entità con tipo non gestito producono key=None e vengono
-    ignorate da _find_duplicates.
-    """
+    """Produce the list (key, entity) for all the msp entities. Entities of an
+    unhandled type produce key=None and are ignored by _find_duplicates."""
     return [(_key_for(entity), entity) for entity in msp]
 
 
 def delete_entities(refs: List[Any], msp) -> None:
-    """Elimina le entità dal msp in-place."""
+    """Delete the entities from the msp in place."""
     for entity in refs:
         msp.delete_entity(entity)
 
@@ -527,16 +498,14 @@ def delete_entities(refs: List[Any], msp) -> None:
 def _find_duplicates(
     keyed_entities: Iterable[Tuple[Hashable, Any]],
 ) -> List[Any]:
-    """
-    Restituisce i ref delle entità duplicate (seconda occorrenza in poi).
+    """Return the refs of the duplicate entities (second occurrence onwards).
 
-    Parametri:
-        keyed_entities : iterabile di (key, ref) — l'adapter produce le chiavi,
-                         ref è opaco (l'adapter sa come eliminarlo)
+    Parameters:
+        keyed_entities : iterable of (key, ref) — the adapter produces the keys,
+                         ref is opaque (the adapter knows how to delete it)
 
-    Restituisce:
-        Lista di ref da eliminare. L'ordine riflette l'ordine di input.
-    """
+    Returns:
+        List of refs to delete. The order reflects the input order."""
     seen:      set       = set()
     to_delete: List[Any] = []
 
@@ -552,11 +521,9 @@ def _find_duplicates(
 
 
 def deduplicate(msp) -> int:
-    """
-    Shortcut: estrae chiavi, trova duplicati, li elimina.
+    """Shortcut: extract keys, find duplicates, delete them.
 
-    Restituisce il numero di entità eliminate.
-    """
+    Returns the number of entities deleted."""
     keyed    = extract_keyed_entities(msp)
     to_delete = _find_duplicates(keyed)
     delete_entities(to_delete, msp)

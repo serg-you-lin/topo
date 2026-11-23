@@ -1,11 +1,11 @@
 """
 topo_pdf/loader.py
 ------------------
-Punto di ingresso unico per aprire, estrarre e convertire geometrie da un file PDF.
+Single entry point to open, extract and convert geometries from a PDF file.
 
-Funzioni pubbliche:
-    load_pdf — apre il PDF, estrae i disegni, li sanifica tramite snap geometrico 
-               e restituisce una lista di Edge per il core.
+Public functions:
+    load_pdf — opens the PDF, extracts the drawings, sanitizes them by
+               geometric snap and returns a list of Edges for the core.
 """
 
 from topo.precision import PDF_SNAP
@@ -21,39 +21,34 @@ from .graph_adapter import map_sanitized_item_to_edge
 
 
 def load_pdf(path: str, snap_tolerance: float = PDF_SNAP) -> list:
-    """
-    Apre un documento PDF, estrae le geometrie vettoriali da tutte le pagine,
-    applica una sanificazione pesante (snap geometrico dei nodi vicini),
-    le converte in scala reale (mm) con l'asse Y cartesiano corretto,
-    e restituisce una lista di Edge topologici pronti per il core del grafo.
+    """Open a PDF document, extract the vector geometries from all the pages, apply
+    a heavy sanitization (geometric snap of nearby nodes), convert them to real
+    scale (mm) with the Cartesian Y axis corrected, and return a list of
+    topological Edges ready for the graph core.
 
     Args:
-        path:           percorso del file .pdf
-        snap_tolerance: distanza massima in mm sotto la quale due nodi vicini vengono fusi
+        path:           path of the .pdf file
+        snap_tolerance: maximum distance in mm below which two nearby nodes are merged
 
     Returns:
-        list[Edge] — pronti per essere passati a build_node_graph() o inseriti in un msp virtuale
-    """
-    # 1. Verifica preliminare dell'esistenza del file
+        list[Edge] — ready to be passed to build_node_graph() or put in a virtual msp"""
     if not os.path.isfile(path):
         raise FileNotFoundError(f"PDF file not found: {path}")
 
     all_edges = []
 
     try:
-        # 2. Apertura del file tramite PyMuPDF
         doc = fitz.open(path)
         print(f"[pdf/loader] Aperto PDF: {path} ({len(doc)} pagine)")
 
-        # 3. Iterazione su ogni pagina del documento
         for page_idx, page in enumerate(doc):
             page_height = page.rect.height
-            page_edges_count = 0  # Resetta il contatore per la pagina corrente
+            page_edges_count = 0  # reset the counter for the current page
 
-            # Estrazione dei pacchetti grafici grezzi (isole di dati Python nativi)
+            # Extraction of the raw graphic packets (islands of native Python data)
             drawings_packages = extract_drawings_from_page(page)
 
-            # Srotoliamo tutti i singoli item grezzi presenti nei vari pacchetti della pagina
+            # Unroll all the single raw items present in the page's various packets
             raw_items = []
             for package in drawings_packages:
                 raw_items.extend(package["items"])
@@ -65,10 +60,8 @@ def load_pdf(path: str, snap_tolerance: float = PDF_SNAP) -> list:
                 snap_tolerance=snap_tolerance
             )
 
-            # 5. Mappatura finale degli elementi puliti in Edge topologici
             for item in sanitized_items:
-                # i nodi stanno sulla griglia di topo (Edge.of, D113): niente
-                # cifre decimali proprie dell'adapter (D125)
+                # the nodes are the true points (Edge.of): no decimal digits of the adapter's own
                 mapped = map_sanitized_item_to_edge(item, page_idx)
                 if mapped is None:
                     continue
@@ -78,7 +71,6 @@ def load_pdf(path: str, snap_tolerance: float = PDF_SNAP) -> list:
 
             print(f"  [page {page_idx}] Estratti e sanificati {page_edges_count} elementi grafici convertiti in mm")
 
-        # 6. Chiusura del file e restituzione dei dati strutturati
         doc.close()
         return all_edges
 

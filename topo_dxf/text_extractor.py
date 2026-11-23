@@ -1,25 +1,25 @@
 """
 topo_dxf/text_extractor.py
 --------------------------
-Legge le entità di testo di un modelspace DXF (TEXT, MTEXT, DIMENSION, LEADER,
-MULTILEADER) e le traduce in ``topo.model.Text`` (MAP.md D138).
+Reads the text entities of a DXF modelspace (TEXT, MTEXT, DIMENSION, LEADER,
+MULTILEADER) and translates them into ``topo.model.Text``.
 
-È l'equivalente per i testi di quello che ``DxfAdapter.to_edges()`` è per
-la geometria: l'unico punto in cui i testi DXF vengono letti.
-Dopo ``extract()`` il modelspace sorgente non serve più.
+It is for texts what ``DxfAdapter.to_edges()`` is for geometry: the only point
+where DXF texts are read. After ``extract()`` the source modelspace is no
+longer needed.
 
-Compito: solo conoscenza di formato — dove sta il testo, come si appiattisce il
-blocco anonimo di una quota, cosa vuol dire ``<>``. NON decide cosa un testo
-significhi: quello è di ``anchor_texts()`` e dei consumatori.
+Task: format knowledge only — where the text is, how a dimension's anonymous
+block is flattened, what ``<>`` means. It does NOT decide what a text means:
+that is for ``anchor_texts()`` and the consumers.
 
-Tipi gestiti: TEXT, MTEXT, DIMENSION, LEADER, MULTILEADER.
-Non gestisce INSERT — si assume siano già stati esplosi da load_dxf().
+Handled types: TEXT, MTEXT, DIMENSION, LEADER, MULTILEADER.
+It does not handle INSERT — they are assumed already exploded by load_dxf().
 
-DIMENSION / LEADER / MULTILEADER non hanno una geometria "propria" nei campi
-DXF: la loro immagine (linee di misura, direttrici, frecce, testo) sta in un
-blocco anonimo espandibile con ``virtual_entities()``. La appiattiamo qui in
-primitive pure e la conserviamo in ``Text.rendered`` (RenderedGeometry),
-così ``write()`` la ri-materializza fedele all'originale.
+DIMENSION / LEADER / MULTILEADER have no "own" geometry in the DXF fields:
+their image (measure lines, leaders, arrows, text) is in an anonymous block
+expandable with ``virtual_entities()``. We flatten it here into pure
+primitives and keep it in ``Text.rendered`` (RenderedGeometry), so ``write()``
+re-materializes it faithful to the original.
 """
 
 from __future__ import annotations
@@ -38,12 +38,12 @@ from .mtext import clean_mtext, mleader_text
 
 TEXT_TYPES = frozenset({"TEXT", "MTEXT", "DIMENSION", "LEADER", "MULTILEADER"})
 
-# Errore massimo di corda per discretizzare archi/curve (mm).
-_ARC_SAGITTA = SAME_POINT  # D275
+# Maximum chord error to discretize arcs/curves (mm).
+_ARC_SAGITTA = SAME_POINT
 
 
 class DxfTextExtractor:
-    """Traduce le entità di testo di un msp in list[Text]."""
+    """Translate the text entities of a msp into list[Text]."""
 
     def __init__(self, msp, role_rules: Sequence[RoleRule] = ()):
         self.msp = msp
@@ -62,9 +62,8 @@ class DxfTextExtractor:
 
 def _to_text(entity, role_rules: Sequence[RoleRule] = ()) -> Optional[Text]:
     kind = entity.dxftype()
-    # Il ruolo dalle stesse regole degli edge, sul nome del layer: contano
-    # solo quelle sul nome, di un testo non si legge l'aspetto (D127). Il
-    # layer resta qui (D128).
+    # The role from the same rules as the edges, on the layer name: only those on
+    # the name count, a text's appearance is not read. The layer stays here.
     role = resolve_role(role_rules, entity.dxf.get("layer", "0"))
 
     if kind in ("TEXT", "MTEXT"):
@@ -97,18 +96,16 @@ def _to_text(entity, role_rules: Sequence[RoleRule] = ()) -> Optional[Text]:
     return None
 
 
-# ---------------------------------------------------------------------------
-# Punto d'ancoraggio — dove `write` riposiziona il testo
-# ---------------------------------------------------------------------------
+# --- Anchor point — where `write` repositions the text ---
 
-# Punto d'attacco di un MTEXT (gruppo 71, 1..9) → (halign, valign). MTEXT non
-# ha linea di base: la riga in basso è `bottom`.
+# Attachment point of an MTEXT (group 71, 1..9) → (halign, valign). MTEXT has no
+# baseline: the bottom row is `bottom`.
 _MTEXT_ALIGN = {
     1: ("left", "top"), 2: ("center", "top"), 3: ("right", "top"),
     4: ("left", "center"), 5: ("center", "center"), 6: ("right", "center"),
     7: ("left", "bottom"), 8: ("center", "bottom"), 9: ("right", "bottom"),
 }
-# Allineamento di un TEXT (ezdxf `TextEntityAlignment`) → (halign, valign).
+# Alignment of a TEXT (ezdxf `TextEntityAlignment`) → (halign, valign).
 _TEXT_ALIGN = {
     "LEFT": ("left", "baseline"), "CENTER": ("center", "baseline"),
     "RIGHT": ("right", "baseline"), "MIDDLE": ("center", "center"),
@@ -122,15 +119,13 @@ _TEXT_ALIGN = {
 
 
 def text_placement(entity) -> Optional[Tuple[Tuple[float, float], str, str]]:
-    """
-    (punto, halign, valign) di un TEXT/MTEXT (D256): il punto a cui la
-    sorgente aggancia la stringa e come la stringa gli sta attorno.
+    """(point, halign, valign) of a TEXT/MTEXT: the point to which the source hooks
+    the string and how the string sits around it.
 
-    MTEXT: il punto d'inserimento col suo attacco. TEXT: l'inserimento se
-    allineato a sinistra sulla base, altrimenti il punto d'allineamento (il
-    gruppo 11, quello che il CAD rispetta); ALIGNED/FIT stanno fra i due
-    punti, e l'ancora è il loro punto medio. None senza un punto.
-    """
+    MTEXT: the insertion point with its attachment. TEXT: the insertion if
+    left-aligned on the baseline, otherwise the alignment point (group 11, the one
+    the CAD respects); ALIGNED/FIT lie between the two points, and the anchor is
+    their midpoint. None without a point."""
     t = entity.dxftype()
     if t == "MTEXT":
         ins = entity.dxf.get("insert")
@@ -156,13 +151,11 @@ def text_placement(entity) -> Optional[Tuple[Tuple[float, float], str, str]]:
 
 
 def text_anchor(entity) -> Optional[Tuple[float, float]]:
-    """
-    Punto d'ancoraggio XY di una quota o di un richiamo.
+    """XY anchor point of a dimension or a callout.
 
-    MULTILEADER e DIMENSION lo tengono in strutture annidate; LEADER non ce
-    l'ha e ricade sul fallback (poi lo si ricava dalla geometria appiattita).
-    Ritorna None se nessuna fonte è disponibile.
-    """
+    MULTILEADER and DIMENSION keep it in nested structures; LEADER has none and
+    falls back (then it is derived from the flattened geometry). Returns None if
+    no source is available."""
     t = entity.dxftype()
     if t == "MULTILEADER":
         return _mleader_anchor(entity)
@@ -172,7 +165,7 @@ def text_anchor(entity) -> Optional[Tuple[float, float]]:
 
 
 def _mleader_anchor(entity) -> Optional[Tuple[float, float]]:
-    """Primo vertice della direttrice di un MULTILEADER."""
+    """First vertex of the leader of a MULTILEADER."""
     try:
         leader = entity.context.mleader
         if leader and leader.vertices:
@@ -184,7 +177,7 @@ def _mleader_anchor(entity) -> Optional[Tuple[float, float]]:
 
 
 def _dimension_anchor(entity) -> Optional[Tuple[float, float]]:
-    """Def-point di una DIMENSION."""
+    """Def-point of a DIMENSION."""
     try:
         return (entity.dxf.defpoint.x, entity.dxf.defpoint.y)
     except Exception:
@@ -208,10 +201,10 @@ def _fallback_anchor(entity) -> Optional[Tuple[float, float]]:
 # ---------------------------------------------------------------------------
 
 def _extract_content(entity) -> str:
-    """Testo pulito dell'entità, stringa vuota se non ne ha."""
+    """Clean text of the entity, empty string if it has none."""
     t = entity.dxftype()
     if t == "TEXT":
-        # spazi ai bordi compresi: l'ancora del testo li conta (D261)
+        # edge spaces included: the text's anchor counts them
         raw = entity.dxf.get("text", "") or ""
         return raw if raw.strip() else ""
     if t == "MTEXT":
@@ -220,16 +213,13 @@ def _extract_content(entity) -> str:
 
 
 def _width_factor(entity) -> float:
-    """
-    Stretch orizzontale effettivo del testo (1.0 = nessuno).
+    """Effective horizontal stretch of the text (1.0 = none).
 
-    TEXT porta un proprio override (gruppo DXF 41) che vince se non è il
-    default neutro; MTEXT non ha un equivalente per-entità utilizzabile (il
-    suo gruppo 41 è la larghezza di colonna, non lo stretch dei glifi) — in
-    quel caso, e quando TEXT non ha un override esplicito, si legge il valore
-    dallo STYLE assegnato all'entità (dove i cartigli SolidWorks, per dire,
-    tengono davvero la condensazione).
-    """
+    TEXT carries its own override (DXF group 41) that wins if it is not the
+    neutral default; MTEXT has no usable per-entity equivalent (its group 41 is
+    the column width, not the glyph stretch) — in that case, and when TEXT has no
+    explicit override, the value is read from the STYLE assigned to the entity
+    (where SolidWorks title blocks, say, really keep the condensation)."""
     if entity.dxftype() == "TEXT":
         try:
             own = float(entity.dxf.get("width", 1.0))
@@ -274,10 +264,10 @@ def _dimension_text_of(entity, pos, role: str) -> Optional[Text]:
 
 
 def _bare_dimension(entity, pos, role: str, text: str, measures) -> Optional[Text]:
-    """Quota senza blocco (così le scrive QCAD): il file non ne disegna niente,
-    né il numero. Resta la stringa del file col ``<>`` aperto, centrata sul
-    punto medio del testo (codice 11), e cosa misura (D262, D264). Senza quel
-    punto resta `pos`."""
+    """Dimension with no block (the way QCAD writes them): the file draws nothing of
+    it, not even the number. The file's string with the open ``<>`` remains,
+    centred on the text midpoint (code 11), and what it measures. Without that
+    point `pos` stays."""
     if not text.strip():
         return None
     tm = entity.dxf.get("text_midpoint")
@@ -290,12 +280,10 @@ def _bare_dimension(entity, pos, role: str, text: str, measures) -> Optional[Tex
 
 
 def dimension_measures(entity):
-    """
-    Cosa misura una DIMENSION, coi punti di definizione del file (D264):
-    lineare/allineata → `MeasuredDistance`, raggio → `MeasuredRadius`,
-    diametro → `MeasuredDiameter`, angolare fra due linee → `MeasuredAngle`.
-    None per gli altri tipi (angolare a 3 punti, coordinata) o se manca un punto.
-    """
+    """What a DIMENSION measures, with the file's definition points: linear/aligned →
+    `MeasuredDistance`, radius → `MeasuredRadius`, diameter → `MeasuredDiameter`,
+    angular between two lines → `MeasuredAngle`. None for the other types
+    (3-point angular, ordinate) or if a point is missing."""
     dxf = entity.dxf
 
     def pt(name):
@@ -331,9 +319,9 @@ def dimension_measures(entity):
 
 
 def _dimension_style(entity, angular: bool):
-    """Quello che la quota dice del suo numero (D265): decimali (`dimdec`,
-    `dimadec` per un angolo) e fattore da lunghezza disegnata a vera (`dimlfac`).
-    L'aspetto (altezza, rotazione) è del consumer."""
+    """What the dimension says about its number: decimals (`dimdec`, `dimadec` for an
+    angle) and factor from drawn to true length (`dimlfac`). The appearance
+    (height, rotation) is the consumer's."""
     try:
         o = entity.override()
         dec = o.get("dimadec" if angular else "dimdec")
@@ -344,28 +332,27 @@ def _dimension_style(entity, angular: bool):
 
 
 def written_by_hand(entity) -> bool:
-    """La quota ha il numero scritto a mano: il campo testo del file non è
-    vuoto e non ha `<>`, quindi decimali e fattore non lo producono (D265)."""
+    """The dimension has the number written by hand: the file's text field is not
+    empty and has no `<>`, so decimals and factor do not produce it."""
     raw = entity.dxf.get("text", "") or ""
     return bool(raw.strip()) and "<>" not in raw
 
 
 def hand_written_dimensions(msp) -> int:
-    """Quante DIMENSION hanno il numero scritto a mano (D265)."""
+    """How many DIMENSIONs have the number written by hand."""
     return sum(1 for e in msp.query("DIMENSION") if written_by_hand(e))
 
 
 def bare_dimensions(msp) -> int:
-    """Quante DIMENSION non portano il loro disegno nel file (nessun blocco
-    geometria): di quelle resta solo la stringa (D262)."""
+    """How many DIMENSIONs do not carry their drawing in the file (no geometry
+    block): of those only the string remains."""
     return sum(1 for e in msp.query("DIMENSION") if e.get_geometry_block() is None)
 
 
 def _on_string(rendered: RenderedGeometry, pos) -> dict:
-    """Punto, allineamento, altezza e rotazione di un testo col suo disegno:
-    quelli della sua prima stringa, nell'ordine della sorgente (D260), così
-    `position` sta dove la stringa si legge come per ogni altro testo. Senza
-    stringhe resta `pos`."""
+    """Point, alignment, height and rotation of a text with its drawing: those of its
+    first string, in the source's order, so `position` is where the string reads
+    as for any other text. Without strings `pos` stays."""
     if not rendered.texts:
         return {"position": pos}
     first = rendered.texts[0]
@@ -377,10 +364,8 @@ _NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
 
 
 def _shown_text(override: Optional[str], rendered: RenderedGeometry) -> str:
-    """
-    La stringa che la quota mostra: l'override con ``<>`` sostituito dalla
-    misura; senza override, i testi dell'immagine; senza immagine, la misura.
-    """
+    """The string the dimension shows: the override with ``<>`` replaced by the
+    measure; without override, the image's texts; without image, the measure."""
     if override is not None:
         return override.replace("<>", _shown_value(rendered, override))
     if rendered.texts:
@@ -389,10 +374,10 @@ def _shown_text(override: Optional[str], rendered: RenderedGeometry) -> str:
 
 
 def _shown_value(rendered: RenderedGeometry, override: str = "") -> str:
-    """La misura come la scrive il disegno (precisione, virgola): una stringa
-    che è solo un numero, se no il primo numero dei testi che l'override non
-    scrive già (``R5`` per ``R<>``, ``10`` di ``10±0.2`` per ``<>±0.2``).
-    topo non la calcola mai (D263, D264): nessun numero, ``<>`` resta."""
+    """The measure as the drawing writes it (precision, comma): a string that is just
+    a number, otherwise the first number of the texts that the override does not
+    already write (``R5`` for ``R<>``, ``10`` of ``10±0.2`` for ``<>±0.2``). topo
+    never computes it: no number, ``<>`` stays."""
     for t in rendered.texts:
         if _NUMBER.fullmatch(t.content.strip()):
             return t.content.strip()
@@ -405,18 +390,16 @@ def _shown_value(rendered: RenderedGeometry, override: str = "") -> str:
 
 
 def _dimension_override(entity) -> Optional[str]:
-    """
-    Override esplicito del testo quota, o None se la quota mostra la misura.
+    """Explicit override of the dimension text, or None if the dimension shows the measure.
 
-    Campo DXF `text`: "" / "<>" → misura calcolata (nessun override);
-    " " → testo soppresso; "...<>" → prefisso/suffisso; altro → override.
-    `_shown_text` risolve "<>" con la misura (D138).
-    """
+    DXF field `text`: "" / "<>" → computed measure (no override); " " →
+    suppressed text; "...<>" → prefix/suffix; other → override. `_shown_text`
+    resolves "<>" with the measure."""
     raw = entity.dxf.get("text", "") or ""
     if raw in ("", "<>"):
         return None
     if raw.strip():
-        raw = plain_mtext(raw).strip()   # codici di formattazione MTEXT (\A1; ...)
+        raw = plain_mtext(raw).strip()   # MTEXT formatting codes (\A1; ...)
         if raw in ("", "<>"):
             return None
     for code, char in _SPECIAL_CODES.items():
@@ -424,7 +407,7 @@ def _dimension_override(entity) -> Optional[str]:
     return _UNICODE_ESCAPE.sub(lambda m: chr(int(m.group(1), 16)), raw)
 
 
-# Codici speciali del testo DXF → carattere (diametro, grado, più-meno).
+# Special DXF text codes → character (diameter, degree, plus-minus).
 _SPECIAL_CODES = {"%%c": "Ø", "%%d": "°", "%%p": "±"}
 _UNICODE_ESCAPE = re.compile(r"\\[Uu]\+([0-9A-Fa-f]{4})")   # "\U+00B0" → "°"
 
@@ -434,9 +417,9 @@ _UNICODE_ESCAPE = re.compile(r"\\[Uu]\+([0-9A-Fa-f]{4})")   # "\U+00B0" → "°"
 # ---------------------------------------------------------------------------
 
 def carries_string(entity) -> bool:
-    """Un LEADER/MULTILEADER porta una stringa sua: nel campo dell'entità o
-    fra le entità del suo blocco. Senza, è geometria (D258): la stessa regola
-    per l'estrattore dei testi e per il loader che lo esplode."""
+    """A LEADER/MULTILEADER carries a string of its own: in the entity's field or
+    among the entities of its block. Without, it is geometry: the same rule for
+    the text extractor and for the loader that explodes it."""
     if clean_mtext(mleader_text(entity)):
         return True
     try:
@@ -451,21 +434,21 @@ def _leader_text(entity, pos, role: str) -> Optional[Text]:
     if rendered.is_empty():
         return None
 
-    # Il testo del leader: prima il campo dedicato dell'entità, poi il primo
-    # testo appiattito nel blocco.
+    # The leader's text: first the entity's dedicated field, then the first
+    # flattened text in the block.
     text = clean_mtext(mleader_text(entity))
     if not text and rendered.texts:
         text = rendered.texts[0].content
     if not text:
-        # nessuna stringa sua: è geometria, la esplode il loader (D258)
+        # no string of its own: it is geometry, the loader explodes it
         return None
     vertices = _leader_vertices(entity)
 
     if pos is None:
-        # Fallback all'ancora: primo vertice della direttrice (dove punta), poi
-        # il centro dell'immagine. Molti MULTILEADER (es. Solid Edge) non
-        # espongono né anchor né vertici né geometria: lì l'unica ancora è la
-        # posizione del testo appiattito.
+        # Fallback to the anchor: first vertex of the leader (where it points), then the
+        # centre of the image. Many MULTILEADERs (e.g. Solid Edge) expose neither anchor
+        # nor vertices nor geometry: there the only anchor is the position of the
+        # flattened text.
         if vertices:
             pos = vertices[0]
         else:
@@ -497,12 +480,10 @@ def _leader_vertices(entity) -> List[Tuple[float, float]]:
     return []
 
 
-# ---------------------------------------------------------------------------
-# Appiattimento del blocco anonimo (DIMENSION / LEADER / MULTILEADER)
-# ---------------------------------------------------------------------------
+# --- Flattening of the anonymous block (DIMENSION / LEADER / MULTILEADER) ---
 
 def _render_block(entity) -> RenderedGeometry:
-    """Espande l'immagine dell'entità in strokes/fills/texts puri."""
+    """Expand the entity's image into pure strokes/fills/texts."""
     strokes: List[List[Tuple[float, float]]] = []
     fills: List[List[Tuple[float, float]]] = []
     texts: List[RenderedText] = []
@@ -583,7 +564,7 @@ def _xy(p) -> Tuple[float, float]:
 
 
 def _flattened_points(entity) -> List[Tuple[float, float]]:
-    """Punti di un ARC o CIRCLE appiattito alla sagitta `_ARC_SAGITTA`."""
+    """Points of an ARC or CIRCLE flattened at the sagitta `_ARC_SAGITTA`."""
     try:
         return [(float(p[0]), float(p[1])) for p in entity.flattening(_ARC_SAGITTA)]
     except Exception:

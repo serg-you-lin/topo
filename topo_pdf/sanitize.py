@@ -1,10 +1,11 @@
 """
 topo_pdf/sanitize.py
 --------------------
-Sanitizzazione geometrica dei dati estratti dal PDF prima della conversione in Edge.
+Geometric sanitization of the data extracted from the PDF before conversion
+into Edges.
 
-Funzioni pubbliche:
-    sanitize_pdf_geometries — esegue lo snap dei nodi vicini ed elimina i segmenti duplicati o degeneri
+Public functions:
+    sanitize_pdf_geometries — snaps nearby nodes and removes duplicate or degenerate segments
 """
 
 
@@ -13,19 +14,17 @@ from topo.precision import PDF_SNAP
 
 
 def sanitize_pdf_geometries(raw_items: list, page_height: float, snap_tolerance: float = PDF_SNAP) -> list:
-    """
-    Prende gli item geometrici grezzi estratti dall'extractor, applica la conversione 
-    in mm con inversione dell'asse Y, esegue lo snap dei punti vicini entro una tolleranza,
-    ed elimina i micro-segmenti degeneri (es. linee lunghe meno della tolleranza).
+    """Take the raw geometric items extracted by the extractor, apply the mm
+    conversion with Y-axis inversion, snap nearby points within a tolerance, and
+    remove degenerate micro-segments (e.g. lines shorter than the tolerance).
 
     Args:
-        raw_items:       lista di tuple (cmd, ...) provenienti da extractor_adapter
-        page_height:     altezza della pagina PDF in punti (pt)
-        snap_tolerance:  distanza massima in mm sotto la quale due punti vengono fusi (default 0.15 mm)
+        raw_items:       list of tuples (cmd, ...) coming from extractor_adapter
+        page_height:     height of the PDF page in points (pt)
+        snap_tolerance:  maximum distance in mm below which two points are merged (default 0.15 mm)
 
     Returns:
-        list — lista di item pronti, sanificati e già convertiti in coordinate float standard (mm)
-    """
+        list — ready items, sanitized and already converted to standard float coordinates (mm)"""
     from .geometry_adapter import transform_point, sample_bezier_cubic
     import math
 
@@ -53,7 +52,7 @@ def sanitize_pdf_geometries(raw_items: list, page_height: float, snap_tolerance:
             p1 = _get_snapped_point(p1_raw)
             p2 = _get_snapped_point(p2_raw)
             
-            # 3. Elimina segmenti degeneri (se i punti collassano sullo stesso nodo o sono troppo corti)
+            # remove degenerate segments (points collapsing onto the same node, or too short)
             if math.hypot(p2[0] - p1[0], p2[1] - p1[1]) > snap_tolerance:
                 sanitized_items.append(("l", p1, p2))
 
@@ -64,14 +63,14 @@ def sanitize_pdf_geometries(raw_items: list, page_height: float, snap_tolerance:
             p2 = _get_snapped_point(transform_point(rect.x1, rect.y1, page_height))
             p3 = _get_snapped_point(transform_point(rect.x0, rect.y1, page_height))
             
-            # Evita rettangoli collassati a linee o punti
+            # avoid rectangles collapsed to lines or points
             if p0 != p1 and p1 != p2:
                 sanitized_items.append(("re", [p0, p1, p2, p3]))
 
         elif cmd == "qu":
             quad = item[1]
             pts = [_get_snapped_point(transform_point(p.x, p.y, page_height)) for p in quad]
-            if len(set(pts)) >= 3:  # Almeno 3 punti distinti per fare un quadrilatero valido
+            if len(set(pts)) >= 3:  # at least 3 distinct points to make a valid quadrilateral
                 sanitized_items.append(("qu", pts))
 
         elif cmd == "c":
@@ -85,10 +84,11 @@ def sanitize_pdf_geometries(raw_items: list, page_height: float, snap_tolerance:
             p3 = _get_snapped_point(p3_raw)
             p4 = _get_snapped_point(p4_raw)
             
-            # Campioniamo direttamente la curva in una poligonale (punti discretizzati)
+            # sample the curve directly into a polyline (discretized points)
             pts_curve = sample_bezier_cubic(p1, p2, p3, p4, num_segments=16)
             
-            # Applichiamo lo snap anche ai punti interni campionati della curva
+            # apply the snap to the sampled interior points of the curve too
+            #
             pts_curve_snapped = [_get_snapped_point(pt) for pt in pts_curve]
             
             # Pulizia da duplicati consecutivi generati dallo snapping

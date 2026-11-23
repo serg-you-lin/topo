@@ -2,14 +2,14 @@
 """
 topo_dxf/loader.py
 ------------------
-Punto di ingresso unico per aprire un file DXF o DWG.
+Single entry point to open a DXF or DWG file.
 
-Funzioni pubbliche:
-    load_dxf — apre, audita, upgradia, sanitizza, traduce → Document
+Public functions:
+    load_dxf — opens, audits, upgrades, sanitizes, translates → Document
 
-load_dxf è l'UNICO punto in cui ezdxf viene toccato per la lettura: dopo di essa
-il documento ezdxf sorgente sparisce e heal()/write() lavorano solo sul
-Document restituito.
+load_dxf is the ONLY point where ezdxf is touched for reading: after it the
+source ezdxf document disappears and heal()/write() work only on the returned
+Document.
 """
 
 import os
@@ -25,14 +25,14 @@ from .adapter import DxfAdapter
 from .text_extractor import DxfTextExtractor, bare_dimensions, carries_string, hand_written_dimensions
 from topo.model import Diagnostic, Document, RoleRule
 
-# Percorso dell'eseguibile ODA File Converter. `topo` NON legge i DWG da solo:
-# il supporto DWG di ezdxf È l'addon `odafc`, che è un wrapper attorno a ODA
-# File Converter (converte il DWG in DXF temporaneo, ezdxf rilegge il DXF).
-# Download (gratuito): https://www.opendesign.com/guestfiles/oda_file_converter
+# Path of the ODA File Converter executable. `topo` does NOT read DWGs by
+# itself: ezdxf's DWG support IS the `odafc` addon, a wrapper around ODA File
+# Converter (it converts the DWG to a temporary DXF, ezdxf re-reads the DXF).
+# Download (free): https://www.opendesign.com/guestfiles/oda_file_converter
 ODA_DOWNLOAD_URL = "https://www.opendesign.com/guestfiles/oda_file_converter"
 ODA_PATH = os.environ.get("ODA_PATH")
 
-# Guida rapida alle variabili d'ambiente per SO — rimando nei messaggi d'errore.
+# Quick guide to the environment variables per OS — pointer in the error messages.
 _ENV_VAR_HELP = (
     "How to set ODA_PATH:\n"
     "  Windows (permanente): setx ODA_PATH \"C:\\Program Files\\ODA\\"
@@ -64,7 +64,7 @@ def _text_signature(text) -> tuple:
 
 
 def _merge_texts(base: list, extra: list) -> None:
-    """Aggiunge a `base` i testi di `extra` non già presenti (per firma)."""
+    """Add to `base` the texts of `extra` not already present (by signature)."""
     seen = {_text_signature(t) for t in base}
     for text in extra:
         sig = _text_signature(text)
@@ -73,8 +73,8 @@ def _merge_texts(base: list, extra: list) -> None:
             base.append(text)
 
 
-# Tipi che topo sa ri-materializzare in to_dxf(): geometria di taglio +
-# testi. Tutto il resto viene perso nel write-back.
+# Types topo knows how to re-materialize in to_dxf(): cutting geometry + texts.
+# Everything else is lost in the write-back.
 _ROUNDTRIP_TYPES = frozenset({
     "LINE", "ARC", "CIRCLE", "ELLIPSE", "SPLINE", "LWPOLYLINE", "POLYLINE",
     "POINT", "TEXT", "MTEXT", "DIMENSION", "LEADER", "MULTILEADER", "INSERT",
@@ -82,7 +82,7 @@ _ROUNDTRIP_TYPES = frozenset({
 
 
 def _warn_non_roundtrip_types(msp, sink: list, verbose: bool = False) -> list[str]:
-    """Avvisa sui tipi di entità che to_dxf() non riscrive (HATCH, IMAGE, …); li restituisce."""
+    """Warn about the entity types to_dxf() does not rewrite (HATCH, IMAGE, …); returns them."""
     lost = sorted({
         e.dxftype() for e in msp if e.dxftype() not in _ROUNDTRIP_TYPES
     })
@@ -94,8 +94,8 @@ def _warn_non_roundtrip_types(msp, sink: list, verbose: bool = False) -> list[st
 
 
 def _warn_bare_dimensions(msp, sink: list, verbose: bool = False) -> None:
-    """Avvisa delle quote senza disegno nel file (resta solo la stringa, D262)
-    e di quelle col numero scritto a mano (D265)."""
+    """Warn about dimensions with no drawing in the file (only the string remains)
+    and those with the number written by hand."""
     n = bare_dimensions(msp)
     if n:
         _emit(sink, Diagnostic(
@@ -119,18 +119,16 @@ def _emit(sink: list, msg: str, verbose: bool = False) -> None:
 
 
 def _configure_odafc(sink: list = None, verbose: bool = False) -> None:
-    """
-    Punta l'addon `odafc` all'eseguibile ODA File Converter.
+    """Point the `odafc` addon at the ODA File Converter executable.
 
-    Ordine di ricerca:
-      1. variabile d'ambiente ODA_PATH (full path dell'eseguibile)
-      2. `ODAFileConverter` nel PATH di sistema (odafc lo trova da solo)
+    Search order:
+      1. environment variable ODA_PATH (full path of the executable)
+      2. `ODAFileConverter` in the system PATH (odafc finds it by itself)
 
     Raises:
-        EnvironmentError: ODA_PATH non settato E nessun ODAFileConverter nel PATH.
-                          Il messaggio include link di download e guida alle
-                          variabili d'ambiente per SO.
-    """
+        EnvironmentError: ODA_PATH not set AND no ODAFileConverter in the PATH.
+                          The message includes the download link and the guide to
+                          the environment variables per OS."""
     # su Windows odafc usa "win_exec_path", su Linux/macOS "unix_exec_path"
     opt_key = "win_exec_path" if sys.platform == "win32" else "unix_exec_path"
 
@@ -143,7 +141,7 @@ def _configure_odafc(sink: list = None, verbose: bool = False) -> None:
             help="point ODA_PATH at the ODAFileConverter executable"), verbose)
 
     if shutil.which("ODAFileConverter"):
-        return  # odafc lo troverà da solo
+        return  # odafc will find it by itself
 
     raise EnvironmentError(
         "Cannot open the DWG: ODA File Converter not found.\n"
@@ -157,13 +155,11 @@ def _configure_odafc(sink: list = None, verbose: bool = False) -> None:
 
 
 def _read_dwg(path: str, sink: list = None, verbose: bool = False, notes: list = None):
-    """
-    Legge un file DWG usando ezdxf.addons.odafc (wrapper di ODA File Converter).
+    """Read a DWG file using ezdxf.addons.odafc (wrapper of ODA File Converter).
 
     Raises:
-        EnvironmentError: ODA File Converter non trovato (vedi `_configure_odafc`)
-        RuntimeError: la conversione DWG→DXF è fallita
-    """
+        EnvironmentError: ODA File Converter not found (see `_configure_odafc`)
+        RuntimeError: the DWG→DXF conversion failed"""
     from ezdxf.addons import odafc
 
     with open(path, 'rb') as f:
@@ -190,11 +186,8 @@ def _read_dwg(path: str, sink: list = None, verbose: bool = False, notes: list =
 # ---------------------------------------------------------------------------
 
 def _upgrade_to_r2010(doc, sink: list = None, verbose: bool = False, notes: list = None) -> object:
-    """
-    Converte un documento DXF legacy in R2010.
-    Esplode INSERT e POLYLINE in place, poi copia tutto nel nuovo doc.
-    Funzione privata — chiamata da load_dxf.
-    """
+    """Convert a legacy DXF document to R2010. Explodes INSERT and POLYLINE in place,
+    then copies everything into the new doc. Private function — called by load_dxf."""
     if doc.dxfversion >= 'AC1015':
         return doc
 
@@ -222,8 +215,8 @@ def _upgrade_to_r2010(doc, sink: list = None, verbose: bool = False, notes: list
                                notes=failed[:5]), verbose)
 
     for entity in old_msp:
-        # Le entità devono essere copiate nel nuovo documento: non è lecito
-        # trasferire un'entità da un DXF all'altro tramite add_entity().
+        # The entities must be copied into the new document: it is not allowed to
+        # transfer an entity from one DXF to another via add_entity().
         new_msp.add_entity(entity.copy())
 
     return new_doc
@@ -266,28 +259,28 @@ def load_dxf(
                          the plane
         verbose:         if True, prints entity detail in sanitize
         role_rules:      caller's rules that assign the role to Edges at
-                         translation time (RoleRule, D63); the name
+                         translation time (RoleRule); the name
                          evaluated by `name`/`name_contains` is the layer
-        skip_layers:     layers whose geometry is skipped (D176): exact
+        skip_layers:     layers whose geometry is skipped: exact
                          names, case-insensitive, or a function
                          `name -> bool` (part of the name, a regex,
                          whatever is needed). By default `()`: every layer
-                         is read (D243). To read back a file written by
+                         is read. To read back a file written by
                          topo without its `loose` and text layers, pass
                          `SKIP_LAYERS`. The curves skipped are counted per
-                         layer in a `dxf-layer-skipped` warning (D242)
+                         layer in a `dxf-layer-skipped` warning
 
     Returns:
         Document (edges + texts + source_meta + warnings) — ready for
         heal(). What should be looked at on the raw file (audit, unexploded
         INSERTs, unmodeled types) ends up in `doc.warnings`, what the adapter
         did on its own (exploded INSERTs, duplicates removed, Z flattened) in
-        `doc.notes`, all `Diagnostic` (D233); with verbose=True also
+        `doc.notes`, all `Diagnostic`; with verbose=True also
         printed. `topo.validate_document(doc)` re-raises them.
 
     Raises:
         ValueError: the file has entities but none topo models (e.g. only
-            3DFACE): an empty Document would read as an empty sheet (D252).
+            3DFACE): an empty Document would read as an empty sheet.
             A file with no entities at all gives an empty Document.
     """
     warnings: list = []
@@ -301,11 +294,10 @@ def load_dxf(
     if upgrade or doc.dxfversion < 'AC1015':
         doc = _upgrade_to_r2010(doc, sink=warnings, verbose=verbose, notes=notes)
 
-    # I testi vanno estratti PRIMA di doc.audit(): l'auditor di ezdxf
-    # cancella le DIMENSION che referenziano un blocco geometria non definito
-    # (dims salvate senza pre-rendering) — sono comunque testi validi da
-    # riportare in output. `get_measurement()` / `virtual_entities()` non hanno
-    # bisogno del documento auditato.
+    # The texts must be extracted BEFORE doc.audit(): ezdxf's auditor deletes the
+    # DIMENSIONs that reference an undefined geometry block (dims saved with no
+    # pre-rendering) — they are still valid texts to carry to the output.
+    # `get_measurement()` / `virtual_entities()` do not need the audited document.
     texts = DxfTextExtractor(doc.modelspace(), role_rules).extract()
     _warn_bare_dimensions(doc.modelspace(), warnings, verbose)
 
@@ -340,10 +332,10 @@ def load_dxf(
         _emit(notes, Diagnostic("dxf-hatches-exploded", f"{n} HATCH exploded into their pattern lines (D205)",
                                 level="note"), verbose)
 
-    # i doppioni li decide topo (normalize), con la soglia unica (D268)
+    # duplicates are decided by topo (normalize), with the single threshold
 
-    # dopo la deduplicazione: un lato pieno uguale a una linea del disegno
-    # cede alla linea, che resta senza il segno (D255)
+    # after deduplication: a filled side equal to a line of the drawing yields to
+    # the line, which stays without the mark
     filled = _explode_fills(msp, sink=warnings)
     if filled:
         _emit(notes, Diagnostic("dxf-fills-exploded", f"{len(filled)} filled-area sides read as filled curves (D255)",
@@ -359,16 +351,16 @@ def load_dxf(
     for msg in adapter.warnings:
         _emit(warnings, msg, verbose)
 
-    # Dopo explode possono affiorare TEXT/MTEXT che stavano dentro i blocchi:
-    # le aggiungiamo a quelle catturate pre-audit, senza duplicare.
+    # After explode, TEXT/MTEXT that were inside blocks may surface: we add them to
+    # those captured pre-audit, without duplicating.
     if inserts_found and explode_inserts:
         _merge_texts(texts, DxfTextExtractor(msp, role_rules).extract())
 
     lost = _warn_non_roundtrip_types(msp, warnings, verbose)
-    # Un file con contenuto ma nessuna entità letta: un Document vuoto
-    # direbbe "foglio vuoto", che è falso (D252). Un file vuoto davvero resta
-    # un Document vuoto; layer saltati e INSERT non esplosi sono scelta del
-    # chiamante, i loro tipi non sono in `lost`.
+    # A file with content but no entity read: an empty Document would say "empty
+    # sheet", which is false. A truly empty file stays an empty Document; skipped
+    # layers and unexploded INSERTs are the caller's choice, their types are not in
+    # `lost`.
     if lost and not edges and not texts:
         raise ValueError(
             f"{path}: nothing topo can read, only entity types it does not model: {', '.join(lost)}"
@@ -415,8 +407,8 @@ def document_from_msp(
         "$INSUNITS":     header.get("$INSUNITS", 4) if header else 4,
         "$MEASUREMENT":  header.get("$MEASUREMENT", 1) if header else 1,
     }
-    # niente esplosioni qui: quello che resta non letto lo dice un avviso,
-    # mai un silenzio (D137) — i tipi non modellati e i richiami senza stringa
+    # no explosions here: what stays unread is told by a warning, never by silence —
+    # the unmodelled types and the callouts with no string
     warnings = list(adapter.warnings)
     _warn_non_roundtrip_types(msp, warnings)
     _warn_bare_dimensions(msp, warnings)

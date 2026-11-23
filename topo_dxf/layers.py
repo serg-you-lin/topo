@@ -1,17 +1,16 @@
 """
 topo_dxf/layers.py
 ------------------
-Dove l'adapter DXF scrive un ruolo quando il chiamante non lo dice, e come
-traduce in DXF il colore della palette di topo (MAP.md D123, D128).
+Where the DXF adapter writes a role when the caller does not say, and how it
+translates topo's palette colour into DXF.
 
-topo non ha layer: i nomi qui sono il default dell'adapter DXF, non una
-regola di topo. Il chiamante sceglie i layer con `to_dxf(layers=...)`. Il
-colore non è dell'adapter: è la palette di topo (`topo.model.role_style`),
-qui solo scritta come indice ACI quando ne ha uno esatto.
+topo has no layers: the names here are the DXF adapter's default, not a topo
+rule. The caller chooses the layers with `to_dxf(layers=...)`. The colour is
+not the adapter's: it is topo's palette (`topo.model.role_style`), only
+written here as an ACI index when it has an exact one.
 
-Un ruolo che il default non nomina va su un layer col nome del suo slug: la
-sua geometria non è spazzatura e resta distinta (D31). `unknown` va su
-`Trash`.
+A role the default does not name goes on a layer named after its slug: its
+geometry is not trash and stays distinct. `unknown` goes on `Trash`.
 """
 
 from typing import Callable, Mapping, Optional, Union
@@ -20,35 +19,33 @@ from ezdxf.colors import aci2rgb
 
 from topo.model import ContourRole, role_str, role_style
 
-# Testi e quote senza ruolo: il "foreground" del DXF (bianco su fondo scuro,
-# nero su fondo chiaro) — un colore che esiste solo in DXF, non un ruolo
+# Texts and dimensions with no role: the DXF "foreground" (white on a dark
+# background, black on a light one) — a colour that exists only in DXF, not a role
 COLOR_ANNOTATION = 7
 
-# ---------------------------------------------------------------------------
-# Nomi di layer di default
-# ---------------------------------------------------------------------------
+# Default layer names
 LAYER_OUTER      = "OuterContour"
 LAYER_INNER      = "InnerContour"
 LAYER_ANNOTATION = "Annotation"
 TRASH_LAYER      = "Trash"
 
-# I layer che il writer usa per ciò che non è geometria di parte: chi rilegge
-# un file già passato da topo (round-trip, ri-heal) e non li vuole li passa a
-# `load_dxf(skip_layers=SKIP_LAYERS)`; di default si legge tutto (D243)
+# The layers the writer uses for what is not part geometry: whoever re-reads a
+# file already passed through topo (round-trip, re-heal) and does not want them
+# passes them to `load_dxf(skip_layers=SKIP_LAYERS)`; by default everything is read
 SKIP_LAYERS: tuple[str, ...] = (TRASH_LAYER, LAYER_ANNOTATION)
 
 
-# ruolo → layer di default
+# role → default layer
 DEFAULT_LAYERS: dict[str, str] = {
     ContourRole.OUTER.value:   LAYER_OUTER,
     ContourRole.INNER.value:   LAYER_INNER,
     ContourRole.UNKNOWN.value: TRASH_LAYER,
 }
 
-# Il layer di un ruolo come lo dà il chiamante: un nome, o una funzione
-# dell'elemento scritto (un Contour, un elemento di `cluster.overlay`,
-# una curva di `loose`, un Text) che ne ritorna il nome — così le entità
-# di un ruolo possono dividersi su più layer (una piega "up" e una "down").
+# A role's layer as the caller gives it: a name, or a function of the written
+# element (a Contour, an element of `cluster.overlay`, a `loose` curve, a Text)
+# that returns its name — so the entities of a role can split over several
+# layers (an "up" and a "down" bend).
 LayerChoice = Union[str, Callable[[object], str]]
 LayerMap = Mapping[str, LayerChoice]
 LayerMap.__doc__ = """
@@ -62,7 +59,7 @@ def role_to_dxf_layer(role, element: object = None, *, layers: Optional[LayerMap
     Name of the DXF layer for `role`. The caller's choice (`layers`, keys
     already normalized to slugs) wins: a name, or the function called with
     `element`. Otherwise the default: `OuterContour`/`InnerContour`/`Trash`
-    for the engine's roles, the slug itself for every other role (D31).
+    for the engine's roles, the slug itself for every other role.
     """
     slug = _slug(role)
     choice = (layers or {}).get(slug)
@@ -73,15 +70,15 @@ def role_to_dxf_layer(role, element: object = None, *, layers: Optional[LayerMap
     return DEFAULT_LAYERS.get(slug, slug)
 
 
-# RGB → indice ACI, solo per i colori che hanno un indice esatto
+# RGB → ACI index, only for colours that have an exact index
 _ACI_BY_RGB: dict[tuple, int] = {}
-for _aci in range(255, 0, -1):          # a parità di RGB vince l'indice più basso
+for _aci in range(255, 0, -1):          # on equal RGB the lowest index wins
     _ACI_BY_RGB[tuple(aci2rgb(_aci))] = _aci
 
 
 def color_for_role(role) -> Optional[int]:
-    """Il colore della palette di topo per `role` (D128) come indice ACI:
-    verde 3, giallo 2, rosso 1, grigio 8. None se non ne ha uno esatto."""
+    """The colour of topo's palette for `role` as an ACI index: green 3, yellow 2,
+    red 1, grey 8. None if it has no exact one."""
     return _ACI_BY_RGB.get(tuple(role_style(role).color or ()))
 
 
@@ -89,7 +86,7 @@ def _slug(role) -> str:
     return role_str(role) if role else ContourRole.UNKNOWN.value
 
 
-# I layer di default col loro colore — creati in ogni documento scritto
+# The default layers with their colour — created in every written document
 ALL_LAYERS: dict[str, int] = {
     LAYER_OUTER:      color_for_role(ContourRole.OUTER),
     LAYER_INNER:      color_for_role(ContourRole.INNER),

@@ -1,8 +1,8 @@
 """
 topo_dxf/parser.py
 ------------------
-Traduce entità ezdxf in primitive geometriche pure (LineSeg, CircleSeg, BSplineSeg).
-Unico file che conosce ezdxf e il formato bulge DXF per il parsing.
+Translates ezdxf entities into pure geometric primitives (LineSeg, CircleSeg,
+BSplineSeg). The only file that knows ezdxf and the DXF bulge format for parsing.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from topo.primitives import LineSeg, BSplineSeg, CircleSeg, EllipseSeg
 # ---------------------------------------------------------------------------
 
 class DxfEntityDispatcher:
-    """Centralizza il routing per tipo di entità DXF."""
+    """Centralizes the routing by DXF entity type."""
 
     def __init__(self, entity):
         self.entity = entity
@@ -69,12 +69,9 @@ def _parse_arc(entity, rev) -> CircleSeg:
 
 
 def _parse_spline(entity, rev) -> BSplineSeg:
-    """
-    Solo la geometria (MAP.md D135): grado, punti di controllo, nodi, pesi
-    così come sono scritti. Una SPLINE data per soli fit points (e tangenti),
-    o senza nodi, diventa punti di controllo e nodi qui, con la stessa
-    costruzione del CAD.
-    """
+    """Geometry only: degree, control points, knots, weights as they are written. A
+    SPLINE given by fit points only (and tangents), or with no knots, becomes
+    control points and knots here, with the same construction as the CAD."""
     try:
         if entity.control_point_count() and len(entity.knots):
             seg = BSplineSeg(
@@ -105,12 +102,10 @@ def _parse_circle(entity) -> CircleSeg:
 
 
 def _parse_ellipse(entity, rev) -> EllipseSeg:
-    """
-    Un'ELLIPSE DXF è sempre percorsa CCW da `start_param` a `end_param`
-    (nessun flag di verso nel gruppo, come per ARC) — `rev` inverte gli
-    stessi due parametri e nega `ccw`, stesso trattamento di `_parse_arc`.
-    Un'ellisse piena ha `start_param=0`/`end_param=2π` (default di ezdxf).
-    """
+    """A DXF ELLIPSE is always walked CCW from `start_param` to `end_param` (no
+    direction flag in the group, as for ARC) — `rev` swaps the same two parameters
+    and negates `ccw`, the same treatment as `_parse_arc`. A full ellipse has
+    `start_param=0`/`end_param=2π` (ezdxf's default)."""
     seg = EllipseSeg(
         center=(entity.dxf.center.x, entity.dxf.center.y),
         major_axis=(entity.dxf.major_axis.x, entity.dxf.major_axis.y),
@@ -138,8 +133,8 @@ def _parse_polyline(entity, rev) -> list:
         getattr(entity, "is_closed", False) or getattr(entity, "closed", False)
     )
 
-    # Polilinea chiusa con vertice di chiusura esplicito (primo == ultimo):
-    # scartalo, altrimenti il ciclo `%n` genera un segmento di lunghezza nulla.
+    # Closed polyline with an explicit closing vertex (first == last): discard it,
+    # otherwise the `%n` cycle generates a zero-length segment.
     if is_closed and len(points) > 1:
         if (points[0][0], points[0][1]) == (points[-1][0], points[-1][1]):
             points = points[:-1]
@@ -159,10 +154,10 @@ def _parse_polyline(entity, rev) -> list:
         else:
             x2, y2, _ = points[i + 1]
         
-        # una corda nulla col bulge è un arco di raggio 0, un punto: resta il
-        # tratto nullo che darebbe senza bulge (D154)
+        # a null chord with bulge is an arc of radius 0, a point: the null stretch it
+        # would give without bulge remains
         if abs(bulge) > 1e-9 and (x1, y1) != (x2, y2):
-            # bulge = tan(angolo spazzato / 4), col segno del verso
+            # bulge = tan(swept angle / 4), with the sign of the direction
             primitives.append(CircleSeg.from_ends((x1, y1), (x2, y2), 4.0 * math.atan(bulge)))
         else:
             primitives.append(LineSeg(start=(x1, y1), end=(x2, y2)))

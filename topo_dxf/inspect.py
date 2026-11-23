@@ -1,13 +1,13 @@
 """
 topo_dxf/inspect.py
 -------------------
-Il primo livello dell'ispezione, quello del file: cosa contiene un DXF prima
-che topo lo tocchi. `inspect_file` stampa i tre livelli in fila — DXF
-grezzo, poi `topo.inspect_document` e `topo.inspect_result` (D129):
+The first level of inspection, the file's: what a DXF contains before topo
+touches it. `inspect_file` prints the three levels in a row — raw DXF, then
+`topo.inspect_document` and `topo.inspect_result`:
 
     topo_dxf.inspect_file("pezzo.dxf", role_rules=topo.name_rules({"Piega": "bending"}))
 
-Tutto stampa su stdout con `print`. Nessun logger da configurare.
+Everything prints to stdout with `print`. No logger to configure.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ def _header(title: str) -> None:
 
 
 def _point(x, nd: int = 2) -> str:
-    """Formatta un punto (x, y) con nd decimali."""
+    """Format a point (x, y) with nd decimals."""
     return f"({x[0]:.{nd}f}, {x[1]:.{nd}f})"
 
 

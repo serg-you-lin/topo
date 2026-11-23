@@ -1,11 +1,11 @@
 """
 topo_dxf/mtext.py
 -----------------
-Decodifica del testo formattato DXF: MTEXT inline codes e testo dei MULTILEADER.
+Decoding of DXF formatted text: MTEXT inline codes and MULTILEADER text.
 
-`clean_mtext` è una funzione stringa → stringa (i codici di formattazione MTEXT
-sono un formato di testo, non entità DXF) ed è riesportata da ``topo`` come
-utilità generica. `mleader_text` invece legge un'entità ezdxf.
+`clean_mtext` is a string → string function (the MTEXT formatting codes are a
+text format, not DXF entities) and is re-exported by ``topo`` as a generic
+utility. `mleader_text` instead reads an ezdxf entity.
 """
 
 from __future__ import annotations
@@ -16,13 +16,10 @@ from ezdxf.tools.text import plain_mtext
 
 
 def clean_mtext(txt) -> str:
-    """
-    Testo semplice da una stringa MTEXT grezza: rimuove i codici di
-    formattazione (font, colore, allineamento, …). Gli spazi ai bordi
-    restano: occupano posto nella stringa disegnata (D261).
-    Accetta anche un'entità con attributo ``.text`` per comodità.
-    Ritorna "" per stringhe vuote o segnaposto ("<>").
-    """
+    """Plain text from a raw MTEXT string: removes the formatting codes (font,
+    colour, alignment, …). Edge spaces stay: they take room in the drawn string.
+    It also accepts an entity with a ``.text`` attribute for convenience.
+    Returns "" for empty strings or placeholders ("<>")."""
     if not txt:
         return ""
     if not isinstance(txt, str):
@@ -36,7 +33,7 @@ def clean_mtext(txt) -> str:
 
 
 def mleader_text(entity) -> Optional[str]:
-    """Testo grezzo di un MULTILEADER (prima della pulizia), None se assente."""
+    """Raw text of a MULTILEADER (before cleaning), None if absent."""
     try:
         mtext = entity.context.mtext
         if mtext and hasattr(mtext, "default_content"):

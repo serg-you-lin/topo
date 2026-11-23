@@ -3,8 +3,8 @@
 """
 topo_dxf/adapter.py
 -------------------
-Traduce entità DXF in primitive Topo.
-UNICO punto di conversione DXF → primitive.
+Translates DXF entities into Topo primitives. The ONLY point of conversion
+DXF → primitives.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 from ezdxf.colors import aci2rgb, int2rgb
 
-# Solo nomi pubblici di topo: l'adapter è un consumer come un altro (MAP.md D125)
+# Only public topo names: the adapter is a consumer like any other
 from topo.primitives import LineSeg, BSplineSeg, CircleSeg, EllipseSeg
 from topo.model import Diagnostic, Edge, EdgeStyle, RoleRule, resolve_role
 
@@ -27,12 +27,12 @@ from .parser import DxfEntityDispatcher
 # ---------------------------------------------------------------------------
 
 _SUPPORTED_TYPES = frozenset({'LINE', 'ARC', 'SPLINE', 'ELLIPSE'})
-# ogni tipo che to_edges trasforma in curve
+# every type that to_edges turns into curves
 _CURVE_TYPES = _SUPPORTED_TYPES | {'CIRCLE', 'LWPOLYLINE', 'POLYLINE'}
 
-# Linetype "di sistema": non hanno una entry propria nella tabella o non
-# portano un pattern (BYLAYER/BYBLOCK ereditano; CONTINUOUS è sempre presente
-# in ogni documento ezdxf.new()). Nessun pattern da catturare per questi.
+# "System" linetypes: they have no entry of their own in the table or carry no
+# pattern (BYLAYER/BYBLOCK inherit; CONTINUOUS is always present in every
+# ezdxf.new() document). No pattern to capture for these.
 _STANDARD_LINETYPES = frozenset({'BYLAYER', 'BYBLOCK', 'CONTINUOUS'})
 
 
@@ -41,16 +41,12 @@ _STANDARD_LINETYPES = frozenset({'BYLAYER', 'BYBLOCK', 'CONTINUOUS'})
 # ---------------------------------------------------------------------------
 
 def _raw_linetype_pattern(lt_entry) -> Optional[Tuple[float, ...]]:
-    """
-    Pattern grezzo (lunghezza totale + tratti con segno, `+` = tratto,
-    `-` = spazio) di un `Linetype` — lo stesso formato voluto da
-    `doc.linetypes.add(name, pattern=[...])`.
+    """Raw pattern (total length + signed strokes, `+` = stroke, `-` = gap) of a
+    `Linetype` — the same format wanted by `doc.linetypes.add(name, pattern=[...])`.
 
-    NON `Linetype.simplified_line_pattern()`: quello è un rendering per sola
-    lettura, ha già perso i segni e la lunghezza totale (pensato per essere
-    letto, non per essere ri-registrato) — ri-passarlo a `.add()` produce un
-    pattern degenere (tutti tratti pieni, nessun vuoto).
-    """
+    NOT `Linetype.simplified_line_pattern()`: that is a read-only rendering, it
+    has already lost the signs and the total length — handing it back to `.add()`
+    produces a degenerate pattern (all solid strokes, no gaps)."""
     pattern_length = 0.0
     elements = []
     for tag in lt_entry.pattern_tags.tags:
@@ -64,9 +60,9 @@ def _raw_linetype_pattern(lt_entry) -> Optional[Tuple[float, ...]]:
 
 
 def _color_rgb(aci: int, true_color: Optional[int]) -> Optional[Tuple[int, int, int]]:
-    """Il colore effettivo in RGB: il true color se c'è, altrimenti l'indice
-    ACI (1–255) col suo RGB canonico. BYBLOCK (0) e un BYLAYER non risolto
-    (256) non dicono un colore: None (MAP.md D126)."""
+    """The effective colour as RGB: the true colour if present, otherwise the ACI
+    index (1–255) with its canonical RGB. BYBLOCK (0) and an unresolved BYLAYER
+    (256) do not tell a colour: None."""
     if true_color is not None:
         return tuple(int2rgb(true_color))
     if 1 <= aci <= 255:
@@ -75,27 +71,22 @@ def _color_rgb(aci: int, true_color: Optional[int]) -> Optional[Tuple[int, int, 
 
 
 def _entity_style(entity) -> EdgeStyle:
-    """
-    Cattura l'aspetto EFFETTIVO (linetype/colore) di un'entità DXF in un
-    `EdgeStyle` puro — quello che si vede davvero in CAD, non solo l'attributo
-    grezzo dell'entità.
+    """Capture the EFFECTIVE appearance (linetype/colour) of a DXF entity in a pure
+    `EdgeStyle` — what is really seen in CAD, not only the entity's raw attribute.
 
-    Caso comune: il disegno mette lo stile sul LAYER, non sulla singola
-    entità (`entity.dxf.linetype == "ByLayer"`) — il tratteggio vero vive
-    nella entry del layer (`doc.layers.get(layer).dxf.linetype`), l'attributo
-    dell'entità da solo non lo dice. Senza risolvere BYLAYER al valore del
-    layer, ogni entità che eredita lo stile (il caso tipico) sfuggirebbe sia a
-    `role_rules` sia al ripristino fedele in output (Cluster E):
-    scritta su un layer topo diverso (Trash/Bending/...), che di default è
-    continuo, perderebbe silenziosamente il tratteggio.
+    Common case: the drawing puts the style on the LAYER, not on the single
+    entity (`entity.dxf.linetype == "ByLayer"`) — the real dashing lives in the
+    layer's entry (`doc.layers.get(layer).dxf.linetype`), the entity's attribute
+    alone does not say it. Without resolving BYLAYER to the layer's value, every
+    entity that inherits the style (the typical case) would escape both
+    `role_rules` and the faithful restore on output: written on a different topo
+    layer (Trash/Bending/...), continuous by default, it would silently lose the
+    dashing.
 
-    Se il linetype risolto non è uno standard, ne risolve anche il pattern
-    (durate dei tratti) dalla tabella del documento sorgente — l'unico
-    momento in cui topo può ancora leggerla, prima che il riferimento a
-    ezdxf sparisca (`model-is-provenance-free-edges`). Il pattern risolto
-    viaggia come dato puro fino a write(), che lo ri-registra nel documento
-    di output.
-    """
+    If the resolved linetype is not a standard one, its pattern (stroke lengths)
+    is also resolved from the source document's table — the only moment topo can
+    still read it, before the reference to ezdxf is gone. The resolved pattern
+    travels as pure data up to write(), which re-registers it in the output document."""
     try:
         linetype = entity.dxf.linetype if entity.dxf.hasattr("linetype") else "BYLAYER"
     except Exception:
@@ -143,15 +134,15 @@ def _entity_style(entity) -> EdgeStyle:
         except Exception:
             pass
 
-    # BYLAYER/BYBLOCK sono parole del DXF, non tipi di linea: se restano dopo
-    # la risoluzione la sorgente non dice niente (D126)
+    # BYLAYER/BYBLOCK are DXF words, not line types: if they remain after
+    # resolution the source says nothing
     upper = linetype.upper()
     if upper in ("BYLAYER", "BYBLOCK"):
         linetype, dash = "", None
     elif upper == "CONTINUOUS":
         dash = ()
     else:
-        # il pattern DXF apre con la lunghezza totale: il tratto sono i segni
+        # the DXF pattern opens with the total length: the stroke is the marks
         dash = tuple(pattern[1:]) if pattern else None
     return EdgeStyle(
         linetype=linetype,
@@ -161,12 +152,9 @@ def _entity_style(entity) -> EdgeStyle:
     )
 
 
-# ---------------------------------------------------------------------------
-# TRADUZIONE DXF → PRIMITIVE
-# ---------------------------------------------------------------------------
-# La traduzione entità DXF → primitiva vive in UN SOLO posto:
-# `topo_dxf/parser.py::DxfEntityDispatcher` (MAP.md D7). Prima ce n'erano
-# due copie quasi identiche — una qui (`entity_to_primitive`), una in parser.py.
+# --- DXF → PRIMITIVES TRANSLATION ---
+# The translation DXF entity → primitive lives in ONE place only:
+# `topo_dxf/parser.py::DxfEntityDispatcher`.
 
 
 def _segment_key(segment) -> tuple:
@@ -224,12 +212,9 @@ def _segment_key(segment) -> tuple:
 # ---------------------------------------------------------------------------
 
 def layer_skipper(skip_layers) -> Callable[[str], bool]:
-    """
-    Il predicato "questo layer si salta" da `skip_layers` (D176): una
-    funzione `nome -> bool` passa così com'è e riceve il nome del layer come
-    sta nel file; una sequenza di nomi vale per nome esatto, senza
-    distinguere maiuscole.
-    """
+    """The predicate "this layer is skipped" from `skip_layers`: a function
+    `name -> bool` passes as it is and receives the layer name as in the file; a
+    sequence of names matches by exact name, case-insensitive."""
     if callable(skip_layers):
         return skip_layers
     names = {s.lower() for s in skip_layers}
@@ -237,13 +222,11 @@ def layer_skipper(skip_layers) -> Callable[[str], bool]:
 
 
 class DxfAdapter:
-    """
-    Adapter DXF che traduce entità DXF in Edge del dominio Topo.
+    """DXF adapter that translates DXF entities into Edges of the Topo domain.
 
-    Il ruolo di ogni Edge viene da `role_rules` (D63), valutate sul nome del
-    layer e sull'aspetto effettivo dell'entità: la prima che matcha vince,
-    nessuna → `unknown`. Il layer non esce dall'adapter.
-    """
+    The role of every Edge comes from `role_rules`, evaluated on the layer name
+    and on the entity's effective appearance: the first that matches wins, none →
+    `unknown`. The layer does not leave the adapter."""
 
     def __init__(
         self,
@@ -254,18 +237,18 @@ class DxfAdapter:
         filled_handles: Optional[set] = None,
     ):
         self.msp = msp
-        # entità nate dal bordo di un'area piena (D255): i loro lati sono `filled`
+        # entities born from the border of a filled area: their sides are `filled`
         self.filled_handles = filled_handles or set()
         self.exclude_ids = exclude_ids or set()
         self.skip_layer = layer_skipper(skip_layers)
         self.role_rules = list(role_rules)
-        # un messaggio per tipo di entità degenere scartata da to_edges (D154)
+        # one message per type of degenerate entity discarded by to_edges
         self.warnings: List[str] = []
 
     def to_edges(self) -> List[Edge]:
-        """Traduce entità DXF in Edge."""
-        # una curva su un layer saltato non sparisce in silenzio: si conta per
-        # layer e diventa un avviso (D137, D242)
+        """Translate DXF entities into Edges."""
+        # a curve on a skipped layer does not vanish silently: it is counted per layer
+        # and becomes a warning
         skipped = Counter()
 
         def _is_excluded(entity) -> bool:
@@ -283,9 +266,9 @@ class DxfAdapter:
         degenerate = Counter()
 
         def _parse(entity, dtype):
-            # una curva di misura nulla (raggio 0, asse nullo) o con una coordinata
-            # non finita non è una curva: la primitiva la rifiuta, qui diventa un
-            # avviso invece di un crash (D154, D190)
+            # a curve of zero measure (radius 0, null axis) or with a non-finite coordinate
+            # is not a curve: the primitive rejects it, here it becomes a warning instead
+            # of a crash
             try:
                 return DxfEntityDispatcher(entity).parse()
             except ValueError:
@@ -330,8 +313,8 @@ class DxfAdapter:
                     _append_edge(role, segment, style=style)
                 continue
 
-            # LINE / ARC / SPLINE / ELLIPSE: una SPLINE o un'ELLIPSE chiusa è un
-            # loop degenere come CIRCLE, e lo decide Edge.of, non il tipo DXF
+            # LINE / ARC / SPLINE / ELLIPSE: a closed SPLINE or ELLIPSE is a degenerate
+            # loop like CIRCLE, and Edge.of decides it, not the DXF type
             if dtype not in _SUPPORTED_TYPES:
                 continue
 
