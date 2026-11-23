@@ -1,5 +1,5 @@
 # tests/engine/geometry/test_axis.py
-"""`topo.core.geometry.axis`: intervalli, rettangoli coperti, linee che attraversano un rettangolo (D94)."""
+"""`topo.core.geometry.axis`: intervals, covered rectangles, lines crossing a rectangle."""
 
 import math
 import unittest
@@ -56,14 +56,14 @@ class TestCoveredRectangles(unittest.TestCase):
 
 
 class TestCoveredRectanglesUnderMotion(unittest.TestCase):
-    """G6e, gruppo B, `axis.py:179`: i rettangoli trovati si toglievano i
-    doppioni su una chiave arrotondata a 0.1. Le coordinate escono da
-    `cluster_values`, distanti più di `cluster_tolerance`: con la soglia sotto
-    0.1 due rettangoli veri (lato destro a 100 e a 100.03) finivano nella
-    stessa cella o in due secondo dove il moto metteva la cella. Prova: al
-    posto e a traslazioni e quarti di giro escono i tre rettangoli (i due
-    pieni e la striscia fra i due lati destri). Non prova niente dentro le
-    letture: nessuna lettura di topo chiama `covered_rectangles`."""
+    """the rectangles found were deduplicated on a key rounded to 0.1. The
+    coordinates come from `cluster_values`, farther apart than `cluster_tolerance`:
+    with the threshold below 0.1 two true rectangles (right side at 100 and at
+    100.03) ended in the same cell or in two depending on where the motion put the
+    cell. Proof: in place and at translations and quarter turns the three
+    rectangles come out (the two full ones and the strip between the two right
+    sides). It proves nothing inside the readings: no topo reading calls
+    `covered_rectangles`."""
 
     MOTIONS = [(0.0, 0.0, 0.0), (0.0, 0.04, 0.0), (0.0, 0.07, -3.3),
                (math.pi / 2, 0.0, 0.0), (math.pi / 2, 12.345, 0.06)]
@@ -123,7 +123,7 @@ class TestMeasures(unittest.TestCase):
 class TestSidesOnBorder(unittest.TestCase):
 
     def test_riquadro_nell_angolo(self):
-        # in basso a destra: tocca il lato basso e il destro del bordo
+        # bottom right: touches the bottom and the right side of the border
         self.assertEqual(topo.geometry.sides_on_border((300, 10, 400, 60), (10, 10, 400, 280), tolerance=1.0),
                          ["bottom", "right"])
 

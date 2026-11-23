@@ -1,14 +1,14 @@
 """
 tests/engine/base/test_hierarchy_builder.py
 
-Test per HierarchyBuilder.
+Tests for HierarchyBuilder.
 
-D15: HierarchyBuilder costruisce SOLO l'albero di contenimento —
-`Cluster(outer, inners=[Contour...])`, zero `Hole`. La classificazione
-hole / countersink è di `detect_flat()` (vedi tests/unit/test_detect.py).
+HierarchyBuilder builds ONLY the containment tree —
+`Cluster(outer, inners=[Contour...])`, no `Hole`. The hole / countersink
+classification is `detect_flat()`'s.
 
-I proxy ClosedCurve/OpenCurve vengono costruiti direttamente con primitive
-native — nessun adapter DXF, nessun file reale.
+The ClosedCurve/OpenCurve proxies are built directly with native primitives —
+no DXF adapter, no real file.
 """
 
 import math
@@ -106,14 +106,12 @@ class TestOuterConInner(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestNestingFlattened(unittest.TestCase):
-    """
-    - outer   : rettangolo 100×100
-    - medio   : cerchio d=20 dentro outer
-    - piccolo : cerchio d=8  dentro medio
+    """- outer   : 100×100 rectangle
+    - middle  : circle d=20 inside outer
+    - small   : circle d=8  inside middle
 
-    heal() non riconosce più il countersink dal nesting (D15): consegna
-    entrambi i cerchi come inners piatti. Il riconoscimento è di detect_flat().
-    """
+    heal() no longer recognizes the countersink from the nesting: it delivers both
+    circles as flat inners. The recognition is detect_flat()'s."""
 
     def setUp(self):
         outer   = _rect_proxy(0, 0, 100, 100)
@@ -131,18 +129,13 @@ class TestNestingFlattened(unittest.TestCase):
         self.assertEqual(len(self.clusters[0].inners), 2)
 
 
-# ---------------------------------------------------------------------------
-# Test 2bis — stessa gerarchia, ma depth/parent non vengono più persi
-# ---------------------------------------------------------------------------
+# --- Test 2bis — same hierarchy, but depth/parent are no longer lost ---
 
 class TestNestingDepthAndParent(unittest.TestCase):
-    """
-    Stessa gerarchia a tre livelli di TestNestingFlattened: outer (100x100) →
-    medio (d=20) → piccolo (d=8). heal() appiattisce comunque tutto in
-    `cluster.inners`, ma ogni Contour porta con sé `depth`/`parent` — il
-    dato che uno strumento di linguette (Smoother) legge per sapere chi è
-    nipote di chi, invece di ricalcolare il contenimento da solo.
-    """
+    """Same three-level hierarchy as TestNestingFlattened: outer (100x100) → middle
+    (d=20) → small (d=8). heal() still flattens everything into `cluster.inners`,
+    but every Contour carries `depth`/`parent` — the data a tab tool (Smoother)
+    reads to know who is whose grandchild, instead of recomputing the containment itself."""
 
     def setUp(self):
         self.outer_proxy   = _rect_proxy(0, 0, 100, 100)
@@ -152,8 +145,8 @@ class TestNestingDepthAndParent(unittest.TestCase):
             [self.outer_proxy, self.medio_proxy, self.piccolo_proxy]
         )
         self.cluster = self.clusters[0]
-        # area decrescente: inners[0] è sempre il medio, inners[1] il piccolo
-        # (_build_tree ordina i proxy per area prima di piazzarli).
+        # decreasing area: inners[0] is always the middle one, inners[1] the small one
+        # (_build_tree sorts the proxies by area before placing them).
         self.medio, self.piccolo = self.cluster.inners
 
     def test_outer_depth_zero_senza_genitore(self):
@@ -175,12 +168,10 @@ class TestNestingDepthAndParent(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestTrash(unittest.TestCase):
-    """
-    - 1 proxy outer (100×100)
-    - 1 OpenCurve role=UNKNOWN fuori dall'outer
+    """- 1 outer proxy (100×100)
+    - 1 OpenCurve role=UNKNOWN outside the outer
 
-    Atteso: il proxy aperto flottante finisce in trash, l'outer produce 1 Cluster.
-    """
+    Expected: the floating open proxy ends in trash, the outer produces 1 Cluster."""
 
     def setUp(self):
         self.outer    = _rect_proxy(0, 0, 100, 100)
@@ -203,16 +194,12 @@ class TestTrash(unittest.TestCase):
         )
 
 
-# ---------------------------------------------------------------------------
-# Test 4 — segments copiati dal proxy al model
-# ---------------------------------------------------------------------------
+# --- Test 4 — segments copied from the proxy to the model ---
 
 class TestSegmentsCopiati(unittest.TestCase):
-    """
-    HierarchyBuilder copia proxy.segments su outer e inner.
+    """HierarchyBuilder copies proxy.segments onto outer and inner.
 
-    I segments sono stub — l'importante è che arrivino intatti.
-    """
+    The segments are stubs — what matters is that they arrive intact."""
 
     def setUp(self):
         from topo.core.primitives import LineSeg, CircleSeg
@@ -248,12 +235,11 @@ if __name__ == "__main__":
 
 
 class TestCopiesOrderUnderMotion(unittest.TestCase):
-    """G6e, gruppo B, `hierarchy.py:82`: due copie congruenti si ordinano per
-    l'angolo del bbox (D166). L'area arrotondata a 1e-6 le diceva pari solo se
-    cadevano nella stessa cella: con l'area a metà cella (10.0000005) l'ultimo
-    bit, che il moto cambia, decideva l'ordine. Prova: a ogni traslazione la
-    copia a sinistra (o in basso) viene prima. Le rotazioni non sono provate:
-    lì cambia davvero quale copia è a sinistra."""
+    """two congruent copies are ordered by the bbox corner. The area rounded to 1e-6
+    called them equal only if they fell in the same cell: with the area at mid-cell
+    (10.0000005) the last bit, which the motion changes, decided the order. Proof:
+    at every translation the copy on the left (or below) comes first. Rotations are
+    not proved: there which copy is on the left really changes."""
 
     W, H = 10.0, 1.00000005
     MOTIONS = [(0.0, dx, dy) for dx in (0.0, 0.3, 1.7, 13.1, 250.0, 2.5e6) for dy in (0.0, 0.7, -9.3, -1.5e6)]
@@ -285,13 +271,13 @@ class TestCopiesOrderUnderMotion(unittest.TestCase):
 
 
 class TestTreeOrderUnderMotion(unittest.TestCase):
-    """G6e, gruppo B, `hierarchy.py:86`: `_build_tree` piazza i contorni dal
-    più grande per `round(area, 6)`. L'ordine decide la forma dell'albero solo
-    fra due contorni di cui uno contiene l'altro, e lì le aree differiscono
-    ben oltre 1e-6 (sui disegni: 344 coppie entro 1e-5, nessuna annidata).
-    Prova: una piastra con due fori congruenti con l'area a metà cella dà a
-    ogni traslazione un cluster con due inner di profondità 1. Non prova
-    l'ordine dei due inner fra loro, che non è un contratto."""
+    """`_build_tree` places the contours from the largest by `round(area, 6)`. The
+    order decides the shape of the tree only between two contours one of which
+    contains the other, and there the areas differ by far more than 1e-6 (on the
+    drawings: 344 pairs within 1e-5, none nested). Proof: a plate with two
+    congruent holes with the area at mid-cell gives at every translation a cluster
+    with two inners of depth 1. It does not prove the order of the two inners
+    between themselves, which is not a contract."""
 
     MOTIONS = [(0.0, dx, dy) for dx in (0.0, 0.3, 13.1, 250.0, 2.5e6) for dy in (0.0, -9.3, -1.5e6)]
 

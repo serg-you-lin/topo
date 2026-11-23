@@ -1,12 +1,12 @@
 """
 test_geometry.py
 ----------------
-Test unitari per le funzioni pure di topo.core.geometry.
+Unit tests for the pure functions of topo.core.geometry.
 
-Copre:
-  - are_collinear         : verifica collinearità di due tratti (topo/core/lines.py, D93)
-  - group_collinear_lines : raggruppa tratti collineari
-  - dash_line             : tratteggio di un segmento, capi ancorati e vuoti uguali
+Covers:
+  - are_collinear         : collinearity of two strokes
+  - group_collinear_lines : groups collinear strokes
+  - dash_line             : dashing of a segment, ends anchored and equal gaps
 """
 
 import unittest
@@ -35,7 +35,7 @@ from topo.core.primitives.conics import CircleSeg
 # ---------------------------------------------------------------------------
 
 def make_arc(cx, cy, radius, start_angle, end_angle):
-    """Crea un CircleSeg con angoli in gradi."""
+    """Create a CircleSeg with angles in degrees."""
     return CircleSeg(
         center=(cx, cy),
         radius=radius,
@@ -46,7 +46,7 @@ def make_arc(cx, cy, radius, start_angle, end_angle):
 
 
 def make_line(x1, y1, x2, y2) -> LineSeg:
-    """Un tratto di topo."""
+    """A topo stroke."""
     return LineSeg((x1, y1), (x2, y2))
 
 
@@ -225,10 +225,7 @@ class TestTrackHelpers(unittest.TestCase):
         self.assertEqual(track_length([]), 0.0)
 
 
-# ---------------------------------------------------------------------------
-# drop_duplicate_points / fit_circle_kasa (D38), Douglas-Peucker, spigoli per
-# svolta, cerchio per tre punti, spline approssimante (D141)
-# ---------------------------------------------------------------------------
+# --- drop_duplicate_points / fit_circle_kasa, Douglas-Peucker, corners by turn, circle through three points, approximating spline ---
 
 class TestPointSequenceMath(unittest.TestCase):
 
@@ -259,9 +256,9 @@ class TestPointSequenceMath(unittest.TestCase):
         self.assertEqual(douglas_peucker(pts, 0.01), [0, 10, 20])
 
     def test_008b_douglas_peucker_does_not_depend_on_the_frame(self):
-        # G6e: una S antisimmetrica ha due punti alla stessa distanza dalla
-        # corda; `d > best` teneva il primo, e la rotazione decideva quale
-        # (4 risultati diversi in 200 angoli). Al pari merito si taglia in tutti
+        # an antisymmetric S has two points at the same distance from the chord;
+        # `d > best` kept the first, and the rotation decided which (4 different
+        # results in 200 angles). On a tie it cuts at all
         from tests.invariants import rigid
         pts = [(x * 0.05, 0.3 * math.sin(x * 0.05 * math.pi)) for x in range(81)]
         at_rest = douglas_peucker(pts, 0.02)
@@ -272,8 +269,8 @@ class TestPointSequenceMath(unittest.TestCase):
                 self.assertEqual(douglas_peucker([point(p) for p in pts], 0.02), at_rest)
 
     def test_008c_simplify_points_does_not_depend_on_the_frame(self):
-        # la stessa S fino alle primitive: la sequenza retta/arco/spline non
-        # cambia con la rotazione né lontano dall'origine
+        # the same S down to the primitives: the line/arc/spline sequence does not
+        # change with rotation nor far from the origin
         from tests.invariants import rigid
         from topo.core.geometry.fitting import simplify_points
         pts = [(x * 0.05, 0.3 * math.sin(x * 0.05 * math.pi)) for x in range(81)]
@@ -287,8 +284,8 @@ class TestPointSequenceMath(unittest.TestCase):
                     self.assertEqual(kinds([point(q) for q in pts]), at_rest)
 
     def test_008d_collinear_points_stay_a_line_under_motion(self):
-        # G6e, `points.py:282`: tre punti allineati danno un cerchio dal rumore
-        # (enorme, la corda stessa); retta e quasi-retta restano una retta
+        # three aligned points give a circle from the noise (huge, the chord itself);
+        # line and near-line stay a line
         from tests.invariants import rigid
         from topo.core.geometry.fitting import simplify_points
         for name, pts in (("retta", [(x * 0.05, 0.0) for x in range(81)]),
@@ -301,8 +298,8 @@ class TestPointSequenceMath(unittest.TestCase):
                     self.assertEqual([type(q).__name__ for q in prims], ["LineSeg"])
 
     def test_009_a_right_angle_rounded_by_sampling_is_still_a_corner(self):
-        # quadrato 10x10 con gli spigoli smussati su 2 campioni: nessun angolo
-        # interno fra vicini sta sotto 90°, la svolta su scala 2 sì
+        # 10x10 square with the corners blunted over 2 samples: no interior angle
+        # between neighbours is below 90°, the turn over scale 2 is
         pts = []
         for (ax, ay), (bx, by) in [((0, 0), (10, 0)), ((10, 0), (10, 10)), ((10, 10), (0, 10)), ((0, 10), (0, 0))]:
             pts += [(ax + (bx - ax) * t / 20, ay + (by - ay) * t / 20) for t in range(1, 20)]
@@ -310,10 +307,10 @@ class TestPointSequenceMath(unittest.TestCase):
         self.assertEqual(len(corners), 4)
 
     def test_009b_a_symmetric_cut_corner_does_not_depend_on_the_frame(self):
-        # G6e: quadrato 10x10 con ogni vertice tagliato da due campioni a 0.3,
-        # uno per lato. I due svoltano uguale; "fra due spigoli più vicini di
-        # `scale` quello che svolta di più" lo decideva l'ultimo bit
-        # (14 insiemi di spigoli in 200 rotazioni, lati dritti fatti spline)
+        # 10x10 square with every vertex cut by two samples at 0.3, one per side. The
+        # two turn equally; "between two corners closer than `scale` the one that turns
+        # most" was decided by the last bit (14 sets of corners in 200 rotations,
+        # straight sides made splines)
         from tests.invariants import rigid
         from topo.core.geometry.fitting import simplify_points
         square = [(0, 0), (10, 0), (10, 10), (0, 10)]
@@ -333,7 +330,7 @@ class TestPointSequenceMath(unittest.TestCase):
                 _, point = rigid(angle, 0.0, 0.0)
                 moved = [point(q) for q in pts]
                 self.assertEqual((corners(moved), kinds(moved)), at_rest)
-        # l'anello chiuso comincia dove capita: gli spigoli (come punti) no
+        # the closed ring starts wherever: the corners (as points) do not
         at_rest_points = {pts[k] for k in at_rest[0]}
         for start in (1, 19, 20, 41, len(pts) - 1):
             with self.subTest(start=start):
@@ -353,8 +350,8 @@ class TestPointSequenceMath(unittest.TestCase):
         self.assertIsNone(circle_through((0, 0), (1, 1), (2, 2)))
 
     def test_012_approximate_bspline_ends_exact_and_within_tolerance(self):
-        # mezza circonferenza con rumore di 0.05: la spline passa per gli
-        # estremi, sta entro 0.1 da ogni punto e usa molti meno controlli
+        # half circle with noise of 0.05: the spline passes through the ends, is within
+        # 0.1 of every point and uses far fewer controls
         pts = [(10 * math.cos(a) + 0.05 * math.sin(37 * a), 10 * math.sin(a))
                for a in (i * math.pi / 200 for i in range(201))]
         control, knots = approximate_bspline(pts, 3, 0.1)
@@ -373,17 +370,14 @@ class TestPointSequenceMath(unittest.TestCase):
         self.assertTrue(all(b[0] - a[0] <= 1.0 + 1e-9 for a, b in zip(out, out[1:])))
 
 
-# ---------------------------------------------------------------------------
-# segment_length / longest_segment / chord_angle_deg
-# ---------------------------------------------------------------------------
-# Nate dalla discussione "funzioni geometriche" (TODO.md): dato un elenco di
-# segmenti nativi, qual è il più lungo e che angolo ha — usate da
-# topo.tools.rotate per allineare il lato OUTER più lungo di un disegno.
+# --- segment_length / longest_segment / chord_angle_deg ---
+# Given a list of native segments, which is the longest and what angle it has —
+# used by topo.tools.rotate to align the longest OUTER side of a drawing.
 
 class TestLengthInside(unittest.TestCase):
 
     def test_linea_tagliata_dal_rettangolo(self):
-        # 20 mm di linea, ne entrano 8 nel rettangolo
+        # 20 mm of line, 8 of it fit in the rectangle
         seg = LineSeg(start=(-12, 5), end=(8, 5))
         self.assertAlmostEqual(length_inside(seg, (0, 0, 10, 10)), 8.0, places=9)
 
@@ -402,7 +396,7 @@ class TestSegmentLength(unittest.TestCase):
         self.assertAlmostEqual(segment_length(seg), 5.0, places=9)
 
     def test_002_arc_length_is_radius_times_sweep(self):
-        seg = make_arc(0, 0, 10, 0, 90)  # quarto di cerchio
+        seg = make_arc(0, 0, 10, 0, 90)  # quarter circle
         self.assertAlmostEqual(segment_length(seg), 10 * math.pi / 2, places=6)
 
     def test_003_circle_length_is_circumference(self):
@@ -435,7 +429,7 @@ class TestChordAngleDeg(unittest.TestCase):
         self.assertAlmostEqual(chord_angle_deg((0, 0), (0, 10)), 90.0, places=9)
 
     def test_003_direction_does_not_matter_mod_180(self):
-        # una linea non ha un verso proprio: a->b e b->a sono lo stesso angolo
+        # a line has no direction of its own: a->b and b->a are the same angle
         forward  = chord_angle_deg((0, 0), (10, 10))
         backward = chord_angle_deg((10, 10), (0, 0))
         self.assertAlmostEqual(forward, backward, places=9)
@@ -443,7 +437,7 @@ class TestChordAngleDeg(unittest.TestCase):
 
 
 class TestInterpolateBspline(unittest.TestCase):
-    """La B-spline di fit è matematica di topo, non di una libreria di formato."""
+    """The fit B-spline is topo's maths, not a format library's."""
 
     def _check_passes_through(self, pts, degree):
         from topo.core.geometry.spline_fit import interpolate_bspline
@@ -455,7 +449,7 @@ class TestInterpolateBspline(unittest.TestCase):
         from shapely.geometry import Point
         dense = LineString(curve.discretize(tolerance=0.001))
         for p in pts:
-            # ogni punto di fit sta sulla curva
+            # every fit point lies on the curve
             self.assertLess(dense.distance(Point(p)), 0.002)
 
     def test_grado_dispari_passa_per_i_punti(self):
@@ -476,13 +470,13 @@ if __name__ == "__main__":
     unittest.main(verbosity=2)
 
 class TestDashLine(unittest.TestCase):
-    """Tratteggio di un segmento: capi ancorati, vuoti uguali, segmento intero se coperto."""
+    """Dashing of a segment: ends anchored, equal gaps, whole segment if covered."""
 
     def _lengths(self, dashes):
         return [round(math.dist(a, b), 9) for a, b in dashes]
 
     def test_head_tail_and_middle_with_equal_gaps(self):
-        # 100 lungo, tratti 10: due capi + 2 centrali = 40 coperti, 3 vuoti da 20
+        # 100 long, strokes 10: two ends + 2 central = 40 covered, 3 gaps of 20
         dashes = dash_line((0, 0), (100, 0), head=10, tail=10, middle=10, n_middle=2)
         self.assertEqual([(round(a[0], 9), round(b[0], 9)) for a, b in dashes],
                          [(0, 10), (30, 40), (60, 70), (90, 100)])

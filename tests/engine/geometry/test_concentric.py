@@ -1,5 +1,5 @@
 # tests/engine/geometry/test_concentric.py
-"""`concentric_groups` e `arcs_around`: fatti geometrici fra più contorni (D91)."""
+"""`concentric_groups` and `arcs_around`: geometric facts between several contours."""
 
 import math
 import unittest
@@ -60,12 +60,12 @@ MOTIONS = [(0.0, (0, 0)), (math.pi, (0, 0)), (2.0, (1e5, 3e4)), (0.5, (-7, 3)),
 
 
 class TestConcentricGroupsUnderMotion(unittest.TestCase):
-    """G6e: la partizione non dipende dal riferimento."""
+    """the partition does not depend on the frame."""
 
     def test_il_cerchio_grande_va_col_centro_piu_vicino(self):
-        # A e B uguali a 0.15 (due gruppi); C più grande a 0.06 da A e 0.09 da B:
-        # entra in A. Prima entrava nel gruppo nato prima, cioè nel centro con
-        # la x minore, e una rotazione di 180° lo mandava in B.
+        # A and B equal at 0.15 (two groups); C larger at 0.06 from A and 0.09 from B:
+        # it enters A. Before, it entered the group born first, that is the centre with
+        # the smaller x, and a 180° rotation sent it to B.
         spec = [((0, 0), 2), ((0.15, 0), 2), ((0.06, 0), 4)]
         for angle, shift in MOTIONS:
             with self.subTest(angle=angle, shift=shift):
@@ -74,8 +74,8 @@ class TestConcentricGroupsUnderMotion(unittest.TestCase):
                 self.assertEqual(parts, {(0, 2), (1,)})
 
     def test_a_pari_diametro_il_riferimento_e_il_primo_dato(self):
-        # A e B uguali a 0.05 (un gruppo): il centro del gruppo è quello di A,
-        # il primo dato, in ogni riferimento; D a 0.09 da A e 0.14 da B ci entra.
+        # A and B equal at 0.05 (one group): the group's centre is A's, the first
+        # given, in every frame; D at 0.09 from A and 0.14 from B enters it.
         spec = [((0, 0), 2), ((0.05, 0), 2), ((-0.09, 0), 4)]
         for angle, shift in MOTIONS:
             with self.subTest(angle=angle, shift=shift):
@@ -85,8 +85,8 @@ class TestConcentricGroupsUnderMotion(unittest.TestCase):
                 self.assertEqual(group.center, items[0][0].center)
 
     def test_gruppi_impilati_restano_in_ordine_di_y(self):
-        # Due fori uno sopra l'altro, stessa x a riposo: una traslazione sposta
-        # le x di un ulp, l'ordine resta quello delle y.
+        # Two holes one above the other, same x at rest: a translation moves the x's by
+        # one ulp, the order stays that of the y's.
         for shift in [(0, 0), (0.1, 0), (1e5 + 0.3, 7), (-3e5 + 0.7, 0)]:
             with self.subTest(shift=shift):
                 low = _circle((0.1 + shift[0], 0 + shift[1]), 2)
@@ -106,7 +106,7 @@ class TestArcsAround(unittest.TestCase):
         self.assertAlmostEqual(found.radius_ratio, 1.2)
 
     def test_solo_archi_piu_grandi_e_concentrici(self):
-        arcs = [self._arc((0, 0), 2, 270),       # più piccolo
+        arcs = [self._arc((0, 0), 2, 270),       # smaller
                 self._arc((5, 0), 3, 270),       # altro centro
                 self._arc((0, 0), 10, 90),
                 self._arc((0, 0.05), 3, 270)]

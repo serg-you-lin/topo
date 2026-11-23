@@ -26,18 +26,17 @@ def _arc(center, radius, start_deg, end_deg, role="unknown"):
 
 
 def _line_raw(rounded_p1, rounded_p2, raw_p1, raw_p2, role="unknown"):
-    # Come l'adapter reale: Edge.start/end sono il punto ARROTONDATO
-    # (identità del nodo nel grafo), il LineSeg del segmento porta la
-    # coordinata a piena precisione della sorgente — le due possono differire
-    # di una frazione di mm su coordinate non tonde (v. MAP.md D50 seguito).
+    # As the real adapter: Edge.start/end are the ROUNDED point (node identity in
+    # the graph), the segment's LineSeg carries the full-precision coordinate of the
+    # source — the two may differ by a fraction of a mm on non-round coordinates.
     return Edge(role=role, start=rounded_p1, end=rounded_p2, segment=LineSeg(start=raw_p1, end=raw_p2))
 
 
 class TestMergeCollinearOverlaps(unittest.TestCase):
 
     def test_catena_di_tre_si_fonde(self):
-        # A-B si sovrappongono, B-C si sovrappongono, A-C no direttamente —
-        # deve fondersi comunque in un solo segmento (0,0)-(30,0).
+        # A-B overlap, B-C overlap, A-C do not directly — it must merge anyway into a
+        # single segment (0,0)-(30,0).
         edges = [
             _line((0.0, 0.0), (10.0, 0.0)),
             _line((8.0, 0.0), (20.0, 0.0)),
@@ -48,10 +47,9 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
         self.assertEqual((out[0].segment.start, out[0].segment.end), ((0.0, 0.0), (30.0, 0.0)))
 
     def test_catena_di_due_si_fonde(self):
-        # Due soli tratti che si sovrappongono: l'unione di due intervalli
-        # 1D e' sempre ben definita (qui: (0,15)), non c'e' modo di
-        # "sbagliare" fondendo solo 2 pezzi collineari — v. il seguito del
-        # commit per la storia della soglia minima che c'era qui prima.
+        # Two strokes only that overlap: the union of two 1D intervals is always well
+        # defined (here: (0,15)), there is no way to "go wrong" merging only 2 collinear
+        # pieces.
         edges = [
             _line((0.0, 0.0), (10.0, 0.0)),
             _line((5.0, 0.0), (15.0, 0.0)),
@@ -61,11 +59,10 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
         self.assertEqual((out[0].segment.start, out[0].segment.end), ((0.0, 0.0), (15.0, 0.0)))
 
     def test_un_tratto_contenuto_nell_altro_si_fonde_nel_piu_lungo(self):
-        # Caso reale (golden la_104): un tratto corto (15.68-21.36) e uno
-        # lungo (10.0-21.36) sulla stessa retta, il corto interamente dentro
-        # il lungo — due caratteri di un'incisione allineati per coincidenza,
-        # non un errore di disegno. L'unione e' comunque solo il piu' lungo:
-        # fonderli non fabbrica ne' perde geometria.
+        # Real case (golden la_104): a short stretch (15.68-21.36) and a long one
+        # (10.0-21.36) on the same line, the short one wholly inside the long one — two
+        # characters of an engraving aligned by coincidence, not a drawing error. The
+        # union is just the longer one anyway: merging them neither fabricates nor loses geometry.
         edges = [
             _line((73.297, 15.68), (73.297, 21.36)),
             _line((73.297, 21.36), (73.297, 10.0)),
@@ -75,10 +72,9 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
         self.assertEqual({out[0].segment.start, out[0].segment.end}, {(73.297, 10.0), (73.297, 21.36)})
 
     def test_contatto_punta_coda_si_fonde(self):
-        # Tre segmenti che si toccano esattamente in successione (nessuna
-        # sovrapposizione, solo continuita') sono la stessa riga tracciata a
-        # pezzi quanto una sovrapposizione vera — l'unione e' comunque ben
-        # definita, (0,0)-(30,0).
+        # Three segments touching exactly in succession (no overlap, only continuity)
+        # are the same line traced in pieces as much as a true overlap — the union is
+        # well defined anyway, (0,0)-(30,0).
         edges = [
             _line((0.0, 0.0), (10.0, 0.0)),
             _line((10.0, 0.0), (20.0, 0.0)),
@@ -89,7 +85,7 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
         self.assertEqual((out[0].segment.start, out[0].segment.end), ((0.0, 0.0), (30.0, 0.0)))
 
     def test_rette_parallele_non_si_fondono(self):
-        # Stessa direzione, offset diverso: NON è la stessa retta.
+        # Same direction, different offset: NOT the same line.
         edges = [
             _line((0.0, 0.0), (10.0, 0.0)),
             _line((3.0, 0.0), (13.0, 0.0)),
@@ -102,10 +98,10 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
         self.assertEqual(len(out), 2)
 
     def test_ruolo_gia_assegnato_non_e_candidato(self):
-        # Un ruolo diverso da UNKNOWN (assegnato da role_rules) non entra mai
-        # nel graph-building: fonderlo non aiuta e può alterare geometria di
-        # dominio intenzionale (v. golden la_104: tratti di un'incisione che
-        # si sovrappongono per disegno, non per errore).
+        # A role other than UNKNOWN (assigned by role_rules) never enters
+        # graph-building: merging it does not help and may alter intentional domain
+        # geometry (see golden la_104: stretches of an engraving that overlap by design,
+        # not by error).
         edges = [
             _line((0.0, 0.0), (10.0, 0.0), role="engrave"),
             _line((5.0, 0.0), (15.0, 0.0), role="engrave"),
@@ -115,9 +111,9 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
         self.assertEqual(len(out), 3)
 
     def test_ordine_preservato_per_tutto_il_resto(self):
-        # Un pre-pass di pulizia non deve riordinare edge che non tocca —
-        # anche a zero fusioni (v. golden staffa_scarto_doppia: il solo riordino,
-        # senza nessuna fusione, cambiava il risultato del loop-finder).
+        # A cleanup pre-pass must not reorder edges it does not touch — even with zero
+        # merges (see golden staffa_scarto_doppia: the reordering alone, with no merge,
+        # changed the loop-finder's result).
         others = [_line((i * 100.0, 0.0), (i * 100.0 + 1.0, 0.0)) for i in range(5)]
         chain = [
             _line((0.0, 50.0), (10.0, 50.0)),
@@ -128,8 +124,8 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
         out = merge_collinear_overlaps(edges)
 
         self.assertEqual(len(out), 6)  # 5 "others" + 1 fuso
-        # Il fuso occupa la posizione del primo membro della catena in ordine
-        # di input (indice 2 in `edges`), il resto non si è mosso.
+        # The merge takes the position of the chain's first member in input order
+        # (index 2 in `edges`), the rest did not move.
         self.assertIs(out[0], others[0])
         self.assertIs(out[1], others[1])
         self.assertEqual((out[2].segment.start, out[2].segment.end), ((0.0, 50.0), (30.0, 50.0)))
@@ -141,22 +137,18 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
         self.assertEqual(merge_collinear_overlaps([]), [])
 
     def test_estremi_fusi_edge_arrotondato_segment_grezzo(self):
-        # Su coordinate non tonde edge.start/end (arrotondati, identita' del
-        # nodo nel grafo) e segment.start/end (piena precisione) differiscono
-        # di una frazione di mm — due scopi diversi, mai mischiati (stesso
-        # principio già in gaps.apply_gap_fixes):
-        #   - Edge.start/end del fuso RESTANO arrotondati: servono a
-        #     riagganciarsi al nodo del vicino reale nel grafo, altrimenti un
-        #     pezzo vero può sparire del tutto (bug trovato su
-        #     fa_che_non_mi_incazzi.dxf).
-        #   - il LineSeg fuso (edge.segment) porta invece SEMPRE il punto
-        #     grezzo a piena precisione, mai quello arrotondato: è quello che
-        #     l'export legge per costruire la geometria in output, e un fuso
-        #     il cui segmento porta il punto arrotondato produce uno scalino
-        #     visibile appena affianca un lato nativo mai toccato dal merge
-        #     nello stesso contorno (bug trovato su un foglio reale: un
-        #     lato "verticale" con dx=0.031 invece di 0, lunghezza 0.97
-        #     invece di 1).
+        # On non-round coordinates edge.start/end (rounded, node identity in the graph)
+        # and segment.start/end (full precision) differ by a fraction of a mm — two
+        # different purposes, never mixed:
+        #   - Edge.start/end of the merge STAY rounded: they serve to reattach to the
+        #     node of the real neighbour in the graph, otherwise a true piece can
+        #     vanish entirely (bug found on fa_che_non_mi_incazzi.dxf).
+        #   - the merged LineSeg (edge.segment) ALWAYS carries the raw full-precision
+        #     point, never the rounded one: it is what the export reads to build the
+        #     output geometry, and a merge whose segment carries the rounded point
+        #     produces a visible step as soon as it sits beside a native side never
+        #     touched by the merge in the same contour (bug found on a real sheet: a
+        #     "vertical" side with dx=0.031 instead of 0, length 0.97 instead of 1).
         edges = [
             _line_raw((0.0, 0.0), (10.0, 0.0), (0.0000003, 0.0), (10.0000003, 0.0)),
             _line_raw((8.0, 0.0), (20.0, 0.0), (8.0000003, 0.0), (20.0000003, 0.0)),
@@ -170,10 +162,10 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
         self.assertEqual(out[0].segment.end, (30.0000003, 0.0))
 
     def test_contatto_su_uno_spigolo_non_si_fonde(self):
-        # Una traccia interna che parte da uno spigolo dell'outer, collineare
-        # col lato che arriva lì: in (0,0) finisce anche il lato verticale, è
-        # un nodo vero. Fonderli lo cancellerebbe (MAP.md D110). Senza
-        # `keep_junctions` (`outlines()`, che noda da sé) si fondono come prima.
+        # An inner trace starting from a corner of the outer, collinear with the side
+        # arriving there: the vertical side also ends in (0,0), it is a true node.
+        # Merging them would erase it. Without `keep_junctions` (`outlines()`, which
+        # nodes by itself) they merge as before.
         edges = [
             _line((-40.0, 0.0), (0.0, 0.0)),
             _line((0.0, 0.0), (200.0, 0.0)),
@@ -183,13 +175,13 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
         self.assertEqual(len(merge_collinear_overlaps(edges)), 2)
 
     def test_contatto_senza_altri_edge_si_fonde(self):
-        # Stesso contatto, ma nel punto non arriva nient'altro: è solo la
-        # cucitura fra due spezzoni della stessa riga.
+        # Same contact, but nothing else arrives at the point: it is only the seam
+        # between two pieces of the same line.
         edges = [_line((-40.0, 0.0), (0.0, 0.0)), _line((0.0, 0.0), (200.0, 0.0))]
         self.assertEqual(len(merge_collinear_overlaps(edges, keep_junctions=True)), 1)
 
     def test_sovrapposizione_su_uno_spigolo_si_fonde(self):
-        # Una sovrapposizione vera si fonde anche dove arriva un altro edge.
+        # A true overlap merges even where another edge arrives.
         edges = [
             _line((-40.0, 0.0), (5.0, 0.0)),
             _line((0.0, 0.0), (200.0, 0.0)),
@@ -199,9 +191,8 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
 
 
 class TestSameCarrierUnderMotion(unittest.TestCase):
-    """G6e (drw_0015, drw_0016): la stessa retta in due spezzoni si fonde a ogni
-    moto. La chiave arrotondata (angolo, offset) aveva un bordo di cella dove
-    i due cadevano da parti diverse, e una cucitura sulle verticali (D184)."""
+    """the same line in two pieces merges at every motion. The rounded key (angle,
+    offset) had a cell edge where the two fell on different sides, and a seam on the verticals."""
 
     def _merged_at_every_motion(self, pieces, merge, expected):
         import topo
@@ -211,16 +202,16 @@ class TestSameCarrierUnderMotion(unittest.TestCase):
             self.assertEqual(len(merge(moved(doc, move).edges)), expected, name)
 
     def test_doppione_verticale_a_cavallo_di_una_cella(self):
-        # drw_0016: x = 578.1875 è a metà fra due celle di 1e-3, il doppione a
-        # 2.5e-5 cade nell'altra; ruotati si fondevano, al posto no
+        # drw_0016: x = 578.1875 is midway between two 1e-3 cells, the duplicate at
+        # 2.5e-5 falls in the other; rotated they merged, in place they did not
         self._merged_at_every_motion(
             [LineSeg(start=(578.1875, 17.0), end=(578.1875, 25.0)),
              LineSeg(start=(578.1874750603, 24.9999881745), end=(578.1874750603, 16.9999881745))],
             merge_collinear_overlaps, 1)
 
     def test_doppione_verticale_sulla_cucitura(self):
-        # drw_0015: 1e-11 di rumore su x manda un doppione verticale dall'altra
-        # parte della cucitura a +-90 gradi della chiave (angolo, offset)
+        # drw_0015: 1e-11 of noise on x sends a vertical duplicate to the other side of
+        # the seam at +-90 degrees of the key (angle, offset)
         self._merged_at_every_motion(
             [LineSeg(start=(-71582.466979507, -2985.743765108251),
                      end=(-71582.46697950704, -2991.205129665564)),
@@ -231,7 +222,7 @@ class TestSameCarrierUnderMotion(unittest.TestCase):
             merge_collinear_overlaps, 1)
 
     def test_archi_dello_stesso_cerchio_a_cavallo_di_una_cella(self):
-        # come drw_0016 per i cerchi: centro a metà fra due celle, l'altro a 2.5e-5
+        # like drw_0016 for circles: centre midway between two cells, the other at 2.5e-5
         self._merged_at_every_motion(
             [CircleSeg(center=(578.1875, 20.0), radius=12.0, start_angle=0.1, end_angle=1.3, ccw=True),
              CircleSeg(center=(578.187475, 20.0), radius=12.0, start_angle=1.2, end_angle=2.9, ccw=True)],
@@ -239,10 +230,9 @@ class TestSameCarrierUnderMotion(unittest.TestCase):
 
 
     def test_il_fuso_va_nel_verso_del_primo_pezzo(self):
-        # G6e C, `merge.py`: la retta comune prendeva un verso
-        # canonico (x crescente, poi y), che dipende dal riferimento: una
-        # verticale ruotata di +1e-12 rad usciva fusa all'ingiù, e ogni retta
-        # si girava a mezzo giro. Si vede nelle `loose` di `heal`.
+        # `merge.py`: the common line took a canonical direction (x increasing, then y),
+        # which depends on the frame: a vertical rotated by +1e-12 rad came out merged
+        # downwards, and every line turned half a turn. Visible in the `loose` of `heal`.
         from tests.invariants import rigid
         for pieces in ([((0, 0), (0, 6)), ((0, 4), (0, 10))],
                        [((10, 0), (4, 0)), ((6, 0), (0, 0))]):
@@ -259,7 +249,7 @@ class TestSameCarrierUnderMotion(unittest.TestCase):
 
 
 class TestMergeNearCopies(unittest.TestCase):
-    """D226: la retta quasi sopra un'altra, fusa solo da chi la chiama."""
+    """The line nearly on top of another, merged only by the caller."""
 
     _PIECES = [LineSeg(start=(100, 0), end=(0.099, -0.0001)), LineSeg(start=(0, 0), end=(0, 50)),
                LineSeg(start=(0, 50), end=(100, 50)), LineSeg(start=(100, 50), end=(100, 0)),
@@ -276,15 +266,16 @@ class TestMergeNearCopies(unittest.TestCase):
         self.assertEqual((seg.start, seg.end), ((0.0, 0.001), (50.0, 0.002)))
 
     def test_la_copia_va_con_la_retta_piu_vicina(self):
-        # seme 1468: un tratto corto a 0.006 da una retta e a 0.41 da un'altra
-        # (le due rette lunghe si coprono solo in parte: non sono copia l'una dell'altra)
+        # seed 1468: a short stretch at 0.006 from one line and at 0.41 from another
+        # (the two long lines cover each other only in part: they are not copies of each other)
         near, far, copy = _line((0, 0), (3, 0)), _line((2, 0.41), (5, 0.41)), _line((2.2, 0.006), (2.5, 0.006))
         out = merge_near_copies([far, near, copy], distance=0.5)
         self.assertEqual(out, [far, near])
 
     def test_il_pezzo_che_continua_non_e_una_copia(self):
-        # D235, forza bruta (seme 834): il pezzo dopo il capo, in fila o d'angolo, ha i due capi
-        # entro la distanza dalla lunga ma non le sta sopra: resta, e heal() non avvisa
+        # brute force (seed 834): the piece after the end, in a row or at an angle, has
+        # both ends within the distance of the long one but does not lie on it: it
+        # stays, and heal() does not warn
         long = _line((0, 0), (10, 0))
         for nxt in (_line((10, 0), (10.3, 0.001)), _line((10, 0), (10.2, 0.3))):
             self.assertEqual(merge_near_copies([long, nxt], distance=0.5), [long, nxt])
@@ -296,9 +287,9 @@ class TestMergeNearCopies(unittest.TestCase):
         self.assertEqual(merge_near_copies(edges, distance=0.01), edges)
 
     def test_il_rovinato_si_chiude_solo_se_il_chiamante_fonde(self):
-        # forza bruta, seme 1775: il lato in basso si ferma a 0.099
-        # dall'angolo; una copia del lato sinistro parte dall'angolo e lo tiene
-        # occupato, così il gap non si chiude. heal() lo dice, non lo fonde
+        # brute force, seed 1775: the bottom side stops at 0.099 from the corner; a copy
+        # of the left side starts from the corner and keeps it occupied, so the gap does
+        # not close. heal() says so, it does not merge it
         doc = topo.load_segments(self._PIECES)
         net = topo.heal(doc, max_gap=0.5)
         [d] = [w for w in net.warnings if isinstance(w, topo.Diagnostic)]
@@ -313,8 +304,8 @@ class TestMergeNearCopies(unittest.TestCase):
 class TestMergeCocircularOverlaps(unittest.TestCase):
 
     def test_catena_di_frammenti_si_fonde(self):
-        # golden piega_cazzuta: un arco tracciato a 4 spezzoni consecutivi
-        # che si toccano esattamente -> un solo CircleSeg da 0 a 200 gradi.
+        # golden piega_cazzuta: an arc traced in 4 consecutive pieces touching exactly
+        # -> a single CircleSeg from 0 to 200 degrees.
         edges = [
             _arc((0.0, 0.0), 10.0, 0.0, 50.0),
             _arc((0.0, 0.0), 10.0, 50.0, 120.0),
@@ -329,8 +320,8 @@ class TestMergeCocircularOverlaps(unittest.TestCase):
         self.assertNotEqual(out[0].start, out[0].end)
 
     def test_sliver_degenere_assorbito(self):
-        # golden piega_cazzuta: uno spezzone di 0.008 gradi (rumore) in mezzo
-        # alla catena sparisce nel fuso invece di restare un nodo spurio.
+        # golden piega_cazzuta: a piece of 0.008 degrees (noise) in the middle of the
+        # chain vanishes in the merge instead of staying a spurious node.
         edges = [
             _arc((0.0, 0.0), 10.0, 0.0, 50.0),
             _arc((0.0, 0.0), 10.0, 50.0, 50.008),
@@ -340,9 +331,8 @@ class TestMergeCocircularOverlaps(unittest.TestCase):
         self.assertEqual(len(out), 1)
 
     def test_due_semicerchi_chiudono_il_cerchio(self):
-        # golden cerchi_ciambella: un foro disegnato come 2 semicirchi ->
-        # un giro intero e' un cerchio (CircleSeg), non un CircleSeg a 360 gradi
-        # -- niente traccia di quale frammento fosse il primo.
+        # golden cerchi_ciambella: a hole drawn as 2 semicircles -> a full turn is a
+        # circle (CircleSeg), not a 360-degree CircleSeg -- no trace of which fragment was first.
         edges = [
             _arc((0.0, 0.0), 10.0, 0.0, 180.0),
             _arc((0.0, 0.0), 10.0, 180.0, 360.0),
@@ -354,8 +344,8 @@ class TestMergeCocircularOverlaps(unittest.TestCase):
         self.assertEqual(out[0].segment.radius, 10.0)
 
     def test_gap_vero_non_si_chiude_per_errore(self):
-        # arc_arc_gap: un gap reale (qui volutamente grande, 10 gradi) su un
-        # lato non deve sparire solo perché l'altro lato tocca esattamente.
+        # arc_arc_gap: a real gap (deliberately large here, 10 degrees) on one side must
+        # not vanish only because the other side touches exactly.
         edges = [
             _arc((0.0, 0.0), 10.0, 0.0, 170.0),
             _arc((0.0, 0.0), 10.0, 180.0, 360.0),
@@ -429,10 +419,10 @@ class TestMergeCocircularOverlaps(unittest.TestCase):
 class TestWeldUnderMotion(unittest.TestCase):
 
     def test_arco_a_corde_uguali_saldato_uguale_a_ogni_moto(self):
-        # G6e (da un disegno vero): un raccordo scritto a corde da 0.04 fra due lati. Con
-        # le corde tutte uguali l'ordine di saldatura lo decideva l'ultimo bit,
-        # e il tetto di 0.05 ne lasciava un'alternanza diversa a ogni moto.
-        # Ora il gruppo si giudica intero: più largo di 0.05, nessuna (D186)
+        # (from a real drawing): a fillet written in 0.04 chords between two sides. With
+        # all chords equal the welding order was decided by the last bit, and the 0.05
+        # cap left a different alternation at every motion. Now the whole group is
+        # judged: wider than 0.05, none
         import topo
         from tests.invariants import MOTIONS, moved
         center, r, n = (251.0, 21.0), 1.25, 12
@@ -458,14 +448,14 @@ class TestWeldDegenerateLinesegs(unittest.TestCase):
         ]
 
     def test_catena_resta_connessa(self):
-        # D56: il LineSeg da 0.0002 mm (sotto SAME_POINT, D268) sparisce, ma i due vicini devono ritrovarsi
-        # sullo stesso nodo — cancellarlo e basta staccherebbe la catena.
+        # the 0.0002 mm LineSeg (below SAME_POINT) vanishes, but the two neighbours must
+        # find themselves on the same node — just deleting it would detach the chain.
         out = weld_degenerate_linesegs(self._chain())
         self.assertEqual(len(out), 2)
         self.assertEqual(out[0].end, out[1].start)
 
     def test_segmento_conserva_il_punto_reale(self):
-        # si sposta solo il nodo, il segment resta a piena precisione
+        # only the node moves, the segment stays at full precision
         out = weld_degenerate_linesegs(self._chain())
         self.assertEqual(out[1].segment.start, (10.0002, 0.0))
 
@@ -481,9 +471,9 @@ class TestWeldDegenerateLinesegs(unittest.TestCase):
         self.assertIs(out[1], edges[1])
 
     def test_punta_libera_non_e_saldata(self):
-        # D164: un tratto corto con un capo che non tocca nessuno è una punta,
-        # non un nodo doppio: saldarlo sposterebbe il capo libero di 0.03 e il
-        # gap di 0.004 verso l'arco accanto non si chiuderebbe più
+        # a short stretch with an end touching nobody is a tip, not a double node:
+        # welding it would move the free end by 0.03 and the 0.004 gap towards the
+        # adjacent arc would no longer close
         edges = [_line((10.0, 0.0), (20.0, 0.0)), _line((10.03, 0.0), (10.0, 0.0))]
         self.assertEqual(weld_degenerate_linesegs(edges), edges)
 

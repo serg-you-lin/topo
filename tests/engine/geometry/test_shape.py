@@ -1,5 +1,5 @@
 # tests/engine/geometry/test_shape.py
-"""`contour_shape`: fatti di forma di un contorno chiuso (D68)."""
+"""`contour_shape`: shape facts of a closed contour."""
 
 import math
 import unittest
@@ -14,7 +14,7 @@ from topo.core.geometry.shape import (
 from topo.core.topology.edge import Edge
 from topo.model.document import Document
 
-# max_gap non ha default (D98); island_gap non esiste più (D99)
+# max_gap has no default; island_gap no longer exists
 MAX_GAP = 0.5
 
 
@@ -23,7 +23,7 @@ def _ring(*pts):
 
 
 def _stadium(c1, c2, r):
-    """Stadio orizzontale fra i centri c1 e c2 (stessa y), percorsa in senso antiorario."""
+    """Horizontal stadium between the centres c1 and c2 (same y), walked counter-clockwise."""
     (x1, y), (x2, _) = c1, c2
     return [
         LineSeg(start=(x1, y - r), end=(x2, y - r)),
@@ -72,7 +72,7 @@ class TestContourShape(unittest.TestCase):
         self.assertEqual(s.sides, 4)
 
     def test_rettangolo_storto_oltre_same_point_e_un_poligono(self):
-        # D281: ogni misura entro SAME_POINT, nessun margine di somiglianza (con l'1% era un rettangolo)
+        # every measure within SAME_POINT, no similarity margin (with 1% it was a rectangle)
         self.assertEqual(contour_shape(_ring((0, 0), (100, 0), (100, 50.5), (0, 50))).kind, POLYGON)
         self.assertEqual(contour_shape(_ring((0, 0), (100, 0), (100, 50.0005), (0, 50))).kind, RECTANGLE)
 
@@ -82,7 +82,7 @@ class TestContourShape(unittest.TestCase):
         self.assertEqual(s.sides, 3)
 
     def test_altro(self):
-        # rettangolo con un angolo raccordato
+        # rectangle with a filleted corner
         segs = [LineSeg(start=(0, 0), end=(20, 0)),
                 LineSeg(start=(20, 0), end=(20, 5)),
                 CircleSeg(center=(15, 5), radius=5, start_angle=0, end_angle=math.pi / 2),
@@ -95,10 +95,8 @@ class TestContourShape(unittest.TestCase):
 
 
 class TestShapeKindStabile(unittest.TestCase):
-    """
-    D136: l'elenco dei kind è chiuso e il kind di un contorno non cambia nella
-    1.x. Un kind in più, o un contorno che cambia kind, deve rompere qui.
-    """
+    """the list of kinds is closed and a contour's kind does not change in 1.x. An
+    extra kind, or a contour that changes kind, must break here."""
 
     def test_elenco_chiuso(self):
         self.assertEqual({k.value for k in ShapeKind},
@@ -125,15 +123,15 @@ class TestShapeKindStabile(unittest.TestCase):
         self.assertEqual(s.center, (1, 2))
 
     def test_ellisse_ad_assi_uguali_e_un_cerchio(self):
-        # stessi punti di un cerchio, esattamente: non un'approssimazione
+        # the same points as a circle, exactly: not an approximation
         s = contour_shape([EllipseSeg(center=(0, 0), major_axis=(0, 4), ratio=1.0,
                                       start_param=0, end_param=2 * math.pi)])
         self.assertEqual(s.kind, CIRCLE)
         self.assertAlmostEqual(s.diameter, 8)
 
     def test_foro_in_isometria_in_due_meta(self):
-        # un cerchio visto in isometria, spezzato da due nodi: due metà della
-        # stessa ellisse, la seconda con l'asse maggiore girato di 180°
+        # a circle seen in isometry, split by two nodes: two halves of the same
+        # ellipse, the second with the major axis turned by 180°
         top = EllipseSeg(center=(0, 0), major_axis=(10, 0), ratio=0.5, start_param=0, end_param=math.pi)
         bottom = EllipseSeg(center=(0, 0), major_axis=(-10, 0), ratio=0.5, start_param=0, end_param=math.pi)
         s = contour_shape([top, bottom])
@@ -147,8 +145,8 @@ class TestShapeKindStabile(unittest.TestCase):
         self.assertEqual(contour_shape([half, LineSeg(start=(-10, 0), end=(10, 0))]).kind, OTHER)
 
     def test_cerchio_fatto_di_spline_resta_altro(self):
-        # cerchio esatto come NURBS razionale quadratica: la regola legge le
-        # primitive come sono, il riconoscimento è un passo del chiamante
+        # exact circle as a rational quadratic NURBS: the rule reads the primitives as
+        # they are, the recognition is a step of the caller
         w = math.sqrt(2) / 2
         spline = BSplineSeg(
             degree=2,
@@ -159,7 +157,7 @@ class TestShapeKindStabile(unittest.TestCase):
         self.assertEqual(contour_shape([spline]).kind, OTHER)
 
     def test_rettangolo_raccordato_e_altro(self):
-        # quattro spigoli a raggio 2: serve una misura in più del record
+        # four corners at radius 2: one more measure than the record is needed
         r = 2
         segs = [LineSeg(start=(r, 0), end=(20 - r, 0)),
                 CircleSeg(center=(20 - r, r), radius=r, start_angle=-math.pi / 2, end_angle=0),
@@ -173,11 +171,11 @@ class TestShapeKindStabile(unittest.TestCase):
 
 
 class TestMisureSullePrimitive(unittest.TestCase):
-    """`length`/`width` di `other` misurati sulla curva, non sul poligono inscritto (D156)."""
+    """`length`/`width` of `other` measured on the curve, not on the inscribed polygon."""
 
     def test_d_ruotata(self):
-        # semicerchio r 10 chiuso dal diametro, ruotato di 20°: 20 × 10 esatti,
-        # mentre il poligono inscritto è più corto fino a 2·tol
+        # semicircle r 10 closed by the diameter, rotated by 20°: 20 × 10 exact, while
+        # the inscribed polygon is shorter by up to 2·tol
         a = math.radians(20)
         arc = CircleSeg(center=(5, 7), radius=10, start_angle=a - math.pi / 2, end_angle=a + math.pi / 2)
         s = contour_shape([arc, LineSeg(start=arc._point_at(a + math.pi / 2),
@@ -187,8 +185,8 @@ class TestMisureSullePrimitive(unittest.TestCase):
         self.assertAlmostEqual(s.width, 10, places=9)
 
     def test_d_grande_oltre_la_tolleranza(self):
-        # la stessa D a r 500: la polilinea a tol 0.01 resta indietro di quasi
-        # 0.01 sulla larghezza (sagitta), la misura no
+        # the same D at r 500: the polyline at tol 0.01 falls short by nearly 0.01 on
+        # the width (sagitta), the measure does not
         a = math.radians(20)
         arc = CircleSeg(center=(0, 0), radius=500, start_angle=a - math.pi / 2, end_angle=a + math.pi / 2)
         s = contour_shape([arc, LineSeg(start=arc._point_at(a + math.pi / 2),
@@ -207,7 +205,7 @@ class TestMisureSullePrimitive(unittest.TestCase):
             n = math.hypot(*d)
             proj = [(p[0] * d[0] + p[1] * d[1]) / n for p in dense]
             lo, hi = segment_reach(spline, d)
-            # la curva vera arriva almeno dove arrivano i suoi punti, e non oltre la tolleranza densa
+            # the true curve reaches at least where its points reach, and not beyond the dense tolerance
             self.assertLessEqual(lo, min(proj) + 1e-9)
             self.assertGreaterEqual(hi, max(proj) - 1e-9)
             self.assertAlmostEqual(lo, min(proj), delta=1e-6)
@@ -238,7 +236,7 @@ def _edge(seg):
 
 
 class TestContourShapeSuIsole(unittest.TestCase):
-    """Stesso fatto di forma dalle due letture."""
+    """The same shape fact from the two readings."""
 
     def _doc(self):
         segs = (_ring((0, 0), (100, 0), (100, 50), (0, 50))
@@ -251,7 +249,7 @@ class TestContourShapeSuIsole(unittest.TestCase):
         return sorted(contour_shape(c).kind for c in cluster.inners)
 
     def test_outlines(self):
-        # D161: outlines() non fa inner; i pezzi che chiudono da sé sono in loose (D162)
+        # outlines() makes no inner; the pieces that close by themselves are in loose
         result = topo.heal(self._doc(), max_gap=MAX_GAP).outlines()
         self.assertEqual(contour_shape(result.clusters[0].outer).kind, RECTANGLE)
         kinds = sorted(s.kind for s in map(contour_shape, result.loose) if s is not None)
@@ -267,7 +265,7 @@ class TestContourShapeSuIsole(unittest.TestCase):
 class TestMergeRuns(unittest.TestCase):
 
     def test_arcs_across_angle_zero_add_their_sweeps(self):
-        # da 3π/2 a 2π e da 0 a π/2: un arco solo di π, non uno di ampiezza nulla
+        # from 3π/2 to 2π and from 0 to π/2: a single arc of π, not one of null sweep
         ring = [CircleSeg(center=(0, 0), radius=1, start_angle=3 * math.pi / 2, end_angle=2 * math.pi, ccw=True),
                 CircleSeg(center=(0, 0), radius=1, start_angle=0.0, end_angle=math.pi / 2, ccw=True),
                 LineSeg(start=(0, 1), end=(0, -1))]

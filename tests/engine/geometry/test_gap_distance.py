@@ -1,9 +1,7 @@
 # tests/engine/geometry/test_gap_distance.py
 
-"""
-`topo.geometry.gap` (D251): la distanza minima fra due bordi e la coppia di
-punti più vicini, su contorni costruiti con `topo.geometry`.
-"""
+"""`topo.geometry.gap`: the minimum distance between two boundaries and the pair
+of nearest points, on contours built with `topo.geometry`."""
 
 import math
 import unittest
@@ -23,7 +21,7 @@ class TestGap(unittest.TestCase):
         self.assertAlmostEqual(g.on_b[0], 12.0, places=9)
 
     def test_tocca_in_un_vertice_e_zero(self):
-        # un rombo dentro un quadrato, con un vertice sul lato basso
+        # a rhombus inside a square, with a vertex on the bottom side
         g = topo.geometry.gap(topo.geometry.polygon([(0, 0), (100, 0), (100, 60), (0, 60)]),
                 topo.geometry.polygon([(50, 0), (80, 20), (50, 40), (20, 20)]))
         self.assertLessEqual(g.distance, FLOAT_NOISE)
@@ -44,7 +42,7 @@ class TestGap(unittest.TestCase):
         self.assertLessEqual(topo.geometry.gap(topo.geometry.circle(10, center=(0, 0)), topo.geometry.circle(10, center=(20, 0))).distance, FLOAT_NOISE)
 
     def test_arco_e_retta(self):
-        # mezzo cerchio di raggio 5 sopra l'origine, retta a y = 8
+        # semicircle of radius 5 above the origin, line at y = 8
         arc = [CircleSeg(center=(0, 0), radius=5, start_angle=0.0, end_angle=math.pi, ccw=True)]
         g = topo.geometry.gap(arc, [LineSeg(start=(-20, 8), end=(20, 8))])
         self.assertAlmostEqual(g.distance, 3.0, places=9)

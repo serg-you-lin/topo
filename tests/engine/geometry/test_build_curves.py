@@ -1,9 +1,9 @@
 """
 tests/engine/geometry/test_build_curves.py
 ------------------------------------------
-I costruttori di curve di `topo.geometry` (MAP.md D291): il raccordo fra due
-capi, il grafico di un polinomio, l'evolvente, la clotoide, il triangolo dai
-lati. Microcasi con la risposta in forma chiusa.
+The curve constructors of `topo.geometry`: the fillet between two ends, the
+graph of a polynomial, the involute, the clothoid, the triangle from the
+sides. Micro-cases with the answer in closed form.
 """
 
 import math
@@ -16,7 +16,7 @@ g = topo.geometry
 
 
 def _turn(seg, t: float) -> float:
-    """Curvatura con segno da derivata prima e seconda (numerica sulla derivata esatta)."""
+    """Signed curvature from the first and second derivative (numerical on the exact derivative)."""
     h = 1e-5
     (ax, ay), (bx, by) = seg.derivative_at(t - h if t > h else t), seg.derivative_at(t + h)
     span = (t + h) - (t - h if t > h else t)
@@ -32,7 +32,7 @@ class TestBlend(unittest.TestCase):
         for t, d in ((t0, start_dir), (t1, end_dir)):
             dx, dy = seg.derivative_at(t)
             self.assertAlmostEqual(dx * d[1] - dy * d[0], 0.0, delta=1e-12)   # parallela
-            self.assertGreater(dx * d[0] + dy * d[1], 0)                       # nello stesso verso
+            self.assertGreater(dx * d[0] + dy * d[1], 0)                       # in the same direction
 
     def test_due_parallele_nello_stesso_verso_una_esse(self):
         (seg,) = g.blend((0.0, 0.0), (1.0, 0.0), (10.0, 5.0), (1.0, 0.0))
@@ -106,7 +106,7 @@ class TestTriangle(unittest.TestCase):
         sides = g.right_triangle(3.0, 4.0, start=(10.0, 5.0), angle=30)
         self.assertEqual(sides[0].start, (10.0, 5.0))
         self.assertEqual([round(topo.geometry.segment_length(s), 12) for s in sides], [3.0, 5.0, 4.0])
-        # angolo retto in start: i due cateti perpendicolari
+        # right angle at start: the two legs perpendicular
         (ax, ay), (bx, by) = sides[0].end, sides[2].start
         self.assertAlmostEqual((ax - 10) * (bx - 10) + (ay - 5) * (by - 5), 0.0, delta=1e-12)
         (cluster,) = topo.heal(topo.load_segments(sides)).faces().clusters

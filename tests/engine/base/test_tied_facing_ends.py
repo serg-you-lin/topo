@@ -1,17 +1,15 @@
 # tests/engine/base/test_tied_facing_ends.py
 
-"""
-D272: due capi già legati che si guardano lungo il proprio prolungamento,
-entro `max_gap`, si uniscono con un tratto nuovo. La vista di fianco di
-drw_0031: i due lati spezzati con un buco di qualche millesimo.
-"""
+"""Two already bound ends facing each other along their own extension, within
+`max_gap`, are joined by a new stretch. The side view of drw_0031: the two
+sides broken with a hole of a few thousandths."""
 
 import unittest
 
 import topo
 from topo.primitives import LineSeg
 
-STEP = 0.005   # il buco fra i due pezzi di ogni lato
+STEP = 0.005   # the hole between the two pieces of each side
 
 
 def _line(a, b):
@@ -19,8 +17,8 @@ def _line(a, b):
 
 
 def _side_view() -> list:
-    """Striscia 100x2 sotto; sopra il corpo, coi lati che ripartono STEP più su
-    e un risvolto largo 0,3 a ogni lato."""
+    """Strip 100x2 below; above, the body, with the sides restarting STEP higher and
+    a 0.3-wide return at each side."""
     top = 2 + STEP
     return [_line((0, 0), (100, 0)), _line((100, 0), (100, 2)), _line((100, 2), (0, 2)), _line((0, 2), (0, 0)),
             _line((0, top), (0, 10)), _line((0, 10), (100, 10)), _line((100, 10), (100, top)),
@@ -49,7 +47,7 @@ class TestLatoInDuePezzi(unittest.TestCase):
         self.assertEqual(_tied(net), [])
 
     def test_senza_max_gap_niente_si_unisce(self):
-        # D267: heal(doc) legge il disegno com'è
+        # heal(doc) reads the drawing as it is
         self.assertEqual(_tied(topo.heal(topo.load_segments(_side_view()))), [])
 
 

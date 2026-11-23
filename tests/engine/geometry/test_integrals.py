@@ -1,8 +1,8 @@
 """
 tests/engine/geometry/test_integrals.py
 
-Area e baricentro esatti (D165) contro formule note: ogni primitiva, i due
-versi, un giro misto, e la discretizzazione fine come controprova.
+Exact area and centroid against known formulas: every primitive, both
+directions, a mixed loop, and the fine discretization as a counter-check.
 """
 
 import math
@@ -33,7 +33,7 @@ def _shoelace(points):
 
 
 def _sampled(seg, n):
-    """`n` corde uniformi nel parametro: una retta resta una corda."""
+    """`n` uniform chords in the parameter: a line stays one chord."""
     if isinstance(seg, LineSeg):
         return [seg.start]
     if isinstance(seg, EllipseSeg):
@@ -115,8 +115,8 @@ def test_mezza_ellisse_ruotata_contro_la_discretizzazione_fine():
 
 
 def test_segmento_parabolico():
-    # Bézier quadratica (0,0)-(1,2)-(2,0): 2/3 del triangolo di controllo,
-    # baricentro a 2/5 della freccia (1) dalla corda
+    # quadratic Bézier (0,0)-(1,2)-(2,0): 2/3 of the control triangle, centroid at
+    # 2/5 of the sagitta (1) from the chord
     spline = BSplineSeg(2, [(0.0, 0.0), (1.0, 2.0), (2.0, 0.0)], [0, 0, 0, 1, 1, 1])
     ring = [spline, LineSeg((2.0, 0.0), (0.0, 0.0))]
     assert ring_moments(ring).area == pytest.approx(-4 / 3, rel=1e-14)
@@ -153,7 +153,7 @@ def test_giro_senza_area_non_ha_baricentro():
 
 
 def test_spline_periodica_chiusa_da_sola():
-    # cubica uniforme non clamped: i primi tre punti ripetuti in coda la chiudono
+    # unclamped uniform cubic: the first three points repeated at the end close it
     base = [(0.0, 0.0), (4.0, -1.0), (7.0, 2.0), (5.0, 6.0), (1.0, 5.0)]
     ctrl = base + base[:3]
     spline = BSplineSeg(3, ctrl, [float(k) for k in range(len(ctrl) + 4)])
@@ -162,8 +162,8 @@ def test_spline_periodica_chiusa_da_sola():
 
 
 def test_un_salto_fra_segmenti_conta_come_la_sua_corda():
-    # quadrato con un gap di 0.01 chiuso entro tolleranza: l'area non
-    # dipende da dove sta il pezzo
+    # square with a 0.01 gap closed within tolerance: the area does not depend on
+    # where the piece sits
     far = (1e5, -3e5)
     ring = [LineSeg((0.0, 0.0), (2.0, 0.0)), LineSeg((2.0, 0.0), (2.0, 2.0)),
             LineSeg((2.0, 2.0), (0.0, 2.0)), LineSeg((0.0, 2.0), (0.0, 0.01))]

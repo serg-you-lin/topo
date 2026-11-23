@@ -1,10 +1,10 @@
 """
 test_geometry_regions.py
 ------------------------
-Primitive per algoritmi di un chiamante (MAP.md D118): `intersections` fra due
-primitive, `point_on_contour`, `cut_by`, `contour_minus`, `contour_union`,
-`Contour.from_segments`. Ogni regione è un contorno chiuso qualunque:
-gli stessi test girano con un disco e con un rettangolo.
+Primitives for a caller's algorithms: `intersections` between two primitives,
+`point_on_contour`, `cut_by`, `contour_minus`, `contour_union`,
+`Contour.from_segments`. Every region is any closed contour: the same tests
+run with a disc and with a rectangle.
 """
 
 import math
@@ -18,7 +18,7 @@ from topo import to_shapely
 
 g = topo.geometry
 SQUARE = g.rectangle(10, 10, center=(5, 5))          # 0..10 x 0..10, antiorario
-# una L: 10x10 meno il quadrato 5..10 x 5..10, spigolo concavo in (5, 5)
+# an L: 10x10 minus the square 5..10 x 5..10, concave corner at (5, 5)
 L_SHAPE = g.polygon([(0, 0), (10, 0), (10, 5), (5, 5), (5, 10), (0, 10)])
 
 
@@ -47,10 +47,10 @@ class TestIntersections(unittest.TestCase):
     def test_line_circle_and_line_arc_only_inside_the_sweep(self):
         line = LineSeg((0, 0), (10, 0))
         self.assertEqual(_rounded(g.intersections(line, CircleSeg((5, 0), 2))), [(3, 0), (7, 0)])
-        # semicerchio superiore da 0 a π: tocca la retta nei due capi
+        # upper semicircle from 0 to π: touches the line at both ends
         self.assertEqual(_rounded(g.intersections(line, CircleSeg((5, 0), 2, 0, math.pi, True))),
                          [(3, 0), (7, 0)])
-        # quarto da 0 a π/2: solo il capo in (7, 0)
+        # quarter from 0 to π/2: only the end at (7, 0)
         self.assertEqual(_rounded(g.intersections(line, CircleSeg((5, 0), 2, 0, math.pi / 2, True))),
                          [(7, 0)])
 
@@ -103,15 +103,13 @@ class TestPointOnContour(unittest.TestCase):
 
 
 class TestCuspUnderMotion(unittest.TestCase):
-    """G6e, gruppo C, `regions.py:269`: concavo è il segno di `cross * area`.
-    A una punta (il contorno torna indietro, 180°) `cross` è 0. Prova: sotto
-    moto la risposta non cambia, perché i due lati di una punta di larghezza
-    zero sono l'uno il rovescio esatto dell'altro anche mossi (cross resta 0
-    esatto), e su una punta larga 1e-9 il segno di cross è geometria, non
-    rumore. Non prova che la risposta a larghezza zero sia giusta: un taglio
-    verso dentro esce convesso (in coda nell'inventario G6e). Non prova la
-    riga dentro le letture: `point_on_contour` non è chiamata da `faces()` né da
-    `outlines()`."""
+    """concave is the sign of `cross * area`. At a cusp (the contour goes back, 180°)
+    `cross` is 0. Proof: under motion the answer does not change, because the two
+    sides of a zero-width cusp are the exact reverse of each other even moved
+    (cross stays exactly 0), and on a cusp 1e-9 wide the sign of cross is
+    geometry, not noise. It does not prove that the zero-width answer is right: a
+    cut towards the inside comes out convex. It does not prove the line inside the
+    readings: `point_on_contour` is not called by `faces()` nor by `outlines()`."""
 
     MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
                (0.7, 3.1, -2.2), (2.4, -0.37, 0.61), (math.pi / 2, 0.0, 0.0)]
@@ -134,12 +132,12 @@ class TestCuspUnderMotion(unittest.TestCase):
                 answers.add((p.kind, round(p.turn_deg, 6), p.concave))
             with self.subTest(ring=name):
                 self.assertEqual(len(answers), 1, answers)
-        # la punta stretta verso fuori è convessa: il segno di cross è vero
+        # the narrow cusp towards the outside is convex: the sign of cross is true
         self.assertEqual(answers, {("vertex", 180.0, False)})
 
 
 class TestNearestPoint(unittest.TestCase):
-    """Il punto del contorno più vicino a un punto qualunque (es. un click)."""
+    """The contour point nearest any point (e.g. a click)."""
 
     def test_middle_of_a_side_not_a_vertex(self):
         self.assertEqual(_rounded([g.nearest_point(SQUARE, (4, -3))]), [(4, 0)])
@@ -150,7 +148,7 @@ class TestNearestPoint(unittest.TestCase):
 
     def test_circle_and_arc_exact(self):
         self.assertEqual(_rounded([g.nearest_point(g.circle(5), (0, 9))]), [(0, 5)])
-        # quarto da 0 a π/2: un punto sotto l'asse x cade sul capo (5, 0), non oltre l'ampiezza
+        # quarter from 0 to π/2: a point below the x axis falls on the end (5, 0), not beyond the sweep
         quarter = [CircleSeg((0, 0), 5, 0, math.pi / 2, True)]
         self.assertEqual(_rounded([g.nearest_point(quarter, (6, -4))]), [(5, 0)])
 
@@ -254,7 +252,7 @@ class TestContourUnion(unittest.TestCase):
         rings = g.contour_union(SQUARE, g.rectangle(10, 10, center=(15, 5)))
         self.assertEqual(len(rings), 1)
         self.assertAlmostEqual(_area(rings[0]), 200)
-        # dove il bordo prosegue sulla stessa retta non c'è spigolo
+        # where the border continues on the same line there is no corner
         self.assertEqual(self._kinds(rings[0]), ["LineSeg"] * 4)
 
     def test_a_shorter_neighbour_leaves_the_rest_of_the_side(self):
@@ -273,7 +271,7 @@ class TestContourUnion(unittest.TestCase):
         self.assertEqual(len(g.contour_union(SQUARE, g.circle(1, center=(50, 50)))), 2)
         self.assertEqual([round(_area(r), 6) for r in g.contour_union(SQUARE, g.circle(1, center=(5, 5)))],
                          [100])
-        # un tocco in un punto: due anelli, non un otto
+        # a touch at a point: two rings, not a figure eight
         for other in (g.rectangle(10, 10, center=(15, 15)), g.circle(5, center=(15, 5))):
             rings = g.contour_union(SQUARE, other)
             self.assertEqual(len(rings), 2)
@@ -322,7 +320,7 @@ class TestContourUnion(unittest.TestCase):
         self.assertTrue(to_shapely(contour).is_valid)
 
     def test_a_border_within_same_point_is_shared(self):
-        # entro SAME_POINT i due bordi sono lo stesso bordo; oltre, due anelli (D268)
+        # within SAME_POINT the two borders are the same border; beyond, two rings
         near = g.contour_union(SQUARE, g.rectangle(10, 10, center=(15 + topo.precision.SAME_POINT / 2, 5)))
         self.assertEqual(len(near), 1)
         self.assertAlmostEqual(_area(near[0]), 200, delta=0.01)
@@ -331,15 +329,14 @@ class TestContourUnion(unittest.TestCase):
 
 
 class TestTouchingRingsUnderMotion(unittest.TestCase):
-    """G6e, gruppo D, `regions.py:356` (`min(nexts, key=wedge)` in `_chain`): dove
-    due anelli dell'unione si toccano in un punto ripartono due pezzi, vince lo
-    spicchio più stretto. Prova: spigolo contro spigolo e cerchio tangente a un
-    lato (lo spicchio del cerchio, tangente all'indietro, è il giro intero)
-    danno due anelli a ogni moto; con `max` al posto di `min` esce un otto
-    (rosso). Non c'è un pari merito da provare: due pezzi tenuti non partono
-    nello stesso verso, perché con la regione dalla stessa parte quello che
-    curva di più sta dentro l'altro anello ed è già tolto. Non prova le letture:
-    `contour_union` non la chiamano né `faces()` né `outlines()`."""
+    """(`min(nexts, key=wedge)` in `_chain`): where two rings of the union touch at a
+    point two pieces restart, the narrowest wedge wins. Proof: corner against
+    corner and a circle tangent to a side (the circle's wedge, tangent backwards,
+    is the full turn) give two rings at every motion; with `max` in place of `min`
+    a figure eight comes out (red). There is no tie to prove: two kept pieces do
+    not start in the same direction, because with the region on the same side the
+    one that curves more is inside the other ring and is already removed. It does
+    not prove the readings: `contour_union` is called neither by `faces()` nor by `outlines()`."""
 
     MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
                (0.7, 3.1, -2.2), (2.4, -0.37, 0.61), (math.pi / 2, 0.0, 0.0)]
@@ -374,10 +371,10 @@ class TestContourFromSegments(unittest.TestCase):
 
 
 class TestTangentOnTheTrueCurve(unittest.TestCase):
-    """D278: la direzione al capo di spline ed ellissi è la derivata della curva
-    vera, non l'ultima corda del poligono. Prova: un quarto di cerchio scritto
-    come NURBS razionale ha tangenti esatte note; una spline e un'ellisse
-    coincidono con la differenza finita sulla curva."""
+    """the direction at the end of splines and ellipses is the derivative of the
+    true curve, not the last chord of the polygon. Proof: a quarter circle written
+    as a rational NURBS has known exact tangents; a spline and an ellipse
+    coincide with the finite difference on the curve."""
 
     def test_quarto_di_cerchio_razionale(self):
         from topo.core.geometry.regions import end_tangent

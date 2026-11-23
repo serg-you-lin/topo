@@ -10,11 +10,10 @@ from topo.precision import FLOAT_NOISE, SAME_POINT
 
 
 class TestRefitJointsUnderMotion(unittest.TestCase):
-    """G6e, gruppo B: una curva scritta a punti (retta, quarto di cerchio,
-    retta) rifittata in tre primitive resta una catena sola. Ogni giunzione
-    si arrotondava due volte, dalla fine di un pezzo e dall'inizio del
-    successivo: due copie a 1 ulp, e con un bordo di cella fra loro i due
-    pezzi prendevano nodi diversi."""
+    """a curve written as points (line, quarter circle, line) refitted into three
+    primitives stays a single chain. Every junction was rounded twice, from the
+    end of a piece and from the start of the next: two copies 1 ulp apart, and
+    with a cell edge between them the two pieces took different nodes."""
 
     def _profile(self, angle, dx, dy):
         import topo
@@ -29,7 +28,7 @@ class TestRefitJointsUnderMotion(unittest.TestCase):
     def test_una_giunzione_su_un_bordo_di_cella_resta_un_nodo(self):
         from collections import Counter
         from topo.core.base.refit import refit_tessellations
-        # il moto mette la giunzione fra la retta e l'arco a metà fra due celle di 1e-3
+        # the motion puts the junction between the line and the arc midway between two 1e-3 cells
         for motion in [(0.0, 0.0, 0.0), (1.209, 2999999.9996208353, -2499999.9996809117)]:
             with self.subTest(motion=motion):
                 out = refit_tessellations(self._profile(*motion))
@@ -39,8 +38,8 @@ class TestRefitJointsUnderMotion(unittest.TestCase):
 
 
 class TestRefitCornerFromTolerance(unittest.TestCase):
-    """D283: nel rifit lo spigolo è dove nessuna curva liscia passa entro la
-    tolleranza, non una svolta sopra 35° (un numero di smoother). Microcasi."""
+    """in the refit a corner is where no smooth curve passes within the tolerance,
+    not a turn above 35° (a smoother number). Micro-cases."""
 
     def test_spigolo_di_20_gradi_scritto_a_punti_resta_due_rette(self):
         t = math.radians(20)
@@ -49,13 +48,13 @@ class TestRefitCornerFromTolerance(unittest.TestCase):
         self.assertEqual(self._refit(pts), ["LineSeg", "LineSeg"])
 
     def test_curva_liscia_che_non_e_un_arco_resta_una_curva(self):
-        # una gobba di 0,04 mm su 3 mm, la curvatura cambia (regr_01 a y 686): nessuno spigolo
+        # a bump of 0.04 mm over 3 mm, the curvature changes (regr_01 at y 686): no corner
         pts = [(x * 0.02, 0.04 * math.sin(math.pi * x / 150) - 0.3 * (x / 150) ** 3) for x in range(151)]
-        (kind,) = self._refit(pts)     # un pezzo solo; arco o spline, entro 0,02 vanno bene tutti e due
+        (kind,) = self._refit(pts)     # a single piece; arc or spline, within 0.02 both are fine
         self.assertNotEqual(kind, "LineSeg")
 
     def test_retta_e_raccordo_tangente_senza_spigoli_finti(self):
-        # 2 mm di retta, poi un quarto di cerchio di raggio 1 tangente: retta + arco, nessun pezzo in più
+        # 2 mm of line, then a tangent quarter circle of radius 1: line + arc, no extra piece
         pts = [(x * 0.05, 0.0) for x in range(41)]
         pts += [(2.0 + math.sin(a / 40 * math.pi / 2), 1 - math.cos(a / 40 * math.pi / 2)) for a in range(1, 41)]
         self.assertEqual(self._refit(pts), ["LineSeg", "CircleSeg"])
@@ -72,8 +71,8 @@ def _refit_segments(pts):
 
 
 class TestRefitEllipse(unittest.TestCase):
-    """Il rifit prova l'ellisse prima della spline: la famiglia più semplice
-    entro la tolleranza (5 numeri contro i punti di controllo). Microcasi."""
+    """The refit tries the ellipse before the spline: the simplest family within the
+    tolerance (5 numbers against the control points). Micro-cases."""
 
     @staticmethod
     def _ellipse(t, angle=math.radians(30), a=4.0, b=1.6, center=(1000.0, 500.0)):
@@ -82,7 +81,7 @@ class TestRefitEllipse(unittest.TestCase):
                 center[1] + a * math.cos(t) * s + b * math.sin(t) * c)
 
     def test_ellisse_intera_scritta_a_punti_diventa_una_ellisse(self):
-        pts = [self._ellipse(2 * math.pi * k / 300) for k in range(301)]   # lati sotto 0,1 mm
+        pts = [self._ellipse(2 * math.pi * k / 300) for k in range(301)]   # sides below 0.1 mm
         (seg,) = _refit_segments(pts)
         self.assertIsInstance(seg, EllipseSeg)
         self.assertAlmostEqual(math.hypot(*seg.major_axis), 4.0, delta=SAME_POINT)
@@ -99,7 +98,7 @@ class TestRefitEllipse(unittest.TestCase):
             self.assertAlmostEqual(seg._sweep(), 2.0, delta=SAME_POINT, msg=sweep)
 
     def test_ramo_d_iperbole_scritto_a_punti_diventa_un_iperbole(self):
-        # D294: la conica che il fit trova dice quale; lati sotto 0,1 mm come un rifit vero
+        # the conic the fit finds says which; sides below 0.1 mm like a real refit
         from topo.primitives import HyperbolaSeg
         hyp = HyperbolaSeg(center=(1000.0, 500.0), major_axis=(3.0, 1.0), ratio=0.6, start_param=-0.9, end_param=1.1)
         pts = [hyp.point_at(hyp.t_range[1] * k / 120) for k in range(121)]
@@ -126,10 +125,10 @@ def _circles(segments):
 
 
 class TestRefitCircleRings(unittest.TestCase):
-    """D236: un anello che sta tutto entro 0,02 mm da un cerchio e gli fa il giro è quel cerchio."""
+    """a ring lying wholly within 0.02 mm of a circle and going round it is that circle."""
 
     def test_foro_a_lati_lunghi_diventa_cerchio(self):
-        # forza bruta (seme 42): r 1,424 in 71 lati da 0,14 mm, oltre il lato corto di D60
+        # brute force (seed 42): r 1.424 in 71 sides of 0.14 mm, beyond the short side
         (c,) = _circles(_polygon((5, 5), 1.424, 64))
         self.assertAlmostEqual(c.radius, 1.424, delta=0.002)
 
@@ -141,17 +140,17 @@ class TestRefitCircleRings(unittest.TestCase):
         self.assertEqual(len(_circles(ring)), 1)
 
     def test_pezzo_doppio_che_corre_sul_cerchio_va_col_cerchio(self):
-        # seme 42: un tratto doppio lungo il giro, lasciato da parte, spezzava il cerchio in arco + linea
+        # seed 42: a double stretch along the loop, left aside, broke the circle into arc + line
         ring = _polygon((5, 5), 1.0, 60)
         a, b = ring[10].start, ring[10].end
-        for extra in (LineSeg(start=a, end=((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)),          # dal vertice, capo libero
-                      LineSeg(start=((2 * a[0] + b[0]) / 3, (2 * a[1] + b[1]) / 3), end=b)):  # parte a metà lato
+        for extra in (LineSeg(start=a, end=((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)),          # from the vertex, free end
+                      LineSeg(start=((2 * a[0] + b[0]) / 3, (2 * a[1] + b[1]) / 3), end=b)):  # starts at mid-side
             faces = topo.heal(topo.load_segments(ring + [extra]), max_gap=0.1).faces()
             self.assertEqual([[type(s) for s in ct.segments] for cl in faces.clusters for ct in [cl.outer, *cl.inners]],
                              [[CircleSeg]])
 
     def test_poligono_vero_resta(self):
-        # esagono di r 5: a metà lato si stacca di 0,67 mm dal cerchio
+        # hexagon of r 5: at mid-side it departs 0.67 mm from the circle
         self.assertEqual(_circles(_polygon((0, 0), 5.0, 6)), [])
 
     def test_mezzo_giro_non_diventa_cerchio(self):

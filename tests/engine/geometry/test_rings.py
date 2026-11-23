@@ -1,9 +1,9 @@
 """
 tests/engine/geometry/test_rings.py
 
-Fatti di un giro sulle primitive (D166): bbox esatto contro le formule,
-perimetro, punti, e `ring_contains` contro il poligono fine di shapely su una
-griglia di punti lontani dal bordo — ogni primitiva, i due versi, un salto.
+Facts of a loop on the primitives: exact bbox against the formulas, perimeter,
+points, and `ring_contains` against shapely's fine polygon on a grid of points
+far from the border — every primitive, both directions, a jump.
 """
 
 import math
@@ -39,14 +39,14 @@ def _rounded_rectangle(L=30.0, W=12.0, r=2.5):
 
 
 def _concave_fillet():
-    # quadrato 10×10 con un raccordo concavo r=3 sull'angolo in alto a destra
+    # 10×10 square with a concave r=3 fillet on the top-right corner
     return [LineSeg((0.0, 0.0), (10.0, 0.0)), LineSeg((10.0, 0.0), (10.0, 7.0)),
             CircleSeg((10.0, 10.0), 3.0, 1.5 * math.pi, math.pi, ccw=False),
             LineSeg((7.0, 10.0), (0.0, 10.0)), LineSeg((0.0, 10.0), (0.0, 0.0))]
 
 
 def _big_arc():
-    # arco di 300° chiuso dalla sua corda: il segmento di cerchio contiene il centro
+    # 300° arc closed by its chord: the circle segment contains the centre
     t0, t1 = math.radians(30), math.radians(330)
     arc = CircleSeg((0.0, 0.0), 5.0, t0, t1)
     s, e = arc._point_at(t0), arc._point_at(t1)
@@ -99,9 +99,9 @@ def test_contains_come_il_poligono_fine_lontano_dal_bordo(name, reverse):
 
 
 def _chords(ring, polygon, n=150, seed=7):
-    """Corde a caso nel bbox allargato, lontane da un tocco tangente: ogni
-    incontro col bordo è un incrocio netto o non c'è (il poligono fine e
-    le primitive possono differire solo lì)."""
+    """Random chords in the enlarged bbox, away from a tangent touch: every meeting
+    with the border is a clean crossing or there is none (the fine polygon and the
+    primitives can differ only there)."""
     rnd = random.Random(seed)
     xmin, ymin, xmax, ymax = ring_bbox(ring)
     w, h = xmax - xmin, ymax - ymin
@@ -112,7 +112,7 @@ def _chords(ring, polygon, n=150, seed=7):
         line = LineString([a, b])
         if line.length < 1e-3 or min(polygon.exterior.distance(SPoint(p)) for p in (a, b)) < 1e-2:
             continue
-        # niente tangenze: spostata di ±1e-2 la corda incontra il bordo lo stesso numero di volte
+        # no tangencies: moved by ±1e-2 the chord meets the border the same number of times
         if len({_meets(line.offset_curve(d), polygon) for d in (-1e-2, 1e-2)}) != 1:
             continue
         out.append((a, b))
@@ -137,11 +137,11 @@ def test_corda_che_divide_e_corda_coperta_come_shapely(name):
 
 def test_corda_sul_bordo_e_tocco():
     ring = _rounded_rectangle()              # 30×12, raccordi r=2.5
-    assert not ring_split_by_chord(ring, (-10.0, -6.0), (10.0, -6.0))     # sul lato
+    assert not ring_split_by_chord(ring, (-10.0, -6.0), (10.0, -6.0))     # on the side
     assert ring_covers_chord(ring, (-10.0, -6.0), (10.0, -6.0))
-    assert not ring_split_by_chord(ring, (-20.0, 6.0), (20.0, 6.0))       # lungo il lato in alto
+    assert not ring_split_by_chord(ring, (-20.0, 6.0), (20.0, 6.0))       # along the top side
     assert ring_split_by_chord(ring, (0.0, -7.0), (0.0, 7.0))
-    assert ring_split_by_chord(ring, (0.0, -6.0), (0.0, 6.0))             # da bordo a bordo, capi sul bordo
+    assert ring_split_by_chord(ring, (0.0, -6.0), (0.0, 6.0))             # from border to border, ends on the border
     assert not ring_split_by_chord(ring, (0.0, -6.0), (0.0, 0.0))         # entra e si ferma
 
 
@@ -154,7 +154,7 @@ def test_un_punto_del_bordo_sta_dentro(name):
 
 
 def test_sulla_corda_dentro_il_segmento_di_cerchio():
-    # il punto sta sulla retta della corda di un arco, ma la corda non è bordo
+    # the point lies on the line of an arc's chord, but the chord is not border
     ring = [CircleSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),
             LineSeg((0.0, -5.0), (5.0, 0.0))]
     assert ring_contains(ring, (1.0, 0.0))
@@ -165,13 +165,12 @@ def test_sulla_corda_dentro_il_segmento_di_cerchio():
 @pytest.mark.parametrize("motion", [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
                                     (0.7, 3.1, -2.2), (2.4, -0.37, 0.61)])
 def test_sulla_corda_e_accanto_sotto_moto(motion):
-    # G6e, gruppo C, `rings.py:244`: da che parte della corda sta il punto è il
-    # segno di `cross_pt`, nullo sulla corda. Prova: sulla corda (dove la
-    # guardia a :239 decide al posto del segno) e a 1e-7 / 5e-9 di lato (dove
-    # decide il segno, che è geometria) la risposta non cambia col moto.
-    # Senza la guardia (4.9, 0) esce fuori a (2.4, -0.37, 0.61). Non prova la
-    # riga dentro le letture: la raggiunge snapbend (`splits_contour`,
-    # `bridged_runs`), non `faces()` né `outlines()`.
+    # which side of the chord the point is on is the sign of `cross_pt`, zero on the
+    # chord. Proof: on the chord (where the guard decides in place of the sign) and
+    # at 1e-7 / 5e-9 to the side (where the sign decides, which is geometry) the
+    # answer does not change with the motion. Without the guard (4.9, 0) comes out
+    # at (2.4, -0.37, 0.61). It does not prove the line inside the readings: it is
+    # reached by snapbend (`splits_contour`, `bridged_runs`), not `faces()` nor `outlines()`.
     from tests.invariants import rigid
     move_seg, move_pt = rigid(*motion)
     ring = [CircleSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),
@@ -184,14 +183,14 @@ def test_sulla_corda_e_accanto_sotto_moto(motion):
 @pytest.mark.parametrize("motion", [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
                                     (0.7, 3.1, -2.2), (2.4, -0.37, 0.61)])
 def test_a_cavallo_della_guardia_sulla_corda(motion):
-    # G6e, gruppo C, `rings.py:239`: entro 1e-9 rad dalla corda il punto si
-    # dà dentro il segmento di cerchio. Prova: a cavallo della soglia (punti a
-    # 1e-9, 2.5e-9, 3e-9, 1e-6 dalla corda, dai due lati), con la corda dentro
-    # il giro (arco convesso) e fuori (arco che morde), la risposta è la stessa
-    # a ogni moto. Il valore della soglia conta poco: sbagliando ramo l'angolo
-    # dell'arco cambia della soglia stessa, e il giro si arrotonda; con 0.5 rad
-    # o 1e-17 questi punti escono uguali. Non prova la riga dentro le letture
-    # (la raggiunge snapbend, non `faces()` né `outlines()`).
+    # within 1e-9 rad of the chord the point is given inside the circle segment.
+    # Proof: across the threshold (points at 1e-9, 2.5e-9, 3e-9, 1e-6 from the
+    # chord, on both sides), with the chord inside the loop (convex arc) and outside
+    # (biting arc), the answer is the same at every motion. The threshold's value
+    # matters little: taking the wrong branch changes the arc's angle by the
+    # threshold itself, and the loop is rounded; with 0.5 rad or 1e-17 these points
+    # come out equal. It does not prove the line inside the readings (reached by
+    # snapbend, not `faces()` nor `outlines()`).
     from tests.invariants import rigid
     move_seg, move_pt = rigid(*motion)
     convex = [CircleSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),
@@ -208,7 +207,7 @@ def test_a_cavallo_della_guardia_sulla_corda(motion):
 def test_bbox_esatto_sugli_estremi_delle_curve():
     assert ring_bbox(_rounded_rectangle()) == pytest.approx((-15.0, -6.0, 15.0, 6.0), abs=EPS)
     assert ring_bbox([CircleSeg((1.0, -2.0), 4.0)]) == pytest.approx((-3.0, -6.0, 5.0, 2.0), abs=EPS)
-    # arco di 300° da 30°: tocca x = -5, y = ±5, non x = +5
+    # 300° arc from 30°: touches x = -5, y = ±5, not x = +5
     xmin, ymin, xmax, ymax = ring_bbox(_big_arc())
     assert (xmin, ymin, ymax) == pytest.approx((-5.0, -5.0, 5.0), abs=EPS)
     assert xmax == pytest.approx(5 * math.cos(math.radians(30)), abs=EPS)

@@ -1,5 +1,5 @@
 # tests/engine/geometry/test_build.py
-"""Costruttori di `topo.geometry` e `topo.load_segments` (D96): costruire e leggere usano le stesse misure."""
+"""Constructors of `topo.geometry` and `topo.load_segments`: building and reading use the same measures."""
 
 import math
 import unittest

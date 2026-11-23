@@ -1,5 +1,5 @@
 # tests/engine/geometry/test_lines.py
-"""`splits_contour`, `bridged_runs`, `point_line_distance`: fatti fra rette e contorni (D93, D166)."""
+"""`splits_contour`, `bridged_runs`, `point_line_distance`: facts between lines and contours."""
 
 import unittest
 
@@ -48,7 +48,7 @@ class TestBridgedRuns(unittest.TestCase):
         self.assertEqual(len(bridged_runs(segments, [hole], tolerance=0.1)), 1)
 
     def test_ponte_rotondo(self):
-        # lo spazio passa dentro un cerchio Ø12: il bordo vero, non le corde
+        # the space passes inside a circle Ø12: the true border, not the chords
         segments = [((40, 0), (40, 19)), ((40, 31), (40, 50))]
         self.assertEqual(len(bridged_runs(segments, [topo.geometry.circle(6.0, center=(40, 25))], tolerance=0.1)), 1)
 
@@ -64,7 +64,7 @@ class TestLineFacts(unittest.TestCase):
         self.assertAlmostEqual(point_line_distance((3, 4), (0, 0), (0, 0)), 5)
 
     def test_lo_scarto_di_direzione_sta_nella_distanza(self):
-        # D282: niente angolo a parte, il capo lontano di b si scosta di 0,06
+        # no separate angle, the far end of b deviates by 0.06
         a, b = ((0, 0), (100, 0)), ((0, 0.01), (100, 0.06))
         self.assertTrue(are_collinear(a, b, 0.1))
         self.assertFalse(are_collinear(a, b, 0.05))

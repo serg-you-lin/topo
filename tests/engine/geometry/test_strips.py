@@ -1,10 +1,10 @@
 """
 test_strips.py
 --------------
-Test unitari per topo.tools.strips e topo.core.geometry.strips (MAP.md D134,
-D142): i bordi affacciati, la distanza fra due bordi, la striscia (anche fra
-due regioni sorelle, rifiutata se attraversa qualcosa), le regioni non
-collegate, i bordi aperti dove passano le strisce.
+Unit tests for topo.tools.strips and topo.core.geometry.strips: the facing
+boundaries, the distance between two boundaries, the strip (also between two
+sibling regions, rejected if it crosses something), the unconnected regions,
+the open boundaries where the strips pass.
 """
 
 import math
@@ -28,7 +28,7 @@ def _cluster(*shapes):
 
 
 def _window_with_two_discs():
-    """Riquadro 200×120 con una finestra 160×80; dentro, due dischi r=10 a 20 l'uno dall'altro."""
+    """200×120 box with a 160×80 window; inside, two r=10 discs 20 from each other."""
     cluster = _cluster(rectangle(200, 120, center=(100, 60)), rectangle(160, 80, center=(100, 60)),
                        circle(10, center=(60, 60)), circle(10, center=(100, 60)))
     facing = facing_boundaries(cluster)[0]
@@ -37,7 +37,7 @@ def _window_with_two_discs():
 
 
 def _heal_opened(cluster, links):
-    """Il cluster ricostruito coi bordi aperti e i fianchi: deve richiudersi."""
+    """The cluster rebuilt with the open boundaries and the sides: it must close again."""
     opened = open_boundaries(links)
     touched = {id(c) for c, _ in opened.boundaries}
     segments = [s for c in (cluster.outer, *cluster.inners) if id(c) not in touched for s in c.segments]
@@ -84,7 +84,7 @@ class TestGap(unittest.TestCase):
     def test_002_disc_and_window(self):
         _, facing, left, _ = _window_with_two_discs()
         g = topo.geometry.gap(facing.region, left)
-        # finestra x 20..180, y 20..100; disco in (60, 60) r=10: 30 dal lato sinistro, da sopra e da sotto
+        # window x 20..180, y 20..100; disc at (60, 60) r=10: 30 from the left side, from above and below
         self.assertAlmostEqual(g.distance, 30.0, places=9)
         self.assertAlmostEqual(math.dist(g.on_b, (60, 60)), 10.0, places=9)
 
@@ -106,7 +106,7 @@ class TestLink(unittest.TestCase):
         cluster = _cluster(rectangle(100, 100, center=(50, 50)), rectangle(80, 80, center=(50, 50)), rectangle(20, 40, center=(50, 50)))
         facing = facing_boundaries(cluster)[0]
         island = facing.inside[0]
-        s = link(facing, facing.region, island, (60, 45), 2.0).strip   # sul lato destro dell'isola
+        s = link(facing, facing.region, island, (60, 45), 2.0).strip   # on the right side of the island
         for side in s.sides:
             self.assertAlmostEqual(side.start[1], side.end[1], places=9)
         self.assertEqual(sorted(round(p[1], 9) for p in s.b_cuts), [44.0, 46.0])
@@ -114,7 +114,7 @@ class TestLink(unittest.TestCase):
     def test_003_refused_across_a_third_boundary(self):
         _, facing, left, _ = _window_with_two_discs()
         with self.assertRaisesRegex(ValueError, "crosses"):
-            link(facing, facing.region, left, (180, 60), 4.0)   # dalla destra, passa attraverso l'altro disco
+            link(facing, facing.region, left, (180, 60), 4.0)   # from the right, it passes through the other disc
 
     def test_004_refused_when_too_wide(self):
         _, facing, left, right = _window_with_two_discs()
@@ -141,7 +141,7 @@ class TestUnconnectedRegions(unittest.TestCase):
         cluster, facing, left, right = _window_with_two_discs()
         self.assertEqual(len(unconnected_regions(cluster, [])), 2)
         sisters = link(facing, left, right, (80, 60), 4.0)
-        self.assertEqual(len(unconnected_regions(cluster, [sisters])), 2)   # unite fra loro, non al bordo
+        self.assertEqual(len(unconnected_regions(cluster, [sisters])), 2)   # joined to each other, not to the border
         edge = link(facing, facing.region, left, (20, 60), 4.0, placed=[sisters])
         self.assertEqual(unconnected_regions(cluster, [sisters, edge]), [])
 
@@ -149,7 +149,7 @@ class TestUnconnectedRegions(unittest.TestCase):
         cluster = _cluster(circle(20), circle(15), circle(10), circle(6), circle(3))
         groups = sorted(facing_boundaries(cluster), key=lambda g: g.region.depth)
         inner = link(groups[1], groups[1].region, groups[1].inside[0], (3, 0), 1.0)
-        self.assertEqual(len(unconnected_regions(cluster, [inner])), 2)   # il 4 è unito al 2, il 2 a niente
+        self.assertEqual(len(unconnected_regions(cluster, [inner])), 2)   # 4 is joined to 2, 2 to nothing
         outer = link(groups[0], groups[0].region, groups[0].inside[0], (0, 10), 1.0)
         self.assertEqual(unconnected_regions(cluster, [inner, outer]), [])
 
@@ -162,8 +162,8 @@ class TestOpenBoundaries(unittest.TestCase):
         self.assertEqual(len(opened.sides), 2)
         for contour, chains in opened.boundaries:
             self.assertEqual(len(chains), 1)
-            self.assertEqual([type(s) for s in chains[0]], [CircleSeg])   # un cerchio tagliato è un arco
-            self.assertGreater(chains[0][0]._sweep(), math.pi)          # il tratto lungo, non quello sotto
+            self.assertEqual([type(s) for s in chains[0]], [CircleSeg])   # a cut circle is an arc
+            self.assertGreater(chains[0][0]._sweep(), math.pi)          # the long stretch, not the one below
 
     def test_002_reclosed_on_the_fixture(self):
         cluster = topo.heal(topo_dxf.load_dxf(str(FIXTURE))).faces().clusters[0]
@@ -180,7 +180,7 @@ class TestOpenBoundaries(unittest.TestCase):
         healed = _heal_opened(cluster, links)
         self.assertTrue(healed.is_valid)
         self.assertEqual(len(healed.clusters), 1)
-        self.assertEqual(len(healed.clusters[0].inners), 4)   # quattro spicchi vuoti, il disco è unito al resto
+        self.assertEqual(len(healed.clusters[0].inners), 4)   # four empty wedges, the disc is joined to the rest
 
     def test_003_sisters_and_window_reclose(self):
         cluster, facing, left, right = _window_with_two_discs()
@@ -193,7 +193,8 @@ class TestOpenBoundaries(unittest.TestCase):
     def test_004_overlapping_strips_on_a_boundary_raise(self):
         _, facing, left, right = _window_with_two_discs()
         a = link(facing, left, right, (80, 60), 4.0)
-        b = link(facing, left, right, (80, 61), 4.0)   # senza `placed`: nessuno l'ha rifiutata
+        b = link(facing, left, right, (80, 61), 4.0)   # without `placed`: nobody rejected it
+
         with self.assertRaises(ValueError):
             open_boundaries([a, b])
 
