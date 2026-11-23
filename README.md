@@ -31,7 +31,7 @@ through adapters shipped in the same distribution; today DXF/DWG in, DXF out.
 ```bash
 pip install g-topo              # topo alone: geometry in, SVG / JSON out
 pip install "g-topo[dxf]"       # + topo_dxf: DXF and DWG files in, DXF out
-pip install "g-topo[pdf]"       # + topo_pdf: PDF in (experimental)
+pip install "g-topo[pdf]"       # + topo_pdf: PDF in (experimental; PyMuPDF is AGPL, see License)
 ```
 
 Python ≥ 3.10. To work on topo itself: clone the repository and
@@ -301,6 +301,12 @@ fixed in 1.x. Each was reproduced on the current code.
 
 ## License
 
-All rights reserved — see [`LICENSE`](LICENSE). Copyright (c) 2026 Federico
-Sidraschi. This is not open source; if you'd like to try or use it, get in
-touch: smia4punto6@gmail.com.
+[Apache License 2.0](LICENSE) — free to use, modify and distribute, in open or
+closed software, commercial use included. Copyright 2026 Federico Sidraschi
+(see [`NOTICE`](NOTICE)).
+
+The optional PDF adapter (`g-topo[pdf]`) depends on PyMuPDF, which is licensed
+under the AGPL-3.0 (or a commercial license from Artifex): installing that extra
+brings its terms into your program. topo itself and the DXF adapter do not.
+
+Questions, ideas, or using topo in your work: smia4punto6@gmail.com.

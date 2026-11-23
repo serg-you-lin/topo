@@ -5,3 +5,4 @@ authors:
   - family-names: Sidraschi
     given-names: Federico
 repository-code: "https://github.com/serg-you-lin/topo"
+license: Apache-2.0
