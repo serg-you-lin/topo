@@ -58,10 +58,10 @@ class _Frozen(types.ModuleType):
     """The module is not reassigned: a threshold is changed only here, with a decision."""
 
     def __setattr__(self, name, value):
-        raise AttributeError(f"topo.precision.{name} is fixed (D269); pass a value to the call instead")
+        raise AttributeError(f"topo.precision.{name} is fixed; pass a value to the call instead")
 
     def __delattr__(self, name):
-        raise AttributeError(f"topo.precision.{name} is fixed (D269)")
+        raise AttributeError(f"topo.precision.{name} is fixed")
 
 
 sys.modules[__name__].__class__ = _Frozen

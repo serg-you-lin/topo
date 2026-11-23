@@ -100,13 +100,13 @@ def _warn_bare_dimensions(msp, sink: list, verbose: bool = False) -> None:
     if n:
         _emit(sink, Diagnostic(
             "dxf-dimension-no-block",
-            f"{n} DIMENSION carry no drawing of their own in the file: only their string is read (D262)",
+            f"{n} DIMENSION carry no drawing of their own in the file: only their string is read",
             notes=["their lines, arrows and text style are drawn by whoever opens the file, not stored in it"]), verbose)
     n = hand_written_dimensions(msp)
     if n:
         _emit(sink, Diagnostic(
             "dxf-dimension-written-number",
-            f"{n} DIMENSION write their number by hand: it is kept as written, not checked against their points (D265)",
+            f"{n} DIMENSION write their number by hand: it is kept as written, not checked against their points",
             notes=["their measures carry no decimals nor drawn_to_real"]), verbose)
 
 
@@ -324,12 +324,12 @@ def load_dxf(
 
     n = _explode_leaders(msp, sink=warnings)
     if n:
-        _emit(notes, Diagnostic("dxf-leaders-exploded", f"{n} LEADER with no string of their own exploded into curves (D258)",
+        _emit(notes, Diagnostic("dxf-leaders-exploded", f"{n} LEADER with no string of their own exploded into curves",
                                 level="note"), verbose)
 
     n = _explode_hatches(msp, sink=warnings)
     if n:
-        _emit(notes, Diagnostic("dxf-hatches-exploded", f"{n} HATCH exploded into their pattern lines (D205)",
+        _emit(notes, Diagnostic("dxf-hatches-exploded", f"{n} HATCH exploded into their pattern lines",
                                 level="note"), verbose)
 
     # duplicates are decided by topo (normalize), with the single threshold
@@ -338,7 +338,7 @@ def load_dxf(
     # the line, which stays without the mark
     filled = _explode_fills(msp, sink=warnings)
     if filled:
-        _emit(notes, Diagnostic("dxf-fills-exploded", f"{len(filled)} filled-area sides read as filled curves (D255)",
+        _emit(notes, Diagnostic("dxf-fills-exploded", f"{len(filled)} filled-area sides read as filled curves",
                                 level="note"), verbose)
 
     flattened = sanitize(msp, flatten_z_flag=flatten_z, verbose=verbose)
@@ -416,7 +416,7 @@ def document_from_msp(
     if bare:
         warnings.append(Diagnostic(
             "dxf-not-modeled", f"{len(bare)} LEADER with no string of their own not read: not exploded here",
-            help="topo_dxf.load_dxf reads them as curves (D258)"))
+            help="topo_dxf.load_dxf reads them as curves"))
     return Document(
         edges=edges, texts=texts,
         source_meta=meta, source_path=source_path, source_format="dxf",

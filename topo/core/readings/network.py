@@ -159,7 +159,7 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
     if clean.full_arcs:
         net.notes.append(Diagnostic(
             "arc-joined", f"{_plural(clean.full_arcs, 'arc', 'arcs')} on one circle joined across their holes",
-            notes=[f"holes within max_gap and at most {math.degrees(NEAR_FULL_ARC_MISSING):.0f}° (D218)"],
+            notes=[f"holes within max_gap and at most {math.degrees(NEAR_FULL_ARC_MISSING):.0f}°"],
             level="note"))
     closed = [(pt, d) for pt, d in clean.gaps if d > FLOAT_NOISE]
     if closed:
@@ -170,18 +170,18 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
         net.notes.append(Diagnostic(
             "arc-bent", f"{_plural(len(clean.bent), 'arc', 'arcs')} redrawn through the free end beside it, its own ends kept",
             points=[pt for pt, _ in sorted(clean.bent, key=lambda c: -c[1])],
-            notes=[f"{_range_text([d for _, d in clean.bent], '.4f')} mm, max_gap {gap:g} mm (D273)"], level="note"))
+            notes=[f"{_range_text([d for _, d in clean.bent], '.4f')} mm, max_gap {gap:g} mm"], level="note"))
     if clean.tied:
         net.notes.append(Diagnostic(
             "tied-ends-joined", f"{_plural(len(clean.tied), 'gap', 'gaps')} between ends already tied, facing each other, closed",
             points=[pt for pt, _ in sorted(clean.tied, key=lambda c: -c[1])],
-            notes=[f"{_range_text([d for _, d in clean.tied], '.4f')} mm, max_gap {gap:g} mm (D272)"], level="note"))
+            notes=[f"{_range_text([d for _, d in clean.tied], '.4f')} mm, max_gap {gap:g} mm"], level="note"))
     if clean.ambiguous:
         net.warnings.append(Diagnostic(
             "tie", f"{_plural(len(clean.ambiguous), 'free end', 'free ends')} with two partners at the same "
                    f"distance, left open",
             points=clean.ambiguous,
-            notes=["a symmetric figure: no rule in the geometry picks one partner (D185)"],
+            notes=["a symmetric figure: no rule in the geometry picks one partner"],
             help="no threshold fixes it: remove one of the two partners from the drawing"))
     net.edges = _no_degenerate(clean.edges)
     # what almost closed, one per type, with the points nearest first
@@ -245,7 +245,7 @@ def _near_copy_warning(pairs: list) -> Diagnostic:
     return Diagnostic(
         "near-copy", f"{_plural(len(pairs), 'line', 'lines')} nearly on top of a longer one, not merged",
         points=[p.at for p in pairs],
-        notes=[f"{_range_text([p.offset for p in pairs], '.2g')} mm apart; not one line for D184 "
+        notes=[f"{_range_text([p.offset for p in pairs], '.2g')} mm apart; not the same line "
                f"(parallel within 1e-7, ends within 1e-3 mm), so topo reads both"],
         help=f"doc.edges = topo.experimental.merge_near_copies(doc.edges, distance={_ceil_2(offset):g}) "
              f"before heal() keeps the longer of each pair",
@@ -260,7 +260,7 @@ def _open_arc_warning(arcs: list) -> Diagnostic:
         points=[e.segment.center for e, _, _ in arcs],
         notes=[f"{_range_text([math.degrees(m) for _, m, _ in arcs], '.2f')}° missing "
                f"({_range_text([c for _, _, c in arcs], '.3f')} mm), over the "
-               f"{math.degrees(NEAR_FULL_ARC_MISSING):.0f}° that close an arc (D218)"],
+               f"{math.degrees(NEAR_FULL_ARC_MISSING):.0f}° that close an arc"],
         help=f"doc.edges, _ = topo.experimental.close_near_full_arcs(doc.edges, tolerance, "
              f"max_missing_angle=math.radians({_ceil_2(deg):g})) before heal() closes them",
         param="max_missing_angle", value=arcs[-1][1])
@@ -278,7 +278,7 @@ def _curves_moved_note(moved: list, gap: float) -> Diagnostic:
     return Diagnostic(
         "curves-moved", f"{_plural(len(moved), 'curve', 'curves')} moved whole, each onto the two curves its ends reach",
         points=[pt for pt, _ in sorted(moved, key=lambda m: -m[1])],
-        notes=[f"{_range_text([d for _, d in moved], '.4f')} mm, max_gap {gap:g} mm (D271)"],
+        notes=[f"{_range_text([d for _, d in moved], '.4f')} mm, max_gap {gap:g} mm"],
         level="note")
 
 

@@ -16,13 +16,13 @@ FORMAT_WORDS = re.compile(r"dxf|dwg", re.IGNORECASE)
 
 class TestNoFormatWords(unittest.TestCase):
 
-    def test_nessun_formato_dentro_topo(self):
+    def test_no_format_inside_topo(self):
         found = []
         for path in sorted((PROJECT_ROOT / "topo").rglob("*.py")):
             for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
                 if FORMAT_WORDS.search(line):
                     found.append(f"{path.relative_to(PROJECT_ROOT).as_posix()}:{n}: {line.strip()}")
-        self.assertEqual(found, [], "il nome di un formato dentro topo: va nell'adapter (D292)")
+        self.assertEqual(found, [], "il nome di un formato dentro topo: va nell'adapter")
 
 
 if __name__ == "__main__":

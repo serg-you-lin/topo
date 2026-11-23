@@ -77,19 +77,19 @@ def parity_faces(net: Network) -> Result:
             "non-contour", f"{_plural(len(excluded), 'edge', 'edges')} read as no contour",
             points=list(dict.fromkeys(starts)),
             notes=["free ends, bridges, and the least outer boundary, then the shortest "
-                   "length, that leaves every node of even degree (D250)"],
+                   "length, that leaves every node of even degree"],
             level="note"))
     if parity.rim_used:
         result.warnings.append(Diagnostic(
             "rim-cut", "no set of inner edges leaves every node of even degree: "
                        "part of the outer boundary is read as no contour",
-            notes=["the least outer boundary that does it, then the shortest (D250)"]))
+            notes=["the least outer boundary that does it, then the shortest"]))
     if parity.conflicts:
         result.warnings.append(Diagnostic(
             "face-colour", f"{_plural(len(parity.conflicts), 'node', 'nodes')} where two "
                            f"neighbouring faces read the same side",
             points=parity.conflicts,
-            notes=["the walk round a node does not order branches that leave it tangent (D199)"]))
+            notes=["the walk round a node does not order branches that leave it tangent"]))
     closed, used = [], set()
     for loop in (noded.whole(loop) for loop in parity.loops):
         curves = loops_to_curves([loop])

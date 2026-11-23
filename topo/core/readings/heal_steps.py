@@ -128,7 +128,7 @@ def close_contour_jumps(result, tolerance: float) -> None:
         result.notes.append(Diagnostic(
             "gap-closed", f"{len(starts)} {'jump' if len(starts) == 1 else 'jumps'} in the contours closed "
                           f"with a new straight segment",
-            points=starts, notes=[f"up to {widest:.3g} wide (D206, D209)"], level="note"))
+            points=starts, notes=[f"up to {widest:.3g} wide"], level="note"))
 
 
 # ---------------------------------------------------------------------------

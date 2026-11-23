@@ -58,7 +58,7 @@ def read_faces(net: Network) -> Result:
         result.notes.append(Diagnostic(
             "non-contour", f"{_plural(len(excluded), 'edge', 'edges')} read as no contour",
             points=list(dict.fromkeys(starts)),
-            notes=["chains between two branching nodes that the outer boundary does not run once (D111, D131)"],
+            notes=["chains between two branching nodes that the outer boundary does not run once"],
             level="note"))
     loops = [noded.whole(loop) for loop in face_loops([p for p in noded.pieces if id(p) not in non_contour])]
     # a loop that does not become a contour (no area) takes nothing: its edges go
