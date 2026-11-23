@@ -2,21 +2,22 @@
 
 **Deterministic 2D geometry engine: it repairs vector geometry and reads its structure — closed contours, what lies inside what, what is connected.**
 
-`topo` turns broken 2D geometry into a clean, lossless model — healed closed
-contours, their containment hierarchy, the drawing's texts, and an open overlay
-where a consumer attaches its own reading — and renders it back out. The model
-is the product. **topo knows no file format**: it works on geometry and roles.
-Files come in and go out through adapters, sibling packages in the same
-distribution.
+Real drawings are rarely clean: lines that should meet stop a hair short or run
+past each other, the same curve is drawn twice, a circle arrives as fifty short
+segments. `topo` **heals** that geometry — reconnects it into closed contours,
+and nothing is silently dropped — then tells you its structure: which contours
+close, which lies inside which, what is connected to what.
 
-The distinctive part is the **healing**: curves that should meet but do not —
-small gaps, doubles, overshoots, pieces drawn one by one — are reconnected into
-closed contours, and nothing is silently dropped.
+The result is a clean, lossless model (healed contours, their containment
+hierarchy, the drawing's texts, and an open overlay where your code attaches its
+own reading) that renders back out to DXF, JSON or SVG. **topo knows no file
+format**: it works on geometry, whatever its source. Files come in and go out
+through adapters shipped in the same distribution; today DXF/DWG in, DXF out.
 
-Today the geometry mostly comes from CAD files and technical drawings (DXF in;
-DXF, JSON or SVG out); the engine itself sees only geometry, whatever its source.
-
-> Status: **alpha**. Used in production, but the API still moves.
+> **Status: stable.** Used in production. Public names do not break: a change
+> arrives as a new form, the old one keeps working with a `FutureWarning` for two
+> minor versions, then goes. `topo.experimental` and the PDF adapter carry no
+> such promise.
 
 > **Writing code against topo with an AI assistant?** Give it
 > [`docs/LLM.md`](docs/LLM.md) too: every public name with its signature, in few
@@ -28,13 +29,13 @@ DXF, JSON or SVG out); the engine itself sees only geometry, whatever its source
 ## Install
 
 ```bash
-pip install -e .            # topo alone: geometry in, SVG / JSON / text out
-pip install -e ".[dxf]"     # + topo_dxf: DXF and DWG files in, DXF out
-pip install -e ".[pdf]"     # + topo_pdf: PDF in (experimental)
+pip install g-topo              # topo alone: geometry in, SVG / JSON out
+pip install "g-topo[dxf]"       # + topo_dxf: DXF and DWG files in, DXF out
+pip install "g-topo[pdf]"       # + topo_pdf: PDF in (experimental)
 ```
 
-The commands above install from a clone of the repository. From a built wheel, name the file:
-`pip install "g_topo-<version>-py3-none-any.whl[dxf]"`. g-topo is not on PyPI.
+Python ≥ 3.10. To work on topo itself: clone the repository and
+`pip install -e ".[dev]"`.
 
 One distribution (`g-topo`), three importable packages:
 
@@ -47,7 +48,6 @@ One distribution (`g-topo`), three importable packages:
 `topo` never imports an adapter, and an adapter uses only topo's public names —
 a boundary the index check enforces (`scripts/gen_index.py --check`). What an
 adapter reads and writes, and its options, are in `docs/API.md` (§9, §10).
-Python ≥ 3.10.
 
 ---
 
@@ -78,8 +78,8 @@ Builders return topo segments: `polygon(points)`, `rectangle`, `regular_polygon`
 ```python
 import topo, topo_dxf
 
-doc = topo_dxf.load_dxf("part.dxf", tolerance=0.5)   # .dxf or .dwg -> Document
-result = topo.heal(doc).faces()
+doc = topo_dxf.load_dxf("part.dxf")                  # .dxf or .dwg -> Document
+result = topo.heal(doc, max_gap=0.5).faces()      # close gaps up to 0.5 mm
 topo_dxf.to_dxf(result, doc).saveas("part_healed.dxf")
 ```
 

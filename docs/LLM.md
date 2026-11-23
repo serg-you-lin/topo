@@ -82,7 +82,7 @@ argument returns `None`.
 ```python
 import topo, topo_dxf
 
-doc = topo_dxf.load_dxf("part.dxf", tolerance=0.5)
+doc = topo_dxf.load_dxf("part.dxf")
 check = topo.validate_document(doc)             # input validation, optional
 result = topo.heal(doc, label="P-1024").faces()
 if not result.is_valid:                           # check before handing output to a machine

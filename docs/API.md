@@ -142,7 +142,6 @@ computer vision). The caller imports no internal topo type.
 | parameter | meaning |
 |---|---|
 | `entities` | list of dicts, one per geometric entity. Supported `type`s: `line` (`start`, `end`), `arc` (`center`, `radius`, `start_angle`/`end_angle` **in degrees**, `ccw`), `circle` (`center`, `radius`), `polygon` (`points` — always closed), `spline` (`control_points`, `knots`, `degree`, plus optional `weights` — same fields as `BSplineSeg`, which carries only the geometry: `closed`/`periodic` are derived), `ellipse` (`center`, `major_axis` as a **vector** from the centre, plus optional `ratio`/`start_param`/`end_param`/`ccw` — same fields as `EllipseSeg`, same parametrisation as the DXF ELLIPSE group; default = full ellipse). `role` is optional on every entity — same vocabulary as `RoleRule.role` (`outer`, `hole`, `bending`, …); a different value is preserved as a consumer slug, not an error. |
-| `tolerance` | rounding tolerance of the topological nodes — same meaning as `topo_dxf.load_dxf(tolerance=...)`. |
 | `source_path` | free label for `Document.source_path`; it is not a file, it is only for diagnostics. |
 
 ```python
@@ -1529,7 +1528,7 @@ result = topo.heal(doc).faces()   # "flange_up" is already out of the graph, "be
 import topo, topo_dxf
 
 # 1. open — the adapter is the only one that reads a format
-doc = topo_dxf.load_dxf("pezzo.dxf", tolerance=0.5)
+doc = topo_dxf.load_dxf("part.dxf")
 
 # 2. validate the input (optional but recommended)
 check = topo.validate_document(doc)
@@ -1621,7 +1620,7 @@ sheet; a file with no entities at all gives an empty `Document`), or the
 read exceptions of `ezdxf`.
 
 ```python
-doc = topo_dxf.load_dxf("pezzo.dxf", tolerance=0.5,
+doc = topo_dxf.load_dxf("part.dxf",
                      role_rules=topo.name_rules({"Piega": "bending", "MARK": "engrave"}))
 for w in doc.warnings:
     print("loader:", w)
