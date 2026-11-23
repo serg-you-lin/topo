@@ -1,11 +1,10 @@
 """
 tests/adapters/dxf/test_text_align.py
 -------------------------------------
-Ancora e allineamento dei testi (MAP.md D256): un testo scritto da topo e
-riletto torna nello stesso punto con lo stesso allineamento, per ogni coppia
-halign × valign; una stringa su più righe torna su più righe; gli spazi ai
-bordi restano, perché l'ancora li conta (D261). Il tipo d'entità della
-sorgente non è nel modello.
+Text anchor and alignment: a text written by topo and re-read comes back at the
+same point with the same alignment, for every halign × valign pair; a
+multi-line string comes back on several lines; edge spaces stay, because the
+anchor counts them. The source's entity type is not in the model.
 """
 
 import os

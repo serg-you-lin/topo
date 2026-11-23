@@ -1,40 +1,39 @@
 
 """
-Test Suite per writeback.split() e la ricetta heal → split → file.
+Test suite for writeback.split() and the recipe heal → split → file.
 
-Struttura
+Structure
 ---------
-_Fixtures        — helper che costruiscono geometria in memoria
-                   e passano per heal() reale (no mock Result)
+_Fixtures        — helpers that build geometry in memory and go through
+                   the real heal() (no mock Result)
 
-TestUnitSplitOutput        — unit: file generati, namer, min_area
+TestUnitSplitOutput        — unit: generated files, namer, min_area
 TestUnitSplitFilters       — unit: include_texts, exclude_types, keep_trash
-TestUnitSplitLayers        — unit: layer presenti e colori canonici nei figli
+TestUnitSplitLayers        — unit: layers present and canonical colours in the children
 
-TestIntegrationPipeline    — integration: pipeline heal→detect→split su examples/
-TestIntegrationContours    — integration: LWPOLYLINE chiuse, CIRCLE, SPLINE
+TestIntegrationPipeline    — integration: heal→detect→split pipeline on examples/
+TestIntegrationContours    — integration: closed LWPOLYLINEs, CIRCLE, SPLINE
 
-Filosofia
----------
-- I test unit usano _make_via_heal(): costruisce un msp ezdxf in memoria,
-  chiama heal() reale, poi chiama split() direttamente.
-  Niente Result finto — se heal() non riconosce la geometria il test
-  fallisce con un messaggio chiaro, non con un falso verde.
-
-- I test integration usano split_to_files() come black box su file in examples/.
-  Verificano solo invarianti osservabili dall'esterno (file su disco, layer, entità).
-
-- exclude_types è un parametro che split() deve accettare.
-  Se non esiste ancora, i test in TestUnitSplitFilters falliscono con TypeError —
-  segnale chiaro per aggiungerlo.
-
-- ALL_LAYERS deve essere esportato da topo_dxf.rules.layers come:
-      ALL_LAYERS = {LAYER_OUTER: 3, LAYER_INNER: 2, ...} (la palette di topo in ACI)
-  Se manca, TestUnitSplitLayers.test_002 e TestIntegrationLayers.test_003
-  falliscono con ImportError — segnale chiaro per aggiungerlo.
-
-Esecuzione
+Philosophy
 ----------
+- The unit tests use _make_via_heal(): it builds an in-memory ezdxf msp, calls
+  the real heal(), then calls split() directly. No fake Result — if heal() does
+  not recognize the geometry the test fails with a clear message, not a false green.
+
+- The integration tests use split_to_files() as a black box on files in
+  examples/. They verify only invariants observable from outside (files on
+  disk, layers, entities).
+
+- exclude_types is a parameter split() must accept. If it does not exist yet,
+  the tests in TestUnitSplitFilters fail with TypeError — a clear signal to add it.
+
+- ALL_LAYERS must be exported from topo_dxf.rules.layers as:
+      ALL_LAYERS = {LAYER_OUTER: 3, LAYER_INNER: 2, ...} (topo's palette in ACI)
+  If it is missing, TestUnitSplitLayers.test_002 and TestIntegrationLayers.test_003
+  fail with ImportError — a clear signal to add it.
+
+Running
+-------
     python -m unittest tests/adapters/dxf/test_splitter.py -v
 """
 
@@ -64,17 +63,14 @@ EXAMPLES_DIR = DATA
 # ---------------------------------------------------------------------------
 
 def _make_via_heal(points: list[tuple], extra_entities=None):
-    """
-    Crea un msp ezdxf in memoria con una LWPOLYLINE chiusa definita da `points`,
-    esegue heal() reale e ritorna (msp, result).
+    """Create an in-memory ezdxf msp with a closed LWPOLYLINE defined by `points`,
+    run the real heal() and return (msp, result).
 
-    extra_entities: lista di callable (msp) -> None
-                    per aggiungere entità extra (testi, cerchi, ecc.)
-                    prima di heal().
+    extra_entities: list of callables (msp) -> None to add extra entities (texts,
+    circles, etc.) before heal().
 
-    Usato dai test unit per avere un Result autentico su geometria
-    controllata, senza file su disco e senza dipendere da examples/.
-    """
+    Used by the unit tests to have an authentic Result on controlled geometry,
+    without files on disk and without depending on examples/."""
     doc = ezdxf.new("R2010")
     msp = doc.modelspace()
     msp.add_lwpolyline(points, close=True, dxfattribs={"layer": "0"})
@@ -87,12 +83,12 @@ def _make_via_heal(points: list[tuple], extra_entities=None):
 
 
 def _rect(w=200, h=100) -> list[tuple]:
-    """Punti di un rettangolo con angolo in origine."""
+    """Points of a rectangle with a corner at the origin."""
     return [(0, 0), (w, 0), (w, h), (0, h)]
 
 
 def _read_children(out_dir: str) -> dict[str, object]:
-    """Legge tutti i file .dxf in out_dir e ritorna {nome: modelspace}."""
+    """Read all the .dxf files in out_dir and return {name: modelspace}."""
     return {
         f.name: ezdxf.readfile(str(f)).modelspace()
         for f in Path(out_dir).glob("*.dxf")
@@ -102,8 +98,8 @@ def _read_children(out_dir: str) -> dict[str, object]:
 
 def _split_files(result, source_doc, out_dir, *, min_area=0.0,
                  namer=None, **write_kwargs):
-    """topo.split() puro, poi to_dxf + saveas per parte (D129): le opzioni di
-    scrittura (`include_texts`, `exclude_types`, ...) vanno a to_dxf."""
+    """Pure topo.split(), then to_dxf + saveas per part: the write options
+    (`include_texts`, `exclude_types`, ...) go to to_dxf."""
     os.makedirs(out_dir, exist_ok=True)
     paths = []
     for part in topo.split(result, namer=namer, min_area=min_area):
@@ -116,9 +112,9 @@ def _split_files(result, source_doc, out_dir, *, min_area=0.0,
 def _split_to_files(doc, output_folder, label="", source_file="", tolerance=None,
                     namer=None, min_area=0.0, is_structural=None,
                     **write_kwargs):
-    """heal → split → to_dxf + saveas per parte: la ricetta che era
-    `topo_dxf.split_to_files`, tolta dalla superficie (D176) e tenuta qui
-    come scatola nera dei test d'integrazione."""
+    """heal → split → to_dxf + saveas per part: the recipe that was
+    `topo_dxf.split_to_files`, removed from the surface and kept here as a black
+    box of the integration tests."""
     result = topo.heal(doc,  label=label, source_file=source_file,
                        is_structural=is_structural).faces()
     if result.is_valid and result.clusters:
@@ -131,10 +127,7 @@ def _split_to_files(doc, output_folder, label="", source_file="", tolerance=None
 # ---------------------------------------------------------------------------
 
 class TestUnitSplitOutput(unittest.TestCase):
-    """
-    Testa gli invarianti di output di split():
-    file generati, namer, min_area, cartella di output.
-    """
+    """Test the output invariants of split(): generated files, namer, min_area, output folder."""
 
     def setUp(self):
         self.out_dir = tempfile.mkdtemp()
@@ -156,7 +149,7 @@ class TestUnitSplitOutput(unittest.TestCase):
                          "Lista returned non corrisponde ai file su disco")
 
     def test_002_file_leggibile(self):
-        """I file generati sono DXF validi leggibili da ezdxf."""
+        """The generated files are valid DXFs readable by ezdxf."""
         self._assert_heal_found_parts()
         generated = _split_files(self.result, self.doc, self.out_dir)
         for path in generated:
@@ -166,7 +159,7 @@ class TestUnitSplitOutput(unittest.TestCase):
                 self.fail(f"File non leggibile: {path} — {e}")
 
     def test_003_namer_default_formato(self):
-            """Il namer default produce un nome del tipo 'label_P1'."""
+            """The default namer produces a name of the type 'label_P1'."""
             self._assert_heal_found_parts()
             generated = _split_files(self.result, self.doc, self.out_dir)
             
@@ -177,7 +170,7 @@ class TestUnitSplitOutput(unittest.TestCase):
                              f"Nome '{nome}' non segue il formato 'label_P1'")
 
     def test_004_namer_custom(self):
-        """Un namer custom viene rispettato."""
+        """A custom namer is respected."""
         self._assert_heal_found_parts()
         namer = lambda i, cluster: f"pezzo_{i + 1}"
         generated = _split_files(self.result, self.doc, self.out_dir,
@@ -186,7 +179,7 @@ class TestUnitSplitOutput(unittest.TestCase):
         self.assertEqual(Path(generated[0]).stem, "pezzo_1")
 
     def test_005_cluster_label_della_parte_originale_intatto(self):
-        """Il label della parte dà il nome file; il cluster originale non cambia (D176)."""
+        """The part's label gives the file name; the original cluster does not change."""
         self._assert_heal_found_parts()
         before = self.result.clusters[0].label
         generated = _split_files(self.result, self.doc, self.out_dir)
@@ -194,7 +187,7 @@ class TestUnitSplitOutput(unittest.TestCase):
         self.assertEqual(self.result.clusters[0].label, before)
 
     def test_006_min_area_scarta_part_sotto_soglia(self):
-        """Part con area sotto min_area vengono scartati e producono un warning."""
+        """Parts with area below min_area are discarded and produce a warning."""
         self._assert_heal_found_parts()
         # 200x100 = 20_000 mm²; soglia altissima → scartato
         generated = _split_files(self.result, self.doc, self.out_dir,
@@ -204,7 +197,7 @@ class TestUnitSplitOutput(unittest.TestCase):
                         "Nessun warning emesso per cluster scartato")
 
     def test_007_output_folder_creata_se_assente(self):
-        """split() crea la cartella di output se non esiste."""
+        """split() creates the output folder if it does not exist."""
         self._assert_heal_found_parts()
         new_dir = os.path.join(self.out_dir, "sub", "nuovo")
         _split_files(self.result, self.doc, new_dir)
@@ -212,15 +205,12 @@ class TestUnitSplitOutput(unittest.TestCase):
 
 
 class TestUnitSplitFilters(unittest.TestCase):
-    """
-    Testa i filtri su tipi di entità in split().
+    """Test the filters on entity types in split().
 
-    La fixture aggiunge un TEXT e un CIRCLE dentro l'area del rettangolo,
-    così i filtri hanno qualcosa su cui agire.
+    The fixture adds a TEXT and a CIRCLE inside the rectangle's area, so the
+    filters have something to act on.
 
-    `exclude_types` è un'opzione di `topo_dxf.to_dxf` (D129), propagata da
-    `split_to_files()`.
-    """
+    `exclude_types` is an option of `topo_dxf.to_dxf`, propagated by `split_to_files()`."""
 
     def setUp(self):
         self.out_dir = tempfile.mkdtemp()
@@ -240,14 +230,14 @@ class TestUnitSplitFilters(unittest.TestCase):
         )
 
     def _child_msp(self, **split_kwargs):
-        """Esegue split() e ritorna il modelspace del primo figlio."""
+        """Run split() and return the modelspace of the first child."""
         out_dir = tempfile.mkdtemp()
         generated = _split_files(self.result, self.doc, out_dir, **split_kwargs)
         self.assertTrue(len(generated) > 0, "Nessun file generato")
         return ezdxf.readfile(generated[0]).modelspace()
 
     def test_001_default_include_testo_e_cerchio(self):
-        """Default (include_texts=True): TEXT e CIRCLE copiati nel figlio."""
+        """Default (include_texts=True): TEXT and CIRCLE copied into the child."""
         out_msp = self._child_msp()
         self.assertEqual(len(list(out_msp.query("TEXT"))), 1,
                          "TEXT dovrebbe essere presente")
@@ -263,7 +253,7 @@ class TestUnitSplitFilters(unittest.TestCase):
                          "CIRCLE dovrebbe essere presente")
 
     def test_003_include_texts_false_esclude_tutti_i_tipi(self):
-        """include_texts=False esclude tutti i tipi in TEXT_TYPES."""
+        """include_texts=False excludes all the types in TEXT_TYPES."""
         def _add_mtext(msp):
             msp.add_mtext("mtext", dxfattribs={
                 "insert": (30, 30), "char_height": 5, "layer": "0"
@@ -297,18 +287,16 @@ class TestUnitSplitFilters(unittest.TestCase):
         self.assertEqual(len(list(out_msp.query("CIRCLE"))), 0)
 
     def test_006_split_senza_source_doc(self):
-        """Una parte si scrive anche senza source_doc (modello puro)."""
+        """A part is written even without source_doc (pure model)."""
         drawings = [topo_dxf.to_dxf(part) for part in topo.split(self.result)]
         self.assertGreater(len(drawings), 0)
 
 
 class TestUnitSplitLayers(unittest.TestCase):
-    """
-    Verifica layer e colori canonici nei documenti figli prodotti da split().
+    """Verify layers and canonical colours in the child documents produced by split().
 
-    NOTA: ALL_LAYERS deve esistere in topo_dxf.rules.layers come:
-        ALL_LAYERS = {LAYER_OUTER: 3, LAYER_INNER: 2, ...} (la palette di topo in ACI)
-    """
+    NOTE: ALL_LAYERS must exist in topo_dxf.rules.layers as:
+        ALL_LAYERS = {LAYER_OUTER: 3, LAYER_INNER: 2, ...} (topo's palette in ACI)"""
 
     def setUp(self):
         self.out_dir = tempfile.mkdtemp()
@@ -323,7 +311,7 @@ class TestUnitSplitLayers(unittest.TestCase):
                         "split() non ha generato file")
 
     def test_001_tutti_i_layer_presenti(self):
-        """Tutti i layer topo standard sono presenti nel documento figlio."""
+        """All the standard topo layers are present in the child document."""
         from topo_dxf.layers import LAYER_OUTER, LAYER_INNER, TRASH_LAYER
         expected = {LAYER_OUTER, LAYER_INNER, TRASH_LAYER}
         for path in self.generated:
@@ -334,7 +322,7 @@ class TestUnitSplitLayers(unittest.TestCase):
                               f"{Path(path).name}: layer '{name}' mancante")
 
     def test_002_colori_canonici(self):
-        """Ogni layer topo ha il colore canonico definito in layers.py."""
+        """Every topo layer has the canonical colour defined in layers.py."""
         from topo_dxf.layers import ALL_LAYERS
         for path in self.generated:
             child_doc = ezdxf.readfile(path)
@@ -355,11 +343,9 @@ class TestUnitSplitLayers(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestIntegrationPipeline(unittest.TestCase):
-    """
-    Testa split_to_files() come black box su file in examples/.
-    Verifica invarianti osservabili: file su disco, cluster count, layer.
-    Non entra nei dettagli di split() — quelli sono nei test unit.
-    """
+    """Test split_to_files() as a black box on files in examples/. It verifies
+    observable invariants: files on disk, cluster count, layers. It does not go
+    into the details of split() — those are in the unit tests."""
 
     def _run(self, dxf_name, label, **kwargs):
         out_dir = tempfile.mkdtemp()
@@ -378,7 +364,7 @@ class TestIntegrationPipeline(unittest.TestCase):
                          f"{[f.name for f in files]}")
 
     def test_002_file_figli_leggibili(self):
-        """I file figli sono DXF validi."""
+        """The child files are valid DXFs."""
         _, out_dir = self._run("two_parts.dxf", "two_parts")
         for f in Path(out_dir).glob("*.dxf"):
             try:
@@ -387,19 +373,19 @@ class TestIntegrationPipeline(unittest.TestCase):
                 self.fail(f"File figlio non leggibile: {f.name} — {e}")
 
     def test_003_result_ha_parts(self):
-        """split_to_files() ritorna un Result con clusters popolati."""
+        """split_to_files() returns a Result with clusters filled."""
         result, _ = self._run("two_parts.dxf", "two_parts")
         self.assertGreater(result.cluster_count, 0)
 
     def test_004_part_con_foro(self):
-        """pline_with_hole.dxf → il cluster ha almeno un inner/hole."""
+        """pline_with_hole.dxf → the cluster has at least one inner/hole."""
         result, _ = self._run("pline_with_hole.dxf", "pline_with_hole")
         self.assertEqual(result.cluster_count, 1)
         self.assertGreater(len(result.clusters[0].inners), 0,
                            "Nessun inner/hole trovato")
 
     def test_005_include_texts_false_propagato(self):
-        """include_texts=False propagato correttamente dalla wrapper."""
+        """include_texts=False correctly propagated by the wrapper."""
         out_dir = tempfile.mkdtemp()
         doc = ezdxf.new("R2010")
         msp = doc.modelspace()
@@ -415,7 +401,7 @@ class TestIntegrationPipeline(unittest.TestCase):
                              f"{f.name}: TEXT presente con include_texts=False")
 
     def test_006_namer_custom_propagato(self):
-        """Un namer custom passato a split_to_files() viene usato."""
+        """A custom namer passed to split_to_files() is used."""
         out_dir = tempfile.mkdtemp()
         namer = lambda i, cluster: f"custom_{i + 1:02d}"
         _split_to_files(topo_dxf.load_dxf(str(drawing("two_parts.dxf"))), output_folder=out_dir,
@@ -425,7 +411,7 @@ class TestIntegrationPipeline(unittest.TestCase):
                       f"Nome custom non trovato tra: {names}")
 
     def test_007_msp_vuoto_non_genera_file(self):
-        """msp vuoto → nessun file generato."""
+        """empty msp → no file generated."""
         out_dir = tempfile.mkdtemp()
         doc = ezdxf.new("R2010")
         _split_to_files(topo_dxf.document_from_msp(doc.modelspace()), output_folder=out_dir,
@@ -436,10 +422,8 @@ class TestIntegrationPipeline(unittest.TestCase):
 
 
 class TestIntegrationContours(unittest.TestCase):
-    """
-    Verifica che i contorni strutturali nei file figli siano corretti:
-    LWPOLYLINE chiuse, CIRCLE e SPLINE esportati correttamente.
-    """
+    """Verify that the structural contours in the child files are correct: closed
+    LWPOLYLINEs, CIRCLE and SPLINE exported correctly."""
 
     def _children(self, dxf_name, label, **kwargs):
         out_dir = tempfile.mkdtemp()
@@ -448,8 +432,8 @@ class TestIntegrationContours(unittest.TestCase):
         return _read_children(out_dir)
 
     def _spline_signature(self, spline):
-        # solo la geometria (MAP.md D135): flag, tolleranze, fit points e
-        # tangenti del file sorgente non fanno parte della curva
+        # geometry only: flags, tolerances, fit points and tangents of the source file
+        # are not part of the curve
         cps = tuple((round(float(p[0]), 6), round(float(p[1]), 6), round(float(p[2]), 6))
                     for p in spline.control_points)
         knots = tuple(round(float(k), 9) for k in spline.knots)
@@ -457,7 +441,7 @@ class TestIntegrationContours(unittest.TestCase):
         return (int(spline.dxf.degree), cps, knots, weights)
 
     def test_001_lwpolyline_outer_chiusa(self):
-        """LWPOLYLINE su OuterContour nei figli è closed=True."""
+        """LWPOLYLINE on OuterContour in the children is closed=True."""
         from topo_dxf.layers import LAYER_OUTER
         children = self._children("two_parts.dxf", "two_parts")
         self.assertGreater(len(children), 0)
@@ -469,7 +453,7 @@ class TestIntegrationContours(unittest.TestCase):
                                     f"non è chiusa")
 
     def test_002_lwpolyline_inner_chiusa(self):
-        """LWPOLYLINE su InnerContour/Hole nei figli è closed=True."""
+        """LWPOLYLINE on InnerContour/Hole in the children is closed=True."""
         from topo_dxf.layers import LAYER_INNER
         children = self._children("pline_with_hole.dxf", "pline_with_hole")
         for fname, msp in children.items():
@@ -480,7 +464,7 @@ class TestIntegrationContours(unittest.TestCase):
                                     f"non è chiusa")
 
     def test_003_circle_outer_esportato(self):
-        """CIRCLE su OuterContour viene esportato nel file figlio."""
+        """CIRCLE on OuterContour is exported to the child file."""
         from topo_dxf.layers import LAYER_OUTER
         children = self._children("cerchi_ciambella.dxf", "cerchi_ciambella")
         self.assertGreater(len(children), 0,
@@ -493,7 +477,7 @@ class TestIntegrationContours(unittest.TestCase):
                              f"trovati {len(outer_circles)}")
 
     def test_004_spline_outer_esportato(self):
-        """File con SPLINE: almeno un figlio contiene SPLINE strutturale su OuterContour."""
+        """File with SPLINE: at least one child contains a structural SPLINE on OuterContour."""
         from topo_dxf.layers import LAYER_OUTER
         children = self._children("intricato_doppio.dxf", "intricato_doppio")
         figli_con_outer = [
@@ -506,7 +490,7 @@ class TestIntegrationContours(unittest.TestCase):
                            "per file con SPLINE")
 
     def test_006_spline_parametri_preservati(self):
-        """Le SPLINE scritte nei figli preservano i parametri chiave della sorgente."""
+        """The SPLINEs written in the children preserve the source's key parameters."""
         from topo_dxf.layers import LAYER_OUTER
         src_doc = ezdxf.readfile(str(drawing("intricato_doppio.dxf")))
         src_splines = list(src_doc.modelspace().query("SPLINE"))
@@ -528,14 +512,12 @@ class TestIntegrationContours(unittest.TestCase):
                           "SPLINE figlia non corrisponde ai parametri della sorgente")
 
     def test_005_regressione_lwpolyline_chiusa_tutti_gli_esempi(self):
-        """
-        Regressione: per ogni file in tests/data/, ogni LWPOLYLINE strutturale
-        nei figli è closed=True, sui layer senza SPLINE/ELLIPSE: un contorno
-        misto si scrive in pezzi aperti che chiudono insieme (`write_segments`).
-        """
+        """Regression: for every file in tests/data/, every structural LWPOLYLINE in the
+        children is closed=True, on the layers without SPLINE/ELLIPSE: a mixed contour
+        is written in open pieces that close together (`write_segments`)."""
         from topo_dxf.layers import LAYER_OUTER, LAYER_INNER
         structural = {LAYER_OUTER, LAYER_INNER}
-        # i disegni che stavano nella radice stanno ora in golden_faces/ (un nome, una copia)
+        # the drawings that were in the root are now in golden_faces/ (one name, one copy)
         sources = {p.name: p for d in (EXAMPLES_DIR / "golden_faces", EXAMPLES_DIR) for p in Path(d).glob("*.dxf")}
         for src in sorted(sources.values()):
             if src.stem.endswith("_healed"):
@@ -556,10 +538,9 @@ class TestIntegrationContours(unittest.TestCase):
 
 
 class TestIntegrationLayers(unittest.TestCase):
-    """
-    Verifica layer e colori canonici nei file prodotti dalla pipeline completa.
-    Separato da TestUnitSplitLayers perché qui passa per heal() su file reale.
-    """
+    """Verify layers and canonical colours in the files produced by the full
+    pipeline. Separate from TestUnitSplitLayers because here it goes through
+    heal() on a real file."""
 
     def setUp(self):
         self.out_dir = tempfile.mkdtemp()
@@ -570,7 +551,7 @@ class TestIntegrationLayers(unittest.TestCase):
                         "setUp: nessun file generato da two_parts.dxf")
 
     def test_001_outer_layer_colore_canonico(self):
-        """LAYER_OUTER ha il verde della palette di topo in ogni file figlio."""
+        """LAYER_OUTER has topo's palette green in every child file."""
         from topo_dxf.layers import LAYER_OUTER
         from topo_dxf.layers import color_for_role
         COLOR_OUTER = color_for_role("outer")
@@ -583,7 +564,7 @@ class TestIntegrationLayers(unittest.TestCase):
                              f"{layer.dxf.color}, atteso {COLOR_OUTER}")
 
     def test_002_tutti_i_layer_topo_presenti(self):
-        """Tutti i layer topo standard sono presenti in ogni file figlio."""
+        """All the standard topo layers are present in every child file."""
         from topo_dxf.layers import LAYER_OUTER, LAYER_INNER, TRASH_LAYER
         expected = {LAYER_OUTER, LAYER_INNER, TRASH_LAYER}
         for f in self.files:
@@ -594,7 +575,7 @@ class TestIntegrationLayers(unittest.TestCase):
                               f"{f.name}: layer '{name}' mancante")
 
     def test_003_tutti_i_colori_canonici(self):
-        """Ogni layer topo ha il colore canonico definito in layers.py."""
+        """Every topo layer has the canonical colour defined in layers.py."""
         from topo_dxf.layers import ALL_LAYERS
         for f in self.files:
             child_doc = ezdxf.readfile(str(f))

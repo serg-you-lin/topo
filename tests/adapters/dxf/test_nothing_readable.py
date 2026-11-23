@@ -1,11 +1,11 @@
 """
 tests/adapters/dxf/test_nothing_readable.py
 --------------------------------------------
-Un file con entità ma nessuna che topo modella è un errore, non un foglio
-vuoto (D252). Un file vuoto davvero resta un Document vuoto.
+A file with entities but none that topo models is an error, not an empty
+sheet. A truly empty file stays an empty Document.
 
-Il fixture usa ezdxf perché topo non sa scrivere un 3DFACE: è il formato di
-ingresso stesso che si prova qui.
+The fixture uses ezdxf because topo cannot write a 3DFACE: it is the input
+format itself that is tested here.
 """
 
 import os
@@ -40,7 +40,7 @@ class TestNothingReadable(unittest.TestCase):
         _save(self.path, faces=True)
         with self.assertRaises(ValueError) as ctx:
             topo_dxf.load_dxf(self.path)
-        # il messaggio nomina il tipo che topo non legge
+        # the message names the type topo does not read
         self.assertIn("3DFACE", str(ctx.exception))
 
     def test_empty_file_is_an_empty_document(self):

@@ -1,11 +1,12 @@
 """
 tests/promises/test_outlines_single_use.py
 ------------------------------------
-Un pezzo della rete piana ha un solo destino: se il contorno esterno lo usa,
-non è anche una sporgenza (D146). Prima il giro scelto per D100 poteva usare
-un edge che il percorso aveva contato due volte: finiva nel contorno e in
-`loose`, la stessa linea due volte. Sui disegni senza cornice di
-`golden_anchoring`, dove le viste sono isole loro.
+A piece of the planar network has a single fate: if the outer contour uses it,
+it is not also a protrusion. Before, the loop chosen by the fallback could use
+an edge that the walk had counted twice: it ended in the contour and in
+`loose`, the same line twice. On the drawings without frame of
+`golden_anchoring`, where the views are islands of their own.
+
 """
 
 import unittest

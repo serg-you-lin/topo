@@ -1,9 +1,8 @@
 """
 tests/adapters/dxf/test_ensure_linetype.py
 ----------------------------------
-`ensure_linetype` (MAP.md D85): un'unica regola per registrare un linetype nel
-documento di uscita — già presente, pattern della sorgente, tabella standard,
-altrimenti None.
+`ensure_linetype`: a single rule to register a linetype in the output
+document — already present, source pattern, standard table, otherwise None.
 """
 
 import unittest
@@ -22,12 +21,12 @@ class TestEnsureLinetype(unittest.TestCase):
         self.assertEqual(ensure_linetype(self.doc, "Continuous"), "Continuous")
 
     def test_002_source_pattern_wins_over_standard(self):
-        # stesso nome di uno standard, ma la forma della sorgente è la verità di quel file
+        # same name as a standard one, but the source's shape is the truth of that file
         self.assertEqual(ensure_linetype(self.doc, "DASHED", (10.0, 7.0, -3.0), "dalla sorgente"), "DASHED")
         self.assertEqual(self.doc.linetypes.get("DASHED").dxf.description, "dalla sorgente")
 
     def test_003_standard_name_without_pattern_is_registered(self):
-        # prima di D85 una linea DASHED senza pattern catturato diventava continua
+        # before, a DASHED line with no captured pattern became continuous
         self.assertEqual(ensure_linetype(self.doc, "DASHED"), "DASHED")
         self.assertIn("DASHED", self.doc.linetypes)
 

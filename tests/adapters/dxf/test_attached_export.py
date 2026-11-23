@@ -1,10 +1,10 @@
 """
 tests/adapters/dxf/test_attached_export.py
 ----------------------------------
-D70: `to_dxf` scrive ogni collezione attaccata a `cluster.overlay` da un
-consumatore (D90: tutte, topo non ne conosce nessuna per nome). Un elemento
-con `role` va sul layer del suo ruolo: i suoi `contours` se ne ha, altrimenti
-i suoi `segments`. Senza ruolo o senza geometria si salta.
+`to_dxf` writes every collection attached to `cluster.overlay` by a consumer
+(all of them, topo knows none by name). An element with a `role` goes on the
+layer of its role: its `contours` if it has them, otherwise its `segments`.
+Without a role or without geometry it is skipped.
 """
 
 import unittest
@@ -18,7 +18,7 @@ from topo import to_shapely
 
 @dataclass
 class _Mark:
-    """Un elemento di un consumatore: solo quello che l'exporter legge."""
+    """A consumer's element: only what the exporter reads."""
     role: str
     segments: list = field(default_factory=list)
     styles: list = field(default_factory=list)
@@ -28,7 +28,7 @@ class _Mark:
 
 @dataclass
 class _Composite:
-    """Un elemento fatto di più contorni chiusi (un foro con la sua sede)."""
+    """An element made of several closed contours (a hole with its seat)."""
     role: str
     contours: list = field(default_factory=list)
     source: str = "test"
@@ -36,7 +36,7 @@ class _Composite:
 
 
 def _plate():
-    # piastra 100x50 con due fori concentrici e uno singolo
+    # 100x50 plate with two concentric holes and a single one
     doc = topo.load_geometry([
         {"type": "polygon", "points": [(0, 0), (100, 0), (100, 50), (0, 50)]},
         {"type": "circle", "center": (20, 25), "radius": 3},

@@ -1,10 +1,9 @@
 """
 test_role_palette.py
 --------------------
-La palette di topo (MAP.md D128): il colore dei ruoli che topo produce è uno
-solo, per ogni formato — outer verde, inner giallo, unknown rosso, grigio
-ogni altro ruolo — e la mappa del chiamante ci si mette sopra campo per
-campo, senza riscrivere i ruoli di topo.
+topo's palette: the colour of the roles topo produces is a single one, for
+every format — outer green, inner yellow, unknown red, grey every other role —
+and the caller's map goes on top field by field, without rewriting topo's roles.
 """
 
 import unittest
@@ -40,8 +39,8 @@ class TestRoleStyle(unittest.TestCase):
 
 
 class TestUnaPalettePerOgniFormato(unittest.TestCase):
-    """DXF e SVG leggono la stessa palette: l'ACI scritto dal DXF e l'hex
-    del view model sono lo stesso RGB."""
+    """DXF and SVG read the same palette: the ACI written by the DXF and the hex of
+    the view model are the same RGB."""
 
     def _result(self):
         segs = topo.geometry.rectangle(100, 50)

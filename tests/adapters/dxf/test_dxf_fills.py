@@ -1,13 +1,13 @@
 """
 tests/adapters/dxf/test_dxf_fills.py
 ------------------------------------
-Aree piene e richiami senza stringa (MAP.md D255, D258): un SOLID, un HATCH
-pieno, una polilinea con larghezza arrivano come lati con `EdgeStyle.filled`;
-un LEADER senza stringa sua arriva come curve, non come `Text`; `to_dxf`
-riscrive un giro di lati pieni come HATCH pieno.
+Filled areas and callouts without a string: a SOLID, a filled HATCH, a polyline
+with width arrive as sides with `EdgeStyle.filled`; a LEADER with no string of
+its own arrives as curves, not as `Text`; `to_dxf` rewrites a loop of filled
+sides as a filled HATCH.
 
-Il fixture usa ezdxf perché topo non sa scrivere queste entità: è il formato
-di ingresso stesso che si prova qui.
+The fixture uses ezdxf because topo cannot write these entities: it is the
+input format itself that is tested here.
 """
 
 import math
@@ -25,10 +25,10 @@ from topo.core.geometry.measure import segment_length
 def _drawing(path: str) -> None:
     doc = ezdxf.new()
     msp = doc.modelspace()
-    # A: un triangolo SOLID (punta di freccia)
+    # A: a SOLID triangle (arrowhead)
     msp.add_solid([(0, 0), (4, 0), (2, 3)])
-    # B: un HATCH pieno 3x18 col bordo salvato a pezzi, come in anch_01 (D253):
-    #    i quattro lati fuori ordine
+    # B: a filled 3x18 HATCH with the border saved in pieces, as in anch_01: the
+    #    four sides out of order
     hatch = msp.add_hatch(color=1)
     hatch.set_solid_fill()
     edges = hatch.paths.add_edge_path()
@@ -36,9 +36,9 @@ def _drawing(path: str) -> None:
     edges.add_line((23, 0), (23, 18))
     edges.add_line((20, 18), (20, 0))
     edges.add_line((23, 18), (20, 18))
-    # C: una polilinea larga 1 da (40, 0) a (50, 0)
+    # C: a polyline of width 1 from (40, 0) to (50, 0)
     msp.add_lwpolyline([(40, 0), (50, 0)], dxfattribs={"const_width": 1.0})
-    # D: un LEADER senza nota, freccia piena in (60, 10)
+    # D: a LEADER with no note, filled arrow at (60, 10)
     msp.add_leader([(60, 10), (60, 0)])
     doc.saveas(path)
 
@@ -69,7 +69,7 @@ class TestFilledAreas(unittest.TestCase):
         self.assertAlmostEqual(self._length(sides), 4 + 2 * math.hypot(2, 3), places=6)
 
     def test_hatch_pieno_a_pezzi_resta_un_rettangolo(self):
-        # i quattro lati del file, nessuna corda: perimetro 2 * (3 + 18)
+        # the four sides of the file, no chord: perimeter 2 * (3 + 18)
         sides = self._filled_in(19, 24)
         self.assertEqual(len(sides), 4)
         self.assertAlmostEqual(self._length(sides), 42.0, places=6)
@@ -101,14 +101,14 @@ class TestFilledAreas(unittest.TestCase):
         result = topo.heal(self.doc).outlines()
         out = topo_dxf.to_dxf(result, self.doc)
         hatches = list(out.modelspace().query("HATCH"))
-        # A, B, C e la punta del leader
+        # A, B, C and the leader's tip
         self.assertEqual(len(hatches), 4)
         self.assertTrue(all(h.dxf.solid_fill for h in hatches))
 
 
 class TestDocumentFromMsp(unittest.TestCase):
-    """`document_from_msp` non esplode niente: un LEADER senza stringa e un
-    SOLID non letti lo dice un avviso, non un silenzio (D137)."""
+    """`document_from_msp` explodes nothing: a LEADER with no string and an unread
+    SOLID are told by a warning, not by silence."""
 
     def test_avviso_per_quello_che_non_legge(self):
         doc = ezdxf.new()

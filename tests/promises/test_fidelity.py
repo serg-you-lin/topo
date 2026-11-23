@@ -1,27 +1,27 @@
 """
 tests/promises/test_fidelity.py
 ---------------------------
-La promessa "fedele" della 1.0 (D143), su ogni disegno tracciato: il
-risultato scritto in DXF e riletto si sovrappone al sorgente.
+The "faithful" promise of 1.0, on every tracked drawing: the result written to
+DXF and re-read overlaps the source.
 
-1. Hausdorff nei due versi ≤ il limite della lettura: la tolleranza dei nodi
-   per `heal()`, `max_gap` per `outlines()` (l'unica cosa che sposta geometria
-   in una vista sono le chiusure dei gap).
-2. Coefficienti identici (centro e raggio, ellisse, punti di controllo) per
-   ogni curva che la lettura non ha toccato — presa dopo `refit_native_curves`:
-   una spline che è un arco o un'ellisse esce come quello (D296): entrambi i capi coincidono con
-   quelli di un altro edge del sorgente e la curva non ha un doppione quasi
-   coincidente. Un capo che non tocca niente può essere stato chiuso entro la
-   tolleranza, e allora l'arco riletto da un bulge ha centro e raggio
-   ricalcolati; un doppione viene fuso. Lì vale solo il punto 1.
+1. Hausdorff in both directions ≤ the reading's limit: the node tolerance for
+   `heal()`, `max_gap` for `outlines()` (the only thing that moves geometry in
+   a view is the gap closures).
+2. Identical coefficients (centre and radius, ellipse, control points) for
+   every curve the reading did not touch — taken after `refit_native_curves`:
+   a spline that is an arc or an ellipse comes out as that: both ends coincide
+   with those of another edge of the source and the curve has no nearly
+   coincident duplicate. An end touching nothing may have been closed within the
+   tolerance, and then the arc re-read from a bulge has centre and radius
+   recomputed; a duplicate is merged. There only point 1 holds.
 
-3. Contorni chiusi esatti (D206): nessun salto fra un segmento e il seguente
-   oltre FLOAT_NOISE, in nessuna lettura: un salto entro la tolleranza lo
-   chiude il motore con un segmento nuovo.
+3. Exact closed contours: no jump between a segment and the next beyond
+   FLOAT_NOISE, in any reading: a jump within the tolerance is closed by the
+   engine with a new segment.
 
-Ogni disegno con la sua lettura (D152): quelli di `golden_outlines/` e
-`golden_anchoring/` sono fogli di viste e si leggono con `outlines()`, gli
-altri con `heal()`. Le copie identiche si misurano una volta.
+Each drawing with its reading: those of `golden_outlines/` and
+`golden_anchoring/` are sheets of views and are read with `outlines()`, the
+others with `heal()`. Identical copies are measured once.
 """
 
 import unittest
@@ -41,18 +41,18 @@ from tests.invariants import contour_jumps
 from tests.readings import outline_reading
 from tests.paths import PROJECT_ROOT
 
-MAX_GAP = 0.5            # quello di snapdraw, come test_golden_outlines
-# passo della discretizzazione su cui si misura, in frazione del limite: la
-# misura sbaglia al più di un passo (un decimo del limite) a ogni tolleranza.
-# Il controllo resta `<= limite`: un gap chiuso largo esattamente la tolleranza
-# sposta un capo di tutto il limite (Multipolis), e non è un difetto
+MAX_GAP = 0.5            # snapdraw's, like test_golden_outlines
+# step of the discretization on which it is measured, as a fraction of the
+# limit: the measure is wrong by at most one step (a tenth of the limit) at every
+# tolerance. The check stays `<= limit`: a closed gap exactly as wide as the
+# tolerance moves an end by the whole limit, and it is not a defect
 SAMPLE_RATIO = 0.1
-SPLINE_BOX = 0.01        # margine dei rettangoli delle spline scritte (_written_splines)
+SPLINE_BOX = 0.01        # margin of the rectangles of the written splines (_written_splines)
 COEFF_EPS = 1e-9         # "identico" in virgola mobile
-DUPLICATE_EPS = 0.05     # due curve così vicine sono un doppione da fondere
-CUT_EPS = 2e-6           # un pezzo tagliato sta sulla sua spline (taglio esatto)
-CUT_SAMPLE = 1e-6        # errore di corda nel confronto, sotto CUT_EPS
-CUT_GAP = 0.02           # un tratto più corto resta dentro la fascia del bordo (2·GRAPH_EPSILON)
+DUPLICATE_EPS = 0.05     # two curves this close are a duplicate to merge
+CUT_EPS = 2e-6           # a cut piece lies on its spline (exact cut)
+CUT_SAMPLE = 1e-6        # chord error in the comparison, below CUT_EPS
+CUT_GAP = 0.02           # a shorter stretch stays inside the border band (2·GRAPH_EPSILON)
 
 
 
@@ -67,7 +67,7 @@ def _lines_and_samples(edges, step: float):
 
 
 def _directed(samples, lines) -> float:
-    """Massima distanza di un punto di `samples` dalle linee di `lines`."""
+    """Maximum distance of a point of `samples` from the lines of `lines`."""
     if not samples:
         return 0.0
     if not lines:
@@ -78,7 +78,7 @@ def _directed(samples, lines) -> float:
 
 
 def _coefficients(seg):
-    """Quello che nessun passo di una lettura cambia su una curva che non tocca."""
+    """What no step of a reading changes on a curve it does not touch."""
     if isinstance(seg, topo.primitives.CircleSeg):
         return ("circle", (seg.center[0], seg.center[1], seg.radius))
     if isinstance(seg, topo.primitives.EllipseSeg):
@@ -97,12 +97,12 @@ def _same(a, b, eps) -> bool:
     (deg_a, pts_a), (deg_b, pts_b) = a[1], b[1]
     close = lambda P, Q: len(P) == len(Q) and all(
         abs(p[0] - q[0]) <= eps and abs(p[1] - q[1]) <= eps for p, q in zip(P, Q))
-    # una spline percorsa al contrario ha i punti di controllo invertiti
+    # a spline walked backwards has the control points reversed
     return deg_a == deg_b and (close(pts_a, pts_b) or close(pts_a, pts_b[::-1]))
 
 
 def _untouched_curves(edges) -> list:
-    """Coefficienti delle curve che una lettura non ha motivo di toccare."""
+    """Coefficients of the curves a reading has no reason to touch."""
     def ends(seg):
         try:
             p, q = segment_endpoints(seg)
@@ -130,19 +130,18 @@ def _untouched_curves(edges) -> list:
 
 
 def _written_splines(written_edges):
-    """(spline, indice sui loro rettangoli) delle spline scritte: la
-    discretizzazione fine si fa solo per quelle vicine a una curva."""
+    """(spline, index on their rectangles) of the written splines: the fine
+    discretization is done only for those near a curve."""
     splines = [e.segment for e in written_edges if isinstance(e.segment, topo.primitives.BSplineSeg)]
     boxes = [box(*LineString(s.discretize(tolerance=SPLINE_BOX)).buffer(SPLINE_BOX).bounds) for s in splines]
     return splines, STRtree(boxes)
 
 
 def _cut_in_pieces(coeffs, source_edges, written) -> bool:
-    """Vero se la spline `coeffs` del sorgente esce tagliata, non rifittata:
-    in pezzi che stanno su di lei entro CUT_EPS e la coprono tutta, a
-    meno di CUT_GAP. Una
-    lettura la taglia dove un bordo la lascia a metà (G6b: il resto va in
-    `loose`, la parte sul bordo nel contorno)."""
+    """True if the source's spline `coeffs` comes out cut, not refitted: in pieces
+    lying on it within CUT_EPS and covering it all, up to CUT_GAP. A reading cuts
+    it where a border leaves it in the middle (the rest goes in `loose`, the part
+    on the border in the contour)."""
     if coeffs[0] != "spline":
         return False
     source = next(e.segment for e in source_edges if _coefficients(e.segment) == coeffs)
@@ -164,18 +163,18 @@ def _round_trip(rel: str, reading: str):
         result = topo.heal(doc).faces()
         bound = topo.precision.SAME_POINT
     drawing = topo_dxf.to_dxf(result, doc, include_texts=False)
-    # il layer di `loose` si rilegge (default, D243): è parte del risultato
+    # the `loose` layer is re-read (default): it is part of the result
     back = topo_dxf.document_from_msp(drawing.modelspace())
     return doc, result, back, bound
 
 
 class TestFidelity(unittest.TestCase):
-    """Un test per disegno tracciato, così la suite li divide fra i core
-    (D160): in un test solo, il ciclo su tutti i disegni era il più lento
-    della suite e non si poteva dividere."""
+    """One test per tracked drawing, so the suite divides them among the cores: in a
+    single test, the loop over all the drawings was the slowest of the suite and
+    could not be divided."""
 
     def test_il_confronto_dei_coefficienti_non_e_vuoto(self):
-        # la regola "non toccata" non deve escludere quasi tutto
+        # the "untouched" rule must not exclude almost everything
         compared = sum(len(_untouched_curves(topo_dxf.load_dxf(str(PROJECT_ROOT / rel)).edges))
                        for rel, _ in tracked_drawings())
         self.assertGreater(compared, 1000)
@@ -193,7 +192,7 @@ def _make_fidelity_test(rel: str, reading: str):
         self.assertLessEqual(_directed(out_samples, src_lines), bound,
                              "un punto del risultato non è nel sorgente")
         written = [c for c in map(_coefficients, (e.segment for e in back.edges)) if c]
-        # una curva del file che è una primitiva più semplice esce come quella (D296)
+        # a curve of the file that is a simpler primitive comes out as that
         source = refit_native_curves(doc.edges)
         missing = [c for c in _untouched_curves(source)
                    if not any(_same(c, w, COEFF_EPS) for w in written)]

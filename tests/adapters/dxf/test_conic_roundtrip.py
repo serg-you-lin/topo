@@ -1,11 +1,10 @@
 """
 tests/adapters/dxf/test_conic_roundtrip.py
 ------------------------------------------
-D288: il DXF non ha parabole né iperboli. `to_dxf` le scrive come la loro
-spline razionale quadratica, esatta: riletta, è la stessa curva (ogni suo
-punto sta sull'equazione della conica) e chiude la stessa area. D289: una
-formula non ha una spline esatta: riletta sta entro SAME_POINT dalla curva;
-D290: la clotoide neanche, lo stesso.
+DXF has no parabolas or hyperbolas. `to_dxf` writes them as their exact
+rational quadratic spline: re-read, it is the same curve (every point of it
+lies on the conic's equation) and closes the same area. A formula has no exact
+spline: re-read it is within SAME_POINT of the curve; the clothoid too, the same.
 """
 
 import math

@@ -1,13 +1,10 @@
 # tests/promises/test_outlines_invariants.py
 
-"""
-Invarianti di `outlines()` che devono valere sempre, per qualunque disegno —
-non confrontano contro un valore congelato (un golden): o sono vere o il
-motore ha un difetto. Non vanno mai rigenerate né guardate a occhio (a
-differenza di `tests/golden/test_golden_outlines.py`). Fixture: gli stessi
-disegni reali: ogni disegno tracciato che si legge con `outlines()`
-(tests/drawings.py, D158).
-"""
+"""Invariants of `outlines()` that must always hold, for any drawing — they do
+not compare against a frozen value (a golden): they are either true or the
+engine has a defect. They are never regenerated nor looked at by eye (unlike
+`tests/golden/test_golden_outlines.py`). Fixture: the same real drawings:
+every tracked drawing read with `outlines()` (tests/drawings.py)."""
 
 import tempfile
 import unittest
@@ -29,11 +26,11 @@ from topo import to_shapely
 
 MAX_GAP = 0.5
 SOURCES = drawings_for("outlines")
-# lo stesso contorno può dare un poligono diverso di tanto così: la freccia
-# della discretizzazione più la griglia dei nodi dell'unione di facce (D106)
+# the same contour may give a polygon differing by this much: the
+# discretization's sagitta plus the node grid of the union of faces
 BOUNDS_TOLERANCE = DEFAULT_TOLERANCE + GRAPH_EPSILON
-# due letture dello stesso contorno, ognuna fuori di BOUNDS_TOLERANCE: area di
-# scarto ammessa per mm di perimetro
+# two readings of the same contour, each off by BOUNDS_TOLERANCE: allowed
+# difference area per mm of perimeter
 SHAPE_BAND = 2 * BOUNDS_TOLERANCE
 
 
@@ -41,14 +38,14 @@ def _keys(text: str) -> frozenset:
     return frozenset(f"data/{k}" for k in text.split())
 
 
-# difetti veri trovati da queste invarianti, aperti nel cancello (TODO.md):
-# invariante → (voce, disegni). Ogni caso esce come skip con la sua voce; quando
-# un caso passa il test fallisce finché non esce dalla lista (D158)
+# true defects found by these invariants, open in the gate (TODO.md):
+# invariant → (entry, drawings). Every case comes out as a skip with its entry;
+# when a case passes the test fails until it leaves the list
 KNOWN: dict = {}
 
 
 def _check(test, invariant: str, dxf: Path, check) -> None:
-    """`check()` per `dxf`, o come difetto noto se il disegno è in KNOWN[invariant]."""
+    """`check()` for `dxf`, or as a known defect if the drawing is in KNOWN[invariant]."""
     gate, keys = KNOWN.get(invariant, ("", frozenset()))
     if drawing_key(dxf) in keys:
         known_defect(test, f"{drawing_key(dxf)} ({invariant})", gate, check)
@@ -61,8 +58,8 @@ def _snapshot(result) -> list:
 
 
 def _unmatched(before: list, after: list) -> list:
-    """Le isole di `before` senza una gemella in `after`: stesso numero di
-    inner, riquadro entro BOUNDS_TOLERANCE (accoppiamento uno a uno)."""
+    """The islands of `before` without a twin in `after`: same number of inners, box
+    within BOUNDS_TOLERANCE (one-to-one pairing)."""
     free = list(after)
     missing = []
     for item in before:
@@ -77,9 +74,9 @@ def _unmatched(before: list, after: list) -> list:
 
 
 class TestPolygonValidity(unittest.TestCase):
-    """Ogni poligono letto da `outlines()` — outer e inner — è una forma
-    semplice (non autointersecante): un poligono autointersecante dà
-    un'area calcolata per cancellazione di segno, non la forma vera."""
+    """Every polygon read by `outlines()` — outer and inner — is a simple shape (not
+    self-intersecting): a self-intersecting polygon gives an area computed by sign
+    cancellation, not the true shape."""
 
     def _assert_valid(self, contour, where):
         self.assertTrue(to_shapely(contour).is_valid, f"{where}: il poligono non è una forma semplice")
@@ -101,7 +98,7 @@ for _dxf in SOURCES:
 
 
 class TestMessagesAreDiagnostics(unittest.TestCase):
-    """Ogni messaggio di outlines() è un Diagnostic del suo canale, con un codice noto (D233)."""
+    """Every message of outlines() is a Diagnostic of its channel, with a known code."""
 
 
 def _make_messages_test(dxf: Path):
@@ -115,12 +112,11 @@ for _dxf in SOURCES:
 
 
 class TestRoundtripStable(unittest.TestCase):
-    """Esportare in DXF e rileggere con `outlines()` deve dare le stesse isole
-    (stesso riquadro esterno entro BOUNDS_TOLERANCE, stesso numero di inner
-    per isola) — se cambia, il motore ha scritto o letto qualcosa di diverso
-    da quello che aveva trovato la prima volta. Trovato così il 12 ottobre su
-    `regr_04` (due mezzelune in un giro solo, risolto in D106). Difetti noti
-    in KNOWN."""
+    """Exporting to DXF and re-reading with `outlines()` must give the same islands
+    (same outer box within BOUNDS_TOLERANCE, same number of inners per island) — if
+    it changes, the engine wrote or read something different from what it found the
+    first time. Found this way on 12 October on `regr_04` (two crescents in a
+    single loop, solved). Known defects in KNOWN."""
 
 
 def _roundtrip(self, dxf: Path):
@@ -129,7 +125,7 @@ def _roundtrip(self, dxf: Path):
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp) / f"{dxf.stem}.dxf"
         exported.saveas(str(tmp_path))
-        # rilegge l'uscita di topo senza i suoi layer di loose e testi (D243)
+        # re-reads topo's output without its loose and text layers
         after = topo.heal(topo_dxf.load_dxf(str(tmp_path), skip_layers=topo_dxf.SKIP_LAYERS),
                           max_gap=MAX_GAP).outlines()
     snap_before, snap_after = _snapshot(before), _snapshot(after)
@@ -151,10 +147,10 @@ for _dxf in SOURCES:
 
 
 class TestNothingDropped(unittest.TestCase):
-    """Ogni pezzo di geometria in ingresso finisce in uscita — nei segmenti
-    di un contorno o nel trash — entro `max_gap`: il gap-fix può spostare un
-    estremo fino a lì, non oltre (D98). Trovato così (D106) il tratto di due
-    archi tangenti che, diviso un giro in lobi, non stava in nessun lobo."""
+    """Every piece of input geometry ends in the output — in the segments of a
+    contour or in the trash — within `max_gap`: the gap-fix may move an end up to
+    there, not beyond. Found this way the stretch of two tangent arcs that, with a
+    loop divided into lobes, was in no lobe."""
 
 
 def _make_dropped_test(dxf: Path):
@@ -172,8 +168,8 @@ for _dxf in SOURCES:
 
 
 class TestOutOnce(unittest.TestCase):
-    """Ogni pezzo d'ingresso esce una volta, o in un contorno o in `loose`
-    (D137, D158): nessun tratto di `loose` corre lungo un contorno."""
+    """Every input piece comes out once, either in a contour or in `loose`: no
+    `loose` stretch runs along a contour."""
 
 
 def _make_out_once_test(dxf: Path):
@@ -189,8 +185,8 @@ for _dxf in SOURCES:
 
 
 def _differences(result, again, back=lambda p: p) -> list:
-    """Cosa cambia fra le isole di `result` e quelle di `again` (riportate
-    indietro con `back`): numero, outer, inner."""
+    """What changes between the islands of `result` and those of `again` (brought
+    back with `back`): number, outer, inner."""
     outers, inners = contours(result)
     outers_again, inners_again = ([back(p) for p in ps] for ps in contours(again))
     found = []
@@ -203,16 +199,14 @@ def _differences(result, again, back=lambda p: p) -> list:
     return found
 
 
-_SCRAMBLED: dict = {}   # impronta della geometria -> differenze: i gemelli si leggono una volta
+_SCRAMBLED: dict = {}   # fingerprint of the geometry -> differences: twins are read once
 
 
 class TestScrambled(unittest.TestCase):
-    """Lo stesso disegno scritto in un altro modo — entità in un altro ordine,
-    ruotato, lontano dall'origine, specchiato — dà le stesse isole: la
-    lettura non dipende né dall'ordine del file né dal sistema di
-    riferimento (D143, D158). Una lettura sola, tutto insieme (D160), una
-    volta per geometria (D180); gli altri angoli li provano i micro-casi
-    (TestScrambledMicro)."""
+    """The same drawing written another way — entities in another order, rotated,
+    far from the origin, mirrored — gives the same islands: the reading depends
+    neither on the file's order nor on the frame. One reading, all at once, once
+    per geometry; the other angles are tried by the micro-cases (TestScrambledMicro)."""
 
 
 def _scrambled_differences(dxf: Path) -> list:
@@ -235,22 +229,21 @@ for _dxf in SOURCES:
     setattr(TestScrambled, case_name(_dxf), _make_scrambled_test(_dxf))
 
 
-# otto angoli qualunque: sui disegni interi ognuno costava una lettura per
-# disegno (~25 s di suite), sui micro-casi pochi millisecondi
+# eight arbitrary angles: on whole drawings each cost a reading per drawing
+# (~25 s of suite), on micro-cases a few milliseconds
 ANGLES = (0.13, 0.41, 0.97, 1.33, 1.9, 2.47, 3.01, 4.4)
-# ritagli minimi dei disegni del repo che, prima di D180, cambiavano lettura
-# con l'angolo, e a ROTATION no: ognuno era instabile sul codice di 3ea516b^
-# ed è stabile da D180 (TODO.md, Tempo della suite)
+# minimal cuts of the repo's drawings that, before the change, changed reading
+# with the angle, and not at ROTATION: each was unstable on the old code and is stable since
 MICRO_CASES = {
-    # anch_03, anch_03_noframe, regr_02: una V di 60° col cerchio inscritto che
-    # taglia ogni lato di 0.004; prima instabile a 6 angoli su 8
+    # anch_03, anch_03_noframe, regr_02: a 60° V with the inscribed circle cutting
+    # every side by 0.004; before unstable at 6 angles out of 8
     "v_col_cerchio": [
         LineSeg(start=(746.518400822, 390.9160859284), end=(754.018400822, 395.2910859284)),
         LineSeg(start=(754.018400822, 395.2910859284), end=(739.018400822, 403.8625144998001)),
         CircleSeg(center=(748.5175721479, 395.281296222), radius=2.7545675962),
     ],
-    # regr_04 ridotto a blocchi: due rette quasi allineate, sfalsate di 0.04,
-    # inizi a 0.042; prima davano un contorno degenere a 4 angoli su 8
+    # regr_04 reduced to blocks: two nearly aligned lines, offset by 0.04, starts at
+    # 0.042; before they gave a degenerate contour at 4 angles out of 8
     "rette_sfalsate": [
         LineSeg(start=(1068.899871006625, 584.2766554286404), end=(1063.209502662657, 586.5054223191735)),
         LineSeg(start=(1068.884100771032, 584.2375217405909), end=(1069.529957804885, 583.9735163747837)),
@@ -259,10 +252,9 @@ MICRO_CASES = {
 
 
 class TestScrambledMicro(unittest.TestCase):
-    """Come TestScrambled, a otto angoli, sui contatti che un angolo solo non
-    vede: un contatto deciso male cambia la lettura solo ad alcuni angoli
-    (D180). Un caso nuovo entra qui come ritaglio minimo, non come angolo in
-    più sui disegni interi."""
+    """Like TestScrambled, at eight angles, on the contacts a single angle does not
+    see: a wrongly decided contact changes the reading only at some angles. A new
+    case enters here as a minimal cut, not as an extra angle on whole drawings."""
 
 
 def _make_micro_test(segments: list):

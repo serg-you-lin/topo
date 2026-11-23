@@ -1,10 +1,10 @@
 """
 tests/adapters/dxf/test_dxf_hatch.py
 -------------------------------------
-Un HATCH del DXF arriva come righe del suo pattern, edge normali.
+A DXF HATCH arrives as the lines of its pattern, normal edges.
 
-Il fixture usa ezdxf perché topo non sa scrivere un HATCH: è il formato di
-ingresso stesso che si prova qui.
+The fixture uses ezdxf because topo cannot write a HATCH: it is the input
+format itself that is tested here.
 """
 
 import math
@@ -18,7 +18,7 @@ import topo_dxf
 
 
 def _square_with_hatch(path: str) -> None:
-    # quadrato 10x10 di LINE + ANSI31 (righe a 45°) sullo stesso bordo
+    # 10x10 square of LINEs + ANSI31 (lines at 45°) on the same border
     doc = ezdxf.new()
     msp = doc.modelspace()
     pts = [(0, 0), (10, 0), (10, 10), (0, 10)]
@@ -44,7 +44,7 @@ class TestHatchExploded(unittest.TestCase):
         cls.tmp.cleanup()
 
     def test_pattern_lines_become_edges(self):
-        # i 4 lati più le righe del tratteggio
+        # the 4 sides plus the hatching lines
         self.assertGreater(len(self.doc.edges), 4)
 
     def test_pattern_lines_are_at_45_degrees(self):
@@ -58,8 +58,8 @@ class TestHatchExploded(unittest.TestCase):
         self.assertGreater(diagonals, 0)
 
     def test_same_file_same_lines(self):
-        # ezdxf sposta a caso l'origine del pattern se non glielo si vieta:
-        # due caricamenti dello stesso file devono dare le stesse righe
+        # ezdxf moves the pattern origin at random unless forbidden: two loads of the
+        # same file must give the same lines
         again = topo_dxf.load_dxf(os.path.join(self.tmp.name, "hatch.dxf"))
         self.assertEqual([e.segment for e in again.edges],
                          [e.segment for e in self.doc.edges])
@@ -69,8 +69,8 @@ class TestHatchExploded(unittest.TestCase):
         self.assertFalse(any("HATCH" in w for w in lost))
 
 
-# il rettangolo 3x18 dell'HATCH "B" di anch_01, ritagliato dal file: il CAD
-# lo salva in tre percorsi aperti, una L (sinistro + alto) e due lati sciolti
+# the 3x18 rectangle of HATCH "B" of anch_01, cut out of the file: the CAD saves
+# it in three open paths, an L (left + top) and two loose sides
 _ANCH_01 = os.path.join(os.path.dirname(__file__), "..", "..", "data", "golden_anchoring", "anch_01.dxf")
 
 
@@ -81,11 +81,11 @@ def _hatch_rect(path: str, in_pieces: bool) -> None:
     for e in list(msp):
         if e is not hatch:
             msp.delete_entity(e)
-    first = hatch.paths.paths[:3]  # i tre pezzi del primo rettangolo
+    first = hatch.paths.paths[:3]  # the three pieces of the first rectangle
     if in_pieces:
         hatch.paths.paths = first
     else:
-        # gli stessi lati, salvati come un solo anello chiuso
+        # the same sides, saved as a single closed ring
         xs = [v for p in first for e in p.edges for v in (e.start.x, e.end.x)]
         ys = [v for p in first for e in p.edges for v in (e.start.y, e.end.y)]
         hatch.paths.clear()
@@ -95,7 +95,7 @@ def _hatch_rect(path: str, in_pieces: bool) -> None:
 
 
 class TestHatchBoundaryInPieces(unittest.TestCase):
-    # D253: un bordo a pezzi si rimette in anelli coi soli lati del file
+    # a border in pieces is put back into rings with the file's sides only
 
     @classmethod
     def setUpClass(cls):
@@ -117,7 +117,7 @@ class TestHatchBoundaryInPieces(unittest.TestCase):
                       for e in doc.edges)
 
     def test_same_lines_as_one_closed_boundary(self):
-        # oggi ezdxf chiude ogni pezzo con la sua corda: righe in metà rettangolo
+        # today ezdxf closes every piece with its chord: lines in half a rectangle
         self.assertTrue(self.whole.edges)
         self.assertEqual(self._lines(self.pieces), self._lines(self.whole))
 
@@ -125,7 +125,7 @@ class TestHatchBoundaryInPieces(unittest.TestCase):
         self.assertFalse(any(w.code == "dxf-hatch-open-boundary" for w in self.pieces.warnings))
 
     def test_boundary_that_never_closes_is_warned(self):
-        # solo la L del file: nessun lato la chiude, resta la corda di ezdxf e si dice
+        # only the file's L: no side closes it, ezdxf's chord stays and it is said
         path = os.path.join(self.tmp.name, "only_l.dxf")
         _hatch_rect(path, in_pieces=True)
         doc = ezdxf.readfile(path)

@@ -1,12 +1,12 @@
 """
 tests/adapters/dxf/test_ellipse_roundtrip.py
 ---------------------------------------------
-Test end-to-end (ezdxf reale, non mock) per l'ELLIPSE: load -> heal -> to_dxf
--> reload, per un'ellisse piena (standalone) e un arco ellittico misto a
-linee. Verifica che l'ELLIPSE esca nativa in output (mai discretizzata a
-spline) e che il roundtrip riproduca la stessa geometria.
+End-to-end test (real ezdxf, not a mock) for ELLIPSE: load -> heal -> to_dxf
+-> reload, for a full (standalone) ellipse and an elliptical arc mixed with
+lines. It verifies that the ELLIPSE comes out native in output (never
+discretized to a spline) and that the roundtrip reproduces the same geometry.
 
-Lancia:
+Run:
     python -m pytest tests/adapters/dxf/test_ellipse_roundtrip.py -v
 """
 
@@ -20,7 +20,7 @@ import topo_dxf
 
 
 class TestFullEllipseOuter(unittest.TestCase):
-    """Un'ELLIPSE piena, sola geometria del file: un cluster, outer ellittico."""
+    """A full ELLIPSE, the file's only geometry: one cluster, elliptical outer."""
 
     def setUp(self):
         doc = ezdxf.new()
@@ -51,13 +51,13 @@ class TestFullEllipseOuter(unittest.TestCase):
         self.assertAlmostEqual(e.dxf.ratio, 0.5, places=6)
 
     def test_004_no_spline_written(self):
-        """Un'ellisse non deve mai uscire come SPLINE — è una conica esatta,
-        non un'approssimazione (stesso principio delle spline mai discretizzate)."""
+        """An ellipse must never come out as a SPLINE — it is an exact conic, not an
+        approximation (the same principle as splines never discretized)."""
         doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
         self.assertEqual(len(list(doc_out.modelspace().query("SPLINE"))), 0)
 
     def test_005_roundtrip_area_stable(self):
-        """Ricaricando l'output con topo stesso si ritrova la stessa area."""
+        """Reloading the output with topo itself finds the same area."""
         doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
         reloaded = topo.heal(topo_dxf.document_from_msp(doc_out.modelspace())).faces()
         self.assertEqual(reloaded.cluster_count, 1)
@@ -69,12 +69,12 @@ class TestFullEllipseOuter(unittest.TestCase):
 
 
 class TestEllipticalArcMixedWithLines(unittest.TestCase):
-    """Un quarto di ellisse (arco aperto) + 2 LINE chiudono un contorno."""
+    """A quarter ellipse (open arc) + 2 LINEs close a contour."""
 
     def setUp(self):
         doc = ezdxf.new()
         msp = doc.modelspace()
-        # quarto di ellisse da (20,0) a (0,10) — CCW, param 0 -> pi/2
+        # quarter ellipse from (20,0) to (0,10) — CCW, param 0 -> pi/2
         msp.add_ellipse(center=(0, 0), major_axis=(20, 0), ratio=0.5,
                          start_param=0.0, end_param=math.pi / 2)
         msp.add_line((0, 10), (0, 0))
@@ -87,8 +87,8 @@ class TestEllipticalArcMixedWithLines(unittest.TestCase):
         self.assertEqual(self.result.cluster_count, 1)
 
     def test_002_area_matches_quarter_ellipse(self):
-        # settore delimitato dai due semiassi e dall'arco = un quarto
-        # dell'area totale dell'ellisse (a=20, b=10)
+        # sector bounded by the two semi-axes and the arc = a quarter of the ellipse's
+        # total area (a=20, b=10)
         expected = 0.25 * math.pi * 20 * 10
         area = self.result.clusters[0].outer.area
         self.assertAlmostEqual(area, expected, delta=1.0)

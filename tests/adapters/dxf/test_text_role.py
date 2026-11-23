@@ -1,10 +1,9 @@
 """
 test_text_role.py
 -----------------
-Il ruolo di un testo (MAP.md D127, D128, D138): lo scrive il consumer, o le
-sue RoleRule al load sul nome del gruppo sorgente; topo lo conserva e un DXF
-mette il testo sul layer del suo ruolo, come un edge. Uno senza ruolo va su
-`text_layer`.
+The role of a text: the consumer writes it, or its RoleRules at load on the
+source group's name; topo keeps it and a DXF puts the text on the layer of its
+role, like an edge. One without a role goes on `text_layer`.
 """
 
 import unittest

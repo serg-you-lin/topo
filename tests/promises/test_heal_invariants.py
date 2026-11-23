@@ -1,16 +1,15 @@
 # tests/promises/test_heal_invariants.py
 
-"""
-Invarianti di `heal()` che devono valere sempre, per qualunque disegno — come
-quelle di `outlines()` (test_outlines_invariants.py): non confrontano contro un
-valore congelato, o sono vere o il motore ha un difetto. Non si rigenerano
-mai. Fixture: ogni disegno tracciato che si legge con `heal()` (tests/drawings.py,
-D158), letto come lo legge `tests/golden/test_golden_faces.py`; i golden di heal,
-`tests/data/golden_faces/`, con tolleranza e ruoli da `tests/data/config/`.
+"""Invariants of `heal()` that must always hold, for any drawing — like those of
+`outlines()` (test_outlines_invariants.py): they do not compare against a
+frozen value, they are either true or the engine has a defect. They are never
+regenerated. Fixture: every tracked drawing read with `heal()`
+(tests/drawings.py), read as `tests/golden/test_golden_faces.py` reads it; the
+heal golden, `tests/data/golden_faces/`, with tolerance and roles from
+`tests/data/config/`.
 
-Un golden congela un'uscita e protegge anche un difetto che c'era quando è
-stato scritto; queste no (MAP.md D111).
-"""
+A golden freezes an output and also protects a defect that was there when it
+was written; these do not."""
 
 import json
 import math
@@ -38,25 +37,25 @@ from tests.paths import DATA
 SOURCE_DIR = DATA / "golden_faces"
 DEFAULT_HEAL_TOLERANCE = 0.5          # come tests/golden/test_golden_faces.py
 GLOBAL_NAME_ROLES = {"MARK": "engrave", "Signature": "engrave"}
-# disegni con un gap largo esattamente la tolleranza: una rotazione di un angolo
-# qualunque cambia le coordinate dell'arrotondamento (~1e-14), quanto basta a
-# portare quel gap sopra o sotto la soglia. È il bordo di una regola sì/no: la
-# stessa geometria mossa non è promessa (D215, docs/LIMITS.md), non un difetto.
-# I moti esatti (`exact` in MOTIONS) li controllano comunque
+# drawings with a gap exactly as wide as the tolerance: a rotation by any angle
+# changes the rounding coordinates (~1e-14), enough to bring that gap above or
+# below the threshold. It is the edge of a yes/no rule: the same geometry moved
+# is not promised (docs/LIMITS.md), not a defect. The exact motions (`exact` in
+# MOTIONS) are checked anyway
 GAP_AT_TOLERANCE = {"Multipolis"}
-# difetti veri trovati da queste invarianti, aperti in TODO.md: quando sono
-# risolti la lista si svuota
+# true defects found by these invariants, open in TODO.md: when they are solved
+# the list empties
 KNOWN_ORDER_DEPENDENT: set = set()
-# (disegno, tolleranza) → voce del cancello: pezzi usciti due volte
+# (drawing, tolerance) → gate entry: pieces that came out twice
 KNOWN_TWICE: dict = {}
-# disegno → voce del cancello: le corde cambiano l'outer (cave larghe quanto la
-# tolleranza, riempite solo quando ci sono le corde)
-KNOWN_CHORDS: dict = {}   # G6d chiuso da D189
-# tolleranze su cui si prova che ogni pezzo esce una volta, oltre a quella del disegno
+# drawing → gate entry: the chords change the outer (slots as wide as the
+# tolerance, filled only when the chords are there)
+KNOWN_CHORDS: dict = {}   # closed
+# tolerances on which every piece is proved to come out once, besides the drawing's own
 OUT_ONCE_TOLERANCES = (DEFAULT_TOLERANCE, 0.05)
 CHORDS_PER_CLUSTER = 6
-# due letture dello stesso contorno possono differire della freccia della
-# discretizzazione lungo tutto il bordo: area di scarto ammessa per mm di perimetro
+# two readings of the same contour may differ by the discretization's sagitta
+# along the whole border: allowed difference area per mm of perimeter
 SHAPE_BAND = 2 * DEFAULT_TOLERANCE
 
 
@@ -65,8 +64,8 @@ def _sources() -> list:
 
 
 def _config(dxf: Path) -> dict:
-    # tolleranza e ruoli scelti per i golden di heal (test_golden_faces.py); ogni
-    # altro disegno si legge con quelli di default
+    # tolerance and roles chosen for the heal golden (test_golden_faces.py); every
+    # other drawing is read with the defaults
     path = DATA / "config" / f"{dxf.stem}.json"
     if dxf.parent != SOURCE_DIR:
         return {}
@@ -78,8 +77,8 @@ def _tolerance(dxf: Path) -> float:
 
 
 def _read(dxf: Path, tol: Optional[float] = None):
-    """(documento, risultato di heal) come in test_golden, alla tolleranza del
-    disegno o a `tol`: la tolleranza del disegno data per nome è la stessa lettura."""
+    """(document, heal result) as in test_golden, at the drawing's tolerance or at
+    `tol`: the drawing's tolerance given by name is the same reading."""
     return _read_at(dxf, _tolerance(dxf) if tol is None else tol)
 
 
@@ -110,7 +109,7 @@ def _register(cls, make, known: frozenset = frozenset()):
 # ---------------------------------------------------------------------------
 
 class TestMessagesAreDiagnostics(unittest.TestCase):
-    """Ogni messaggio di faces() è un Diagnostic del suo canale, con un codice noto (D233)."""
+    """Every message of faces() is a Diagnostic of its channel, with a known code."""
 
 
 def _make_messages_test(dxf: Path):
@@ -123,7 +122,7 @@ _register(TestMessagesAreDiagnostics, _make_messages_test)
 
 
 class TestPolygonValidity(unittest.TestCase):
-    """Ogni outer e ogni inner è una forma semplice di area positiva."""
+    """Every outer and every inner is a simple shape of positive area."""
 
 
 def _make_validity_test(dxf: Path):
@@ -141,10 +140,10 @@ _register(TestPolygonValidity, _make_validity_test)
 
 
 class TestContoursAreRings(unittest.TestCase):
-    """I segmenti di ogni outer e di ogni inner sono un anello testa-coda:
-    ognuno parte dove finisce il precedente, l'ultimo chiude sul primo (D118).
-    È quello che un chiamante trova in `contour.segments` e passa alle
-    primitive di `topo.geometry.regions` senza riordinarlo."""
+    """The segments of every outer and every inner are a head-to-tail ring: each
+    starts where the previous ends, the last closes on the first. It is what a
+    caller finds in `contour.segments` and passes to the primitives of
+    `topo.geometry.regions` without reordering."""
 
 
 def _make_ring_test(dxf: Path):
@@ -168,9 +167,9 @@ _register(TestContoursAreRings, _make_ring_test)
 
 
 class TestNothingDropped(unittest.TestCase):
-    """Ogni pezzo di geometria in ingresso finisce in uscita — nei segmenti di
-    un contorno o nel trash — entro la tolleranza di heal: chiudere un gap o
-    riparare un angolo sposta un estremo fino a lì, non oltre."""
+    """Every piece of input geometry ends in the output — in the segments of a
+    contour or in the trash — within heal's tolerance: closing a gap or repairing
+    a corner moves an end up to there, not beyond."""
 
 
 def _make_dropped_test(dxf: Path):
@@ -188,10 +187,10 @@ _register(TestNothingDropped, _make_dropped_test)
 
 
 class TestOutOnce(unittest.TestCase):
-    """Ogni pezzo d'ingresso esce una volta, o in un contorno o in `loose`
-    (D137, D158): nessun tratto di `loose` corre lungo un contorno. Alla
-    tolleranza del disegno e su OUT_ONCE_TOLERANCES (un'altra tolleranza
-    cambia quali gap chiude e quali angoli ripara)."""
+    """Every input piece comes out once, either in a contour or in `loose`: no
+    `loose` stretch runs along a contour. At the drawing's tolerance and on
+    OUT_ONCE_TOLERANCES (another tolerance changes which gaps it closes and which
+    corners it repairs)."""
 
 
 def _make_out_once_test(dxf: Path):
@@ -222,8 +221,8 @@ def _vertices(contour) -> list:
 
 
 def _is_chord(polygon, a, b, margin: float) -> bool:
-    """`a`–`b` attraversa il materiale: dentro il poligono, tocca il bordo solo
-    nei due estremi, e non ci corre vicino."""
+    """`a`–`b` crosses the material: inside the polygon, touching the border only at
+    the two ends, and not running near it."""
     if math.dist(a, b) < 4 * margin:
         return False
     line = LineString([a, b])
@@ -236,9 +235,9 @@ def _is_chord(polygon, a, b, margin: float) -> bool:
 
 
 def _chords(cluster, margin: float) -> list:
-    """Coppie di corde da un vertice comune ai due estremi di un lato dritto:
-    così i due estremi del lato diventano nodi di diramazione. Prima i lati
-    fuori dal convex hull (la parte concava), poi gli altri."""
+    """Pairs of chords from a common vertex to the two ends of a straight side: so
+    the two ends of the side become branching nodes. First the sides outside the
+    convex hull (the concave part), then the others."""
     polygon = to_shapely(cluster.outer)
     hull = polygon.convex_hull.exterior
     vertices = _vertices(cluster.outer)
@@ -259,10 +258,11 @@ def _chords(cluster, margin: float) -> list:
 
 
 class TestChordsKeepTheOuter(unittest.TestCase):
-    """Una corda fra due vertici di un outer, dentro il materiale, divide il
-    pezzo in due facce ma non ne cambia il bordo: rifatto heal sull'outer più
-    le corde, esce lo stesso outer e le corde vanno nel trash. È il caso di
-    una linea di piega senza ruolo (MAP.md D111). Salta i disegni senza corde."""
+    """A chord between two vertices of an outer, inside the material, divides the
+    piece into two faces but does not change its border: with heal redone on the
+    outer plus the chords, the same outer comes out and the chords go to the
+    trash. It is the case of a bend line with no role. It skips the drawings
+    without chords."""
 
 
 def _make_chords_test(dxf: Path):
@@ -291,10 +291,9 @@ _register(TestChordsKeepTheOuter, _make_chords_test)
 
 
 class TestRolesOfChordsDontMatter(unittest.TestCase):
-    """Gli edge non strutturali di un file (pieghe dal layer) che attraversano
-    un outer da bordo a bordo, letti invece senza ruolo, non cambiano gli
-    outer: la geometria da sola dice che sono corde. Salta i disegni senza
-    edge del genere."""
+    """The non-structural edges of a file (bends from the layer) that cross an outer
+    from border to border, read instead with no role, do not change the outers:
+    the geometry alone says they are chords. It skips the drawings without such edges."""
 
 
 def _crossing_edges(doc, result, tol: float) -> set:
@@ -333,11 +332,10 @@ _register(TestRolesOfChordsDontMatter, _make_roles_test)
 
 
 class TestRigidMotion(unittest.TestCase):
-    """Ruotare, spostare lontano dall'origine o specchiare il disegno prima
-    di heal dà gli stessi pezzi mossi, outer e inner: heal non dipende dal
-    sistema di riferimento (né da "il punto più a sinistra", né da una
-    griglia allineata agli assi, né dal verso in cui gira un contorno, né
-    dalla grandezza delle coordinate)."""
+    """Rotating, moving far from the origin or mirroring the drawing before heal
+    gives the same pieces moved, outer and inner: heal does not depend on the frame
+    (nor on "the leftmost point", nor on a grid aligned to the axes, nor on the
+    direction a contour turns, nor on the size of the coordinates)."""
 
 
 def _make_motion_test(dxf: Path):
@@ -361,8 +359,8 @@ _register(TestRigidMotion, _make_motion_test)
 
 
 class TestEdgeOrder(unittest.TestCase):
-    """L'ordine in cui il file elenca le entità non conta: gli edge al
-    contrario, e rimescolati con seed fissi, danno gli stessi pezzi."""
+    """The order in which the file lists the entities does not matter: the edges
+    reversed, and shuffled with fixed seeds, give the same pieces."""
 
 
 def _make_order_test(dxf: Path):

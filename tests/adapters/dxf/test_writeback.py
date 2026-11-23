@@ -1,17 +1,17 @@
 """
 test_writeback.py
 -----------------
-Test di integrazione per topo_dxf.to_dxf().
+Integration tests for topo_dxf.to_dxf().
 
-Dopo il refactoring `write` non modifica più il modelspace sorgente: produce
-un Drawing NUOVO. Questi test verificano il routing dei layer topo sul
-documento materializzato (doc_out), non più sul msp di partenza.
+After the refactoring `write` no longer modifies the source modelspace: it
+produces a NEW Drawing. These tests verify the routing of the topo layers on
+the materialized document (doc_out), no longer on the starting msp.
 
-Il vecchio comportamento "sposta le entità sul msp / entità su layer Trash /
-keep_trash" non esiste più — i test relativi sono stati riscritti per
-ispezionare il modello (`result.loose`) o l'output di to_dxf().
+The old behaviour "move the entities on the msp / entities on layer Trash /
+keep_trash" no longer exists — the related tests were rewritten to inspect the
+model (`result.loose`) or the output of to_dxf().
 
-Poi lancia:
+Then run:
     python -m pytest tests/adapters/dxf/test_writeback.py -v
 """
 
@@ -126,9 +126,7 @@ class TestWritebackDeduplication(unittest.TestCase):
         self.assertEqual(_dedup(self.msp), 0)
 
 
-# ---------------------------------------------------------------------------
-# Trash — vive nel modello E viene materializzato sul layer Trash del doc_out
-# ---------------------------------------------------------------------------
+# --- Trash — lives in the model AND is materialized on the Trash layer of doc_out ---
 
 from topo_dxf.layers import TRASH_LAYER
 
@@ -140,9 +138,8 @@ class TestWritebackTrash(unittest.TestCase):
         self.assertGreater(len(result.loose), 0)
 
     def test_002_trash_materialized_on_trash_layer(self):
-        # Regressione: to_dxf() DEVE riportare ogni entità non classificata sul
-        # layer Trash — un operatore CAM deve vedere tutto il disegno di
-        # partenza, non solo le parti pulite.
+        # Regression: to_dxf() MUST bring every unclassified entity back on the Trash
+        # layer — a CAM operator must see the whole starting drawing, not only the clean parts.
         result, msp = _pipeline("rect_with_trash.dxf")
         trash = [e for e in msp
                  if e.dxf.hasattr("layer") and e.dxf.layer == TRASH_LAYER]
@@ -157,10 +154,10 @@ class TestWritebackTrash(unittest.TestCase):
         self.assertEqual(len(trash), 0)
 
     def test_004_open_trash_not_closed(self):
-        # Le tracce aperte non devono essere chiuse: una LWPOLYLINE trash
-        # con flag closed falserebbe la forma. two_rects_with_bend ha una
-        # bending line interna che il detector non promuove (endpoint a ~10 mm
-        # dall'outer) → finisce in trash come traccia aperta.
+        # Open traces must not be closed: a trash LWPOLYLINE with the closed flag would
+        # falsify the shape. two_rects_with_bend has an inner bending line that the
+        # detector does not promote (endpoint ~10 mm from the outer) → it ends in trash
+        # as an open trace.
         result, msp = _pipeline("two_rects_with_bend.dxf")
         trash_pl = [e for e in msp.query("LWPOLYLINE")
                     if e.dxf.layer == TRASH_LAYER]
@@ -169,10 +166,10 @@ class TestWritebackTrash(unittest.TestCase):
             self.assertFalse(e.closed)
 
     def test_005_invalid_result_written_unless_refused(self):
-        # Nessun contorno esterno chiuso (arc_open a tolleranza default: gap
-        # arco/arco di ~0.26 mm > 0.05) → heal() invalida il risultato. Di
-        # default to_dxf() lo scrive lo stesso (tutto in trash, D83); con
-        # allow_invalid=False si rifiuta, come vuole chi consegna a una macchina.
+        # No closed outer contour (arc_open at default tolerance: arc/arc gap of ~0.26
+        # mm > 0.05) → heal() invalidates the result. By default to_dxf() writes it
+        # anyway (everything in trash); with allow_invalid=False it refuses, as whoever
+        # delivers to a machine wants.
         doc = topo_dxf.load_dxf(drawing("arc_open.dxf"))
         result = topo.heal(doc).faces()
         self.assertFalse(result.is_valid)
@@ -192,8 +189,8 @@ class TestWritebackTrash(unittest.TestCase):
 
 
 class TestWritebackSourceLayerNotKept(unittest.TestCase):
-    """Il layer sorgente "MARK" di la_104 non è un contorno: la sua geometria
-    resta nel modello come loose, e il DXF scritto non ha quel layer."""
+    """The source layer "MARK" of la_104 is not a contour: its geometry stays in the
+    model as loose, and the written DXF has no such layer."""
 
     def setUp(self):
         doc = topo_dxf.load_dxf(drawing("la_104.DXF"))
@@ -207,12 +204,7 @@ class TestWritebackSourceLayerNotKept(unittest.TestCase):
         self.assertGreater(len(self.result.loose), 0)
 
 
-# ---------------------------------------------------------------------------
-# Cluster E — linetype della sorgente sempre ripristinato in output. Le linee
-# tratteggiate non devono uscire continue. Il colore invece non si tocca mai:
-# resta quello del layer topo di destinazione (semantico per ruolo — verde
-# outer, rosso trash, ... — adapters/dxf/layers.py), mai quello della sorgente.
-# ---------------------------------------------------------------------------
+# --- Cluster E — the source's linetype always restored on output. Dashed lines must not come out continuous. The colour is never touched instead: it stays that of the destination topo layer (semantic by role — green outer, red trash, ... — adapters/dxf/layers.py), never the source's. ---
 
 class TestWritebackStyle(unittest.TestCase):
 
@@ -223,9 +215,9 @@ class TestWritebackStyle(unittest.TestCase):
         return _pipeline(name, name_roles={"MARK": "engrave"})
 
     def test_001_trash_linetype_preserved(self):
-        # 64+ LINE su "02___PRT_ALL_AXES" (assi dei fori) sono CENTER nella
-        # sorgente e finiscono in trash: devono restare CENTER in output, non
-        # ricadere sul BYLAYER continuo del layer Trash.
+        # 64+ LINEs on "02___PRT_ALL_AXES" (hole axes) are CENTER in the source and end
+        # in trash: they must stay CENTER on output, not fall back to the continuous
+        # BYLAYER of the Trash layer.
         _, msp = self._multifeature()
         trash = [e for e in msp
                  if e.dxf.hasattr("layer") and e.dxf.layer == TRASH_LAYER]
@@ -238,10 +230,9 @@ class TestWritebackStyle(unittest.TestCase):
         self.assertGreater(len(lt.simplified_line_pattern()), 1)
 
     def test_003_trash_color_stays_trash_layer_color(self):
-        # Le stesse linee assiali portano un colore esplicito nella sorgente
-        # (ACI 4/7/1, alcune anche con true_color): il trash non ripristina
-        # mai il colore originale, solo il tratteggio. Il colore resta quello
-        # del layer Trash (BYLAYER).
+        # The same axis lines carry an explicit colour in the source (ACI 4/7/1, some
+        # also with true_color): the trash never restores the original colour, only the
+        # dashing. The colour stays that of the Trash layer (BYLAYER).
         _, msp = self._multifeature()
         trash = [e for e in msp
                  if e.dxf.hasattr("layer") and e.dxf.layer == TRASH_LAYER]
@@ -251,9 +242,9 @@ class TestWritebackStyle(unittest.TestCase):
             self.assertFalse(e.dxf.hasattr("true_color"))
 
     def test_004_structural_color_stays_bylayer_despite_source_color(self):
-        # outer/inner restano BYLAYER anche quando la sorgente aveva un
-        # colore esplicito diverso: il colore è una decisione di dominio per
-        # ruolo (adapters/dxf/layers.py), non un attributo da riportare fedele.
+        # outer/inner stay BYLAYER even when the source had a different explicit
+        # colour: the colour is a domain decision by role (adapters/dxf/layers.py), not
+        # an attribute to carry faithfully.
         result, msp = _pipeline("rect_with_circle_hole.dxf")
         for e in msp.query("LWPOLYLINE"):
             if e.dxf.layer == LAYER_OUTER:
@@ -273,8 +264,8 @@ class TestWritebackTexts(unittest.TestCase):
         return list(msp.query("TEXT")) + list(msp.query("MTEXT"))
 
     def test_001_dimensions_and_text_materialized(self):
-        # gamba_tavolo: 7 DIMENSION + 1 MTEXT nella sorgente. Nessuna parte le
-        # copre → prima sparivano tutte. Ora ognuna è un TEXT/MTEXT scritto.
+        # gamba_tavolo: 7 DIMENSIONs + 1 MTEXT in the source. No part covers them →
+        # before they all vanished. Now each is a written TEXT/MTEXT.
         result, msp = _pipeline("gamba_tavolo.dxf")
         texts = self._texts(msp)
         self.assertEqual(len(texts), 8)
@@ -285,14 +276,14 @@ class TestWritebackTexts(unittest.TestCase):
             self.assertEqual(e.dxf.layer, LAYER_ANNOTATION)
 
     def test_003_dimension_carries_measured_value(self):
-        # La quota non porta geometria nel modello: ne materializziamo il valore.
+        # The dimension carries no geometry in the model: we materialize its value.
         result, msp = _pipeline("gamba_tavolo.dxf")
         values = {e.dxf.text for e in msp.query("TEXT")}
         self.assertIn("50", values)
 
     def test_003b_dimension_geometry_rendered_not_just_number(self):
-        # Regressione: la quota deve uscire con le sue linee (direttrici, linea
-        # di misura, frecce), non solo un numero piazzato a caso.
+        # Regression: the dimension must come out with its lines (leaders, measure
+        # line, arrows), not just a number placed at random.
         result, msp = _pipeline("gamba_tavolo.dxf")
         dim_geom = [e for e in msp.query("LWPOLYLINE")
                     if e.dxf.layer == LAYER_ANNOTATION]
@@ -300,16 +291,16 @@ class TestWritebackTexts(unittest.TestCase):
         self.assertGreater(len(dim_geom), 7 * 3)
 
     def test_004_text_covered_by_part_also_routed_to_annotation(self):
-        # rect_with_trash: il TEXT è dentro l'outer, prima restava sul layer
-        # sorgente "TESTO". Col default va comunque sul layer Annotation.
+        # rect_with_trash: the TEXT is inside the outer, before it stayed on the source
+        # layer "TESTO". By default it goes on the Annotation layer anyway.
         result, msp = _pipeline("rect_with_trash.dxf")
         texts = self._texts(msp)
         self.assertEqual(len(texts), 1)
         self.assertEqual(texts[0].dxf.layer, LAYER_ANNOTATION)
 
     def test_005_text_with_role_goes_on_its_role_layer(self):
-        # Il layer d'origine non resta nel modello (D128): un testo che il
-        # chiamante vuole distinto gli dà un ruolo, e va sul layer del ruolo.
+        # The source layer does not stay in the model: a text the caller wants distinct
+        # gives it a role, and it goes on the role's layer.
         doc = topo_dxf.load_dxf(drawing("rect_with_trash.dxf"),
                             role_rules=topo.name_rules({"TESTO": "note"}))
         result = topo.heal(doc).faces()
@@ -326,24 +317,23 @@ class TestWritebackTexts(unittest.TestCase):
         self.assertEqual(texts[0].dxf.layer, TRASH_LAYER)
 
     def test_007_dims_and_leaders_survive_audit(self):
-        # Multifeature: 16 DIMENSION (senza blocco geometria → l'auditor di
-        # ezdxf le cancellava) + 4 LEADER (frecce di sezione, senza repr point).
-        # Devono arrivare tutte in output.
+        # Multifeature: 16 DIMENSIONs (no geometry block → ezdxf's auditor deleted them)
+        # + 4 LEADERs (section arrows, no repr point). They must all arrive in the output.
         name = "Multifeature.dxf"
         if not (drawing(name)).exists():
             self.skipTest(name)
         doc = topo_dxf.load_dxf(drawing(name))
-        # le 16 quote non hanno blocco: solo la loro stringa, centrata sul
-        # punto medio del testo, topo_dxf non le disegna (D262); i 4 LEADER non hanno una
-        # stringa loro e sono curve, la punta piena compresa (D258, D255)
+        # the 16 dimensions have no block: only their string, centred on the text
+        # midpoint, topo_dxf does not draw them; the 4 LEADERs have no string of their
+        # own and are curves, the filled tip included
         dims = [a for a in doc.texts if a.rendered.is_empty()
                 and (a.halign, a.valign) == ("center", "center")]
         self.assertEqual(len(dims), 16)
-        # e un avviso le conta: il loro disegno nel file non c'è
+        # and a warning counts them: their drawing is not in the file
         self.assertEqual([str(w).split(":")[1].split()[0] for w in doc.warnings
                           if w.code == "dxf-dimension-no-block"], ["16"])
         self.assertEqual([a for a in doc.texts if not a.text], [])
-        # cosa misurano, coi punti del file, il numero no: `<>` aperto (D264)
+        # what they measure, with the file's points, the number not: open `<>`
         self.assertTrue(all(a.measures is not None for a in dims))
         radius = [a for a in dims if isinstance(a.measures, topo.MeasuredRadius)]
         self.assertEqual([a.text for a in radius], ["R<>"])
@@ -356,9 +346,9 @@ class TestWritebackTexts(unittest.TestCase):
         self.assertEqual(ann, Counter({"TEXT": len(doc.texts)}))
 
     def test_008_every_layer_read_by_default(self):
-        # Di default si legge ogni layer (D243); chi rilegge un file di topo
-        # salta i layer Annotation e Trash con `skip_layers=SKIP_LAYERS`, per
-        # nome esatto senza maiuscole.
+        # By default every layer is read; whoever re-reads a topo file skips the
+        # Annotation and Trash layers with `skip_layers=SKIP_LAYERS`, by exact name,
+        # case-insensitive.
         self.assertEqual(set(topo_dxf.SKIP_LAYERS), {LAYER_ANNOTATION, TRASH_LAYER})
         src = ezdxf.new("R2010")
         msp = src.modelspace()
@@ -366,7 +356,7 @@ class TestWritebackTexts(unittest.TestCase):
             msp.add_line((0, 10 * i), (50, 10 * i), dxfattribs={"layer": layer})
         doc = topo_dxf.document_from_msp(msp, skip_layers=topo_dxf.SKIP_LAYERS)
         self.assertEqual(len(doc.edges), 2)
-        # niente sparisce in silenzio (D137, D242): un avviso conta le curve per layer
+        # niente sparisce in silenzio: un avviso conta le curve per layer
         skipped = [w for w in doc.warnings if w.code == "dxf-layer-skipped"]
         self.assertEqual(len(skipped), 1)
         self.assertIn("2 curves", skipped[0].message)
@@ -374,20 +364,18 @@ class TestWritebackTexts(unittest.TestCase):
         full = topo_dxf.document_from_msp(msp)
         self.assertEqual(len(full.edges), 4)
         self.assertFalse([w for w in full.warnings if w.code == "dxf-layer-skipped"])
-        # una funzione decide da sé (D176): qui una parte del nome
+        # a function decides by itself: here part of the name
         skip = lambda name: "trash" in name.lower()
         self.assertEqual(len(topo_dxf.document_from_msp(msp, skip_layers=skip).edges), 2)
 
 
-# ---------------------------------------------------------------------------
-# INSERT — esplosi di default: un blocco non deve far sparire la geometria
-# ---------------------------------------------------------------------------
+# --- INSERT — exploded by default: a block must not make the geometry vanish ---
 
 class TestWritebackInsertExplodedByDefault(unittest.TestCase):
 
     def test_001_block_geometry_survives_without_flag(self):
-        # scritta.dxf è un solo INSERT che avvolge 93 LINE + 23 SPLINE (lettere).
-        # Senza esplodere, load_dxf scartava tutto. Ora è il default.
+        # scritta.dxf is a single INSERT wrapping 93 LINEs + 23 SPLINEs (letters).
+        # Without exploding, load_dxf discarded everything. Now it is the default.
         doc = topo_dxf.load_dxf(drawing("scritta.dxf"))
         self.assertGreater(len(doc.edges), 50)
         result = topo.heal(doc).faces()
@@ -395,17 +383,13 @@ class TestWritebackInsertExplodedByDefault(unittest.TestCase):
         self.assertGreater(len(result.clusters[0].inners), 6)
 
 
-# ---------------------------------------------------------------------------
-# Round-trip geometrico — la geometria SCRITTA deve coincidere col modello
-# ---------------------------------------------------------------------------
+# --- Geometric round-trip — the WRITTEN geometry must coincide with the model ---
 
 class TestWritebackArcRoundTrip(unittest.TestCase):
-    """
-    Regressione archi: to_dxf() deve materializzare l'outer con la stessa
-    area del modello. Prima del fix a arc_seg_to_bulge gli archi invertiti
-    (loop orientato CCW → ccw=False) venivano scritti con il bulge dell'arco
-    complementare, cioè "alla rovescia", falsando l'area di migliaia di mm².
-    """
+    """Arc regression: to_dxf() must materialize the outer with the same area as the
+    model. Before the arc_seg_to_bulge fix the inverted arcs (loop oriented CCW →
+    ccw=False) were written with the bulge of the complementary arc, that is
+    "upside down", falsifying the area by thousands of mm²."""
 
     ARC_EXAMPLES = [
         "archi_bastardi.dxf",

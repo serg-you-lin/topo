@@ -40,7 +40,7 @@ def _make_test(dxf_path):
         result = topo.heal(topo_doc).faces()
         doc_out = topo_dxf.to_dxf(result, topo_doc)
 
-        # ogni disegno di edge_cases/ ha almeno una parte
+        # every drawing of edge_cases/ has at least one part
         self.assertGreater(result.cluster_count, 0)
 
         healed_vertices = _extract_pline_vertices(doc_out.modelspace())

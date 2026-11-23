@@ -1,11 +1,10 @@
 """
 test_role_style.py
 -------------------
-Test per l'uscita per ruolo in to_dxf() (MAP.md D37, D128): il chiamante
-sceglie il layer di un ruolo (`layers`, un nome o una funzione
-dell'elemento) e il suo aspetto (`role_styles`). L'aspetto agisce sul layer,
-non sull'entità — tutto ciò che si scrive è BYLAYER. Nessuno stato fra una
-chiamata e l'altra.
+Tests for the output by role in to_dxf(): the caller chooses a role's layer
+(`layers`, a name or a function of the element) and its appearance
+(`role_styles`). The appearance acts on the layer, not on the entity —
+everything written is BYLAYER. No state between one call and the next.
 """
 
 import unittest
@@ -20,11 +19,9 @@ from topo_dxf.layers import LAYER_OUTER, TRASH_LAYER, color_for_role
 
 
 def _rect_with_hole_and_frame():
-    """
-    Rettangolo 100x50 con un cerchio dentro + due LINE su layer STAMP dentro
-    (ruolo 'stamp_d90', una a sinistra e una a destra) + una LINE su layer
-    FRAME fuori (ruolo consumatore 'frame', D31).
-    """
+    """Rectangle 100x50 with a circle inside + two LINEs on layer STAMP inside (role
+    'stamp_d90', one on the left and one on the right) + a LINE on layer FRAME
+    outside (consumer role 'frame')."""
     doc = ezdxf.new('R2010')
     msp = doc.modelspace()
 
@@ -49,11 +46,9 @@ def _entities_on(doc, layer: str) -> int:
 
 
 class TestLayerByName(unittest.TestCase):
-    """
-    `layers={ruolo: nome}` manda un ruolo di consumatore sul layer scelto, e
-    il suo `RoleStyle` va su quel layer; un ruolo senza scelta (`frame`) va
-    sul layer col nome dello slug, grigio, senza `true_color` (D31).
-    """
+    """`layers={role: name}` sends a consumer role to the chosen layer, and its
+    `RoleStyle` goes on that layer; a role with no choice (`frame`) goes on the
+    layer named after the slug, grey, without `true_color`."""
 
     def setUp(self):
         self.result, self.doc_in = _rect_with_hole_and_frame()
@@ -79,11 +74,9 @@ class TestLayerByName(unittest.TestCase):
 
 
 class TestLayerSplitByElement(unittest.TestCase):
-    """
-    Una funzione in `layers` divide le entità di un ruolo su due layer
-    guardando l'elemento scritto (come una piega "up" e una "down"); lo
-    stile del ruolo va su entrambi.
-    """
+    """A function in `layers` divides the entities of a role over two layers by
+    looking at the written element (like an "up" and a "down" bend); the role's
+    style goes on both."""
 
     def setUp(self):
         def side(element) -> str:
@@ -107,8 +100,8 @@ class TestLayerSplitByElement(unittest.TestCase):
 
 
 class TestEngineRoleRemapped(unittest.TestCase):
-    """Anche un ruolo del motore si sposta: outer su `Cut`, verde di default,
-    e il layer di default non nasce."""
+    """An engine role moves too: outer on `Cut`, green by default, and the default
+    layer is not born."""
 
     def setUp(self):
         self.result, self.doc_in = _rect_with_hole_and_frame()
@@ -123,8 +116,8 @@ class TestEngineRoleRemapped(unittest.TestCase):
 
 
 class TestNoStateBetweenCalls(unittest.TestCase):
-    """La mappa vale per la sua chiamata: la successiva, senza, torna al
-    default (D128 — niente registro globale)."""
+    """The map holds for its call: the next one, without it, goes back to the default
+    (no global registry)."""
 
     def test_001_second_call_is_default(self):
         result, doc_in = _rect_with_hole_and_frame()
@@ -134,7 +127,7 @@ class TestNoStateBetweenCalls(unittest.TestCase):
 
 
 class TestRoleStyleConsumerRole(unittest.TestCase):
-    """role_styles funziona anche su uno slug di consumatore (frame, D31)."""
+    """role_styles also works on a consumer slug (frame)."""
 
     def setUp(self):
         self.result, self.doc_in = _rect_with_hole_and_frame()
@@ -171,8 +164,8 @@ class TestRoleStyleLinetypeOverride(unittest.TestCase):
 
 
 class TestRoleStyleDash(unittest.TestCase):
-    """Un tratto senza nome (`dash`, D126) si registra col nome del ruolo e
-    il pattern DXF che apre con la lunghezza totale."""
+    """A stroke without a name (`dash`) is registered with the role's name and the
+    DXF pattern that opens with the total length."""
 
     def setUp(self):
         self.result, self.doc_in = _rect_with_hole_and_frame()
@@ -190,11 +183,8 @@ class TestRoleStyleDash(unittest.TestCase):
 
 
 class TestRoleStyleUnknownLinetypeRaises(unittest.TestCase):
-    """
-    Un linetype che né il documento né la tabella standard sanno definire è
-    un errore di configurazione del consumatore: solleva, mai un DXF con un
-    riferimento pendente (MAP.md D85).
-    """
+    """A linetype that neither the document nor the standard table can define is a
+    consumer configuration error: it raises, never a DXF with a dangling reference."""
 
     def test_001_unknown_name_raises(self):
         result, doc_in = _rect_with_hole_and_frame()
@@ -203,10 +193,8 @@ class TestRoleStyleUnknownLinetypeRaises(unittest.TestCase):
 
 
 class TestRoleStyleUnknownRoleCreatesLayerEvenWithoutEntities(unittest.TestCase):
-    """
-    Un override per un ruolo che non compare in nessuna entità di questo
-    documento non deve sollevare — il layer viene comunque creato e stilato.
-    """
+    """An override for a role that appears in no entity of this document must not
+    raise — the layer is created and styled anyway."""
 
     def setUp(self):
         self.result, self.doc_in = _rect_with_hole_and_frame()

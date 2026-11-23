@@ -1,17 +1,15 @@
 # tests/promises/test_outlines_segments_consistency.py
 
-"""
-Per ogni contorno letto da `outlines()`, il poligono (`to_shapely`, la forma geometrica finita,
-quella che SVG/view_model disegnano) e `.segments` (i pezzi grezzi che `to_dxf`
-scrive) devono descrivere la stessa forma: sono due rappresentazioni dello
-stesso contorno, non due letture indipendenti. Trovato il 12 ottobre: su
-`regr_04.dxf`, un contorno esterno di vista isometrica (l'unione di più facce,
-D100) aveva `.segments` scollegati (26 giunzioni rotte su 84) che coprivano un
-terzo dell'area vera — invisibile sia a `test_golden_outlines.py` (confronta
-solo bbox+conteggio) sia a SVG/view_model (leggono solo il poligono).
-Non è un golden: non confronta contro un valore congelato, è un'invariante
-sempre vera per definizione — non va mai rigenerato, va solo fatto passare.
-"""
+"""For every contour read by `outlines()`, the polygon (`to_shapely`, the finite
+geometric shape that SVG/view_model draw) and `.segments` (the raw pieces
+`to_dxf` writes) must describe the same shape: they are two representations of
+the same contour, not two independent readings. Found on 12 October: on
+`regr_04.dxf`, an isometric view's outer contour (the union of several faces)
+had disconnected `.segments` (26 broken junctions out of 84) covering a third
+of the true area — invisible both to `test_golden_outlines.py` (it compares
+only bbox + count) and to SVG/view_model (they read only the polygon).
+It is not a golden: it does not compare against a frozen value, it is an
+invariant always true by definition — it is never regenerated, only made to pass."""
 
 import unittest
 from pathlib import Path
@@ -27,9 +25,9 @@ from tests.paths import DATA
 
 SOURCE_DIR = DATA / "golden_outlines"
 MAX_GAP = 0.5
-# di quanto può spostarsi il bordo della stessa forma fra le due letture: la
-# freccia della discretizzazione più la griglia dei nodi dell'unione di facce
-# (D106) — lungo tutto il perimetro, è l'area di una fascia così larga
+# how much the border of the same shape may move between the two readings: the
+# discretization's sagitta plus the node grid of the union of faces — along the
+# whole perimeter, the area of a band that wide
 OUTLINE_BAND = DEFAULT_TOLERANCE + GRAPH_EPSILON
 
 

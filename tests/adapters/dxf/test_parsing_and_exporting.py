@@ -1,10 +1,10 @@
 """
 test_parsing_and_exporting.py
 -------------------
-Test unitari per adapters/dxf/parser.py e adapters/dxf/exporter.py.
+Unit tests for adapters/dxf/parser.py and adapters/dxf/exporter.py.
 
-Testa il parsing di entità ezdxf mock → primitive pure,
-l'esportazione primitive → DXF, e segments_from_loop.
+It tests the parsing of mock ezdxf entities → pure primitives, the export
+primitives → DXF, and segments_from_loop.
 """
 
 import unittest
@@ -24,9 +24,7 @@ from topo_dxf.exporter import (
 )
 from topo.model.role import ContourRole
 
-# ---------------------------------------------------------------------------
-# Helper — entità DXF mock
-# ---------------------------------------------------------------------------
+# --- Helper — mock DXF entities ---
 
 def make_line(x1, y1, x2, y2, layer="0"):
     e = MagicMock()
@@ -52,10 +50,8 @@ def make_arc(cx, cy, radius, start_angle, end_angle, layer="0"):
 
 
 def make_lwpolyline(points_with_bulge, layer="0", is_closed=True):
-    """
-    Crea una LWPOLYLINE mock.
-    points_with_bulge: lista di tuple (x, y, bulge)
-    """
+    """Create a mock LWPOLYLINE.
+    points_with_bulge: list of tuples (x, y, bulge)"""
     e = MagicMock()
     e.dxftype.return_value = 'LWPOLYLINE'
     e.get_points.return_value = points_with_bulge
@@ -66,7 +62,7 @@ def make_lwpolyline(points_with_bulge, layer="0", is_closed=True):
 
 
 def make_polyline(vertices, layer="0", is_closed=True):
-    """Crea una POLYLINE mock (3D)."""
+    """Create a mock POLYLINE (3D)."""
     e = MagicMock()
     e.dxftype.return_value = 'POLYLINE'
     e.dxf.layer = layer
@@ -122,13 +118,11 @@ def make_ellipse(cx, cy, major_x, major_y, ratio, start_param, end_param, layer=
 
 
 def make_edge(entity, layer="0", rev=False):
-    """
-    Crea un Edge portando la primitiva reale parsata dall'entità mock.
+    """Create an Edge carrying the real primitive parsed from the mock entity.
 
-    segments_from_loop() non riparsa l'entità sorgente:
-    concatena semplicemente edge.segment. La primitiva va quindi costruita
-    qui, come fa l'adapter in fase di traduzione.
-    """
+    segments_from_loop() does not re-parse the source entity: it simply
+    concatenates edge.segment. The primitive must therefore be built here, as the
+    adapter does at translation time."""
     seg = DxfEntityDispatcher(entity).parse(rev=rev)
     if isinstance(seg, list):
         start = getattr(seg[0], "start", (0.0, 0.0))
@@ -215,7 +209,7 @@ class MockMSP:
 # ===========================================================================
 
 class TestDxfEntityDispatcher(unittest.TestCase):
-    """Test del dispatcher per tipo entità DXF."""
+    """Test of the dispatcher by DXF entity type."""
 
     def test_001_riconosce_tipi_noti(self):
         """Il dispatcher riconosce correttamente i tipi DXF."""
@@ -239,21 +233,21 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         )
 
     def test_002_parse_line(self):
-        """Parsing di una LINE → LineSeg."""
+        """Parsing of a LINE → LineSeg."""
         parsed = DxfEntityDispatcher(make_line(0, 0, 10, 0)).parse(rev=False)
         self.assertIsInstance(parsed, LineSeg)
         self.assertEqual(parsed.start, (0.0, 0.0))
         self.assertEqual(parsed.end, (10.0, 0.0))
 
     def test_003_parse_line_reversed(self):
-        """Parsing di una LINE con rev=True inverte start/end."""
+        """Parsing of a LINE with rev=True swaps start/end."""
         parsed = DxfEntityDispatcher(make_line(0, 0, 10, 0)).parse(rev=True)
         self.assertIsInstance(parsed, LineSeg)
         self.assertEqual(parsed.start, (10.0, 0.0))
         self.assertEqual(parsed.end, (0.0, 0.0))
 
     def test_004_parse_arc(self):
-        """Parsing di un ARC → CircleSeg."""
+        """Parsing of an ARC → CircleSeg."""
         parsed = DxfEntityDispatcher(
             make_arc(0, 0, 10, 0, 180)
         ).parse(rev=False)
@@ -265,7 +259,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertTrue(parsed.ccw)
 
     def test_005_parse_arc_reversed(self):
-        """Parsing di un ARC con rev=True inverte ccw e angoli."""
+        """Parsing of an ARC with rev=True inverts ccw and angles."""
         parsed = DxfEntityDispatcher(
             make_arc(0, 0, 10, 0, 180)
         ).parse(rev=True)
@@ -275,7 +269,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertFalse(parsed.ccw)
 
     def test_006_parse_circle(self):
-        """Parsing di un CIRCLE → CircleSeg (primitiva geometrica pura)."""
+        """Parsing of a CIRCLE → CircleSeg (pure geometric primitive)."""
         parsed = DxfEntityDispatcher(make_circle(0, 0, 10)).parse(rev=False)
         from topo.core.primitives import CircleSeg
         self.assertIsInstance(parsed, CircleSeg)
@@ -283,7 +277,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertEqual(parsed.radius, 10.0)
 
     def test_006b_parse_ellipse(self):
-        """Parsing di un'ELLIPSE → EllipseSeg (primitiva geometrica pura)."""
+        """Parsing of an ELLIPSE → EllipseSeg (pure geometric primitive)."""
         parsed = DxfEntityDispatcher(
             make_ellipse(1, 2, 10, 0, 0.5, 0.0, math.tau)
         ).parse(rev=False)
@@ -296,7 +290,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertTrue(parsed.ccw)
 
     def test_006c_parse_ellipse_reversed(self):
-        """Parsing di un'ELLIPSE con rev=True scambia i parametri e nega ccw."""
+        """Parsing of an ELLIPSE with rev=True swaps the parameters and negates ccw."""
         parsed = DxfEntityDispatcher(
             make_ellipse(0, 0, 10, 0, 0.5, 0.0, math.pi / 2)
         ).parse(rev=True)
@@ -306,7 +300,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertFalse(parsed.ccw)
 
     def test_007_parse_lwpolyline_senza_bulge(self):
-        """LWPOLYLINE senza bulge → LineSeg."""
+        """LWPOLYLINE without bulge → LineSeg."""
         parsed = DxfEntityDispatcher(
             make_lwpolyline([(0, 0, 0), (10, 0, 0), (10, 10, 0)], is_closed=False)
         ).parse(rev=False)
@@ -315,11 +309,11 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertIsInstance(parsed[0], LineSeg)
 
     def test_008_parse_lwpolyline_con_bulge(self):
-        """LWPOLYLINE con bulge → CircleSeg."""
+        """LWPOLYLINE with bulge → CircleSeg."""
         parsed = DxfEntityDispatcher(
             make_lwpolyline([
                 (0, 0, 0),
-                (10, 0, 1.0),  # bulge=1 → arco 180°
+                (10, 0, 1.0),  # bulge=1 → 180° arc
                 (10, 10, 0),
             ], is_closed=False)
         ).parse(rev=False)
@@ -338,7 +332,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertAlmostEqual(parsed[1].radius, 5.0)
 
     def test_009_parse_lwpolyline_chiusa(self):
-        """LWPOLYLINE chiusa: N punti → N segmenti."""
+        """Closed LWPOLYLINE: N points → N segments."""
         parsed = DxfEntityDispatcher(
             make_lwpolyline([
                 (0, 0, 0),
@@ -350,7 +344,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertEqual(len(parsed), 3)  # N segmenti (chiusa)
 
     def test_010_parse_polyline_3d(self):
-        """Parsing di POLYLINE 3D con bulge."""
+        """Parsing of a 3D POLYLINE with bulge."""
         parsed = DxfEntityDispatcher(
             make_polyline([
                 (0, 0, 0),
@@ -377,14 +371,14 @@ class TestDxfEntityDispatcher(unittest.TestCase):
 # ===========================================================================
 
 class TestSegmentsFromLoop(unittest.TestCase):
-    """Test di segments_from_loop su loop di Edge."""
+    """Test of segments_from_loop on an Edge loop."""
 
     def test_001_loop_vuoto(self):
         """Loop vuoto → lista vuota."""
         self.assertEqual(segments_from_loop([]), [])
 
     def test_002_loop_line_singola(self):
-        """Loop con una LINE → un LineSeg."""
+        """Loop with a LINE → a LineSeg."""
         loop = [(make_edge(make_line(0, 0, 10, 0)), False)]
         result = segments_from_loop(loop)
         self.assertEqual(len(result), 1)
@@ -400,7 +394,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertEqual(primitives[0].end, (100.0, 0.0))
 
     def test_004_loop_con_arco(self):
-        """Loop con ARC → CircleSeg."""
+        """Loop with an ARC → CircleSeg."""
         arc = make_arc(50, 0, 50, 0, 180)
         loop = [
             (make_edge(arc), False),
@@ -412,7 +406,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertIsInstance(result[1], LineSeg)
 
     def test_005_loop_con_lwpolyline(self):
-        """Loop con LWPOLYLINE → segmenti."""
+        """Loop with an LWPOLYLINE → segments."""
         polyline = make_lwpolyline([
             (0, 0, 0),
             (10, 0, 0.5),
@@ -428,7 +422,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertIsInstance(result[2], LineSeg)
 
     def test_006_loop_con_lwpolyline_reversed(self):
-        """Loop con LWPOLYLINE reversed → bulge negato e punti invertiti."""
+        """Loop with a reversed LWPOLYLINE → negated bulge and inverted points."""
         polyline = make_lwpolyline([
             (0, 0, 0),
             (10, 0, 0.5),
@@ -439,17 +433,17 @@ class TestSegmentsFromLoop(unittest.TestCase):
 
         self.assertEqual(len(result), 2)
         
-        # Con reversal, l'ordine dei punti è invertito:
+        # With reversal, the order of the points is inverted:
         # original: (0,0) → (10,0) → (10,10)
         # reversed: (10,10) → (10,0) → (0,0)
-        # Il bulge rimane sullo stesso segmento ma invertito: (10,0)→(0,0) con bulge=0.5
+        # The bulge stays on the same segment but inverted: (10,0)→(0,0) with bulge=0.5
         
-        # Primo segmento: da (10,10) a (10,0) con bulge=0 → LineSeg
+        # First segment: from (10,10) to (10,0) with bulge=0 → LineSeg
         self.assertIsInstance(result[0], LineSeg)
         self.assertEqual(result[0].start, (10.0, 10.0))
         self.assertEqual(result[0].end, (10.0, 0.0))
         
-        # Secondo segmento: da (10,0) a (0,0) con bulge=0.5 → CircleSeg
+        # Second segment: from (10,0) to (0,0) with bulge=0.5 → CircleSeg
         self.assertIsInstance(result[1], CircleSeg)
         start1 = (
             result[1].center[0] + result[1].radius * math.cos(result[1].start_angle),
@@ -465,7 +459,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertAlmostEqual(end1[1], 0.0)
 
     def test_007_loop_con_spline(self):
-        """Loop con SPLINE → BSplineSeg."""
+        """Loop with a SPLINE → BSplineSeg."""
         spline = make_spline_entity([(0, 0), (0, 50), (0, 100)])
         loop = [
             (make_edge(spline), False),
@@ -476,7 +470,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertEqual(len(spline_prims), 1)
 
     def test_008_loop_ottimizzazione_polyline_singola(self):
-        """Loop con singola LWPOLYLINE viene ottimizzato."""
+        """Loop with a single LWPOLYLINE is optimized."""
         polyline = make_lwpolyline([
             (0, 0, 0),
             (10, 0, 0),
@@ -508,22 +502,20 @@ class TestArcToBulge(unittest.TestCase):
         self.assertAlmostEqual(bulge, -math.tan(math.pi/8), places=6)
 
     def test_002b_bulge_arco_invertito_non_e_il_complemento(self):
-        """
-        Regressione: un arco CW ha per angolo spazzato il tratto reale
-        start→end percorso in orario, NON il complemento a 2π.
+        """Regression: a CW arc has as swept angle the real stretch start→end walked
+        clockwise, NOT the complement to 2π.
 
-        segments_from_loop produce archi con ccw=False quando orienta il loop in
-        CCW; se arc_seg_to_bulge usasse (end-start)%2π l'arco verrebbe
-        riscritto "alla rovescia" (bulge dell'arco complementare).
-        """
+        segments_from_loop produces arcs with ccw=False when it orients the loop CCW;
+        if arc_seg_to_bulge used (end-start)%2π the arc would be rewritten "upside
+        down" (the complementary arc's bulge)."""
         ccw_arc = CircleSeg(center=(0, 0), radius=10,
                          start_angle=math.radians(350),
                          end_angle=math.radians(10), ccw=True)
         cw_arc = CircleSeg(center=(0, 0), radius=10,
                         start_angle=math.radians(10),
                         end_angle=math.radians(350), ccw=False)
-        # Stesso arco fisico (sweep 20°), verso opposto → bulge opposti in segno
-        # e uguali in modulo, entrambi piccoli (tan(5°) ≈ 0.087), non ~11.4.
+        # Same physical arc (sweep 20°), opposite direction → bulges opposite in sign
+        # and equal in modulus, both small (tan(5°) ≈ 0.087), not ~11.4.
         self.assertAlmostEqual(arc_seg_to_bulge(ccw_arc), math.tan(math.radians(5)), places=6)
         self.assertAlmostEqual(arc_seg_to_bulge(cw_arc), -math.tan(math.radians(5)), places=6)
 
@@ -540,12 +532,9 @@ class TestArcToBulge(unittest.TestCase):
         self.assertLess(bulge, 0)
 
     def test_005_roundtrip_arco_invertito(self):
-        """
-        Un CircleSeg e la sua versione invertita (come la produce segments_from_loop
-        quando il loop è orientato CCW) devono discretizzare sullo stesso
-        insieme di punti e produrre bulge di modulo uguale: nessun arco
-        "alla rovescia" nel write-back.
-        """
+        """A CircleSeg and its reversed version (as segments_from_loop produces it when
+        the loop is oriented CCW) must discretize on the same set of points and
+        produce bulges of equal modulus: no "upside-down" arc in the write-back."""
         arc = CircleSeg(center=(3, -2), radius=7.5,
                      start_angle=math.radians(20),
                      end_angle=math.radians(140), ccw=True)
@@ -568,7 +557,7 @@ class TestArcToBulge(unittest.TestCase):
 # ===========================================================================
 
 class TestSegmentsToPtsWithBulge(unittest.TestCase):
-    """Test conversione segmenti → punti con bulge."""
+    """Test of the conversion of segments → points with bulge."""
 
     def test_001_line_segments(self):
         """LineSeg → bulge=0."""
@@ -582,7 +571,7 @@ class TestSegmentsToPtsWithBulge(unittest.TestCase):
             self.assertEqual(pt[4], 0.0)  # bulge=0
 
     def test_002_arc_segment(self):
-        """CircleSeg → punto di partenza + bulge calcolato."""
+        """CircleSeg → start point + computed bulge."""
         arc = CircleSeg(center=(0, 0), radius=10, start_angle=0, end_angle=math.pi/2, ccw=True)
         result = segments_to_pts_with_bulge([arc])
         self.assertEqual(len(result), 1)
@@ -591,7 +580,7 @@ class TestSegmentsToPtsWithBulge(unittest.TestCase):
         self.assertAlmostEqual(result[0][4], math.tan(math.pi/8), places=6)
 
     def test_003_arc_con_start_angle_diverso(self):
-        """CircleSeg con start_angle ≠ 0."""
+        """CircleSeg with start_angle ≠ 0."""
         arc = CircleSeg(
             center=(5, 5), radius=10,
             start_angle=math.pi/4,
@@ -680,7 +669,7 @@ class TestWriteContourToMsp(unittest.TestCase):
         self.assertEqual(len(entity['points']), 4)
 
     def test_004_con_arc_segments(self):
-        """Con CircleSeg → LWPOLYLINE con bulge."""
+        """With CircleSeg → LWPOLYLINE with bulge."""
         contour = MagicMock()
         contour.segments = [
             CircleSeg(center=(10, 0), radius=10, start_angle=0, end_angle=math.pi/2, ccw=True),
@@ -691,13 +680,13 @@ class TestWriteContourToMsp(unittest.TestCase):
         result = write_segments(contour.segments, self.msp, "TEST")
         self.assertIsNotNone(result)
         entity = self.msp.entities[0]
-        # Primo punto = inizio arco
+        # First point = arc start
         self.assertAlmostEqual(entity['points'][0][0], 20.0)
         self.assertAlmostEqual(entity['points'][0][1], 0.0)
         self.assertNotEqual(entity['points'][0][4], 0.0)  # bulge != 0
 
     def test_005_r12_compatibility(self):
-        """Versione R12 → POLYLINE2D invece di LWPOLYLINE."""
+        """R12 version → POLYLINE2D instead of LWPOLYLINE."""
         self.msp.doc.dxfversion = "AC1009"
         contour = MagicMock()
         contour.segments = [
@@ -710,9 +699,9 @@ class TestWriteContourToMsp(unittest.TestCase):
         self.assertEqual(entity['type'], 'POLYLINE2D')
 
     def test_006_salto_resta_visibile(self):
-        """Un anello con un salto (anch_01: un trattino da 0,05 tolto) non si
-        scrive chiuso: la polilinea chiusa tirerebbe un lato storto sopra il
-        buco e il salto sparirebbe dal DXF (D208)."""
+        """A ring with a jump (anch_01: a 0.05 dash removed) is not written closed: the
+        closed polyline would draw a crooked side over the hole and the jump would
+        vanish from the DXF."""
         segments = [
             LineSeg(start=(171.0068, 90.4406), end=(171.0068, 138.3906)),
             LineSeg(start=(171.0068, 138.3906), end=(168.0068, 138.3906)),
@@ -722,12 +711,12 @@ class TestWriteContourToMsp(unittest.TestCase):
         write_segments(segments, self.msp, "TEST")
         self.assertTrue(all(not e.get('close', False) for e in self.msp.entities))
         points = [tuple(p[:2]) for e in self.msp.entities for p in e['points']]
-        self.assertIn((171.0068, 90.3906), points)   # la fine del lato in basso
-        self.assertIn((171.0068, 90.4406), points)   # l'inizio del lato dopo
+        self.assertIn((171.0068, 90.3906), points)   # the end of the bottom side
+        self.assertIn((171.0068, 90.4406), points)   # the start of the next side
 
     def test_007_salto_dentro_un_tratto_aperto(self):
-        """write_open_segments spezza la polilinea dove un segmento non parte
-        dalla fine del precedente: nessun vertice salta la fine di un tratto (D208)."""
+        """write_open_segments splits the polyline where a segment does not start at the
+        end of the previous: no vertex skips the end of a stretch."""
         segments = [
             LineSeg(start=(0, 0), end=(10, 0)),
             LineSeg(start=(10, 0.05), end=(10, 10)),
