@@ -246,8 +246,8 @@ def uncovered(doc: Document, result, distance: float):
 
 
 def known_defect(test, where: str, gate: str, check) -> None:
-    """Run `check()` for a case of a known defect, open in the gate (`gate`,
-    TODO.md): it must fail, and the case comes out as a skip with the gate's
+    """Run `check()` for a case of a known defect, open in the gate (`gate`):
+    it must fail, and the case comes out as a skip with the gate's
     entry. If it passes the defect is solved and the test fails until the case
     leaves the list."""
     try:

@@ -136,5 +136,9 @@ tests/lab/
 MAP_ARCHIVE.md
 TODO_ARCHIVE.md
 
+# decision log and to-do list: local only, never on GitHub (MAP.md D323)
+MAP.md
+TODO.md
+
 # uscite salvate di topo (scripts/11_batch_heal.py): restano sul disco, fuori da git
 tests/**/*healed*

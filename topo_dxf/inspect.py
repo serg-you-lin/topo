@@ -5,7 +5,7 @@ The first level of inspection, the file's: what a DXF contains before topo
 touches it. `inspect_file` prints the three levels in a row — raw DXF, then
 `topo.inspect_document` and `topo.inspect_result`:
 
-    topo_dxf.inspect_file("pezzo.dxf", role_rules=topo.name_rules({"Piega": "bending"}))
+    topo_dxf.inspect_file("part.dxf", role_rules=topo.name_rules({"Bend": "bending"}))
 
 Everything prints to stdout with `print`. No logger to configure.
 """

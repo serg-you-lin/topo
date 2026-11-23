@@ -38,7 +38,7 @@ def _keys(text: str) -> frozenset:
     return frozenset(f"data/{k}" for k in text.split())
 
 
-# true defects found by these invariants, open in the gate (TODO.md):
+# true defects found by these invariants, open in the gate:
 # invariant → (entry, drawings). Every case comes out as a skip with its entry;
 # when a case passes the test fails until it leaves the list
 KNOWN: dict = {}

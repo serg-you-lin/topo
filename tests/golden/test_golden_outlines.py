@@ -10,7 +10,7 @@ copies of snapdraw's sheets with only the geometry `outlines()` reads in the
 framer — frame, title block and construction lines removed by snapdraw, the
 file written by topo (layer `geometry`). topo does not know what a frame is:
 it receives the sheet already cleaned. Clusters judged right by Federico on
-the "Scala delle isole" page (5 October). Golden in `json/` alongside;
+the islands-scale review page (5 October). Golden in `json/` alongside;
 without the drawings the test skips.
 
 Golden to be regenerated only after checking by eye that the clusters are

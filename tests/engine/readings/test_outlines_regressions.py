@@ -2,7 +2,7 @@
 
 """Isolated regressions on `read_outline()`, found on 11 October by opening
 `anch_02.dxf` (golden_outlines) in a viewer and judged wrong by eye by Federico
-— not caught by any existing golden (see TODO.md). Every fixture is a minimal
+— not caught by any existing golden. Every fixture is a minimal
 cut of the real sheet, saved with topo's own API (never ezdxf directly):
 `tests/data/regressions/*.dxf`."""
 

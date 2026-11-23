@@ -44,7 +44,7 @@ GLOBAL_NAME_ROLES = {"MARK": "engrave", "Signature": "engrave"}
 # is not promised (docs/LIMITS.md), not a defect. The exact motions (`exact` in
 # MOTIONS) are checked anyway
 GAP_AT_TOLERANCE = {"Multipolis"}
-# true defects found by these invariants, open in TODO.md: when they are solved
+# true defects found by these invariants, still open: when they are solved
 # the list empties
 KNOWN_ORDER_DEPENDENT: set = set()
 # (drawing, tolerance) → gate entry: pieces that came out twice
