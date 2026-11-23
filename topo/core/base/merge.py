@@ -1,39 +1,25 @@
 """
 topo/core/base/merge.py
 -----------------------
-Fusione di doppioni geometrici, format-agnostic: "due entità non dovrebbero
-contare come due" (la copia identica, entità per entità, la toglie l'adapter
-prima: D125). Il rifit, che riscrive una curva in un'altra forma, sta in
-`refit.py`.
-    merge_collinear_overlaps — sovrapposizione geometrica reale: due o più
-                             LineSeg sulla stessa retta infinita che si
-                             coprono almeno in parte (anche a catena — il
-                             primo non deve toccare l'ultimo, basta una
-                             sequenza di sovrapposizioni intermedie) sono la
-                             stessa riga tracciata più volte a spezzoni.
-                             Lavora su `Edge` (già format-agnostic, D18),
-                             non su chiavi opache: deve calcolare proiezioni
-                             reali per produrre il segmento unico che
-                             sostituisce il gruppo, non solo confrontare due
-                             valori.
+Merging of geometric duplicates, format-agnostic: "two entities should not
+count as two" (an identical copy, entity for entity, is removed by the adapter
+beforehand). The refit, which rewrites a curve in another form, is in `refit.py`.
 
-merge_cocircular_overlaps — stesso principio, sugli CircleSeg co-circolari
-                             invece dei LineSeg collineari (v. MAP.md D52).
+    merge_collinear_overlaps  — two or more LineSegs on the same infinite line
+                                that cover each other at least in part (also in a
+                                chain) are the same line drawn in several pieces.
+                                Works on `Edge`, not on opaque keys: it computes
+                                real projections to produce the single segment
+                                that replaces the group.
+    merge_cocircular_overlaps — the same principle, on co-circular CircleSegs.
+    weld_degenerate_linesegs  — not overlap but degeneration: a LineSeg shorter
+                                than 0.05 mm is noise in the graph, its two ends
+                                are welded into one node.
+    merge_near_copies         — a line nearly on top of another within a threshold
+                                of the caller: never inside a reading, `heal()`
+                                only warns (`near_copies`).
 
-weld_degenerate_linesegs — non sovrapposizione ma degenerazione: un LineSeg
-                             più corto di 0.05mm è solo rumore nel grafo,
-                             i suoi due estremi vengono saldati in un nodo
-                             (v. MAP.md D56).
-
-merge_near_copies        — una retta quasi sopra un'altra entro una soglia del
-                             chiamante: mai dentro una lettura, `heal()` ne
-                             avvisa soltanto (`near_copies`, D226).
-
-Funzioni pubbliche:
-    merge_collinear_overlaps  — dato un iterabile di Edge, i gruppi LineSeg da fondere
-    merge_cocircular_overlaps — dato un iterabile di Edge, i gruppi CircleSeg da fondere
-    weld_degenerate_linesegs  — dato un iterabile di Edge, i LineSeg degeneri da saldare
-    merge_near_copies         — dato un iterabile di Edge e una distanza, le quasi-copie fuse
+Each takes an iterable of Edges and returns the merged ones.
 """
 
 from __future__ import annotations
@@ -56,25 +42,20 @@ from ...model.role import ContourRole
 # merge_collinear_overlaps
 # ---------------------------------------------------------------------------
 
-_SAME_OFFSET    = SAME_POINT   # mm — "stessa retta / stesso cerchio", non "vicina"  # D268
-_CHAIN_GAP_EPS  = FLOAT_NOISE  # guardia da rumore in virgola mobile, non tolleranza utente
+_SAME_OFFSET    = SAME_POINT   # mm — "same line / same circle", not "near"
+_CHAIN_GAP_EPS  = FLOAT_NOISE  # guard against floating-point noise, not a user tolerance
 
 
 def _same_line(a: LineSeg, b: LineSeg) -> bool:
-    """
-    `a` e `b` stanno sulla stessa retta infinita: ogni estremo di ognuno a
-    non più di `_SAME_OFFSET` dalla retta dell'altro. La direzione è già
-    dentro: lungo il tratto le due rette si scostano meno di `SAME_POINT` (D277). Giudicato sui
-    segmenti veri, mai su una chiave arrotondata: una cella di griglia ha
-    un bordo dove due spezzoni della stessa retta finiscono da parti
-    diverse, e il bordo si sposta col riferimento (D184, G6e).
+    """`a` and `b` lie on the same infinite line: each end of each at no more than
+    `_SAME_OFFSET` from the other's line. The direction is already in: along the
+    stretch the two lines deviate by less than `SAME_POINT`. Judged on the true
+    segments, never on a rounded key: a grid cell has an edge where two pieces of
+    the same line end on different sides, and the edge moves with the frame.
 
-    Soglie FISSE, non la tolleranza di heal del chiamante: "sono la stessa
-    retta" è precisione geometrica (rumore fra spezzoni nati identici), non
-    "abbastanza vicine da chiudere un gap". Con la tolleranza di heal (provato,
-    poi tolto) rette parallele **reali e distinte** a 0.5 mm si fondevano —
-    un pattern di denti/asole sparito in un golden (`fa_che_non_mi_incazzi`).
-    """
+    FIXED thresholds, not the caller's heal tolerance: "same line" is geometric
+    precision (noise between pieces born identical), not "near enough to close a
+    gap". With the heal tolerance, real distinct parallel lines 0.5 mm apart merged."""
     da, db = (unit_vector((s.end[0] - s.start[0], s.end[1] - s.start[1])) for s in (a, b))
     if da is None or db is None:
         return False
@@ -86,103 +67,41 @@ def _off_line(p, origin, u) -> float:
 
 
 def merge_collinear_overlaps(edges: Iterable[Edge], keep_junctions: bool = False) -> List[Edge]:
-    """
-    Fonde gruppi di LineSeg collineari (stessa retta infinita, `_same_line`)
-    che si toccano o si sovrappongono in un solo Edge ciascuno — a catena: il
-    primo membro non deve toccare/sovrapporsi all'ultimo, basta una sequenza
-    di contatti/sovrapposizioni intermedi, esattamente come un fascio di
-    segmenti che insieme disegnano una riga sola. Bastano 2 membri: l'unione
-    di due intervalli 1D che si toccano o si sovrappongono è sempre e
-    comunque ben definita (il segmento più lungo, se uno contiene l'altro;
-    l'estensione totale, altrimenti) — non c'è modo di "sbagliare" a fondere
-    solo 2 pezzi collineari, la domanda semmai è se DEVONO restare due
-    feature distinte a valle (v. sotto).
+    """Merge groups of collinear LineSegs (same infinite line, `_same_line`) that
+    touch or overlap into one Edge each — in a chain: the first member need not
+    touch the last, a sequence of intermediate contacts is enough. Two members
+    suffice: the union of two touching 1D intervals is always well defined.
 
-    `keep_junctions=True` (lo usa `heal()`): due pezzi che si TOCCANO soltanto
-    in un nodo dove arriva anche un edge su un'altra retta non si fondono — è
-    uno spigolo o un innesto, e il grafo di `heal()`, che non noda da sé, lo
-    perderebbe per sempre (MAP.md D110). `outlines()` noda la rete da sé e
-    lascia il default.
+    `keep_junctions=True` (used by `heal()`): two pieces that only TOUCH at a node
+    where an edge on another line also arrives do not merge — it is a corner or a
+    branch, and the graph of `heal()`, which does not node by itself, would lose it
+    for good. `outlines()` nodes the network itself and keeps the default.
 
-    Storia della soglia minima che c'era qui prima (rimossa): un'ipotesi di
-    "servono almeno 3 pezzi indipendenti, una coppia può essere coincidenza"
-    è nata da due golden reali (`la_104`, `staffa_scarto_doppia`) dove fondere
-    esattamente 2 tratti — due caratteri di un'incisione allineati per caso,
-    non un errore di disegno — sembrava aver rotto un pezzo vicino. Causa
-    vera, trovata dopo: un bug di arrotondamento (sotto), non il numero di
-    pezzi. Con quel bug corretto, fondere quelle stesse coppie non rompe più
-    niente su nessun file della suite — l'unione di 2 intervalli è sempre
-    corretta, il numero di pezzi non era mai stato la variabile giusta.
+    Two ends, two purposes, never mixed: `Edge.start`/`Edge.end` of the merged
+    edge carry the ROUNDED point (the node's identity in the graph), to reattach
+    exactly to the neighbour's node; the merged `LineSeg` (`edge.segment`) ALWAYS
+    carries the real full-precision point, since that is what the export reads.
+    The projection `_t` for ordering/overlap stays at full precision in both cases.
 
-    Due estremi, due scopi, mai mischiati (stesso principio già in
-    `gaps.apply_gap_fixes`: "il segmento conserva il punto reale, solo
-    il nodo topologico dell'Edge viene arrotondato"): `Edge.start`/`Edge.end`
-    del fuso portano il punto ARROTONDATO (l'identità del nodo nel grafo,
-    l'adapter li produce arrotondando `segment_endpoints(segment)`, D18 /
-    adapter.py `_append_edge`) — quello serve a riagganciarsi esattamente al
-    nodo del vicino reale (un CircleSeg che chiude l'angolo, un'altra LINE): un
-    fuso il cui Edge.start/end fosse a piena precisione del segmento nativo
-    può risultare vicinissimo ma non identico a quel nodo, e il sub-mm di
-    scarto spezza il contorno. Il `LineSeg` fuso (`edge.segment`), invece,
-    porta SEMPRE il punto reale a piena precisione — mai quello arrotondato:
-    è quello che l'export legge per costruire la geometria in output (area,
-    lunghezza, poligono scritto), e un fuso il cui segmento porta il punto
-    arrotondato produce, appena affianca nello stesso contorno un lato
-    nativo mai toccato dal merge, uno scalino visibile nel punto che
-    dovrebbe essere lo stesso angolo — due fonti di verità diverse cucite
-    insieme (trovato su un caso reale: un lato "verticale" con dx=0.031
-    invece di 0, lunghezza 0.97 invece di 1). La proiezione `_t` per
-    ordinamento/sovrapposizione resta a piena precisione in entrambi i casi.
+    Never candidates: non-LineSeg segments, and edges with a `role` other than
+    UNKNOWN (an assigned role is domain data; merging could alter intentional
+    geometry). Nothing here looks at where the edge comes from in the source format.
 
-    Esclusi a monte, mai candidati alla fusione:
-      - segmenti non LineSeg (ARC/SPLINE non sono "collineari")
-      - edge con `role` già diverso da UNKNOWN — un ruolo assegnato da
-        role_rules (bending/engrave/hole/...) è dato di dominio: quegli edge
-        non entrano mai nel graph-building (`steps.split_labeled` li leva
-        prima), quindi fonderli non aiuta a chiudere niente e rischia di
-        alterare geometria intenzionale — trovato su un golden reale
-        (`la_104`): due tratti di un'incisione/testo si sovrappongono per
-        disegno (font vettoriale), non per errore, e fonderli cambiava la
-        feature attesa
+    The replacing segment uses the two real farthest ends along the line (min and
+    max projections) — never a fabricated point — and keeps the `style` of the
+    group's first edge in input order.
 
-    Niente qui guarda da dove viene l'edge nel formato sorgente (una
-    polilinea già chiusa contro linee sciolte, un layer, un tipo di
-    entità): una versione precedente escludeva gli edge di un percorso già
-    chiuso per analogia con `NonContourEdgeDetector` (dove un'esclusione
-    simile ha un significato diverso: un edge di un anello chiuso non può
-    ANCHE essere una piega che lo attraversa), ma qui non proteggeva niente
-    di reale — un lato vero disegnato come polilinea e un doppione
-    disegnato come LINE sciolte sono la stessa identica situazione di
-    qualunque altra coppia, e l'esclusione impediva di vederlo (golden
-    reale `staffa_scarto_doppia`: una staffa di scarto a 3 lati duplicava
-    esattamente un lato di una polilinea chiusa). Rimossa: `Edge` non porta
-    più quel dato, per lo stesso motivo (MAP.md, seguito D50).
-
-    Il segmento sostituto usa i due estremi reali più lontani lungo la retta
-    (le proiezioni minima e massima) — mai un punto fabbricato — e conserva
-    `style` del primo edge del gruppo in ordine di input (lo stile può
-    differire leggermente fra spezzoni, si tiene quello del primo; `role` è
-    UNKNOWN per ogni membro per costruzione).
-
-    Restituisce una nuova lista di Edge della STESSA lunghezza relativa e nel
-    MEDESIMO ordine di input per tutto ciò che non fonde: un pre-pass di
-    pulizia non deve riordinare edge che non tocca. Un gruppo fuso occupa la
-    posizione del suo primo membro in ordine di input; gli altri membri del
-    gruppo spariscono (assorbiti), il resto della lista resta tale e quale.
-    (Trovato per necessità, non per eleganza: raggruppare-per-retta-poi-
-    riconcatenare cambiava l'ordine anche a zero fusioni effettive, e quel
-    solo riordino bastava a far scegliere al loop-finder un percorso diverso
-    a un bivio — probabilmente paritario — in un golden reale,
-    `staffa_scarto_doppia`, senza che una sola fusione fosse coinvolta.)
-    """
+    Returns a new list of Edges in the SAME input order for everything that does
+    not merge: a cleanup pre-pass must not reorder edges it does not touch. A merged
+    group takes the position of its first member; the other members are absorbed."""
     return _merge_on_carrier(edges, LineSeg, _same_line, _line_spans, _merged_line, keep_junctions)
 
 
 def _line_spans(group: List[Edge]) -> List[_Span]:
-    """Span lungo la retta comune: `t` è la proiezione sulla direzione del
-    primo edge, la stessa per tutti, quindi confrontabile fra edge; il fuso
-    va nel verso del primo edge (un verso canonico dipenderebbe dal
-    riferimento, G6e)."""
+    """Span along the common line: `t` is the projection on the direction of the
+    first edge, the same for all, hence comparable between edges; the merged
+    edge goes in the direction of the first (a canonical direction would depend
+    on the frame)."""
     s0, e0 = group[0].segment.start, group[0].segment.end
     ux, uy = e0[0] - s0[0], e0[1] - s0[1]
     length0 = math.hypot(ux, uy)
@@ -203,24 +122,20 @@ def _line_spans(group: List[Edge]) -> List[_Span]:
 
 
 def _merged_line(lo: _Span, hi: _Span):
-    """Il fuso di una catena collineare: nodi arrotondati, segmento a piena
-    precisione (v. docstring di `merge_collinear_overlaps`)."""
+    """The merge of a collinear chain: rounded nodes, full-precision segment (see
+    the docstring of `merge_collinear_overlaps`)."""
     return lo.lo_node, hi.hi_node, LineSeg(start=lo.extra[0], end=hi.extra[1])
 
 
-# ---------------------------------------------------------------------------
-# Motore comune: unione di intervalli 1D su un supporto (retta o cerchio)
-# ---------------------------------------------------------------------------
+# --- Common engine: union of 1D intervals on a support (line or circle) ---
 
 @dataclass(frozen=True)
 class _Span:
-    """
-    Un edge come intervallo [lo, hi] sul suo supporto (posizione lungo la
-    retta, o angolo sul cerchio). `lo_node`/`hi_node` sono gli estremi
-    arrotondati dell'Edge — l'identità del nodo nel grafo, che il fuso riusa
-    per riagganciarsi al vicino; `extra` è ciò che serve al chiamante per
-    costruire il segmento fuso a piena precisione.
-    """
+    """An edge as an interval [lo, hi] on its support (position along the line, or
+    angle on the circle). `lo_node`/`hi_node` are the rounded ends of the Edge —
+    the node's identity in the graph, which the merge reuses to reattach to the
+    neighbour; `extra` is what the caller needs to build the merged
+    full-precision segment."""
     lo:      float
     lo_node: Point
     hi:      float
@@ -230,12 +145,9 @@ class _Span:
 
 
 def _chain(spans: List[_Span]) -> List[List[_Span]]:
-    """
-    Ordina per `lo` e incatena gli span che si toccano o si sovrappongono:
-    l'unione di intervalli 1D che si toccano è sempre ben definita.
-    `_CHAIN_GAP_EPS` è rumore in virgola mobile, non una tolleranza: un gap
-    vero resta fuori dalla catena.
-    """
+    """Sort by `lo` and chain the spans that touch or overlap: the union of touching
+    1D intervals is always well defined. `_CHAIN_GAP_EPS` is floating-point noise,
+    not a tolerance: a true gap stays out of the chain."""
     spans = sorted(spans, key=lambda s: s.lo)
     chains: List[List[_Span]] = [[spans[0]]]
     cur_hi = spans[0].hi
@@ -257,26 +169,24 @@ def _merge_on_carrier(
     merged: Callable[[_Span, _Span], Tuple[Point, Point, Any]],
     keep_junctions: bool = False,
 ) -> List[Edge]:
-    """
-    Raggruppa per supporto gli edge di `segment_type` con ruolo UNKNOWN —
-    due vicini con `same(a, b)`, a catena —, divide ogni gruppo in catene
-    (`chains_of`) e sostituisce ogni catena di 2+ con un Edge solo:
-    (start, end, segmento) da `merged(lo, hi)`, role/style del membro che
-    viene prima in input. Il resto della lista resta nell'ordine di input.
-    """
+    """Group by support the edges of `segment_type` with role UNKNOWN — two
+    neighbours with `same(a, b)`, in a chain —, split every group into chains
+    (`chains_of`) and replace every chain of 2+ with a single Edge:
+    (start, end, segment) from `merged(lo, hi)`, role/style of the member that
+    comes first in input. The rest of the list stays in input order."""
     edges = list(edges)
     original_index = {id(e): i for i, e in enumerate(edges)}
 
     typed = [e for e in edges if e.role == ContourRole.UNKNOWN and isinstance(e.segment, segment_type)]
-    # solo pezzi che si toccano possono fondersi: le coppie da giudicare sono
-    # le vicine, il supporto lo decide `same` sui segmenti veri
+    # only touching pieces can merge: the pairs to judge are the neighbouring ones,
+    # the support is decided by `same` on the true segments
     pairs = [(i, j) for i, j in near_pairs([edge_geometry(e) for e in typed], _SAME_OFFSET)
              if same(typed[i].segment, typed[j].segment)]
     groups = connected_groups(len(typed), pairs)
     carrier = {id(typed[i]): k for k, members in enumerate(groups) for i in members}
     buckets = [[typed[i] for i in members] for members in groups]
 
-    carriers_at: dict = {}  # nodo -> supporti degli edge che finiscono lì
+    carriers_at: dict = {}  # node -> supports of the edges ending there
     for edge in edges:
         if edge.role != ContourRole.UNKNOWN:
             continue
@@ -285,7 +195,7 @@ def _merge_on_carrier(
             carriers_at.setdefault(node, set()).add(key)
 
     replacement: dict = {}  # id(rappresentante) -> Edge fuso
-    drop: set = set()       # id(edge) assorbiti da una fusione
+    drop: set = set()       # id(edge) absorbed by a merge
     junction = lambda node: len(carriers_at.get(node, ())) > 1
     for group in buckets:
         if len(group) < 2:
@@ -309,13 +219,10 @@ def _merge_on_carrier(
 
 
 def _split_at_junctions(chain: List[_Span], junction: Callable[[Point], bool]) -> List[List[_Span]]:
-    """
-    Spezza una catena dove due span consecutivi si toccano SOLO (nessuna
-    sovrapposizione) in un nodo dove finisce anche un edge su un altro
-    supporto: lì c'è uno spigolo o un innesto, un nodo vero del grafo, e
-    fondere i due pezzi lo cancellerebbe (MAP.md D110). Una sovrapposizione
-    vera si fonde sempre.
-    """
+    """Split a chain where two consecutive spans only TOUCH (no overlap) at a node
+    where an edge on another support also ends: there is a corner or a branch, a
+    true node of the graph, and merging the two pieces would erase it. A true
+    overlap always merges."""
     out = [[chain[0]]]
     cur_hi, cur_node = chain[0].hi, chain[0].hi_node
     for span in chain[1:]:
@@ -337,35 +244,28 @@ _TWO_PI = 2.0 * math.pi
 
 
 def _same_circle(a, b) -> bool:
-    """Stesso cerchio: centri e raggi entro `_SAME_OFFSET` — v. `_same_line`."""
+    """Same circle: centres and radii within `_SAME_OFFSET` — see `_same_line`."""
     return math.dist(a.center, b.center) <= _SAME_OFFSET and abs(a.radius - b.radius) <= _SAME_OFFSET
 
 
 def merge_cocircular_overlaps(edges: Iterable[Edge]) -> List[Edge]:
-    """
-    `merge_collinear_overlaps` per i CircleSeg (archi e giri interi):
-    fonde gruppi co-circolari
-    (stesso centro+raggio, `_same_circle`) che si toccano/sovrappongono
-    angolarmente in un solo Edge ciascuno, incatenando a catena sul dominio
-    circolare [0, 2*pi) (srotolando oltre il taglio 0/2*pi quando serve).
-    Se la copertura totale chiude un giro intero, il fuso ha
-    Edge.start == Edge.end (loop degenere, v. MAP.md D52): due cerchi uguali
-    sono un cerchio, un arco sopra un cerchio sparisce nel cerchio.
+    """`merge_collinear_overlaps` for CircleSegs (arcs and full turns): merge
+    co-circular groups (same centre+radius, `_same_circle`) that touch/overlap
+    angularly into one Edge each, chaining on the circular domain [0, 2*pi)
+    (unrolling past the 0/2*pi cut when needed). If the total coverage closes a
+    full turn, the merged edge has Edge.start == Edge.end (degenerate loop): two
+    equal circles are one circle, an arc over a circle vanishes into the circle.
 
-    Stesse regole di `merge_collinear_overlaps`: esclude segmenti non CircleSeg
-    e `role != UNKNOWN`; usa `edge.start`/`edge.end` (arrotondati) come
-    estremi conservati, mai il punto ricalcolato a piena precisione;
-    preserva l'ordine di input per tutto ciò che non fonde.
-    """
+    Same rules as `merge_collinear_overlaps`: excludes non-CircleSeg segments and
+    `role != UNKNOWN`; uses the rounded `edge.start`/`edge.end` as the kept ends;
+    preserves input order for everything that does not merge."""
     return _merge_on_carrier(edges, CircleSeg, _same_circle, _arc_chains, _merged_arc)
 
 
 def _arc_chains(group: List[Edge]) -> List[List[_Span]]:
-    """
-    Catene angolari di un gruppo sullo stesso cerchio. Se l'ultima catena
-    chiude il giro nella prima, le unisce: la prima viene srotolata di +2*pi
-    (solo l'angolo usato per ordinare; i nodi restano quelli reali).
-    """
+    """Angular chains of a group on the same circle. If the last chain closes the
+    turn into the first, it joins them: the first is unrolled by +2*pi (only the
+    angle used for ordering; the nodes stay the real ones)."""
     spans = []
     for e in group:
         seg = e.segment
@@ -390,9 +290,8 @@ def _arc_chains(group: List[Edge]) -> List[List[_Span]]:
 
 
 def _merged_arc(lo: _Span, hi: _Span):
-    """Il fuso di una catena cocircolare: un arco, o un cerchio se chiude il
-    giro — stesso primitivo di un CIRCLE nativo, nessuna traccia di quale
-    frammento fosse il primo."""
+    """The merge of a co-circular chain: an arc, or a circle if it closes the turn —
+    the same primitive as a native CIRCLE, no trace of which fragment was first."""
     center, radius = lo.extra
     if hi.hi - lo.lo >= _TWO_PI - _CHAIN_GAP_EPS:
         circle = CircleSeg(center=center, radius=radius)
@@ -408,21 +307,21 @@ def _merged_arc(lo: _Span, hi: _Span):
 
 @dataclass(frozen=True)
 class NearCopy:
-    """Una retta quasi sopra un'altra (D226): `copy` sta tutta entro `offset`
-    dal segmento `kept`, la più lunga (a pari lunghezza, la prima in ordine)."""
+    """A line nearly on top of another: `copy` lies wholly within `offset` of the
+    segment `kept`, the longer (on equal length, the first in order)."""
     kept: Edge
     copy: Edge
     offset: float
 
     @property
     def at(self) -> Point:
-        """Il punto medio della copia: dove guardare."""
+        """The midpoint of the copy: where to look."""
         a, b = self.copy.segment.start, self.copy.segment.end
         return ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
 
 
 def _off_segment(p, seg: LineSeg) -> float:
-    """Distanza di `p` dal segmento (non dalla retta infinita)."""
+    """Distance of `p` from the segment (not from the infinite line)."""
     (ax, ay), (bx, by) = seg.start[:2], seg.end[:2]
     dx, dy = bx - ax, by - ay
     t = max(0.0, min(1.0, ((p[0] - ax) * dx + (p[1] - ay) * dy) / (dx * dx + dy * dy)))
@@ -430,7 +329,7 @@ def _off_segment(p, seg: LineSeg) -> float:
 
 
 def _over(p, seg: LineSeg) -> bool:
-    """La proiezione di `p` sulla retta di `seg` cade dentro `seg` (a meno di FLOAT_NOISE)."""
+    """The projection of `p` on the line of `seg` falls inside `seg` (within FLOAT_NOISE)."""
     (ax, ay), (bx, by) = seg.start[:2], seg.end[:2]
     dx, dy = bx - ax, by - ay
     length = math.hypot(dx, dy)
@@ -443,16 +342,13 @@ def _line_length(e: Edge) -> float:
 
 
 def near_copies(edges: Iterable[Edge], distance: float) -> List[NearCopy]:
-    """
-    Le coppie di LineSeg con lo stesso ruolo in cui la più corta sta tutta
-    sopra la più lunga (i due capi si proiettano dentro di lei) ed entro
-    `distance` da lei: un segmento è convesso, quindi bastano i due capi della
-    corta. Il pezzo oltre il capo della lunga continua il contorno e non è una
-    copia (D235). Le coppie che sono già la stessa retta (`_same_line`,
-    D184) le fonde `merge_collinear_overlaps` e qui non compaiono; nemmeno le
-    sovrapposte solo in parte (un capo della corta fuori dalla lunga). Ogni
-    copia una volta sola, con la retta più vicina; le più vicine prima.
-    """
+    """The pairs of LineSegs with the same role in which the shorter lies wholly on
+    top of the longer (both ends project inside it) and within `distance` of it: a
+    segment is convex, so the two ends of the short one are enough. The piece
+    beyond the long one's end continues the contour and is not a copy. Pairs that
+    are already the same line (`_same_line`) are merged by
+    `merge_collinear_overlaps` and do not appear here; nor do those overlapping
+    only in part. Each copy once, with the nearest line; nearest first."""
     lines = [e for e in edges if isinstance(e.segment, LineSeg) and e.start != e.end]
     nearest = {}
     for i, j in near_pairs([edge_geometry(e) for e in lines], distance):
@@ -460,25 +356,23 @@ def near_copies(edges: Iterable[Edge], distance: float) -> List[NearCopy]:
         if a.role != b.role or _same_line(a.segment, b.segment):
             continue
         kept, copy = (b, a) if _line_length(b) > _line_length(a) + FLOAT_NOISE else (a, b)
-        # sopra la lunga, non oltre il suo capo: il pezzo che continua il contorno non è una copia (D235)
+        # on top of the long one, not beyond its end: the piece continuing the contour is not a copy
         if not all(_over(p, kept.segment) for p in (copy.segment.start, copy.segment.end)):
             continue
         offset = max(_off_segment(p, kept.segment) for p in (copy.segment.start, copy.segment.end))
-        # una copia è copia della retta più vicina, non di ogni retta entro la soglia
+        # a copy is a copy of the nearest line, not of every line within the threshold
         if offset <= distance and (id(copy) not in nearest or offset < nearest[id(copy)].offset):
             nearest[id(copy)] = NearCopy(kept, copy, offset)
     return sorted(nearest.values(), key=lambda p: p.offset)
 
 
 def merge_near_copies(edges: Iterable[Edge], *, distance: float) -> List[Edge]:
-    """
-    Le rette quasi una sopra l'altra entro `distance` (`near_copies`)
-    diventano una (D226): resta la più lunga; a pari lunghezza (entro
-    `FLOAT_NOISE`) la mediana, coi capi a metà fra i capi vicini e il ruolo e
-    lo stile della prima in ordine. topo non la chiama mai da sé: `heal()`
-    avvisa delle coppie entro la sua tolleranza, il chiamante decide se e
-    dove fonderle. Il resto passa nell'ordine di input.
-    """
+    """The lines nearly on top of one another within `distance` (`near_copies`)
+    become one: the longer stays; on equal length (within `FLOAT_NOISE`) the
+    median, with ends midway between the near ends and the role and style of the
+    first in order. topo never calls it by itself: `heal()` warns of the pairs
+    within its tolerance, the caller decides whether and where to merge them. The
+    rest passes in input order."""
     edges = list(edges)
     dropped, median = set(), {}
     for pair in near_copies(edges, distance):
@@ -491,8 +385,7 @@ def merge_near_copies(edges: Iterable[Edge], *, distance: float) -> List[Edge]:
 
 
 def _median_line(a: Edge, b: Edge) -> Edge:
-    """La retta a metà fra due copie di pari lunghezza: ogni capo di `a` col
-    capo di `b` più vicino."""
+    """The line midway between two copies of equal length: each end of `a` with the nearest end of `b`."""
     (p, q), (r, s) = (a.segment.start[:2], a.segment.end[:2]), (b.segment.start[:2], b.segment.end[:2])
     if math.dist(p, r) + math.dist(q, s) > math.dist(p, s) + math.dist(q, r):
         r, s = s, r
@@ -504,27 +397,25 @@ def _median_line(a: Edge, b: Edge) -> Edge:
 # weld_degenerate_linesegs
 # ---------------------------------------------------------------------------
 
-_DEGENERATE_LENGTH_EPS = SAME_POINT  # mm — fisso, non la tolerance del chiamante (v. MAP.md D56)  # D268
+_DEGENERATE_LENGTH_EPS = SAME_POINT  # mm — fixed, not the caller's tolerance
 
 
 def weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]:
-    """
-    Salda (non cancella) i LineSeg `role == UNKNOWN` di lunghezza reale
-    sotto `_DEGENERATE_LENGTH_EPS`: l'Edge sparisce, i suoi due nodi
-    diventano uno e ogni altro Edge che li toccava viene rimappato lì — la
-    catena resta connessa. Solo i nodi (Edge.start/end) si spostano, il
-    `segment` conserva il punto reale. Ordine di input preservato.
+    """Weld (not delete) the `role == UNKNOWN` LineSegs of real length below
+    `_DEGENERATE_LENGTH_EPS`: the Edge disappears, its two nodes become one and
+    every other Edge touching them is remapped there — the chain stays connected.
+    Only the nodes (Edge.start/end) move, the `segment` keeps the real point.
+    Input order preserved.
 
-    Si giudica il gruppo intero: i tratti corti collegati fra loro si saldano
-    tutti se i loro nodi distano al più `_DEGENERATE_LENGTH_EPS` l'uno
-    dall'altro, altrimenti nessuno — una curva disegnata a tratti corti non
-    collassa in un punto (D152) e quali tratti saldarne non lo decide un
-    ordine, che cambia col riferimento (D186). Un tratto con un capo libero
-    (nessun altro edge lo tocca) resta: è una punta, non un nodo doppio (D164).
-    """
+    The whole group is judged: connected short stretches all weld if their nodes
+    are at most `_DEGENERATE_LENGTH_EPS` from one another, otherwise none — a
+    curve drawn in short stretches does not collapse to a point, and which
+    stretches to weld is not decided by an order that changes with the frame. A
+    stretch with a free end (no other edge touches it) stays: it is a tip, not a
+    double node."""
     edges = list(edges)
-    # una punta libera non ha due nodi da unire: saldarla cancellerebbe il
-    # tratto e sposterebbe il capo libero, che poi nessun gap ritrova (D164)
+    # a free tip has no two nodes to join: welding it would delete the stretch and
+    # move the free end, which no gap would then find
     degree: Counter = Counter()
     for edge in edges:
         degree[edge.start] += 1
@@ -543,7 +434,7 @@ def weld_degenerate_linesegs(edges: Iterable[Edge]) -> List[Edge]:
     for members in groups:
         points = [nodes[k] for k in members]
         if len(points) > 1 and within_diameter(points, _DEGENERATE_LENGTH_EPS):
-            # il rappresentante è il nodo minimo del gruppo, un estremo reale
+            # the representative is the group's minimum node, a real end
             target.update((p, points[0]) for p in points)
     degenerate_ids = {id(e) for e in candidates if e.start in target}
     if not degenerate_ids:

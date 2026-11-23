@@ -1,12 +1,12 @@
 """
 topo/core/base/curves.py
 ------------------------
-Da giri ed edge a curve del modello, per ogni lettura (D187, D189): un giro
-diventa un contorno chiuso, o le sue curve aperte se non racchiude niente
-(D151); quello che nessun contorno prende va in `loose` con una regola sola
-(D162), ruolo intatto. Niente si perde: un edge chiuso da solo esce chiuso.
+From loops and edges to model curves, for every reading: a loop becomes a
+closed contour, or its open curves if it encloses nothing; what no contour
+takes goes to `loose` with a single rule, role intact. Nothing is lost: an
+edge closed by itself comes out closed.
 
-Puro: solo Edge, primitive e modello, nessun formato.
+Pure: Edges, primitives and model only, no format.
 """
 
 from __future__ import annotations
@@ -50,8 +50,8 @@ def loop_to_closed_curve(
             poly = poly.buffer(0)
         if poly.is_empty:
             return None
-        # largo in media meno di SAME_POINT (2·area/perimetro): i due lati
-        # sono lo stesso tratto, non c'è un contorno (D279)
+        # average width below SAME_POINT (2·area/perimeter): the two sides are the same
+        # stretch, there is no contour
         if not segments or 2 * ring_area(segments) <= SAME_POINT * ring_scale(segments):
             return None
 
@@ -61,11 +61,9 @@ def loop_to_closed_curve(
 
 
 def loops_to_curves(loops: List[list]) -> List[ClosedCurve | OpenCurve]:
-    """
-    Un ClosedCurve per loop, col ruolo del primo edge. Un loop che non fa un
-    contorno (poligono nullo, largo meno di SAME_POINT, D279) torna come un
-    OpenCurve per edge, così finisce in `loose` invece di sparire (D151).
-    """
+    """One ClosedCurve per loop, with the role of the first edge. A loop that makes
+    no contour (null polygon, narrower than SAME_POINT) comes back as one
+    OpenCurve per edge, so it ends in `loose` instead of vanishing."""
     curves = []
     for loop in loops:
         role = loop[0][0].role if loop else ContourRole.UNKNOWN
@@ -83,10 +81,10 @@ def loops_to_curves(loops: List[list]) -> List[ClosedCurve | OpenCurve]:
 
 
 def loose_curves(edges: List[Edge]) -> list:
-    """Le curve di `loose` (D162): un pezzo che chiude da sé — un segmento
-    chiuso, o una catena in cui ogni nodo ha grado 2 — è un ClosedCurve,
-    perché non c'è niente da scegliere; il resto un OpenCurve per edge. Il
-    ruolo di ogni edge resta il suo."""
+    """The curves of `loose`: a piece that closes by itself — a closed segment, or a
+    chain in which every node has degree 2 — is a ClosedCurve, because there is
+    nothing to choose; the rest one OpenCurve per edge. The role of each edge
+    stays its own."""
     edges = list(edges)
     single = [e for e in edges if e.segment is not None and segment_is_closed(e.segment)]
     rest = [e for e in edges if not (e.segment is not None and segment_is_closed(e.segment))]
@@ -96,9 +94,8 @@ def loose_curves(edges: List[Edge]) -> list:
 
 
 def _open(edges) -> List[OpenCurve]:
-    """Un OpenCurve per edge col suo segmento nativo, anche se chiuso da solo
-    (un cerchio scartato non è un contorno). Esclusi solo i tratti di
-    lunghezza nulla."""
+    """One OpenCurve per edge with its native segment, even if closed by itself (a
+    discarded circle is not a contour). Only zero-length stretches are excluded."""
     curves = []
     for edge in edges:
         seg = edge.segment or LineSeg(start=edge.start, end=edge.end)

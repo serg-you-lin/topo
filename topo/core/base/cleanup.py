@@ -1,11 +1,11 @@
 """
 topo/core/base/cleanup.py
 -------------------------
-Le pulizie di ogni lettura, una per funzione: ruoli non strutturali, archi quasi completi, gap fra estremi liberi, spline
-penzolanti (D187). `prepare` e `normalize` le compongono; un chiamante con
-un'altra ricetta le compone come gli serve.
+The cleanups of every reading, one per function: non-structural roles, nearly
+complete arcs, gaps between free ends, dangling splines. `prepare` and
+`normalize` compose them; a caller with another recipe composes them as needed.
 
-Puro: solo Edge, primitive e modello, nessun formato.
+Pure: Edges, primitives and model only, no format.
 """
 
 from __future__ import annotations
@@ -39,12 +39,10 @@ from .gaps import (free_endpoints_from_edges, compute_gap_fixes, apply_gap_fixes
 def split_labeled(edges: List[Edge],
                   is_structural: Optional[Callable[[str], bool]] = None
                   ) -> Tuple[List[Edge], List[Edge]]:
-    """
-    Separa gli Edge con un ruolo già deciso e non strutturale (cornice,
-    marcatura, un manifatturiero non riconosciuto senza predicato — D30):
-    ritorna (restano nel grafo, etichettati). Senza `is_structural`, solo
-    outer/inner sono strutturali.
-    """
+    """Separate the Edges with an already decided, non-structural role (frame,
+    marking, an unrecognized manufacturing one with no predicate): returns
+    (stay in the graph, labelled). Without `is_structural`, only outer/inner are
+    structural."""
     structural = is_structural or is_structural_role
     labeled = [e for e in edges if e.role != ContourRole.UNKNOWN and not structural(e.role)]
     if not labeled:
@@ -53,25 +51,22 @@ def split_labeled(edges: List[Edge],
     return [e for e in edges if id(e) not in labeled_ids], labeled
 
 
-NEAR_FULL_ARC_MISSING = math.radians(NEAR_FULL_ARC_MISSING_DEG)   # angolo mancante oltre il quale un arco non è un cerchio (D112)
-NEAR_FULL_ARC_HINT = math.radians(NEAR_FULL_ARC_HINT_DEG)      # fin qui heal() avvisa che manca poco; un filetto (~90°) mai (D227)
+NEAR_FULL_ARC_MISSING = math.radians(NEAR_FULL_ARC_MISSING_DEG)   # missing angle beyond which an arc is not a circle
+NEAR_FULL_ARC_HINT = math.radians(NEAR_FULL_ARC_HINT_DEG)      # up to here heal() warns that little is missing; a thread (~90°) never
 
 
 def close_near_full_arcs(edges: List[Edge], tolerance: float,
                          max_missing_angle: float = NEAR_FULL_ARC_MISSING) -> Tuple[List[Edge], int]:
-    """
-    Gli archi coi due capi liberi sullo stesso cerchio (`_same_circle`, D184):
-    un buco fra un arco e il seguente entro `tolerance` E col suo angolo entro
-    `max_missing_angle` si chiude (MAP.md D112, D218) — la tolleranza dice se è
-    un gap, l'angolo se l'arco prosegue. Chiusi tutti i buchi è un CircleSeg;
-    altrimenti gli archi uniti sono un arco solo, aperto sui buchi rimasti
-    (un capo e l'altro dello stesso arco non sono mai un gap). Un arco solo ha
-    un buco solo. `tolerance=math.inf` lascia solo l'angolo. Prima fonde gli
-    archi dello stesso cerchio che si toccano (`merge_cocircular_overlaps`):
-    due archi uniti in un capo hanno un capo legato ciascuno, e chi la chiama
-    da sé non deve saperlo (D227).
-    Ritorna (edge, n_edge_rifatti).
-    """
+    """The arcs with both ends free on the same circle (`_same_circle`): a hole
+    between an arc and the next within `tolerance` AND with its angle within
+    `max_missing_angle` is closed — the tolerance says whether it is a gap, the
+    angle whether the arc continues. With all holes closed it is a CircleSeg;
+    otherwise the joined arcs are one arc, open on the remaining holes (the two
+    ends of the same arc are never a gap). A single arc has a single hole.
+    `tolerance=math.inf` leaves only the angle. It first merges the arcs of the
+    same circle that touch (`merge_cocircular_overlaps`): two arcs joined at one
+    end have one end bound each, and whoever calls it need not know.
+    Returns (edges, number of edges rebuilt)."""
     edges = merge_cocircular_overlaps(edges)
     graph = build_node_graph(edges)
     free = [k for k, e in enumerate(edges) if is_arc(e.segment) and _both_ends_free(e, graph)]
@@ -90,13 +85,11 @@ def close_near_full_arcs(edges: List[Edge], tolerance: float,
 
 def open_near_full_arcs(edges: List[Edge], tolerance: float,
                         max_missing_angle: float = NEAR_FULL_ARC_MISSING) -> List[Tuple[Edge, float, float]]:
-    """
-    Gli archi coi due capi liberi che `close_near_full_arcs` lascia aperti
-    solo per l'angolo: la corda del buco sta in `tolerance`, l'angolo mancante
-    supera `max_missing_angle` ma non `NEAR_FULL_ARC_HINT` — oltre, l'arco è
-    aperto di proposito (un filetto). Ritorna (edge, angolo mancante, corda) —
-    ciò che l'avviso dice al chiamante (D227).
-    """
+    """The arcs with both ends free that `close_near_full_arcs` leaves open only
+    for the angle: the chord of the hole is within `tolerance`, the missing angle
+    exceeds `max_missing_angle` but not `NEAR_FULL_ARC_HINT` — beyond, the arc is
+    open on purpose (a thread). Returns (edges, missing angle, chord) — what the
+    warning tells the caller."""
     graph = build_node_graph(edges)
     found = []
     for e in edges:
@@ -110,11 +103,10 @@ def open_near_full_arcs(edges: List[Edge], tolerance: float,
 
 
 def _joined_runs(group: List[int], edges: List[Edge], tolerance: float, max_missing_angle: float) -> list:
-    """Le catene da rifare: [(indice, span)] per catena, in giro sul cerchio;
-    span = (lo, sweep, lo_node, hi_node). Un giro intero è una catena con
-    `None` in coda; una catena di un arco solo che non chiude il giro non si
-    rifà. Archi che si sovrappongono non si giudicano (li fonde
-    `merge_cocircular_overlaps`)."""
+    """The chains to rebuild: [(index, span)] per chain, going round the circle;
+    span = (lo, sweep, lo_node, hi_node). A full turn is a chain with `None` at
+    the tail; a one-arc chain that does not close the circle is not rebuilt.
+    Overlapping arcs are not judged (`merge_cocircular_overlaps` merges them)."""
     spans = []
     for k in group:
         e, seg = edges[k], edges[k].segment
@@ -132,7 +124,7 @@ def _joined_runs(group: List[int], edges: List[Edge], tolerance: float, max_miss
         joins.append(missing <= max_missing_angle and math.dist(hi_pt, nxt_pt) <= tolerance)
     if all(joins):
         return [spans + [None]]
-    # si parte dopo un buco che resta aperto: ogni catena è un tratto continuo
+    # start after a hole that stays open: every chain is a continuous stretch
     start = joins.index(False) + 1
     order = spans[start:] + spans[:start]
     opened = joins[start:] + joins[:start]
@@ -146,8 +138,8 @@ def _joined_runs(group: List[int], edges: List[Edge], tolerance: float, max_miss
 
 
 def _joined_edge(edge: Edge, chain: list) -> Edge:
-    """L'edge di una catena: un CircleSeg se chiude il giro (`None` in coda),
-    altrimenti l'arco ccw dal primo capo all'ultimo, coi loro nodi."""
+    """The edge of a chain: a CircleSeg if it closes the circle (`None` at the
+    tail), otherwise the ccw arc from the first end to the last, with their nodes."""
     seg = edge.segment
     if chain[-1] is None:
         circle = CircleSeg(center=seg.center, radius=seg.radius)
@@ -161,20 +153,18 @@ def _joined_edge(edge: Edge, chain: list) -> Edge:
 
 
 def _both_ends_free(edge: Edge, graph) -> bool:
-    # un capo che tocca altra geometria non è libero: l'arco fa parte di un giro.
-    # Capi fusi nello stesso nodo: il self-loop sta fra i degeneri, quindi il
-    # nodo deve restare senza altri edge (la punta di uno spigolo non è un cerchio)
+    # an end touching other geometry is not free: the arc is part of a loop. Ends
+    # merged in the same node: the self-loop is among the degenerate ones, so the
+    # node must stay without other edges (the tip of a corner is not a circle)
     if edge.start == edge.end:
         return graph.degree(edge.start) == 0
     return graph.degree(edge.start) == 1 and graph.degree(edge.end) == 1
 
 
 def close_free_gaps(edges: List[Edge], tolerance: float, closed: Optional[list] = None) -> List[Edge]:
-    """
-    Chiude i gap fra estremi liberi entro `tolerance` col gap solver
-    (estensione all'intersezione reale o linea di congiunzione), a coppie (D112).
-    `closed`, se dato, riceve (estremo, distanza) di ogni gap chiuso.
-    """
+    """Close the gaps between free ends within `tolerance` with the gap solver
+    (extension to the real intersection or a joining line), pairwise.
+    `closed`, if given, receives (end, distance) of every closed gap."""
     graph = build_node_graph(edges)
     endpoints = free_endpoints_from_edges(edges, graph)
     if not endpoints:
@@ -186,12 +176,10 @@ def close_free_gaps(edges: List[Edge], tolerance: float, closed: Optional[list] 
 
 
 def join_tied_facing_ends(edges: List[Edge], gap: float, joined: Optional[list] = None) -> List[Edge]:
-    """
-    Due estremi già legati che si guardano lungo il proprio prolungamento,
-    entro `gap`, si uniscono con un tratto nuovo: il lato disegnato in due
-    pezzi con un buco in mezzo (D272). Nessuna curva si sposta. `joined`, se
-    dato, riceve (estremo, distanza) di ogni unione.
-    """
+    """Two already bound ends facing each other along their own extension, within
+    `gap`, are joined by a new stretch: the side drawn in two pieces with a hole
+    between. No curve moves. `joined`, if given, receives (end, distance) of every
+    join."""
     out = list(edges)
     for a, b, d in tied_facing_ends(edges, build_node_graph(edges), gap):
         out.append(Edge(role=ContourRole.UNKNOWN, start=getattr(a.ref, a.role), end=getattr(b.ref, b.role),
@@ -202,13 +190,11 @@ def join_tied_facing_ends(edges: List[Edge], gap: float, joined: Optional[list] 
 
 
 def bend_arcs_through_free_ends(edges: List[Edge], gap: float, bent: Optional[list] = None) -> List[Edge]:
-    """
-    Un arco coi capi fermi e, di fianco alla sua pancia entro `gap`, il capo
-    libero di una curva legata dall'altro capo che gli arriva tangente: l'arco
-    si ridisegna per i suoi due capi e per quel capo (D273). Nessuna retta si sposta. Non se l'arco
-    nuovo si scosta dal vecchio più di `gap`, non verso un filetto né su un
-    asse (D271). `bent`, se dato, riceve (capo, distanza) di ogni arco ridisegnato.
-    """
+    """An arc with fixed ends and, beside its belly within `gap`, the free end of a
+    curve bound at the other end that arrives tangent: the arc is redrawn through
+    its two ends and that end. No line moves. Not if the new arc deviates from
+    the old by more than `gap`, not towards a thread nor on an axis. `bent`, if
+    given, receives (end, distance) of every redrawn arc."""
     edges = list(edges)
     geoms = [edge_geometry(e) for e in edges]
     tree = STRtree(geoms)
@@ -232,9 +218,9 @@ def bend_arcs_through_free_ends(edges: List[Edge], gap: float, bent: Optional[li
             foot = nearest_point([arc], p)
             if min(math.dist(foot, q) for q in (a, b)) <= SAME_POINT:
                 continue
-            # solo una curva che arriva tangente all'arco: doveva proseguire in lui
-            # (il lato dritto di un'asola); una che arriva storta finisce lì apposta.
-            # Tangente: lungo tutta la curva la direzione si scosta meno di SAME_POINT (D277)
+            # only a curve arriving tangent to the arc: it was meant to continue in it (the
+            # straight side of a slot); one arriving askew ends there on purpose.
+            # Tangent: along the whole curve the direction deviates by less than SAME_POINT
             ux, uy = end_tangent(edge.segment, node == edge.end)
             rx, ry = foot[0] - arc.center[0], foot[1] - arc.center[1]
             if segment_length(edge.segment) * abs(ux * rx + uy * ry) > SAME_POINT * math.hypot(rx, ry):
@@ -246,7 +232,7 @@ def bend_arcs_through_free_ends(edges: List[Edge], gap: float, bent: Optional[li
             new = CircleSeg(center=(cx, cy), radius=radius, start_angle=math.atan2(a[1] - cy, a[0] - cx),
                          end_angle=math.atan2(b[1] - cy, b[0] - cx), ccw=arc.ccw)
             if math.dist(nearest_point([new], p), p) > FLOAT_NOISE:
-                continue        # il capo cade sull'altro arco del cerchio
+                continue        # the end falls on the other arc of the circle
             if max(math.dist(q, nearest_point([arc], q)) for q in new.discretize(tolerance=DEFAULT_TOLERANCE)) > gap:
                 continue
             out[k] = replace(edges[k], segment=new)
@@ -257,19 +243,16 @@ def bend_arcs_through_free_ends(edges: List[Edge], gap: float, bent: Optional[li
 
 
 def move_onto_targets(edges: List[Edge], gap: float, moved: Optional[list] = None) -> List[Edge]:
-    """
-    Un raccordo (arco, spline, ellisse aperti: mai una retta) disegnato
-    qualche millesimo di fianco a ciò che deve toccare si sposta intero (D271).
-    Vincoli, tutti insieme: un suo capo libero cade sulla curva più vicina
-    entro `gap`; un suo capo legato a una retta sola resta sul prolungamento
-    di quella retta, che si allunga o si accorcia fino a lì; il capo libero di
-    un'altra curva entro `gap` dal raccordo cade sul raccordo spostato. Si
-    sposta della traslazione unica che li soddisfa, se non supera `gap` e se
-    almeno un vincolo era staccato. Una retta non si sposta mai, si allunga o
-    si accorcia. Non verso un filetto (arco o cerchio con un altro
-    concentrico), non su un asse (retta per il centro). `moved`, se dato,
-    riceve (punto, spostamento) di ogni raccordo spostato.
-    """
+    """A fillet (open arc, spline, ellipse: never a line) drawn a few thousandths
+    beside what it must touch moves whole. Constraints, all together: a free end
+    of it falls on the nearest curve within `gap`; an end bound to a single line
+    stays on that line's extension, which lengthens or shortens up to there; the
+    free end of another curve within `gap` of the fillet falls on the moved
+    fillet. It moves by the unique translation satisfying them, if it does not
+    exceed `gap` and if at least one constraint was detached. A line never moves,
+    it lengthens or shortens. Not towards a thread (arc or circle with another
+    concentric one), not on an axis (line through the centre). `moved`, if given,
+    receives (point, displacement) of every moved fillet."""
     edges = list(edges)
     geoms = [edge_geometry(e) for e in edges]
     tree = STRtree(geoms)
@@ -279,7 +262,7 @@ def move_onto_targets(edges: List[Edge], gap: float, moved: Optional[list] = Non
     for k, edge in enumerate(edges):
         for node in {edge.start, edge.end}:
             at_node.setdefault(node, []).append(k)
-    # i capi liberi staccati, sotto la curva più vicina: chi può toccarla spostandola
+    # detached free ends, under the nearest curve: whoever can touch it by moving it
     beside: dict = {}
     for k, edge in enumerate(edges):
         if segment_is_closed(edge.segment) or edge.start == edge.end:
@@ -300,7 +283,7 @@ def move_onto_targets(edges: List[Edge], gap: float, moved: Optional[list] = Non
         constraints, stretch, reach, detached = plan
         reached = {j for j, _ in reach}
         for q, owner in beside.get(k, []):
-            # la retta target si allunga fino al raccordo: il suo capo non è un vincolo in più
+            # the target line lengthens up to the fillet: its end is not an extra constraint
             if owner not in reached and _may_land(edges[owner].segment, seg, rounds, gap):
                 constraints.append((q, seg, -1))
                 detached = True
@@ -314,7 +297,7 @@ def move_onto_targets(edges: List[Edge], gap: float, moved: Optional[list] = Non
         grow = _reached_ends(reach, edge, a, b, edges, graph)
         if grow is None:
             continue
-        # una retta si blocca per capo: due raccordi possono allungarla, uno per parte
+        # a line is blocked per end: two fillets can lengthen it, one per side
         involved = {(k, None)} | {(j, node) for j, node in stretch} | {(j, getattr(edges[j], role)) for j, role, _ in grow}
         if involved & touched:
             continue
@@ -333,10 +316,10 @@ def move_onto_targets(edges: List[Edge], gap: float, moved: Optional[list] = Non
 
 
 def _reached_ends(reach: list, edge: Edge, a, b, edges: List[Edge], graph):
-    """Le rette target da allungare fino al capo spostato del raccordo:
-    [(indice, capo della retta, punto)]. Un capo che cade dentro la retta non
-    allunga niente; oltre la fine, la retta si allunga se quel suo capo è
-    libero. None se dovrebbe allungarsi un capo legato."""
+    """The target lines to lengthen up to the moved end of the fillet:
+    [(index, end of the line, point)]. An end falling inside the line lengthens
+    nothing; beyond its end, the line lengthens if that end is free. None if a
+    bound end would have to lengthen."""
     out = []
     for j, node in reach:
         pt = a if node == edge.start else b
@@ -354,9 +337,10 @@ def _reached_ends(reach: list, edge: Edge, a, b, edges: List[Edge], graph):
 
 
 def _fillet_constraints(k: int, edges: List[Edge], geoms: list, tree, graph, at_node: dict, rounds: list, gap: float):
-    """(vincoli, rette legate da allungare, rette target, c'è un vincolo
-    staccato) dei capi del raccordo `k`; None se un capo è legato a qualcosa
-    che non è una retta sola, o se un capo staccato cadrebbe su un filetto o un asse."""
+    """(constraints, bound lines to lengthen, target lines, whether there is a
+    detached constraint) of the ends of fillet `k`; None if an end is bound to
+    something that is not a single line, or if a detached end would fall on a
+    thread or an axis."""
     seg = edges[k].segment
     constraints, stretch, reach, detached = [], [], [], False
     for p, node in zip(segment_endpoints(seg), (edges[k].start, edges[k].end)):
@@ -371,8 +355,8 @@ def _fillet_constraints(k: int, edges: List[Edge], geoms: list, tree, graph, at_
                     return None
                 detached = True
             if isinstance(edges[j].segment, LineSeg):
-                # su una retta conta il suo prolungamento: se il capo ci cade
-                # oltre la fine, la retta si allunga fin lì
+                # on a line its extension counts: if the end falls there beyond its end, the
+                # line lengthens up to there
                 constraints.append((p, _carrier(edges[j].segment, gap), 1))
                 reach.append((j, node))
             else:
@@ -389,8 +373,8 @@ def _fillet_constraints(k: int, edges: List[Edge], geoms: list, tree, graph, at_
 
 
 def _carrier(line: LineSeg, gap: float) -> LineSeg:
-    """La retta di `line` prolungata di `2 * gap` ai due capi: il capo che ci
-    scorre sopra resta dentro."""
+    """The line of `line` extended by `2 * gap` at both ends: the end sliding on it
+    stays inside."""
     (ax, ay), (bx, by) = line.start, line.end
     length = math.hypot(bx - ax, by - ay) or 1.0
     ux, uy = (bx - ax) / length * 2 * gap, (by - ay) / length * 2 * gap
@@ -398,7 +382,7 @@ def _carrier(line: LineSeg, gap: float) -> LineSeg:
 
 
 def _target(p, k: int, edges: List[Edge], geoms: list, tree, gap: float):
-    """(distanza, indice) della curva più vicina a `p` entro `gap`, fuori da `k`."""
+    """(distance, index) of the curve nearest `p` within `gap`, outside `k`."""
     best = None
     for j in tree.query(Point(p), predicate="dwithin", distance=gap + 2 * DEFAULT_TOLERANCE):
         j = int(j)
@@ -411,8 +395,8 @@ def _target(p, k: int, edges: List[Edge], geoms: list, tree, gap: float):
 
 
 def _may_land(seg, target, rounds: list, gap: float) -> bool:
-    """Un capo staccato può cadere su `target`: no se è un arco o cerchio con
-    un altro concentrico (filetto), no se `seg` è una retta per il suo centro (asse)."""
+    """A detached end can fall on `target`: no if it is an arc or circle with
+    another concentric one (thread), no if `seg` is a line through its centre (axis)."""
     if not isinstance(target, CircleSeg):
         return True
     if any(r is not target and math.dist(r.center, target.center) <= gap for r in rounds):
@@ -427,19 +411,19 @@ def _may_land(seg, target, rounds: list, gap: float) -> bool:
 
 
 def near_free_gaps(edges: List[Edge], tolerance: float, reach_to: float) -> list:
-    """I gap fra estremi liberi che `close_free_gaps` chiuderebbe entro
-    `reach_to` ma non entro `tolerance`: (estremo, compagno, distanza) (D227)."""
+    """The gaps between free ends that `close_free_gaps` would close within
+    `reach_to` but not within `tolerance`: (end, partner, distance)."""
     return near_gaps(free_endpoints_from_edges(edges, build_node_graph(edges)), tolerance, reach_to, edges)
 
 
 def ambiguous_free_ends(edges: List[Edge], tolerance: float) -> List[Tuple[float, float]]:
-    """Gli estremi liberi che `close_free_gaps` lascia aperti: due punti
-    più vicini a pari merito, nessuno scelto (D185)."""
+    """The free ends that `close_free_gaps` leaves open: two equally near points,
+    none chosen."""
     return ambiguous_gap_ends(free_endpoints_from_edges(edges, build_node_graph(edges)), tolerance, edges)
 
 
 def dangling_splines(edges: List[Edge]) -> List[Edge]:
-    """BSplineSeg aperte con almeno un estremo non collegato a nient'altro."""
+    """Open BSplineSegs with at least one end not connected to anything else."""
     open_splines = [e for e in edges if isinstance(e.segment, BSplineSeg) and e.start != e.end]
     if not open_splines:
         return []
@@ -448,7 +432,7 @@ def dangling_splines(edges: List[Edge]) -> List[Edge]:
 
 
 def self_crossings(edges: List[Edge]) -> List[Tuple[float, float]]:
-    """I punti dove una spline incrocia se stessa (le altre primitive non possono)."""
+    """The points where a spline crosses itself (the other primitives cannot)."""
     from shapely.geometry import LineString
     from shapely.ops import unary_union
     found = []
@@ -458,7 +442,7 @@ def self_crossings(edges: List[Edge]) -> List[Tuple[float, float]]:
         line = LineString(e.segment.discretize())
         if line.is_simple:
             continue
-        # la curva nodata su se stessa: a un incrocio arrivano 4 pezzi
+        # the curve knotted on itself: 4 pieces arrive at a crossing
         ends = {}
         for piece in unary_union(line).geoms:
             for p in (piece.coords[0], piece.coords[-1]):
@@ -468,7 +452,7 @@ def self_crossings(edges: List[Edge]) -> List[Tuple[float, float]]:
 
 
 def closed_touches(edges: List[Edge], tolerance: float) -> List[Tuple[float, float]]:
-    """I nodi di una curva chiusa che stanno su un'altra curva chiusa."""
+    """The nodes of a closed curve lying on another closed curve."""
     from shapely.geometry import LineString, Point
     from shapely.strtree import STRtree
     from ..primitives.mathseg import segment_is_closed

@@ -1,1 +1,1 @@
-"""topo/core/base — le basi comuni a ogni lettura (D187, D188)."""
+"""topo/core/base — the foundations common to every reading."""

@@ -1,8 +1,8 @@
 """
 topo/core/base/hierarchy.py
 ---------------------------
-L'albero di contenimento dei contorni chiusi: quale sta dentro quale (shapely,
-D169), e i cluster che ne escono, ordinati. Il giro che diventa curva sta in
+The containment tree of closed contours: which is inside which (shapely), and
+the clusters that come out of it, ordered. The loop that becomes a curve is in
 `curves.py`.
 """
 
@@ -19,9 +19,7 @@ from ..geometry.regions import enclosing
 
 
 
-# ---------------------------------------------------------------------------
-# Albero di contenimento
-# ---------------------------------------------------------------------------
+# --- Containment tree ---
 
 def _place(proxy: ClosedCurve, nodes: list) -> bool:
     for node in nodes:
@@ -33,12 +31,10 @@ def _place(proxy: ClosedCurve, nodes: list) -> bool:
 
 
 def sort_clusters(clusters: list) -> list:
-    """
-    I cluster dal più grande: area esatta dell'outer, poi a pari area l'angolo
-    (xmin, ymin) del bbox — fra due copie congruenti l'unico fatto che le
-    distingue. Pari vuol dire entro il rumore (FLOAT_NOISE sul perimetro per
-    l'area, FLOAT_NOISE per xmin), non nella stessa cella di una griglia (D195).
-    """
+    """The clusters from the largest: exact area of the outer, then on equal area the
+    (xmin, ymin) corner of the bbox — between two congruent copies the only fact
+    that tells them apart. Equal means within the noise (FLOAT_NOISE on the
+    perimeter for the area, FLOAT_NOISE for xmin), not in the same cell of a grid."""
     ordered = []
     by_area = sorted(clusters, key=lambda c: -c.outer.area)
     for same_area in noise_runs(by_area, lambda a, b: a.outer.area - b.outer.area
@@ -90,20 +86,17 @@ def _collect_inners(
     depth: int = 1,
     parent: Optional[Contour] = None,
 ):
-    """
-    Appiattisce l'albero di contenimento in `cluster.inners` (ogni discendente
-    di un outer diventa un `Contour`, a qualsiasi profondità), ma non
-    butta via la forma dell'albero: ogni contorno porta con sé `depth` (0 per
-    l'outer, 1 per un figlio diretto, 2 per un nipote, ...) e `parent` (il
-    `Contour` che lo contiene direttamente). Chi consuma il cluster può
-    quindi risalire la catena di contenimento senza doverla ricalcolare da
-    zero — è il dato che `topo.tools.strips` legge per sapere quali bordi
-    si affacciano (D134).
+    """Flatten the containment tree into `cluster.inners` (every descendant of an
+    outer becomes a `Contour`, at any depth), but keep the shape of the tree:
+    each contour carries `depth` (0 for the outer, 1 for a direct child, 2 for a
+    grandchild, ...) and `parent` (the `Contour` that directly contains it). A
+    consumer of the cluster can thus climb the containment chain without
+    recomputing it — it is the data `topo.tools.strips` reads to know which
+    borders face each other.
 
-    heal() si ferma qui — non decide più hole vs inner né riconosce i
-    countersink dal nesting (D15). detect_flat(features="holes") ri-deriva il
-    nesting per contenimento fra poligoni e promuove i fori.
-    """
+    heal() stops here — it no longer decides hole vs inner nor recognizes
+    countersinks from the nesting. detect_flat(features="holes") re-derives the
+    nesting by containment between polygons and promotes the holes."""
     for child_proxy, grandchildren in children:
         classified_proxies.add(id(child_proxy))
         contour = _make_inner(child_proxy, parent_role=parent_role, depth=depth, parent=parent)
@@ -123,9 +116,9 @@ class HierarchyBuilder:
     def __init__(self, label: str, source_file: str, is_structural=None):
         self.label       = label
         self.source_file = source_file
-        # Stesso predicato di split_labeled / structural_loops — iniettato dal chiamante
-        # (snapbend: un foro è contorno di pezzo) o, di
-        # default, solo outer/inner (model.role.is_structural_role).
+        # Same predicate as split_labeled / structural_loops — injected by the caller
+        # (snapbend: a hole is a part contour) or, by default, only outer/inner
+        # (model.role.is_structural_role).
         self._is_structural = is_structural or is_structural_role
 
     def build(self, proxies: list) -> tuple[list[Cluster], list]:
@@ -180,15 +173,12 @@ class HierarchyBuilder:
         ]
 
 
-# ---------------------------------------------------------------------------
-# cluster_ref delle curve sciolte (D137)
-# ---------------------------------------------------------------------------
+# --- cluster_ref of the loose curves ---
 
 def assign_cluster_refs(curves: list, clusters: list, tolerance: float) -> None:
-    """
-    Scrive su ogni curva di `curves` (`result.loose`) `cluster_ref`: l'indice
-    in `clusters` del cluster il cui contorno esterno la contiene tutta, bordo
-    e buchi compresi; `None` se nessuno (`geometry.regions.enclosing`).
+    """Write on every curve of `curves` (`result.loose`) `cluster_ref`: the index in
+    `clusters` of the cluster whose outer contour contains it wholly, border and
+    holes included; `None` if none (`geometry.regions.enclosing`).
     """
     tracks = [
         list(poly.exterior.coords) if poly is not None

@@ -1,21 +1,21 @@
 """
 topo/core/base/refit.py
 -----------------------
-Rifit: una curva scritta in un'altra forma torna primitive. Nessuna
-fusione di copie (quelle stanno in `merge.py`): qui un gruppo di pezzi o una
-curva diventa un'altra primitiva, entro una soglia.
+Refit: a curve written in another form comes back as primitives. No merging of
+copies (those are in `merge.py`): here a group of pieces or a curve becomes
+another primitive, within a threshold.
 
-    refit_tessellations — una catena di tanti LineSeg corti è una curva scritta
-                          a punti: rifittata come arco/cerchio/spline
-                          (fitting.simplify_points) entro POINTS_NOISE dai
-                          punti; un dettaglio più piccolo si perde (D321).
-    refit_native_curves — una spline entro SAME_POINT da un arco o da
-                          un'ellisse diventa quello (fitting.conic_of_spline);
-                          un'ellisse coi semiassi uguali, il suo cerchio.
-    refit_circle_rings  — un gruppo di pezzi che fa il giro di un cerchio entro
-                          POINTS_NOISE è quel cerchio (D236).
-    chain_runs          — le catene massimali di lati corti: il percorso che
-                          il rifit delle tassellature segue.
+    refit_tessellations — a chain of many short LineSegs is a curve written as
+                          points: refitted as arc/circle/spline
+                          (fitting.simplify_points) within POINTS_NOISE of the
+                          points; a smaller detail is lost.
+    refit_native_curves — a spline within SAME_POINT of an arc or an ellipse
+                          becomes that (fitting.conic_of_spline); an ellipse
+                          with equal semi-axes, its circle.
+    refit_circle_rings  — a group of pieces going round a circle within
+                          POINTS_NOISE is that circle.
+    chain_runs          — the maximal chains of short sides: the path the
+                          refit of tessellations follows.
 """
 
 from __future__ import annotations
@@ -45,14 +45,12 @@ def refit_tessellations(
     min_run: int = TESSELLATION_RUN,
     tolerance: float = POINTS_NOISE,
 ) -> List[Edge]:
-    """
-    Una catena di almeno `min_run` LineSeg (`role == UNKNOWN`) più corti di
-    `max_segment`, collegati uno dopo l'altro, è una curva scritta a punti:
-    diventa le primitive di `simplify_points` (linee, archi, spline entro
-    `tolerance`; uno spigolo è una svolta su `max_segment`, D141). Gli
-    estremi della catena tengono i nodi originali, così resta attaccata ai
-    vicini. Il resto non si tocca.
-    """
+    """A chain of at least `min_run` LineSegs (`role == UNKNOWN`) shorter than
+    `max_segment`, connected one after the other, is a curve written as points:
+    it becomes the primitives of `simplify_points` (lines, arcs, splines within
+    `tolerance`; a corner is a turn over `max_segment`). The ends of the chain
+    keep the original nodes, so it stays attached to the neighbours. The rest is
+    not touched."""
     edges = list(edges)
     short = [e for e in edges
              if isinstance(e.segment, LineSeg) and e.role == ContourRole.UNKNOWN
@@ -76,8 +74,8 @@ def refit_tessellations(
         first, last = path[0], path[-1]
         start_node = first[0].end if first[1] else first[0].start
         end_node = last[0].start if last[1] else last[0].end
-        # una giunzione è un nodo solo, la fine del pezzo che arriva; l'inizio
-        # del successivo (a 1 ulp) non conta, o le due copie staccano la catena (G6e)
+        # a junction is a single node, the end of the arriving piece; the start of the
+        # next (1 ulp away) does not count, or the two copies detach the chain
         nodes = [node_point(segment_endpoints(prims[0])[0])] + [node_point(segment_endpoints(p)[1]) for p in prims]
         if closed:
             nodes[-1] = nodes[0]
@@ -92,12 +90,10 @@ def refit_tessellations(
 
 
 def refit_native_curves(edges: Iterable[Edge], tolerance: float = SAME_POINT) -> List[Edge]:
-    """
-    Una curva del file che è una primitiva più semplice diventa quella (D296),
-    stessi capi e stessi nodi: una spline entro `tolerance` da un arco o da
-    un'ellisse (`conic_of_spline`); un'ellisse coi semiassi uguali, il suo
-    cerchio (esatto). Le altre restano come sono.
-    """
+    """A curve of the file that is a simpler primitive becomes that, same ends and
+    same nodes: a spline within `tolerance` of an arc or an ellipse
+    (`conic_of_spline`); an ellipse with equal semi-axes, its circle (exact). The
+    others stay as they are."""
     out = []
     for e in edges:
         s, simpler = e.segment, None
@@ -110,22 +106,20 @@ def refit_native_curves(edges: Iterable[Edge], tolerance: float = SAME_POINT) ->
 
 
 def _circle_of(s: EllipseSeg) -> CircleSeg:
-    """L'ellisse coi semiassi uguali come cerchio: il suo parametro più l'angolo dell'asse è l'angolo."""
+    """The ellipse with equal semi-axes as a circle: its parameter plus the axis angle is the angle."""
     phi = math.atan2(s.major_axis[1], s.major_axis[0])
     return CircleSeg(center=s.center, radius=math.hypot(*s.major_axis), start_angle=s.start_param + phi,
                      end_angle=s.end_param + phi, ccw=s.ccw)
 
 
 def refit_circle_rings(edges: Iterable[Edge], tolerance: float = POINTS_NOISE) -> List[Edge]:
-    """
-    Un gruppo connesso di pezzi `role == UNKNOWN` (niente CircleSeg) il cui
-    nucleo (il gruppo senza i rami a capo libero) sta tutto entro `tolerance`
-    da un cerchio e gli fa il giro completo è quel cerchio: il nucleo diventa
-    un CircleSeg, a qualunque grandezza dei lati. Un ramo a capo libero, o un
-    pezzo isolato, che ci corre sopra va col cerchio; gli altri restano. Lo
-    scarto si misura sul pezzo intero (per una linea anche il punto più
-    vicino al centro), così un poligono vero resta (D236).
-    """
+    """A connected group of `role == UNKNOWN` pieces (no CircleSeg) whose core (the
+    group without the free-ended branches) lies wholly within `tolerance` of a
+    circle and goes completely round it is that circle: the core becomes a
+    CircleSeg, at any size of the sides. A free-ended branch, or an isolated
+    piece, running over it goes with the circle; the others stay. The deviation
+    is measured on the whole piece (for a line also the point nearest the
+    centre), so a true polygon stays."""
     edges = list(edges)
     node_edges: dict = {}
     for k, e in enumerate(edges):
@@ -146,13 +140,13 @@ def refit_circle_rings(edges: Iterable[Edge], tolerance: float = POINTS_NOISE) -
             continue
         segments = [e.segment for e in core]
         near, far = _ring_band(segments, fit[0])
-        radius = (near + far) / 2   # il raggio a metà fra il punto più vicino e il più lontano
+        radius = (near + far) / 2   # the radius midway between the nearest and the farthest point
         if radius <= tolerance or far - radius > tolerance or not _full_turn(segments, fit[0], tolerance / radius):
             continue
         circle = CircleSeg(center=fit[0], radius=radius)
         node = node_point(segment_endpoints(circle)[0])
         new_edges.append(replace(core[0], segment=circle, start=node, end=node))
-        # un ramo libero, o un pezzo isolato, che corre anch'esso sul cerchio è un tratto doppio del giro
+        # a free branch, or an isolated piece, also running on the circle is a double stretch of the loop
         on_ring = [e for e in [edges[k] for k in group] + loose
                    if e.role == ContourRole.UNKNOWN and not is_full_circle(e.segment)
                    and math.dist(node_point(e.start), fit[0]) <= radius + tolerance
@@ -164,12 +158,12 @@ def refit_circle_rings(edges: Iterable[Edge], tolerance: float = POINTS_NOISE) -
 
 
 def _chord_midpoint(s: LineSeg) -> Point:
-    """Il punto di mezzo della linea: col fit sui capi e sui mezzi il cerchio sta fra i due, non sui vertici."""
+    """The midpoint of the line: with the fit on the ends and the middles the circle lies between the two, not on the vertices."""
     return ((s.start[0] + s.end[0]) / 2, (s.start[1] + s.end[1]) / 2)
 
 
 def _without_free_branches(group: List[Edge]) -> List[Edge]:
-    """Il gruppo senza i rami che finiscono in un capo libero (tolti uno alla volta finché ce ne sono)."""
+    """The group without the branches ending in a free end (removed one at a time while there are any)."""
     core = [e for e in group if e.start != e.end or not isinstance(e.segment, LineSeg)]
     while True:
         degree = Counter(p for e in core for p in (e.start, e.end))
@@ -180,7 +174,7 @@ def _without_free_branches(group: List[Edge]) -> List[Edge]:
 
 
 def _full_turn(segments, center, slack: float) -> bool:
-    """I pezzi, visti dal centro, coprono tutto il giro: nessuno spicchio scoperto più largo di `slack` radianti."""
+    """The pieces, seen from the centre, cover the whole turn: no uncovered wedge wider than `slack` radians."""
     spans = []
     for s in segments:
         pts = [s.start, s.end] if isinstance(s, LineSeg) else s.discretize(tolerance=SAME_POINT)
@@ -197,14 +191,14 @@ def _full_turn(segments, center, slack: float) -> bool:
 
 
 def _within_band(segment, center, radius: float, tolerance: float) -> bool:
-    """Il pezzo sta tutto entro `tolerance` dal cerchio."""
+    """The piece lies wholly within `tolerance` of the circle."""
     near, far = _ring_band([segment], center)
     return radius - near <= tolerance and far - radius <= tolerance
 
 
 def _ring_band(segments, center) -> Tuple[float, float]:
-    """Distanza minima e massima dei pezzi dal centro: per una linea i capi e il suo punto più vicino, per
-    le altre curve i loro punti."""
+    """Minimum and maximum distance of the pieces from the centre: for a line its ends and its nearest point, for
+    the other curves their points."""
     near, far = math.inf, 0.0
     for s in segments:
         if isinstance(s, LineSeg):
@@ -221,8 +215,9 @@ def _ring_band(segments, center) -> Tuple[float, float]:
 
 
 def chain_runs(short_edges: List[Edge]) -> list:
-    """Catene massimali: percorsi fra nodi di grado != 2, o anelli.
-    [( [(edge, percorso_al_contrario)], chiusa )]."""
+    """Maximal chains: paths between nodes of degree != 2, or rings.
+    [( [(edge, path_reversed)], closed )].
+    """
     graph = build_node_graph(short_edges)
     used: set = set()
     runs = []
