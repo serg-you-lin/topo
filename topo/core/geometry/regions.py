@@ -309,7 +309,7 @@ def _nearest_on_curve(seg, curve, point: Point) -> Point:
     far = [math.dist(at(t), point) for t in ts]
     best: Optional[Point] = None
     for i in sorted(range(n + 1), key=far.__getitem__)[:3]:
-        t = golden_min(lambda s: math.dist(at(s), point), ts[max(i - 1, 0)], ts[min(i + 1, n)])
+        t, _ = golden_min(lambda s: math.dist(at(s), point), ts[max(i - 1, 0)], ts[min(i + 1, n)])
         q = at(t)
         if best is None or math.dist(q, point) < math.dist(best, point):
             best = q

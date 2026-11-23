@@ -16,7 +16,7 @@ from ..primitives.spline import BSplineSeg
 from ..primitives.mathseg import MathSeg
 from ..primitives.clothoid import ClothoidSeg
 from ..primitives.conics import HyperbolaSeg, ParabolaSeg, CircleSeg, EllipseSeg
-from .numeric import golden_max
+from .numeric import golden_min
 
 Point = Tuple[float, float]
 
@@ -223,8 +223,8 @@ class Reach:
         out = []
         for sign in (1.0, -1.0):
             t, lo, hi = seg._minimize(lambda q: -sign * dot(q), lambda ctrl: min(-sign * dot(q) for q in ctrl))
-            _t, refined = golden_max(lambda u: sign * dot(seg._evaluate(u)), lo, hi)
-            out.append(sign * max(sign * dot(seg._evaluate(t)), refined))
+            _t, refined = golden_min(lambda u: -sign * dot(seg._evaluate(u)), lo, hi, iterations=40)
+            out.append(sign * max(sign * dot(seg._evaluate(t)), -refined))
         return out[1], out[0]
 
 

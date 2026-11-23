@@ -22,7 +22,7 @@ from typing import Optional, Tuple
 from shapely.geometry import Polygon
 
 from .measure import Reach, chord_angle_deg, segment_length, SAME_POINT
-from .numeric import golden_max
+from .numeric import golden_min
 from ..primitives.line import LineSeg
 from ..primitives.mathseg import segment_endpoints, segment_is_closed
 from ..primitives.conics import CircleSeg, EllipseSeg, is_arc
@@ -248,11 +248,11 @@ def _min_area_angle(reaches, theta: float) -> float:
     soli campioni una forma quasi simmetrica (area piatta con l'angolo)
     sceglie un altro minimo locale. Costa tempo, voluto (MAP.md D156).
     """
-    def neg_area(t):
-        return -_extent_along(reaches, _angle_direction(t)) * _extent_along(reaches, _angle_direction(t + math.pi / 2))
+    def area(t):
+        return _extent_along(reaches, _angle_direction(t)) * _extent_along(reaches, _angle_direction(t + math.pi / 2))
 
-    best, value = golden_max(neg_area, theta - _ANGLE_BRACKET, theta + _ANGLE_BRACKET, iterations=30)
-    return best if value > neg_area(theta) else theta
+    best, value = golden_min(area, theta - _ANGLE_BRACKET, theta + _ANGLE_BRACKET, iterations=30)
+    return best if value < area(theta) else theta
 
 
 def _angle_direction(t: float) -> Point:
