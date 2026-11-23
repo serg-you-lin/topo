@@ -261,7 +261,7 @@ class TestForgeResult(unittest.TestCase):
         self.assertIn("source_file", d)
 
     def test_006_to_dict_values(self):
-        """to_dict ha i valori corretti."""
+        """to_dict has the right values."""
         result = self._make_result()
         d = result.to_dict()
         print(f"[Result] cluster label={d['clusters'][0]['label']}")

@@ -135,7 +135,7 @@ class TestUnitSplitOutput(unittest.TestCase):
             "heal() found no parts — check the fixture geometry"
         )
 
-    def test_001_genera_un_file(self):
+    def test_001_writes_a_file(self):
         """split() generates at least one .dxf file."""
         self._assert_heal_found_parts()
         generated = _split_files(self.result, self.doc, self.out_dir)

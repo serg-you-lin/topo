@@ -4,10 +4,12 @@ tests/package/test_english_only.py
 The code is written in English, and decisions are not cited in it. In every
 `.py` file of the packages, the tests and the tutorial, the comments, the
 docstrings and the names (functions, classes, arguments) carry no Italian word
-of `ITALIAN` and no decision number (`D` and two or three digits). String
-literals that are not docstrings are data (a drawing's texts, a fixture's
-labels) and are not checked, nor are file names and snake_case names quoted
-in a text (a fixture is named as it is). `scripts/` is out of scope.
+of `ITALIAN` and no decision number (`D` and two or three digits). In the
+packages every string is checked too: their messages reach the caller. In the
+tests and the tutorial the other strings are data (a drawing's texts, a
+fixture's labels) and are not checked, nor are file names and snake_case names
+quoted in a text (a fixture is named as it is). `scripts/` is out of scope.
+`ITALIAN` holds only words that are not English too ("per", "non", "come" are).
 """
 
 import ast
@@ -19,6 +21,7 @@ import unittest
 from tests.paths import PROJECT_ROOT
 
 FOLDERS = ("topo", "topo_dxf", "topo_pdf", "tests", "tutorial")
+PACKAGES = ("topo", "topo_dxf", "topo_pdf")
 
 # words that are Italian and not English: one is enough
 ITALIAN = frozenset("""
@@ -28,6 +31,12 @@ quello quella quando perché perche cioè ogni anche dove già più però essere
 viene vengono resta restano deve devono punto punti lato lati catena spigolo
 spigoli curva retta rette arco archi cerchio cerchi capo capi diventa
 tratto pezzo pezzi uguale uguali sempre mai niente nessun nessuna altrimenti
+genera generano figli figlio figlia padre padri altro altra altri altre striscia
+strisce contorno contorni foro fori piega pieghe foglio fogli disegno disegni
+con una uno del nel nei tra fra sia poi ancora trovato trovata trovati
+manca mancano chiuso chiusa aperto aperta vicino vicini lungo lunga errore
+attenzione valore valori esterno interno esterni interni sinistra destra sopra
+sotto pagina pagine
 """.split())
 DECISION = re.compile(r"\bD\d{2,3}\b")
 WORD = re.compile(r"[A-Za-zÀ-ÿ]+")
@@ -54,15 +63,22 @@ class TestEnglishOnly(unittest.TestCase):
                 texts = [(tok.start[0], tok.string, WORD.findall(QUOTED_NAME.sub(" ", tok.string)))
                          for tok in tokenize.generate_tokens(io.StringIO(source).readline)
                          if tok.type == tokenize.COMMENT]
+                docstrings = set()
                 for node in ast.walk(tree):
                     if isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                         doc = ast.get_docstring(node, clean=False)
                         if doc:
+                            docstrings.add(id(node.body[0].value))
                             texts.append((node.body[0].lineno, doc, WORD.findall(QUOTED_NAME.sub(" ", doc))))
                     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                         texts.append((node.lineno, node.name, NAME_PART.split(node.name)))
                     elif isinstance(node, ast.arg):
                         texts.append((node.lineno, node.arg, NAME_PART.split(node.arg)))
+                if folder in PACKAGES:
+                    texts += [(node.lineno, node.value, WORD.findall(QUOTED_NAME.sub(" ", node.value)))
+                              for node in ast.walk(tree)
+                              if isinstance(node, ast.Constant) and isinstance(node.value, str)
+                              and id(node) not in docstrings]
                 for line, text, words in texts:
                     bad = sorted({w for w in words if w.lower() in ITALIAN}) + DECISION.findall(text)
                     if bad:

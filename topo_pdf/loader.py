@@ -39,7 +39,7 @@ def load_pdf(path: str, snap_tolerance: float = PDF_SNAP) -> list:
 
     try:
         doc = fitz.open(path)
-        print(f"[pdf/loader] Aperto PDF: {path} ({len(doc)} pagine)")
+        print(f"[pdf/loader] Opened PDF: {path} ({len(doc)} pages)")
 
         for page_idx, page in enumerate(doc):
             page_height = page.rect.height
