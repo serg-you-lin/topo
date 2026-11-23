@@ -29,7 +29,7 @@ from topo import to_shapely
 # --- Helper: building pure Edges (no ezdxf) ---
 
 def _edge(start, end):
-    """Crea un Edge lineare."""
+    """Create a linear Edge."""
     return Edge(
         role=ContourRole.UNKNOWN,
         start=start,
@@ -45,7 +45,7 @@ def _arc_edge(start, end, arc_pts):
         role=ContourRole.UNKNOWN,
         start=start,
         end=end,
-        # grado 1 clamped: un nodo per vertice, i due estremi doppi
+        # degree 1 clamped: one node per vertex, the two ends doubled
         segment=BSplineSeg(
             degree=1,
             control_points=arc_pts,
@@ -191,12 +191,10 @@ def _make_rect_with_split_arcs_and_stubs(
     return edges
 
 
-# ---------------------------------------------------------------------------
-# Helper: loop → Polygon
-# ---------------------------------------------------------------------------
+# --- Helper: loop → Polygon ---
 
 def _loop_to_polygon(loop) -> Polygon:
-    """Converte un Loop in Polygon Shapely."""
+    """Convert a Loop into a Shapely Polygon."""
     pts = []
     for edge, rev in loop:
         coords = list(edge.segment.discretize(tolerance=0.01))
@@ -206,9 +204,7 @@ def _loop_to_polygon(loop) -> Polygon:
     return Polygon(pts) if len(pts) >= 3 else None
 
 
-# ---------------------------------------------------------------------------
-# Test: LoopFinder.find() – rettangolo base
-# ---------------------------------------------------------------------------
+# --- Test: LoopFinder.find() – basic rectangle ---
 
 class TestFaceLoopsRect(unittest.TestCase):
     def setUp(self):
@@ -236,9 +232,7 @@ class TestFaceLoopsRect(unittest.TestCase):
         self.assertAlmostEqual(first_start[1], last_exit[1], places=1)
 
 
-# ---------------------------------------------------------------------------
-# Test: orientamento CCW
-# ---------------------------------------------------------------------------
+# --- Test: CCW orientation ---
 
 class TestLoopOrientationCCW(unittest.TestCase):
     def setUp(self):
@@ -297,12 +291,10 @@ class TestLoopWithArcs(unittest.TestCase):
         for i, poly in enumerate(self.valid_polys):
             ring = LinearRing(poly.exterior.coords)
             self.assertTrue(ring.is_ccw,
-                            f"Loop {i+1} non è CCW (area={poly.area:.1f})")
+                            f"Loop {i+1} is not CCW (area={poly.area:.1f})")
 
 
-# ---------------------------------------------------------------------------
-# Test: stub su archi concavi spezzati — recupero via pipeline
-# ---------------------------------------------------------------------------
+# --- Test: stubs on broken concave arcs — recovery via the full pipeline ---
 
 class TestSplitArcStubs(unittest.TestCase):
     """Concave arcs broken into two halves + stub LINEs towards the inside attached

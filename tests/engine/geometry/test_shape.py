@@ -223,7 +223,7 @@ class TestMeasuresOnThePrimitives(unittest.TestCase):
 
     def test_arc_not_passing_through_the_end(self):
         from topo.core.geometry.measure import segment_reach
-        # quarto in alto a destra percorso al contrario: lungo x va da 0 a r, mai a −r
+        # top-right quarter walked backwards: along x it goes from 0 to r, never to −r
         arc = CircleSeg(center=(0, 0), radius=4, start_angle=math.pi / 2, end_angle=0, ccw=False)
         lo, hi = segment_reach(arc, (1, 0))
         self.assertAlmostEqual(lo, 0, places=12)

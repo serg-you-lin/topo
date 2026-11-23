@@ -203,9 +203,9 @@ class TestCurveBranch(unittest.TestCase):
     involute up to 144 mm away."""
 
     CURVES = {
-        "clotoide a spirale": ClothoidSeg(origin=(0, 0), angle=0, a=1.0, start_param=0, end_param=30),
-        "evolvente lunga": FormulaSeg(x="cos(t) + t*sin(t)", y="sin(t) - t*cos(t)", start_param=0, end_param=200),
-        "forcina non uniforme": FormulaSeg(x="50 * sin(pi * t**3)", y="0.01 * t", start_param=0, end_param=1),
+        "spiral clothoid": ClothoidSeg(origin=(0, 0), angle=0, a=1.0, start_param=0, end_param=30),
+        "long involute": FormulaSeg(x="cos(t) + t*sin(t)", y="sin(t) - t*cos(t)", start_param=0, end_param=200),
+        "non-uniform hairpin": FormulaSeg(x="50 * sin(pi * t**3)", y="0.01 * t", start_param=0, end_param=1),
     }
 
     def test_the_cut_ends_are_those_asked_for(self):

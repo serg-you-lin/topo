@@ -36,9 +36,7 @@ def build_polygon(
     return _make_polygon(pts)
 
 
-# ---------------------------------------------------------------------------
-# Helper privato
-# ---------------------------------------------------------------------------
+# --- Private helper ---
 
 def _make_polygon(pts: list) -> Optional[Polygon]:
     if len(pts) < 3:

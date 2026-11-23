@@ -32,15 +32,15 @@ def _spline_of(seg, tolerance=1e-5) -> BSplineSeg:
 
 
 CASES = [
-    ("arco ccw", CircleSeg(center=(1.0, 1.0), radius=5.0, start_angle=0.5, end_angle=2.0), CircleSeg),
-    ("arco cw", CircleSeg(center=(1.0, 1.0), radius=5.0, start_angle=2.0, end_angle=0.5, ccw=False), CircleSeg),
-    ("arco di 300°", CircleSeg(center=(0.0, 0.0), radius=3.0, start_angle=0.0, end_angle=5.3), CircleSeg),
-    ("cerchio da 0,7 rad", CircleSeg(center=(1.0, 1.0), radius=5.0, start_angle=0.7, end_angle=0.7 + 2 * math.pi), CircleSeg),
-    ("arco d'ellisse", EllipseSeg(center=(3.0, -2.0), major_axis=(8.0, 3.0), ratio=0.4, start_param=0.3, end_param=2.5),
+    ("ccw arc", CircleSeg(center=(1.0, 1.0), radius=5.0, start_angle=0.5, end_angle=2.0), CircleSeg),
+    ("cw arc", CircleSeg(center=(1.0, 1.0), radius=5.0, start_angle=2.0, end_angle=0.5, ccw=False), CircleSeg),
+    ("300° arc", CircleSeg(center=(0.0, 0.0), radius=3.0, start_angle=0.0, end_angle=5.3), CircleSeg),
+    ("circle of 0.7 rad", CircleSeg(center=(1.0, 1.0), radius=5.0, start_angle=0.7, end_angle=0.7 + 2 * math.pi), CircleSeg),
+    ("ellipse arc", EllipseSeg(center=(3.0, -2.0), major_axis=(8.0, 3.0), ratio=0.4, start_param=0.3, end_param=2.5),
      EllipseSeg),
-    ("arco d'ellisse cw", EllipseSeg(center=(3.0, -2.0), major_axis=(8.0, 3.0), ratio=0.4, start_param=2.5,
+    ("cw ellipse arc", EllipseSeg(center=(3.0, -2.0), major_axis=(8.0, 3.0), ratio=0.4, start_param=2.5,
                                      end_param=0.3, ccw=False), EllipseSeg),
-    ("ellisse intera", EllipseSeg(center=(3.0, -2.0), major_axis=(8.0, 3.0), ratio=0.4, start_param=1.0,
+    ("whole ellipse", EllipseSeg(center=(3.0, -2.0), major_axis=(8.0, 3.0), ratio=0.4, start_param=1.0,
                                   end_param=1.0 + 2 * math.pi), EllipseSeg),
 ]
 

@@ -1,7 +1,7 @@
 """
 tests/adapters/dxf/test_edge_cases.py
 -------------------------------------
-Test Suite per casi edge su DXF reali.
+Test suite for edge cases on real DXFs.
 """
 
 import unittest

@@ -82,9 +82,7 @@ def refine_gap(a: Sequence, b: Sequence, on_a: Point, on_b: Point) -> Gap:
     return Gap(math.dist(on_a, on_b), on_a, on_b)
 
 
-# ---------------------------------------------------------------------------
-# La striscia
-# ---------------------------------------------------------------------------
+# --- The strip ---
 
 @dataclass(frozen=True)
 class Strip:
@@ -195,9 +193,9 @@ def strip_between(a: Sequence, b: Sequence, at: Point, width: float,
             raise ValueError(f"a side of the strip {width} wide does not meet {which}")
         return nearest_point(ring, min(found, key=lambda p: math.dist(p, near)))
 
-    start_cuts = (cut(start_ring, start, 1.0, "il contorno di partenza"),
-                  cut(start_ring, start, -1.0, "il contorno di partenza"))
-    end_cuts = (cut(end_ring, end, 1.0, "il contorno d'arrivo"), cut(end_ring, end, -1.0, "il contorno d'arrivo"))
+    start_cuts = (cut(start_ring, start, 1.0, "the starting contour"),
+                  cut(start_ring, start, -1.0, "the starting contour"))
+    end_cuts = (cut(end_ring, end, 1.0, "the arriving contour"), cut(end_ring, end, -1.0, "the arriving contour"))
     if flip:
         found = Strip(a_at=end, b_at=start, a_cuts=end_cuts, b_cuts=start_cuts,
                       sides=(LineSeg(start=end_cuts[0], end=start_cuts[0]),
@@ -216,7 +214,7 @@ def _refuse_crossings(strip: Strip, a: Sequence, b: Sequence, obstacles: Sequenc
         if math.dist(side.start, side.end) <= _TOUCH:
             raise ValueError("a side of the strip has zero length: the two contours touch there")
         ends = (side.start, side.end)
-        for name, ring in [("di nuovo un suo contorno", a), ("di nuovo un suo contorno", b),
+        for name, ring in [("again one of its contours", a), ("again one of its contours", b),
                            *(("un altro contorno", r) for r in obstacles),
                            *(("un'altra striscia", s.outline) for s in placed)]:
             if any(min(math.dist(p, e) for e in ends) > _TOUCH for p in _hits(ring, side)):

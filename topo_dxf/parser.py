@@ -39,9 +39,7 @@ class DxfEntityDispatcher:
         return None
 
 
-# ---------------------------------------------------------------------------
-# Parsing ezdxf → primitive
-# ---------------------------------------------------------------------------
+# --- Parsing ezdxf → primitives ---
 
 def _parse_line(entity, rev) -> tuple:
     if rev:
@@ -139,7 +137,7 @@ def _parse_polyline(entity, rev) -> list:
         if (points[0][0], points[0][1]) == (points[-1][0], points[-1][1]):
             points = points[:-1]
 
-    # Semplice reversal: inverte tutto e basta
+    # Simple reversal: invert everything, that is all
     if rev:
         points = list(reversed(points))
 

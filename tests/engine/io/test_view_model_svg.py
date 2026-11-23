@@ -70,7 +70,7 @@ class TestViewModel(unittest.TestCase):
         cluster = self.vm["clusters"][0]
         self.assertGreaterEqual(len(cluster["outer"]["points"]), 3)
         self.assertTrue(cluster["outer"]["closed"])
-        self.assertEqual(cluster["outer"]["color"], "#00ff00")  # verde = outer
+        self.assertEqual(cluster["outer"]["color"], "#00ff00")  # green = outer
 
     def test_overlay_entry_carries_to_dict_fields(self):
         marks = [m for p in self.vm["clusters"] for m in p["features"]["my_circles"]]

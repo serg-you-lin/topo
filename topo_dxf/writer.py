@@ -28,9 +28,7 @@ from .layers import (
 )
 
 
-# ---------------------------------------------------------------------------
-# API pubblica
-# ---------------------------------------------------------------------------
+# --- Public API ---
 
 def to_dxf(
     result: Result,
@@ -143,9 +141,8 @@ def to_dxf(
     return doc_out
 
 
-# ---------------------------------------------------------------------------
-# Testi
-# ---------------------------------------------------------------------------
+# --- Texts ---
+#
 
 def _write_texts(
     msp,
@@ -299,9 +296,7 @@ def _write_fills(msp, result: Result, book: "_Layers", include_loose: bool) -> N
                 hatch.paths.add_polyline_path(points, is_closed=True)
 
 
-# ---------------------------------------------------------------------------
-# Helpers interni
-# ---------------------------------------------------------------------------
+# --- Internal helpers ---
 
 def _write_attached_features(msp, cluster: Cluster, book: "_Layers") -> None:
     """Every collection of `cluster.overlay`: topo does not know what they are. Of an

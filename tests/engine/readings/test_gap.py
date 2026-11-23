@@ -20,19 +20,17 @@ EXAMPLES_DIR = DATA
 W, H  = 100.0, 50.0
 AREA  = W * H       # 5000.0
 GAP   = 0.1
-DELTA = 1.0         # tolleranza area mm²
+DELTA = 1.0         # tolerance area mm²
 
 
 def load(name):
     return topo_dxf.load_dxf(str(drawing(name)))
 
 
-# ---------------------------------------------------------------------------
-# GAP — LINE troppo corte
-# ---------------------------------------------------------------------------
+# --- GAP — LINEs too short ---
 
 class TestGapClose(unittest.TestCase):
-    """tolerance > gap → profilo chiuso, area corretta."""
+    """tolerance > gap → profile closed, correct area."""
 
     def setUp(self):
         doc = load("rect_gap.dxf")
@@ -66,9 +64,7 @@ class TestGapNoClose(unittest.TestCase):
         self.assertEqual(self.result.cluster_count, 0)
 
 
-# ---------------------------------------------------------------------------
-# OVERLAP — LINE troppo lunghe
-# ---------------------------------------------------------------------------
+# --- OVERLAP — LINEs too long ---
 
 class TestOverlapClose(unittest.TestCase):
     """tolerance > overlap → trim at the corners, correct area."""
@@ -285,7 +281,7 @@ class TestSplineLineGapClose(unittest.TestCase):
         """Area must be close to W*H — the spline is nearly vertical."""
         area = self.result.clusters[0].area
         self.assertAlmostEqual(area, W * H, delta=50.0,
-                               msg=f"Area {area:.2f} lontana da attesa {W*H}")
+                               msg=f"Area {area:.2f} far from expected {W*H}")
 
 
 class TestSplineLineGapNoClose(unittest.TestCase):

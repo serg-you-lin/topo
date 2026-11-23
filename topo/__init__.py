@@ -83,7 +83,7 @@ except ImportError:  # pragma: no cover
     __version__ = "0.0.0+dev"
 
 __all__ = [
-    # Geometria in ingresso (i file entrano dagli adapter)
+    # Input geometry (the files come in through the adapters)
     "load_geometry",
     "load_segments",
     # Validazione

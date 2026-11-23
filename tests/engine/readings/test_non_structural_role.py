@@ -75,8 +75,8 @@ class TestOnlyNonStructuralEdges(unittest.TestCase):
 
     def test_the_edges_set_aside_stay_in_loose(self):
         shapes = {
-            "anello": topo.geometry.rectangle(200, 100),
-            "righe": [LineSeg(start=(0, 0), end=(50, 0)),
+            "ring": topo.geometry.rectangle(200, 100),
+            "rows": [LineSeg(start=(0, 0), end=(50, 0)),
                       LineSeg(start=(0, 10), end=(50, 30))],
         }
         for name, segments in shapes.items():

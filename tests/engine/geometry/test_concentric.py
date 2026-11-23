@@ -107,7 +107,7 @@ class TestArcsAround(unittest.TestCase):
 
     def test_only_larger_and_concentric_arcs(self):
         arcs = [self._arc((0, 0), 2, 270),       # smaller
-                self._arc((5, 0), 3, 270),       # altro centro
+                self._arc((5, 0), 3, 270),       # other centre
                 self._arc((0, 0), 10, 90),
                 self._arc((0, 0.05), 3, 270)]
         found = arcs_around((0, 0), 2.5, arcs, tolerance=0.1)

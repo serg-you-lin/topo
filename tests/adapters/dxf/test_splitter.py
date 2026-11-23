@@ -58,9 +58,7 @@ from tests.paths import DATA, drawing
 EXAMPLES_DIR = DATA
 
 
-# ---------------------------------------------------------------------------
-# Fixtures: geometria in memoria + heal() reale
-# ---------------------------------------------------------------------------
+# --- Fixtures: in-memory geometry + real heal() ---
 
 def _make_via_heal(points: list[tuple], extra_entities=None):
     """Create an in-memory ezdxf msp with a closed LWPOLYLINE defined by `points`,
@@ -122,9 +120,7 @@ def _split_to_files(doc, output_folder, label="", source_file="", tolerance=None
     return result
 
 
-# ---------------------------------------------------------------------------
-# UNIT TEST — writeback.split()
-# ---------------------------------------------------------------------------
+# --- UNIT TEST — writeback.split() ---
 
 class TestUnitSplitOutput(unittest.TestCase):
     """Test the output invariants of split(): generated files, namer, min_area, output folder."""
@@ -136,17 +132,17 @@ class TestUnitSplitOutput(unittest.TestCase):
     def _assert_heal_found_parts(self):
         self.assertGreater(
             len(self.result.clusters), 0,
-            "heal() non ha trovato parti — verifica la geometria della fixture"
+            "heal() found no parts — check the fixture geometry"
         )
 
     def test_001_genera_un_file(self):
-        """split() genera almeno un file .dxf."""
+        """split() generates at least one .dxf file."""
         self._assert_heal_found_parts()
         generated = _split_files(self.result, self.doc, self.out_dir)
         files = list(Path(self.out_dir).glob("*.dxf"))
-        self.assertGreater(len(files), 0, "Nessun file .dxf generato")
+        self.assertGreater(len(files), 0, "No .dxf file generated")
         self.assertEqual(len(generated), len(files),
-                         "Lista returned non corrisponde ai file su disco")
+                         "Returned list does not match the files on disk")
 
     def test_002_file_leggibile(self):
         """The generated files are valid DXFs readable by ezdxf."""
@@ -156,7 +152,7 @@ class TestUnitSplitOutput(unittest.TestCase):
             try:
                 ezdxf.readfile(path)
             except Exception as e:
-                self.fail(f"File non leggibile: {path} — {e}")
+                self.fail(f"File not readable: {path} — {e}")
 
     def test_003_namer_default_formato(self):
             """The default namer produces a name of the type 'label_P1'."""
@@ -167,16 +163,16 @@ class TestUnitSplitOutput(unittest.TestCase):
             nome = Path(generated[0]).stem
             
             self.assertRegex(nome, r".+_P\d+$",
-                             f"Nome '{nome}' non segue il formato 'label_P1'")
+                             f"Name '{nome}' does not follow the format 'label_P1'")
 
     def test_004_namer_custom(self):
         """A custom namer is respected."""
         self._assert_heal_found_parts()
-        namer = lambda i, cluster: f"pezzo_{i + 1}"
+        namer = lambda i, cluster: f"piece_{i + 1}"
         generated = _split_files(self.result, self.doc, self.out_dir,
                           namer=namer)
         self.assertTrue(len(generated) > 0)
-        self.assertEqual(Path(generated[0]).stem, "pezzo_1")
+        self.assertEqual(Path(generated[0]).stem, "piece_1")
 
     def test_005_cluster_label_of_the_original_part_intact(self):
         """The part's label gives the file name; the original cluster does not change."""
@@ -189,17 +185,17 @@ class TestUnitSplitOutput(unittest.TestCase):
     def test_006_min_area_discards_part_below_threshold(self):
         """Parts with area below min_area are discarded and produce a warning."""
         self._assert_heal_found_parts()
-        # 200x100 = 20_000 mm²; soglia altissima → scartato
+        # 200x100 = 20_000 mm²; very high threshold → discarded
         generated = _split_files(self.result, self.doc, self.out_dir,
                           min_area=999_999)
-        self.assertEqual(len(generated), 0, "Part sotto soglia non scartato")
+        self.assertEqual(len(generated), 0, "Part below threshold not discarded")
         self.assertTrue(len(self.result.warnings) > 0,
-                        "Nessun warning emesso per cluster scartato")
+                        "No warning emitted for a discarded cluster")
 
     def test_007_output_folder_creata_se_assente(self):
         """split() creates the output folder if it does not exist."""
         self._assert_heal_found_parts()
-        new_dir = os.path.join(self.out_dir, "sub", "nuovo")
+        new_dir = os.path.join(self.out_dir, "sub", "new")
         _split_files(self.result, self.doc, new_dir)
         self.assertTrue(os.path.isdir(new_dir))
 
@@ -226,31 +222,31 @@ class TestUnitSplitFilters(unittest.TestCase):
         )
         self.assertTrue(
             len(self.result.clusters) > 0,
-            "heal() non ha trovato parti — verifica la fixture"
+            "heal() found no parts — check the fixture"
         )
 
     def _child_msp(self, **split_kwargs):
         """Run split() and return the modelspace of the first child."""
         out_dir = tempfile.mkdtemp()
         generated = _split_files(self.result, self.doc, out_dir, **split_kwargs)
-        self.assertTrue(len(generated) > 0, "Nessun file generato")
+        self.assertTrue(len(generated) > 0, "No file generated")
         return ezdxf.readfile(generated[0]).modelspace()
 
     def test_001_default_includes_text_and_circle(self):
         """Default (include_texts=True): TEXT and CIRCLE copied into the child."""
         out_msp = self._child_msp()
         self.assertEqual(len(list(out_msp.query("TEXT"))), 1,
-                         "TEXT dovrebbe essere presente")
+                         "TEXT should be present")
         self.assertEqual(len(list(out_msp.query("CIRCLE"))), 1,
-                         "CIRCLE dovrebbe essere presente")
+                         "CIRCLE should be present")
 
     def test_002_include_texts_false_esclude_text(self):
-        """include_texts=False: TEXT assente, CIRCLE presente."""
+        """include_texts=False: TEXT absent, CIRCLE present."""
         out_msp = self._child_msp(include_texts=False)
         self.assertEqual(len(list(out_msp.query("TEXT"))), 0,
-                         "TEXT non dovrebbe essere presente")
+                         "TEXT should not be present")
         self.assertEqual(len(list(out_msp.query("CIRCLE"))), 1,
-                         "CIRCLE dovrebbe essere presente")
+                         "CIRCLE should be present")
 
     def test_003_include_texts_false_excludes_all_types(self):
         """include_texts=False excludes all the types in TEXT_TYPES."""
@@ -270,18 +266,18 @@ class TestUnitSplitFilters(unittest.TestCase):
         for ann_type in TEXT_TYPES:
             found = list(out_msp.query(ann_type))
             self.assertEqual(len(found), 0,
-                             f"{ann_type} non dovrebbe essere presente")
+                             f"{ann_type} should not be present")
 
     def test_004_exclude_types_singolo(self):
-        """exclude_types={'TEXT'}: TEXT assente, CIRCLE presente."""
+        """exclude_types={'TEXT'}: TEXT absent, CIRCLE present."""
         out_msp = self._child_msp(exclude_types={"TEXT"})
         self.assertEqual(len(list(out_msp.query("TEXT"))), 0,
-                         "TEXT non dovrebbe essere presente")
+                         "TEXT should not be present")
         self.assertEqual(len(list(out_msp.query("CIRCLE"))), 1,
-                         "CIRCLE dovrebbe essere presente")
+                         "CIRCLE should be present")
 
     def test_005_exclude_types_multipli(self):
-        """exclude_types={'TEXT', 'CIRCLE'}: entrambi assenti."""
+        """exclude_types={'TEXT', 'CIRCLE'}: both absent."""
         out_msp = self._child_msp(exclude_types={"TEXT", "CIRCLE"})
         self.assertEqual(len(list(out_msp.query("TEXT"))), 0)
         self.assertEqual(len(list(out_msp.query("CIRCLE"))), 0)
@@ -303,12 +299,12 @@ class TestUnitSplitLayers(unittest.TestCase):
         self.doc, self.result = _make_via_heal(_rect())
         self.assertTrue(
             len(self.result.clusters) > 0,
-            "heal() non ha trovato parti — verifica la fixture"
+            "heal() found no parts — check the fixture"
         )
         self.generated = _split_files(self.result, self.doc,
                                       self.out_dir)
         self.assertTrue(len(self.generated) > 0,
-                        "split() non ha generato file")
+                        "split() generated no file")
 
     def test_001_all_layers_present(self):
         """All the standard topo layers are present in the child document."""
@@ -319,7 +315,7 @@ class TestUnitSplitLayers(unittest.TestCase):
             present = {l.dxf.name for l in child_doc.layers}
             for name in expected:
                 self.assertIn(name, present,
-                              f"{Path(path).name}: layer '{name}' mancante")
+                              f"{Path(path).name}: layer '{name}' missing")
 
     def test_002_colori_canonici(self):
         """Every topo layer has the canonical colour defined in layers.py."""
@@ -329,18 +325,16 @@ class TestUnitSplitLayers(unittest.TestCase):
             for layer_name, expected_color in ALL_LAYERS.items():
                 layer = child_doc.layers.get(layer_name)
                 self.assertIsNotNone(
-                    layer, f"{Path(path).name}: layer '{layer_name}' non trovato"
+                    layer, f"{Path(path).name}: layer '{layer_name}' not found"
                 )
                 self.assertEqual(
                     layer.dxf.color, expected_color,
-                    f"{Path(path).name}: '{layer_name}' ha colore "
-                    f"{layer.dxf.color}, atteso {expected_color}"
+                    f"{Path(path).name}: '{layer_name}' has colour "
+                    f"{layer.dxf.color}, expected {expected_color}"
                 )
 
 
-# ---------------------------------------------------------------------------
-# INTEGRATION TEST — split_to_files() pipeline completa
-# ---------------------------------------------------------------------------
+# --- INTEGRATION TEST — full split_to_files() pipeline ---
 
 class TestIntegrationPipeline(unittest.TestCase):
     """Test split_to_files() as a black box on files in examples/. It verifies
@@ -360,7 +354,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         _, out_dir = self._run("two_parts.dxf", "two_parts")
         files = list(Path(out_dir).glob("*.dxf"))
         self.assertEqual(len(files), 2,
-                         f"Attesi 2 file, trovati {len(files)}: "
+                         f"Attesi 2 file, found {len(files)}: "
                          f"{[f.name for f in files]}")
 
     def test_002_child_files_readable(self):
@@ -370,7 +364,7 @@ class TestIntegrationPipeline(unittest.TestCase):
             try:
                 ezdxf.readfile(str(f))
             except Exception as e:
-                self.fail(f"File figlio non leggibile: {f.name} — {e}")
+                self.fail(f"Child file not readable: {f.name} — {e}")
 
     def test_003_result_ha_parts(self):
         """split_to_files() returns a Result with clusters filled."""
@@ -382,7 +376,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         result, _ = self._run("pline_with_hole.dxf", "pline_with_hole")
         self.assertEqual(result.cluster_count, 1)
         self.assertGreater(len(result.clusters[0].inners), 0,
-                           "Nessun inner/hole trovato")
+                           "No inner/hole found")
 
     def test_005_include_texts_false_propagato(self):
         """include_texts=False correctly propagated by the wrapper."""
@@ -398,7 +392,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         for f in Path(out_dir).glob("*.dxf"):
             out_msp = ezdxf.readfile(str(f)).modelspace()
             self.assertEqual(len(list(out_msp.query("TEXT"))), 0,
-                             f"{f.name}: TEXT presente con include_texts=False")
+                             f"{f.name}: TEXT present with include_texts=False")
 
     def test_006_namer_custom_propagato(self):
         """A custom namer passed to split_to_files() is used."""
@@ -408,7 +402,7 @@ class TestIntegrationPipeline(unittest.TestCase):
                              label="two_parts", namer=namer)
         names = {f.stem for f in Path(out_dir).glob("*.dxf")}
         self.assertIn("custom_01", names,
-                      f"Nome custom non trovato tra: {names}")
+                      f"Custom name not found among: {names}")
 
     def test_007_empty_msp_generates_no_file(self):
         """empty msp → no file generated."""
@@ -418,7 +412,7 @@ class TestIntegrationPipeline(unittest.TestCase):
                              label="empty")
         files = list(Path(out_dir).glob("*.dxf"))
         self.assertEqual(len(files), 0,
-                         f"File generati da msp vuoto: {[f.name for f in files]}")
+                         f"Files generated from empty msp: {[f.name for f in files]}")
 
 
 class TestIntegrationContours(unittest.TestCase):
@@ -450,7 +444,7 @@ class TestIntegrationContours(unittest.TestCase):
                 if e.dxf.layer == LAYER_OUTER:
                     self.assertTrue(e.closed,
                                     f"{fname}: LWPOLYLINE su {LAYER_OUTER} "
-                                    f"non è chiusa")
+                                    f"is not closed")
 
     def test_002_lwpolyline_inner_closed(self):
         """LWPOLYLINE on InnerContour/Hole in the children is closed=True."""
@@ -461,19 +455,19 @@ class TestIntegrationContours(unittest.TestCase):
                 if e.dxf.layer in (LAYER_INNER,):
                     self.assertTrue(e.closed,
                                     f"{fname}: LWPOLYLINE su {e.dxf.layer} "
-                                    f"non è chiusa")
+                                    f"is not closed")
 
     def test_003_circle_outer_esportato(self):
         """CIRCLE on OuterContour is exported to the child file."""
         from topo_dxf.layers import LAYER_OUTER
         children = self._children("cerchi_ciambella.dxf", "cerchi_ciambella")
         self.assertGreater(len(children), 0,
-                           "Nessun file figlio da cerchi_ciambella.dxf")
+                           "No child file from cerchi_ciambella.dxf")
         for fname, msp in children.items():
             outer_circles = [e for e in msp.query("CIRCLE")
                              if e.dxf.layer == LAYER_OUTER]
             self.assertEqual(len(outer_circles), 1,
-                             f"{fname}: atteso 1 CIRCLE su {LAYER_OUTER}, "
+                             f"{fname}: expected 1 CIRCLE on {LAYER_OUTER}, "
                              f"trovati {len(outer_circles)}")
 
     def test_004_spline_outer_esportato(self):
@@ -486,15 +480,15 @@ class TestIntegrationContours(unittest.TestCase):
                    for e in msp.query("SPLINE LINE ARC"))
         ]
         self.assertGreater(len(figli_con_outer), 0,
-                           "Nessun figlio ha entità su OuterContour "
-                           "per file con SPLINE")
+                           "No child has entities on OuterContour "
+                           "for a file with SPLINE")
 
     def test_006_spline_parametri_preservati(self):
         """The SPLINEs written in the children preserve the source's key parameters."""
         from topo_dxf.layers import LAYER_OUTER
         src_doc = ezdxf.readfile(str(drawing("intricato_doppio.dxf")))
         src_splines = list(src_doc.modelspace().query("SPLINE"))
-        self.assertGreater(len(src_splines), 0, "La fixture sorgente non contiene SPLINE")
+        self.assertGreater(len(src_splines), 0, "The source fixture contains no SPLINE")
 
         src_signatures = {self._spline_signature(s) for s in src_splines}
 
@@ -504,12 +498,12 @@ class TestIntegrationContours(unittest.TestCase):
             out_outer_splines.extend([e for e in msp.query("SPLINE") if e.dxf.layer == LAYER_OUTER])
 
         self.assertGreater(len(out_outer_splines), 0,
-                           "Nessuna SPLINE su OuterContour trovata nei figli")
+                           "No SPLINE on OuterContour found in the children")
 
         for out_spline in out_outer_splines:
             sig = self._spline_signature(out_spline)
             self.assertIn(sig, src_signatures,
-                          "SPLINE figlia non corrisponde ai parametri della sorgente")
+                          "Child SPLINE does not match the source's parameters")
 
     def test_005_regression_closed_lwpolyline_all_the_examples(self):
         """Regression: for every file in tests/data/, every structural LWPOLYLINE in the
@@ -533,7 +527,7 @@ class TestIntegrationContours(unittest.TestCase):
                             self.assertTrue(
                                 e.closed,
                                 f"{child.name}: LWPOLYLINE su {e.dxf.layer} "
-                                f"non chiusa (sorgente: {src.name})"
+                                f"not closed (source: {src.name})"
                             )
 
 
@@ -548,7 +542,7 @@ class TestIntegrationLayers(unittest.TestCase):
                              output_folder=self.out_dir, label="test")
         self.files = list(Path(self.out_dir).glob("*.dxf"))
         self.assertTrue(len(self.files) > 0,
-                        "setUp: nessun file generato da two_parts.dxf")
+                        "setUp: no file generated from two_parts.dxf")
 
     def test_001_outer_layer_colore_canonico(self):
         """LAYER_OUTER has topo's palette green in every child file."""
@@ -558,10 +552,10 @@ class TestIntegrationLayers(unittest.TestCase):
         for f in self.files:
             child_doc = ezdxf.readfile(str(f))
             layer = child_doc.layers.get(LAYER_OUTER)
-            self.assertIsNotNone(layer, f"{f.name}: LAYER_OUTER mancante")
+            self.assertIsNotNone(layer, f"{f.name}: LAYER_OUTER missing")
             self.assertEqual(layer.dxf.color, COLOR_OUTER,
-                             f"{f.name}: LAYER_OUTER ha colore "
-                             f"{layer.dxf.color}, atteso {COLOR_OUTER}")
+                             f"{f.name}: LAYER_OUTER has colour "
+                             f"{layer.dxf.color}, expected {COLOR_OUTER}")
 
     def test_002_all_topo_layers_present(self):
         """All the standard topo layers are present in every child file."""
@@ -572,7 +566,7 @@ class TestIntegrationLayers(unittest.TestCase):
             present = {l.dxf.name for l in child_doc.layers}
             for name in expected:
                 self.assertIn(name, present,
-                              f"{f.name}: layer '{name}' mancante")
+                              f"{f.name}: layer '{name}' missing")
 
     def test_003_all_canonical_colours(self):
         """Every topo layer has the canonical colour defined in layers.py."""
@@ -582,12 +576,12 @@ class TestIntegrationLayers(unittest.TestCase):
             for layer_name, expected_color in ALL_LAYERS.items():
                 layer = child_doc.layers.get(layer_name)
                 self.assertIsNotNone(
-                    layer, f"{f.name}: layer '{layer_name}' non trovato"
+                    layer, f"{f.name}: layer '{layer_name}' not found"
                 )
                 self.assertEqual(
                     layer.dxf.color, expected_color,
-                    f"{f.name}: '{layer_name}' ha colore "
-                    f"{layer.dxf.color}, atteso {expected_color}"
+                    f"{f.name}: '{layer_name}' has colour "
+                    f"{layer.dxf.color}, expected {expected_color}"
                 )
 
 

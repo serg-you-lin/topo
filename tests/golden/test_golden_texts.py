@@ -100,13 +100,13 @@ def _make_test(path: Path):
         if "cluster_count" in golden:
             self.assertEqual(
                 result.cluster_count, golden["cluster_count"],
-                msg=f"{golden['source_file']}: numero parti",
+                msg=f"{golden['source_file']}: number of parts",
             )
         self.assertEqual(len(actual), golden["text_count"],
-                         msg=f"{golden['source_file']}: numero testi")
+                         msg=f"{golden['source_file']}: numero texts")
         for i, (act, exp) in enumerate(zip(actual, expected)):
             ctx = f"{golden['source_file']} testo[{i}]"
-            self.assertEqual(act.keys(), exp.keys(), msg=f"{ctx}: campi")
+            self.assertEqual(act.keys(), exp.keys(), msg=f"{ctx}: fields")
             for key in ("halign", "valign", "text", "cluster_ref", "rendered"):
                 self.assertEqual(act[key], exp[key], msg=f"{ctx}: {key}")
             for key in ("height", "rotation"):
@@ -128,7 +128,7 @@ for _golden in _golden_files():
 
 class TestGoldenTextsSetup(unittest.TestCase):
     def test_golden_dir_populated(self):
-        self.assertGreater(len(_golden_files()), 0, "nessun golden dei testi")
+        self.assertGreater(len(_golden_files()), 0, "no golden for the texts")
 
 
 if __name__ == "__main__":

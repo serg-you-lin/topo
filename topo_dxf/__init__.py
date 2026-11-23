@@ -20,7 +20,7 @@ what the caller leaves unsaid is this adapter's default (`layers.py`).
 
 try:
     import ezdxf  # noqa: F401
-except ImportError as exc:  # pragma: no cover - dipende dall'ambiente
+except ImportError as exc:  # pragma: no cover - depends on the environment
     raise ImportError(
         "topo_dxf needs ezdxf: pip install g-topo[dxf]"
     ) from exc

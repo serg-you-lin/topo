@@ -171,7 +171,7 @@ def to_svg(
 
 
 def save_svg(result: Result, path: str, **kwargs) -> None:
-    """Scrive `to_svg(result, **kwargs)` su file."""
+    """Write `to_svg(result, **kwargs)` to a file."""
     with open(path, "w", encoding="utf-8") as f:
         f.write(to_svg(result, **kwargs))
 

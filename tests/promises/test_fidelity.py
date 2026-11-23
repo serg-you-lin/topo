@@ -48,7 +48,8 @@ MAX_GAP = 0.5            # snapdraw's, like test_golden_outlines
 # tolerance moves an end by the whole limit, and it is not a defect
 SAMPLE_RATIO = 0.1
 SPLINE_BOX = 0.01        # margin of the rectangles of the written splines (_written_splines)
-COEFF_EPS = 1e-9         # "identico" in virgola mobile
+COEFF_EPS = 1e-9         # "identical" in floating point
+
 DUPLICATE_EPS = 0.05     # two curves this close are a duplicate to merge
 CUT_EPS = 2e-6           # a cut piece lies on its spline (exact cut)
 CUT_SAMPLE = 1e-6        # chord error in the comparison, below CUT_EPS
@@ -183,14 +184,14 @@ class TestFidelity(unittest.TestCase):
 def _make_fidelity_test(rel: str, reading: str):
     def test(self):
         doc, result, back, bound = _round_trip(rel, reading)
-        self.assertEqual(contour_jumps(result), [], "salti nei contorni consegnati")
+        self.assertEqual(contour_jumps(result), [], "leaps in the delivered contours")
         step = SAMPLE_RATIO * bound
         src_lines, src_samples = _lines_and_samples(doc.edges, step)
         out_lines, out_samples = _lines_and_samples(back.edges, step)
         self.assertLessEqual(_directed(src_samples, out_lines), bound,
-                             "un punto del sorgente non è nel risultato")
+                             "a source point is not in the result")
         self.assertLessEqual(_directed(out_samples, src_lines), bound,
-                             "un punto del risultato non è nel sorgente")
+                             "a result point is not in the source")
         written = [c for c in map(_coefficients, (e.segment for e in back.edges)) if c]
         # a curve of the file that is a simpler primitive comes out as that
         source = refit_native_curves(doc.edges)
@@ -199,7 +200,7 @@ def _make_fidelity_test(rel: str, reading: str):
         if missing:
             written_splines = _written_splines(back.edges)
             missing = [c for c in missing if not _cut_in_pieces(c, source, written_splines)]
-        self.assertEqual(missing, [], "curve non toccate riscritte con altri coefficienti")
+        self.assertEqual(missing, [], "untouched curves rewritten with other coefficients")
     return test
 
 

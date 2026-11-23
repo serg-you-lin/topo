@@ -31,21 +31,21 @@ PRECISION_NAMES = {
 
 # (file, name): numbers that are not thresholds, with the why
 NOT_THRESHOLDS = {
-    ("topo_pdf/geometry_adapter.py", "PT_TO_MM"): "conversione di unità",
+    ("topo_pdf/geometry_adapter.py", "PT_TO_MM"): "unit conversion",
     ("topo/core/primitives/clothoid.py", "_SERIES_UP_TO"):
-        "dove Fresnel passa dalla serie alla frazione continua: esatte tutte e due, cambia solo la velocità (D290)",
+        "where Fresnel passes from the series to the continued fraction: both exact, only the speed changes",
     ("topo/core/topology/matching.py", "start"):
-        "coppie vicine da cui parte l'accoppiamento: le escluse si aggiungono dopo, il risultato è esatto, cambia la velocità",
-    ("topo_pdf/geometry_adapter.py", "num_segments"): "adattatore PDF sperimentale, congelato (D10)",
-    ("topo/core/primitives/formula.py", "_INITIAL_PIECES"): "poligono adattivo di FormulaSeg, non per dimostrazione (D289)",
+        "near pairs the matching starts from: the excluded ones are added after, the result is exact, only the speed changes",
+    ("topo_pdf/geometry_adapter.py", "num_segments"): "experimental PDF adapter, frozen",
+    ("topo/core/primitives/formula.py", "_INITIAL_PIECES"): "FormulaSeg's adaptive polygon, not by proof",
 }
 
 # caps of a converging method: the precision is given by the method, the cap only stops a case that does not converge
 CONVERGENCE = {
-    ("topo/core/primitives/trim.py", "_REFINE_STEPS"): "ricerca ternaria: (2/3)^60 ≈ 3e-11 della forchetta",
-    ("topo/core/geometry/regions.py", "_ONTO_STEPS"): "Newton, si ferma prima a FLOAT_NOISE",
-    ("topo/core/primitives/clothoid.py", "_MAX_TERMS"): "serie di Fresnel, si ferma prima al termine sotto l'epsilon",
-    ("topo/core/primitives/formula.py", "_MAX_DEPTH"): "dimezzamenti di un tratto: 2^-30 del tratto",
+    ("topo/core/primitives/trim.py", "_REFINE_STEPS"): "ternary search: (2/3)^60 ≈ 3e-11 of the bracket",
+    ("topo/core/geometry/regions.py", "_ONTO_STEPS"): "Newton, stops earlier at FLOAT_NOISE",
+    ("topo/core/primitives/clothoid.py", "_MAX_TERMS"): "Fresnel series, stops earlier at the term below epsilon",
+    ("topo/core/primitives/formula.py", "_MAX_DEPTH"): "halvings of a stretch: 2^-30 of the stretch",
 }
 
 # to be removed (TODO "Numbers of the primitives that escaped precision", points b and c): when the number disappears, test_the_exceptions_still_exist asks to remove the line
@@ -76,7 +76,7 @@ def _counted(name: str, value) -> bool:
 
 
 def thresholds() -> list:
-    """[(file, nome, valore)]: le soglie scritte come numero, decimale o conteggio."""
+    """[(file, name, value)]: the thresholds written as a number, a decimal or a count."""
     out = []
     for package in PACKAGES:
         for path in sorted((PROJECT_ROOT / package).rglob("*.py")):
@@ -108,12 +108,12 @@ class TestOneThreshold(unittest.TestCase):
     def test_every_threshold_is_in_precision(self):
         found = sorted({(f, n, v) for f, n, v in thresholds()
                         if f != PRECISION and (f, n) not in EXCEPTIONS})
-        self.assertEqual(found, [], "soglie scritte fuori da topo/precision.py: "
-                                    "metterle lì, col loro perché (D269)")
+        self.assertEqual(found, [], "thresholds written outside topo/precision.py: "
+                                    "put them there, with their why")
 
     def test_the_exceptions_still_exist(self):
         found = {(f, n) for f, n, _ in thresholds()}
-        self.assertEqual(sorted(set(EXCEPTIONS) - found), [], "eccezione senza più il suo numero: toglierla")
+        self.assertEqual(sorted(set(EXCEPTIONS) - found), [], "exception without its number any more: remove it")
 
     def test_the_names_of_precision_are_those_decided(self):
         import topo.precision

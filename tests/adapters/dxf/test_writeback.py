@@ -42,9 +42,7 @@ def _layers_of(msp, dxftype):
     return {e.dxf.layer for e in msp.query(dxftype)}
 
 
-# ---------------------------------------------------------------------------
-# Rettangolo 4 LINE — routing outer
-# ---------------------------------------------------------------------------
+# --- 4-LINE rectangle — outer routing ---
 
 class TestWritebackRectLines(unittest.TestCase):
 
@@ -63,9 +61,7 @@ class TestWritebackRectLines(unittest.TestCase):
                 self.assertEqual(e.dxf.color, 256)
 
 
-# ---------------------------------------------------------------------------
-# CIRCLE outer (flangia tonda)
-# ---------------------------------------------------------------------------
+# --- Outer CIRCLE (round flange) ---
 
 class TestWritebackCircleOuter(unittest.TestCase):
 
@@ -76,9 +72,7 @@ class TestWritebackCircleOuter(unittest.TestCase):
         self.assertIn(LAYER_OUTER, _layers_of(self.msp, "CIRCLE"))
 
 
-# ---------------------------------------------------------------------------
-# CIRCLE grande → LAYER_INNER
-# ---------------------------------------------------------------------------
+# --- Large CIRCLE → LAYER_INNER ---
 
 class TestWritebackCircleInner(unittest.TestCase):
 
@@ -89,9 +83,7 @@ class TestWritebackCircleInner(unittest.TestCase):
         self.assertIn(LAYER_INNER, _layers_of(self.msp, "CIRCLE"))
 
 
-# ---------------------------------------------------------------------------
-# LWPOLYLINE outer + loop LINE interno
-# ---------------------------------------------------------------------------
+# --- Outer LWPOLYLINE + inner LINE loop ---
 
 class TestWritebackInnerLoop(unittest.TestCase):
 
@@ -107,9 +99,7 @@ class TestWritebackInnerLoop(unittest.TestCase):
         self.assertEqual(len(outer), 1)
 
 
-# ---------------------------------------------------------------------------
-# Deduplicazione
-# ---------------------------------------------------------------------------
+# --- Deduplication ---
 
 class TestWritebackDeduplication(unittest.TestCase):
 
@@ -251,9 +241,7 @@ class TestWritebackStyle(unittest.TestCase):
                 self.assertEqual(e.dxf.color, 256)
 
 
-# ---------------------------------------------------------------------------
-# Annotazioni — testi e quote mai scartati, routing su layer dedicato
-# ---------------------------------------------------------------------------
+# --- Annotations — texts and dimensions never discarded, routing to a dedicated layer ---
 
 from topo_dxf.layers import LAYER_ANNOTATION
 
@@ -287,7 +275,7 @@ class TestWritebackTexts(unittest.TestCase):
         result, msp = _pipeline("gamba_tavolo.dxf")
         dim_geom = [e for e in msp.query("LWPOLYLINE")
                     if e.dxf.layer == LAYER_ANNOTATION]
-        # 7 quote → parecchie polilinee (≈ 2 direttrici + linea misura + frecce)
+        # 7 dimensions → several polylines (≈ 2 leaders + measure line + arrows)
         self.assertGreater(len(dim_geom), 7 * 3)
 
     def test_004_text_covered_by_part_also_routed_to_annotation(self):
@@ -356,7 +344,7 @@ class TestWritebackTexts(unittest.TestCase):
             msp.add_line((0, 10 * i), (50, 10 * i), dxfattribs={"layer": layer})
         doc = topo_dxf.document_from_msp(msp, skip_layers=topo_dxf.SKIP_LAYERS)
         self.assertEqual(len(doc.edges), 2)
-        # niente sparisce in silenzio: un avviso conta le curve per layer
+        # nothing vanishes in silence: a warning counts the curves per layer
         skipped = [w for w in doc.warnings if w.code == "dxf-layer-skipped"]
         self.assertEqual(len(skipped), 1)
         self.assertIn("2 curves", skipped[0].message)
@@ -427,7 +415,7 @@ class TestWritebackArcRoundTrip(unittest.TestCase):
                 written_area = self._written_outer_area(msp)
                 self.assertAlmostEqual(
                     written_area, model_area, delta=max(1.0, model_area * 1e-4),
-                    msg=f"{name}: outer scritto {written_area:.3f} vs "
+                    msg=f"{name}: outer written {written_area:.3f} vs "
                         f"modello {model_area:.3f}",
                 )
 

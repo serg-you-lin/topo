@@ -67,7 +67,7 @@ def generate(force: bool = False, only: str = None) -> None:
     for dxf_path in dxf_files:
         golden_path = GOLDEN_DIR / f"{dxf_path.stem}.json"
         if golden_path.exists() and not force:
-            print(f"  SKIP (esiste): {dxf_path.name}")
+            print(f"  SKIP (exists): {dxf_path.name}")
             skipped += 1
             continue
         try:
@@ -86,7 +86,7 @@ def generate(force: bool = False, only: str = None) -> None:
             golden_path.write_text(
                 json.dumps(golden, indent=2, ensure_ascii=False), encoding="utf-8"
             )
-            print(f"  OK: {dxf_path.name} → {len(entries)} testi")
+            print(f"  OK: {dxf_path.name} → {len(entries)} texts")
             generated += 1
         except Exception as ex:
             import traceback
@@ -94,7 +94,7 @@ def generate(force: bool = False, only: str = None) -> None:
             traceback.print_exc()
             failed += 1
 
-    print(f"\nGenerati: {generated}  Skippati: {skipped}  Errori: {failed}")
+    print(f"\nGenerati: {generated}  Skipped: {skipped}  Errors: {failed}")
     print(f"Golden in: {GOLDEN_DIR}")
 
 

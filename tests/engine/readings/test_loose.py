@@ -51,7 +51,7 @@ def _at(result, x, y):
         pts = topo.geometry.track_points(curve.segments)
         if any(math.dist(p, (x, y)) < 1e-6 for p in pts):
             return curve
-    raise AssertionError(f"nessuna curva sciolta per ({x}, {y})")
+    raise AssertionError(f"no loose curve for ({x}, {y})")
 
 
 class TestClusterRef(unittest.TestCase):
@@ -106,7 +106,7 @@ class TestPromote(unittest.TestCase):
         # the curves would leave loose without reaching any file
         line = _at(self.result, 0, -50)
         plate = self.result.clusters[0]
-        for item in ("asse", ("asse", line), _Item([])):
+        for item in ("axis", ("axis", line), _Item([])):
             with self.assertRaises(ValueError):
                 self.result.promote(line, plate, "axes", item=item)
         self.assertTrue(any(c is line for c in self.result.loose))

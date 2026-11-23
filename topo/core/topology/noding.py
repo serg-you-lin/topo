@@ -78,7 +78,7 @@ class NodedEdges:
     parent:    Dict[int, Edge]       = field(default_factory=dict)   # id(piece) -> original Edge
     crossings: List[tuple]           = field(default_factory=list)
     planar:    bool                  = True    # cut also at the crossings (`cut_crossings`)
-    trimmed:   set                   = field(default_factory=set)    # id(Edge) accorciati fino a un incrocio
+    trimmed:   set                   = field(default_factory=set)    # id(Edge) shortened up to a crossing
 
     def parent_of(self, piece: Edge) -> Edge:
         return self.parent[id(piece)]
@@ -110,9 +110,7 @@ class NodedEdges:
         return out
 
 
-# ---------------------------------------------------------------------------
-# API pubblica
-# ---------------------------------------------------------------------------
+# --- Public API ---
 
 def renode(edges: List[Edge]) -> List[Edge]:
     """Nodes of every Edge recomputed from the segment's real point. Two real ends
@@ -199,7 +197,7 @@ def interior_crossings(edges: List[Edge], tolerance: float) -> List[tuple]:
 
 
 def edge_geometry(edge: Edge):
-    """L'edge come geometria shapely: LineString discretizzata, Point se degenere."""
+    """The edge as a shapely geometry: a discretized LineString, a Point if degenerate."""
     pts = edge.segment.discretize(tolerance=DEFAULT_TOLERANCE)
     if len(pts) < 2 or all(p == pts[0] for p in pts):
         return Point(pts[0])
@@ -294,9 +292,7 @@ class _Curve:
         return sub_segment(seg, a, b, self.at((s0 + s1) / 2))
 
 
-# ---------------------------------------------------------------------------
-# Contatti
-# ---------------------------------------------------------------------------
+# --- Contacts ---
 
 def near_pairs(geoms: list, tolerance: float) -> List[Tuple[int, int]]:
     """The pairs (i < j), in order, of the geometries (`edge_geometry`) within
@@ -510,7 +506,7 @@ class _Contacts:
                 return end
         k, curve = sides[0][0], self.curves[sides[0][0]]
         s = [side[1] for side in sides]
-        if curve.closed and max(s) - min(s) > curve.length / 2:   # a cavallo dell'inizio
+        if curve.closed and max(s) - min(s) > curve.length / 2:   # straddling the start
             s = [x if x >= curve.length / 2 else x + curve.length for x in s]
         mean = sum(s) / len(s)
         pt = (sum(side[2][0] for side in sides) / len(sides), sum(side[2][1] for side in sides) / len(sides))
@@ -604,7 +600,7 @@ class _Contacts:
         for ks in groups.values():
             # the cut of a group with a crossing lies on the crossing
             s = [self.stops[k][1] for k in ks if self.stops[k][3] == "x"] or [self.stops[k][1] for k in ks]
-            if curve.closed and max(s) - min(s) > curve.length / 2:   # gruppo a cavallo dell'inizio
+            if curve.closed and max(s) - min(s) > curve.length / 2:   # group straddling the start
                 s = [x if x >= curve.length / 2 else x + curve.length for x in s]
             cuts.append(((sum(s) / len(s)) % curve.length if curve.closed else sum(s) / len(s),
                          nodes[self._find(ks[0])]))
@@ -743,9 +739,7 @@ def _inside_arc(seg, pt) -> bool:
     return _MIN_PIECE / seg.radius < s < seg._sweep() - _MIN_PIECE / seg.radius
 
 
-# ---------------------------------------------------------------------------
-# Nodi
-# ---------------------------------------------------------------------------
+# --- Nodes ---
 
 def _with_nodes(edge, seg, same=None):
     s, e = segment_endpoints(seg)

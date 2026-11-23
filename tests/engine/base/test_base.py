@@ -44,7 +44,7 @@ class TestSameBaseForEveryReading(unittest.TestCase):
     def test_faces_and_outlines_read_the_same_contour_at_every_motion(self):
         doc = topo.load_segments(_square_with_split_corner())
         band = 2 * DEFAULT_TOLERANCE
-        for name, move, back, _ in [("al posto", lambda s: s, lambda p: p, None)] + MOTIONS:
+        for name, move, back, _ in [("in place", lambda s: s, lambda p: p, None)] + MOTIONS:
             moved_doc = moved(doc, move)
             healed = [back(p) for p in contours(topo.heal(moved_doc).faces())[0]]
             read = [back(p) for p in contours(topo.heal(moved_doc, max_gap=0.5).outlines())[0]]

@@ -103,7 +103,7 @@ class TestD_CrossingSidesAreReported(unittest.TestCase):
 
     def test_clean_drawing_no_warning(self):
         result = _heal(_lines((0, 0), (40, 0), (40, 20), (0, 20), closed=True))
-        self.assertFalse(any("incroci" in w for w in result.warnings), result.warnings)
+        self.assertFalse(any("crossing" in w for w in result.warnings), result.warnings)
 
 
 class TestE_ClosedChainNeverCandidate(unittest.TestCase):

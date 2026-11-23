@@ -24,7 +24,7 @@ stays as an alias with a warning for two minors.
 Written in full, `topo.experimental.<name>`: whoever reads the script sees that
 that name has no promise.
 """
-# gruppi per contatto, rete piana, faccia esterna, tassellature
+# groups by contact, planar network, outer face, tessellations
 from .core.topology.touching import touching_groups, TouchingGroup
 from .core.topology.noding import split_at_crossings, NodedEdges
 from .core.topology.outer_face import outer_face, OuterFace, face_loops

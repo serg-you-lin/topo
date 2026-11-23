@@ -23,7 +23,7 @@ class TestTutorial(unittest.TestCase):
                 self.assertEqual(run.returncode, 0, run.stdout[-2000:] + run.stderr[-3000:])
 
     def test_the_lessons_use_only_public_names(self):
-        # un tester impara la superficie pubblica: niente topo.core né import da un modulo interno
+        # a tester learns the public surface: no topo.core nor an import from an internal module
         for lesson in LESSONS:
             with self.subTest(lesson=lesson.name):
                 source = lesson.read_text(encoding="utf-8")

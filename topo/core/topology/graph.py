@@ -46,9 +46,7 @@ from ..primitives.conics import CircleSeg, is_arc
 from .edge import Edge
 
 
-# ---------------------------------------------------------------------------
-# Dataclass Graph
-# ---------------------------------------------------------------------------
+# --- Graph dataclass ---
 
 @dataclass
 class Graph:
@@ -220,9 +218,7 @@ class Graph:
         return self.nodes.get(node, default)
 
 
-# ---------------------------------------------------------------------------
-# Clustering endpoint
-# ---------------------------------------------------------------------------
+# --- Endpoint clustering ---
 
 def cluster_points(points: list, epsilon: float) -> Dict[Tuple, Tuple]:
     """Group 2D points within `epsilon` and return {point -> representative}.
@@ -303,9 +299,7 @@ def connected_groups(n: int, pairs: Iterable[Tuple[int, int]]) -> List[List[int]
     return list(groups.values())
 
 
-# ---------------------------------------------------------------------------
-# Costruzione grafo
-# ---------------------------------------------------------------------------
+# --- Graph construction ---
 
 def _close_self_loop(edge: Edge, epsilon: float):
     """An arc that returns to its node, if its development (radius*sweep) exceeds epsilon -> the full circle (a true degenerate loop). Otherwise `None` (sliver)."""
@@ -374,9 +368,7 @@ def build_node_graph(edges: list, epsilon: float = 0.0, *, sliver: Optional[floa
     return Graph(nodes=dict(raw), degenerate_loops=degenerate, node_map=node_map)
 
 
-# ---------------------------------------------------------------------------
-# Utility geometriche (usate da loops.py)
-# ---------------------------------------------------------------------------
+# --- Geometric utilities (used by loops.py) ---
 
 def _edge_coords(edge: Edge, reversed_flag: bool) -> list:
     pts = edge.segment.discretize() if edge.segment else [edge.start, edge.end]

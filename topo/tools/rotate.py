@@ -89,9 +89,7 @@ def longest_structural_segment(
     return seg, length, chord_angle_deg(start, end)
 
 
-# ---------------------------------------------------------------------------
-# Rotazione — primitive pure, riusabili in un ciclo (nester)
-# ---------------------------------------------------------------------------
+# --- Rotation — pure primitives, reusable in a loop (nester) ---
 
 def _rotate_contour(contour: ClosedCurve, angle_rad: float, origin: Point) -> ClosedCurve:
     rotated = replace(contour, segments=[s.rotated(angle_rad, origin=origin) for s in contour.segments])

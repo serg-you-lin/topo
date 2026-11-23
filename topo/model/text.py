@@ -64,8 +64,8 @@ class RenderedGeometry:
     callout is in a separate block, not in the entity's fields; it is kept here
     and a writer re-materializes it."""
     _: KW_ONLY
-    strokes: List[List[Point]]  = field(default_factory=list)  # polilinee aperte
-    fills:   List[List[Point]]  = field(default_factory=list)  # polilinee chiuse
+    strokes: List[List[Point]]  = field(default_factory=list)  # open polylines
+    fills:   List[List[Point]]  = field(default_factory=list)  # closed polylines
     texts:   List[RenderedText] = field(default_factory=list)
 
     def is_empty(self) -> bool:

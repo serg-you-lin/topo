@@ -30,12 +30,12 @@ class TestTextRole(unittest.TestCase):
         self.assertEqual(topo.Text(position=(0, 0), role="Title Block").role, "title_block")
 
     def test_rule_on_the_name_at_load(self):
-        msp = _drawing_with_text("Testi")
-        doc = topo_dxf.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
+        msp = _drawing_with_text("Texts")
+        doc = topo_dxf.document_from_msp(msp, role_rules=topo.name_rules({"texts": "part_code"}))
         self.assertEqual([a.role for a in doc.texts], ["part_code"])
 
     def test_rule_on_the_appearance_does_not_touch_the_texts(self):
-        msp = _drawing_with_text("Testi")
+        msp = _drawing_with_text("Texts")
         doc = topo_dxf.document_from_msp(msp, role_rules=[topo.RoleRule("cut", dashed=False)])
         self.assertEqual([a.role for a in doc.texts], ["unknown"])
 
@@ -44,17 +44,17 @@ class TestTextRole(unittest.TestCase):
         return {e.dxf.layer for e in out.modelspace().query("TEXT MTEXT")}
 
     def test_dxf_on_the_role_layer(self):
-        msp = _drawing_with_text("Testi")
-        doc = topo_dxf.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
+        msp = _drawing_with_text("Texts")
+        doc = topo_dxf.document_from_msp(msp, role_rules=topo.name_rules({"texts": "part_code"}))
         self.assertEqual(self._text_layers(doc), {"part_code"})
 
     def test_dxf_on_the_layer_chosen_for_the_role(self):
-        msp = _drawing_with_text("Testi")
-        doc = topo_dxf.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
-        self.assertEqual(self._text_layers(doc, layers={"part_code": "Codice"}), {"Codice"})
+        msp = _drawing_with_text("Texts")
+        doc = topo_dxf.document_from_msp(msp, role_rules=topo.name_rules({"texts": "part_code"}))
+        self.assertEqual(self._text_layers(doc, layers={"part_code": "Code"}), {"Code"})
 
     def test_dxf_without_role_on_the_texts_layer(self):
-        doc = topo_dxf.document_from_msp(_drawing_with_text("Testi"))
+        doc = topo_dxf.document_from_msp(_drawing_with_text("Texts"))
         self.assertEqual(self._text_layers(doc), {"Annotation"})
         self.assertEqual(self._text_layers(doc, text_layer="Note"), {"Note"})
 

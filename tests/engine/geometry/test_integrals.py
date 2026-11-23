@@ -44,7 +44,7 @@ def _sampled(seg, n):
 
 
 def _dense_area(ring, n=4000):
-    """Controprova indipendente: poligono a n e 2n corde, estrapolato (errore O(1/n²))."""
+    """Independent counter-check: polygon with n and 2n chords, extrapolated (error O(1/n²))."""
     coarse = abs(_shoelace([p for seg in ring for p in _sampled(seg, n)]))
     fine = abs(_shoelace([p for seg in ring for p in _sampled(seg, 2 * n)]))
     return (4 * fine - coarse) / 3

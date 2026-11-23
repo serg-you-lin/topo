@@ -99,7 +99,7 @@ class _OnCurve:
         reference = seg.discretize(tolerance=FINE)
         for q in moved.discretize(tolerance=0.01):
             d = _distance_to_polyline(back(q), reference)
-            self.assertLessEqual(d, 2 * FINE + RELATIVE * max(1.0, scale), f"{q} fuori di {d}")
+            self.assertLessEqual(d, 2 * FINE + RELATIVE * max(1.0, scale), f"{q} off by {d}")
 
     def assert_ends(self, seg, moved, forward, scale: float):
         if (isinstance(seg, CircleSeg) and seg.full):

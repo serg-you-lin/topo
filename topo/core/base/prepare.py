@@ -32,7 +32,7 @@ from .cleanup import (ambiguous_free_ends, bend_arcs_through_free_ends, close_fr
 @dataclass
 class Prepared:
     """The edges ready for a reading, and what `prepare` set aside."""
-    edges:   List[Edge] = field(default_factory=list)   # strutturali, nodi decisi
+    edges:   List[Edge] = field(default_factory=list)   # non-structural set aside, nodes decided
     labeled: List[Edge] = field(default_factory=list)   # decided, non-structural role
     welded:  int = 0                                    # shorter than GRAPH_EPSILON, welded
 

@@ -167,7 +167,7 @@ class TestSpurDoesNotTakeTheSide(unittest.TestCase):
         from tests.invariants import rigid
         sides = [_line(self.SQUARE[i], self.SQUARE[(i + 1) % 4]) for i in range(4)]
         spur = _line((5, 0), (5, -3))
-        for name, order in (("sporgenza ultima", sides + [spur]), ("sporgenza prima", [spur] + sides)):
+        for name, order in (("protrusion last", sides + [spur]), ("protrusion first", [spur] + sides)):
             for motion in self.MOTIONS:
                 move_seg, move_pt = rigid(*motion)
                 edges = [Edge(role="unknown", start=move_pt(e.start), end=move_pt(e.end),

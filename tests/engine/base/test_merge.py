@@ -123,7 +123,7 @@ class TestMergeCollinearOverlaps(unittest.TestCase):
         edges = [others[0], others[1], chain[0], others[2], chain[1], others[3], chain[2], others[4]]
         out = merge_collinear_overlaps(edges)
 
-        self.assertEqual(len(out), 6)  # 5 "others" + 1 fuso
+        self.assertEqual(len(out), 6)  # 5 "others" + 1 merge
         # The merge takes the position of the chain's first member in input order
         # (index 2 in `edges`), the rest did not move.
         self.assertIs(out[0], others[0])
@@ -198,7 +198,7 @@ class TestSameCarrierUnderMotion(unittest.TestCase):
         import topo
         from tests.invariants import MOTIONS, moved
         doc = topo.load_segments(pieces)
-        for name, move, _, _ in [("al posto", lambda s: s, None, None)] + MOTIONS:
+        for name, move, _, _ in [("in place", lambda s: s, None, None)] + MOTIONS:
             self.assertEqual(len(merge(moved(doc, move).edges)), expected, name)
 
     def test_vertical_duplicate_astride_a_cell(self):
@@ -381,7 +381,7 @@ class TestMergeCocircularOverlaps(unittest.TestCase):
         edges = [others[0], chain[0], others[1], chain[1], others[2]]
         out = merge_cocircular_overlaps(edges)
 
-        self.assertEqual(len(out), 4)  # 3 "others" + 1 fuso
+        self.assertEqual(len(out), 4)  # 3 "others" + 1 merge
         self.assertIs(out[0], others[0])
         seg = out[1].segment
         self.assertAlmostEqual(math.degrees(seg.end_angle), 120.0)
@@ -392,7 +392,7 @@ class TestMergeCocircularOverlaps(unittest.TestCase):
         self.assertEqual(merge_cocircular_overlaps([]), [])
 
     def test_circle_written_twice_is_one_circle(self):
-        # forza bruta 7 novembre: due CircleSeg uguali erano due fori sovrapposti
+        # brute force 7 November: two equal CircleSegs were two overlapping holes
         edges = [Edge.of(CircleSeg((0.0, 0.0), 5.0), "unknown") for _ in range(2)]
         out = merge_cocircular_overlaps(edges)
         self.assertEqual(len(out), 1)

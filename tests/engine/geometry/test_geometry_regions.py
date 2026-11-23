@@ -114,9 +114,9 @@ class TestCuspUnderMotion(unittest.TestCase):
     MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
                (0.7, 3.1, -2.2), (2.4, -0.37, 0.61), (math.pi / 2, 0.0, 0.0)]
     RINGS = {
-        "punta fuori": ([(0, 0), (10, 0), (10, 5), (15, 5), (10, 5), (10, 10), (0, 10)], (15, 5)),
-        "taglio dentro": ([(0, 0), (10, 0), (10, 5), (5, 5), (10, 5), (10, 10), (0, 10)], (5, 5)),
-        "punta stretta": ([(0, 0), (10, 0), (10, 5), (15, 5 + 1e-9), (10, 5 + 2e-9),
+        "tip outward": ([(0, 0), (10, 0), (10, 5), (15, 5), (10, 5), (10, 10), (0, 10)], (15, 5)),
+        "cut inside": ([(0, 0), (10, 0), (10, 5), (5, 5), (10, 5), (10, 10), (0, 10)], (5, 5)),
+        "narrow tip": ([(0, 0), (10, 0), (10, 5), (15, 5 + 1e-9), (10, 5 + 2e-9),
                            (10, 10), (0, 10)], (15, 5 + 1e-9)),
     }
 
@@ -343,7 +343,7 @@ class TestTouchingRingsUnderMotion(unittest.TestCase):
 
     def test_two_rings_at_every_motion(self):
         from tests.invariants import rigid
-        others = {"spigolo": g.rectangle(10, 10, center=(15, 15)), "cerchio": g.circle(5, center=(15, 5))}
+        others = {"corner": g.rectangle(10, 10, center=(15, 15)), "circle": g.circle(5, center=(15, 5))}
         for name, other in others.items():
             for motion in self.MOTIONS:
                 move_seg, _ = rigid(*motion)

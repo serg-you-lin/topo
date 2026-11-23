@@ -26,7 +26,7 @@ def extract_drawings_from_page(page: Any) -> List[Dict[str, Any]]:
     try:
         raw_drawings = page.get_drawings()
     except Exception as ex:
-        print(f"  [WARN] Estrazione disegni fallita sulla pagina: {ex}")
+        print(f"  [WARN] Drawing extraction failed on the page: {ex}")
         return []
 
     for drawing in raw_drawings:
@@ -42,12 +42,12 @@ def extract_drawings_from_page(page: Any) -> List[Dict[str, Any]]:
         for item in drawing.get("items", []):
             cmd = item[0]
 
-            # 1. LINEA ("l") -> (cmd, point1, point2)
+            # 1. LINE ("l") -> (cmd, point1, point2)
             if cmd == "l":
                 p1, p2 = item[1], item[2]
                 normalized_drawing["items"].append(("l", p1, p2))
 
-            # 2. RETTANGOLO ("re") -> (cmd, rect_object)
+            # 2. RECTANGLE ("re") -> (cmd, rect_object)
             elif cmd == "re":
                 rect = item[1]
                 # check that the rectangle is valid and not degenerate
@@ -60,7 +60,7 @@ def extract_drawings_from_page(page: Any) -> List[Dict[str, Any]]:
                 if len(quad) == 4:
                     normalized_drawing["items"].append(("qu", quad))
 
-            # 4. CURVA DI BEZIER ("c") -> (cmd, p1, p2, p3, p4)
+            # 4. BEZIER CURVE ("c") -> (cmd, p1, p2, p3, p4)
             elif cmd == "c":
                 p1, p2, p3, p4 = item[1], item[2], item[3], item[4]
                 normalized_drawing["items"].append(("c", p1, p2, p3, p4))

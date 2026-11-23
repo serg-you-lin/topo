@@ -39,7 +39,7 @@ class TestGrammar(unittest.TestCase):
 class TestDerivative(unittest.TestCase):
 
     def test_symbolic_on_every_rule(self):
-        # somma, prodotto, quoziente, potenza costante e variabile, composizione
+        # sum, product, quotient, constant and variable power, composition
         seg = FormulaSeg("t*sin(t) + 2**t", "sqrt(1 + t**2) / cosh(t) - atan(t)**3", -1.0, 2.0)
         h = 1e-6
         for t in (0.2, 1.0, 2.7):

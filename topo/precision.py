@@ -14,9 +14,7 @@ All lengths are millimetres.
 import sys
 import types
 
-# ---------------------------------------------------------------------------
-# La soglia
-# ---------------------------------------------------------------------------
+# --- The threshold ---
 
 # Two points closer than this are the same point: nodes, contacts, same
 # line/circle, degenerate side, jumps in a contour, spline cutting. CHANGING IT
@@ -51,7 +49,7 @@ NEAR_GAP_FACTOR = 2.0          # a hole up to this multiple of max_gap "is nearl
 POINTS_NOISE = 0.02            # mm: how much the points of a curve written as points can be off (refit and rings): an assumption about the files, measured on regr_01, not derived
 TESSELLATION_SIDE = 0.1        # mm: shorter sides may be points of a curve written as points (refit_tessellations)
 TESSELLATION_RUN = 10          # short sides in a row: from this many up they are a curve written as points; below, the refit rounds corners
-PDF_SNAP = 0.15                # mm: adattatore PDF sperimentale, congelato
+PDF_SNAP = 0.15                # mm: experimental PDF adapter, frozen
 
 
 class _Frozen(types.ModuleType):

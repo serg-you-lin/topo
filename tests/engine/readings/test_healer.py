@@ -25,9 +25,7 @@ def load(name):
     return EXAMPLES_DIR / name
 
 
-# ---------------------------------------------------------------------------
-# Rettangolo 4 LINE
-# ---------------------------------------------------------------------------
+# --- 4-LINE rectangle ---
 
 class TestHealerRectLines(unittest.TestCase):
 
@@ -92,9 +90,7 @@ class TestHealerCleanFile(unittest.TestCase):
         self.assertEqual(len(result.clusters[0].inners), 1)
 
 
-# ---------------------------------------------------------------------------
-# CIRCLE outer (flangia tonda)
-# ---------------------------------------------------------------------------
+# --- Outer CIRCLE (round flange) ---
 
 class TestHealerCircleOuter(unittest.TestCase):
 
@@ -141,11 +137,9 @@ class TestHealerCircleInner(unittest.TestCase):
         self.assertEqual(len(self.result.clusters[0].features("holes")), 0)
 
 
-# ---------------------------------------------------------------------------
-# Coppia concentrica → countersink
-# heal() vede entrambi i CIRCLE come inners; detect_flat(features="holes") li
-# riconosce come countersink (piccolo → Hole, anello grande assorbito).
-# ---------------------------------------------------------------------------
+# --- Concentric pair → countersink ---
+# heal() sees both CIRCLEs as inners; detect_flat(features="holes") recognizes
+# them as a countersink (small → Hole, large ring absorbed).
 
 class TestHealerCountersink(unittest.TestCase):
 
@@ -171,9 +165,7 @@ class TestHealerCountersink(unittest.TestCase):
         self.assertAlmostEqual(c.area, exact, delta=0.01 * 2 * math.pi * (15 + 5))
 
 
-# ---------------------------------------------------------------------------
-# LWPOLYLINE outer + loop LINE interno
-# ---------------------------------------------------------------------------
+# --- Outer LWPOLYLINE + inner LINE loop ---
 
 class TestHealerInnerLoopInsideLwpolyline(unittest.TestCase):
 

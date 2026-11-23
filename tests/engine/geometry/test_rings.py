@@ -69,14 +69,14 @@ def _with_jump():
 
 
 RINGS = {
-    "rettangolo_raccordato": _rounded_rectangle(),
-    "raccordo_concavo": _concave_fillet(),
-    "arco_di_300": _big_arc(),
-    "cerchio": [CircleSeg((1.0, -2.0), 4.0)],
-    "ellisse_ruotata": [EllipseSeg((2.0, 3.0), (7 * math.cos(0.6), 7 * math.sin(0.6)), 0.4, 0.0, 2 * math.pi)],
-    "mezza_ellisse": _half_ellipse(),
+    "filleted_rectangle": _rounded_rectangle(),
+    "concave_fillet": _concave_fillet(),
+    "arc_of_300": _big_arc(),
+    "circle": [CircleSeg((1.0, -2.0), 4.0)],
+    "rotated_ellipse": [EllipseSeg((2.0, 3.0), (7 * math.cos(0.6), 7 * math.sin(0.6)), 0.4, 0.0, 2 * math.pi)],
+    "half_ellipse": _half_ellipse(),
     "spline": _spline_cap(),
-    "salto": _with_jump(),
+    "leap": _with_jump(),
 }
 
 
@@ -142,7 +142,7 @@ def test_chord_on_the_border_is_a_touch():
     assert not ring_split_by_chord(ring, (-20.0, 6.0), (20.0, 6.0))       # along the top side
     assert ring_split_by_chord(ring, (0.0, -7.0), (0.0, 7.0))
     assert ring_split_by_chord(ring, (0.0, -6.0), (0.0, 6.0))             # from border to border, ends on the border
-    assert not ring_split_by_chord(ring, (0.0, -6.0), (0.0, 0.0))         # entra e si ferma
+    assert not ring_split_by_chord(ring, (0.0, -6.0), (0.0, 0.0))         # enters and stops
 
 
 @pytest.mark.parametrize("name", sorted(RINGS))
@@ -211,11 +211,11 @@ def test_exact_bbox_on_the_curve_extremes():
     xmin, ymin, xmax, ymax = ring_bbox(_big_arc())
     assert (xmin, ymin, ymax) == pytest.approx((-5.0, -5.0, 5.0), abs=EPS)
     assert xmax == pytest.approx(5 * math.cos(math.radians(30)), abs=EPS)
-    # ellisse ruotata: semiampiezze sqrt(a²cos² + b²sin²), sqrt(a²sin² + b²cos²)
+    # rotated ellipse: half-extents sqrt(a²cos² + b²sin²), sqrt(a²sin² + b²cos²)
     a, b, t = 7.0, 2.8, 0.6
     hx = math.sqrt((a * math.cos(t)) ** 2 + (b * math.sin(t)) ** 2)
     hy = math.sqrt((a * math.sin(t)) ** 2 + (b * math.cos(t)) ** 2)
-    assert ring_bbox(RINGS["ellisse_ruotata"]) == pytest.approx((2 - hx, 3 - hy, 2 + hx, 3 + hy), abs=1e-12)
+    assert ring_bbox(RINGS["rotated_ellipse"]) == pytest.approx((2 - hx, 3 - hy, 2 + hx, 3 + hy), abs=1e-12)
 
 
 def test_perimeter_with_the_chords_of_the_leaps():

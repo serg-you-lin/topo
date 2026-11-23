@@ -18,7 +18,7 @@ def map_sanitized_item_to_edge(item: tuple, page_idx: int) -> Edge | list[Edge] 
 
     elif cmd in ("re", "qu"):
         pts = item[1]
-        # poligono chiuso → segmenti separati
+        # closed polygon → separate segments
         return [
             Edge.of(LineSeg(start=pts[i], end=pts[(i + 1) % len(pts)]), ContourRole.UNKNOWN)
             for i in range(len(pts))

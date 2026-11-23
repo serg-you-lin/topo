@@ -14,7 +14,7 @@ from .curve_tests import within_smooth_curve
 
 
 def _turn(back: Point, at: Point, forward: Point) -> float:
-    """Di quanto gira (gradi, 0..180) chi va da `back` ad `at` e poi a `forward`."""
+    """By how many degrees (0..180) one turns going from `back` to `at` and then to `forward`."""
     v1 = (at[0] - back[0], at[1] - back[1])
     v2 = (forward[0] - at[0], forward[1] - at[1])
     n1, n2 = math.hypot(*v1), math.hypot(*v2)

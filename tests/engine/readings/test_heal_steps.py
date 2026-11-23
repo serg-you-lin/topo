@@ -44,8 +44,7 @@ def _circle(center, radius, role=ContourRole.UNKNOWN):
 
 
 def _broken_square(spur=False):
-    # Angolo in basso a destra rotto: 10.03 vs 10.14, nodi a 1 decimale
-    # 10.0 vs 10.1 â€” lo chiude solo la riparazione via clustering.
+    # Broken bottom-right corner: 10.03 vs 10.14, nodes at 1 decimal 10.0 vs 10.1 — only the repair via clustering closes it.
     edges = [_line((0.0, 0.0), (10.03, 0.0), decimals=1),
              _line((10.14, 0.0), (10.14, 10.0), decimals=1),
              _line((10.14, 10.0), (0.0, 10.0), decimals=1),
@@ -152,7 +151,7 @@ class TestLooseEnds(unittest.TestCase):
     def test_001_line_joining_two_shapes(self):
         candidates = topo.experimental.find_non_contour_edges(self.edges + [self.chord], 0.01)
         self.assertEqual(topo.experimental.find_joining_edges(self.edges + [self.chord], candidates), [self.joint],
-                         "la diagonale di un quadrato Ã¨ una corda, non unisce niente")
+                         "the diagonal of a square is a chord, it joins nothing")
 
     def test_002_estremo_libero_e_distanza(self):
         ends = topo.experimental.free_ends(self.edges)
@@ -213,7 +212,7 @@ class TestShortElementsAndTolerance(unittest.TestCase):
         # three ends within tol: the two nearest pair up, the third stays free
         edges = [_line((0, 0), (10, 0)), _line((10.2, 0), (20, 0)), _line((10.5, 0.6), (10.5, 10))]
         healed = topo.experimental.close_free_gaps(edges, 1.0)
-        self.assertEqual(len(topo.experimental.free_ends(healed)), 4, "i due capi esterni e i due del moncone")
+        self.assertEqual(len(topo.experimental.free_ends(healed)), 4, "the two outer ends and the two of the stub")
 
 
 class TestGapAtTolerance(unittest.TestCase):
@@ -230,7 +229,7 @@ class TestGapAtTolerance(unittest.TestCase):
                 LineSeg(start=(45.0, 60.616), end=(52.159, 60.616))]
         plate = topo.geometry.rectangle(100, 100, center=(50, 60))
         doc = topo.load_segments(plate + hole)
-        for name, move, _, _ in [("al posto", lambda s: s, None, None)] + MOTIONS:
+        for name, move, _, _ in [("in place", lambda s: s, None, None)] + MOTIONS:
             result = topo.heal(moved(doc, move), max_gap=0.5).faces()
             self.assertEqual([len(c.inners) for c in result.clusters], [1], name)
 
@@ -312,7 +311,7 @@ class TestGapOntoCurve(unittest.TestCase):
             counts.append(len(hits))
             return hits
 
-        for name, move, back, _ in [("al posto", lambda d: d, lambda g: g, None)] + list(MOTIONS):
+        for name, move, back, _ in [("in place", lambda d: d, lambda g: g, None)] + list(MOTIONS):
             counts.clear()
             with mock.patch.object(gaps, "intersections", counted):
                 healed = topo.experimental.close_free_gaps(list(moved(doc, move).edges), 0.5)
@@ -400,7 +399,7 @@ class TestCloseNearFullArcs(unittest.TestCase):
         self.assertEqual(self._close(_arc(3.0, 0.4), 0.05), ("CircleSeg", 1))
 
     def test_002_gap_within_tol_but_not_a_circle(self):
-        self.assertEqual(self._close(_arc(0.4, 90), 1.0), ("CircleSeg", 0), "un tre quarti piccolo")
+        self.assertEqual(self._close(_arc(0.4, 90), 1.0), ("CircleSeg", 0), "a small three-quarter")
         self.assertEqual(self._close(_arc(10.0, 2.9), 1.0), ("CircleSeg", 0))
 
     def test_003_near_circle_but_gap_beyond_tol(self):
@@ -513,7 +512,7 @@ class TestSingleNodeGrid(unittest.TestCase):
                 result = topo.heal(topo.load_segments(self._lollipop()), max_gap=tol).faces()
                 self.assertEqual(result.cluster_count, 1)
                 cluster = result.clusters[0]
-                self.assertEqual(cluster.inners, [], "l'arco non Ã¨ un foro")
+                self.assertEqual(cluster.inners, [], "the arc is not a hole")
                 arcs = [s for s in cluster.outer.segments if (isinstance(s, CircleSeg) and not s.full)]
                 self.assertEqual(len(arcs), 1)
                 self.assertGreater(math.degrees(arcs[0]._sweep()), 359)

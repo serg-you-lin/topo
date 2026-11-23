@@ -2,7 +2,7 @@
 tests/engine/io/test_to_shapely.py
 
 `topo.to_shapely`: the explicit conversion. A contour is the reading's polygon
-(or rebuilt at a tolerance), an open curve a LineString, a cluster its material
+(or rebuilt at at tolerance), an open curve a LineString, a cluster its material
 by even-odd like `area`.
 """
 

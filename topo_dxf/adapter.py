@@ -22,9 +22,7 @@ from topo.model import Diagnostic, Edge, EdgeStyle, RoleRule, resolve_role
 from .parser import DxfEntityDispatcher
 
 
-# ---------------------------------------------------------------------------
-# Costanti
-# ---------------------------------------------------------------------------
+# --- Constants ---
 
 _SUPPORTED_TYPES = frozenset({'LINE', 'ARC', 'SPLINE', 'ELLIPSE'})
 # every type that to_edges turns into curves
@@ -36,9 +34,7 @@ _CURVE_TYPES = _SUPPORTED_TYPES | {'CIRCLE', 'LWPOLYLINE', 'POLYLINE'}
 _STANDARD_LINETYPES = frozenset({'BYLAYER', 'BYBLOCK', 'CONTINUOUS'})
 
 
-# ---------------------------------------------------------------------------
-# Aspetto grezzo (linetype/colore) — Cluster E
-# ---------------------------------------------------------------------------
+# --- Raw appearance (linetype/colour) ---
 
 def _raw_linetype_pattern(lt_entry) -> Optional[Tuple[float, ...]]:
     """Raw pattern (total length + signed strokes, `+` = stroke, `-` = gap) of a
@@ -158,7 +154,7 @@ def _entity_style(entity) -> EdgeStyle:
 
 
 def _segment_key(segment) -> tuple:
-    """Chiave univoca per deduplicazione."""
+    """Unique key for deduplication."""
     if isinstance(segment, LineSeg):
         pts = tuple(sorted((
             (round(segment.start[0], 6), round(segment.start[1], 6)),
@@ -297,14 +293,14 @@ class DxfAdapter:
                 style = replace(style, filled=True)
             role = resolve_role(self.role_rules, label, style)
 
-            # CIRCLE → CircleSeg (preservato!)
+            # CIRCLE → CircleSeg (preserved!)
             if dtype == "CIRCLE":
                 prim = _parse(entity, dtype)
                 if (isinstance(prim, CircleSeg) and prim.full):
                     edges.append(Edge.of(prim, role, style=style))
                 continue
 
-            # LWPOLYLINE / POLYLINE → segmenti
+            # LWPOLYLINE / POLYLINE → segments
             if dtype in ("LWPOLYLINE", "POLYLINE"):
                 primitives = _parse(entity, dtype) or []
                 if not isinstance(primitives, list):

@@ -34,7 +34,7 @@ class TestFullEllipseOuter(unittest.TestCase):
         self.assertEqual(self.result.cluster_count, 1)
 
     def test_002_area_matches_ellipse_formula(self):
-        # area = pi * a * b, a=10 (semiasse maggiore), b=5 (ratio 0.5)
+        # area = pi * a * b, a=10 (semi-major axis), b=5 (ratio 0.5)
         expected = math.pi * 10 * 5
         area = self.result.clusters[0].outer.area
         self.assertAlmostEqual(area, expected, delta=1.0)

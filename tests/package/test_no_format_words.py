@@ -22,7 +22,7 @@ class TestNoFormatWords(unittest.TestCase):
             for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
                 if FORMAT_WORDS.search(line):
                     found.append(f"{path.relative_to(PROJECT_ROOT).as_posix()}:{n}: {line.strip()}")
-        self.assertEqual(found, [], "il nome di un formato dentro topo: va nell'adapter")
+        self.assertEqual(found, [], "the name of a format inside topo: it goes in the adapter")
 
 
 if __name__ == "__main__":

@@ -25,9 +25,7 @@ import topo
 from topo.model.role import ContourRole
 from topo.core.primitives.line import LineSeg
 
-# ---------------------------------------------------------------------------
-# Fake entity minimale — isola i test da ezdxf
-# ---------------------------------------------------------------------------
+# --- Minimal fake entity — isolates the tests from ezdxf ---
 
 def _ring(polygon):
     return topo.geometry.polygon(polygon.exterior.coords)
@@ -54,14 +52,14 @@ class _FakeEntity:
 class TestForgeContour(unittest.TestCase):
 
     def test_001_area(self):
-        """Area calcolata correttamente."""
+        """Area computed correctly."""
         poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
         contour = Contour(segments=_ring(poly), role="outer")
         print(f"\n[Contour] area={contour.area}")
         self.assertEqual(contour.area, 100.0)
 
     def test_002_bbox(self):
-        """Bbox calcolato correttamente."""
+        """Bbox computed correctly."""
         poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
         contour = Contour(segments=_ring(poly), role="outer")
         print(f"[Contour] bbox={contour.bbox}")
@@ -74,13 +72,13 @@ class TestForgeContour(unittest.TestCase):
         self.assertEqual(contour.role, ContourRole.UNKNOWN)
 
     def test_004_role_inner(self):
-        """role inner assegnato correttamente."""
+        """inner role assigned correctly."""
         poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
         contour = Contour(segments=_ring(poly), role="inner")
         self.assertEqual(contour.role, "inner")
 
     def test_005_role_preserved(self):
-        """Role preservato correttamente."""
+        """Role preserved correctly."""
         poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
         contour = Contour(segments=_ring(poly), role="outer")
         self.assertEqual(contour.role, "outer")
@@ -162,7 +160,7 @@ class TestForgeCluster(unittest.TestCase):
         self.assertEqual(len(cluster.features("holes")), 0)
 
     def test_003_with_hole_net_area(self):
-        """Area netta = outer - un vuoto dell'overlay (is_void)."""
+        """Net area = outer - an overlay void (is_void)."""
         import math
         outer = self._make_outer()
         cluster = Cluster(outer=outer, overlay=Overlay())
@@ -181,7 +179,7 @@ class TestForgeCluster(unittest.TestCase):
         self.assertEqual(len(list(result_poly.interiors)), 1)
 
     def test_005_bbox(self):
-        """Bbox corrisponde all'outer."""
+        """Bbox matches the outer."""
         cluster = Cluster(outer=self._make_outer())
         print(f"[Cluster] bbox={cluster.bbox}")
         self.assertEqual(cluster.bbox, (0, 0, 100, 100))
@@ -225,11 +223,11 @@ class TestForgeResult(unittest.TestCase):
     def _make_result(self):
         outer_poly = Polygon([(0,0), (50,0), (50,50), (0,50)])
         outer = Contour(role=ContourRole.OUTER, segments=_ring(outer_poly))
-        cluster  = Cluster(outer=outer, label="pezzo_1", source_file="test.dxf")
+        cluster  = Cluster(outer=outer, label="piece_1", source_file="test.dxf")
         return Result(clusters=[cluster], source_file="test.dxf")
 
     def test_001_part_count(self):
-        """cluster_count corretto."""
+        """cluster_count correct."""
         result = self._make_result()
         print(f"\n[Result] cluster_count={result.cluster_count}")
         self.assertEqual(result.cluster_count, 1)
@@ -247,12 +245,12 @@ class TestForgeResult(unittest.TestCase):
     def test_004_has_issues_true(self):
         """has_issues is True if there are warnings."""
         result = self._make_result()
-        result.warnings.append("qualcosa non va")
+        result.warnings.append("something is wrong")
         print(f"[Result] has_issues={result.has_issues}")
         self.assertTrue(result.has_issues)
 
     def test_005_to_dict_keys(self):
-        """to_dict ha le chiavi giuste."""
+        """to_dict has the right keys."""
         result = self._make_result()
         d = result.to_dict()
         print(f"[Result] keys={list(d.keys())}")
@@ -268,7 +266,7 @@ class TestForgeResult(unittest.TestCase):
         d = result.to_dict()
         print(f"[Result] cluster label={d['clusters'][0]['label']}")
         self.assertEqual(len(d["clusters"]), 1)
-        self.assertEqual(d["clusters"][0]["label"], "pezzo_1")
+        self.assertEqual(d["clusters"][0]["label"], "piece_1")
         self.assertTrue(d["is_valid"])
 
 

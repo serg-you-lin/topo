@@ -54,7 +54,7 @@ class Network:
     warnings:    advice about the drawing (`Diagnostic`); every reading copies it.
     notes:       what the repair did by itself (`Diagnostic`, level `note`).
     errors, is_valid: with errors no reading finds anything."""
-    edges:       List[Edge] = field(default_factory=list)   # riparati, nodi decisi
+    edges:       List[Edge] = field(default_factory=list)   # repaired, nodes decided
     set_aside:   List[Edge] = field(default_factory=list)   # non-structural roles
     warnings:    List[str] = field(default_factory=list)
     notes:       List[str] = field(default_factory=list)
@@ -92,7 +92,7 @@ class Network:
         """Read the network from the inside: one Cluster per closed outer
         contour, with its inners by containment. The reading for a flat
         drawing (a cutting file, a nesting of separate parts)."""
-        # import qui: le letture importano la riparazione (repair_edges)
+        # import here: the readings import the repair (repair_edges)
         from .faces import read_faces
         return read_faces(self)
 

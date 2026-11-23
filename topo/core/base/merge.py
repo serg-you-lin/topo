@@ -194,7 +194,7 @@ def _merge_on_carrier(
         for node in (edge.start, edge.end):
             carriers_at.setdefault(node, set()).add(key)
 
-    replacement: dict = {}  # id(rappresentante) -> Edge fuso
+    replacement: dict = {}  # id(representative) -> merged Edge
     drop: set = set()       # id(edge) absorbed by a merge
     junction = lambda node: len(carriers_at.get(node, ())) > 1
     for group in buckets:

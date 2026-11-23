@@ -128,7 +128,7 @@ def _make_test(path):
         for idx, (cluster, expected) in enumerate(
             zip(result.clusters, golden["clusters"])
         ):
-            label = f"{golden['source_file']} parte {idx+1}"
+            label = f"{golden['source_file']} part {idx+1}"
 
             inners = sorted(cluster.inners, key=lambda x: x.area, reverse=True)
 
@@ -140,7 +140,7 @@ def _make_test(path):
                 msg=f"{label} area",
             )
 
-            # --- perimetro outer ---
+            # --- outer perimeter ---
             self.assertAlmostEqual(
                 round(to_shapely(cluster.outer).exterior.length, 4),
                 expected["outer_perimeter_mm"],
@@ -148,7 +148,7 @@ def _make_test(path):
                 msg=f"{label} outer perimeter",
             )
 
-            # --- perimetro inner totale ---
+            # --- total inner perimeter ---
             actual_inner_p = round(
                 sum(to_shapely(i).exterior.length for i in inners),
                 4,
@@ -260,7 +260,7 @@ def _make_roundtrip_test(path):
         if not dxf_path.exists():
             self.skipTest(str(dxf_path))
         if golden["source_file"] in ROUNDTRIP_KNOWN_LOSSY:
-            self.skipTest(f"{golden['source_file']}: write-back lossy noto (spline miste)")
+            self.skipTest(f"{golden['source_file']}: known lossy write-back (mixed splines)")
 
         config = _load_config(dxf_path)
         max_gap = config.get("max_gap", MAX_GAP)
@@ -291,7 +291,7 @@ def _make_roundtrip_test(path):
         self.assertEqual(
             rt_result.cluster_count, result.cluster_count,
             msg=f"{src} round-trip cluster_count "
-                f"(l'exporter ha perso o inventato una parte)",
+                f"(the exporter lost or invented a part)",
         )
 
         unmatched = list(rt_result.clusters)
@@ -303,9 +303,9 @@ def _make_roundtrip_test(path):
                 ),
                 default=None,
             )
-            self.assertIsNotNone(match, msg=f"{src} parte {i+1} senza corrispondenza")
+            self.assertIsNotNone(match, msg=f"{src} part {i+1} without a match")
             unmatched.remove(match)
-            label = f"{src} round-trip parte {i+1}"
+            label = f"{src} round-trip part {i+1}"
 
             self.assertAlmostEqual(
                 match.area, cluster.area, delta=TOL_AREA_ROUNDTRIP, msg=f"{label} area",

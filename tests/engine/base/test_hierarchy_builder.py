@@ -67,16 +67,13 @@ class TestVirtualModelRemoved(unittest.TestCase):
         self.assertFalse(hasattr(proxy, "vs_id"))
 
 
-# ---------------------------------------------------------------------------
-# Test 1 — outer + contorno interno
-# ---------------------------------------------------------------------------
+# --- Test 1 — outer + inner contour ---
 
 class TestOuterWithInner(unittest.TestCase):
-    """
-    - 1 proxy grande (100×100) → OUTER
-    - 1 proxy circolare d=5 contenuto → inner (heal NON lo promuove a foro)
+    """- 1 large proxy (100×100) → OUTER
+    - 1 contained circular proxy d=5 → inner (heal does NOT promote it to a hole)
 
-    Atteso: 1 Cluster, 0 holes, 1 inner, trash vuoto.
+    Expected: 1 Cluster, 0 holes, 1 inner, empty trash.
     """
 
     def setUp(self):
@@ -101,9 +98,8 @@ class TestOuterWithInner(unittest.TestCase):
         self.assertEqual(len(self.trash), 0)
 
 
-# ---------------------------------------------------------------------------
-# Test 2 — nesting a tre livelli (countersink): heal appiattisce tutto in inners
-# ---------------------------------------------------------------------------
+# --- Test 2 — three-level nesting (countersink): heal flattens everything into inners ---
+#
 
 class TestNestingFlattened(unittest.TestCase):
     """- outer   : 100×100 rectangle
@@ -139,7 +135,7 @@ class TestNestingDepthAndParent(unittest.TestCase):
 
     def setUp(self):
         self.outer_proxy   = _rect_proxy(0, 0, 100, 100)
-        self.medio_proxy   = _circle_proxy(50, 50, 10)   # d=20, figlio diretto
+        self.medio_proxy   = _circle_proxy(50, 50, 10)   # d=20, direct child
         self.piccolo_proxy = _circle_proxy(50, 50, 4)    # d=8,  nipote
         self.clusters, _ = _make_builder().build(
             [self.outer_proxy, self.medio_proxy, self.piccolo_proxy]
@@ -163,9 +159,7 @@ class TestNestingDepthAndParent(unittest.TestCase):
         self.assertIsNot(self.piccolo.parent, self.cluster.outer)
 
 
-# ---------------------------------------------------------------------------
-# Test 3 — trash
-# ---------------------------------------------------------------------------
+# --- Test 3 — trash ---
 
 class TestTrash(unittest.TestCase):
     """- 1 outer proxy (100×100)

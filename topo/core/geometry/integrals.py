@@ -99,9 +99,7 @@ def ring_centroid(segments: Sequence) -> Point:
     return (m.mx / m.area, m.my / m.area)
 
 
-# ---------------------------------------------------------------------------
-# Retta
-# ---------------------------------------------------------------------------
+# --- Line ---
 
 def _line_moments(p0: Point, p1: Point) -> Moments:
     (x0, y0), (x1, y1) = p0, p1
@@ -158,7 +156,7 @@ def _trig_integral(poly: Trig, t0: float, t1: float, hyperbolic: bool = False) -
 
 
 def _cosh_sinh_integral(i: int, j: int, t0: float, t1: float) -> float:
-    """∫ coshⁱ t · sinhʲ t dt da t0 a t1, in forma chiusa per i + j ≤ 3."""
+    """∫ coshⁱ t · sinhʲ t dt from t0 to t1, in closed form for i + j ≤ 3."""
     if i + j > 3:
         raise ValueError(f"unexpected degree: cosh^{i} sinh^{j}")
 
@@ -172,7 +170,7 @@ def _cosh_sinh_integral(i: int, j: int, t0: float, t1: float) -> float:
 
 
 def _cos_sin_integral(i: int, j: int, t0: float, t1: float) -> float:
-    """∫ cosⁱ t · sinʲ t dt da t0 a t1, in forma chiusa per i + j ≤ 3."""
+    """∫ cosⁱ t · sinʲ t dt from t0 to t1, in closed form for i + j ≤ 3."""
     c0, s0, c1, s1 = math.cos(t0), math.sin(t0), math.cos(t1), math.sin(t1)
     if (i, j) == (0, 0):
         return t1 - t0

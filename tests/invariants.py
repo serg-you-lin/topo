@@ -38,7 +38,7 @@ ROTATION = 0.7                        # radians, any angle: the nodes come back 
 # digits below the millimetre, but every product of coordinates (cross products,
 # areas) loses 6-7 digits relative to the origin
 FAR = (2.5e6, -1.5e6)
-SHUFFLES = 5                          # rimescolamenti per disegno, seed 0..SHUFFLES-1
+SHUFFLES = 5                          # shufflings per drawing, seed 0..SHUFFLES-1
 GRID = 1e-6
 # two discretizations of the same stretch of curve are at most this far apart
 # (every chord is within DEFAULT_TOLERANCE of the curve, on the same side)
@@ -113,7 +113,7 @@ def orders(edges: list) -> list:
 
 
 def geometry(segment):
-    """Il segmento come geometria shapely, discretizzato a DEFAULT_TOLERANCE."""
+    """The segment as a shapely geometry, discretized at DEFAULT_TOLERANCE."""
     pts = segment.discretize(tolerance=DEFAULT_TOLERANCE)
     if len(pts) < 2 or all(p == pts[0] for p in pts):
         return Point(pts[0])
@@ -253,8 +253,8 @@ def known_defect(test, where: str, gate: str, check) -> None:
     try:
         check()
     except AssertionError:
-        test.skipTest(f"difetto noto, {gate}: {where}")
-    test.fail(f"{where} passa: il difetto di {gate} è risolto, togli il caso dalla lista")
+        test.skipTest(f"known defect, {gate}: {where}")
+    test.fail(f"{where} passes: the defect of {gate} is solved, remove the case from the list")
 
 
 def contour_jumps(result) -> list:

@@ -65,7 +65,7 @@ class TestHatchExploded(unittest.TestCase):
                          [e.segment for e in self.doc.edges])
 
     def test_no_hatch_left_unread(self):
-        lost = [w for w in self.doc.warnings if w.startswith("tipi non riportati")]
+        lost = [w for w in self.doc.warnings if w.startswith("types not reported")]
         self.assertFalse(any("HATCH" in w for w in lost))
 
 

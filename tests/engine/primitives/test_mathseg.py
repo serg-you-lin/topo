@@ -22,9 +22,9 @@ from tests.engine.primitives.test_segment_motion import _segments
 
 def _all() -> list:
     return _segments() + [
-        ("spline a tre tratti", BSplineSeg(degree=3, control_points=[(0, 0), (1, 3), (4, 4), (6, 1), (8, 2), (9, 0)],
+        ("three-piece spline", BSplineSeg(degree=3, control_points=[(0, 0), (1, 3), (4, 4), (6, 1), (8, 2), (9, 0)],
                                            knots=[0, 0, 0, 0, 1, 2.5, 3, 3, 3, 3])),
-        ("spline di grado 1", BSplineSeg(degree=1, control_points=[(0, 0), (2, 1), (3, -1)], knots=[0, 0, 1, 2, 2])),
+        ("degree-1 spline", BSplineSeg(degree=1, control_points=[(0, 0), (2, 1), (3, -1)], knots=[0, 0, 1, 2, 2])),
     ]
 
 

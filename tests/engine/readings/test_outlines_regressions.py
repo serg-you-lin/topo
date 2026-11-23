@@ -33,7 +33,7 @@ class TestTangentSpike(unittest.TestCase):
         max_x = max(x for x, _ in to_shapely(reading.outer).exterior.coords)
         # clean = 1506.30; broken (today) = 1506.63 (0.33 mm spike)
         self.assertLess(max_x, 1506.4,
-                         "vertice spurio sulla punta arrotondata, oltre la curva liscia")
+                         "spurious vertex on the rounded tip, beyond the smooth curve")
 
 
 if __name__ == "__main__":

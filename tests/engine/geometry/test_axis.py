@@ -97,7 +97,7 @@ class TestSpanningLines(unittest.TestCase):
     def test_rows_and_columns(self):
         items = _rect(0, 0, 100, 40) + [LineSeg(start=(0, 20), end=(100, 20)),
                                         LineSeg(start=(60, 0), end=(60, 40)),
-                                        LineSeg(start=(0, 30), end=(30, 30))]   # troppo corta
+                                        LineSeg(start=(0, 30), end=(30, 30))]   # too short
         self.assertEqual(spanning_lines((0, 0, 100, 40), items, eps=0.5, cluster_tolerance=1.5, coverage=0.85), ([20.0], [60.0]))
 
 

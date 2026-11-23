@@ -49,9 +49,7 @@ def _role(r) -> str:
     return getattr(r, "value", str(r))
 
 
-# ===========================================================================
-# LIVELLO 2 — Document: edge, primitive, grafo
-# ===========================================================================
+# === LEVEL 2 — Document: edges, primitives, graph ===
 
 def inspect_document(doc, *, graph: bool = True, limit: Optional[int] = 60) -> None:
     """

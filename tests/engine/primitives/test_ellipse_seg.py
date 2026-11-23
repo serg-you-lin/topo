@@ -21,7 +21,7 @@ def _max_deviation_from_ellipse(seg: EllipseSeg, pts) -> float:
     mx, my = seg.major_axis
     a = math.hypot(mx, my)
     b = a * seg.ratio
-    ux, uy = mx / a, my / a  # asse maggiore, versore
+    ux, uy = mx / a, my / a  # major axis, unit vector
     max_dev = 0.0
     for x, y in pts:
         dx, dy = x - seg.center[0], y - seg.center[1]

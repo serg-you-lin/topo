@@ -32,7 +32,7 @@ def _random_graph(rnd, n_max=8, m_max=12):
     edges = []
     for _ in range(rnd.randint(0, m_max)):
         i, j = rnd.sample(range(n), 2)
-        # pesi piccoli (tanti pareggi) e grandi
+        # small weights (many ties) and large
         edges.append((i, j, rnd.choice([rnd.randint(0, 5), rnd.randint(0, 10 ** 9)])))
     return n, edges
 

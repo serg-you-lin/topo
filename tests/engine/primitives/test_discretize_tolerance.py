@@ -98,7 +98,7 @@ def _deviation_along(poly, curve_pts, window: int = 64) -> float:
 
 
 def _spline(degree, n, clamped, rational, seed):
-    """Una spline pseudo-casuale ma fissa: nodi bloccati o no, pesi o no."""
+    """A pseudo-random but fixed spline: locked knots or not, weights or not."""
     import random
     rnd = random.Random(seed)
     cps = [(rnd.uniform(-50, 50), rnd.uniform(-50, 50)) for _ in range(n)]
@@ -195,7 +195,7 @@ class TestArcOnCircleGrid(unittest.TestCase):
     def test_four_quarters_are_the_circle(self):
         circle = self._circle()
         n = len(circle) - 1
-        self.assertEqual(n % 4, 0, "griglia scelta per avere i quarti sui vertici")
+        self.assertEqual(n % 4, 0, "grid chosen to have the quarters on the vertices")
         joined = [circle[0]]
         for q in range(4):
             joined += self._arc(q * math.pi / 2, (q + 1) * math.pi / 2)[1:]

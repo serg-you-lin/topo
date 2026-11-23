@@ -92,9 +92,9 @@ class TestNonContourEdgeDetector(unittest.TestCase):
         b_diagonal_id = id(b[-1])
 
         self.assertEqual(result & b_contour_ids, set(),
-                          "i lati veri del contorno di B non vanno esclusi")
+                          "B's true contour sides must not be excluded")
         self.assertIn(b_diagonal_id, result,
-                       "la diagonale di B resta un edge non di contorno")
+                       "B's diagonal stays a non-contour edge")
 
     def test_concave_side_between_two_chords_stays_contour(self):
         # an L: the side (10,10)-(10,30) of the concave part is inside the convex hull;

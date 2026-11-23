@@ -55,9 +55,7 @@ DWG_VERSIONS = {
 }
 
 
-# ---------------------------------------------------------------------------
-# DWG → doc via odafc
-# ---------------------------------------------------------------------------
+# --- DWG → doc via odafc ---
 
 def _text_signature(text) -> tuple:
     return (round(text.position[0], 3), round(text.position[1], 3), text.text)
@@ -111,7 +109,7 @@ def _warn_bare_dimensions(msp, sink: list, verbose: bool = False) -> None:
 
 
 def _emit(sink: list, msg: str, verbose: bool = False) -> None:
-    """Aggiunge `msg` (un `Diagnostic`) al canale `sink`; lo stampa solo se verbose."""
+    """Add `msg` (a `Diagnostic`) to the `sink` channel; print it only if verbose."""
     if sink is not None:
         sink.append(msg)
     if verbose:
@@ -129,7 +127,7 @@ def _configure_odafc(sink: list = None, verbose: bool = False) -> None:
         EnvironmentError: ODA_PATH not set AND no ODAFileConverter in the PATH.
                           The message includes the download link and the guide to
                           the environment variables per OS."""
-    # su Windows odafc usa "win_exec_path", su Linux/macOS "unix_exec_path"
+    # on Windows odafc uses "win_exec_path", on Linux/macOS "unix_exec_path"
     opt_key = "win_exec_path" if sys.platform == "win32" else "unix_exec_path"
 
     if ODA_PATH:
@@ -222,9 +220,7 @@ def _upgrade_to_r2010(doc, sink: list = None, verbose: bool = False, notes: list
     return new_doc
 
 
-# ---------------------------------------------------------------------------
-# Entry point pubblico
-# ---------------------------------------------------------------------------
+# --- Public entry point ---
 
 def load_dxf(
     path: str,

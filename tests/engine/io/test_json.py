@@ -17,7 +17,7 @@ g = topo.geometry
 
 def _result(reading="faces"):
     # 100×60 plate with a Ø20 hole
-    net = topo.heal(topo.load_segments(g.rectangle(100, 60) + g.circle(10)), label="piastra")
+    net = topo.heal(topo.load_segments(g.rectangle(100, 60) + g.circle(10)), label="plate")
     return net.faces() if reading == "faces" else net.outlines()
 
 
@@ -43,7 +43,7 @@ def test_exact_facts_without_coordinates_or_process():
 def test_extra_adds_the_consumers_fields():
     data = json.loads(topo.to_json(_result(), extra=lambda c: {"material": "x", "code": c.label}))
     assert data["clusters"][0]["material"] == "x"
-    assert data["clusters"][0]["code"] == "piastra"
+    assert data["clusters"][0]["code"] == "plate"
 
 
 def test_extra_does_not_replace_a_topo_field():

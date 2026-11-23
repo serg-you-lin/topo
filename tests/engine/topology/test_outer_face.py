@@ -185,8 +185,8 @@ class TestFirstStepUnderMotion(unittest.TestCase):
         self.assertGreater(len(starts), 1)            # the tie is really there
         for r in readings[1:]:
             self.assertEqual(r, readings[0])
-        self.assertIn(2, [n for _, n in readings[0]])  # la sporgenza, due volte
-        self.assertIn(0, [n for _, n in readings[0]])  # la corda, mai
+        self.assertIn(2, [n for _, n in readings[0]])  # the protrusion, twice
+        self.assertIn(0, [n for _, n in readings[0]])  # the chord, never
 
 
 class TestUnionGridUnderMotion(unittest.TestCase):
@@ -213,7 +213,7 @@ class TestUnionGridUnderMotion(unittest.TestCase):
         lines = _on_nodes(edges, build_node_graph(edges, sliver=0.01))
         on_grid = len(shapely.unary_union(lines, grid_size=UNION_GRID).geoms)
         exact = len(shapely.unary_union(lines).geoms)
-        self.assertEqual(on_grid, len(lines[0].coords) - 1)   # i due poligoni coincidono vertice per vertice
+        self.assertEqual(on_grid, len(lines[0].coords) - 1)   # the two polygons coincide vertex by vertex
         self.assertLess(exact, 10)      # without a grid: few crossings at the last bit
 
     def test_the_reading_depends_neither_on_the_grid_nor_on_the_motion(self):

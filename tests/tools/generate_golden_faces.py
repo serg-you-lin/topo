@@ -89,10 +89,10 @@ def generate(force: bool = False, only: str = None):
     if only:
         dxf_files = [f for f in dxf_files if f.stem == only]
         if not dxf_files:
-            print(f"Nessun DXF trovato con stem '{only}'")
+            print(f"No DXF found with stem '{only}'")
             return
 
-    print(f"Trovati {len(dxf_files)} DXF in {GOLDEN_DXF_DIR}\n")
+    print(f"Found {len(dxf_files)} DXF in {GOLDEN_DXF_DIR}\n")
 
     generated = 0
     skipped   = 0
@@ -102,7 +102,7 @@ def generate(force: bool = False, only: str = None):
         geom_path = GOLDEN_JSON_DIR / f"{dxf_path.stem}.json"
 
         if geom_path.exists() and not force:
-            print(f"  SKIP (golden esiste): {dxf_path.name}")
+            print(f"  SKIP (golden exists): {dxf_path.name}")
             skipped += 1
             continue
 
@@ -120,7 +120,7 @@ def generate(force: bool = False, only: str = None):
             geom = topo.heal(_load(), max_gap=max_gap).faces()
 
             if not geom.is_valid:
-                print(f"  SKIP (non valido): {dxf_path.name} — {geom.errors}")
+                print(f"  SKIP (invalid): {dxf_path.name} — {geom.errors}")
                 skipped += 1
                 continue
 
@@ -136,13 +136,13 @@ def generate(force: bool = False, only: str = None):
             traceback.print_exc()
             failed += 1
 
-    print(f"\nGenerati: {generated}  Skippati: {skipped}  Errori: {failed}")
-    print(f"Golden salvati in: {GOLDEN_JSON_DIR}")
+    print(f"\nGenerati: {generated}  Skipped: {skipped}  Errors: {failed}")
+    print(f"Golden saved in: {GOLDEN_JSON_DIR}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--force", action="store_true", help="Sovrascrive golden esistenti")
-    parser.add_argument("--only",  type=str, default=None, help="Stem del DXF da rigenerare (senza estensione)")
+    parser.add_argument("--force", action="store_true", help="Overwrite existing goldens")
+    parser.add_argument("--only",  type=str, default=None, help="Stem of the DXF to regenerate (without extension)")
     args = parser.parse_args()
     generate(force=args.force, only=args.only)

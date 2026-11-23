@@ -38,9 +38,7 @@ SIDE_MAX = "max"
 _EPS = FLOAT_NOISE
 
 
-# ---------------------------------------------------------------------------
-# Risultato
-# ---------------------------------------------------------------------------
+# --- Result ---
 
 @dataclass
 class OuterHit:
@@ -66,9 +64,7 @@ class OuterCandidates:
         return self.hits.get(id(edge), [])
 
 
-# ---------------------------------------------------------------------------
-# API pubblica
-# ---------------------------------------------------------------------------
+# --- Public API ---
 
 def outer_candidate_edges(edges: Iterable[Edge]) -> OuterCandidates:
     """For each axis, a representative height (midpoint) between every pair of
@@ -102,7 +98,7 @@ class _Arc:
     center: Point
     radius: float
     start:  float   # radianti
-    sweep:  float   # radianti, positivo
+    sweep:  float   # radians, positive
     ccw:    bool
 
 
@@ -173,9 +169,7 @@ def _intersections(piece, a: int, level: float) -> List[Point]:
     return out
 
 
-# ---------------------------------------------------------------------------
-# Sweep su un asse
-# ---------------------------------------------------------------------------
+# --- Sweep on an axis ---
 
 def _scan_axis(pieces: list, axis: str, hits: Dict[int, List[OuterHit]]) -> int:
     a = 1 if axis == AXIS_Y else 0

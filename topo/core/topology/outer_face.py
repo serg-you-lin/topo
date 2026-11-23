@@ -49,7 +49,7 @@ class OuterFace:
     loop:      list                         # [(Edge, reversed)] as from the LoopFinder
     segments:  list                         # oriented primitives of the contour
     styles:    list
-    spurs:     List[Edge] = field(default_factory=list)   # percorsi andata e ritorno
+    spurs:     List[Edge] = field(default_factory=list)   # back-and-forth walks
     # the stretches off the border of the loop's edges that run over it only in
     # part (fallback): new Edges, the rest exact from those edges
     rest:      List[Edge] = field(default_factory=list)
@@ -61,9 +61,7 @@ class OuterFace:
         return [e for e, _ in self.loop]
 
 
-# ---------------------------------------------------------------------------
-# API pubblica
-# ---------------------------------------------------------------------------
+# --- Public API ---
 
 def outer_face(edges: List[Edge], epsilon: float = 0.0) -> Optional[OuterFace]:
     """Outer contour of the network `edges` (already planar: split_at_crossings). The
@@ -111,9 +109,7 @@ def outer_face_passes(graph: Graph, component, n_edges: int) -> dict:
     return count
 
 
-# ---------------------------------------------------------------------------
-# Percorso
-# ---------------------------------------------------------------------------
+# --- Walk ---
 
 def _outer_face_walk(graph: Graph, component, n_edges: int) -> list:
     """[(edge, from node, to node)] along the border of the outer face."""

@@ -375,9 +375,7 @@ def cut_by(segment, region: Sequence, *, keep: str = "outside") -> list:
     return out
 
 
-# ---------------------------------------------------------------------------
-# Contorno meno regione
-# ---------------------------------------------------------------------------
+# --- Contour minus region ---
 
 def _chain(pieces: list, inside_left: Optional[bool] = None) -> List[list]:
     """Oriented pieces chained head-to-tail into closed rings. With `inside_left`

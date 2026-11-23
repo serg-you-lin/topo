@@ -185,7 +185,7 @@ def _dimension_anchor(entity) -> Optional[Tuple[float, float]]:
 
 
 def _fallback_anchor(entity) -> Optional[Tuple[float, float]]:
-    """Cerca un qualsiasi attributo-punto usabile."""
+    """Look for any usable point attribute."""
     for attr in ("center", "insert", "start", "defpoint"):
         if hasattr(entity.dxf, attr):
             try:
@@ -196,9 +196,7 @@ def _fallback_anchor(entity) -> Optional[Tuple[float, float]]:
     return None
 
 
-# ---------------------------------------------------------------------------
-# TEXT / MTEXT — testo semplice
-# ---------------------------------------------------------------------------
+# --- TEXT / MTEXT — plain text ---
 
 def _extract_content(entity) -> str:
     """Clean text of the entity, empty string if it has none."""
@@ -412,9 +410,7 @@ _SPECIAL_CODES = {"%%c": "Ø", "%%d": "°", "%%p": "±"}
 _UNICODE_ESCAPE = re.compile(r"\\[Uu]\+([0-9A-Fa-f]{4})")   # "\U+00B0" → "°"
 
 
-# ---------------------------------------------------------------------------
-# LEADER / MULTILEADER
-# ---------------------------------------------------------------------------
+# --- LEADER / MULTILEADER ---
 
 def carries_string(entity) -> bool:
     """A LEADER/MULTILEADER carries a string of its own: in the entity's field or
@@ -522,7 +518,7 @@ def _render_block(entity) -> RenderedGeometry:
 
 
 def _flatten_virtual(entity):
-    """Espande `virtual_entities()` ricorsivamente sugli INSERT (frecce a blocco)."""
+    """Recursively expand `virtual_entities()` on INSERTs (block arrowheads)."""
     for v in entity.virtual_entities():
         if v.dxftype() == "INSERT":
             yield from _flatten_virtual(v)
@@ -584,9 +580,9 @@ def _polyline_points(pl) -> Tuple[List[Tuple[float, float]], bool]:
 
 
 def _solid_points(solid) -> List[Tuple[float, float]]:
-    """SOLID/TRACE: 4 vertici in ordine 'a farfalla' → poligono convesso."""
+    """SOLID/TRACE: 4 vertices in 'bow-tie' order → convex polygon."""
     vs = []
-    for name in ("vtx0", "vtx1", "vtx3", "vtx2"):  # 3<->2 per de-farfallare
+    for name in ("vtx0", "vtx1", "vtx3", "vtx2"):  # 3<->2 to untwist the bow-tie order
         p = solid.dxf.get(name)
         if p is not None:
             vs.append((float(p[0]), float(p[1])))

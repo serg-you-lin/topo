@@ -51,9 +51,7 @@ class TouchingGroup:
         return self.bbox[3] - self.bbox[1]
 
 
-# ---------------------------------------------------------------------------
-# API pubblica
-# ---------------------------------------------------------------------------
+# --- Public API ---
 
 def touching_groups(edges: Iterable[Edge], gap_tolerance: float) -> List[TouchingGroup]:
     """Union-find on the pairs of Edges at true distance <= gap_tolerance

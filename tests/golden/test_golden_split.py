@@ -88,7 +88,7 @@ def _match_inner_polygons(actual_wkts: list[str], expected_wkts: list[str]) -> l
             break
 
     if len(matches) != len(actual_wkts):
-        raise ValueError("impossibile costruire un matching completo tra inner")
+        raise ValueError("cannot build a complete matching between inners")
 
     return matches
 
@@ -191,7 +191,7 @@ def _make_split_test(golden_path: Path):
         parent_path = drawing(parent_name)
 
         if not parent_path.exists():
-            self.skipTest(f"DXF padre non trovato: {parent_path}")
+            self.skipTest(f"Parent DXF not found: {parent_path}")
 
         config    = _load_config(parent_path)
         max_gap = config.get("max_gap", MAX_GAP)
@@ -206,22 +206,22 @@ def _make_split_test(golden_path: Path):
 
             if part_index >= len(children):
                 self.fail(
-                    f"part_index={part_index} fuori range: "
-                    f"lo split ha prodotto solo {len(children)} figli.\n"
-                    f"Figli generati: {[f.name for f in children]}"
+                    f"part_index={part_index} out of range: "
+                    f"the split produced only {len(children)} children.\n"
+                    f"Generated children: {[f.name for f in children]}"
                 )
 
             part_payload = _PARENT_PIPELINE_CACHE[(parent_path.resolve(), float(max_gap))]["clusters"][part_index]
 
         self.assertIsNotNone(
             part_payload,
-            f"{child_name}: nessuna parte disponibile per il figlio richiesto"
+            f"{child_name}: no part available for the requested child"
         )
 
         self.assertEqual(
             len(_PARENT_PIPELINE_CACHE[(parent_path.resolve(), float(max_gap))]["clusters"]),
             len(children),
-            f"{child_name}: il numero di parti in cache ({len(_PARENT_PIPELINE_CACHE[(parent_path.resolve(), float(max_gap))]['clusters'])}) non coincide con i figli generati ({len(children)})"
+            f"{child_name}: the number of parts in cache ({len(_PARENT_PIPELINE_CACHE[(parent_path.resolve(), float(max_gap))]['clusters'])}) does not match the generated children ({len(children)})"
         )
 
         label = child_name
@@ -235,14 +235,14 @@ def _make_split_test(golden_path: Path):
             msg=f"{label}: area {actual_area} != attesa {golden['area_mm2']} (tol={TOL_AREA})",
         )
 
-        # --- Contorni interni ---
+        # --- Inner contours ---
         self.assertEqual(
             part_payload["inners_count"],
             golden["inners_count"],
             msg=f"{label}: inners_count {part_payload['inners_count']} != atteso {golden['inners_count']}",
         )
 
-        # --- Perimetro esterno ---
+        # --- Outer perimeter ---
         actual_outer_p = round(part_payload["outer_perimeter"], 4)
         self.assertAlmostEqual(
             actual_outer_p,
@@ -251,7 +251,7 @@ def _make_split_test(golden_path: Path):
             msg=f"{label}: outer_perimeter {actual_outer_p} != atteso {golden['outer_perimeter_mm']}",
         )
 
-        # --- Perimetro interno ---
+        # --- Inner perimeter ---
         actual_inner_p = round(
             part_payload["inner_perimeter"],
             4,
@@ -263,7 +263,7 @@ def _make_split_test(golden_path: Path):
             msg=f"{label}: inner_perimeter {actual_inner_p} != atteso {golden['inner_perimeter_mm']}",
         )
 
-        # --- Geometria outer (WKT) ---
+        # --- Outer geometry (WKT) ---
         expected_outer = shapely_wkt.loads(golden["outer_wkt"])
         diff = shapely_wkt.loads(part_payload["outer_wkt"]).symmetric_difference(expected_outer).area
         self.assertLess(
@@ -271,7 +271,7 @@ def _make_split_test(golden_path: Path):
             msg=f"{label}: geometria outer cambiata (diff={diff:.4f} mm², tol={TOL_SHAPE})",
         )
 
-        # --- Geometria inners (WKT) ---
+        # --- Inners geometry (WKT) ---
         self.assertEqual(
             len(part_payload["inners_wkt"]),
             len(golden["inners_wkt"]),
@@ -291,7 +291,7 @@ def _make_split_test(golden_path: Path):
                 ),
             )
 
-        # --- Layer ---
+        # --- Layers ---
         if "outer_layer" in golden:
             self.assertEqual(
                 role_to_dxf_layer(part_payload["outer_role"]),
@@ -320,19 +320,19 @@ for _golden_path in _load_golden_files():
 class TestGoldenSplitSetup(unittest.TestCase):
 
     def test_001_golden_dir_exists(self):
-        """La cartella golden_split/golden/ esiste."""
+        """The golden_split/golden/ folder exists."""
         self.assertTrue(
             GOLDEN_DIR.exists(),
-            f"Cartella golden non trovata: {GOLDEN_DIR}\n"
+            f"Golden folder not found: {GOLDEN_DIR}\n"
             f"Genera i golden file con: python generate_golden_split.py"
         )
 
     def test_002_golden_not_empty(self):
-        """La cartella golden_split/golden/ contiene almeno 1 golden file."""
+        """The golden_split/golden/ folder contains at least 1 golden file."""
         files = list(GOLDEN_DIR.glob("*.json")) if GOLDEN_DIR.exists() else []
         self.assertGreater(
             len(files), 0,
-            f"Nessun golden file trovato in {GOLDEN_DIR}\n"
+            f"No golden file found in {GOLDEN_DIR}\n"
             f"Genera i golden file con: python generate_golden_split.py"
         )
         print(f"\n  Golden split trovati: {len(files)}")

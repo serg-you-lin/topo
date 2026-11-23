@@ -79,8 +79,8 @@ class TestPolygonValidity(unittest.TestCase):
     cancellation, not the true shape."""
 
     def _assert_valid(self, contour, where):
-        self.assertTrue(to_shapely(contour).is_valid, f"{where}: il poligono non è una forma semplice")
-        self.assertGreater(to_shapely(contour).area, 0, f"{where}: il poligono ha area nulla")
+        self.assertTrue(to_shapely(contour).is_valid, f"{where}: the polygon is not a simple shape")
+        self.assertGreater(to_shapely(contour).area, 0, f"{where}: the polygon has null area")
 
 
 def _make_validity_test(dxf: Path):
@@ -130,10 +130,10 @@ def _roundtrip(self, dxf: Path):
                           max_gap=MAX_GAP).outlines()
     snap_before, snap_after = _snapshot(before), _snapshot(after)
     self.assertEqual(len(snap_before), len(snap_after),
-                     f"{dxf.stem}: il numero di isole cambia dopo export+reload")
+                     f"{dxf.stem}: the number of islands changes after export+reload")
     self.assertEqual(_unmatched(snap_before, snap_after), [],
-                     f"{dxf.stem}: le isole cambiano dopo export+reload "
-                     f"(dopo: {[[round(v, 3) for v in s] for s in snap_after]})")
+                     f"{dxf.stem}: the islands change after export+reload "
+                     f"(after: {[[round(v, 3) for v in s] for s in snap_after]})")
 
 
 def _make_roundtrip_test(dxf: Path):
@@ -158,8 +158,8 @@ def _make_dropped_test(dxf: Path):
         doc, result = outline_reading(dxf, MAX_GAP)
         lost = uncovered(doc, result, MAX_GAP)
         self.assertLessEqual(lost.length, GRAPH_EPSILON,
-                             f"{dxf.stem}: {lost.length:.3f} mm di geometria in ingresso "
-                             f"non stanno in nessuna uscita (vicino a {lost.representative_point()})")
+                             f"{dxf.stem}: {lost.length:.3f} mm of input geometry "
+                             f"are in no output (near {lost.representative_point()})")
     return test
 
 
@@ -176,7 +176,7 @@ def _make_out_once_test(dxf: Path):
     def test(self):
         doc, result = outline_reading(dxf, MAX_GAP)
         _check(self, "out once", dxf, lambda: self.assertEqual(
-            along_contours(result, doc), [], f"{dxf.stem}: tratti di loose lungo un contorno"))
+            along_contours(result, doc), [], f"{dxf.stem}: loose stretches along a contour"))
     return test
 
 
@@ -195,7 +195,7 @@ def _differences(result, again, back=lambda p: p) -> list:
     for what, before, after in (("outer", outers, outers_again), ("inner", inners, inners_again)):
         lost = shape_differences(before, after, SHAPE_BAND)
         if lost:
-            found.append(f"{what} {len(before)} → {len(after)}, cambiano {lost[:3]}")
+            found.append(f"{what} {len(before)} → {len(after)}, change {lost[:3]}")
     return found
 
 
@@ -221,7 +221,7 @@ def _make_scrambled_test(dxf: Path):
     def test(self):
         found = _scrambled_differences(dxf)
         _check(self, "scrambled", dxf,
-               lambda: self.assertEqual(found, [], f"{dxf.stem}: scritto in un altro modo cambia le isole"))
+               lambda: self.assertEqual(found, [], f"{dxf.stem}: written another way changes the islands"))
     return test
 
 
@@ -237,14 +237,14 @@ ANGLES = (0.13, 0.41, 0.97, 1.33, 1.9, 2.47, 3.01, 4.4)
 MICRO_CASES = {
     # anch_03, anch_03_noframe, regr_02: a 60° V with the inscribed circle cutting
     # every side by 0.004; before unstable at 6 angles out of 8
-    "v_col_cerchio": [
+    "v_with_circle": [
         LineSeg(start=(746.518400822, 390.9160859284), end=(754.018400822, 395.2910859284)),
         LineSeg(start=(754.018400822, 395.2910859284), end=(739.018400822, 403.8625144998001)),
         CircleSeg(center=(748.5175721479, 395.281296222), radius=2.7545675962),
     ],
     # regr_04 reduced to blocks: two nearly aligned lines, offset by 0.04, starts at
     # 0.042; before they gave a degenerate contour at 4 angles out of 8
-    "rette_sfalsate": [
+    "offset_lines": [
         LineSeg(start=(1068.899871006625, 584.2766554286404), end=(1063.209502662657, 586.5054223191735)),
         LineSeg(start=(1068.884100771032, 584.2375217405909), end=(1069.529957804885, 583.9735163747837)),
     ],
@@ -264,7 +264,7 @@ def _make_micro_test(segments: list):
         for seed, angle in enumerate(ANGLES):
             again = topo.heal(scrambled(doc, angle, seed), max_gap=MAX_GAP).outlines()
             self.assertEqual(_differences(result, again, lambda p: unscrambled(p, angle)), [],
-                             f"{angle} rad: scritto in un altro modo cambia le isole")
+                             f"{angle} rad: written another way changes the islands")
     return test
 
 

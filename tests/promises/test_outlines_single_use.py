@@ -32,7 +32,7 @@ class TestOutlinesSingleUse(unittest.TestCase):
                     if r.outer is None:
                         continue
                     both = {id(e) for e in r.outer.edges} & {id(e) for e in r.spurs}
-                    self.assertFalse(both, f"{name} isola {i}: {len(both)} edge nel contorno e fra le sporgenze")
+                    self.assertFalse(both, f"{name} island {i}: {len(both)} edges in the contour and among the protrusions")
 
 
 if __name__ == "__main__":

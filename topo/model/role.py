@@ -49,7 +49,7 @@ class ContourRole(str, Enum):
     strings work without ``.value``."""
     UNKNOWN = "unknown"   # default — no role decided
     OUTER   = "outer"     # outer profile of the part, found by heal()
-    INNER   = "inner"     # loop interno, trovato da heal()
+    INNER   = "inner"     # inner loop, found by heal()
     # Nothing else here. `hole`/`bending`/`engrave`/... are process vocabulary
     # (snapbend), `frame`/`title_block`/... snapdraw's: a consumer's slugs, outside
     # this enum, same treatment.

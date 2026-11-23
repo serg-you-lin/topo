@@ -74,7 +74,7 @@ def make_polyline(vertices, layer="0", is_closed=True):
         v = MagicMock()
         v.dxf.location.x = x
         v.dxf.location.y = y
-        getattr(v.dxf, "bulge", 0.0)  # per mockare l'attributo
+        getattr(v.dxf, "bulge", 0.0)  # to mock the attribute
         v.dxf.bulge = bulge
         mock_vertices.append(v)
     e.vertices = mock_vertices
@@ -149,7 +149,7 @@ def make_square_loop(side=100.0):
 
 
 class MockMSP:
-    """Mock per ezdxf ModelSpace."""
+    """Mock for ezdxf ModelSpace."""
     def __init__(self):
         self.doc = MagicMock()
         self.doc.dxfversion = "AC1015"
@@ -204,15 +204,13 @@ class MockMSP:
         return spline
 
 
-# ===========================================================================
-# TESTS: DxfEntityDispatcher
-# ===========================================================================
+# === TESTS: DxfEntityDispatcher ===
 
 class TestDxfEntityDispatcher(unittest.TestCase):
     """Test of the dispatcher by DXF entity type."""
 
     def test_001_riconosce_tipi_noti(self):
-        """Il dispatcher riconosce correttamente i tipi DXF."""
+        """The dispatcher correctly recognizes the DXF types."""
         self.assertEqual(DxfEntityDispatcher(make_line(0, 0, 10, 0)).kind, 'LINE')
         self.assertEqual(DxfEntityDispatcher(make_arc(0, 0, 10, 0, 180)).kind, 'ARC')
         self.assertEqual(
@@ -305,7 +303,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
             make_lwpolyline([(0, 0, 0), (10, 0, 0), (10, 10, 0)], is_closed=False)
         ).parse(rev=False)
         self.assertIsInstance(parsed, list)
-        self.assertEqual(len(parsed), 2)  # N-1 segmenti
+        self.assertEqual(len(parsed), 2)  # N-1 segments
         self.assertIsInstance(parsed[0], LineSeg)
 
     def test_008_parse_lwpolyline_with_bulge(self):
@@ -341,7 +339,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
             ], is_closed=True)
         ).parse(rev=False)
         
-        self.assertEqual(len(parsed), 3)  # N segmenti (chiusa)
+        self.assertEqual(len(parsed), 3)  # N segments (closed)
 
     def test_010_parse_polyline_3d(self):
         """Parsing of a 3D POLYLINE with bulge."""
@@ -359,7 +357,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertIsInstance(parsed[1], CircleSeg)
 
     def test_011_parse_tipo_sconosciuto_restituisce_none(self):
-        """Tipo DXF sconosciuto → None."""
+        """Unknown DXF type → None."""
         e = MagicMock()
         e.dxftype.return_value = 'UNKNOWN'
         parsed = DxfEntityDispatcher(e).parse(rev=False)
@@ -374,7 +372,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
     """Test of segments_from_loop on an Edge loop."""
 
     def test_001_loop_void(self):
-        """Loop vuoto → lista vuota."""
+        """Empty loop → empty list."""
         self.assertEqual(segments_from_loop([]), [])
 
     def test_002_loop_line_singola(self):
@@ -385,7 +383,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertIsInstance(result[0], LineSeg)
 
     def test_003_loop_quadrate(self):
-        """Loop quadrato → 4 LineSeg."""
+        """Square loop → 4 LineSegs."""
         primitives = segments_from_loop(make_square_loop(100.0))
         self.assertEqual(len(primitives), 4)
         for p in primitives:
@@ -416,9 +414,9 @@ class TestSegmentsFromLoop(unittest.TestCase):
         loop = [(make_edge(polyline), False)]
         result = segments_from_loop(loop)
         
-        self.assertEqual(len(result), 3)  # N-1 segmenti
+        self.assertEqual(len(result), 3)  # N-1 segments
         self.assertIsInstance(result[0], LineSeg)
-        self.assertIsInstance(result[1], CircleSeg)  # bulge convertito
+        self.assertIsInstance(result[1], CircleSeg)  # bulge converted
         self.assertIsInstance(result[2], LineSeg)
 
     def test_006_loop_with_lwpolyline_reversed(self):
@@ -479,7 +477,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         ], is_closed=True)
         loop = [(make_edge(polyline), False)]
         result = segments_from_loop(loop)
-        self.assertEqual(len(result), 4)  # N segmenti (chiusa)
+        self.assertEqual(len(result), 4)  # N segments (closed)
 
 
 # ===========================================================================
@@ -487,16 +485,16 @@ class TestSegmentsFromLoop(unittest.TestCase):
 # ===========================================================================
 
 class TestArcToBulge(unittest.TestCase):
-    """Test conversione CircleSeg → bulge DXF."""
+    """Test of the CircleSeg → DXF bulge conversion."""
 
     def test_001_bulge_90_ccw(self):
-        """Arco 90° CCW → bulge = tan(π/8)."""
+        """90° CCW arc → bulge = tan(π/8)."""
         arc = CircleSeg(center=(0, 0), radius=10, start_angle=0, end_angle=math.pi/2, ccw=True)
         bulge = arc_seg_to_bulge(arc)
         self.assertAlmostEqual(bulge, math.tan(math.pi/8), places=6)
 
     def test_002_bulge_90_cw(self):
-        """Arco 90° CW (da π/2 a 0) → bulge = -tan(π/8)."""
+        """90° CW arc (from π/2 to 0) → bulge = -tan(π/8)."""
         arc = CircleSeg(center=(0, 0), radius=10, start_angle=math.pi/2, end_angle=0, ccw=False)
         bulge = arc_seg_to_bulge(arc)
         self.assertAlmostEqual(bulge, -math.tan(math.pi/8), places=6)
@@ -520,13 +518,13 @@ class TestArcToBulge(unittest.TestCase):
         self.assertAlmostEqual(arc_seg_to_bulge(cw_arc), -math.tan(math.radians(5)), places=6)
 
     def test_003_bulge_180_ccw(self):
-        """Arco 180° CCW → bulge = tan(π/4)."""
+        """180° CCW arc → bulge = tan(π/4)."""
         arc = CircleSeg(center=(0, 0), radius=10, start_angle=0, end_angle=math.pi, ccw=True)
         bulge = arc_seg_to_bulge(arc)
         self.assertAlmostEqual(bulge, math.tan(math.pi/4), places=6)
 
     def test_004_negative_bulge_for_cw(self):
-        """Arco CW produce bulge negativo."""
+        """CW arc produces a negative bulge."""
         arc = CircleSeg(center=(0, 0), radius=10, start_angle=math.pi, end_angle=0, ccw=False)
         bulge = arc_seg_to_bulge(arc)
         self.assertLess(bulge, 0)
@@ -594,7 +592,7 @@ class TestSegmentsToPtsWithBulge(unittest.TestCase):
         self.assertAlmostEqual(result[0][1], expected_y)
 
     def test_004_segments_misti(self):
-        """Segmenti misti LineSeg + CircleSeg."""
+        """Mixed LineSeg + CircleSeg segments."""
         segments = [
             LineSeg(start=(0, 0), end=(10, 0)),
             CircleSeg(center=(10, 0), radius=10, start_angle=-math.pi/2, end_angle=0, ccw=True),
@@ -610,20 +608,20 @@ class TestSegmentsToPtsWithBulge(unittest.TestCase):
 # ===========================================================================
 
 class TestWriteContourToMsp(unittest.TestCase):
-    """Test esportazione contour su ModelSpace."""
+    """Test of the export of a contour to ModelSpace."""
 
     def setUp(self):
         self.msp = MockMSP()
 
     def test_001_segments_void(self):
-        """Segments vuoti → None."""
+        """Empty segments → None."""
         contour = MagicMock()
         contour.segments = []
         result = write_segments(contour.segments, self.msp, "TEST")
         self.assertIsNone(result)
 
     def test_002_segments_with_spline(self):
-        """Spline singola → esportata come SPLINE nativa."""
+        """Single spline → exported as a native SPLINE."""
         contour = MagicMock()
         contour.segments = [
             BSplineSeg(degree=0, control_points=[(0, 0), (10, 0)], knots=[], weights=None)
@@ -637,7 +635,7 @@ class TestWriteContourToMsp(unittest.TestCase):
         self.assertEqual(entity['entity'].control_points, [(0.0, 0.0, 0.0), (10.0, 0.0, 0.0)])
 
     def test_002b_segments_with_closed_ellipse(self):
-        """Ellisse chiusa singola → esportata come ELLIPSE nativa, mai spline."""
+        """Single closed ellipse → exported as a native ELLIPSE, never a spline."""
         contour = MagicMock()
         contour.segments = [
             EllipseSeg(center=(1, 2), major_axis=(10, 0), ratio=0.5,
@@ -653,7 +651,7 @@ class TestWriteContourToMsp(unittest.TestCase):
         self.assertEqual(entity['ratio'], 0.5)
 
     def test_003_line_segments_soli(self):
-        """Solo LineSeg → LWPOLYLINE."""
+        """LineSeg only → LWPOLYLINE."""
         contour = MagicMock()
         contour.segments = [
             LineSeg(start=(0, 0), end=(10, 0)),

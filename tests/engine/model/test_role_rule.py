@@ -18,8 +18,8 @@ TRATTEGGIATA = EdgeStyle(linetype="DASHED", dash=(0.5, -0.25))
 PUNTINATA   = EdgeStyle(linetype="DOT", dash=(0.0, -4.0))
 CIANO       = EdgeStyle(color=(0, 255, 255))
 # chains: different marks alternating (long stroke + short stroke / dot)
-TRATTO_PUNTO = EdgeStyle(linetype="Qualunque", dash=(0.5, -0.25, 0.0, -0.25))
-DUE_TRATTI   = EdgeStyle(linetype="Qualunque", dash=(1.25, -0.25, 0.25, -0.25))
+TRATTO_PUNTO = EdgeStyle(linetype="AnyType", dash=(0.5, -0.25, 0.0, -0.25))
+DUE_TRATTI   = EdgeStyle(linetype="AnyType", dash=(1.25, -0.25, 0.25, -0.25))
 
 
 class TestIsDashed(unittest.TestCase):
@@ -35,7 +35,7 @@ class TestIsDashed(unittest.TestCase):
     def test_the_pattern_counts_not_the_name(self):
         # "dashed" is a fact of the pattern; the name says nothing
         self.assertFalse(EdgeStyle(linetype="DASHED").is_dashed)
-        self.assertTrue(EdgeStyle(linetype="Qualunque",
+        self.assertTrue(EdgeStyle(linetype="AnyType",
                                   dash=(1.0, -1.0)).is_dashed)
 
 
@@ -74,14 +74,14 @@ class TestDashKind(unittest.TestCase):
 class TestRoleRule(unittest.TestCase):
 
     def test_name_ignores_case(self):
-        rule = topo.RoleRule("bending", name="Piega")
-        self.assertTrue(rule.matches("PIEGA", style=CONTINUA))
-        self.assertFalse(rule.matches("Pieghe", style=CONTINUA))
+        rule = topo.RoleRule("bending", name="Bend")
+        self.assertTrue(rule.matches("BEND", style=CONTINUA))
+        self.assertFalse(rule.matches("Bends", style=CONTINUA))
 
     def test_name_contains(self):
         rule = topo.RoleRule("construction", name_contains="constr")
         self.assertTrue(rule.matches("Construction_lines", style=CONTINUA))
-        self.assertFalse(rule.matches("Taglio", style=CONTINUA))
+        self.assertFalse(rule.matches("Cut", style=CONTINUA))
 
     def test_conditions_all_true_together(self):
         # snapdraw's case: dashed AND name "construction"
@@ -119,7 +119,7 @@ class TestRoleRule(unittest.TestCase):
 
     def test_unknown_colour_raises(self):
         with self.assertRaises(ValueError):
-            topo.RoleRule("engrave", color="viola")
+            topo.RoleRule("engrave", color="puce")
         with self.assertRaises(ValueError):
             topo.RoleRule("engrave", color=4)     # an ACI index belongs to DXF
 
@@ -136,28 +136,28 @@ class TestResolveRole(unittest.TestCase):
     def test_chain_bend_taken_first_by_name(self):
         # a bend drawn as a chain stays bending if the rule by name comes first
         rules = [
-            topo.RoleRule("bending", name="piega"),
+            topo.RoleRule("bending", name="bend"),
             topo.RoleRule("construction", dash="chain"),
         ]
-        self.assertEqual(resolve_role(rules, "Piega", TRATTO_PUNTO), "bending")
-        self.assertEqual(resolve_role(rules, "Assi", TRATTO_PUNTO), "construction")
+        self.assertEqual(resolve_role(rules, "Bend", TRATTO_PUNTO), "bending")
+        self.assertEqual(resolve_role(rules, "Axes", TRATTO_PUNTO), "construction")
 
     def test_the_first_in_order_wins(self):
         rules = [
-            topo.RoleRule("bending", name="piega"),
+            topo.RoleRule("bending", name="bend"),
             topo.RoleRule("engrave", color="cyan"),
         ]
-        self.assertEqual(resolve_role(rules, "Piega", CIANO), "bending")
-        self.assertEqual(resolve_role(rules[::-1], "Piega", CIANO), "engrave")
+        self.assertEqual(resolve_role(rules, "Bend", CIANO), "bending")
+        self.assertEqual(resolve_role(rules[::-1], "Bend", CIANO), "engrave")
 
     def test_no_rule_is_unknown(self):
-        self.assertEqual(resolve_role([], "Piega", CONTINUA), "unknown")
-        self.assertEqual(resolve_role(topo.name_rules({"altro": "outer"}), "Boh", CONTINUA),
+        self.assertEqual(resolve_role([], "Bend", CONTINUA), "unknown")
+        self.assertEqual(resolve_role(topo.name_rules({"misc": "outer"}), "Dunno", CONTINUA),
                          "unknown")
 
     def test_name_rules(self):
-        rules = topo.name_rules({"Cartiglio": "title_block", "MARK": "engrave"})
-        self.assertEqual(resolve_role(rules, "cartiglio", CONTINUA), "title_block")
+        rules = topo.name_rules({"TitleBlock": "title_block", "MARK": "engrave"})
+        self.assertEqual(resolve_role(rules, "titleblock", CONTINUA), "title_block")
         self.assertEqual(resolve_role(rules, "MARK", CONTINUA), "engrave")
 
 
@@ -165,18 +165,18 @@ class TestWithoutAppearance(unittest.TestCase):
     # an annotation has no appearance to compare (style=None)
 
     def test_rule_on_the_name_matches(self):
-        self.assertTrue(topo.RoleRule("note", name="testo").matches("TESTO"))
+        self.assertTrue(topo.RoleRule("note", name="text").matches("TEXT"))
 
     def test_rule_on_the_appearance_does_not_match(self):
         for rule in (topo.RoleRule("x", dashed=False), topo.RoleRule("x", dash="continuous"),
                      topo.RoleRule("x", color="cyan"),
-                     topo.RoleRule("x", name="testo", dashed=False)):
+                     topo.RoleRule("x", name="text", dashed=False)):
             self.assertTrue(rule.reads_style)
-            self.assertFalse(rule.matches("testo"), msg=repr(rule))
+            self.assertFalse(rule.matches("text"), msg=repr(rule))
 
     def test_resolve_without_style(self):
-        rules = [topo.RoleRule("cut", dashed=False), topo.RoleRule("note", name="testo")]
-        self.assertEqual(resolve_role(rules, "TESTO"), "note")
+        rules = [topo.RoleRule("cut", dashed=False), topo.RoleRule("note", name="text")]
+        self.assertEqual(resolve_role(rules, "TEXT"), "note")
 
 
 if __name__ == "__main__":

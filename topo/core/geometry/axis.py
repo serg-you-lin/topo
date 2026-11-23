@@ -25,9 +25,7 @@ Bounds = Tuple[float, float, float, float]
 
 
 
-# ---------------------------------------------------------------------------
-# Intervalli
-# ---------------------------------------------------------------------------
+# --- Intervals ---
 
 def merge_intervals(intervals: Iterable[Interval], *, tolerance: float = 0.0) -> List[Interval]:
     """Merges the intervals that overlap or are at most `tolerance` apart, in order."""
@@ -59,9 +57,7 @@ def cluster_values(values: Iterable[float], tolerance: float) -> List[float]:
     return out
 
 
-# ---------------------------------------------------------------------------
-# Tratti sugli assi
-# ---------------------------------------------------------------------------
+# --- Strokes on the axes ---
 
 @dataclass(frozen=True)
 class AxisLine:
@@ -204,9 +200,7 @@ def spanning_lines(bounds: Bounds, items: Iterable, *, coverage: float, eps: flo
     return ys, xs
 
 
-# ---------------------------------------------------------------------------
-# Misure
-# ---------------------------------------------------------------------------
+# --- Measures ---
 
 def items_inside(bounds: Bounds, items: Iterable, *, margin: float = 0.0) -> list:
     """The strokes with both ends inside `bounds` enlarged by `margin`, in the given order."""

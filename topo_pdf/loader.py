@@ -53,7 +53,7 @@ def load_pdf(path: str, snap_tolerance: float = PDF_SNAP) -> list:
             for package in drawings_packages:
                 raw_items.extend(package["items"])
 
-            # 4. Sanificazione pesante e Snap Geometrico (elimina le micro-disconnessioni)
+            # 4. Heavy sanitization and geometric snap (removes the micro-disconnections)
             sanitized_items = sanitize_pdf_geometries(
                 raw_items=raw_items, 
                 page_height=page_height, 

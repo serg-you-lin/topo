@@ -80,7 +80,7 @@ class TestIsStructuralRole(unittest.TestCase):
         self.assertFalse(is_structural_role("section"))
 
     def test_accepts_the_equivalent_string_slug(self):
-        # ContourRole eredita da str: "outer" == ContourRole.OUTER
+        # ContourRole inherits from str: "outer" == ContourRole.OUTER
         self.assertTrue(is_structural_role("outer"))
         self.assertIn(ContourRole.INNER, STRUCTURAL_ROLES)
 

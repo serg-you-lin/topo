@@ -43,7 +43,7 @@ class TestBlend(unittest.TestCase):
     def test_two_parallels_in_opposite_directions_a_u(self):
         (seg,) = g.blend((0.0, 0.0), (1.0, 0.0), (0.0, 5.0), (-1.0, 0.0))
         self._check_ends(seg, (0.0, 0.0), (1.0, 0.0), (0.0, 5.0), (-1.0, 0.0))
-        self.assertGreater(seg.point_at(seg.t_range[1] / 2)[0], 0)   # la U esce verso le rette
+        self.assertGreater(seg.point_at(seg.t_range[1] / 2)[0], 0)   # the U leaves towards the lines
 
     def test_continuity_2_zero_curvature_at_the_ends(self):
         (seg,) = g.blend((0.0, 0.0), (1.0, 0.0), (10.0, 5.0), (1.0, 0.0), continuity=2)

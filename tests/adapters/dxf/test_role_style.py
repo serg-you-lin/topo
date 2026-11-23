@@ -146,7 +146,7 @@ class TestRoleStyleConsumerRole(unittest.TestCase):
 
 
 class TestRoleStyleLinetypeOverride(unittest.TestCase):
-    """role_styles registra e applica un linetype standard ezdxf."""
+    """role_styles registers and applies a standard ezdxf linetype."""
 
     def setUp(self):
         self.result, self.doc_in = _rect_with_hole_and_frame()

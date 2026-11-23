@@ -56,7 +56,7 @@ class TestFacingBoundaries(unittest.TestCase):
         self.assertEqual(facing.boundaries, [facing.region, *facing.inside])
 
     def test_002_cousins_never_face_each_other(self):
-        # due finestre, un disco in ognuna: due gruppi, ognuno col suo disco
+        # two windows, a disc in each: two groups, each with its own disc
         cluster = _cluster(rectangle(200, 100, center=(100, 50)),
                            rectangle(60, 60, center=(50, 50)), circle(10, center=(50, 50)),
                            rectangle(60, 60, center=(150, 50)), circle(10, center=(150, 50)))
@@ -100,7 +100,7 @@ class TestLink(unittest.TestCase):
             self.assertAlmostEqual(math.dist(p, (100, 60)), 10.0, places=9)
         self.assertEqual(sorted(round(p[1], 9) for p in s.a_cuts), [58.0, 62.0])
         for side in s.sides:
-            self.assertAlmostEqual(side.start[1], side.end[1], places=9)   # orizzontali: perpendicolari ai due cerchi
+            self.assertAlmostEqual(side.start[1], side.end[1], places=9)   # horizontals: perpendicular to the two circles
 
     def test_002_from_a_straight_side_it_leaves_perpendicular(self):
         cluster = _cluster(rectangle(100, 100, center=(50, 50)), rectangle(80, 80, center=(50, 50)), rectangle(20, 40, center=(50, 50)))

@@ -22,8 +22,8 @@ class TestEnsureLinetype(unittest.TestCase):
 
     def test_002_source_pattern_wins_over_standard(self):
         # same name as a standard one, but the source's shape is the truth of that file
-        self.assertEqual(ensure_linetype(self.doc, "DASHED", (10.0, 7.0, -3.0), "dalla sorgente"), "DASHED")
-        self.assertEqual(self.doc.linetypes.get("DASHED").dxf.description, "dalla sorgente")
+        self.assertEqual(ensure_linetype(self.doc, "DASHED", (10.0, 7.0, -3.0), "from the source"), "DASHED")
+        self.assertEqual(self.doc.linetypes.get("DASHED").dxf.description, "from the source")
 
     def test_003_standard_name_without_pattern_is_registered(self):
         # before, a DASHED line with no captured pattern became continuous

@@ -173,14 +173,12 @@ def _node(ep: GapEndpoint) -> Optional[Point2D]:
 def _get_solver(kind_a: str, kind_b: str):
     solver = _SOLVERS.get((kind_a, kind_b))
     if solver is None:
-        # kind sconosciuto → fallback AddSegment
+        # unknown kind → AddSegment fallback
         return lambda a, b: [_bridge(a, b)]
     return solver
 
 
-# ---------------------------------------------------------------------------
-# Funzione pubblica
-# ---------------------------------------------------------------------------
+# --- Public function ---
 
 def compute_gap_fixes(endpoints: List[GapEndpoint], tolerance: float,
                       edges: Sequence[Edge] = (), closed: Optional[list] = None) -> List[GapFix]:
@@ -418,9 +416,7 @@ def _within_reach(fixes: List[GapFix], ep_a: GapEndpoint, ep_b: GapEndpoint,
     return fixes
 
 
-# ---------------------------------------------------------------------------
-# Ponte Edge <-> GapFix — geometria pura, zero formato sorgente
-# ---------------------------------------------------------------------------
+# --- Edge <-> GapFix bridge — pure geometry, no source format ---
 
 _KIND_BY_SEGMENT = {LineSeg: "line", CircleSeg: "arc", BSplineSeg: "spline", EllipseSeg: "ellipse"}
 
@@ -497,7 +493,7 @@ def apply_gap_fixes(edges: List[Edge], fixes: List[GapFix]) -> List[Edge]:
 
     It rebuilds the Edges involved (MoveEndpoint) and adds new ones (AddSegment,
     always a joining LINE)."""
-    replacements: dict = {}   # id(edge_originale) -> Edge aggiornato
+    replacements: dict = {}   # id(original_edge) -> updated Edge
     added: List[Edge] = []
 
     for fix in fixes:

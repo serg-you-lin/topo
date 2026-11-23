@@ -54,9 +54,7 @@ def _build_tree(proxies: list) -> list:
     return roots
 
 
-# ---------------------------------------------------------------------------
-# Costruzione semantica
-# ---------------------------------------------------------------------------
+# --- Semantic construction ---
 
 def _make_inner(
     proxy: ClosedCurve,

@@ -36,11 +36,11 @@ class TestOutlinesSegmentsConsistency(unittest.TestCase):
     def _assert_same_shape(self, contour, where):
         poly = to_shapely(contour)
         rebuilt = build_polygon(contour.segments)
-        self.assertIsNotNone(rebuilt, f"{where}: .segments non formano un poligono valido")
+        self.assertIsNotNone(rebuilt, f"{where}: .segments do not form a valid polygon")
         sym = poly.symmetric_difference(rebuilt).area
         tol = max(poly.area * 0.01, poly.length * OUTLINE_BAND)
         self.assertLess(sym, tol,
-                         f"{where}: il poligono (area={poly.area:.4f}) e .segments "
+                         f"{where}: the polygon (area={poly.area:.4f}) e .segments "
                          f"(area={rebuilt.area:.4f}) descrivono forme diverse "
                          f"(differenza simmetrica={sym:.4f})")
 

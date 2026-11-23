@@ -43,7 +43,7 @@ def _two_squares_doc():
         msp.add_lwpolyline([(x0, 0), (x0 + 100, 0), (x0 + 100, 100), (x0, 100)], close=True)
     msp.add_text("A", dxfattribs={"insert": (50, 50), "height": 5})
     msp.add_text("B", dxfattribs={"insert": (420, 50), "height": 5})
-    msp.add_line((410, 0), (410, 30))          # trash, vicino al secondo
+    msp.add_line((410, 0), (410, 30))          # trash, near the second
     return topo_dxf.document_from_msp(msp)
 
 

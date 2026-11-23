@@ -74,7 +74,7 @@ class TestGoldenOutlines(unittest.TestCase):
             for k in expected:
                 self._compare(expected[k], actual[k], f"{where}.{k}")
         elif isinstance(expected, list):
-            self.assertEqual(len(expected), len(actual), f"{where}: lunghezze diverse")
+            self.assertEqual(len(expected), len(actual), f"{where}: different lengths")
             for i, (e, a) in enumerate(zip(expected, actual)):
                 self._compare(e, a, f"{where}[{i}]")
         elif isinstance(expected, float):
@@ -107,7 +107,7 @@ def _make_sheet_test(name: str, golden: Path):
     def test(self):
         dxf = _sheets().get(name)
         if dxf is None or not dxf.exists():
-            self.skipTest(f"{name}: disegno non presente (mappa {SHEETS_MAP.name})")
+            self.skipTest(f"{name}: drawing not present (map {SHEETS_MAP.name})")
         expected = json.loads(golden.read_text(encoding="utf-8"))
         self._compare(expected, snapshot(dxf, MAX_GAP_SHEETS, name, area=True), name)
     return test
@@ -122,7 +122,7 @@ def generate():
     for dxf in sorted(SOURCE_DIR.glob("*.dxf")):
         snap = snapshot(dxf)
         (GOLDEN_DIR / f"{dxf.stem}.json").write_text(json.dumps(snap, indent=2), encoding="utf-8")
-        print(f"  OK: {dxf.name} — {len(snap['clusters'])} cluster, {snap['open_outside']} linee aperte fuori")
+        print(f"  OK: {dxf.name} — {len(snap['clusters'])} cluster, {snap['open_outside']} open lines outside")
 
 
 def generate_sheets():
@@ -131,7 +131,7 @@ def generate_sheets():
     for name, dxf in sorted(_sheets().items()):
         snap = snapshot(dxf, MAX_GAP_SHEETS, name, area=True)
         (SHEETS_GOLDEN_DIR / f"{name}.json").write_text(json.dumps(snap, indent=2), encoding="utf-8")
-        print(f"  OK: {name} — {len(snap['clusters'])} cluster, {snap['open_outside']} linee aperte fuori")
+        print(f"  OK: {name} — {len(snap['clusters'])} cluster, {snap['open_outside']} open lines outside")
 
 
 if __name__ == "__main__":

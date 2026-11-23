@@ -288,8 +288,8 @@ class TestPointSequenceMath(unittest.TestCase):
         # line and near-line stay a line
         from tests.invariants import rigid
         from topo.core.geometry.fitting import simplify_points
-        for name, pts in (("retta", [(x * 0.05, 0.0) for x in range(81)]),
-                          ("quasi retta", [(x * 0.05, 0.015 * math.sin(x * 0.05 * math.pi)) for x in range(81)])):
+        for name, pts in (("line", [(x * 0.05, 0.0) for x in range(81)]),
+                          ("near line", [(x * 0.05, 0.015 * math.sin(x * 0.05 * math.pi)) for x in range(81)])):
             for motion in ((0.0, 0.0, 0.0), (0.7, 0.0, 0.0), (0.031, 3e6, -2.5e6), (2.294, 3e6, -2.5e6)):
                 with self.subTest(case=name, motion=motion):
                     _, point = rigid(*motion)

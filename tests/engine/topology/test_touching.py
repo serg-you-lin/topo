@@ -35,7 +35,7 @@ class TestTouchingGroups(unittest.TestCase):
         self.assertEqual(groups[0].bbox, (0.0, 0.0, 23.0, 10.0))
 
     def test_transitive_chain(self):
-        # A vicino a B, B vicino a C, A lontano da C: un solo gruppo
+        # A near B, B near C, A far from C: a single group
         edges = _square(0, 0) + _square(12, 0) + _square(24, 0)
         self.assertEqual(len(touching_groups(edges, gap_tolerance=3)), 1)
 

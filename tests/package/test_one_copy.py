@@ -35,9 +35,9 @@ class TestOneCopy(unittest.TestCase):
                 by_name[p.name].append(p.relative_to(DATA).as_posix())
         doubles = {n for n, paths in by_name.items() if len(paths) > 1}
         self.assertEqual(sorted(doubles - SAME_NAME_DIFFERENT_CONTENT), [],
-                         msg="nomi doppi nuovi: una copia sola, letta con drawing()")
+                         msg="new doubled names: a single copy, read with drawing()")
         self.assertEqual(sorted(SAME_NAME_DIFFERENT_CONTENT - doubles), [],
-                         msg="tornati unici: toglierli da SAME_NAME_DIFFERENT_CONTENT")
+                         msg="became unique again: remove them from SAME_NAME_DIFFERENT_CONTENT")
 
 
 if __name__ == "__main__":

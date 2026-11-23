@@ -18,9 +18,7 @@ from topo.model import EdgeStyle
 _STANDARD_LINETYPES = frozenset({"BYLAYER", "BYBLOCK", "CONTINUOUS"})
 
 
-# ---------------------------------------------------------------------------
-# Aspetto grezzo (linetype/colore) — Cluster E
-# ---------------------------------------------------------------------------
+# --- Raw appearance (linetype/colour) ---
 
 def ensure_linetype(
     doc,
@@ -75,9 +73,7 @@ def _style_attribs(doc, layer: str, style: Optional[EdgeStyle] = None) -> dict:
     return attribs
 
 
-# ---------------------------------------------------------------------------
-# CircleSeg → bulge DXF
-# ---------------------------------------------------------------------------
+# --- CircleSeg → DXF bulge ---
 
 def arc_seg_to_bulge(arc: CircleSeg) -> float:
     # The swept angle depends on the direction: for a CW arc the real stretch is
@@ -289,9 +285,7 @@ def _add_open_run(run: list, msp, layer: str, style: Optional[EdgeStyle] = None)
     return msp.add_lwpolyline(pts, format="xyseb", dxfattribs=attribs, close=False)
 
 
-# ---------------------------------------------------------------------------
-# Write-back — incisioni (engrave / marking)
-# ---------------------------------------------------------------------------
+# --- Write-back — engravings (engrave / marking) ---
 
 def write_native_segments(segments: List, msp, layer: str, styles: Optional[List] = None) -> List[object]:
     """Materialize open segments as NATIVE geometry, one DXF entity per primitive —

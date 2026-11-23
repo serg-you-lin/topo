@@ -18,9 +18,7 @@ from .measure import FLOAT_NOISE
 Point = Tuple[float, float]
 
 
-# ---------------------------------------------------------------------------
-# Intersezioni geometriche pure — usate da core/base/gaps.py
-# ---------------------------------------------------------------------------
+# --- Pure geometric intersections — used by core/base/gaps.py ---
 
 def line_intersection(p1: Point, p2: Point,
                        p3: Point, p4: Point) -> Optional[Point]:
@@ -104,9 +102,7 @@ def closest_to(candidates: List[Point], ref: Point, other: Point) -> Optional[Po
     return best
 
 
-# ---------------------------------------------------------------------------
-# Due primitive qualunque
-# ---------------------------------------------------------------------------
+# --- Any two primitives ---
 
 _SAME_ROOT = FLOAT_NOISE    # two roots closer than this are the same point computed twice
 CURVE_TOLERANCE = SAME_POINT  # curves without a closed form are discretized to cross them

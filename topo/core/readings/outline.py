@@ -50,16 +50,14 @@ class OutlineReading:
     """What outlines() decided about a group, piece by piece."""
     edges:          List[Edge]                               # of the group, as they arrive
     outer:          Optional[OuterFace]    = None            # None: no closed loop
-    spurs:          List[Edge]             = field(default_factory=list)   # percorsi andata e ritorno
+    spurs:          List[Edge]             = field(default_factory=list)   # back-and-forth walks
     outside:        List[Edge]             = field(default_factory=list)   # outside the contour
     non_contour:    List[Edge]             = field(default_factory=list)   # non-contour criterion
     unclassified:   List[Edge]             = field(default_factory=list)
     nested_in:     Optional[int]          = None            # index of the group that contains it (even without an outer)
 
 
-# ---------------------------------------------------------------------------
-# API pubblica
-# ---------------------------------------------------------------------------
+# --- Public API ---
 
 def read_network_outlines(net: Network) -> Result:
     """A Cluster for every outer contour not inside another, with the `outer` only:

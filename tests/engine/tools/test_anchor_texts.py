@@ -32,8 +32,8 @@ class TestAnchorTexts(unittest.TestCase):
             _part(0, 0, 100, 100),
             _part(200, 0, 300, 100),
             texts=[
-                Text(position=(50, 50), text="dentro parte 0"),
-                Text(position=(250, 50), text="dentro parte 1"),
+                Text(position=(50, 50), text="inside part 0"),
+                Text(position=(250, 50), text="inside part 1"),
             ],
         )
         anchor_texts(res)
@@ -43,7 +43,7 @@ class TestAnchorTexts(unittest.TestCase):
     def test_outside_all_parts_stays_none(self):
         res = _result(
             _part(0, 0, 100, 100),
-            texts=[Text(position=(500, 500), text="cartiglio")],
+            texts=[Text(position=(500, 500), text="titleblock")],
         )
         anchor_texts(res)
         self.assertIsNone(res.texts[0].cluster_ref)
@@ -51,7 +51,7 @@ class TestAnchorTexts(unittest.TestCase):
     def test_snap_distance_assigns_near_part(self):
         res = _result(
             _part(0, 0, 100, 100),
-            texts=[Text(position=(105, 50), text="callout appena fuori")],
+            texts=[Text(position=(105, 50), text="callout just outside")],
         )
         anchor_texts(res, snap_distance=0.0)
         self.assertIsNone(res.texts[0].cluster_ref)
@@ -63,7 +63,7 @@ class TestAnchorTexts(unittest.TestCase):
         res = _result(
             _part(0, 0, 100, 100),
             _part(50, 50, 150, 150),   # overlapping the first
-            texts=[Text(position=(75, 75), text="nella zona comune")],
+            texts=[Text(position=(75, 75), text="in the common zone")],
         )
         anchor_texts(res)
         self.assertEqual(res.texts[0].cluster_ref, 0)

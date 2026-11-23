@@ -148,9 +148,7 @@ class GeometryReader:
         return [Edge.of(seg, role) for seg in polygon(entity["points"])]
 
 
-# ---------------------------------------------------------------------------
-# Entry point pubblico
-# ---------------------------------------------------------------------------
+# --- Public entry point ---
 
 def load_geometry(
     entities: List[Dict[str, Any]],

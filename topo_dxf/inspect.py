@@ -107,9 +107,7 @@ def _describe_dxf_entity(e) -> str:
     return tag
 
 
-# ===========================================================================
-# ORCHESTRATORE — i tre livelli in fila su un file
-# ===========================================================================
+# === ORCHESTRATOR — the three levels in a row on a file ===
 
 def inspect_file(
     path: str,

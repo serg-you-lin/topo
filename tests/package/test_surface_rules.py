@@ -242,7 +242,7 @@ class TestOptionsByName(unittest.TestCase):
         for key, fn in public_callables():
             got, declared = _positional(fn), DATA.get(key, ())
             if got != declared:
-                wrong.append(f"{key}: posizionali {got}, dichiarati {declared}")
+                wrong.append(f"{key}: positionals {got}, declared {declared}")
         self.assertEqual(wrong, [], "\n" + "\n".join(wrong))
 
     def test_no_declared_name_vanished(self):

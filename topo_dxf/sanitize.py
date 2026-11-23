@@ -23,7 +23,7 @@ def normalize_ocs(msp, verbose: bool = False) -> None:
     Converts (0,0,-1) → (0,0,1) without altering the geometry in WCS."""
     _upright.upright_all(msp)
     if verbose:
-        print("[sanitize] normalize_ocs: vettori di estrusione normalizzati")
+        print("[sanitize] normalize_ocs: extrusion vectors normalized")
 
 
 def flatten_z(msp, verbose: bool = False) -> int:
@@ -435,9 +435,7 @@ def _explode_failed(sink, dxftype: str, failed: list) -> None:
 from typing import Any, Hashable, Iterable, List, Optional, Tuple
 
 
-# ---------------------------------------------------------------------------
-# Calcolo chiave geometrica per tipo DXF
-# ---------------------------------------------------------------------------
+# --- Geometric key per DXF type ---
 
 def _key_for(entity) -> Optional[Hashable]:
     """Return a hashable key that uniquely identifies the entity's geometry,
@@ -449,7 +447,7 @@ def _key_for(entity) -> Optional[Hashable]:
         if t == 'LINE':
             s   = (round(entity.dxf.start.x, 2), round(entity.dxf.start.y, 2))
             e   = (round(entity.dxf.end.x,   2), round(entity.dxf.end.y,   2))
-            pts = tuple(sorted([s, e]))          # ordine canonico: A→B == B→A
+            pts = tuple(sorted([s, e]))          # canonical order: A→B == B→A
             return (t, layer, pts)
 
         if t in ('LWPOLYLINE', 'POLYLINE'):
@@ -479,9 +477,7 @@ def _key_for(entity) -> Optional[Hashable]:
     return None
 
 
-# ---------------------------------------------------------------------------
-# Funzioni pubbliche
-# ---------------------------------------------------------------------------
+# --- Public functions ---
 
 def extract_keyed_entities(msp) -> List[Tuple[Hashable, Any]]:
     """Produce the list (key, entity) for all the msp entities. Entities of an

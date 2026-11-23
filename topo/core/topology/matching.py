@@ -45,9 +45,9 @@ def _matching(n: int, edges: Sequence[WeightedEdge],
         return [-1] * n, [0] * (2 * n), [-1] * (2 * n)
     for i, j, w in edges:
         if i == j or not (0 <= i < n and 0 <= j < n):
-            raise ValueError(f"lato non valido ({i}, {j})")
+            raise ValueError(f"invalid edge ({i}, {j})")
         if not isinstance(w, int):
-            raise TypeError("i pesi devono essere interi")
+            raise TypeError("the weights must be integers")
     maxweight = max(0, max(w for _, _, w in edges))
 
     # the end p (0..2*nedge-1) is the node edges[p // 2][p % 2]
@@ -59,7 +59,7 @@ def _matching(n: int, edges: Sequence[WeightedEdge],
         neighbend[j].append(2 * k)
 
     mate = [-1] * n                       # remote end of the matched edge
-    label = [0] * (2 * n)                 # 0 libero, 1 S, 2 T (blossom esterni e nodi)
+    label = [0] * (2 * n)                 # 0 free, 1 S, 2 T (outer blossoms and nodes)
     labelend = [-1] * (2 * n)             # end from which the blossom took its label
     inblossom = list(range(n))            # outer blossom of every node
     blossomparent = [-1] * (2 * n)
@@ -283,7 +283,7 @@ def _matching(n: int, edges: Sequence[WeightedEdge],
                 p = labelend[bt] ^ 1
 
     for _ in range(n):
-        # uno stadio: cerca un cammino aumentante
+        # one stage: look for an augmenting path
         label[:] = [0] * (2 * n)
         bestedge[:] = [-1] * (2 * n)
         blossombestedges[n:] = [None] * n
@@ -344,7 +344,7 @@ def _matching(n: int, edges: Sequence[WeightedEdge],
                 if blossomparent[b] == -1 and label[b] == 1 and bestedge[b] != -1:
                     kslack = slack(bestedge[b])
                     if kslack % 2:
-                        raise AssertionError("slack dispari fra due blossom S")
+                        raise AssertionError("odd slack between two S blossoms")
                     d = kslack // 2
                     if deltatype == -1 or d < delta:
                         delta, deltatype, deltaedge = d, 3, bestedge[b]
@@ -416,13 +416,13 @@ def min_weight_perfect_matching(n: int, edges: Sequence[WeightedEdge]) -> List[i
     minimum weight."""
     if not edges:
         if n:
-            raise ValueError("nessun accoppiamento perfetto")
+            raise ValueError("no perfect matching")
         return []
     top = max(w for _, _, w in edges) + 1
     mate = max_weight_matching(n, [(i, j, top - w) for i, j, w in edges],
                                max_cardinality=True)
     if any(m == -1 for m in mate):
-        raise ValueError("nessun accoppiamento perfetto")
+        raise ValueError("no perfect matching")
     return mate
 
 

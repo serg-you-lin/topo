@@ -59,7 +59,7 @@ class TestSplitAtCrossings(unittest.TestCase):
         """A line nearly tangent to an arc crosses in two mathematically distinct but
         very close roots: within `tolerance` they are the same contact, not two nodes
         with a sliver between."""
-        radius, tol, gap = 10.0, 0.05, 0.02   # gap scelto < tol, >> _MIN_PIECE
+        radius, tol, gap = 10.0, 0.05, 0.02   # gap chosen < tol, >> _MIN_PIECE
         sink = (gap / 2) ** 2 / (2 * radius)  # sinking that produces that gap
         x = radius - sink
         half = math.sqrt(2 * radius * sink - sink * sink)
