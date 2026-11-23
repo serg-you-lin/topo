@@ -1,12 +1,11 @@
 """
 topo/core/primitives/trim.py
 -----------------------------
-Il tratto di una primitiva fra due suoi punti: la stessa curva, accorciata —
-stessi centro e assi per un cerchio o un'ellisse, gli stessi
-pezzi polinomiali per una B-spline (inserimento di nodi, Piegl & Tiller
-A5.1), non un'approssimazione.
+The piece of a primitive between two of its points: the same curve, shortened —
+same centre and axes for a circle or an ellipse, the same polynomial pieces
+for a B-spline (knot insertion, Piegl & Tiller A5.1), not an approximation.
 
-Puro: solo primitive, nessun formato.
+Pure: primitives only, no format.
 """
 
 from __future__ import annotations
@@ -25,16 +24,16 @@ from .formula import FormulaSeg
 from .minimize import certified_min, point_split
 
 _TWO_PI = 2 * math.pi
-_REFINE_STEPS = 60     # passi di ricerca ternaria sul parametro
+_REFINE_STEPS = 60     # ternary-search steps on the parameter
 
 
 def sub_segment(seg, a: Point, b: Point, via: Point):
     """
-    Il tratto di `seg` da `a` a `b` (punti sulla curva, o a una tolleranza
-    da lei), percorso da `a` verso `b`. `via` è un punto interno al tratto:
-    serve solo su una curva chiusa (cerchio, ellisse piena) per sapere da
-    che parte girare. None se `seg` non si taglia esatto (spline periodica o
-    senza vettore dei nodi).
+    The piece of `seg` from `a` to `b` (points on the curve, or within a
+    tolerance of it), walked from `a` towards `b`. `via` is a point inside the
+    piece: needed only on a closed curve (circle, full ellipse) to tell which
+    way to turn. None if `seg` cannot be cut exactly (periodic spline, or one
+    without a knot vector).
     """
     if isinstance(seg, LineSeg):
         return LineSeg(start=_on_line(seg, a), end=_on_line(seg, b))
@@ -50,7 +49,7 @@ def sub_segment(seg, a: Point, b: Point, via: Point):
 
 
 def _sub_interval(seg, a: Point, b: Point):
-    """La stessa curva su un intervallo più corto: dal parametro di `a` a quello di `b`."""
+    """The same curve over a shorter interval: from the parameter of `a` to that of `b`."""
     t0, t1 = seg.t_range
     sign = 1.0 if seg.end_param >= seg.start_param else -1.0
     ta, tb = (_curve_param(seg, p, t0, t1) for p in (a, b))
@@ -58,9 +57,9 @@ def _sub_interval(seg, a: Point, b: Point):
 
 
 def _sub_open_conic(seg, a: Point, b: Point):
-    """Parabola e iperbole sono aperte: il tratto va dal parametro di `a` a
-    quello di `b`, dentro il pezzo. Parabola: s = (p − V)·n; iperbole:
-    s = asinh((p − C)·N / |N|²), N il secondo asse."""
+    """Parabola and hyperbola are open: the piece runs from the parameter of `a`
+    to that of `b`, inside the original. Parabola: s = (p − V)·n; hyperbola:
+    s = asinh((p − C)·N / |N|²), N the second axis."""
     lo, hi = sorted((seg.start_param, seg.end_param))
 
     def param(pt: Point) -> float:
@@ -70,7 +69,7 @@ def _sub_open_conic(seg, a: Point, b: Point):
         else:
             nx, ny = seg._minor()
             b2 = nx * nx + ny * ny
-            # (p − C)·N = sinh(s)·|N|², perché M ⟂ N
+            # (p − C)·N = sinh(s)·|N|², because M ⟂ N
             s = math.asinh(((pt[0] - seg.center[0]) * nx + (pt[1] - seg.center[1]) * ny) / b2)
         return min(max(s, lo), hi)
 
@@ -78,18 +77,18 @@ def _sub_open_conic(seg, a: Point, b: Point):
 
 
 def _fields_before_params(seg) -> tuple:
-    """I campi che fissano la curva, senza l'intervallo del parametro."""
+    """The fields that fix the curve, without the parameter interval."""
     if isinstance(seg, ParabolaSeg):
         return (seg.vertex, seg.focus)
     return (seg.center, seg.major_axis, seg.ratio)
 
 
 # ---------------------------------------------------------------------------
-# Retta
+# Line
 # ---------------------------------------------------------------------------
 
 def _on_line(seg: LineSeg, pt: Point) -> Point:
-    """Proiezione di `pt` sulla retta, dentro i suoi due estremi."""
+    """Projection of `pt` on the line, between its two ends."""
     dx, dy = seg.end[0] - seg.start[0], seg.end[1] - seg.start[1]
     l2 = dx * dx + dy * dy
     if l2 == 0:
@@ -99,17 +98,16 @@ def _on_line(seg: LineSeg, pt: Point) -> Point:
 
 
 # ---------------------------------------------------------------------------
-# Cerchio ed ellisse (un cerchio è un'ellisse): un parametro angolare percorso in un verso
+# Circle and ellipse (a circle is an ellipse): an angular parameter walked one way
 # ---------------------------------------------------------------------------
 
 def _sub_angular(seg, a: Point, b: Point, via: Point):
-    # il parametro del cerchio è il suo angolo (D287): una formula per tutti e due
     start, sweep, ccw = seg.start_param, seg._sweep(), seg.ccw
     sign = 1.0 if ccw else -1.0
-    closed = sweep == _TWO_PI   # il giro intero, come `.full` (D296)
+    closed = sweep == _TWO_PI   # the full turn, like `.full`
 
     def offset(pt: Point) -> float:
-        """Quanto si percorre da `start`, nel verso della curva, fino a `pt`."""
+        """How far one walks from `start`, the curve's way, to `pt`."""
         return (sign * (_angle_of(seg, pt) - start)) % _TWO_PI
 
     if closed:
@@ -124,14 +122,14 @@ def _sub_angular(seg, a: Point, b: Point, via: Point):
 
 
 def _clamp(offset: float, sweep: float) -> float:
-    """Un punto appena oltre un estremo (entro tolleranza) sta su quell'estremo."""
+    """A point just past an end (within tolerance) is on that end."""
     if offset <= sweep:
         return offset
     return sweep if offset - sweep < _TWO_PI - offset else 0.0
 
 
 def _angle_of(seg, pt: Point) -> float:
-    """Angolo (o parametro dell'ellisse) di `pt` visto dal centro della curva."""
+    """Angle (or ellipse parameter) of `pt` seen from the curve's centre."""
     dx, dy = pt[0] - seg.center[0], pt[1] - seg.center[1]
     if isinstance(seg, CircleSeg):
         return math.atan2(dy, dx)
@@ -158,9 +156,8 @@ def _sub_spline(seg: BSplineSeg, a: Point, b: Point, via: Point) -> Optional[BSp
     p = seg.degree
     lo, hi = seg.knots[p], seg.knots[-(p + 1)]
     ta, tb = _spline_param(seg, a, lo, hi), _spline_param(seg, b, lo, hi)
-    # un capo sulla giunzione di una spline chiusa ha due parametri, lo e hi,
-    # a pari merito: vale quello che mette `via` dentro il tratto, come sul
-    # cerchio (G6e)
+    # an end on the seam of a closed spline has two parameters, lo and hi,
+    # equally good: the one that puts `via` inside the piece wins, as on the circle
     seam_a, seam_b = _on_seam(seg, a, lo, hi), _on_seam(seg, b, lo, hi)
     if seam_a and seam_b:
         ta, tb = lo, hi
@@ -195,22 +192,22 @@ def _sub_spline(seg: BSplineSeg, a: Point, b: Point, via: Point) -> Optional[BSp
 
 
 def _on_seam(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> bool:
-    """`pt` sta sui due capi della spline insieme: alla stessa distanza da tutti
-    e due entro FLOAT_NOISE, e lì sopra."""
+    """`pt` is on both ends of the spline at once: at the same distance from both
+    within FLOAT_NOISE, and on them."""
     d_lo, d_hi = math.dist(seg._evaluate(lo), pt), math.dist(seg._evaluate(hi), pt)
     return abs(d_lo - d_hi) <= FLOAT_NOISE and max(d_lo, d_hi) <= FLOAT_NOISE
 
 
 def _spline_param(seg: BSplineSeg, pt: Point, lo: float, hi: float) -> float:
-    """Parametro del punto della spline più vicino a `pt`: il ramo giusto per
-    certificato sui pezzi di Bézier (D300), poi rifinito."""
+    """Parameter of the spline point nearest `pt`: the right branch by
+    certificate on the Bézier pieces, then refined."""
     t, left, right = seg._minimize(lambda q: math.dist(q, pt), lambda ctrl: _to_box(ctrl, pt))
     return _refine(seg._evaluate, pt, t, left, right, lo, hi)
 
 
 def _to_box(corners: List[Point], pt: Point) -> float:
-    """Distanza da `pt` al rettangolo dei punti: minora la distanza da ogni
-    punto del loro inviluppo. Nessun punto, nessun limite: 0."""
+    """Distance from `pt` to the box of the points: a lower bound of the distance
+    to every point of their hull. No points, no bound: 0."""
     if not corners:
         return 0.0
     xs, ys = [q[0] for q in corners], [q[1] for q in corners]
@@ -219,10 +216,10 @@ def _to_box(corners: List[Point], pt: Point) -> float:
 
 
 def _curve_param(seg, pt: Point, lo: float, hi: float) -> float:
-    """Parametro in [lo, hi] del punto di una clotoide o di una formula più
-    vicino a `pt`, per certificato (`certified_min`), poi rifinito. Clotoide:
-    t è la lunghezza d'arco, quindi su [t0, t1] la distanza non scende sotto
-    (d0 + d1 − (t1 − t0)) / 2. Formula: il rettangolo degli intervalli (`_box`)."""
+    """Parameter in [lo, hi] of the point of a clothoid or a formula nearest
+    `pt`, by certificate (`certified_min`), then refined. Clothoid: t is the arc
+    length, so over [t0, t1] the distance is at least (d0 + d1 − (t1 − t0)) / 2.
+    Formula: the box of the intervals (`_box`)."""
     def gap(q: Point) -> float:
         return math.dist(q, pt)
 
@@ -240,8 +237,8 @@ def _curve_param(seg, pt: Point, lo: float, hi: float) -> float:
 
 
 def _refine(at, pt: Point, t: float, left: float, right: float, lo: float, hi: float) -> float:
-    """Ricerca ternaria su [left, right], attorno al migliore `t`: mai peggio
-    di lui, né dei due capi della curva."""
+    """Ternary search on [left, right], around the best `t`: never worse than
+    it, nor than the two ends of the curve."""
     for _ in range(_REFINE_STEPS):
         m1, m2 = left + (right - left) / 3, right - (right - left) / 3
         if math.dist(at(m1), pt) <= math.dist(at(m2), pt):

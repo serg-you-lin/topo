@@ -1,9 +1,9 @@
 """
 topo/core/primitives/spline.py
 ------------------------------
-La spline: `BSplineSeg` (NURBS coi pesi, D135), con de Boor, le derivate e
-la ricerca dell'intervallo dei nodi. Il nome è il termine matematico
-(Schoenberg, de Boor).
+The spline: `BSplineSeg` (NURBS with weights), with de Boor, the derivatives
+and the knot-span search. The name is the mathematical term (Schoenberg,
+de Boor).
 """
 
 from __future__ import annotations
@@ -19,10 +19,8 @@ from .polyline import _point_to_segment_distance
 
 
 def _bspline_find_span(t: float, degree: int, knots: List[float], n: int) -> int:
-    """
-    Indice `i` tale che `knots[i] <= t < knots[i+1]` (ricerca binaria, "The
-    NURBS Book" Algoritmo A2.1) — `n` è l'indice dell'ultimo control point.
-    """
+    """Index `i` with `knots[i] <= t < knots[i+1]` (binary search, "The NURBS
+    Book" A2.1); `n` is the index of the last control point."""
     if t >= knots[n + 1]:
         return n
     lo, hi = degree, n + 1
@@ -38,10 +36,10 @@ def _bspline_find_span(t: float, degree: int, knots: List[float], n: int) -> int
 
 def _insert_to_degree(p: int, knots: List[float], cpw: List[Tuple[float, float, float]],
                       t: float):
-    """Inserisce `t` nel vettore dei nodi finché compare `p` volte: lì la curva
-    passa per un punto di controllo e si separa in due tratti indipendenti.
-    Anche agli estremi del tratto, dove una spline non bloccata non passa
-    per un punto di controllo; fuori dal tratto nulla."""
+    """Insert `t` in the knot vector until it appears `p` times: there the curve
+    passes through a control point and splits into two independent pieces.
+    Also at the ends of the span, where an unclamped spline does not pass
+    through a control point; outside the span, nothing."""
     if t < knots[p] or t > knots[-(p + 1)]:
         return knots, cpw
     while sum(1 for k in knots if k == t) < p:
@@ -61,9 +59,9 @@ def _insert_to_degree(p: int, knots: List[float], cpw: List[Tuple[float, float, 
 
 
 def _bezier_pieces(p: int, knots: List[float], cpw: List[Tuple[float, float, float]]) -> List[list]:
-    """I pezzi di Bézier della curva fra `knots[p]` e `knots[-(p + 1)]`, in
-    coordinate omogenee: ogni nodo del tratto inserito fino a molteplicità `p`,
-    così la curva passa per un punto di controllo a ogni nodo."""
+    """The Bézier pieces of the curve between `knots[p]` and `knots[-(p + 1)]`,
+    in homogeneous coordinates: every knot of the span inserted up to
+    multiplicity `p`, so the curve passes through a control point at each knot."""
     lo, hi = knots[p], knots[-(p + 1)]
     for t in sorted({k for k in knots if lo <= k <= hi}):
         knots, cpw = _insert_to_degree(p, knots, cpw, t)
@@ -73,7 +71,7 @@ def _bezier_pieces(p: int, knots: List[float], cpw: List[Tuple[float, float, flo
 
 
 def _halves(c: list) -> Tuple[list, list]:
-    """de Casteljau a metà del pezzo `c` (omogeneo): le due metà, stessa curva."""
+    """de Casteljau at the middle of the (homogeneous) piece `c`: the two halves, same curve."""
     left, right, cur = [c[0]], [c[-1]], list(c)
     while len(cur) > 1:
         cur = [((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2) for a, b in zip(cur, cur[1:])]
@@ -83,10 +81,10 @@ def _halves(c: list) -> Tuple[list, list]:
 
 
 def _flat_polygon(piece: list, tolerance: float, out: List[Point]) -> None:
-    """Aggiunge a `out` i vertici del pezzo dopo il primo: si dimezza finché i
-    punti di controllo stanno entro `tolerance` dalla corda. La curva sta
-    nel loro inviluppo convesso (pesi positivi), quindi entro `tolerance`
-    dalla corda: dimostrato, non stimato (D299)."""
+    """Append to `out` the piece's vertices after the first: halved until the
+    control points are within `tolerance` of the chord. The curve lies in
+    their convex hull (positive weights), so within `tolerance` of the chord:
+    proved, not estimated."""
     stack = [piece]
     while stack:
         c = stack.pop()
@@ -101,7 +99,7 @@ def _flat_polygon(piece: list, tolerance: float, out: List[Point]) -> None:
 
 
 def _derivative_points(points: List[tuple], knots: List[float], p: int) -> List[tuple]:
-    """Punti di controllo della derivata (grado p − 1, nodi senza il primo e l'ultimo)."""
+    """Control points of the derivative (degree p − 1, knots without the first and last)."""
     out = []
     for i in range(len(points) - 1):
         span = knots[i + p + 1] - knots[i + 1]
@@ -111,7 +109,7 @@ def _derivative_points(points: List[tuple], knots: List[float], p: int) -> List[
 
 
 def _deboor(t: float, p: int, knots: List[float], points: List[tuple]) -> tuple:
-    """Punto al parametro `t` di una B-spline di vettori (de Boor, A5.1)."""
+    """Point at parameter `t` of a vector-valued B-spline (de Boor, A5.1)."""
     k = _bspline_find_span(t, p, knots, len(points) - 1)
     d = [list(points[k - p + j]) for j in range(p + 1)]
     for r in range(1, p + 1):
@@ -126,10 +124,10 @@ def _deboor(t: float, p: int, knots: List[float], points: List[tuple]) -> tuple:
 @dataclass
 class BSplineSeg(MathSeg):
     """
-    B-spline (NURBS se `weights` è impostato): grado, punti di controllo,
-    nodi, pesi — solo la geometria (MAP.md D135). Quello che un formato
-    sorgente tiene in più (flag, tolleranze, fit points, tangenti) resta
-    nell'adapter; `closed` e `periodic` si ricavano dai campi.
+    B-spline (NURBS if `weights` is set): degree, control points, knots,
+    weights — geometry only. What a source format keeps besides (flags,
+    tolerances, fit points, tangents) stays in the adapter; `closed` and
+    `periodic` are derived from the fields.
     """
     degree: int
     control_points: List[Point]
@@ -142,23 +140,23 @@ class BSplineSeg(MathSeg):
         self.knots = [_real(k) for k in self.knots]
         if self.weights is not None:
             self.weights = [_real(w) for w in self.weights]
-        # punti di discretize() per tolleranza: heal() chiede la stessa spline
-        # più volte. Non è un campo (fuori da eq/repr/fields); vale perché una
-        # spline non si modifica sul posto — reversed/rotated ne fanno una nuova.
+        # discretize() points per tolerance: heal() asks for the same spline
+        # many times. Not a field (outside eq/repr/fields); valid because a
+        # spline is never modified in place — reversed/rotated make a new one.
         self._points: dict = {}
         self._pieces_cache: Optional[list] = None
 
     @property
     def algebra(self) -> Algebra:
-        """Polinomiale senza pesi o coi pesi tutti uguali (il fattore comune si
-        semplifica), razionale altrimenti."""
+        """Polynomial with no weights or all equal (the common factor cancels),
+        rational otherwise."""
         w = self.weights
         return "polynomial" if not w or all(v == w[0] for v in w) else "rational"
 
     @property
     def clamped(self) -> bool:
-        """True se i primi e gli ultimi `degree + 1` nodi coincidono: la curva
-        parte dal primo punto di controllo e finisce sull'ultimo."""
+        """True if the first and the last `degree + 1` knots coincide: the curve
+        starts at the first control point and ends at the last."""
         p, k = self.degree, self.knots
         if len(k) < 2 * (p + 1):
             return True
@@ -166,7 +164,7 @@ class BSplineSeg(MathSeg):
 
     @property
     def closed(self) -> bool:
-        """True se la curva torna al punto di partenza (entro DEFAULT_TOLERANCE)."""
+        """True if the curve returns to its start (within DEFAULT_TOLERANCE)."""
         if len(self.control_points) < 2:
             return False
         start, end = self.endpoints()
@@ -174,13 +172,13 @@ class BSplineSeg(MathSeg):
 
     @property
     def periodic(self) -> bool:
-        """True se la curva è chiusa e non clamped: si richiude senza un punto
-        di controllo sul giunto."""
+        """True if the curve is closed and not clamped: it closes with no
+        control point on the joint."""
         return self.closed and not self.clamped
 
     def endpoints(self) -> Tuple[Point, Point]:
-        """(inizio, fine) sulla curva vera — per una spline non clamped non
-        sono il primo e l'ultimo punto di controllo."""
+        """(start, end) on the true curve — for an unclamped spline they are
+        not the first and last control points."""
         if not self.control_points:
             return (0.0, 0.0), (0.0, 0.0)
         p = self.degree
@@ -189,18 +187,9 @@ class BSplineSeg(MathSeg):
         return self._evaluate(self.knots[p]), self._evaluate(self.knots[-(p + 1)])
 
     def reversed(self) -> "BSplineSeg":
-        """
-        Spline con la parametrizzazione invertita — stesso luogo geometrico
-        percorso al contrario.
-
-        Invertire una B-spline NON è solo invertire i punti di controllo:
-        va invertito anche il vettore dei nodi e rimappato sul dominio
-        originale ``U'[i] = a + b - U[m-i]`` (con ``a = U[0]``, ``b = U[-1]``),
-        e vanno invertiti i pesi. Invertire i soli control point lascia la
-        curva accoppiata a un vettore nodi sbagliato: la curva
-        risulta deformata all'interno (gli endpoint combaciano lo stesso
-        perché una spline clamped interpola il primo e l'ultimo CP).
-        """
+        """The same curve walked the other way: control points, weights and the
+        knots remapped on the original domain (U'[i] = a + b − U[m−i]) are all
+        reversed; reversing the control points alone deforms the curve inside."""
         if self.knots:
             a, b = self.knots[0], self.knots[-1]
             new_knots = [a + b - k for k in reversed(self.knots)]
@@ -214,8 +203,8 @@ class BSplineSeg(MathSeg):
         )
 
     def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "BSplineSeg":
-        """Stessa spline, ruotata di `angle` radianti attorno a `origin`: si
-        ruotano i punti di controllo, nodi e pesi non cambiano."""
+        """The spline rotated by `angle` radians about `origin`: control points
+        rotate, knots and weights are unchanged."""
         return BSplineSeg(
             degree=self.degree,
             control_points=[_rotate_point(p, angle, origin) for p in self.control_points],
@@ -224,45 +213,45 @@ class BSplineSeg(MathSeg):
         )
 
     def translated(self, dx: float, dy: float) -> "BSplineSeg":
-        """Stessa spline, spostata di (`dx`, `dy`): si spostano i punti di controllo."""
+        """The spline moved by (`dx`, `dy`): the control points move."""
         return BSplineSeg(degree=self.degree,
                           control_points=[_translate_point(p, dx, dy) for p in self.control_points],
                           knots=list(self.knots), weights=list(self.weights) if self.weights else None)
 
     def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "BSplineSeg":
-        """Stessa spline, specchiata sulla retta per `origin` a `angle` radianti
-        (default: l'asse x): una mappa affine porta la curva nella curva dei
-        punti di controllo specchiati."""
+        """The spline mirrored on the line through `origin` at `angle` radians
+        (default: the x axis): an affine map takes the curve to the curve of the
+        mirrored control points."""
         return BSplineSeg(degree=self.degree,
                           control_points=[_mirror_point(p, origin, angle) for p in self.control_points],
                           knots=list(self.knots), weights=list(self.weights) if self.weights else None)
 
     def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "BSplineSeg":
-        """Stessa spline, scalata di `factor` (> 0) attorno a `origin`: si
-        scalano i punti di controllo, nodi e pesi non cambiano."""
+        """The spline scaled by `factor` (> 0) about `origin`: control points
+        scale, knots and weights are unchanged."""
         factor = _check_factor(factor)
         return BSplineSeg(degree=self.degree,
                           control_points=[_scale_point(p, factor, origin) for p in self.control_points],
                           knots=list(self.knots), weights=list(self.weights) if self.weights else None)
 
     def _defined(self) -> bool:
-        """I nodi definiscono la curva: tanti quanti i punti di controllo più
-        grado + 1, e un dominio non vuoto."""
+        """The knots define the curve: as many as the control points plus
+        degree + 1, and a non-empty domain."""
         p, knots = self.degree, self.knots
         return p >= 1 and len(knots) == len(self.control_points) + p + 1 and knots[-(p + 1)] > knots[p]
 
     @property
     def t_range(self) -> Tuple[float, float]:
-        """Il dominio dei nodi: da `knots[degree]` a `knots[-(degree + 1)]`."""
+        """The knot domain: from `knots[degree]` to `knots[-(degree + 1)]`."""
         return (self.knots[self.degree], self.knots[-(self.degree + 1)])
 
     def point_at(self, t: float) -> Point:
         return self._evaluate(t)
 
     def derivative_at(self, t: float) -> Point:
-        """In coordinate omogenee, anche razionale: C' = (A' − w'·C) / w."""
+        """In homogeneous coordinates, rational too: C' = (A' − w'·C) / w."""
         p, knots, ctrl = self.degree, self.knots, self.control_points
-        # nodi che non definiscono la curva: nessuna derivata (chi chiama ripiega sulla corda)
+        # knots that do not define the curve: no derivative (the caller falls back on the chord)
         if not self._defined():
             return (0.0, 0.0)
         t0, t1 = self.t_range
@@ -276,25 +265,21 @@ class BSplineSeg(MathSeg):
         return ((da[0] - da[2] * x) / a[2], (da[1] - da[2] * y) / a[2])
 
     def _evaluate(self, t: float) -> Point:
-        """
-        Punto della curva vera al parametro `t` (algoritmo di de Boor, "The
-        NURBS Book" Algoritmo A5.1 — razionale se `weights` è impostato).
-        Sola matematica: nessuna libreria di formato coinvolta.
-        """
+        """Point of the true curve at parameter `t` (de Boor, "The NURBS Book"
+        A5.1 — rational if `weights` is set)."""
         degree = self.degree
         knots = self.knots
         ctrl = self.control_points
         n = len(ctrl) - 1
 
-        # Fuori dominio si valuta sul bordo: per una spline clamped è il
-        # primo/ultimo punto di controllo (esatto), per una non clamped no.
+        # outside the domain evaluate at the border
         t_min, t_max = knots[degree], knots[-(degree + 1)]
         t = min(max(t, t_min), t_max)
 
         k = _bspline_find_span(t, degree, knots, n)
         first = k - degree
         weights = self.weights
-        # coordinate omogenee (x·w, y·w, w); w = 1 se la spline non è razionale
+        # homogeneous coordinates (x·w, y·w, w)
         if weights:
             ws = weights[first:k + 1]
             xs = [ctrl[first + j][0] * ws[j] for j in range(degree + 1)]
@@ -321,11 +306,9 @@ class BSplineSeg(MathSeg):
         return (xs[degree], ys[degree]) if w == 0 else (xs[degree] / w, ys[degree] / w)
 
     def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
-        """
-        Discretizza la spline in polilinea entro `tolerance` dalla curva vera,
-        per dimostrazione: pezzi di Bézier dimezzati finché i loro punti di
-        controllo stanno entro `tolerance` dalla corda (D299). Capi esatti.
-        """
+        """A polyline within `tolerance` of the true curve, by proof: Bézier
+        pieces halved until their control points are within `tolerance` of the
+        chord. Exact ends."""
         cached = self._points.get(tolerance)
         if cached is None:
             cached = self._points[tolerance] = self._discretize(tolerance)
@@ -353,8 +336,8 @@ class BSplineSeg(MathSeg):
         return out
 
     def _pieces(self) -> List[Tuple[float, float, list]]:
-        """(t0, t1, pezzo di Bézier omogeneo) da un nodo al successivo (D299).
-        Pesi positivi: solo così la curva sta nell'inviluppo dei punti di controllo."""
+        """(t0, t1, homogeneous Bézier piece) from one knot to the next. Weights
+        must be positive: only then does the curve lie in the control hull."""
         if self._pieces_cache is None:
             if self.weights and min(self.weights) <= 0:
                 raise ValueError("a spline's weights must be positive to be discretized")
@@ -367,11 +350,10 @@ class BSplineSeg(MathSeg):
 
     def _minimize(self, value: Callable[[Point], float],
                   bound: Callable[[List[Point]], float]) -> Tuple[float, float, float]:
-        """(t, lo, hi): il parametro dove `value(punto)` è minimo sulla curva,
-        entro FLOAT_NOISE, e il tratto [lo, hi] attorno a lui da rifinire.
-        `bound(punti di controllo)` minora `value` su tutto il pezzo (la curva
-        sta nel loro inviluppo): un pezzo che non scende sotto il migliore di
-        FLOAT_NOISE si scarta, gli altri si dimezzano (`certified_min`, D300)."""
+        """(t, lo, hi): the parameter where `value(point)` is minimal on the curve,
+        within FLOAT_NOISE, and the span [lo, hi] around it to refine.
+        `bound(control points)` is a lower bound of `value` over the piece (the
+        curve lies in their hull); see `certified_min`."""
         def flat(q) -> Point:
             return q[0] / q[2], q[1] / q[2]
 

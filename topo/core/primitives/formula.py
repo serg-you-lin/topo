@@ -1,13 +1,12 @@
 """
 topo/core/primitives/formula.py
 -------------------------------
-`FormulaSeg` (D289): una curva data dalla sua formula, x(t) e y(t), per
-quello che non ha una classe sua (evolvente, polinomio, cicloide, ...).
-La formula è testo in una grammatica chiusa — numeri, t, parametri con nome,
-+ − · / **, le funzioni di `_FUNCTIONS`, pi ed e — analizzata una volta e
-rifiutata se esce dalla grammatica: nessun codice arbitrario. La derivata è
-simbolica, dalla formula. Uno spostamento non riscrive la formula: è una mappa
-affine sul punto (x(t), y(t)).
+`FormulaSeg`: a curve given by its formula, x(t) and y(t), for what has no
+class of its own (involute, polynomial, cycloid, ...). The formula is text in
+a closed grammar — numbers, t, named parameters, + − · / **, the functions of
+`_FUNCTIONS`, pi and e — parsed once and rejected if it leaves the grammar: no
+arbitrary code. The derivative is symbolic, from the formula. A move does not
+rewrite the formula: it is an affine map on the point (x(t), y(t)).
 """
 
 from __future__ import annotations
@@ -21,7 +20,7 @@ from .mathseg import DEFAULT_TOLERANCE, Algebra, MathSeg, Point, _real
 from .motion import _check_factor
 from .polyline import _point_to_segment_distance
 
-# funzione -> derivata (come formula nella stessa grammatica, in `u`)
+# function -> derivative (a formula in the same grammar, in `u`)
 _FUNCTIONS: Dict[str, Tuple[Callable[[float], float], str]] = {
     "sin": (math.sin, "cos(u)"),
     "cos": (math.cos, "-sin(u)"),
@@ -38,12 +37,12 @@ _FUNCTIONS: Dict[str, Tuple[Callable[[float], float], str]] = {
 }
 _CONSTANTS = {"pi": math.pi, "e": math.e}
 _BINARY = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow)
-_INITIAL_PIECES = 16      # tratti di partenza della discretizzazione adattiva
-_MAX_DEPTH = 30           # dimezzamenti al più per tratto
+_INITIAL_PIECES = 16      # starting pieces of the adaptive discretization
+_MAX_DEPTH = 30           # at most this many halvings per piece
 
 
 def _parse(text: str, names: set) -> ast.expr:
-    """L'albero della formula, se sta nella grammatica; ValueError altrimenti."""
+    """The formula's tree if it is in the grammar; ValueError otherwise."""
     try:
         tree = ast.parse(text, mode="eval").body
     except SyntaxError as exc:
@@ -80,10 +79,10 @@ def _depends(node: ast.expr) -> bool:
 
 
 def _diff(node: ast.expr) -> ast.expr:
-    """d(node)/dt, come albero nella stessa grammatica."""
+    """d(node)/dt, as a tree in the same grammar."""
     if not _depends(node):
         return _num(0)
-    if isinstance(node, ast.Name):          # è t
+    if isinstance(node, ast.Name):
         return _num(1)
     if isinstance(node, ast.UnaryOp):
         return ast.UnaryOp(node.op, _diff(node.operand))
@@ -101,7 +100,7 @@ def _diff(node: ast.expr) -> ast.expr:
     if isinstance(node.op, ast.Div):
         top = ast.BinOp(ast.BinOp(da, ast.Mult(), b), ast.Sub(), ast.BinOp(a, ast.Mult(), db))
         return ast.BinOp(top, ast.Div(), ast.BinOp(b, ast.Pow(), _num(2)))
-    # potenza: esponente costante, oppure a**b = exp(b·log a)
+    # power: constant exponent, or a**b = exp(b·log a)
     if not _depends(b):
         return ast.BinOp(ast.BinOp(b, ast.Mult(), ast.BinOp(a, ast.Pow(), ast.BinOp(b, ast.Sub(), _num(1)))),
                          ast.Mult(), da)
@@ -114,13 +113,13 @@ _ORDER = ("polynomial", "rational", "transcendental")
 
 
 def _algebra(node: ast.expr, env: dict) -> Algebra:
-    """Che cosa dimostra l'albero: polinomio in t (+ − · e potenze intere ≥ 0),
-    frazione di polinomi (anche / e potenze intere negative), altrimenti
-    trascendente — che qui vuol dire "nessuna forma razionale dimostrata":
-    cos(t), sin(t) è un cerchio, razionale, ma l'albero non lo dimostra."""
+    """What the tree proves: polynomial in t (+ − · and integer powers ≥ 0),
+    fraction of polynomials (also / and negative integer powers), otherwise
+    transcendental — here meaning "no rational form proved": cos(t), sin(t) is
+    a circle, rational, but the tree does not prove it."""
     if not _depends(node):
-        return "polynomial"                 # una costante
-    if isinstance(node, ast.Name):          # è t
+        return "polynomial"
+    if isinstance(node, ast.Name):
         return "polynomial"
     if isinstance(node, ast.UnaryOp):
         return _algebra(node.operand, env)
@@ -146,25 +145,25 @@ _WHOLE: Interval = (-math.inf, math.inf)
 
 
 def _span(*values: float) -> Interval:
-    """Il più piccolo intervallo che contiene i valori; un NaN (∞ · 0, ∞ − ∞)
-    non dice nulla, quindi tutta la retta."""
+    """The smallest interval containing the values; a NaN (∞ · 0, ∞ − ∞) says
+    nothing, so the whole line."""
     if any(math.isnan(v) for v in values):
         return _WHOLE
     return min(values), max(values)
 
 
 def _hits(lo: float, hi: float, start: float, period: float) -> bool:
-    """[lo, hi] contiene un punto start + k·period."""
+    """[lo, hi] contains a point start + k·period."""
     return math.floor((hi - start) / period) >= math.ceil((lo - start) / period)
 
 
 def _call_interval(name: str, lo: float, hi: float) -> Interval:
-    """L'immagine di [lo, hi] attraverso la funzione `name`: estremi ai capi,
-    più i massimi e minimi interni (sin, cos, cosh); fuori dal dominio, tutta la retta."""
+    """The image of [lo, hi] under the function `name`: values at the ends, plus
+    the interior maxima and minima (sin, cos, cosh); outside the domain, the whole line."""
     if math.isnan(lo) or math.isnan(hi):
         return _WHOLE
     if name in ("sin", "cos"):
-        if not hi - lo < 2 * math.pi:       # anche con un capo infinito
+        if not hi - lo < 2 * math.pi:       # also with an infinite end
             return -1.0, 1.0
         f = math.sin if name == "sin" else math.cos
         top = math.pi / 2 if name == "sin" else 0.0
@@ -190,12 +189,12 @@ def _call_interval(name: str, lo: float, hi: float) -> Interval:
     if name in ("asin", "acos"):
         a, b = math.asin(max(lo, -1.0)), math.asin(min(hi, 1.0))
         return (a, b) if name == "asin" else (math.pi / 2 - b, math.pi / 2 - a)
-    f = _FUNCTIONS[name][0]                 # exp, sinh, tanh, atan: crescenti
+    f = _FUNCTIONS[name][0]                 # exp, sinh, tanh, atan: increasing
     return _grow(f, lo), _grow(f, hi)
 
 
 def _grow(f: Callable[[float], float], x: float) -> float:
-    """f(x) per una funzione crescente che oltre i double va all'infinito col segno di x."""
+    """f(x) for an increasing function that beyond the doubles goes to infinity with the sign of x."""
     try:
         return f(x)
     except OverflowError:
@@ -203,7 +202,7 @@ def _grow(f: Callable[[float], float], x: float) -> float:
 
 
 def _power_interval(base: Interval, n: float) -> Interval:
-    """[lo, hi] ** n con l'esponente costante."""
+    """[lo, hi] ** n with a constant exponent."""
     lo, hi = base
     if n == 0:
         return 1.0, 1.0
@@ -227,7 +226,7 @@ def _power_interval(base: Interval, n: float) -> Interval:
 
 
 def _pow(x: float, n: float) -> float:
-    """x ** n (x ≥ 0 se n non è intero); oltre i double, l'infinito col segno giusto."""
+    """x ** n (x ≥ 0 if n is not an integer); beyond the doubles, infinity with the right sign."""
     try:
         return x ** n
     except OverflowError:
@@ -241,9 +240,9 @@ def _divide(a: Interval, b: Interval) -> Interval:
 
 
 def _enclose(node: ast.expr, env: Dict[str, Interval]) -> Interval:
-    """Un intervallo che contiene ogni valore dell'albero quando le variabili
-    stanno nei loro intervalli di `env` (aritmetica degli intervalli: largo,
-    mai stretto; arrotondamenti dei double a parte, sotto FLOAT_NOISE)."""
+    """An interval containing every value of the tree when the variables lie in
+    their `env` intervals (interval arithmetic: wide, never narrow; double
+    rounding aside, below FLOAT_NOISE)."""
     if isinstance(node, ast.Constant):
         return float(node.value), float(node.value)
     if isinstance(node, ast.Name):
@@ -352,8 +351,8 @@ class FormulaSeg(MathSeg):
 
     @property
     def algebra(self) -> Algebra:
-        """Letta dall'albero della formula (`_algebra`): la peggiore di x e y;
-        la mappa affine non cambia il gruppo."""
+        """Read from the formula's tree (`_algebra`): the worse of x and y; the
+        affine map does not change the class."""
         names = {"t"} | {k for k, _ in self.params}
         env = self._env(0.0)
         return max((_algebra(_parse(text, names), env) for text in (self.x, self.y)), key=_ORDER.index)
@@ -374,21 +373,21 @@ class FormulaSeg(MathSeg):
         return self._at(self.start_param), self._at(self.end_param)
 
     def _box(self, t0: float, t1: float) -> List[Point]:
-        """I quattro angoli di un parallelogramma che contiene la curva per t in
-        [t0, t1]: il rettangolo di x e y dall'aritmetica degli intervalli,
-        portato dalla mappa affine. La curva sta nel loro inviluppo. Vuoto se
-        l'intervallo non è finito (un polo, un dominio superato)."""
+        """The four corners of a parallelogram containing the curve for t in
+        [t0, t1]: the box of x and y from interval arithmetic, carried by the
+        affine map. The curve lies in their hull. Empty if the interval is not
+        finite (a pole, a domain exceeded)."""
         s0, s1 = sorted((self.start_param + self._sign() * t0, self.start_param + self._sign() * t1))
         env = {"t": (s0, s1), **{k: (v, v) for k, v in self.params}}
         (xa, xb), (ya, yb) = (_enclose(tree, env) for tree in self._trees)
         if not all(map(math.isfinite, (xa, xb, ya, yb))):
-            return []                       # nessun limite su questo tratto: si dimezza
+            return []                       # no bound on this piece: halve it
         return [self._map(p) for p in ((xa, ya), (xb, ya), (xb, yb), (xa, yb))]
 
     def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
-        """Adattiva sulla curva vera: un tratto si dimezza finché tre suoi punti
-        interni stanno entro `tolerance` dalla corda. Non per dimostrazione:
-        una formula qualunque non dà un limite a |P''|."""
+        """Adaptive on the true curve: a piece is halved until three of its inner
+        points are within `tolerance` of the chord. Not by proof: an arbitrary
+        formula gives no bound on |P''|."""
         out = [self.point_at(0.0)]
         total = self.t_range[1]
 
@@ -410,13 +409,13 @@ class FormulaSeg(MathSeg):
         """A cubic B-spline within `tolerance` of the curve, through its two
         ends: an approximation (a formula has no exact spline in general), for a
         format that cannot hold a formula."""
-        from ..geometry.spline_fit import approximate_bspline   # geometry sta sopra primitives
+        from ..geometry.spline_fit import approximate_bspline   # geometry sits above primitives
         from .spline import BSplineSeg
         control, knots = approximate_bspline(self.discretize(tolerance=tolerance / 2), 3, tolerance / 2)
         return BSplineSeg(degree=3, control_points=[tuple(p) for p in control], knots=list(knots))
 
     def _moved(self, a: float, b: float, c: float, d: float, e: float, f: float) -> "FormulaSeg":
-        """La stessa formula con la mappa (a b; c d) + (e, f) applicata dopo quella di prima."""
+        """The same formula with the map (a b; c d) + (e, f) applied after the previous one."""
         a0, b0, c0, d0, e0, f0 = self.affine
         affine = (a * a0 + b * c0, a * b0 + b * d0, c * a0 + d * c0, c * b0 + d * d0,
                   a * e0 + b * f0 + e, c * e0 + d * f0 + f)

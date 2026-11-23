@@ -1,16 +1,16 @@
 """
 topo/core/primitives/conics.py
 ------------------------------
-Le coniche (D285, D288): i pezzi di curva su A·x² + B·xy + C·y² + D·x + E·y + F = 0.
-`EllipseSeg` (B² − 4AC < 0), con `CircleSeg` figlia (semiassi uguali, D287);
-`ParabolaSeg` (= 0) e `HyperbolaSeg` (> 0, un ramo). Ognuna è un centro (o
-vertice), dei vettori e un intervallo del parametro; l'equazione si ricava
-da loro. Una conica diventa esatta in spline razionale quadratica
-(`to_bspline`) per chi la deve scrivere dove la conica non c'è.
+The conics: pieces of curve on A·x² + B·xy + C·y² + D·x + E·y + F = 0.
+`EllipseSeg` (B² − 4AC < 0), with `CircleSeg` as its child (equal semi-axes);
+`ParabolaSeg` (= 0) and `HyperbolaSeg` (> 0, one branch). Each is a centre (or
+vertex), some vectors and a parameter interval; the equation is derived from
+them. A conic becomes an exact rational quadratic spline (`to_bspline`) for
+whoever must write it where the conic does not exist.
 
-Discretizzazione per dimostrazione: fra due punti a distanza h di parametro
-lo scarto dalla corda è al più h²/8 · max|P''| sul tratto. La griglia parte
-dal parametro 0, così un pezzo ha i vertici della curva intera (D145, D153).
+Discretization by proof: between two points h apart in parameter the deviation
+from the chord is at most h²/8 · max|P''| over the piece. The grid starts at
+parameter 0, so a piece has the vertices of the whole curve.
 """
 
 from __future__ import annotations
@@ -26,51 +26,43 @@ from .spline import BSplineSeg
 from .motion import _check_factor, _mirror_point, _rotate_point, _scale_point, _translate_point
 
 # ---------------------------------------------------------------------------
-# Angoli e griglia di archi ed ellissi (D145)
+# Angles and grid of arcs and ellipses
 # ---------------------------------------------------------------------------
 
-# Un punto della griglia più vicino di così a un estremo dell'arco coincide
-# con l'estremo e si salta: eviterebbe solo un tratto degenere
+# a grid point closer than this to an arc end is the end itself and is skipped:
+# it would only make a degenerate piece
 _GRID_SNAP = FLOAT_NOISE
 
 
 def _angular_sweep(start: float, end: float, ccw: bool) -> float:
-    """
-    Angolo spazzato in radianti, sempre positivo, percorrendo da `start` a
-    `end` nel verso indicato — stesso calcolo per un CircleSeg (`start_angle`/
-    `end_angle`) e un EllipseSeg (`start_param`/`end_param`): entrambi sono
-    "percorri da un angolo/parametro a un altro, in un verso".
-    """
+    """Angle swept in radians, always positive, walking from `start` to `end`
+    the given way — the same for a CircleSeg and an EllipseSeg."""
     raw = (end - start) if ccw else (start - end)
     sweep = raw % (2 * math.pi)
-    # un giro intero da un angolo qualunque: (a + 2π) − a cade a un ulp da 2π,
-    # sopra (resto ~0) o sotto (resto ~2π); tutti e due sono il giro intero
+    # a full turn from any angle: (a + 2π) − a lands one ulp from 2π, above
+    # (remainder ~0) or below (~2π); both are the full turn
     if (sweep < 1e-12 or 2 * math.pi - sweep < 1e-12) and abs(raw) > 1e-12:
         sweep = 2 * math.pi
     return sweep
 
 
 def point_on_circle(center: Point, radius: float, angle: float) -> Point:
-    """Punto della circonferenza (`center`, `radius`) all'angolo dato (radianti)."""
+    """Point of the circle (`center`, `radius`) at the given angle (radians)."""
     return (center[0] + radius * math.cos(angle), center[1] + radius * math.sin(angle))
 
 
 def angle_from_start(center: Point, start_angle: float, ccw: bool, pt: Point) -> float:
-    """
-    Angolo, in [0, 2π), da percorrere partendo da `start_angle` nel verso
-    `ccw` per arrivare alla direzione di `pt` vista da `center`.
-    """
+    """Angle, in [0, 2π), to walk from `start_angle` the `ccw` way to reach the
+    direction of `pt` seen from `center`."""
     phi = math.atan2(pt[1] - center[1], pt[0] - center[0])
     delta = (phi - start_angle) if ccw else (start_angle - phi)
     return delta % (2 * math.pi)
 
 
 def _sagitta_step(radius: float, tolerance: float) -> Optional[float]:
-    """
-    Angolo massimo di una corda che dista al più `tolerance` dall'arco di
-    raggio `radius`. None se il raggio non supera la tolleranza: lì la formula
-    non ha senso e il chiamante sceglie il suo ripiego.
-    """
+    """Largest angle of a chord at most `tolerance` from the arc of radius
+    `radius`. None if the radius does not exceed the tolerance: the formula
+    is meaningless there and the caller picks its fallback."""
     if radius <= tolerance:
         return None
     ratio = max(-1.0, min(1.0, 1.0 - tolerance / radius))
@@ -78,25 +70,21 @@ def _sagitta_step(radius: float, tolerance: float) -> Optional[float]:
 
 
 def _circle_sides(radius: float, tolerance: float) -> int:
-    """
-    Lati della griglia del cerchio di raggio `radius`: sagitta <= tolerance,
-    nessun minimo e nessun tetto (la freccia è assoluta, i lati crescono con
-    il raggio). Multiplo di 4: la griglia è simmetrica rispetto ai due assi,
-    quindi i quarti cadono sui vertici e un pezzo specchiato dà il poligono
-    specchiato. Un raggio entro la tolleranza ne ha 4: ogni poligono
-    inscritto dista al più il raggio dal cerchio (D300).
-    """
+    """Sides of the grid of a circle of radius `radius`: sagitta <= tolerance,
+    no minimum and no cap (the sagitta is absolute, sides grow with the
+    radius). A multiple of 4: the grid is symmetric about both axes, so
+    quarters fall on vertices and a mirrored piece gives the mirrored polygon.
+    A radius within the tolerance has 4: every inscribed polygon is at most
+    the radius from the circle."""
     step = _sagitta_step(radius, tolerance)
     sides = 4 if step is None else math.ceil(2 * math.pi / step)
     return -(-sides // 4) * 4
 
 
 def _grid_angles(lo: float, hi: float, radius: float, sides: int) -> List[float]:
-    """
-    Angoli da `lo` a `hi` (lo < hi): i due estremi esatti e, fra loro, i punti
-    della griglia k·2π/sides ancorata all'angolo 0 (D145). Così ogni arco di un
-    cerchio è un pezzo del poligono del cerchio intero, comunque sia tagliato.
-    """
+    """Angles from `lo` to `hi` (lo < hi): the two exact ends and, between them,
+    the points of the grid k·2π/sides anchored at angle 0. So every arc of a
+    circle is a piece of the whole circle's polygon, however it is cut."""
     step = 2 * math.pi / sides
     snap = _GRID_SNAP / radius
     angles = [lo]
@@ -129,8 +117,8 @@ class ConicSeg(MathSeg):
 
 
 def _ellipse_equation(center: Point, axis: Point, a: float, b: float) -> Tuple[float, float, float, float, float, float]:
-    """(A..F) dell'ellisse di centro `center`, semiasse `a` lungo il versore
-    `axis` e `b` a 90°: x'²/a² + y'²/b² = 1 nel suo riferimento, espansa."""
+    """(A..F) of the ellipse centred `center`, semi-axis `a` along the unit
+    vector `axis` and `b` at 90°: x'²/a² + y'²/b² = 1 in its frame, expanded."""
     ux, uy = axis
     p = ux * ux / (a * a) + uy * uy / (b * b)
     q = 2 * ux * uy * (1 / (a * a) - 1 / (b * b))
@@ -155,26 +143,25 @@ class EllipseSeg(ConicSeg):
     [0, sweep].
     """
     center: Point
-    major_axis: Point   # vettore dal centro, non un punto assoluto
-    ratio: float         # semiasse minore / semiasse maggiore, 0 < ratio <= 1
-    start_param: float   # radianti
-    end_param: float     # radianti
+    major_axis: Point   # vector from the centre, not an absolute point
+    ratio: float         # minor / major semi-axis, 0 < ratio <= 1
+    start_param: float   # radians
+    end_param: float     # radians
     ccw: bool = True
 
     def __post_init__(self):
         self.center, self.major_axis = _plain(self.center), _plain(self.major_axis)
         self.ratio = _real(self.ratio)
         self.start_param, self.end_param = _real(self.start_param), _real(self.end_param)
-        # asse nullo o ratio 0 è un punto o un segmento, non un'ellisse (D154)
         if not (math.hypot(*self.major_axis) > 0 and self.ratio > 0):
             raise ValueError(f"degenerate ellipse: axis {self.major_axis}, ratio {self.ratio}")
 
     def _sweep(self) -> float:
-        """Angolo (parametro) spazzato in radianti, sempre positivo."""
+        """Angle (parameter) swept in radians, always positive."""
         return _angular_sweep(self.start_param, self.end_param, self.ccw)
 
     def _point_at(self, t: float) -> Point:
-        """center + cos(t)·major_axis + sin(t)·ratio·(major_axis ruotato di +90°)."""
+        """center + cos(t)·major_axis + sin(t)·ratio·(major_axis turned +90°)."""
         mx, my = self.major_axis
         nx, ny = -my * self.ratio, mx * self.ratio
         return (
@@ -187,7 +174,7 @@ class EllipseSeg(ConicSeg):
 
     @property
     def t_range(self) -> Tuple[float, float]:
-        """`t` è il parametro percorso da `start_param`: t in [0, sweep]."""
+        """`t` is the parameter walked from `start_param`: t in [0, sweep]."""
         return (0.0, self._sweep())
 
     def point_at(self, t: float) -> Point:
@@ -205,21 +192,19 @@ class EllipseSeg(ConicSeg):
         return _ellipse_equation(self.center, (self.major_axis[0] / a, self.major_axis[1] / a), a, a * self.ratio)
 
     def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
-        """
-        Discretizza sulla griglia del parametro (D153): l'ellisse è il cerchio
-        del semiasse maggiore `a` visto attraverso una mappa lineare che non
-        allunga nessun vettore (fattori 1 e ratio), quindi i vertici k·2π/N di
-        `_circle_sides(a, tolerance)` portati sull'ellisse restano entro
-        `tolerance` come sul cerchio. Gli estremi esatti più i punti di griglia
-        fra loro, come `CircleSeg`: un'ellisse tagliata in pezzi dà il poligono
-        dell'ellisse intera, una percorsa al contrario gli stessi punti.
-        """
+        """On the parameter grid: the ellipse is the circle of the major
+        semi-axis `a` seen through a linear map that stretches no vector
+        (factors 1 and ratio), so the vertices k·2π/N of `_circle_sides(a,
+        tolerance)` carried onto the ellipse stay within `tolerance` as on the
+        circle. Exact ends plus the grid points between them, like `CircleSeg`:
+        a cut ellipse gives the whole ellipse's polygon, a reversed one the
+        same points."""
         total_angle = self._sweep()
         if total_angle < 1e-12:
             pt = self._point_at(self.start_param)
             return [pt, pt]
 
-        # ratio > 1 (l'asse dato è il minore): il fattore più grande è ratio
+        # ratio > 1 (the given axis is the minor one): the larger factor is ratio
         radius = math.hypot(*self.major_axis) * max(1.0, self.ratio)
         sides = _circle_sides(radius, tolerance)
         if self.ccw:
@@ -229,7 +214,7 @@ class EllipseSeg(ConicSeg):
         return [self._point_at(t) for t in params]
 
     def reversed(self) -> "EllipseSeg":
-        """Stessa ellisse fisica, percorsa al contrario: scambia i parametri e nega ccw."""
+        """The same ellipse walked the other way: swaps the parameters and negates ccw."""
         return EllipseSeg(
             center=self.center,
             major_axis=self.major_axis,
@@ -240,13 +225,9 @@ class EllipseSeg(ConicSeg):
         )
 
     def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "EllipseSeg":
-        """
-        Stessa ellisse fisica, ruotata di `angle` radianti attorno a `origin`:
-        il centro trasla con la rotazione, `major_axis` (vettore) ruota
-        attorno a (0, 0) — mai traslato — che è già come un'ellisse ruota
-        nella sua stessa parametrizzazione, senza toccare `start_param`/
-        `end_param` (relativi a `major_axis`, non a coordinate assolute).
-        """
+        """The ellipse rotated by `angle` radians about `origin`: the centre
+        rotates about `origin`, `major_axis` (a vector) about (0, 0); the
+        parameters are relative to `major_axis` and stay."""
         return EllipseSeg(
             center=_rotate_point(self.center, angle, origin),
             major_axis=_rotate_point(self.major_axis, angle, (0.0, 0.0)),
@@ -257,31 +238,25 @@ class EllipseSeg(ConicSeg):
         )
 
     def translated(self, dx: float, dy: float) -> "EllipseSeg":
-        """Stessa ellisse, spostata di (`dx`, `dy`): si sposta solo il centro."""
+        """The ellipse moved by (`dx`, `dy`): only the centre moves."""
         return EllipseSeg(center=_translate_point(self.center, dx, dy), major_axis=self.major_axis,
                           ratio=self.ratio, start_param=self.start_param, end_param=self.end_param,
                           ccw=self.ccw)
 
     def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "EllipseSeg":
-        """
-        Stessa ellisse, specchiata sulla retta per `origin` a `angle` radianti
-        (default: l'asse x). Il semiasse minore è `ratio`·(asse maggiore
-        ruotato di +90°): uno specchio, su qualunque asse, inverte la
-        rotazione di 90°, quindi il minore ricavato dall'asse maggiore
-        specchiato punta dalla parte opposta all'immagine del minore. Il punto
-        al parametro `t` va al parametro `−t`: parametri col segno cambiato e
-        verso invertito. `major_axis` è un vettore: si specchia sulla
-        direzione dell'asse, senza traslarlo.
-        """
+        """The ellipse mirrored on the line through `origin` at `angle` radians
+        (default: the x axis). A mirror reverses the 90° turn that gives the
+        minor axis, so the point at parameter `t` goes to `−t`: parameters
+        change sign and the direction flips. `major_axis` is a vector: it
+        mirrors on the axis direction, with no translation."""
         return EllipseSeg(center=_mirror_point(self.center, origin, angle),
                           major_axis=_mirror_point(self.major_axis, (0.0, 0.0), angle),
                           ratio=self.ratio, start_param=-self.start_param, end_param=-self.end_param,
                           ccw=not self.ccw)
 
     def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "EllipseSeg":
-        """Stessa ellisse, scalata di `factor` (> 0) attorno a `origin`: il
-        centro si sposta, il vettore `major_axis` si allunga, `ratio` e
-        parametri non cambiano."""
+        """The ellipse scaled by `factor` (> 0) about `origin`: the centre moves,
+        `major_axis` stretches, `ratio` and parameters are unchanged."""
         factor = _check_factor(factor)
         return EllipseSeg(center=_scale_point(self.center, factor, origin),
                           major_axis=(self.major_axis[0] * factor, self.major_axis[1] * factor),
@@ -290,21 +265,20 @@ class EllipseSeg(ConicSeg):
 
 
 # ---------------------------------------------------------------------------
-# CircleSeg: arco o cerchio intero
+# CircleSeg: an arc or a whole circle
 # ---------------------------------------------------------------------------
 
 class CircleSeg(EllipseSeg):
     """A piece of the circle (`center`, `radius`) from `start_angle` to
     `end_angle`, counter-clockwise when `ccw`; with no angles the whole
     circle from angle 0. A circle is an arc that goes all the way round
-    (`full`, D286), and an ellipse with equal semi-axes (D287): its axis is
+    (`full`), and an ellipse with equal semi-axes: its axis is
     (radius, 0), so the ellipse's parameter is the angle. `t` is the angle
     walked from the start: t in [0, sweep]."""
 
     def __init__(self, center: Point, radius: float, start_angle: float = 0.0,
                  end_angle: float = 2 * math.pi, ccw: bool = True):
         radius = _real(radius)
-        # raggio 0 è un punto, non una curva (D154)
         if not radius > 0:
             raise ValueError(f"the radius must be positive, got {radius}")
         super().__init__(center=center, major_axis=(radius, 0.0), ratio=1.0,
@@ -327,7 +301,7 @@ class CircleSeg(EllipseSeg):
                 f"end_angle={self.end_angle!r}, ccw={self.ccw!r})")
 
     def _sweep(self) -> float:
-        """Angolo spazzato in radianti, sempre positivo."""
+        """Angle swept in radians, always positive."""
         return _angular_sweep(self.start_angle, self.end_angle, self.ccw)
 
     @property
@@ -336,17 +310,13 @@ class CircleSeg(EllipseSeg):
         return self._sweep() == 2 * math.pi
 
     def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
-        """
-        Discretizza sulla griglia del cerchio (`_circle_sides`, ancorata
-        all'angolo 0, D145): gli estremi esatti più i vertici della griglia
-        che cadono fra loro, così ogni arco si sovrappone al cerchio intero.
-        Sagitta <= tolerance. Anche il giro intero: un cerchio e i suoi archi
-        hanno gli stessi vertici, da qualunque angolo parta.
-        """
+        """On the circle's grid (`_circle_sides`, anchored at angle 0): the exact
+        ends plus the grid vertices between them, so every arc lies on the whole
+        circle's polygon. Sagitta <= tolerance. Also the full turn: a circle and
+        its arcs have the same vertices, wherever it starts."""
         total_angle = self._sweep()
 
         if total_angle < 1e-12:
-            # Arco nullo
             start_pt = self._point_at(self.start_angle)
             return [start_pt, start_pt]
 
@@ -358,7 +328,7 @@ class CircleSeg(EllipseSeg):
         return [self._point_at(a) for a in angles]
 
     def _point_at(self, angle: float) -> Point:
-        """Punto sull'arco all'angolo dato (radianti)."""
+        """Point on the arc at the given angle (radians)."""
         return point_on_circle(self.center, self.radius, angle)
 
     @property
@@ -378,7 +348,7 @@ class CircleSeg(EllipseSeg):
         return _ellipse_equation(self.center, (1.0, 0.0), self.radius, self.radius)
 
     def reversed(self) -> "CircleSeg":
-        """Stesso arco fisico, percorso al contrario: scambia gli angoli e nega ccw."""
+        """The same arc walked the other way: swaps the angles and negates ccw."""
         return CircleSeg(
             center=self.center,
             radius=self.radius,
@@ -388,11 +358,8 @@ class CircleSeg(EllipseSeg):
         )
 
     def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "CircleSeg":
-        """
-        Stesso arco fisico, ruotato di `angle` radianti attorno a `origin`:
-        il centro trasla con la rotazione, `start_angle`/`end_angle` si
-        spostano dello stesso `angle` (il raggio e il verso non cambiano).
-        """
+        """The arc rotated by `angle` radians about `origin`: the centre rotates,
+        the angles shift by `angle`; radius and direction are unchanged."""
         return CircleSeg(
             center=_rotate_point(self.center, angle, origin),
             radius=self.radius,
@@ -402,26 +369,24 @@ class CircleSeg(EllipseSeg):
         )
 
     def translated(self, dx: float, dy: float) -> "CircleSeg":
-        """Stesso arco, spostato di (`dx`, `dy`): si sposta solo il centro."""
+        """The arc moved by (`dx`, `dy`): only the centre moves."""
         return CircleSeg(center=_translate_point(self.center, dx, dy), radius=self.radius,
                       start_angle=self.start_angle, end_angle=self.end_angle, ccw=self.ccw)
 
     def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "CircleSeg":
-        """
-        Stesso arco, specchiato sulla retta per `origin` a `angle` radianti
-        (default: l'asse x): il punto all'angolo `a` va all'angolo
-        `2·angle − a`, quindi il verso si inverte. Sull'asse x la griglia del
-        cerchio (D145, ancorata all'angolo 0) è simmetrica e l'arco specchiato
-        ha i vertici specchiati; su un altro asse la curva è esatta e i
-        vertici cadono sulla griglia dell'arco nuovo.
-        """
+        """The arc mirrored on the line through `origin` at `angle` radians
+        (default: the x axis): the point at angle `a` goes to `2·angle − a`, so
+        the direction flips. On the x axis the circle's grid (anchored at
+        angle 0) is symmetric and the mirrored arc has the mirrored vertices;
+        on another axis the curve is exact and the vertices fall on the new
+        arc's grid."""
         return CircleSeg(center=_mirror_point(self.center, origin, angle), radius=self.radius,
                       start_angle=2 * angle - self.start_angle, end_angle=2 * angle - self.end_angle,
                       ccw=not self.ccw)
 
     def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "CircleSeg":
-        """Stesso arco, scalato di `factor` (> 0) attorno a `origin`: il centro
-        si sposta, il raggio si moltiplica, angoli e verso non cambiano."""
+        """The arc scaled by `factor` (> 0) about `origin`: the centre moves, the
+        radius is multiplied, angles and direction are unchanged."""
         factor = _check_factor(factor)
         return CircleSeg(center=_scale_point(self.center, factor, origin), radius=self.radius * factor,
                       start_angle=self.start_angle, end_angle=self.end_angle, ccw=self.ccw)
@@ -434,14 +399,13 @@ class CircleSeg(EllipseSeg):
             raise ValueError(f"the sweep must be in (0, 2π) either way, got {sweep}")
         half_chord = math.dist(start, end) / 2.0
         if not half_chord > 0:
-            # corda nulla: raggio 0, con numpy un arco NaN invece di un errore (D154)
             raise ValueError("zero chord: a point, not an arc")
         ccw = sweep > 0
         turn = abs(sweep)
         radius = half_chord / math.sin(turn / 2.0)
-        # dal punto medio della corda il centro sta sulla perpendicolare, a
-        # sinistra se l'arco gira antiorario; a r·cos(turn/2) con segno: oltre
-        # mezzo giro il centro passa dall'altra parte della corda
+        # from the chord's midpoint the centre lies on the perpendicular, to the
+        # left if the arc turns counter-clockwise, at a signed r·cos(turn/2):
+        # past half a turn the centre crosses to the other side of the chord
         nx, ny = -(end[1] - start[1]) / (2 * half_chord), (end[0] - start[0]) / (2 * half_chord)
         d = (1.0 if ccw else -1.0) * radius * math.cos(turn / 2.0)
         cx, cy = (start[0] + end[0]) / 2.0 + d * nx, (start[1] + end[1]) / 2.0 + d * ny
@@ -451,25 +415,25 @@ class CircleSeg(EllipseSeg):
 
 
 def is_full_circle(segment) -> bool:
-    """Un `CircleSeg` che fa tutto il giro."""
+    """A `CircleSeg` that goes all the way round."""
     return isinstance(segment, CircleSeg) and segment.full
 
 
 def is_arc(segment) -> bool:
-    """Un `CircleSeg` che non fa tutto il giro: un arco."""
+    """A `CircleSeg` that does not go all the way round: an arc."""
     return isinstance(segment, CircleSeg) and not segment.full
 
 
 
 def _walk(start: float, end: float) -> float:
-    """+1 se il parametro cresce da `start` a `end`, −1 se cala."""
+    """+1 if the parameter grows from `start` to `end`, −1 if it falls."""
     return 1.0 if end >= start else -1.0
 
 
 def _grid(lo: float, hi: float, step_at) -> List[float]:
-    """I parametri da `lo` a `hi` (lo < hi): i due estremi esatti e, fra loro,
-    i punti della griglia che parte da 0 e avanza di `step_at(|s|)` verso
-    ciascun lato. Un pezzo cade sulla griglia della curva intera."""
+    """The parameters from `lo` to `hi` (lo < hi): the two exact ends and,
+    between them, the grid points starting at 0 and advancing by `step_at(|s|)`
+    towards each side. A piece falls on the whole curve's grid."""
     snap = (hi - lo) * FLOAT_NOISE
     marks = []
     for sign in (1.0, -1.0):
@@ -502,7 +466,7 @@ class ParabolaSeg(ConicSeg):
             raise ValueError(f"degenerate parabola: vertex and focus coincide at {self.vertex}")
 
     def _frame(self) -> Tuple[float, Point, Point]:
-        """(f, u, n): distanza focale, asse verso il fuoco, asse ruotato di +90°."""
+        """(f, u, n): focal distance, axis towards the focus, axis turned +90°."""
         dx, dy = self.focus[0] - self.vertex[0], self.focus[1] - self.vertex[1]
         f = math.hypot(dx, dy)
         u = (dx / f, dy / f)
@@ -515,7 +479,7 @@ class ParabolaSeg(ConicSeg):
 
     @property
     def algebra(self) -> Algebra:
-        """Polinomiale: s e s² nel suo riferimento (ellisse e iperbole no)."""
+        """Polynomial: s and s² in its frame (ellipse and hyperbola are not)."""
         return "polynomial"
 
     @property
@@ -534,7 +498,7 @@ class ParabolaSeg(ConicSeg):
 
     @property
     def equation(self) -> _Equation:
-        """(n·(p − V))² − 4f·u·(p − V) = 0, espansa."""
+        """(n·(p − V))² − 4f·u·(p − V) = 0, expanded."""
         f, (ux, uy), (nx, ny) = self._frame()
         vx, vy = self.vertex
         nv, uv = nx * vx + ny * vy, ux * vx + uy * vy
@@ -542,7 +506,7 @@ class ParabolaSeg(ConicSeg):
                 nv * nv + 4 * f * uv)
 
     def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
-        """|P''| = 1/(2f) costante: il passo h = √(16·f·tol) tiene ogni corda entro `tolerance`."""
+        """|P''| = 1/(2f) is constant: the step h = √(16·f·tol) keeps every chord within `tolerance`."""
         f, _, _ = self._frame()
         step = math.sqrt(16 * f * tolerance)
         lo, hi = sorted((self.start_param, self.end_param))
@@ -554,7 +518,7 @@ class ParabolaSeg(ConicSeg):
         return [self._point(s) for s in params]
 
     def to_bspline(self) -> BSplineSeg:
-        """La stessa curva come spline quadratica (peso 1): esatta, non un'approssimazione."""
+        """The same curve as a quadratic spline (weight 1): exact, not an approximation."""
         a, b = self.start_param, self.end_param
         f, u, n = self._frame()
         q = a * b / (4 * f)
@@ -573,12 +537,12 @@ class ParabolaSeg(ConicSeg):
                            self.start_param, self.end_param)
 
     def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "ParabolaSeg":
-        """Uno specchio inverte n rispetto a u: il punto a `s` va a `−s`."""
+        """A mirror flips n relative to u: the point at `s` goes to `−s`."""
         return ParabolaSeg(_mirror_point(self.vertex, origin, angle), _mirror_point(self.focus, origin, angle),
                            -self.start_param, -self.end_param)
 
     def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "ParabolaSeg":
-        """f diventa factor·f e il punto a `s` va a `factor·s`."""
+        """f becomes factor·f and the point at `s` goes to `factor·s`."""
         factor = _check_factor(factor)
         return ParabolaSeg(_scale_point(self.vertex, factor, origin), _scale_point(self.focus, factor, origin),
                            self.start_param * factor, self.end_param * factor)
@@ -632,7 +596,7 @@ class HyperbolaSeg(ConicSeg):
 
     @property
     def equation(self) -> _Equation:
-        """x'²/a² − y'²/b² = 1 nel riferimento del centro e dell'asse, espansa."""
+        """x'²/a² − y'²/b² = 1 in the frame of the centre and the axis, expanded."""
         a = math.hypot(*self.major_axis)
         b = a * self.ratio
         ux, uy = self.major_axis[0] / a, self.major_axis[1] / a
@@ -643,8 +607,8 @@ class HyperbolaSeg(ConicSeg):
         return (p, q, r, -2 * p * cx - q * cy, -q * cx - 2 * r * cy, p * cx * cx + q * cx * cy + r * cy * cy - 1)
 
     def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
-        """|P''(s)|² = a²·cosh²s + b²·sinh²s cresce con |s|: il passo da |s| si
-        misura all'estremo più lontano del tratto, così ogni corda sta entro `tolerance`."""
+        """|P''(s)|² = a²·cosh²s + b²·sinh²s grows with |s|: the step from |s| is
+        measured at the far end of the piece, so every chord is within `tolerance`."""
         a = math.hypot(*self.major_axis)
         b = a * self.ratio
 
@@ -662,9 +626,9 @@ class HyperbolaSeg(ConicSeg):
         return [self._point(s) for s in params]
 
     def to_bspline(self) -> BSplineSeg:
-        """La stessa curva come spline razionale quadratica: il punto di mezzo è
-        (cosh m·M + sinh m·N) / cosh d dal centro, peso cosh d (m il parametro
-        di mezzo, d la metà dell'ampiezza). Esatta per ogni ampiezza."""
+        """The same curve as a rational quadratic spline: the middle point is
+        (cosh m·M + sinh m·N) / cosh d from the centre, weight cosh d (m the
+        middle parameter, d half the span). Exact for every span."""
         a, b = self.start_param, self.end_param
         m, d = (a + b) / 2, abs(b - a) / 2
         (mx, my), (nx, ny) = self.major_axis, self._minor()
@@ -686,7 +650,7 @@ class HyperbolaSeg(ConicSeg):
                             self.start_param, self.end_param)
 
     def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "HyperbolaSeg":
-        """Come l'ellisse: uno specchio inverte il secondo asse, il punto a `s` va a `−s`."""
+        """Like the ellipse: a mirror flips the second axis, the point at `s` goes to `−s`."""
         return HyperbolaSeg(_mirror_point(self.center, origin, angle), _mirror_point(self.major_axis, (0.0, 0.0), angle),
                             self.ratio, -self.start_param, -self.end_param)
 

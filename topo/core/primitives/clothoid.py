@@ -1,15 +1,15 @@
 """
 topo/core/primitives/clothoid.py
 --------------------------------
-`ClothoidSeg` (D290): la spirale di Eulero, la curva la cui curvatura cresce
-come la lunghezza d'arco, κ(s) = s / A². È un integrale, non una formula
-elementare: P(s) = ∫₀ˢ (cos θ(u), sin θ(u)) du con θ(u) = u² / (2A²), cioè
-A·√π·(C(w), S(w)) con w = s / (A·√π) e C, S gli integrali di Fresnel,
-calcolati alla precisione della macchina.
+`ClothoidSeg`: the Euler spiral, the curve whose curvature grows with arc
+length, κ(s) = s / A². It is an integral, not an elementary formula:
+P(s) = ∫₀ˢ (cos θ(u), sin θ(u)) du with θ(u) = u² / (2A²), that is
+A·√π·(C(w), S(w)) with w = s / (A·√π) and C, S the Fresnel integrals, computed
+to machine precision.
 
-Il parametro è la lunghezza d'arco: la lunghezza di un pezzo è esatta, la
-derivata è il versore della tangente, il poligono sta entro la tolleranza per
-dimostrazione (|P''| = κ, la griglia parte da s = 0 come D145, D153).
+The parameter is the arc length: the length of a piece is exact, the
+derivative is the unit tangent, the polygon is within tolerance by proof
+(|P''| = κ, the grid starts at s = 0).
 """
 
 from __future__ import annotations
@@ -23,15 +23,15 @@ from .conics import _grid
 from .mathseg import DEFAULT_TOLERANCE, Algebra, MathSeg, Point, _plain, _real
 from .motion import _check_factor, _mirror_point, _rotate_point, _scale_point, _translate_point
 
-_EPS = sys.float_info.epsilon   # precisione della macchina: le serie si fermano qui
-# sotto, la serie di potenze; sopra, la frazione continua: esatte entrambe, cambia solo quanti termini servono
+_EPS = sys.float_info.epsilon   # machine precision: the series stop here
+# power series below, continued fraction above: both exact, only the number of terms differs
 _SERIES_UP_TO = 1.5
 _MAX_TERMS = 200
 
 
 def fresnel(x: float) -> Tuple[float, float]:
-    """(C(x), S(x)) = (∫₀ˣ cos(πt²/2) dt, ∫₀ˣ sin(πt²/2) dt), alla precisione della
-    macchina: serie di potenze per |x| ≤ 1.5, frazione continua (Lentz) oltre."""
+    """(C(x), S(x)) = (∫₀ˣ cos(πt²/2) dt, ∫₀ˣ sin(πt²/2) dt), to machine
+    precision: power series for |x| ≤ 1.5, continued fraction (Lentz) beyond."""
     ax = abs(x)
     if ax == 0:
         return 0.0, 0.0
@@ -50,7 +50,7 @@ def fresnel(x: float) -> Tuple[float, float]:
             if part < _EPS * max(abs(c), abs(s)):
                 break
     else:
-        # erf complessa per frazione continua: (C + iS) = (1+i)/2 · (1 − e^{iπx²/2}·h·(x − ix))
+        # complex erf by continued fraction: (C + iS) = (1+i)/2 · (1 − e^{iπx²/2}·h·(x − ix))
         pix2 = math.pi * ax * ax
         b = complex(1.0, -pix2)
         cc, d = 1e300, 1 / b
@@ -120,7 +120,7 @@ class ClothoidSeg(MathSeg):
 
     @property
     def algebra(self) -> Algebra:
-        """Trascendente: il punto è un integrale di Fresnel."""
+        """Transcendental: the point is a Fresnel integral."""
         return "transcendental"
 
     def point_at(self, t: float) -> Point:
@@ -142,9 +142,9 @@ class ClothoidSeg(MathSeg):
         return self._sign() * (1.0 if self.left else -1.0) * s / (self.a * self.a)
 
     def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
-        """|P''| = κ = |s|/a² cresce con |s|. Sul tratto [s, s + h] la corda dista
-        al più h²·(|s| + h)/(8a²): il passo è la radice di h³ + |s|·h² = 8·tol·a²
-        (Newton da sopra, la cubica è crescente e convessa)."""
+        """|P''| = κ = |s|/a² grows with |s|. Over [s, s + h] the chord is at most
+        h²·(|s| + h)/(8a²) away: the step is the root of h³ + |s|·h² = 8·tol·a²
+        (Newton from above, the cubic is increasing and convex)."""
         bound = 8 * tolerance * self.a * self.a
 
         def step_at(s: float) -> float:
@@ -167,7 +167,7 @@ class ClothoidSeg(MathSeg):
         """A cubic B-spline within `tolerance` of the curve, through its two
         ends: an approximation (a clothoid has no exact spline), for a format
         that cannot hold one."""
-        from ..geometry.spline_fit import approximate_bspline   # geometry sta sopra primitives
+        from ..geometry.spline_fit import approximate_bspline   # geometry sits above primitives
         from .spline import BSplineSeg
         control, knots = approximate_bspline(self.discretize(tolerance=tolerance / 2), 3, tolerance / 2)
         return BSplineSeg(degree=3, control_points=[tuple(p) for p in control], knots=list(knots))
@@ -184,12 +184,12 @@ class ClothoidSeg(MathSeg):
                            self.start_param, self.end_param, left=self.left)
 
     def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "ClothoidSeg":
-        """Uno specchio rovescia la tangente sull'asse e il verso in cui gira."""
+        """A mirror flips the tangent about the axis and the way it turns."""
         return ClothoidSeg(_mirror_point(self.origin, origin, angle), 2 * angle - self.angle, self.a,
                            self.start_param, self.end_param, left=not self.left)
 
     def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "ClothoidSeg":
-        """La lunghezza d'arco e il parametro a si moltiplicano per `factor`."""
+        """Arc length and the parameter a are multiplied by `factor`."""
         k = _check_factor(factor)
         return ClothoidSeg(_scale_point(self.origin, k, origin), self.angle, self.a * k,
                            self.start_param * k, self.end_param * k, left=self.left)

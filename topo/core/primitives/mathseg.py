@@ -1,10 +1,10 @@
 """
 topo/core/primitives/mathseg.py
 -------------------------------
-La madre di ogni primitiva (D285): `MathSeg`, una curva data dalla sua
-matematica — un punto e una derivata esatta per ogni `t` di `t_range`. Qui
-anche quello che vale per tutte: `Point`, `DEFAULT_TOLERANCE`, `Algebra`
-(D295), gli estremi e la chiusura di un segmento qualunque.
+The parent of every primitive: `MathSeg`, a curve given by its mathematics —
+a point and an exact derivative for every `t` of `t_range`. Also what holds
+for all: `Point`, `DEFAULT_TOLERANCE`, `Algebra`, the endpoints and the
+closure of any segment.
 """
 
 from __future__ import annotations
@@ -19,8 +19,8 @@ Point = Tuple[float, float]
 
 
 def _real(x) -> float:
-    """Un numero come float Python finito: una coordinata NaN o infinita non ha
-    posizione, la primitiva la rifiuta come una curva di misura nulla (D154, D190)."""
+    """A number as a finite Python float: a NaN or infinite coordinate has no
+    position, so the primitive refuses it like a curve of zero measure."""
     x = float(x)
     if not math.isfinite(x):
         raise ValueError(f"not a finite number: {x}")
@@ -28,17 +28,14 @@ def _real(x) -> float:
 
 
 def _plain(p) -> Point:
-    """Un punto come tupla di float Python finiti: chi passa numpy o i tipi di un'altra libreria non
-    lo ritrova nei campi pubblici (D169)."""
+    """A point as a tuple of finite Python floats: whoever passes numpy or another
+    library's types does not find them in the public fields."""
     return tuple(_real(c) for c in p)
 
 
-
-# Tolleranza predefinita se non specificata
-DEFAULT_TOLERANCE = SAME_POINT  # sagitta dei poligoni, D275
+DEFAULT_TOLERANCE = SAME_POINT  # sagitta of the polygons
 
 
-# che matematica scrive esatta una curva (MathSeg.algebra)
 Algebra = Literal["polynomial", "rational", "transcendental"]
 
 
@@ -104,23 +101,13 @@ class MathSeg(ABC):
 
 
 def segment_endpoints(segment) -> Tuple[Point, Point]:
-    """
-    (start, end) di un segmento primitivo, in coordinate XY non arrotondate.
-
-    Unica sede di questo calcolo — usata dall'adapter per costruire gli Edge e
-    dal gap solver per lavorare su geometria pura.
-    """
+    """(start, end) of a primitive segment, unrounded XY coordinates."""
     if isinstance(segment, MathSeg):
         return segment.endpoints()
     return (0.0, 0.0), (0.0, 0.0)
 
 
 def segment_is_closed(segment, tolerance: float = DEFAULT_TOLERANCE) -> bool:
-    """
-    True se gli endpoint del segmento coincidono entro ``tolerance``.
-
-    Unica sede del test di chiusura di un segmento primitivo — usata
-    dall'adapter per riconoscere le spline chiuse (loop degenere).
-    """
+    """True if the segment's endpoints coincide within ``tolerance``."""
     start, end = segment_endpoints(segment)
     return math.hypot(start[0] - end[0], start[1] - end[1]) < tolerance

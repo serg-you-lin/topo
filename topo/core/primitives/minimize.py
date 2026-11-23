@@ -1,12 +1,12 @@
 """
 topo/core/primitives/minimize.py
 --------------------------------
-Il minimo di una funzione del punto lungo una curva, per certificato: la
-curva si divide in pezzi di parametro, ognuno con un minorante della funzione
-su tutto il pezzo; un pezzo che non scende sotto il migliore trovato si scarta,
-gli altri si dimezzano. Nessun campionamento: un ramo vicino non vince per
-sbaglio (D300). Il minorante lo dà la curva (inviluppo dei punti di controllo,
-velocità nota, aritmetica degli intervalli); il meccanismo è uno solo.
+Minimum of a function of the point along a curve, by certificate: the curve is
+split into parameter pieces, each with a lower bound of the function over the
+whole piece; a piece whose bound is not below the best found is discarded, the
+others are halved. No sampling, so a near branch cannot win by mistake. The
+curve supplies the bound (control-point hull, known speed, interval
+arithmetic); the mechanism is one.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from typing import Any, Callable, Iterable, Tuple
 from ...precision import FLOAT_NOISE
 from .mathseg import Point
 
-# un pezzo: (t0, t1, punto in t0, punto in t1, dati della curva sul pezzo)
+# a piece: (t0, t1, point at t0, point at t1, the curve's data on the piece)
 Piece = Tuple[float, float, Point, Point, Any]
 
 
@@ -27,13 +27,13 @@ def certified_min(pieces: Iterable[Piece],
                   value: Callable[[Point], float],
                   bound: Callable[[Piece], float],
                   split: Callable[[Piece], Tuple[Piece, Piece]]) -> Tuple[float, float, float]:
-    """(t, lo, hi): il parametro dove `value(punto)` è minimo sulla curva, entro
-    FLOAT_NOISE, e il pezzo [lo, hi] attorno a lui da rifinire. `bound(pezzo)`
-    minora `value` su tutto il pezzo; `split(pezzo)` lo dimezza, e il punto di
-    mezzo è il capo comune delle due metà."""
+    """(t, lo, hi): the parameter where `value(point)` is minimal on the curve,
+    within FLOAT_NOISE, and the piece [lo, hi] around it to refine. `bound(piece)`
+    is a lower bound of `value` over the piece; `split(piece)` halves it, the
+    midpoint being the shared end of the two halves."""
     best = (math.inf, 0.0, 0.0, 0.0)
     heap: list = []
-    order = itertools.count()   # a pari minorante, nell'ordine di arrivo
+    order = itertools.count()   # ties on the bound go in arrival order
     for piece in pieces:
         t0, t1, p0, p1, _ = piece
         for t, q in ((t0, p0), (t1, p1)):
@@ -60,7 +60,7 @@ def certified_min(pieces: Iterable[Piece],
 
 
 def point_split(at: Callable[[float], Point]) -> Callable[[Piece], Tuple[Piece, Piece]]:
-    """Il dimezzamento di un pezzo di una curva data per punti `at(t)`, senza dati suoi."""
+    """Halving of a piece of a curve given by points `at(t)`, with no data of its own."""
     def halves(piece: Piece) -> Tuple[Piece, Piece]:
         t0, t1, p0, p1, data = piece
         tm = (t0 + t1) / 2

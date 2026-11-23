@@ -1,7 +1,7 @@
 """
 topo/core/primitives/line.py
 ----------------------------
-La retta: `LineSeg`, il tratto da `start` a `end`.
+`LineSeg`: the straight piece from `start` to `end`.
 """
 
 from __future__ import annotations
@@ -39,35 +39,32 @@ class LineSeg(MathSeg):
         self.start, self.end = _plain(self.start), _plain(self.end)
 
     def discretize(self, *, tolerance: float = DEFAULT_TOLERANCE) -> List[Point]:
-        """
-        Una linea è già esatta: restituisce solo i due endpoint.
-        La tolleranza non serve ma la accettiamo per uniformità di interfaccia.
-        """
+        """The two endpoints: a line is already exact (`tolerance` is unused)."""
         return [self.start, self.end]
 
     def reversed(self) -> "LineSeg":
-        """Stessa linea, percorsa al contrario."""
+        """The same line walked the other way."""
         return LineSeg(start=self.end, end=self.start)
 
     def rotated(self, angle: float, *, origin: Point = (0.0, 0.0)) -> "LineSeg":
-        """Stessa linea, ruotata di `angle` radianti attorno a `origin`."""
+        """The line rotated by `angle` radians about `origin`."""
         return LineSeg(
             start=_rotate_point(self.start, angle, origin),
             end=_rotate_point(self.end, angle, origin),
         )
 
     def translated(self, dx: float, dy: float) -> "LineSeg":
-        """Stessa linea, spostata di (`dx`, `dy`)."""
+        """The line moved by (`dx`, `dy`)."""
         return LineSeg(start=_translate_point(self.start, dx, dy), end=_translate_point(self.end, dx, dy))
 
     def mirrored(self, *, origin: Point = (0.0, 0.0), angle: float = 0.0) -> "LineSeg":
-        """Stessa linea, specchiata sulla retta per `origin` a `angle` radianti
-        (default: l'asse x, y → −y)."""
+        """The line mirrored on the line through `origin` at `angle` radians
+        (default: the x axis, y → −y)."""
         return LineSeg(start=_mirror_point(self.start, origin, angle),
                        end=_mirror_point(self.end, origin, angle))
 
     def scaled(self, factor: float, *, origin: Point = (0.0, 0.0)) -> "LineSeg":
-        """Stessa linea, scalata di `factor` (> 0) attorno a `origin`."""
+        """The line scaled by `factor` (> 0) about `origin`."""
         factor = _check_factor(factor)
         return LineSeg(start=_scale_point(self.start, factor, origin),
                        end=_scale_point(self.end, factor, origin))
