@@ -46,8 +46,8 @@ NAME_PART = re.compile(r"_|(?<=[a-z])(?=[A-Z])")
 # the documents a reader finds on GitHub: the decision log and the to-do list are
 # not published, so they cannot be cited there (`CLAUDE.md` is the working
 # agreement of the sessions and names them on purpose)
-PUBLISHED_DOCUMENTS = ("README.md", "README_IT.md", "SCRIPTS.md", "tutorial/README.md",
-                       "docs/API.md", "docs/ARCHITECTURE.md", "docs/LIMITS.md", "docs/LIMITS_IT.md",
+PUBLISHED_DOCUMENTS = ("README.md", "SCRIPTS.md", "tutorial/README.md",
+                       "docs/API.md", "docs/ARCHITECTURE.md", "docs/LIMITS.md",
                        "docs/LLM.md", "docs/TEXTS.md")
 LOCAL_FILE = re.compile(r"\b(?:MAP|TODO)(?:_ARCHIVE)?\.md\b")
 

@@ -163,7 +163,7 @@ ALLOWED: frozenset[str] = frozenset({
     "F401", "F403", "E501",
     # codice ruff nei commenti `# noqa: BLE001`
     "BLE001",
-    # numeri decimali scritti senza la parte intera (0,500001 in LIMITS_IT.md)
+    # numeri decimali scritti senza la parte intera (0,500001 nel vecchio LIMITS_IT.md, ancora nella history)
     "500001", "50000001",
     # sigle che topo usa come esempio o nei suoi stessi test
     "P1024", "U0001",
