@@ -173,7 +173,7 @@ class TestFidelity(unittest.TestCase):
     single test, the loop over all the drawings was the slowest of the suite and
     could not be divided."""
 
-    def test_il_confronto_dei_coefficienti_non_e_vuoto(self):
+    def test_the_coefficient_comparison_is_not_empty(self):
         # the "untouched" rule must not exclude almost everything
         compared = sum(len(_untouched_curves(topo_dxf.load_dxf(str(PROJECT_ROOT / rel)).edges))
                        for rel, _ in tracked_drawings())

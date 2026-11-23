@@ -237,7 +237,7 @@ def public_callables():
 class TestOptionsByName(unittest.TestCase):
     """Rule 1."""
 
-    def test_posizionali_dichiarati(self):
+    def test_declared_positionals(self):
         wrong = []
         for key, fn in public_callables():
             got, declared = _positional(fn), DATA.get(key, ())
@@ -245,15 +245,15 @@ class TestOptionsByName(unittest.TestCase):
                 wrong.append(f"{key}: posizionali {got}, dichiarati {declared}")
         self.assertEqual(wrong, [], "\n" + "\n".join(wrong))
 
-    def test_nessun_nome_dichiarato_sparito(self):
+    def test_no_declared_name_vanished(self):
         live = {key for key, _ in public_callables()}
         self.assertEqual(sorted(set(DATA) - live), [])
 
-    def test_un_nome_da_opzione_non_e_un_dato(self):
+    def test_an_option_name_is_not_data(self):
         wrong = [(key, name) for key, names in DATA.items() for name in names
                  if OPTION_NAME.search(name) and (key, name) not in DECLARED_EXCEPTIONS]
         self.assertEqual(wrong, [])
 
-    def test_eccezioni_ancora_vere(self):
+    def test_exceptions_still_true(self):
         for key, name in DECLARED_EXCEPTIONS:
             self.assertIn(name, DATA.get(key, ()), key)

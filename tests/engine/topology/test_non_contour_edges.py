@@ -20,7 +20,7 @@ def _make_edge(p1, p2):
 
 class TestNonContourEdgeDetector(unittest.TestCase):
 
-    def test_linea_interna_confermata(self):
+    def test_inner_line_confirmed(self):
         # rectangle with an inner diagonal
         #
         #  (0,2)-----(1,2)
@@ -42,7 +42,7 @@ class TestNonContourEdgeDetector(unittest.TestCase):
         non_contour_edge = edges[-1]
         self.assertIn(id(non_contour_edge), result)
 
-    def test_linea_sul_bordo_ignorata(self):
+    def test_line_on_the_border_ignored(self):
         # simple triangle — no branching node → nothing to exclude
         edges = [
             _make_edge((0.0, 0.0), (1.0, 0.0)),
@@ -53,7 +53,7 @@ class TestNonContourEdgeDetector(unittest.TestCase):
         result = NonContourEdgeDetector(tolerance=0.01).detect(g, edges)
         self.assertEqual(len(result), 0)
 
-    def test_nessun_branching_niente_da_escludere(self):
+    def test_no_branching_nothing_to_exclude(self):
         # open chain — no branching node
         edges = [
             _make_edge((0.0, 0.0), (1.0, 0.0)),
@@ -63,7 +63,7 @@ class TestNonContourEdgeDetector(unittest.TestCase):
         result = NonContourEdgeDetector(tolerance=0.01).detect(g, edges)
         self.assertEqual(len(result), 0)
 
-    def test_hull_per_componente_non_per_foglio_intero(self):
+    def test_hull_per_component_not_for_the_whole_sheet(self):
         # Two shapes on the same sheet, not connected to each other (no edge in
         # common): a large rectangle "A" and, wholly inside its area, a small rectangle
         # "B" with a diagonal — the same scheme as the first test, in miniature. Real bug
@@ -96,7 +96,7 @@ class TestNonContourEdgeDetector(unittest.TestCase):
         self.assertIn(b_diagonal_id, result,
                        "la diagonale di B resta un edge non di contorno")
 
-    def test_lato_concavo_fra_due_corde_resta_contorno(self):
+    def test_concave_side_between_two_chords_stays_contour(self):
         # an L: the side (10,10)-(10,30) of the concave part is inside the convex hull;
         # the two chords from (0,0) to its vertices make it a candidate (ends of degree
         # 3), but it borders the outside
@@ -114,7 +114,7 @@ class TestNonContourEdgeDetector(unittest.TestCase):
         result = NonContourEdgeDetector(tolerance=0.01).detect(build_node_graph(edges), edges)
         self.assertEqual(result, {id(e) for e in chords})
 
-    def test_tacca_coi_fianchi_accavallati(self):
+    def test_notch_with_overlapping_flanks(self):
         # a notch from the bottom up to (30,20), with drawn flanks that cross just above
         # the bottom (the right flank returns to (27, 0.5), to the left of where the left
         # one starts): without a node at the crossing the outer-face walk passed over it
@@ -138,7 +138,7 @@ _RECT = [((0.0, 0.0), (40.0, 0.0)), ((40.0, 0.0), (40.0, 20.0)),
 class TestChainCandidates(unittest.TestCase):
     """The chain between two branching nodes is judged, not the edge: nodes of degree 2 are not forks."""
 
-    def test_catena_a_t_sui_lati(self):
+    def test_chain_at_t_on_the_sides(self):
         # bends from vertex to vertex for two mid-side points, which the heal graph does
         # not split: (10,0) and (30,20) have degree 2 there
         #
@@ -152,7 +152,7 @@ class TestChainCandidates(unittest.TestCase):
         result = NonContourEdgeDetector(tolerance=0.01).detect(build_node_graph(edges), edges)
         self.assertEqual(result, {id(e) for e in chain})
 
-    def test_catena_con_vertice_interno(self):
+    def test_chain_with_interior_vertex(self):
         # a chord broken at (20,10), a free point inside the piece
         outline = [_make_edge(a, b) for a, b in _RECT]
         chain = [_make_edge((0.0, 0.0), (20.0, 10.0)), _make_edge((20.0, 10.0), (40.0, 20.0))]
@@ -160,7 +160,7 @@ class TestChainCandidates(unittest.TestCase):
         result = NonContourEdgeDetector(tolerance=0.01).detect(build_node_graph(edges), edges)
         self.assertEqual(result, {id(e) for e in chain})
 
-    def test_lato_spezzato_resta_contorno(self):
+    def test_broken_side_stays_contour(self):
         # the bottom side in two stretches, a diagonal from its two ends: the two
         # stretches are a candidate chain, but on the outer border
         outline = [_make_edge(a, b) for a, b in [
@@ -171,7 +171,7 @@ class TestChainCandidates(unittest.TestCase):
         result = NonContourEdgeDetector(tolerance=0.01).detect(build_node_graph(edges), edges)
         self.assertEqual(result, {id(chord)})
 
-    def test_foro_che_tocca_il_contorno_resta(self):
+    def test_hole_touching_the_contour_remains(self):
         # a closed loop attached to the contour at a single node (0,0): a chain with
         # equal ends is already a loop, never a chord
         outline = [_make_edge(a, b) for a, b in _RECT]
@@ -184,7 +184,7 @@ class TestChainCandidates(unittest.TestCase):
 
 class TestGraphChains(unittest.TestCase):
 
-    def test_ogni_edge_in_una_catena_sola(self):
+    def test_every_edge_in_a_single_chain(self):
         outline = [_make_edge(a, b) for a, b in _RECT]
         chain = [_make_edge((0.0, 20.0), (10.0, 0.0)), _make_edge((10.0, 0.0), (30.0, 20.0)),
                  _make_edge((30.0, 20.0), (40.0, 0.0))]
@@ -197,7 +197,7 @@ class TestGraphChains(unittest.TestCase):
         ids = [id(e) for run, _, _ in chains for e in run]
         self.assertEqual(sorted(ids), sorted(id(e) for e in outline + chain))
 
-    def test_anello_senza_diramazioni(self):
+    def test_ring_without_branches(self):
         chains = build_node_graph([_make_edge(a, b) for a, b in _RECT]).chains()
         self.assertEqual(len(chains), 1)
         run, a, b = chains[0]

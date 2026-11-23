@@ -23,7 +23,7 @@ def _nested():
     return topo.heal(doc).faces().clusters[0]
 
 
-def test_contorno_e_il_poligono_della_lettura():
+def test_contour_is_the_polygon_of_the_reading():
     cluster = _nested()
     assert topo.to_shapely(cluster.outer).equals(Polygon([(-50, -30), (50, -30), (50, 30), (-50, 30)]))
     hole = next(i for i in cluster.inners if i.depth == 1 and i.area > 1000)
@@ -33,7 +33,7 @@ def test_contorno_e_il_poligono_della_lettura():
     assert len(fine.exterior.coords) > len(coarse.exterior.coords)
 
 
-def test_cluster_pari_dispari_come_l_area():
+def test_cluster_even_odd_like_the_area():
     cluster = _nested()
     material = topo.to_shapely(cluster, tolerance=0.001)
     assert isinstance(material, MultiPolygon) and len(material.geoms) == 2
@@ -45,25 +45,25 @@ def test_cluster_pari_dispari_come_l_area():
     assert not material.intersects(Polygon([(12, -1), (18, -1), (18, 1), (12, 1)]))  # the hole around it is not
 
 
-def test_senza_isole_un_solo_poligono():
+def test_without_islands_a_single_polygon():
     doc = topo.load_segments(g.rectangle(100, 60) + g.circle(5))
     material = topo.to_shapely(topo.heal(doc).faces().clusters[0])
     assert isinstance(material, Polygon) and len(material.interiors) == 1
 
 
-def test_curva_aperta_e_una_linestring():
+def test_open_curve_is_a_linestring():
     doc = topo.load_geometry([{"type": "line", "start": (0, 0), "end": (10, 0)}])
     curve = topo.heal(doc).faces().loose[0]
     line = topo.to_shapely(curve)
     assert isinstance(line, LineString) and line.length == pytest.approx(10.0)
 
 
-def test_senza_geometria_type_error():
+def test_without_geometry_type_error():
     with pytest.raises(TypeError):
         topo.to_shapely(object())
 
 
-def test_il_modello_non_porta_un_poligono():
+def test_the_model_carries_no_polygon():
     contour = topo.Contour(segments=topo.geometry.rectangle(10, 5), role="outer")
     assert not hasattr(contour, "polygon")
     assert not hasattr(topo.Cluster(outer=contour), "polygon_with_holes")
@@ -77,7 +77,7 @@ class _Item:
         self.segments, self.is_void = segments, is_void
 
 
-def test_si_disegna_chiuso_un_giro_un_vuoto_o_una_curva_chiusa():
+def test_drawn_closed_an_ambit_a_void_or_a_closed_curve():
     from topo.model import feature_closed
     ring = topo.geometry.rectangle(10, 5)
     open_run = ring[:3]

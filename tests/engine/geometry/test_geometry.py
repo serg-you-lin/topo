@@ -56,17 +56,17 @@ def make_line(x1, y1, x2, y2) -> LineSeg:
 
 class TestAreCollinear(unittest.TestCase):
 
-    def test_001_stessa_linea_orizzontale(self):
+    def test_001_same_line_horizontal(self):
         a = make_line(0, 10, 45, 10)
         b = make_line(125, 10, 170, 10)
         self.assertTrue(are_collinear(a, b, 0.1))
 
-    def test_002_stessa_linea_verticale(self):
+    def test_002_same_line_vertical(self):
         a = make_line(50, 0, 50, 30)
         b = make_line(50, 80, 50, 120)
         self.assertTrue(are_collinear(a, b, 0.1))
 
-    def test_003_parallele_non_collineari(self):
+    def test_003_parallels_not_collinear(self):
         a = make_line(0, 10, 100, 10)
         b = make_line(0, 20, 100, 20)
         self.assertFalse(are_collinear(a, b, 0.1))
@@ -76,27 +76,27 @@ class TestAreCollinear(unittest.TestCase):
         b = make_line(50, -50, 50, 50)
         self.assertFalse(are_collinear(a, b, 0.1))
 
-    def test_005_stessa_retta_obliqua(self):
+    def test_005_same_line_oblique(self):
         a = make_line(0, 0, 10, 10)
         b = make_line(20, 20, 30, 30)
         self.assertTrue(are_collinear(a, b, 0.1))
 
-    def test_006_direzioni_opposte_stessa_retta(self):
+    def test_006_opposite_directions_same_line(self):
         a = make_line(0, 5, 45, 5)
         b = make_line(170, 5, 125, 5)
         self.assertTrue(are_collinear(a, b, 0.1))
 
-    def test_007_entro_tolleranza(self):
+    def test_007_within_tolerance(self):
         a = make_line(0, 10.00, 100, 10.00)
         b = make_line(0, 10.05, 100, 10.05)
         self.assertTrue(are_collinear(a, b, tolerance=0.1))
 
-    def test_008_fuori_tolleranza(self):
+    def test_008_outside_tolerance(self):
         a = make_line(0, 10.00, 100, 10.00)
         b = make_line(0, 10.20, 100, 10.20)
         self.assertFalse(are_collinear(a, b, tolerance=0.1))
 
-    def test_009_linea_degenere(self):
+    def test_009_degenerate_line(self):
         a = make_line(0, 0, 0, 0)
         b = make_line(10, 10, 10, 10)
         self.assertFalse(are_collinear(a, b, 0.1))
@@ -108,7 +108,7 @@ class TestAreCollinear(unittest.TestCase):
 
 class TestGroupCollinearLines(unittest.TestCase):
 
-    def test_001_caso_reale_tre_pieghe(self):
+    def test_001_real_case_three_bends(self):
         lines = [
             make_line(125.0, -39.628, 170.0, -39.628),
             make_line(0.0,   -39.628,  45.0, -39.628),
@@ -121,7 +121,7 @@ class TestGroupCollinearLines(unittest.TestCase):
         groups = group_collinear_lines(lines, tolerance=0.1)
         self.assertEqual(len(groups), 2)
 
-    def test_002_gruppi_con_dimensione_corretta(self):
+    def test_002_groups_with_correct_size(self):
         lines = [
             make_line(125.0, -39.628, 170.0, -39.628),
             make_line(0.0,   -39.628,  45.0, -39.628),
@@ -135,18 +135,18 @@ class TestGroupCollinearLines(unittest.TestCase):
         sizes = sorted(len(g) for g in groups)
         self.assertEqual(sizes, [2, 4])
 
-    def test_003_segmento_singolo(self):
+    def test_003_single_segment(self):
         lines = [make_line(0, 0, 100, 0)]
         groups = group_collinear_lines(lines, tolerance=0.1)
 
         self.assertEqual(len(groups), 1)
         self.assertEqual(len(groups[0]), 1)
 
-    def test_004_lista_vuota(self):
+    def test_004_list_void(self):
         groups = group_collinear_lines([], tolerance=0.1)
         self.assertEqual(groups, [])
 
-    def test_005_tre_segmenti_stessa_retta(self):
+    def test_005_three_segments_same_line(self):
         lines = [
             make_line(0, 0, 10, 0),
             make_line(20, 0, 30, 0),
@@ -158,7 +158,7 @@ class TestGroupCollinearLines(unittest.TestCase):
         self.assertEqual(len(groups), 1)
         self.assertEqual(len(groups[0]), 3)
 
-    def test_006_parallele_separate(self):
+    def test_006_parallels_separate(self):
         lines = [
             make_line(0, 0, 100, 0),
             make_line(0, 10, 100, 10),
@@ -169,7 +169,7 @@ class TestGroupCollinearLines(unittest.TestCase):
 
         self.assertEqual(len(groups), 3)
 
-    def test_007_linee_oblique_collineari(self):
+    def test_007_oblique_lines_collinear(self):
         lines = [
             make_line(0, 0, 10, 10),
             make_line(20, 20, 30, 30),
@@ -181,7 +181,7 @@ class TestGroupCollinearLines(unittest.TestCase):
         self.assertEqual(len(groups), 1)
         self.assertEqual(len(groups[0]), 3)
 
-    def test_008_linee_miste(self):
+    def test_008_mixed_lines(self):
         lines = [
             make_line(0, 0, 10, 0),    # orizzontale y=0
             make_line(20, 0, 30, 0),   # orizzontale y=0
@@ -376,15 +376,15 @@ class TestPointSequenceMath(unittest.TestCase):
 
 class TestLengthInside(unittest.TestCase):
 
-    def test_linea_tagliata_dal_rettangolo(self):
+    def test_line_cut_by_the_rectangle(self):
         # 20 mm of line, 8 of it fit in the rectangle
         seg = LineSeg(start=(-12, 5), end=(8, 5))
         self.assertAlmostEqual(length_inside(seg, (0, 0, 10, 10)), 8.0, places=9)
 
-    def test_linea_fuori(self):
+    def test_line_outside(self):
         self.assertEqual(length_inside(LineSeg(start=(20, 0), end=(30, 0)), (0, 0, 10, 10)), 0.0)
 
-    def test_cerchio_tutto_dentro(self):
+    def test_circle_wholly_inside(self):
         seg = CircleSeg(center=(5, 5), radius=2)
         self.assertAlmostEqual(length_inside(seg, (0, 0, 10, 10)), segment_length(seg), places=1)
 
@@ -452,15 +452,15 @@ class TestInterpolateBspline(unittest.TestCase):
             # every fit point lies on the curve
             self.assertLess(dense.distance(Point(p)), 0.002)
 
-    def test_grado_dispari_passa_per_i_punti(self):
+    def test_odd_degree_passes_through_the_points(self):
         pts = [(10 * math.cos(i * 0.3), 6 * math.sin(i * 0.3)) for i in range(12)]
         self._check_passes_through(pts, 3)
 
-    def test_grado_pari_passa_per_i_punti(self):
+    def test_even_degree_passes_through_the_points(self):
         pts = [(i * 2.0, math.sin(i) * 3) for i in range(9)]
         self._check_passes_through(pts, 2)
 
-    def test_troppo_pochi_punti(self):
+    def test_too_few_points(self):
         from topo.core.geometry.spline_fit import interpolate_bspline
         with self.assertRaises(ValueError):
             interpolate_bspline([(0, 0), (1, 1), (2, 0)], 3)

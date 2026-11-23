@@ -47,7 +47,7 @@ CASES = [
 
 class TestConicOfSpline(unittest.TestCase):
 
-    def test_diventa_la_conica_coi_capi_della_spline(self):
+    def test_becomes_the_conic_with_the_spline_ends(self):
         for name, seg, kind in CASES:
             with self.subTest(name):
                 spline = _spline_of(seg)
@@ -58,7 +58,7 @@ class TestConicOfSpline(unittest.TestCase):
                 self.assertAlmostEqual(conic._sweep(), seg._sweep(), delta=1e-4)
                 self.assertEqual(conic.ccw, seg.ccw)
 
-    def test_ogni_punto_della_spline_entro_same_point(self):
+    def test_every_point_of_the_spline_within_same_point(self):
         for name, seg, _ in CASES:
             with self.subTest(name):
                 spline = _spline_of(seg)
@@ -69,11 +69,11 @@ class TestConicOfSpline(unittest.TestCase):
                     distance, _ = _ellipse_distance(p, conic.center, axis, a, a * conic.ratio)
                     self.assertLessEqual(distance, SAME_POINT)
 
-    def test_una_spline_vera_resta(self):
+    def test_a_true_spline_remains(self):
         wave = BSplineSeg(degree=3, control_points=[(0, 0), (2, 5), (6, -3), (9, 1)], knots=[0, 0, 0, 0, 1, 1, 1, 1])
         self.assertIsNone(conic_of_spline(wave, SAME_POINT))
 
-    def test_fuori_da_same_point_resta(self):
+    def test_beyond_same_point_stays(self):
         # half ellipse, a control point moved by 3e-3: more than SAME_POINT from the conic
         spline = _spline_of(EllipseSeg(center=(0.0, 0.0), major_axis=(8.0, 0.0), ratio=0.4, start_param=0.0,
                                        end_param=math.pi))
@@ -81,7 +81,7 @@ class TestConicOfSpline(unittest.TestCase):
         bumped = [(x, y + (3e-3 if i == k else 0.0)) for i, (x, y) in enumerate(spline.control_points)]
         self.assertIsNone(conic_of_spline(BSplineSeg(3, bumped, spline.knots), SAME_POINT))
 
-    def test_mai_l_iperbole(self):
+    def test_never_the_hyperbola(self):
         from topo.core.primitives.conics import HyperbolaSeg
         hyp = HyperbolaSeg(center=(0.0, 0.0), major_axis=(2.0, 0.0), ratio=0.8, start_param=-1.0, end_param=1.2)
         self.assertIsNone(conic_of_spline(_spline_of(hyp), SAME_POINT))
@@ -89,7 +89,7 @@ class TestConicOfSpline(unittest.TestCase):
 
 class TestRefitNativeSplines(unittest.TestCase):
 
-    def test_la_spline_diventa_arco_e_tiene_i_nodi(self):
+    def test_the_spline_becomes_an_arc_and_keeps_the_nodes(self):
         spline = _spline_of(CircleSeg(center=(1.0, 1.0), radius=5.0, start_angle=0.5, end_angle=2.0))
         start, end = spline.endpoints()
         line = LineSeg(start=end, end=(-10.0, 0.0))
@@ -100,7 +100,7 @@ class TestRefitNativeSplines(unittest.TestCase):
         self.assertIs(edges[1].segment, line)
 
 
-    def test_ellisse_coi_semiassi_uguali_diventa_il_suo_cerchio(self):
+    def test_ellipse_with_equal_semi_axes_becomes_its_circle(self):
         for ellipse in (EllipseSeg(center=(2.0, 1.0), major_axis=(3.0, 4.0), ratio=1.0, start_param=0.4, end_param=2.0),
                         EllipseSeg(center=(2.0, 1.0), major_axis=(-3.0, 4.0), ratio=1.0, start_param=2.0, end_param=0.4,
                                    ccw=False),
@@ -116,7 +116,7 @@ class TestRefitNativeSplines(unittest.TestCase):
                 t = circle.t_range[1] * k / 8
                 self.assertLessEqual(math.dist(circle.point_at(t), ellipse.point_at(t)), FLOAT_NOISE)
 
-    def test_ellisse_vera_resta(self):
+    def test_true_ellipse_remains(self):
         ellipse = EllipseSeg(center=(0.0, 0.0), major_axis=(3.0, 0.0), ratio=0.999, start_param=0.0, end_param=1.0)
         start, end = ellipse.endpoints()
         [edge] = refit_native_curves([Edge(role=ContourRole.UNKNOWN, start=start, end=end, segment=ellipse)])
@@ -126,7 +126,7 @@ class TestRefitNativeSplines(unittest.TestCase):
 class TestFullTurn(unittest.TestCase):
     """A full turn from any angle stays full: (a + 2π) − a lands one ulp from 2π."""
 
-    def test_cerchio_da_ogni_angolo_e_intero(self):
+    def test_circle_from_any_angle_is_whole(self):
         rng = random.Random(7)
         for _ in range(2000):
             a = rng.uniform(-9.0, 9.0)

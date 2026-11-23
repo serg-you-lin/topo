@@ -32,7 +32,7 @@ def _triangle_edges():
 
 class TestGraphDegree(unittest.TestCase):
 
-    def test_degree_triangolo(self):
+    def test_degree_triangle(self):
         g = build_node_graph(_triangle_edges())
         for node in g.nodes:
             self.assertEqual(g.degree(node), 2)
@@ -40,7 +40,7 @@ class TestGraphDegree(unittest.TestCase):
 
 class TestGraphBranchingNodes(unittest.TestCase):
 
-    def test_nodo_con_tre_connessioni(self):
+    def test_node_with_three_connections(self):
         edges = _triangle_edges()
         edges.append(_make_edge((0.0, 0.0), (1.0, 1.0)))
         g = build_node_graph(edges)
@@ -49,7 +49,7 @@ class TestGraphBranchingNodes(unittest.TestCase):
 
 class TestGraphPruned(unittest.TestCase):
 
-    def test_catena_aperta_rimossa(self):
+    def test_open_chain_removed(self):
         a, b, c = (0.0, 0.0), (1.0, 0.0), (2.0, 0.0)
         edges = [_make_edge(a, b), _make_edge(b, c)]
         g = build_node_graph(edges)
@@ -116,7 +116,7 @@ class TestBuildNodeGraphClustering(unittest.TestCase):
 
 class TestCloseSelfLoop(unittest.TestCase):
 
-    def test_arco_quasi_chiuso_diventa_loop_degenere(self):
+    def test_nearly_closed_arc_becomes_degenerate_loop(self):
         # arc_arc_gap: a 359.9-degree arc, its two ends end in the same epsilon
         # cluster -- but the real development (radius*sweep) is huge, it is not noise:
         # it must close, not vanish.
@@ -128,7 +128,7 @@ class TestCloseSelfLoop(unittest.TestCase):
         closed = g.degenerate_loops[0]
         self.assertEqual(closed.start, closed.end)
 
-    def test_arco_corto_resta_scartato(self):
+    def test_short_arc_stays_discarded(self):
         # Small real development (radius 0.5, sweep 5 degrees): it really is a sliver,
         # the behaviour as always (discarded, not a loop) must not change.
         edge = _arc_edge((0.0, 0.0), 0.5, 0.0, 5.0)
@@ -136,7 +136,7 @@ class TestCloseSelfLoop(unittest.TestCase):
         self.assertEqual(len(g.nodes), 0)
         self.assertEqual(len(g.degenerate_loops), 0)
 
-    def test_epsilon_zero_non_tocca_larco_quasi_chiuso(self):
+    def test_epsilon_zero_leaves_the_nearly_closed_arc(self):
         # Without clustering (epsilon=0, historical behaviour) the two ends stay
         # distinct nodes: the arc is a normal edge, not a loop.
         edge = _arc_edge((0.0, 0.0), 50.0, 0.0, 359.9)

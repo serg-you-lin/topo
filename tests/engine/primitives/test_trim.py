@@ -27,15 +27,15 @@ class TestSubSegment(unittest.TestCase):
         for pt in piece.discretize(tolerance=0.001):
             self.assertLess(curve_distance(pt), tol)
 
-    def test_retta(self):
+    def test_line_straight(self):
         piece = sub_segment(LineSeg(start=(0, 0), end=(10, 0)), (2, 0), (7, 0), (4, 0))
         self.assertEqual(segment_endpoints(piece), ((2, 0), (7, 0)))
 
-    def test_retta_al_contrario(self):
+    def test_line_reversed_straight(self):
         piece = sub_segment(LineSeg(start=(0, 0), end=(10, 0)), (7, 0), (2, 0), (4, 0))
         self.assertEqual(segment_endpoints(piece), ((7, 0), (2, 0)))
 
-    def test_arco_nei_due_versi(self):
+    def test_arc_in_both_directions(self):
         arc = CircleSeg(center=(0, 0), radius=5, start_angle=0, end_angle=math.pi, ccw=True)
         a, b = (5 * math.cos(0.5), 5 * math.sin(0.5)), (5 * math.cos(2.0), 5 * math.sin(2.0))
         for x, y in ((a, b), (b, a)):
@@ -45,13 +45,13 @@ class TestSubSegment(unittest.TestCase):
             self.assertAlmostEqual(piece._sweep(), 1.5)
             self._assert_on(piece, lambda p: abs(math.dist(p, (0, 0)) - 5))
 
-    def test_capo_appena_oltre_la_fine_dell_arco_sta_sulla_fine(self):
+    def test_end_just_beyond_the_arc_end_lies_on_the_end(self):
         arc = CircleSeg(center=(0, 0), radius=5, start_angle=0, end_angle=math.pi / 2, ccw=True)
         beyond = (5 * math.cos(math.pi / 2 + 1e-4), 5 * math.sin(math.pi / 2 + 1e-4))
         piece = sub_segment(arc, (5, 0), beyond, (0, 5))
         self.assertAlmostEqual(piece._sweep(), math.pi / 2)
 
-    def test_cerchio_gira_dalla_parte_di_via(self):
+    def test_circle_turns_on_the_side_of_via(self):
         circle = CircleSeg(center=(0, 0), radius=5)
         top, bottom = (0, 5), (0, -5)
         left = sub_segment(circle, top, bottom, (-5, 0))
@@ -61,7 +61,7 @@ class TestSubSegment(unittest.TestCase):
         self.assertLess(min(p[0] for p in left.discretize(tolerance=0.01)), -4.9)
         self.assertGreater(max(p[0] for p in right.discretize(tolerance=0.01)), 4.9)
 
-    def test_ellisse(self):
+    def test_ellipse(self):
         ellipse = EllipseSeg(center=(0, 0), major_axis=(10, 0), ratio=0.5,
                              start_param=0, end_param=2 * math.pi)
         a, b = ellipse._point_at(0.3), ellipse._point_at(1.2)
@@ -70,7 +70,7 @@ class TestSubSegment(unittest.TestCase):
         self.assertTrue(_close(s, a) and _close(e, b))
         self._assert_on(piece, lambda p: abs((p[0] / 10) ** 2 + (p[1] / 5) ** 2 - 1), tol=1e-6)
 
-    def test_spline_tratto_esatto_nei_due_versi(self):
+    def test_spline_exact_stretch_in_both_directions(self):
         spline = BSplineSeg(degree=3,
                            control_points=[(0, 0), (2, 4), (5, -1), (8, 3), (10, 0), (13, 2)],
                            knots=[0, 0, 0, 0, 0.3, 0.6, 1, 1, 1, 1])
@@ -86,7 +86,7 @@ class TestSubSegment(unittest.TestCase):
             t = lo + (hi - lo) * k / 10
             self.assertTrue(_close(piece._evaluate(t), spline._evaluate(t), 1e-9))
 
-    def test_spline_razionale(self):
+    def test_rational_spline(self):
         spline = BSplineSeg(degree=2, control_points=[(0, 0), (5, 5), (10, 0)],
                            knots=[0, 0, 0, 1, 1, 1], weights=[1.0, 0.5, 1.0])
         a, b = spline._evaluate(0.25), spline._evaluate(0.8)
@@ -95,7 +95,7 @@ class TestSubSegment(unittest.TestCase):
             t = 0.25 + 0.55 * k / 10
             self.assertTrue(_close(piece._evaluate(t), spline._evaluate(t), 1e-9))
 
-    def test_spline_periodica_non_si_taglia(self):
+    def test_periodic_spline_is_not_cut(self):
         # uniform cubic with the first three points repeated at the end: it closes
         # without a control point on the joint (periodic is derived)
         cps = [(0, 0), (4, 0), (4, 4), (0, 4)]
@@ -131,7 +131,7 @@ class TestClosedSplineSeamUnderMotion(unittest.TestCase):
         pts = seg.discretize(tolerance=0.001)
         return sum(math.dist(a, b) for a, b in zip(pts, pts[1:]))
 
-    def test_il_tratto_dalla_giunzione_e_quello_di_via(self):
+    def test_the_stretch_from_the_junction_is_via_s(self):
         from tests.invariants import rigid
         for motion in self.MOTIONS:
             move_seg, _ = rigid(*motion)
@@ -147,7 +147,7 @@ class TestClosedSplineSeamUnderMotion(unittest.TestCase):
                 self.assertTrue(_close(segment_endpoints(short)[0], seam))
                 self.assertTrue(_close(segment_endpoints(long)[1], seam))
 
-    def test_outlines_la_spline_chiusa_tagliata_resta_intera(self):
+    def test_outlines_the_cut_closed_spline_stays_whole(self):
         import topo
         from tests.invariants import rigid
         X, Y = self.X, self.Y
@@ -175,7 +175,7 @@ class TestHairpinBranch(unittest.TestCase):
                         control_points=[(0, 0), (25, 0), (50, 0), (50.5, 0.005), (50, 0.01), (25, 0.01), (0, 0.01)],
                         knots=[0.0] * 4 + [0.3, 0.5, 0.6] + [1.0] * 4)
 
-    def test_il_taglio_resta_sul_suo_ramo(self):
+    def test_the_cut_stays_on_its_branch(self):
         s = self.SPLINE
         for k in range(1, 40):
             t0, t1 = k / 41, (k + 1) / 41
@@ -187,7 +187,7 @@ class TestHairpinBranch(unittest.TestCase):
                 # the stretch is as short as the curve between the two points, not the hairpin's loop
                 self.assertLess(segment_length(piece), 1.5 * math.dist(a, b) + 1e-6)
 
-    def test_reach_vede_la_punta(self):
+    def test_reach_sees_the_tip(self):
         # the hairpin's tip lies beyond x = 50: the extent finds it, exact
         lo, hi = Reach(self.SPLINE)((1.0, 0.0))
         tip = max(self.SPLINE._evaluate(i / 20000)[0] for i in range(20001))
@@ -208,7 +208,7 @@ class TestCurveBranch(unittest.TestCase):
         "forcina non uniforme": FormulaSeg(x="50 * sin(pi * t**3)", y="0.01 * t", start_param=0, end_param=1),
     }
 
-    def test_i_capi_del_taglio_sono_quelli_chiesti(self):
+    def test_the_cut_ends_are_those_asked_for(self):
         for name, seg in self.CURVES.items():
             total = seg.t_range[1]
             for k in range(1, 60):

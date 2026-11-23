@@ -120,7 +120,7 @@ class TestCuspUnderMotion(unittest.TestCase):
                            (10, 10), (0, 10)], (15, 5 + 1e-9)),
     }
 
-    def test_la_risposta_non_dipende_dal_moto(self):
+    def test_the_answer_does_not_depend_on_the_motion(self):
         from tests.invariants import rigid
         for name, (ring, tip) in self.RINGS.items():
             answers = set()
@@ -341,7 +341,7 @@ class TestTouchingRingsUnderMotion(unittest.TestCase):
     MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
                (0.7, 3.1, -2.2), (2.4, -0.37, 0.61), (math.pi / 2, 0.0, 0.0)]
 
-    def test_due_anelli_a_ogni_moto(self):
+    def test_two_rings_at_every_motion(self):
         from tests.invariants import rigid
         others = {"spigolo": g.rectangle(10, 10, center=(15, 15)), "cerchio": g.circle(5, center=(15, 5))}
         for name, other in others.items():
@@ -376,7 +376,7 @@ class TestTangentOnTheTrueCurve(unittest.TestCase):
     as a rational NURBS has known exact tangents; a spline and an ellipse
     coincide with the finite difference on the curve."""
 
-    def test_quarto_di_cerchio_razionale(self):
+    def test_rational_quarter_circle(self):
         from topo.core.geometry.regions import end_tangent
         quarter = BSplineSeg(degree=2, control_points=[(1, 0), (1, 1), (0, 1)],
                              knots=[0, 0, 0, 1, 1, 1], weights=[1, 2 ** -0.5, 1])
@@ -384,7 +384,7 @@ class TestTangentOnTheTrueCurve(unittest.TestCase):
             for got, want in zip(end_tangent(quarter, at_end), expected):
                 self.assertAlmostEqual(got, want, places=12)
 
-    def test_spline_ed_ellisse_come_la_curva(self):
+    def test_spline_and_ellipse_like_the_curve(self):
         from topo.core.geometry.regions import end_tangent
         from topo.core.primitives import EllipseSeg
         spline = BSplineSeg(degree=3, control_points=[(0, 0), (1, 2), (3, 3), (4, 1), (6, 0)],

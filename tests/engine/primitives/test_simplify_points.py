@@ -150,7 +150,7 @@ class TestFlatTopUnderMotion(unittest.TestCase):
             heading -= 8
         return pts
 
-    def test_le_primitive_non_dipendono_dal_moto(self):
+    def test_the_primitives_do_not_depend_on_the_motion(self):
         from tests.invariants import rigid
         kinds = set()
         for motion in self.MOTIONS:
@@ -170,7 +170,7 @@ class TestOnePass(unittest.TestCase):
 
     HOOK = [(0.0076, 0.0906), (0.0196, 0.0569), (0.0351, 0.0331), (0.0518, 0.0229), (0.0672, 0.0276), (0.0463, 0.0246)]
 
-    def test_entro_la_tolleranza_nei_due_sensi(self):
+    def test_within_the_tolerance_both_ways(self):
         grey = LineString(self.HOOK)
         for tol in (0.02, 0.005, 0.001):
             prims = simplify_points(self.HOOK, tolerance=tol, scale=0.1, closed=False, corner_turn_deg=None)

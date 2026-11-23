@@ -71,7 +71,7 @@ class TestVirtualModelRemoved(unittest.TestCase):
 # Test 1 — outer + contorno interno
 # ---------------------------------------------------------------------------
 
-class TestOuterConInner(unittest.TestCase):
+class TestOuterWithInner(unittest.TestCase):
     """
     - 1 proxy grande (100×100) → OUTER
     - 1 proxy circolare d=5 contenuto → inner (heal NON lo promuove a foro)
@@ -84,7 +84,7 @@ class TestOuterConInner(unittest.TestCase):
         self.inner = _circle_proxy(50, 50, 2.5)
         self.clusters, self.trash = _make_builder().build([self.outer, self.inner])
 
-    def test_produce_una_part(self):
+    def test_produces_a_part(self):
         self.assertEqual(len(self.clusters), 1)
 
     def test_outer_area(self):
@@ -93,11 +93,11 @@ class TestOuterConInner(unittest.TestCase):
     def test_zero_holes(self):
         self.assertEqual(len(self.clusters[0].features("holes")), 0)
 
-    def test_un_inner(self):
+    def test_an_inner(self):
         self.assertEqual(len(self.clusters[0].inners), 1)
         self.assertEqual(self.clusters[0].inners[0].role, ContourRole.INNER)
 
-    def test_trash_vuoto(self):
+    def test_trash_empty(self):
         self.assertEqual(len(self.trash), 0)
 
 
@@ -119,13 +119,13 @@ class TestNestingFlattened(unittest.TestCase):
         piccolo = _circle_proxy(50, 50, 4)    # d=8
         self.clusters, self.trash = _make_builder().build([outer, medio, piccolo])
 
-    def test_produce_una_part(self):
+    def test_produces_a_part(self):
         self.assertEqual(len(self.clusters), 1)
 
     def test_zero_holes(self):
         self.assertEqual(len(self.clusters[0].features("holes")), 0)
 
-    def test_due_inners(self):
+    def test_two_inners(self):
         self.assertEqual(len(self.clusters[0].inners), 2)
 
 
@@ -149,15 +149,15 @@ class TestNestingDepthAndParent(unittest.TestCase):
         # (_build_tree sorts the proxies by area before placing them).
         self.medio, self.piccolo = self.cluster.inners
 
-    def test_outer_depth_zero_senza_genitore(self):
+    def test_outer_depth_zero_without_parent(self):
         self.assertEqual(self.cluster.outer.depth, 0)
         self.assertIsNone(self.cluster.outer.parent)
 
-    def test_figlio_diretto_depth_uno_genitore_e_outer(self):
+    def test_direct_child_depth_one_parent_is_outer(self):
         self.assertEqual(self.medio.depth, 1)
         self.assertIs(self.medio.parent, self.cluster.outer)
 
-    def test_nipote_depth_due_genitore_e_il_figlio_non_l_outer(self):
+    def test_grandchild_depth_two_parent_is_the_child_not_the_outer(self):
         self.assertEqual(self.piccolo.depth, 2)
         self.assertIs(self.piccolo.parent, self.medio)
         self.assertIsNot(self.piccolo.parent, self.cluster.outer)
@@ -178,13 +178,13 @@ class TestTrash(unittest.TestCase):
         self.floating = _make_open_proxy([(200, 200), (210, 200)], role=ContourRole.UNKNOWN)
         self.clusters, self.trash = _make_builder().build([self.outer, self.floating])
 
-    def test_una_part_prodotta(self):
+    def test_a_part_produced(self):
         self.assertGreaterEqual(len(self.clusters), 1)
 
     def test_floating_in_trash(self):
         self.assertIn(self.floating, self.trash)
 
-    def test_outer_non_in_trash(self):
+    def test_outer_not_in_trash(self):
         self.assertFalse(
             any(
                 getattr(t, "polygon", None) is not None
@@ -196,7 +196,7 @@ class TestTrash(unittest.TestCase):
 
 # --- Test 4 — segments copied from the proxy to the model ---
 
-class TestSegmentsCopiati(unittest.TestCase):
+class TestSegmentsCopied(unittest.TestCase):
     """HierarchyBuilder copies proxy.segments onto outer and inner.
 
     The segments are stubs — what matters is that they arrive intact."""
@@ -223,10 +223,10 @@ class TestSegmentsCopiati(unittest.TestCase):
 
         self.clusters, _ = _make_builder().build([outer, inner])
 
-    def test_outer_segments_copiati(self):
+    def test_outer_segments_copied(self):
         self.assertEqual(self.clusters[0].outer.segments, self.seg_outer)
 
-    def test_inner_segments_copiati(self):
+    def test_inner_segments_copied(self):
         self.assertEqual(self.clusters[0].inners[0].segments, self.seg_inner)
 
 
@@ -257,13 +257,13 @@ class TestCopiesOrderUnderMotion(unittest.TestCase):
         self.assertEqual(len(result.clusters), 2)
         return result.clusters[0].bbox[:2], point((0.0, 0.0))
 
-    def test_copie_affiancate_la_sinistra_prima(self):
+    def test_copies_side_by_side_the_left_first(self):
         for motion in self.MOTIONS:
             with self.subTest(motion=motion):
                 corner, origin = self._first_corner((20, 0), motion)
                 self.assertAlmostEqual(corner[0], origin[0], delta=1e-3)
 
-    def test_copie_impilate_la_bassa_prima(self):
+    def test_copies_stacked_the_low_first(self):
         for motion in self.MOTIONS:
             with self.subTest(motion=motion):
                 corner, origin = self._first_corner((0, 5), motion)
@@ -281,7 +281,7 @@ class TestTreeOrderUnderMotion(unittest.TestCase):
 
     MOTIONS = [(0.0, dx, dy) for dx in (0.0, 0.3, 13.1, 250.0, 2.5e6) for dy in (0.0, -9.3, -1.5e6)]
 
-    def test_due_fori_congruenti_restano_figli_della_piastra(self):
+    def test_two_congruent_holes_stay_children_of_the_plate(self):
         from tests.invariants import rigid
         rect = TestCopiesOrderUnderMotion._rectangle
         segs = rect(0, 0, 40, 10) + rect(2, 2, 10, 1.00000005) + rect(22, 2, 10, 1.00000005)

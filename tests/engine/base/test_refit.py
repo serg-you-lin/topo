@@ -25,7 +25,7 @@ class TestRefitJointsUnderMotion(unittest.TestCase):
         segment, _ = rigid(angle, dx, dy)
         return topo.load_segments([segment(LineSeg(start=a, end=b)) for a, b in zip(pts, pts[1:])]).edges
 
-    def test_una_giunzione_su_un_bordo_di_cella_resta_un_nodo(self):
+    def test_a_junction_on_a_cell_edge_stays_a_node(self):
         from collections import Counter
         from topo.core.base.refit import refit_tessellations
         # the motion puts the junction between the line and the arc midway between two 1e-3 cells
@@ -41,19 +41,19 @@ class TestRefitCornerFromTolerance(unittest.TestCase):
     """in the refit a corner is where no smooth curve passes within the tolerance,
     not a turn above 35° (a smoother number). Micro-cases."""
 
-    def test_spigolo_di_20_gradi_scritto_a_punti_resta_due_rette(self):
+    def test_corner_of_20_degrees_written_as_points_stays_two_lines(self):
         t = math.radians(20)
         pts = [(x * 0.05, 0.0) for x in range(41)]
         pts += [(2.0 + k * 0.05 * math.cos(t), k * 0.05 * math.sin(t)) for k in range(1, 41)]
         self.assertEqual(self._refit(pts), ["LineSeg", "LineSeg"])
 
-    def test_curva_liscia_che_non_e_un_arco_resta_una_curva(self):
+    def test_smooth_curve_that_is_not_an_arc_stays_a_curve(self):
         # a bump of 0.04 mm over 3 mm, the curvature changes (regr_01 at y 686): no corner
         pts = [(x * 0.02, 0.04 * math.sin(math.pi * x / 150) - 0.3 * (x / 150) ** 3) for x in range(151)]
         (kind,) = self._refit(pts)     # a single piece; arc or spline, within 0.02 both are fine
         self.assertNotEqual(kind, "LineSeg")
 
-    def test_retta_e_raccordo_tangente_senza_spigoli_finti(self):
+    def test_straight_and_tangent_fillet_without_fake_corners(self):
         # 2 mm of line, then a tangent quarter circle of radius 1: line + arc, no extra piece
         pts = [(x * 0.05, 0.0) for x in range(41)]
         pts += [(2.0 + math.sin(a / 40 * math.pi / 2), 1 - math.cos(a / 40 * math.pi / 2)) for a in range(1, 41)]
@@ -80,14 +80,14 @@ class TestRefitEllipse(unittest.TestCase):
         return (center[0] + a * math.cos(t) * c - b * math.sin(t) * s,
                 center[1] + a * math.cos(t) * s + b * math.sin(t) * c)
 
-    def test_ellisse_intera_scritta_a_punti_diventa_una_ellisse(self):
+    def test_whole_ellipse_written_as_points_becomes_an_ellipse(self):
         pts = [self._ellipse(2 * math.pi * k / 300) for k in range(301)]   # sides below 0.1 mm
         (seg,) = _refit_segments(pts)
         self.assertIsInstance(seg, EllipseSeg)
         self.assertAlmostEqual(math.hypot(*seg.major_axis), 4.0, delta=SAME_POINT)
         self.assertAlmostEqual(seg.ratio, 0.4, delta=SAME_POINT)
 
-    def test_arco_d_ellisse_tiene_i_capi_nei_due_versi(self):
+    def test_ellipse_arc_keeps_the_ends_in_both_directions(self):
         for sweep in (2.0, -2.0):
             pts = [self._ellipse(0.3 + sweep * k / 100) for k in range(101)]
             (seg,) = _refit_segments(pts)
@@ -97,7 +97,7 @@ class TestRefitEllipse(unittest.TestCase):
             self.assertLessEqual(math.dist(end, pts[-1]), FLOAT_NOISE, sweep)
             self.assertAlmostEqual(seg._sweep(), 2.0, delta=SAME_POINT, msg=sweep)
 
-    def test_ramo_d_iperbole_scritto_a_punti_diventa_un_iperbole(self):
+    def test_hyperbola_branch_written_as_points_becomes_a_hyperbola(self):
         # the conic the fit finds says which; sides below 0.1 mm like a real refit
         from topo.primitives import HyperbolaSeg
         hyp = HyperbolaSeg(center=(1000.0, 500.0), major_axis=(3.0, 1.0), ratio=0.6, start_param=-0.9, end_param=1.1)
@@ -108,7 +108,7 @@ class TestRefitEllipse(unittest.TestCase):
         self.assertLessEqual(math.dist(start, pts[0]), FLOAT_NOISE)
         self.assertLessEqual(math.dist(end, pts[-1]), FLOAT_NOISE)
 
-    def test_curva_che_non_e_una_conica_non_diventa_ellisse(self):
+    def test_curve_that_is_not_a_conic_does_not_become_an_ellipse(self):
         pts = [(x * 0.05, math.sin(x / 80) + 0.12 * math.sin(x / 20)) for x in range(300)]
         self.assertFalse(any(isinstance(s, EllipseSeg) and not isinstance(s, CircleSeg) for s in _refit_segments(pts)))
 
@@ -127,19 +127,19 @@ def _circles(segments):
 class TestRefitCircleRings(unittest.TestCase):
     """a ring lying wholly within 0.02 mm of a circle and going round it is that circle."""
 
-    def test_foro_a_lati_lunghi_diventa_cerchio(self):
+    def test_hole_with_long_sides_becomes_circle(self):
         # brute force (seed 42): r 1.424 in 71 sides of 0.14 mm, beyond the short side
         (c,) = _circles(_polygon((5, 5), 1.424, 64))
         self.assertAlmostEqual(c.radius, 1.424, delta=0.002)
 
-    def test_foro_con_un_buco_e_un_pezzo_che_sporge(self):
+    def test_hole_with_a_gap_and_a_protruding_piece(self):
         ring = _polygon((5, 5), 1.0, 60)
         a = ring[7]
         ring[7] = LineSeg(start=a.start, end=(a.start[0] + 0.9 * (a.end[0] - a.start[0]), a.start[1] + 0.9 * (a.end[1] - a.start[1])))
         ring.append(LineSeg(start=ring[20].start, end=(ring[20].start[0] + 0.05, ring[20].start[1])))
         self.assertEqual(len(_circles(ring)), 1)
 
-    def test_pezzo_doppio_che_corre_sul_cerchio_va_col_cerchio(self):
+    def test_double_piece_running_on_the_circle_goes_with_the_circle(self):
         # seed 42: a double stretch along the loop, left aside, broke the circle into arc + line
         ring = _polygon((5, 5), 1.0, 60)
         a, b = ring[10].start, ring[10].end
@@ -149,11 +149,11 @@ class TestRefitCircleRings(unittest.TestCase):
             self.assertEqual([[type(s) for s in ct.segments] for cl in faces.clusters for ct in [cl.outer, *cl.inners]],
                              [[CircleSeg]])
 
-    def test_poligono_vero_resta(self):
+    def test_true_polygon_remains(self):
         # hexagon of r 5: at mid-side it departs 0.67 mm from the circle
         self.assertEqual(_circles(_polygon((0, 0), 5.0, 6)), [])
 
-    def test_mezzo_giro_non_diventa_cerchio(self):
+    def test_half_turn_does_not_become_a_circle(self):
         half = _polygon((0, 0), 1.0, 60)[:30]
         net = topo.heal(topo.load_segments(half + [LineSeg(start=half[-1].end, end=half[0].start)]), max_gap=0.1)
         self.assertEqual([s for cl in net.faces().clusters for s in cl.outer.segments if (isinstance(s, CircleSeg) and s.full)], [])

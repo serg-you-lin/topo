@@ -52,7 +52,7 @@ def _layers(out):
 
 class TestAttachedExport(unittest.TestCase):
 
-    def test_elemento_con_segments_sul_layer_del_suo_ruolo(self):
+    def test_element_with_segments_on_its_role_layer(self):
         doc, result = _plate()
         cluster = result.clusters[0]
         single = next(i for i in cluster.inners if abs(to_shapely(i).area - 3.1416 * 16) < 1)
@@ -61,7 +61,7 @@ class TestAttachedExport(unittest.TestCase):
         layers = _layers(topo_dxf.to_dxf(result, doc))
         self.assertEqual(layers.count("my_role"), 1)
 
-    def test_elemento_con_contours_scrive_ogni_contorno(self):
+    def test_element_with_contours_writes_every_contour(self):
         doc, result = _plate()
         cluster = result.clusters[0]
         pair = [i for i in cluster.inners if abs(to_shapely(i).centroid.x - 20) < 1e-6]
@@ -70,7 +70,7 @@ class TestAttachedExport(unittest.TestCase):
         cluster.overlay.attach("my_marks", [_Composite(role="my_seat", contours=pair)])
         self.assertEqual(_layers(topo_dxf.to_dxf(result, doc)).count("my_seat"), 2)
 
-    def test_senza_ruolo_o_senza_geometria_si_salta(self):
+    def test_without_role_or_without_geometry_is_skipped(self):
         doc, result = _plate()
         cluster = result.clusters[0]
         before = len(_layers(topo_dxf.to_dxf(result, doc)))

@@ -65,7 +65,7 @@ def _annotations(obj) -> list:
 
 
 @pytest.mark.parametrize("qualname,obj", list(_public_names()), ids=lambda v: v if isinstance(v, str) else "")
-def test_nessuna_firma_pubblica_nomina_shapely(qualname, obj):
+def test_no_public_signature_names_shapely(qualname, obj):
     found = [a for a in _annotations(obj) if SHAPELY_WORDS.search(a)]
     assert not found, f"{qualname}: {found}"
 
@@ -117,14 +117,14 @@ def _plate():
     return topo.load_segments(segments)
 
 
-def test_faces_e_outlines_non_portano_shapely():
+def test_faces_and_outlines_carry_no_shapely():
     doc = _plate()
     for name, result in (("faces", topo.heal(doc).faces()), ("outlines", topo.heal(doc, max_gap=0.5).outlines())):
         assert result.clusters
         assert _shapely_in(result, name) == []
 
 
-def test_un_disegno_vero_non_porta_shapely():
+def test_a_real_drawing_carries_no_shapely():
     doc = topo_dxf.load_dxf(str(DATA / "golden_faces" / "example_4_polylines.dxf"))
     result = topo.heal(doc).faces()
     assert result.clusters
@@ -132,7 +132,7 @@ def test_un_disegno_vero_non_porta_shapely():
     assert _shapely_in(topo.split(result), "split") == []
 
 
-def test_passi_e_fatti_non_portano_shapely():
+def test_steps_and_facts_carry_no_shapely():
     doc = _plate()
     edges = topo.experimental.split_at_crossings(doc.edges, 0.01).pieces
     assert _shapely_in(topo.experimental.outer_face(edges), "outer_face") == []

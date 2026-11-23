@@ -22,7 +22,7 @@ def _square(c, half):
 
 class TestConcentricGroups(unittest.TestCase):
 
-    def test_due_cerchi_concentrici_e_uno_isolato(self):
+    def test_two_concentric_circles_and_an_isolated_one(self):
         small, big, alone = _circle((0, 0), 2), _circle((0.05, 0), 4), _circle((20, 0), 2)
         groups = concentric_groups([big, alone, small], tolerance=0.1)
         self.assertEqual(len(groups), 2)
@@ -31,21 +31,21 @@ class TestConcentricGroups(unittest.TestCase):
         self.assertEqual(groups[0].center, (0, 0))
         self.assertEqual(groups[1].items, (alone,))
 
-    def test_fuori_tolleranza_non_si_uniscono(self):
+    def test_outside_tolerance_do_not_join(self):
         a, b = _circle((0, 0), 2), _circle((0.5, 0), 4)
         self.assertEqual(len(concentric_groups([a, b], tolerance=0.1)), 2)
         self.assertEqual(len(concentric_groups([a, b], tolerance=1.0)), 1)
 
-    def test_i_non_cerchi_non_compaiono(self):
+    def test_non_circles_do_not_appear(self):
         groups = concentric_groups([_square((0, 0), 5), _circle((0, 0), 2)], tolerance=0.1)
         self.assertEqual([len(g.items) for g in groups], [1])
 
-    def test_tre_cerchi_dal_minore_al_maggiore(self):
+    def test_three_circles_from_the_smaller_to_the_larger(self):
         rings = [_circle((0, 0), r) for r in (6, 2, 4)]
         (group,) = concentric_groups(rings, tolerance=0.1)
         self.assertEqual(group.diameters, (4, 8, 12))
 
-    def test_api_pubblica(self):
+    def test_public_api(self):
         self.assertIs(topo.geometry.concentric_groups, concentric_groups)
         self.assertIs(topo.geometry.arcs_around, arcs_around)
 
@@ -62,7 +62,7 @@ MOTIONS = [(0.0, (0, 0)), (math.pi, (0, 0)), (2.0, (1e5, 3e4)), (0.5, (-7, 3)),
 class TestConcentricGroupsUnderMotion(unittest.TestCase):
     """the partition does not depend on the frame."""
 
-    def test_il_cerchio_grande_va_col_centro_piu_vicino(self):
+    def test_the_large_circle_goes_with_the_nearest_centre(self):
         # A and B equal at 0.15 (two groups); C larger at 0.06 from A and 0.09 from B:
         # it enters A. Before, it entered the group born first, that is the centre with
         # the smaller x, and a 180° rotation sent it to B.
@@ -73,7 +73,7 @@ class TestConcentricGroupsUnderMotion(unittest.TestCase):
                 parts = {tuple(items.index(list(i)) for i in g.items) for g in concentric_groups(items, tolerance=0.1)}
                 self.assertEqual(parts, {(0, 2), (1,)})
 
-    def test_a_pari_diametro_il_riferimento_e_il_primo_dato(self):
+    def test_at_equal_diameter_the_reference_is_the_first_given(self):
         # A and B equal at 0.05 (one group): the group's centre is A's, the first
         # given, in every frame; D at 0.09 from A and 0.14 from B enters it.
         spec = [((0, 0), 2), ((0.05, 0), 2), ((-0.09, 0), 4)]
@@ -84,7 +84,7 @@ class TestConcentricGroupsUnderMotion(unittest.TestCase):
                 self.assertEqual(group.items, (items[0], items[1], items[2]))
                 self.assertEqual(group.center, items[0][0].center)
 
-    def test_gruppi_impilati_restano_in_ordine_di_y(self):
+    def test_stacked_groups_stay_in_y_order(self):
         # Two holes one above the other, same x at rest: a translation moves the x's by
         # one ulp, the order stays that of the y's.
         for shift in [(0, 0), (0.1, 0), (1e5 + 0.3, 7), (-3e5 + 0.7, 0)]:
@@ -100,12 +100,12 @@ class TestArcsAround(unittest.TestCase):
     def _arc(self, c, r, sweep_deg):
         return CircleSeg(center=c, radius=r, start_angle=0.0, end_angle=math.radians(sweep_deg))
 
-    def test_arco_di_tre_quarti(self):
+    def test_three_quarter_arc(self):
         (found,) = arcs_around((0, 0), 2.5, [self._arc((0, 0), 3, 270)], tolerance=0.1)
         self.assertAlmostEqual(found.sweep, 270)
         self.assertAlmostEqual(found.radius_ratio, 1.2)
 
-    def test_solo_archi_piu_grandi_e_concentrici(self):
+    def test_only_larger_and_concentric_arcs(self):
         arcs = [self._arc((0, 0), 2, 270),       # smaller
                 self._arc((5, 0), 3, 270),       # altro centro
                 self._arc((0, 0), 10, 90),
@@ -113,10 +113,10 @@ class TestArcsAround(unittest.TestCase):
         found = arcs_around((0, 0), 2.5, arcs, tolerance=0.1)
         self.assertEqual([a.arc for a in found], [arcs[3], arcs[2]])
 
-    def test_ignora_cio_che_non_e_arco(self):
+    def test_ignores_what_is_not_an_arc(self):
         self.assertEqual(arcs_around((0, 0), 1, [CircleSeg(center=(0, 0), radius=2)], tolerance=0.1), [])
 
-    def test_arco_orario(self):
+    def test_clockwise_arc(self):
         arc = CircleSeg(center=(0, 0), radius=3, start_angle=0.0, end_angle=math.radians(90), ccw=False)
         (found,) = arcs_around((0, 0), 2, [arc], tolerance=0.1)
         self.assertAlmostEqual(found.sweep, 270)

@@ -20,30 +20,30 @@ class TestShownText(unittest.TestCase):
     """The string of a DXF dimension: the file's field with `<>` replaced by the
     number the file draws; topo does not compute numbers."""
 
-    def test_override_con_la_misura_disegnata(self):
+    def test_override_with_the_drawn_measure(self):
         # the symbol arrives as a fragment of its own ("n" in a symbol font): the override holds
         self.assertEqual(_shown_text("Ø<>", _texts("n", "6.5")), "Ø6.5")
 
-    def test_override_usa_la_precisione_del_disegno(self):
+    def test_override_uses_the_drawings_precision(self):
         self.assertEqual(_shown_text("M<>", _texts("M", "5")), "M5")
 
-    def test_numero_dentro_la_stringa_del_blocco(self):
+    def test_number_inside_the_block_string(self):
         # the block writes "R5", not an isolated "5": the number is taken from there
         self.assertEqual(_shown_text("R<>", _texts("R5")), "R5")
         self.assertEqual(_shown_text("Ø<>", _texts("n4.2")), "Ø4.2")
         self.assertEqual(_shown_text("(<>)", _texts("41°")), "(41)")
 
-    def test_numero_scritto_nell_override_saltato(self):
+    def test_number_written_in_the_override_skipped(self):
         # "0.2" is already written by the override: the measure is the other number
         self.assertEqual(_shown_text("<>±0.2", _texts("10±0.2")), "10±0.2")
 
-    def test_nessun_numero_disegnato_lascia_il_segnaposto(self):
+    def test_no_drawn_number_leaves_the_placeholder(self):
         # dimension with no block (QCAD): the number is not in the file
         self.assertEqual(_shown_text("R<>", RenderedGeometry()), "R<>")
         self.assertEqual(_shown_text("(<>)", RenderedGeometry()), "(<>)")
         self.assertEqual(_shown_text(None, RenderedGeometry()), "<>")
 
-    def test_frammenti_uniti(self):
+    def test_fragments_joined(self):
         self.assertEqual(_shown_text(None, _texts("∅5,3", "+0,05^-0")), "∅5,3+0,05^-0")
 
 
@@ -56,11 +56,11 @@ class TestWrittenByHand(unittest.TestCase):
     """A dimension with the number written by hand has no decimals or factor: the
     number is the text as written, topo does not compare it with the points."""
 
-    def test_numero_scritto(self):
+    def test_written_number(self):
         self.assertTrue(written_by_hand(_dimension("2000.00")))
         self.assertTrue(written_by_hand(_dimension("R5")))
 
-    def test_segnaposto_o_vuoto(self):
+    def test_placeholder_or_empty(self):
         for text in ("", "<>", "R<>", "<>±0.2", " "):
             self.assertFalse(written_by_hand(_dimension(text)), text)
 

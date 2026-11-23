@@ -48,7 +48,7 @@ CONVERGENCE = {
     ("topo/core/primitives/formula.py", "_MAX_DEPTH"): "dimezzamenti di un tratto: 2^-30 del tratto",
 }
 
-# to be removed (TODO "Numbers of the primitives that escaped precision", points b and c): when the number disappears, test_le_eccezioni_esistono_ancora asks to remove the line
+# to be removed (TODO "Numbers of the primitives that escaped precision", points b and c): when the number disappears, test_the_exceptions_still_exist asks to remove the line
 PENDING: dict = {}
 EXCEPTIONS = {**NOT_THRESHOLDS, **CONVERGENCE, **PENDING}
 PRECISION = "topo/precision.py"
@@ -105,24 +105,24 @@ def thresholds() -> list:
 
 class TestOneThreshold(unittest.TestCase):
 
-    def test_ogni_soglia_sta_in_precision(self):
+    def test_every_threshold_is_in_precision(self):
         found = sorted({(f, n, v) for f, n, v in thresholds()
                         if f != PRECISION and (f, n) not in EXCEPTIONS})
         self.assertEqual(found, [], "soglie scritte fuori da topo/precision.py: "
                                     "metterle lì, col loro perché (D269)")
 
-    def test_le_eccezioni_esistono_ancora(self):
+    def test_the_exceptions_still_exist(self):
         found = {(f, n) for f, n, _ in thresholds()}
         self.assertEqual(sorted(set(EXCEPTIONS) - found), [], "eccezione senza più il suo numero: toglierla")
 
-    def test_i_nomi_di_precision_sono_quelli_decisi(self):
+    def test_the_names_of_precision_are_those_decided(self):
         import topo.precision
         found = {n for n in vars(topo.precision) if n.isupper()
                  and type(getattr(topo.precision, n)) in (int, float)}
         self.assertEqual(sorted(found ^ PRECISION_NAMES), [],
                          "soglia aggiunta o tolta in precision: deciderlo in MAP e aggiornare l'elenco")
 
-    def test_le_soglie_non_si_riassegnano(self):
+    def test_the_thresholds_are_not_reassigned(self):
         import topo
         with self.assertRaises(AttributeError):
             topo.precision.SAME_POINT = 0.1

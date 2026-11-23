@@ -23,50 +23,50 @@ def _square(x, y, size=10):
 
 class TestTouchingGroups(unittest.TestCase):
 
-    def test_due_quadrati_lontani_due_gruppi(self):
+    def test_two_far_squares_two_groups(self):
         groups = touching_groups(_square(0, 0) + _square(100, 0), gap_tolerance=5)
         self.assertEqual(len(groups), 2)
         self.assertEqual([len(i.edges) for i in groups], [4, 4])
 
-    def test_gap_sotto_tolleranza_unisce(self):
+    def test_gap_below_tolerance_joins(self):
         # 3mm apart, tolerance 5: same group even without touching
         groups = touching_groups(_square(0, 0) + _square(13, 0), gap_tolerance=5)
         self.assertEqual(len(groups), 1)
         self.assertEqual(groups[0].bbox, (0.0, 0.0, 23.0, 10.0))
 
-    def test_catena_transitiva(self):
+    def test_transitive_chain(self):
         # A vicino a B, B vicino a C, A lontano da C: un solo gruppo
         edges = _square(0, 0) + _square(12, 0) + _square(24, 0)
         self.assertEqual(len(touching_groups(edges, gap_tolerance=3)), 1)
 
-    def test_vicino_in_x_lontano_in_y(self):
+    def test_near_in_x_far_in_y(self):
         groups = touching_groups(_square(0, 0) + _square(0, 50), gap_tolerance=5)
         self.assertEqual(len(groups), 2)
 
-    def test_foro_vicino_al_lato_stesso_gruppo(self):
+    def test_hole_near_the_side_same_group(self):
         hole = Edge(role="unknown", start=(3, 5), end=(3, 5),
                     segment=CircleSeg(center=(2, 5), radius=1))
         groups = touching_groups(_square(0, 0) + [hole], gap_tolerance=1.5)
         self.assertEqual(len(groups), 1)
 
-    def test_foro_lontano_dai_lati_gruppo_a_se(self):
+    def test_hole_far_from_the_sides_a_group_of_its_own(self):
         # only nearness: that the hole is INSIDE is told by the outer contour, afterwards
         hole = Edge(role="unknown", start=(52, 50), end=(52, 50),
                     segment=CircleSeg(center=(50, 50), radius=2))
         groups = touching_groups(_square(0, 0, 100) + [hole], gap_tolerance=5)
         self.assertEqual(len(groups), 2)
 
-    def test_diagonale_lunga_non_unisce_per_bbox(self):
+    def test_long_diagonal_does_not_join_by_bbox(self):
         # the diagonal's bbox covers the square, the true distance does not
         diag = _line((0, 0), (100, 100))
         groups = touching_groups([diag] + _square(70, 5), gap_tolerance=2)
         self.assertEqual(len(groups), 2)
 
-    def test_ordinate_per_area(self):
+    def test_sorted_by_area(self):
         groups = touching_groups(_square(0, 0, 5) + _square(100, 0, 20), gap_tolerance=1)
         self.assertEqual(groups[0].width, 20)
 
-    def test_lista_vuota(self):
+    def test_list_void(self):
         self.assertEqual(touching_groups([], gap_tolerance=1), [])
 
 
@@ -94,7 +94,7 @@ class TestGapOnTrueCurvesUnderMotion(unittest.TestCase):
             edges.append(Edge(role="unknown", start=node_point(start), end=node_point(end), segment=seg))
         return edges
 
-    def test_la_distanza_vera_decide_a_ogni_moto(self):
+    def test_the_true_distance_decides_at_every_motion(self):
         from tests.invariants import rigid
         for distance, expected in ((0.4996, 1), (0.5004, 2)):
             for motion in self.MOTIONS:
@@ -102,7 +102,7 @@ class TestGapOnTrueCurvesUnderMotion(unittest.TestCase):
                 with self.subTest(distance=distance, motion=motion):
                     self.assertEqual(len(touching_groups(self._pieces(distance, move), gap_tolerance=0.5)), expected)
 
-    def test_al_posto_la_corda_sta_oltre_la_soglia(self):
+    def test_in_place_the_chord_is_beyond_the_threshold(self):
         # the proof is not empty: at half a step the discretization measures more than 0.5
         #
         from tests.invariants import rigid

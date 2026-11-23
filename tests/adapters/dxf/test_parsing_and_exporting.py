@@ -299,7 +299,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertAlmostEqual(parsed.end_param, 0.0)
         self.assertFalse(parsed.ccw)
 
-    def test_007_parse_lwpolyline_senza_bulge(self):
+    def test_007_parse_lwpolyline_without_bulge(self):
         """LWPOLYLINE without bulge → LineSeg."""
         parsed = DxfEntityDispatcher(
             make_lwpolyline([(0, 0, 0), (10, 0, 0), (10, 10, 0)], is_closed=False)
@@ -308,7 +308,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertEqual(len(parsed), 2)  # N-1 segmenti
         self.assertIsInstance(parsed[0], LineSeg)
 
-    def test_008_parse_lwpolyline_con_bulge(self):
+    def test_008_parse_lwpolyline_with_bulge(self):
         """LWPOLYLINE with bulge → CircleSeg."""
         parsed = DxfEntityDispatcher(
             make_lwpolyline([
@@ -331,7 +331,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
         self.assertAlmostEqual(parsed[1].center[1], 5.0)
         self.assertAlmostEqual(parsed[1].radius, 5.0)
 
-    def test_009_parse_lwpolyline_chiusa(self):
+    def test_009_parse_lwpolyline_closed(self):
         """Closed LWPOLYLINE: N points → N segments."""
         parsed = DxfEntityDispatcher(
             make_lwpolyline([
@@ -373,7 +373,7 @@ class TestDxfEntityDispatcher(unittest.TestCase):
 class TestSegmentsFromLoop(unittest.TestCase):
     """Test of segments_from_loop on an Edge loop."""
 
-    def test_001_loop_vuoto(self):
+    def test_001_loop_void(self):
         """Loop vuoto → lista vuota."""
         self.assertEqual(segments_from_loop([]), [])
 
@@ -384,7 +384,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertIsInstance(result[0], LineSeg)
 
-    def test_003_loop_quadrato(self):
+    def test_003_loop_quadrate(self):
         """Loop quadrato → 4 LineSeg."""
         primitives = segments_from_loop(make_square_loop(100.0))
         self.assertEqual(len(primitives), 4)
@@ -393,7 +393,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertEqual(primitives[0].start, (0.0, 0.0))
         self.assertEqual(primitives[0].end, (100.0, 0.0))
 
-    def test_004_loop_con_arco(self):
+    def test_004_loop_with_arc(self):
         """Loop with an ARC → CircleSeg."""
         arc = make_arc(50, 0, 50, 0, 180)
         loop = [
@@ -405,7 +405,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertIsInstance(result[0], CircleSeg)
         self.assertIsInstance(result[1], LineSeg)
 
-    def test_005_loop_con_lwpolyline(self):
+    def test_005_loop_with_lwpolyline(self):
         """Loop with an LWPOLYLINE → segments."""
         polyline = make_lwpolyline([
             (0, 0, 0),
@@ -421,7 +421,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertIsInstance(result[1], CircleSeg)  # bulge convertito
         self.assertIsInstance(result[2], LineSeg)
 
-    def test_006_loop_con_lwpolyline_reversed(self):
+    def test_006_loop_with_lwpolyline_reversed(self):
         """Loop with a reversed LWPOLYLINE → negated bulge and inverted points."""
         polyline = make_lwpolyline([
             (0, 0, 0),
@@ -458,7 +458,7 @@ class TestSegmentsFromLoop(unittest.TestCase):
         self.assertAlmostEqual(end1[0], 0.0)
         self.assertAlmostEqual(end1[1], 0.0)
 
-    def test_007_loop_con_spline(self):
+    def test_007_loop_with_spline(self):
         """Loop with a SPLINE → BSplineSeg."""
         spline = make_spline_entity([(0, 0), (0, 50), (0, 100)])
         loop = [
@@ -501,7 +501,7 @@ class TestArcToBulge(unittest.TestCase):
         bulge = arc_seg_to_bulge(arc)
         self.assertAlmostEqual(bulge, -math.tan(math.pi/8), places=6)
 
-    def test_002b_bulge_arco_invertito_non_e_il_complemento(self):
+    def test_002b_bulge_inverted_arc_is_not_the_complement(self):
         """Regression: a CW arc has as swept angle the real stretch start→end walked
         clockwise, NOT the complement to 2π.
 
@@ -525,13 +525,13 @@ class TestArcToBulge(unittest.TestCase):
         bulge = arc_seg_to_bulge(arc)
         self.assertAlmostEqual(bulge, math.tan(math.pi/4), places=6)
 
-    def test_004_bulge_negativo_per_cw(self):
+    def test_004_negative_bulge_for_cw(self):
         """Arco CW produce bulge negativo."""
         arc = CircleSeg(center=(0, 0), radius=10, start_angle=math.pi, end_angle=0, ccw=False)
         bulge = arc_seg_to_bulge(arc)
         self.assertLess(bulge, 0)
 
-    def test_005_roundtrip_arco_invertito(self):
+    def test_005_roundtrip_inverted_arc(self):
         """A CircleSeg and its reversed version (as segments_from_loop produces it when
         the loop is oriented CCW) must discretize on the same set of points and
         produce bulges of equal modulus: no "upside-down" arc in the write-back."""
@@ -579,7 +579,7 @@ class TestSegmentsToPtsWithBulge(unittest.TestCase):
         self.assertAlmostEqual(result[0][1], 0.0)   # y start
         self.assertAlmostEqual(result[0][4], math.tan(math.pi/8), places=6)
 
-    def test_003_arc_con_start_angle_diverso(self):
+    def test_003_arc_with_different_start_angle(self):
         """CircleSeg with start_angle ≠ 0."""
         arc = CircleSeg(
             center=(5, 5), radius=10,
@@ -615,14 +615,14 @@ class TestWriteContourToMsp(unittest.TestCase):
     def setUp(self):
         self.msp = MockMSP()
 
-    def test_001_segments_vuoti(self):
+    def test_001_segments_void(self):
         """Segments vuoti → None."""
         contour = MagicMock()
         contour.segments = []
         result = write_segments(contour.segments, self.msp, "TEST")
         self.assertIsNone(result)
 
-    def test_002_segments_con_spline(self):
+    def test_002_segments_with_spline(self):
         """Spline singola → esportata come SPLINE nativa."""
         contour = MagicMock()
         contour.segments = [
@@ -636,7 +636,7 @@ class TestWriteContourToMsp(unittest.TestCase):
         self.assertEqual(entity['entity'].dxf.degree, 0)
         self.assertEqual(entity['entity'].control_points, [(0.0, 0.0, 0.0), (10.0, 0.0, 0.0)])
 
-    def test_002b_segments_con_ellisse_chiusa(self):
+    def test_002b_segments_with_closed_ellipse(self):
         """Ellisse chiusa singola → esportata come ELLIPSE nativa, mai spline."""
         contour = MagicMock()
         contour.segments = [
@@ -668,7 +668,7 @@ class TestWriteContourToMsp(unittest.TestCase):
         self.assertEqual(entity['type'], 'LWPOLYLINE')
         self.assertEqual(len(entity['points']), 4)
 
-    def test_004_con_arc_segments(self):
+    def test_004_with_arc_segments(self):
         """With CircleSeg → LWPOLYLINE with bulge."""
         contour = MagicMock()
         contour.segments = [
@@ -698,7 +698,7 @@ class TestWriteContourToMsp(unittest.TestCase):
         entity = self.msp.entities[0]
         self.assertEqual(entity['type'], 'POLYLINE2D')
 
-    def test_006_salto_resta_visibile(self):
+    def test_006_leap_remains_visible(self):
         """A ring with a jump (anch_01: a 0.05 dash removed) is not written closed: the
         closed polyline would draw a crooked side over the hole and the jump would
         vanish from the DXF."""
@@ -714,7 +714,7 @@ class TestWriteContourToMsp(unittest.TestCase):
         self.assertIn((171.0068, 90.3906), points)   # the end of the bottom side
         self.assertIn((171.0068, 90.4406), points)   # the start of the next side
 
-    def test_007_salto_dentro_un_tratto_aperto(self):
+    def test_007_leap_within_an_open_stretch(self):
         """write_open_segments splits the polyline where a segment does not start at the
         end of the previous: no vertex skips the end of a stretch."""
         segments = [

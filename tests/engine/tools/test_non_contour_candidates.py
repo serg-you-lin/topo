@@ -16,9 +16,9 @@ def _make_edge(p1, p2):
 
 class TestNonContourCandidates(unittest.TestCase):
 
-    def test_diagonale_interna_e_candidata(self):
+    def test_inner_diagonal_is_a_candidate(self):
         # rectangle with an inner diagonal — same scheme as
-        # test_non_contour_edges.test_linea_interna_confermata, but through the public
+        # test_non_contour_edges.test_inner_line_confirmed, but through the public
         # API on a Document.
         rect = [
             _make_edge((0.0, 0.0), (1.0, 0.0)),
@@ -33,7 +33,7 @@ class TestNonContourCandidates(unittest.TestCase):
 
         self.assertEqual([id(e) for e in candidates], [id(diagonal)])
 
-    def test_contorno_semplice_nessun_candidato(self):
+    def test_simple_contour_no_candidate(self):
         # triangle — no branching node, nothing to report
         tri = [
             _make_edge((0.0, 0.0), (1.0, 0.0)),
@@ -44,7 +44,7 @@ class TestNonContourCandidates(unittest.TestCase):
 
         self.assertEqual(topo.non_contour_candidates(doc), [])
 
-    def test_lato_concavo_fra_due_pieghe_non_e_candidato(self):
+    def test_concave_side_between_two_bends_is_not_a_candidate(self):
         # a U: the two bends go from (0,10)/(30,10) to the vertices of the notch's
         # bottom, (10,10)/(20,10); the bottom (10,10)-(20,10) lies inside the convex hull
         # but borders the outside: it is contour
@@ -57,7 +57,7 @@ class TestNonContourCandidates(unittest.TestCase):
 
         self.assertEqual({id(e) for e in topo.non_contour_candidates(doc)}, {id(e) for e in bends})
 
-    def test_edge_restituiti_sono_mutabili_in_place(self):
+    def test_returned_edges_are_mutable_in_place(self):
         # The point of the function: the caller must be able to set .role on the
         # returned objects and see it reflected on doc.edges, to pass them to heal()
         # already labelled.

@@ -21,7 +21,7 @@ def _result(reading="faces"):
     return net.faces() if reading == "faces" else net.outlines()
 
 
-def test_dice_da_dove_arriva_e_come_e_letto():
+def test_says_where_it_comes_from_and_how_it_is_read():
     data = json.loads(topo.to_json(_result()))
     assert data["source_format"] == "geometry"
     assert data["reading"] == "faces"
@@ -29,7 +29,7 @@ def test_dice_da_dove_arriva_e_come_e_letto():
     assert json.loads(topo.to_json(_result("outlines")))["reading"] == "outlines"
 
 
-def test_fatti_esatti_senza_coordinate_ne_processo():
+def test_exact_facts_without_coordinates_or_process():
     cluster = json.loads(topo.to_json(_result()))["clusters"][0]
     assert set(cluster) == {"label", "area", "outer_perimeter", "inner_perimeter",
                             "inner_count", "bbox", "overlay"}
@@ -40,18 +40,18 @@ def test_fatti_esatti_senza_coordinate_ne_processo():
     assert cluster["bbox"] == {"minx": -50, "miny": -30, "maxx": 50, "maxy": 30}
 
 
-def test_extra_aggiunge_i_campi_del_consumatore():
+def test_extra_adds_the_consumers_fields():
     data = json.loads(topo.to_json(_result(), extra=lambda c: {"material": "x", "code": c.label}))
     assert data["clusters"][0]["material"] == "x"
     assert data["clusters"][0]["code"] == "piastra"
 
 
-def test_extra_non_sostituisce_un_campo_di_topo():
+def test_extra_does_not_replace_a_topo_field():
     with pytest.raises(ValueError, match="area"):
         topo.to_json(_result(), extra=lambda c: {"area": 0})
 
 
-def test_save_json_scrive_lo_stesso_testo(tmp_path):
+def test_save_json_writes_the_same_text(tmp_path):
     result = _result()
     path = tmp_path / "out.json"
     topo.save_json(result, str(path))

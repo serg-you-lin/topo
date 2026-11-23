@@ -32,25 +32,25 @@ def _codes(segments: list) -> dict:
 
 class TestKnownDefectWarnings(unittest.TestCase):
 
-    def test_una_spline_che_incrocia_se_stessa(self):
+    def test_a_spline_crossing_itself(self):
         found = _codes([_spline([(0, 0), (100, 0), (100, 100), (0, 100), (20, -10), (10, -10), (0, 0)])])
         self.assertIn("self-crossing", found)
         (x, y), = found["self-crossing"].points
         self.assertAlmostEqual(x, 200 / 11, places=3)
         self.assertAlmostEqual(y, 0.0, places=3)
 
-    def test_il_nodo_di_una_curva_chiusa_su_un_altra(self):
+    def test_the_node_of_a_closed_curve_on_another(self):
         found = _codes([_spline(_ngon(0, 0, 50)), _spline(_ngon(90, 0, 40, math.pi))])
         self.assertIn("closed-touch", found)
         self.assertTrue(all(math.dist(p, (50, 0)) < 1e-6 for p in found["closed-touch"].points))
 
-    def test_ogni_lettura_copia_l_avviso(self):
+    def test_every_reading_copies_the_warning(self):
         network = topo.heal(topo.load_segments([_spline(_ngon(0, 0, 50)), _spline(_ngon(90, 0, 40, math.pi))]))
         for reading in ("faces", "outlines"):
             with self.subTest(reading=reading):
                 self.assertIn("closed-touch", {w.code for w in getattr(network, reading)().warnings})
 
-    def test_un_disegno_pulito_non_avvisa(self):
+    def test_a_clean_drawing_does_not_warn(self):
         found = _codes(topo.geometry.rectangle(200, 100) + topo.geometry.circle(10))
         self.assertNotIn("self-crossing", found)
         self.assertNotIn("closed-touch", found)

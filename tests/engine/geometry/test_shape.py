@@ -35,21 +35,21 @@ def _stadium(c1, c2, r):
 
 class TestContourShape(unittest.TestCase):
 
-    def test_cerchio(self):
+    def test_circle(self):
         s = contour_shape([CircleSeg(center=(10, 20), radius=3)])
         self.assertEqual(s.kind, CIRCLE)
         self.assertAlmostEqual(s.diameter, 6)
         self.assertEqual(s.center, (10, 20))
         self.assertIsNone(s.angle)
 
-    def test_cerchio_in_quattro_archi(self):
+    def test_circle_in_four_arcs(self):
         arcs = [CircleSeg(center=(0, 0), radius=5, start_angle=k * math.pi / 2,
                        end_angle=(k + 1) * math.pi / 2) for k in range(4)]
         s = contour_shape(arcs)
         self.assertEqual(s.kind, CIRCLE)
         self.assertAlmostEqual(s.diameter, 10)
 
-    def test_stadio(self):
+    def test_stadium_shape(self):
         s = contour_shape(_stadium((0, 0), (20, 0), 4))
         self.assertEqual(s.kind, STADIUM)
         self.assertAlmostEqual(s.length, 28)
@@ -57,7 +57,7 @@ class TestContourShape(unittest.TestCase):
         self.assertAlmostEqual(s.angle, 0)
         self.assertEqual(s.center, (10, 0))
 
-    def test_rettangolo_ruotato(self):
+    def test_rotated_rectangle(self):
         c, a = math.cos(math.radians(30)), math.sin(math.radians(30))
         pts = [(0, 0), (40 * c, 40 * a), (40 * c - 10 * a, 40 * a + 10 * c), (-10 * a, 10 * c)]
         s = contour_shape(_ring(*pts))
@@ -66,22 +66,22 @@ class TestContourShape(unittest.TestCase):
         self.assertAlmostEqual(s.width, 10)
         self.assertAlmostEqual(s.angle, 30)
 
-    def test_lato_spezzato_resta_rettangolo(self):
+    def test_broken_side_stays_rectangle(self):
         s = contour_shape(_ring((0, 0), (50, 0), (100, 0), (100, 30), (0, 30)))
         self.assertEqual(s.kind, RECTANGLE)
         self.assertEqual(s.sides, 4)
 
-    def test_rettangolo_storto_oltre_same_point_e_un_poligono(self):
+    def test_crooked_rectangle_beyond_same_point_is_a_polygon(self):
         # every measure within SAME_POINT, no similarity margin (with 1% it was a rectangle)
         self.assertEqual(contour_shape(_ring((0, 0), (100, 0), (100, 50.5), (0, 50))).kind, POLYGON)
         self.assertEqual(contour_shape(_ring((0, 0), (100, 0), (100, 50.0005), (0, 50))).kind, RECTANGLE)
 
-    def test_poligono(self):
+    def test_polygon_plain(self):
         s = contour_shape(_ring((0, 0), (10, 0), (5, 8)))
         self.assertEqual(s.kind, POLYGON)
         self.assertEqual(s.sides, 3)
 
-    def test_altro(self):
+    def test_other(self):
         # rectangle with a filleted corner
         segs = [LineSeg(start=(0, 0), end=(20, 0)),
                 LineSeg(start=(20, 0), end=(20, 5)),
@@ -90,30 +90,30 @@ class TestContourShape(unittest.TestCase):
                 LineSeg(start=(0, 10), end=(0, 0))]
         self.assertEqual(contour_shape(segs).kind, OTHER)
 
-    def test_vuoto(self):
+    def test_void(self):
         self.assertIsNone(contour_shape([]))
 
 
-class TestShapeKindStabile(unittest.TestCase):
+class TestShapeKindStable(unittest.TestCase):
     """the list of kinds is closed and a contour's kind does not change in 1.x. An
     extra kind, or a contour that changes kind, must break here."""
 
-    def test_elenco_chiuso(self):
+    def test_closed_list(self):
         self.assertEqual({k.value for k in ShapeKind},
                          {"circle", "ellipse", "stadium", "rectangle", "polygon", "other"})
 
-    def test_il_kind_si_confronta_e_si_stampa_come_stringa(self):
+    def test_the_kind_compares_and_prints_as_a_string(self):
         s = contour_shape([CircleSeg(center=(0, 0), radius=1)])
         self.assertEqual(s.kind, "circle")
         self.assertEqual(f"{s.kind}", "circle")
         self.assertEqual(s.to_dict()["kind"], "circle")
 
-    def test_quadrato_e_un_rettangolo(self):
+    def test_square_is_a_rectangle(self):
         s = contour_shape(_ring((0, 0), (10, 0), (10, 10), (0, 10)))
         self.assertEqual(s.kind, RECTANGLE)
         self.assertAlmostEqual(s.length, s.width)
 
-    def test_ellisse(self):
+    def test_ellipse(self):
         s = contour_shape([EllipseSeg(center=(1, 2), major_axis=(10, 0), ratio=0.5,
                                       start_param=0, end_param=2 * math.pi)])
         self.assertEqual(s.kind, ELLIPSE)
@@ -122,14 +122,14 @@ class TestShapeKindStabile(unittest.TestCase):
         self.assertAlmostEqual(s.angle, 0)
         self.assertEqual(s.center, (1, 2))
 
-    def test_ellisse_ad_assi_uguali_e_un_cerchio(self):
+    def test_ellipse_with_equal_axes_is_a_circle(self):
         # the same points as a circle, exactly: not an approximation
         s = contour_shape([EllipseSeg(center=(0, 0), major_axis=(0, 4), ratio=1.0,
                                       start_param=0, end_param=2 * math.pi)])
         self.assertEqual(s.kind, CIRCLE)
         self.assertAlmostEqual(s.diameter, 8)
 
-    def test_foro_in_isometria_in_due_meta(self):
+    def test_hole_in_isometry_in_two_halves(self):
         # a circle seen in isometry, split by two nodes: two halves of the same
         # ellipse, the second with the major axis turned by 180°
         top = EllipseSeg(center=(0, 0), major_axis=(10, 0), ratio=0.5, start_param=0, end_param=math.pi)
@@ -140,11 +140,11 @@ class TestShapeKindStabile(unittest.TestCase):
         self.assertAlmostEqual(s.width, 10)
         self.assertEqual(s.sides, 2)
 
-    def test_mezza_ellisse_non_e_un_ellisse(self):
+    def test_half_ellipse_is_not_an_ellipse(self):
         half = EllipseSeg(center=(0, 0), major_axis=(10, 0), ratio=0.5, start_param=0, end_param=math.pi)
         self.assertEqual(contour_shape([half, LineSeg(start=(-10, 0), end=(10, 0))]).kind, OTHER)
 
-    def test_cerchio_fatto_di_spline_resta_altro(self):
+    def test_circle_made_of_splines_stays_other(self):
         # exact circle as a rational quadratic NURBS: the rule reads the primitives as
         # they are, the recognition is a step of the caller
         w = math.sqrt(2) / 2
@@ -156,7 +156,7 @@ class TestShapeKindStabile(unittest.TestCase):
         )
         self.assertEqual(contour_shape([spline]).kind, OTHER)
 
-    def test_rettangolo_raccordato_e_altro(self):
+    def test_filleted_rectangle_and_other(self):
         # four corners at radius 2: one more measure than the record is needed
         r = 2
         segs = [LineSeg(start=(r, 0), end=(20 - r, 0)),
@@ -170,10 +170,10 @@ class TestShapeKindStabile(unittest.TestCase):
         self.assertEqual(contour_shape(segs).kind, OTHER)
 
 
-class TestMisureSullePrimitive(unittest.TestCase):
+class TestMeasuresOnThePrimitives(unittest.TestCase):
     """`length`/`width` of `other` measured on the curve, not on the inscribed polygon."""
 
-    def test_d_ruotata(self):
+    def test_d_rotated(self):
         # semicircle r 10 closed by the diameter, rotated by 20°: 20 × 10 exact, while
         # the inscribed polygon is shorter by up to 2·tol
         a = math.radians(20)
@@ -184,7 +184,7 @@ class TestMisureSullePrimitive(unittest.TestCase):
         self.assertAlmostEqual(s.length, 20, places=9)
         self.assertAlmostEqual(s.width, 10, places=9)
 
-    def test_d_grande_oltre_la_tolleranza(self):
+    def test_large_d_beyond_the_tolerance(self):
         # the same D at r 500: the polyline at tol 0.01 falls short by nearly 0.01 on
         # the width (sagitta), the measure does not
         a = math.radians(20)
@@ -194,7 +194,7 @@ class TestMisureSullePrimitive(unittest.TestCase):
         self.assertAlmostEqual(s.length, 1000, places=7)
         self.assertAlmostEqual(s.width, 500, places=7)
 
-    def test_spline_misurata_sulla_curva(self):
+    def test_spline_measured_on_the_curve(self):
         from topo.core.geometry.measure import segment_reach
         from topo.core.geometry.spline_fit import interpolate_bspline
         pts = [(50 * math.cos(t), 50 * math.sin(t)) for t in (i * 2 * math.pi / 12 for i in range(13))]
@@ -211,7 +211,7 @@ class TestMisureSullePrimitive(unittest.TestCase):
             self.assertAlmostEqual(lo, min(proj), delta=1e-6)
             self.assertAlmostEqual(hi, max(proj), delta=1e-6)
 
-    def test_ellisse_ruotata(self):
+    def test_rotated_ellipse(self):
         from topo.core.geometry.measure import segment_reach
         a = math.radians(20)
         e = EllipseSeg(center=(3, 4), major_axis=(10 * math.cos(a), 10 * math.sin(a)),
@@ -221,7 +221,7 @@ class TestMisureSullePrimitive(unittest.TestCase):
         self.assertAlmostEqual(lo, 3 - half, places=12)
         self.assertAlmostEqual(hi, 3 + half, places=12)
 
-    def test_arco_che_non_passa_per_l_estremo(self):
+    def test_arc_not_passing_through_the_end(self):
         from topo.core.geometry.measure import segment_reach
         # quarto in alto a destra percorso al contrario: lungo x va da 0 a r, mai a −r
         arc = CircleSeg(center=(0, 0), radius=4, start_angle=math.pi / 2, end_angle=0, ccw=False)
@@ -235,7 +235,7 @@ def _edge(seg):
     return Edge(role="unknown", start=pts[0], end=pts[-1], segment=seg)
 
 
-class TestContourShapeSuIsole(unittest.TestCase):
+class TestContourShapeOnIslands(unittest.TestCase):
     """The same shape fact from the two readings."""
 
     def _doc(self):

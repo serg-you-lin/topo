@@ -20,7 +20,7 @@ def _circle(center, radius):
 
 class TestSplitAtCrossings(unittest.TestCase):
 
-    def test_incrocio_a_x_diventa_un_nodo(self):
+    def test_x_crossing_becomes_a_node(self):
         a, b = _line((0, 0), (10, 10)), _line((0, 10), (10, 0))
         noded = split_at_crossings([a, b], tolerance=0.05)
         self.assertEqual(len(noded.pieces), 4)
@@ -29,20 +29,20 @@ class TestSplitAtCrossings(unittest.TestCase):
                [p.start for p in noded.pieces if p.start == (5.0, 5.0)]
         self.assertEqual(len(ends), 4)
 
-    def test_contatto_a_t_spezza_solo_chi_viene_toccato(self):
+    def test_t_contact_splits_only_the_touched(self):
         base, stem = _line((0, 0), (10, 0)), _line((5, 0), (5, 5))
         noded = split_at_crossings([base, stem], tolerance=0.05)
         self.assertEqual(len(noded.pieces), 3)
         self.assertIs(noded.parent_of(noded.pieces[-1]), stem)
 
-    def test_estremi_originali_restano_i_nodi_dell_edge(self):
+    def test_original_ends_stay_the_edge_nodes(self):
         a, b = _line((0, 0), (10, 0)), _line((5, -1), (5, 1))
         noded = split_at_crossings([a, b], tolerance=0.05)
         first = [p for p in noded.pieces if noded.parent_of(p) is a]
         self.assertEqual(first[0].start, a.start)
         self.assertEqual(first[-1].end, a.end)
 
-    def test_cerchio_incrociato_diventa_archi(self):
+    def test_crossed_circle_becomes_arcs(self):
         # a circle crossed by a line: two arcs between the two cuts
         noded = split_at_crossings([_circle((0, 0), 5), _line((-10, 0), (10, 0))], tolerance=0.05)
         arcs = [p for p in noded.pieces if (isinstance(p.segment, CircleSeg) and not p.segment.full)]
@@ -50,12 +50,12 @@ class TestSplitAtCrossings(unittest.TestCase):
         total = sum(p.segment.radius * p.segment._sweep() for p in arcs)
         self.assertAlmostEqual(total, 2 * math.pi * 5, places=6)
 
-    def test_cerchio_non_toccato_resta_intero(self):
+    def test_untouched_circle_stays_whole(self):
         c = _circle((0, 0), 1)
         noded = split_at_crossings([c, _line((5, 0), (6, 0))], tolerance=0.05)
         self.assertIn(c, noded.pieces)
 
-    def test_quasi_tangenza_e_un_nodo_solo_non_due(self):
+    def test_near_tangency_is_a_single_node_not_two(self):
         """A line nearly tangent to an arc crosses in two mathematically distinct but
         very close roots: within `tolerance` they are the same contact, not two nodes
         with a sliver between."""
@@ -73,14 +73,14 @@ class TestSplitAtCrossings(unittest.TestCase):
         self.assertEqual(len(pieces_of(line)), 2)
 
 
-class TestContattoDecisoUnaVolta(unittest.TestCase):
+class TestContactDecidedOnce(unittest.TestCase):
     """every contact is decided once per pair, on the true curves, and gives a single
     node, the same tuple for every edge it touches."""
 
     def _pieces_of(self, noded, parent):
         return [p for p in noded.pieces if noded.parent_of(p) is parent]
 
-    def test_t_entro_la_soglia_condivide_il_nodo(self):
+    def test_t_within_the_threshold_shares_the_node(self):
         # the stem ends 0.0004 above the base, below SAME_POINT: the base is cut and
         # its node is the stem's end, not the rounded projection
         base, stem = _line((0, 0), (10, 0)), _line((5, 0.0004), (5, 5))
@@ -88,7 +88,7 @@ class TestContattoDecisoUnaVolta(unittest.TestCase):
         cuts = {p.end for p in self._pieces_of(noded, base)[:-1]}
         self.assertEqual(cuts, {stem.start})
 
-    def test_t_su_una_spline_la_taglia(self):
+    def test_t_on_a_spline_cuts_it(self):
         from topo.core.primitives.spline import BSplineSeg
         spline = BSplineSeg(degree=2, control_points=[(0, 0), (5, 2), (10, 0)],
                             knots=[0, 0, 0, 1, 1, 1])
@@ -102,7 +102,7 @@ class TestContattoDecisoUnaVolta(unittest.TestCase):
         self.assertEqual(halves[0].end, stem.start)
         self.assertEqual(halves[1].start, stem.start)
 
-    def test_tangenza_mancata_e_un_contatto(self):
+    def test_missed_tangency_is_a_contact(self):
         # a line passes 0.0004 outside a circle (below SAME_POINT) without touching it:
         # a shared node, and the circle, touched once only, stays whole
         c, line = _circle((0, 0), 5), _line((-10, 5.0004), (10, 5.0004))
@@ -110,7 +110,7 @@ class TestContattoDecisoUnaVolta(unittest.TestCase):
         self.assertEqual(len(self._pieces_of(noded, line)), 2)
         self.assertIn(c, noded.pieces)
 
-    def test_due_t_vicini_restano_due_nodi_ognuno_col_suo_gambo(self):
+    def test_two_near_t_stay_two_nodes_each_with_its_stem(self):
         # two stems 0.03 apart (< tolerance, > GRAPH_EPSILON): two contacts of different
         # pairs, two nodes, each equal to its stem
         base = _line((0, 0), (10, 0))
@@ -119,7 +119,7 @@ class TestContattoDecisoUnaVolta(unittest.TestCase):
         nodes = [p.end for p in self._pieces_of(noded, base)[:-1]]
         self.assertEqual(nodes, [a.start, b.start])
 
-    def test_un_lato_corto_non_sparisce(self):
+    def test_a_short_side_does_not_vanish(self):
         # a side of 0.008 between two lines: its two ends do not become a single node,
         # even if each is within GRAPH_EPSILON of the other
         left, short, right = _line((0, 0), (5, 0)), _line((5, 0), (5.008, 0)), _line((5.008, 0), (10, 3))
@@ -131,7 +131,7 @@ class TestContattoDecisoUnaVolta(unittest.TestCase):
 
 class TestRenode(unittest.TestCase):
 
-    def test_nodi_dal_punto_reale(self):
+    def test_nodes_from_the_real_point(self):
         # node rounded to 1 decimal, real point at 3: the node follows the real point
         e = Edge(role="unknown", start=(0.0, 0.0), end=(1.0, 0.0),
                  segment=LineSeg(start=(0.0, 0.0), end=(1.034, 0.0)))
@@ -149,13 +149,13 @@ class TestRenode(unittest.TestCase):
         seg = BSplineSeg(degree=1, control_points=self._CURL, knots=knots)
         return Edge(role="unknown", start=(0.0, 0.0), end=(end_shift, 0.0), segment=seg)
 
-    def test_curva_chiusa_un_nodo_solo(self):
+    def test_closed_curve_a_single_node(self):
         # an Edge written by hand (or rotated) with the end at 1e-13 from the start: the
         # curve is closed, the node is a single one as in Edge.of
         e = renode([self._curl_edge(1e-13)])[0]
         self.assertEqual(e.start, e.end)
 
-    def test_outlines_non_dipende_da_come_e_scritto_il_capo(self):
+    def test_outlines_does_not_depend_on_how_the_end_is_written(self):
         # before: exact end → a contour of 9900; end at 1e-13 → no contour, the whole
         # spline in loose and is_valid False
         import topo
@@ -178,7 +178,7 @@ class TestNodesUnderMotion(unittest.TestCase):
     between them they become two nodes, and `decide_nodes` does not reunite them in
     a group wider than `epsilon`: the chain broke."""
 
-    def test_un_vertice_su_un_bordo_di_cella_resta_un_nodo(self):
+    def test_a_vertex_on_a_cell_edge_stays_a_node(self):
         from collections import Counter
         import topo
         from tests.invariants import rigid
@@ -218,19 +218,19 @@ class TestEndContactsUnderMotion(unittest.TestCase):
             with self.subTest(motion=motion):
                 self.assertEqual(self._reading(segs, motion), at_rest)
 
-    def test_t_sul_capo_di_un_tratto_piu_corto_di_node(self):
+    def test_t_on_the_end_of_a_stretch_shorter_than_node(self):
         # 0.008 < node (0.01): the case in which `_union` may refuse
         self._same_at_every_motion(
             [LineSeg(start=(0.0, 0.0), end=(0.008, 0.0)), LineSeg(start=(0.008, 0.0), end=(0.008, 5.0)),
              LineSeg(start=(0.0, 0.0), end=(0.0, -5.0))], (3, [1, 1, 2, 2]))
 
-    def test_retta_sul_capo_di_un_arco_corto(self):
+    def test_straight_on_the_end_of_a_short_arc(self):
         end = (0.05 * math.cos(0.15), 0.05 * math.sin(0.15))
         self._same_at_every_motion(
             [CircleSeg(center=(0.0, 0.0), radius=0.05, start_angle=0.0, end_angle=0.15),
              LineSeg(start=end, end=(3.0, 3.0))], (2, [1, 1, 2]))
 
-    def test_archi_quasi_concentrici_a_meno_di_node(self):
+    def test_nearly_concentric_arcs_within_node(self):
         for offset in (0.0, 0.8e-9, 1.2e-9, 3e-9, 1e-7):
             with self.subTest(offset=offset):
                 c = (offset * math.cos(0.7), offset * math.sin(0.7))
@@ -261,7 +261,7 @@ class TestEndNodeUnderMotion(unittest.TestCase):
         nodes = {n for e in out.pieces for n in (e.start, e.end)}
         return min(nodes, key=lambda n: math.dist(n, point((0.0, 0.0)))), point
 
-    def test_il_nodo_dei_due_capi_non_dipende_dal_moto(self):
+    def test_the_node_of_the_two_ends_does_not_depend_on_the_motion(self):
         at_rest, _ = self._node((0.0, 0.0, 0.0))
         for motion in [(math.pi, 0.0, 0.0), (math.pi / 2, 0.0, 0.0), (0.7, 3e3, -2e3)]:
             with self.subTest(motion=motion):
@@ -283,7 +283,7 @@ class TestCrossingNodesUnderMotion(unittest.TestCase):
         LineSeg(start=(0.013853742779737218, -0.004663352290131094), end=(-0.9611844021439172, 0.2173740678530485)),
     ]
 
-    def test_due_incroci_oltre_graph_epsilon_restano_due_nodi(self):
+    def test_two_crossings_beyond_graph_epsilon_stay_two_nodes(self):
         import topo
         from tests.invariants import rigid
         for motion in [(0.0, 0.0, 0.0), (0.8126685826151423, -0.5047703326061714, -0.21810059373354584)]:

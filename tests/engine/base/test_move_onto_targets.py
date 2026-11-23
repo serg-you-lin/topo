@@ -34,9 +34,9 @@ def _moved(net) -> list:
     return [d for d in net.notes if d.code == "curves-moved"]
 
 
-class TestRaccordoDiFianco(unittest.TestCase):
+class TestFilletBesideTheSide(unittest.TestCase):
 
-    def test_il_ponticello_chiude_e_lo_dice(self):
+    def test_the_small_bridge_closes_and_says_so(self):
         net = topo.heal(topo.load_segments(_bridge(OFF)), max_gap=0.05)
         result = net.outlines()
         self.assertTrue(result.is_valid)
@@ -45,12 +45,12 @@ class TestRaccordoDiFianco(unittest.TestCase):
         self.assertAlmostEqual(result.clusters[0].outer.area, exact.clusters[0].outer.area, places=6)
         self.assertEqual(len(_moved(net)[0].points), 2)
 
-    def test_senza_max_gap_niente_si_sposta(self):
+    def test_without_max_gap_nothing_moves(self):
         # heal(doc) reads the drawing as it is
         net = topo.heal(topo.load_segments(_bridge(OFF)))
         self.assertEqual(_moved(net), [])
 
-    def test_oltre_max_gap_niente_si_sposta(self):
+    def test_beyond_max_gap_nothing_moves(self):
         net = topo.heal(topo.load_segments(_bridge(OFF)), max_gap=0.003)
         self.assertEqual(_moved(net), [])
 
@@ -72,9 +72,9 @@ def _pinned(gap: float = 0.017) -> list:
             _line(bottom, (cx, 2)), _line((0, 0), (0, 5))]
 
 
-class TestRaccordoLegatoAUnaRetta(unittest.TestCase):
+class TestFilletBoundToALine(unittest.TestCase):
 
-    def test_l_arco_si_sposta_e_le_rette_si_allungano(self):
+    def test_the_arc_moves_and_the_lines_lengthen(self):
         net = topo.heal(topo.load_segments(_png()), max_gap=0.05)
         self.assertEqual(len(_moved(net)), 1)
         self.assertEqual([d for d in net.notes if d.code == "ends-joined"], [])
@@ -115,9 +115,9 @@ def _one_piece(test, net, sides: int):
     test.assertAlmostEqual(faces.clusters[0].outer.area, outlines.clusters[0].outer.area, places=9)
 
 
-class TestAltrePrimitive(unittest.TestCase):
+class TestOtherPrimitives(unittest.TestCase):
 
-    def test_arco_di_ellisse(self):
+    def test_ellipse_arc(self):
         ellipse = EllipseSeg(center=(3.01, 10), major_axis=(3, 0), ratio=2 / 3,
                              start_param=math.radians(45), end_param=math.radians(180), ccw=True)
         top = (3.01 + 3 * math.cos(math.radians(45)), 10 + 2 * math.sin(math.radians(45)))
@@ -131,16 +131,16 @@ class TestAltrePrimitive(unittest.TestCase):
         self.assertEqual(len(_moved(net)), 1)
         _one_piece(self, net, 4)
 
-    def test_raccordo_a_ogni_capo_della_retta(self):
+    def test_fillet_at_each_end_of_the_line(self):
         # within max_gap both are fixed: the line lengthens at one end for one
         net = topo.heal(topo.load_segments(_two_fillets()), max_gap=0.05)
         self.assertEqual(len(_moved(net)[0].points), 2)
         _one_piece(self, net, 6)
 
 
-class TestArcoInchiodato(unittest.TestCase):
+class TestNailedArc(unittest.TestCase):
 
-    def test_l_arco_passa_per_il_capo(self):
+    def test_the_arc_passes_through_the_end(self):
         net = topo.heal(topo.load_segments(_pinned()), max_gap=0.05)
         self.assertEqual(len([d for d in net.notes if d.code == "arc-bent"]), 1)
         faces, outlines = net.faces(), net.outlines()
@@ -149,14 +149,14 @@ class TestArcoInchiodato(unittest.TestCase):
             self.assertEqual(len(result.clusters), 1)
         self.assertAlmostEqual(faces.clusters[0].outer.area, outlines.clusters[0].outer.area, places=9)
 
-    def test_oltre_max_gap_resta_aperto(self):
+    def test_beyond_max_gap_stays_open(self):
         net = topo.heal(topo.load_segments(_pinned()), max_gap=0.005)
         self.assertEqual([d for d in net.notes if d.code == "arc-bent"], [])
 
 
-class TestNonSiSposta(unittest.TestCase):
+class TestDoesNotMove(unittest.TestCase):
 
-    def test_una_retta_non_si_sposta_mai(self):
+    def test_a_line_never_moves(self):
         # short line with both free ends at 0.01 from two perpendicular sides: it
         # lengthens up to them, does not translate
         segs = [_line((0, 0), (10, 0)), _line((0, 0), (0, 10)), _line((2, 0.01), (0.01, 2))]
@@ -167,14 +167,14 @@ class TestNonSiSposta(unittest.TestCase):
         for p in (moved_line[0].start, moved_line[0].end):
             self.assertAlmostEqual(p[0] + p[1], 2.01, places=9)   # always on the same line x + y = 2.01
 
-    def test_braccio_d_asse_che_supera_il_foro(self):
+    def test_axis_arm_that_exceeds_the_hole(self):
         # axis cross of an R3 hole: the arms start from the centre and exceed the
         # circle by 0.3; one arm touches a line with its outer end
         segs = [CircleSeg(center=(0, 0), radius=3), _line((0, 0), (3.3, 0)), _line((3.3, -1), (3.3, 1))]
         net = topo.heal(topo.load_segments(segs), max_gap=0.5)
         self.assertEqual(_moved(net), [])
 
-    def test_riga_verso_un_filetto(self):
+    def test_line_towards_a_thread(self):
         # thread: R3 hole and concentric R3.5 crest arc; the line ends 0.2 outside the
         # crest and touches a line with the other end
         segs = [CircleSeg(center=(0, 0), radius=3), _arc((0, 0), 3.5, 0, 270),

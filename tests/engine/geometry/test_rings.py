@@ -82,7 +82,7 @@ RINGS = {
 
 @pytest.mark.parametrize("name", sorted(RINGS))
 @pytest.mark.parametrize("reverse", [False, True])
-def test_contains_come_il_poligono_fine_lontano_dal_bordo(name, reverse):
+def test_contains_like_the_fine_polygon_far_from_the_border(name, reverse):
     ring = _reversed(RINGS[name]) if reverse else RINGS[name]
     polygon = Polygon(ring_points(ring, 1e-5))
     xmin, ymin, xmax, ymax = ring_bbox(ring)
@@ -125,7 +125,7 @@ def _meets(line, polygon):
 
 
 @pytest.mark.parametrize("name", sorted(RINGS))
-def test_corda_che_divide_e_corda_coperta_come_shapely(name):
+def test_dividing_chord_and_covered_chord_like_shapely(name):
     ring = RINGS[name]
     polygon = Polygon(ring_points(ring, 1e-5))
     for a, b in _chords(ring, polygon):
@@ -135,7 +135,7 @@ def test_corda_che_divide_e_corda_coperta_come_shapely(name):
         assert ring_covers_chord(ring, a, b) == polygon.buffer(1e-6).covers(line), (a, b)
 
 
-def test_corda_sul_bordo_e_tocco():
+def test_chord_on_the_border_is_a_touch():
     ring = _rounded_rectangle()              # 30×12, raccordi r=2.5
     assert not ring_split_by_chord(ring, (-10.0, -6.0), (10.0, -6.0))     # on the side
     assert ring_covers_chord(ring, (-10.0, -6.0), (10.0, -6.0))
@@ -146,14 +146,14 @@ def test_corda_sul_bordo_e_tocco():
 
 
 @pytest.mark.parametrize("name", sorted(RINGS))
-def test_un_punto_del_bordo_sta_dentro(name):
+def test_a_border_point_is_inside(name):
     ring = RINGS[name]
     for p in ring_points(ring, 0.5)[::3]:
         assert ring_contains(ring, p, tolerance=0.01)
         assert ring_contains(_reversed(ring), p, tolerance=0.01)
 
 
-def test_sulla_corda_dentro_il_segmento_di_cerchio():
+def test_on_the_chord_inside_the_circle_segment():
     # the point lies on the line of an arc's chord, but the chord is not border
     ring = [CircleSeg((0.0, 0.0), 5.0, 0.0, math.pi), LineSeg((-5.0, 0.0), (0.0, -5.0)),
             LineSeg((0.0, -5.0), (5.0, 0.0))]
@@ -164,7 +164,7 @@ def test_sulla_corda_dentro_il_segmento_di_cerchio():
 
 @pytest.mark.parametrize("motion", [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
                                     (0.7, 3.1, -2.2), (2.4, -0.37, 0.61)])
-def test_sulla_corda_e_accanto_sotto_moto(motion):
+def test_on_the_chord_and_beside_it_under_motion(motion):
     # which side of the chord the point is on is the sign of `cross_pt`, zero on the
     # chord. Proof: on the chord (where the guard decides in place of the sign) and
     # at 1e-7 / 5e-9 to the side (where the sign decides, which is geometry) the
@@ -182,7 +182,7 @@ def test_sulla_corda_e_accanto_sotto_moto(motion):
 
 @pytest.mark.parametrize("motion", [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
                                     (0.7, 3.1, -2.2), (2.4, -0.37, 0.61)])
-def test_a_cavallo_della_guardia_sulla_corda(motion):
+def test_astride_the_guard_on_the_chord(motion):
     # within 1e-9 rad of the chord the point is given inside the circle segment.
     # Proof: across the threshold (points at 1e-9, 2.5e-9, 3e-9, 1e-6 from the
     # chord, on both sides), with the chord inside the loop (convex arc) and outside
@@ -204,7 +204,7 @@ def test_a_cavallo_della_guardia_sulla_corda(motion):
         assert [ring_contains(ring, move_pt(p), 1e-12) for p in points] == [expected] * len(points)
 
 
-def test_bbox_esatto_sugli_estremi_delle_curve():
+def test_exact_bbox_on_the_curve_extremes():
     assert ring_bbox(_rounded_rectangle()) == pytest.approx((-15.0, -6.0, 15.0, 6.0), abs=EPS)
     assert ring_bbox([CircleSeg((1.0, -2.0), 4.0)]) == pytest.approx((-3.0, -6.0, 5.0, 2.0), abs=EPS)
     # 300° arc from 30°: touches x = -5, y = ±5, not x = +5
@@ -218,14 +218,14 @@ def test_bbox_esatto_sugli_estremi_delle_curve():
     assert ring_bbox(RINGS["ellisse_ruotata"]) == pytest.approx((2 - hx, 3 - hy, 2 + hx, 3 + hy), abs=1e-12)
 
 
-def test_perimetro_con_le_corde_dei_salti():
+def test_perimeter_with_the_chords_of_the_leaps():
     L, W, r = 30.0, 12.0, 2.5
     assert ring_perimeter(_rounded_rectangle(L, W, r)) == pytest.approx(
         2 * (L + W) - 8 * r + 2 * math.pi * r, rel=1e-14)
     assert ring_perimeter(_with_jump()) == pytest.approx(8.0, abs=EPS)
 
 
-def test_punti_senza_ripetere_il_primo():
+def test_points_without_repeating_the_first():
     pts = ring_points(_with_jump())
     assert pts[0] == (0.0, 0.0) and pts[-1] == (0.0, 0.01)
     assert len(pts) == len(set(pts)) == 5

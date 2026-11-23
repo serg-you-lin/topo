@@ -25,7 +25,7 @@ def _line(p1, p2):
 
 class TestFaceSegments(unittest.TestCase):
 
-    def test_edge_sul_bordo_solo_in_parte_da_la_sua_parte(self):
+    def test_edge_on_the_border_only_in_part_gives_its_part(self):
         # the base and the right side overshoot the square: crossings the network did not cut
         edges = [_line((-5, 0), (15, 0)), _line((10, -3), (10, 10)),
                  _line((10, 10), (0, 10)), _line((0, 10), (0, 0))]
@@ -37,7 +37,7 @@ class TestFaceSegments(unittest.TestCase):
         ends = {tuple(round(c, 9) for c in p) for s in segments for p in segment_endpoints(s)}
         self.assertEqual(ends, {(0, 0), (10, 0), (10, 10), (0, 10)})
 
-    def test_il_resto_di_un_edge_solo_in_parte_sul_bordo(self):
+    def test_the_remainder_of_an_edge_only_partly_on_the_border(self):
         # the base overshoots by 5 left and right, the right side by 3 downwards; only
         # the overshoot comes out, never the whole edge
         edges = [_line((-5, 0), (15, 0)), _line((10, -3), (10, 10)),
@@ -50,13 +50,13 @@ class TestFaceSegments(unittest.TestCase):
         self.assertEqual(rest[0].start, (-5, 0))   # the original end keeps its node
         self.assertEqual(off_rim(edges[2], used[2], square.exterior, BAND), [])
 
-    def test_doppione_sovrapposto_non_spezzetta(self):
+    def test_overlapping_duplicate_does_not_fragment(self):
         edges = [_line((0, 0), (10, 0)), _line((10, 0), (10, 10)),
                  _line((10, 10), (0, 10)), _line((10, 10), (0, 10)), _line((0, 10), (0, 0))]
         segments, _, _ = face_segments(edges, box(0, 0, 10, 10), BAND)
         self.assertEqual(len(segments), 4)
 
-    def test_arco_tangente_a_una_retta_resta_un_arco(self):
+    def test_arc_tangent_to_a_line_stays_an_arc(self):
         # half disc: diameter as a line, semicircle as an arc
         arc = CircleSeg(center=(0, 0), radius=5, start_angle=0, end_angle=math.pi, ccw=True)
         edges = [_line((-5, 0), (5, 0)),
@@ -65,7 +65,7 @@ class TestFaceSegments(unittest.TestCase):
         segments, _, _ = face_segments(edges, polygon, BAND)
         self.assertEqual(sorted(type(s).__name__ for s in segments), ["CircleSeg", "LineSeg"])
 
-    def test_due_tratti_vicini_si_chiudono_con_una_retta(self):
+    def test_two_near_stretches_close_with_a_line(self):
         # the top side runs 0.01 above the ring, the vertical sides end on the ring.
         # Every stretch ends on its own curve: between the two near ends a new line, no curve moved
         edges = [_line((0, 0), (10, 0)), _line((10, 0), (10, 10)),
@@ -91,7 +91,7 @@ class TestOffRimCutsUnderMotion(unittest.TestCase):
 
     MOTIONS = [(0.0, 0.0, 0.0), (0.7, 0.0, 0.0), (0.13, 3.1, -7.9), (2.4, -0.37, 0.61)]
 
-    def test_due_capi_quasi_uguali_un_resto_solo(self):
+    def test_two_nearly_equal_ends_a_single_remainder(self):
         from tests.invariants import rigid
         for motion in self.MOTIONS:
             with self.subTest(motion=motion):
@@ -126,7 +126,7 @@ class TestSenseOfAPerpendicularSpur(unittest.TestCase):
                (0.7, 3.1, -2.2), (math.pi / 2, 0.0, 0.0)]
     SQUARE = [(0, 0), (10, 0), (10, 10), (0, 10)]
 
-    def test_il_verso_cambia_l_uscita_no(self):
+    def test_the_direction_changes_the_output_does_not(self):
         from tests.invariants import rigid
         senses, outputs = set(), set()
         for motion in self.MOTIONS:
@@ -163,7 +163,7 @@ class TestSpurDoesNotTakeTheSide(unittest.TestCase):
                (0.7, 3.1, -2.2), (math.pi / 2, 0.0, 0.0)]
     SQUARE = [(0, 0), (10, 0), (10, 10), (0, 10)]
 
-    def test_il_lato_resta_al_suo_edge(self):
+    def test_the_side_stays_with_its_edge(self):
         from tests.invariants import rigid
         sides = [_line(self.SQUARE[i], self.SQUARE[(i + 1) % 4]) for i in range(4)]
         spur = _line((5, 0), (5, -3))
@@ -182,7 +182,7 @@ class TestSpurDoesNotTakeTheSide(unittest.TestCase):
                     self.assertEqual(sorted(round(math.dist(*segment_endpoints(s)), 9) for s in segments),
                                      [10.0] * 4)
 
-    def test_il_lato_di_partenza_non_conta(self):
+    def test_the_starting_side_does_not_count(self):
         # `rim.py:173`: the coverage starts from the side covered by fewer edges, on a
         # tie the first of the ring, and where the ring starts is decided by whoever
         # builds it. Two overlapping lines on the lower side (the coverage has a
@@ -216,7 +216,7 @@ class TestOverlapCutUnderMotion(unittest.TestCase):
     EDGES = [((-1, 0), (6, 0)), ((4, 0), (11, 0)), ((10, -1), (10, 10)), ((10, 10), (0, 10)), ((0, 10), (0, -1))]
     RING = [(0, 0), (4, 0), (5, 0), (6, 0), (10, 0), (10, 10), (0, 10)]
 
-    def test_il_taglio_non_dipende_dal_moto(self):
+    def test_the_cut_does_not_depend_on_the_motion(self):
         from tests.invariants import rigid
         for motion in self.MOTIONS:
             move_seg, move_pt = rigid(*motion)
@@ -243,7 +243,7 @@ class TestTrimmedAtTheMiddleUnderMotion(unittest.TestCase):
     MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0), (0.7, 3.1, -2.2),
                (math.pi / 2, 0.0, 0.0), (2.4, -0.37, 0.61), (2.1, -1e5, 3e4), (0.3, 0.0, 0.0), (1.1, 0.0, 0.0)]
 
-    def test_il_mezzo_non_si_aggancia(self):
+    def test_the_middle_does_not_hook(self):
         from tests.invariants import rigid
         for motion in self.MOTIONS:
             move_seg, move_pt = rigid(*motion)

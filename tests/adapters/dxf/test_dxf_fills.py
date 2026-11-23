@@ -63,41 +63,41 @@ class TestFilledAreas(unittest.TestCase):
     def _length(self, edges) -> float:
         return sum(segment_length(e.segment) for e in edges)
 
-    def test_solid_diventa_tre_lati_pieni(self):
+    def test_solid_becomes_three_filled_sides(self):
         sides = self._filled_in(-1, 5)
         self.assertEqual(len(sides), 3)
         self.assertAlmostEqual(self._length(sides), 4 + 2 * math.hypot(2, 3), places=6)
 
-    def test_hatch_pieno_a_pezzi_resta_un_rettangolo(self):
+    def test_solid_hatch_in_pieces_stays_a_rectangle(self):
         # the four sides of the file, no chord: perimeter 2 * (3 + 18)
         sides = self._filled_in(19, 24)
         self.assertEqual(len(sides), 4)
         self.assertAlmostEqual(self._length(sides), 42.0, places=6)
 
-    def test_polilinea_larga_diventa_la_sua_sagoma(self):
+    def test_wide_polyline_becomes_its_outline(self):
         sides = self._filled_in(39, 51)
         xs = [p[0] for e in sides for p in (e.start, e.end)]
         ys = [p[1] for e in sides for p in (e.start, e.end)]
         self.assertEqual((min(xs), max(xs), min(ys), max(ys)), (40.0, 50.0, -0.5, 0.5))
         self.assertAlmostEqual(self._length(sides), 22.0, places=6)
 
-    def test_niente_aree_perse(self):
+    def test_no_areas_lost(self):
         lost = [d for d in self.doc.warnings if d.code == "dxf-not-modeled"]
         self.assertEqual(lost, [])
 
-    def test_leader_senza_stringa_e_geometria(self):
+    def test_leader_without_string_is_geometry(self):
         self.assertEqual([t for t in self.doc.texts if not t.text], [])
         line = [e for e in self.doc.edges if not e.style.filled
                 and e.start[0] == e.end[0] == 60.0]
         self.assertTrue(line)
         self.assertTrue(self._filled_in(55, 65))
 
-    def test_regola_sul_pieno(self):
+    def test_rule_on_the_filled(self):
         doc = topo_dxf.load_dxf(self.path, role_rules=[topo.RoleRule("arrow", filled=True)])
         self.assertEqual({e.role for e in doc.edges if e.style.filled}, {"arrow"})
         self.assertNotIn("arrow", {e.role for e in doc.edges if not e.style.filled})
 
-    def test_to_dxf_riscrive_le_aree_piene(self):
+    def test_to_dxf_rewrites_the_filled_areas(self):
         result = topo.heal(self.doc).outlines()
         out = topo_dxf.to_dxf(result, self.doc)
         hatches = list(out.modelspace().query("HATCH"))
@@ -110,7 +110,7 @@ class TestDocumentFromMsp(unittest.TestCase):
     """`document_from_msp` explodes nothing: a LEADER with no string and an unread
     SOLID are told by a warning, not by silence."""
 
-    def test_avviso_per_quello_che_non_legge(self):
+    def test_warning_for_what_it_does_not_read(self):
         doc = ezdxf.new()
         msp = doc.modelspace()
         msp.add_leader([(0, 10), (0, 0)])
@@ -123,12 +123,12 @@ class TestDocumentFromMsp(unittest.TestCase):
 
 class TestRoleRuleFilled(unittest.TestCase):
 
-    def test_sola_condizione_valida(self):
+    def test_single_valid_condition(self):
         rule = topo.RoleRule("arrow", filled=True)
         self.assertTrue(rule.matches("", style=topo.model.EdgeStyle(filled=True)))
         self.assertFalse(rule.matches("", style=topo.model.EdgeStyle()))
 
-    def test_testo_senza_aspetto_non_matcha(self):
+    def test_text_without_appearance_does_not_match(self):
         self.assertFalse(topo.RoleRule("arrow", filled=False).matches("x", style=None))
 
 

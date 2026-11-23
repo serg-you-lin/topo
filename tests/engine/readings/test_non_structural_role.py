@@ -49,7 +49,7 @@ class TestNonStructuralRoleLeavesThePart(unittest.TestCase):
         cls.part = topo.geometry.polygon(CONTOUR)
         cls.lines = _lines_across(cls.part)
 
-    def test_il_pezzo_resta_quello_senza_le_righe(self):
+    def test_the_piece_stays_the_one_without_the_lines(self):
         for tolerance in TOLERANCES:
             alone = topo.heal(topo.load_segments(self.part))
             doc = topo.load_segments(self.part)
@@ -73,7 +73,7 @@ class TestOnlyNonStructuralEdges(unittest.TestCase):
     # no structural edge: no part, but the edges set aside do not vanish — they are
     # in `loose` in both readings, equal
 
-    def test_gli_edge_messi_da_parte_restano_in_loose(self):
+    def test_the_edges_set_aside_stay_in_loose(self):
         shapes = {
             "anello": topo.geometry.rectangle(200, 100),
             "righe": [LineSeg(start=(0, 0), end=(50, 0)),

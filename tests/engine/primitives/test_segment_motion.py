@@ -112,7 +112,7 @@ class _OnCurve:
 
 class TestTranslated(unittest.TestCase):
 
-    def test_punti_spostati_della_stessa_quantita(self):
+    def test_points_moved_by_the_same_amount(self):
         for name, seg in _segments():
             for dx, dy in OFFSETS:
                 with self.subTest(segment=name, offset=(dx, dy)):
@@ -123,7 +123,7 @@ class TestTranslated(unittest.TestCase):
                     for p, q in zip(before, after):
                         self.assertTrue(_close((p[0] + dx, p[1] + dy), q, scale), f"{p} → {q}")
 
-    def test_andata_e_ritorno_torna_al_segmento(self):
+    def test_there_and_back_returns_to_the_segment(self):
         for name, seg in _segments():
             for dx, dy in OFFSETS:
                 with self.subTest(segment=name, offset=(dx, dy)):
@@ -135,7 +135,7 @@ class TestTranslated(unittest.TestCase):
 
 class TestMirrored(unittest.TestCase):
 
-    def test_punti_specchiati_sull_asse_x(self):
+    def test_points_mirrored_on_the_x_axis(self):
         for name, seg in _segments():
             with self.subTest(segment=name):
                 # also the full circle: a mirror reverses the direction
@@ -145,14 +145,14 @@ class TestMirrored(unittest.TestCase):
                 for p, q in zip(before, after):
                     self.assertTrue(_close((p[0], -p[1]), q, 100.0), f"{p} → {q}")
 
-    def test_estremi_specchiati_e_stesso_verso_di_percorrenza(self):
+    def test_mirrored_ends_and_same_direction_of_travel(self):
         for name, seg in _segments():
             with self.subTest(segment=name):
                 (s, e), (ms, me) = segment_endpoints(seg), segment_endpoints(seg.mirrored())
                 self.assertTrue(_close((s[0], -s[1]), ms, 100.0))
                 self.assertTrue(_close((e[0], -e[1]), me, 100.0))
 
-    def test_due_volte_torna_al_segmento(self):
+    def test_twice_returns_to_the_segment(self):
         for name, seg in _segments():
             with self.subTest(segment=name):
                 again = seg.mirrored().mirrored().discretize(tolerance=0.01)
@@ -163,7 +163,7 @@ class TestMirrored(unittest.TestCase):
 
 class TestMirroredOnAxis(unittest.TestCase, _OnCurve):
 
-    def test_curva_specchiata_sull_asse(self):
+    def test_curve_mirrored_on_the_axis(self):
         for name, seg in _segments():
             for origin, angle in AXES:
                 with self.subTest(segment=name, axis=(origin, angle)):
@@ -173,7 +173,7 @@ class TestMirroredOnAxis(unittest.TestCase, _OnCurve):
                     self.assert_on_curve(seg, moved, lambda q: _mirror(q, origin, angle), scale)
                     self.assert_ends(seg, moved, lambda p: _mirror(p, origin, angle), scale)
 
-    def test_due_volte_torna_al_segmento(self):
+    def test_twice_returns_to_the_segment(self):
         for name, seg in _segments():
             for origin, angle in AXES:
                 with self.subTest(segment=name, axis=(origin, angle)):
@@ -182,7 +182,7 @@ class TestMirroredOnAxis(unittest.TestCase, _OnCurve):
                     self.assert_ends(seg, again, lambda p: p, scale)
                     self.assert_on_curve(seg, again, lambda q: q, scale)
 
-    def test_asse_x_di_default(self):
+    def test_x_axis_by_default(self):
         # the default is the usual mirror, field by field
         for name, seg in _segments():
             with self.subTest(segment=name):
@@ -191,7 +191,7 @@ class TestMirroredOnAxis(unittest.TestCase, _OnCurve):
 
 class TestScaled(unittest.TestCase, _OnCurve):
 
-    def test_curva_scalata(self):
+    def test_scaled_curve(self):
         for name, seg in _segments():
             for factor, origin in FACTORS:
                 with self.subTest(segment=name, factor=factor, origin=origin):
@@ -201,7 +201,7 @@ class TestScaled(unittest.TestCase, _OnCurve):
                     self.assert_on_curve(seg, moved, lambda q: _scale(q, 1 / factor, origin), scale)
                     self.assert_ends(seg, moved, lambda p: _scale(p, factor, origin), scale)
 
-    def test_raggio_e_assi_moltiplicati(self):
+    def test_radius_and_axes_multiplied(self):
         arc = CircleSeg(center=(1.0, 2.0), radius=3.0, start_angle=0.3, end_angle=2.1, ccw=False)
         big = arc.scaled(2.5, origin=(1.0, 2.0))
         self.assertEqual((big.center, big.radius, big.start_angle, big.end_angle, big.ccw),
@@ -212,7 +212,7 @@ class TestScaled(unittest.TestCase, _OnCurve):
                              start_param=0.0, end_param=1.0).scaled(2.0)
         self.assertEqual((ellipse.major_axis, ellipse.ratio), ((16.0, 6.0), 0.4))
 
-    def test_fattore_non_positivo_rifiutato(self):
+    def test_non_positive_factor_refused(self):
         line = LineSeg(start=(0.0, 0.0), end=(1.0, 0.0))
         for factor in (0.0, -1.0, math.nan, math.inf):
             with self.subTest(factor=factor):

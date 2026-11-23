@@ -34,25 +34,25 @@ class TestBlend(unittest.TestCase):
             self.assertAlmostEqual(dx * d[1] - dy * d[0], 0.0, delta=1e-12)   # parallela
             self.assertGreater(dx * d[0] + dy * d[1], 0)                       # in the same direction
 
-    def test_due_parallele_nello_stesso_verso_una_esse(self):
+    def test_two_parallels_in_the_same_direction_an_s(self):
         (seg,) = g.blend((0.0, 0.0), (1.0, 0.0), (10.0, 5.0), (1.0, 0.0))
         self.assertIsInstance(seg, BSplineSeg)
         self.assertEqual(seg.degree, 3)
         self._check_ends(seg, (0.0, 0.0), (1.0, 0.0), (10.0, 5.0), (1.0, 0.0))
 
-    def test_due_parallele_in_versi_opposti_una_u(self):
+    def test_two_parallels_in_opposite_directions_a_u(self):
         (seg,) = g.blend((0.0, 0.0), (1.0, 0.0), (0.0, 5.0), (-1.0, 0.0))
         self._check_ends(seg, (0.0, 0.0), (1.0, 0.0), (0.0, 5.0), (-1.0, 0.0))
         self.assertGreater(seg.point_at(seg.t_range[1] / 2)[0], 0)   # la U esce verso le rette
 
-    def test_continuita_2_curvatura_zero_ai_capi(self):
+    def test_continuity_2_zero_curvature_at_the_ends(self):
         (seg,) = g.blend((0.0, 0.0), (1.0, 0.0), (10.0, 5.0), (1.0, 0.0), continuity=2)
         self.assertEqual(seg.degree, 5)
         self._check_ends(seg, (0.0, 0.0), (1.0, 0.0), (10.0, 5.0), (1.0, 0.0))
         for t in seg.t_range:
             self.assertAlmostEqual(_turn(seg, t), 0.0, delta=1e-4)
 
-    def test_rifiuta_capi_coincidenti_e_direzione_nulla(self):
+    def test_refuses_coincident_ends_and_null_direction(self):
         with self.assertRaises(ValueError):
             g.blend((1.0, 1.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0))
         with self.assertRaises(ValueError):
@@ -61,7 +61,7 @@ class TestBlend(unittest.TestCase):
 
 class TestPolynomial(unittest.TestCase):
 
-    def test_la_curva_e_il_grafico_del_polinomio(self):
+    def test_the_curve_is_the_graph_of_the_polynomial(self):
         c = [1.0, -2.0, 0.5, 0.25]
         (seg,) = g.polynomial(c, -2.0, 3.0)
         self.assertEqual(seg.degree, 3)
@@ -70,14 +70,14 @@ class TestPolynomial(unittest.TestCase):
             x, y = seg.point_at(t0 + (t1 - t0) * k / 50)
             self.assertAlmostEqual(y, sum(ci * x ** i for i, ci in enumerate(c)), delta=1e-12)
 
-    def test_grado_uno_e_una_retta(self):
+    def test_degree_one_is_a_line(self):
         self.assertEqual(g.polynomial([3.0, 2.0], 0.0, 4.0), [LineSeg(start=(0.0, 3.0), end=(4.0, 11.0))])
         self.assertEqual(g.polynomial([3.0, 2.0, 0.0], 0.0, 4.0), [LineSeg(start=(0.0, 3.0), end=(4.0, 11.0))])
 
 
 class TestInvoluteAndClothoid(unittest.TestCase):
 
-    def test_evolvente_parte_dal_cerchio_e_si_srotola(self):
+    def test_involute_starts_from_the_circle_and_unwinds(self):
         (seg,) = g.involute(10.0, 1.2, center=(5.0, 5.0), angle=90)
         self.assertIsInstance(seg, FormulaSeg)
         start, _ = seg.endpoints()
@@ -85,7 +85,7 @@ class TestInvoluteAndClothoid(unittest.TestCase):
         self.assertAlmostEqual(start[1], 15.0, delta=1e-12)
         self.assertAlmostEqual(topo.geometry.segment_length(seg), 10 * 1.2 ** 2 / 2, delta=1e-12)
 
-    def test_clotoide_raggio_finale(self):
+    def test_clothoid_final_radius(self):
         (seg,) = g.clothoid(4.0, 7.0, start=(1.0, 2.0), angle=45)
         self.assertIsInstance(seg, ClothoidSeg)
         self.assertEqual(seg.endpoints()[0], (1.0, 2.0))
@@ -96,13 +96,13 @@ class TestInvoluteAndClothoid(unittest.TestCase):
 
 class TestTriangle(unittest.TestCase):
 
-    def test_lati_dati(self):
+    def test_given_sides(self):
         sides = g.triangle(3.0, 4.0, 5.0, start=(1.0, 1.0), angle=30)
         self.assertEqual([round(topo.geometry.segment_length(s), 12) for s in sides], [3.0, 4.0, 5.0])
         (cluster,) = topo.heal(topo.load_segments(sides)).faces().clusters
         self.assertAlmostEqual(cluster.area, 6.0, delta=1e-12)
 
-    def test_triangolo_rettangolo_dai_cateti(self):
+    def test_right_triangle_from_the_legs(self):
         sides = g.right_triangle(3.0, 4.0, start=(10.0, 5.0), angle=30)
         self.assertEqual(sides[0].start, (10.0, 5.0))
         self.assertEqual([round(topo.geometry.segment_length(s), 12) for s in sides], [3.0, 5.0, 4.0])
@@ -112,7 +112,7 @@ class TestTriangle(unittest.TestCase):
         (cluster,) = topo.heal(topo.load_segments(sides)).faces().clusters
         self.assertAlmostEqual(cluster.area, 6.0, delta=1e-12)
 
-    def test_lati_che_non_chiudono_rifiutati(self):
+    def test_sides_that_do_not_close_refused(self):
         with self.assertRaises(ValueError):
             g.triangle(1.0, 2.0, 3.0)
 

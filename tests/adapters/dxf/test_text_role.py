@@ -25,16 +25,16 @@ def _drawing_with_text(layer: str):
 
 class TestTextRole(unittest.TestCase):
 
-    def test_default_unknown_e_slug(self):
+    def test_default_unknown_and_slug(self):
         self.assertEqual(topo.Text(position=(0, 0)).role, "unknown")
         self.assertEqual(topo.Text(position=(0, 0), role="Title Block").role, "title_block")
 
-    def test_regola_sul_nome_al_load(self):
+    def test_rule_on_the_name_at_load(self):
         msp = _drawing_with_text("Testi")
         doc = topo_dxf.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
         self.assertEqual([a.role for a in doc.texts], ["part_code"])
 
-    def test_regola_sull_aspetto_non_tocca_i_testi(self):
+    def test_rule_on_the_appearance_does_not_touch_the_texts(self):
         msp = _drawing_with_text("Testi")
         doc = topo_dxf.document_from_msp(msp, role_rules=[topo.RoleRule("cut", dashed=False)])
         self.assertEqual([a.role for a in doc.texts], ["unknown"])
@@ -43,17 +43,17 @@ class TestTextRole(unittest.TestCase):
         out = topo_dxf.to_dxf(topo.heal(doc).faces(), **kwargs)
         return {e.dxf.layer for e in out.modelspace().query("TEXT MTEXT")}
 
-    def test_dxf_sul_layer_del_ruolo(self):
+    def test_dxf_on_the_role_layer(self):
         msp = _drawing_with_text("Testi")
         doc = topo_dxf.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
         self.assertEqual(self._text_layers(doc), {"part_code"})
 
-    def test_dxf_sul_layer_scelto_per_il_ruolo(self):
+    def test_dxf_on_the_layer_chosen_for_the_role(self):
         msp = _drawing_with_text("Testi")
         doc = topo_dxf.document_from_msp(msp, role_rules=topo.name_rules({"testi": "part_code"}))
         self.assertEqual(self._text_layers(doc, layers={"part_code": "Codice"}), {"Codice"})
 
-    def test_dxf_senza_ruolo_sul_layer_dei_testi(self):
+    def test_dxf_without_role_on_the_texts_layer(self):
         doc = topo_dxf.document_from_msp(_drawing_with_text("Testi"))
         self.assertEqual(self._text_layers(doc), {"Annotation"})
         self.assertEqual(self._text_layers(doc, text_layer="Note"), {"Note"})

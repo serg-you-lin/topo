@@ -28,25 +28,25 @@ def _face(edges):
 
 class TestOuterFace(unittest.TestCase):
 
-    def test_quadrato_con_diagonale(self):
+    def test_square_with_diagonal(self):
         # the diagonal divides the square into two faces: the outer contour is the square
         edges = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + [_line((0, 0), (10, 10))]
         face = _face(edges)
         self.assertAlmostEqual(to_shapely(face).area, 100.0)
         self.assertEqual(len(face.edges), 4)
 
-    def test_asse_che_sporge_e_una_sporgenza(self):
+    def test_axis_that_protrudes_is_a_protrusion(self):
         # an axis crossing the square and leaving by the two sides
         edges = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + [_line((-3, 5), (13, 5))]
         face = _face(edges)
         self.assertAlmostEqual(to_shapely(face).area, 100.0)
         self.assertEqual(len(face.spurs), 2)
 
-    def test_l_con_rientro(self):
+    def test_l_with_recess(self):
         edges = _poly((0, 0), (10, 0), (10, 4), (4, 4), (4, 10), (0, 10))
         self.assertAlmostEqual(to_shapely(_face(edges)).area, 64.0)
 
-    def test_punto_piu_a_sinistra_a_meta_di_un_arco(self):
+    def test_leftmost_point_mid_arc(self):
         # narrow view inside a circle that crosses it: the leftmost node is inside the
         # circle, the leftmost point is on the circle
         view = _poly((-1, -3), (1, -3), (1, 20), (-1, 20))
@@ -57,11 +57,11 @@ class TestOuterFace(unittest.TestCase):
         # the part of the view that leaves above the circle is contour
         self.assertGreater(to_shapely(face).bounds[3], 19.9)
 
-    def test_nessun_giro(self):
+    def test_no_ambit(self):
         self.assertIsNone(_face([_line((0, 0), (5, 0))]))
 
 
-class TestContattiPerDistanza(unittest.TestCase):
+class TestContactsByDistance(unittest.TestCase):
     """A square with the base side made of a spline and the vertical sides ending
     0.0004 above it (below SAME_POINT): the noding does not split the spline, the
     face closes only in the union of the faces. The contact holds by distance,
@@ -78,19 +78,19 @@ class TestContattiPerDistanza(unittest.TestCase):
             edges.append(Edge(role="unknown", start=node_point(start), end=node_point(end), segment=seg))
         return _face(edges)
 
-    def test_spostato_di_frazioni_di_cella(self):
+    def test_moved_by_fractions_of_a_cell(self):
         for dy in (0.0, 0.0002, 0.0004, 0.0006, 0.0008):
             with self.subTest(dy=dy):
                 face = self._square(lambda s: s.translated(0.0, dy))
                 self.assertAlmostEqual(to_shapely(face).area, 100.0, delta=0.1)
 
-    def test_ruotato(self):
+    def test_rotated(self):
         for angle in (0.3, 0.7, 1.1, 2.0):
             with self.subTest(angle=angle):
                 face = self._square(lambda s: s.rotated(angle))
                 self.assertAlmostEqual(to_shapely(face).area, 100.0, delta=0.1)
 
-    def test_retta_che_sfiora_un_cerchio(self):
+    def test_straight_grazing_a_circle(self):
         # a V with the inscribed circle, the sides miss it by 0.0004 (below SAME_POINT):
         # the tip between the V and the circle is a closed face of the network. The
         # network is looked at and not the contour: here no edge lies wholly on the
@@ -124,7 +124,7 @@ class TestOverlapFromANodeUnderMotion(unittest.TestCase):
     and far. Measured on 1 November with a trace: the overlap is removed before the
     faces, and the line fires only on the arrival edge (36 times out of 36), never on another."""
 
-    def test_faces_e_outlines_non_dipendono_dal_moto(self):
+    def test_faces_and_outlines_do_not_depend_on_the_motion(self):
         import topo
         from tests.invariants import rigid
         from topo.core.primitives.line import LineSeg
@@ -163,7 +163,7 @@ class TestFirstStepUnderMotion(unittest.TestCase):
     # rotations of 1e-12: the left side leans one way or the other, within the noise
     MOTIONS = [(1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0), (1e-12, 0.3, -0.2), (-1e-12, 0.3, -0.2)]
 
-    def test_partenze_diverse_stessi_passaggi(self):
+    def test_different_starts_same_passes(self):
         from tests.invariants import rigid
         from topo.core.topology.graph import build_node_graph
         from topo.core.topology.outer_face import _first_step, outer_face_passes
@@ -203,7 +203,7 @@ class TestUnionGridUnderMotion(unittest.TestCase):
     MOTIONS = [(0.0, 0.0, 0.0), (0.7, 0.0, 0.0), (0.13, 3.1, -7.9), (2.4, -0.37, 0.61),
                (math.pi / 2, 0.0, 0.0), (0.0, 2.5e6, -1.5e6)]
 
-    def test_la_griglia_lavora_sui_doppioni(self):
+    def test_the_grid_works_on_the_duplicates(self):
         import shapely
         from topo.core.topology.graph import build_node_graph
         from topo.core.topology.outer_face import UNION_GRID, _on_nodes
@@ -216,7 +216,7 @@ class TestUnionGridUnderMotion(unittest.TestCase):
         self.assertEqual(on_grid, len(lines[0].coords) - 1)   # i due poligoni coincidono vertice per vertice
         self.assertLess(exact, 10)      # without a grid: few crossings at the last bit
 
-    def test_la_lettura_non_dipende_dalla_griglia_ne_dal_moto(self):
+    def test_the_reading_depends_neither_on_the_grid_nor_on_the_motion(self):
         from unittest import mock
         import topo
         from topo.core.topology import outer_face as module
@@ -260,7 +260,7 @@ class TestChordContactUnderMotion(unittest.TestCase):
                 LineSeg(start=q, end=(q[0] + 1, q[1] + 2)), LineSeg(start=(q[0] + 1, q[1] + 2), end=(q[0] - 1, q[1] + 2)),
                 LineSeg(start=(q[0] - 1, q[1] + 2), end=q)]
 
-    def test_il_contatto_sulla_corda_non_dipende_dal_moto(self):
+    def test_the_contact_on_the_chord_does_not_depend_on_the_motion(self):
         import topo
         from tests.invariants import rigid
         readings = []

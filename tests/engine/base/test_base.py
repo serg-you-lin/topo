@@ -22,14 +22,14 @@ def _square_with_split_corner():
 
 class TestDecideNodes(unittest.TestCase):
 
-    def test_estremi_a_cavallo_di_una_cella_sono_un_nodo(self):
+    def test_ends_astride_a_cell_are_a_node(self):
         doc = topo.load_segments(_square_with_split_corner())
         self.assertNotEqual(doc.edges[1].end, doc.edges[2].start)   # the grid tuple
         edges, welded = decide_nodes(doc.edges)
         self.assertEqual(edges[1].end, edges[2].start)
         self.assertEqual(welded, 0)
 
-    def test_punti_fitti_piu_larghi_di_epsilon_restano_distinti(self):
+    def test_dense_points_wider_than_epsilon_stay_distinct(self):
         # a curve written in steps of 0.004: the group exceeds 0.01, no node merged
         pts = [(5.0 + 0.004 * k, 1.0) for k in range(6)]
         doc = topo.load_segments([LineSeg(start=a, end=b) for a, b in zip(pts, pts[1:])])
@@ -41,7 +41,7 @@ class TestDecideNodes(unittest.TestCase):
 
 class TestSameBaseForEveryReading(unittest.TestCase):
 
-    def test_faces_e_outlines_leggono_lo_stesso_contorno_a_ogni_moto(self):
+    def test_faces_and_outlines_read_the_same_contour_at_every_motion(self):
         doc = topo.load_segments(_square_with_split_corner())
         band = 2 * DEFAULT_TOLERANCE
         for name, move, back, _ in [("al posto", lambda s: s, lambda p: p, None)] + MOTIONS:

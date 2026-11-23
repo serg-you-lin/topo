@@ -318,14 +318,14 @@ class TestSplitArcStubs(unittest.TestCase):
         edges = _make_rect_with_split_arcs_and_stubs()
         self.result = topo.heal(Document(edges=edges)).faces()
 
-    def test_un_solo_part(self):
+    def test_a_single_part(self):
         self.assertEqual(self.result.cluster_count, 1)
 
-    def test_area_corretta(self):
+    def test_area_rectified(self):
         poly = to_shapely(self.result.clusters[0].outer)
         self.assertAlmostEqual(poly.area, 1000.0 * 500.0, delta=500.0)
 
-    def test_stub_non_perse_finiscono_in_trash(self):
+    def test_stubs_not_lost_end_in_trash(self):
         # one stub per corner: outside the contour, but materialized in trash
         self.assertGreaterEqual(len(self.result.loose), 4)
 

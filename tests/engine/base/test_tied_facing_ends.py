@@ -30,9 +30,9 @@ def _tied(net) -> list:
     return [d for d in net.notes if d.code == "tied-ends-joined"]
 
 
-class TestLatoInDuePezzi(unittest.TestCase):
+class TestSideInTwoPieces(unittest.TestCase):
 
-    def test_la_vista_e_un_pezzo_solo(self):
+    def test_the_view_is_a_single_piece(self):
         net = topo.heal(topo.load_segments(_side_view()), max_gap=0.05)
         result = net.outlines()
         self.assertTrue(result.is_valid)
@@ -42,11 +42,11 @@ class TestLatoInDuePezzi(unittest.TestCase):
         self.assertAlmostEqual(ymax, 10.0)
         self.assertEqual(len(_tied(net)[0].points), 2)
 
-    def test_oltre_max_gap_restano_due(self):
+    def test_beyond_max_gap_two_remain(self):
         net = topo.heal(topo.load_segments(_side_view()), max_gap=0.003)
         self.assertEqual(_tied(net), [])
 
-    def test_senza_max_gap_niente_si_unisce(self):
+    def test_without_max_gap_nothing_joins(self):
         # heal(doc) reads the drawing as it is
         self.assertEqual(_tied(topo.heal(topo.load_segments(_side_view()))), [])
 

@@ -12,17 +12,17 @@ LESSONS = sorted(p for p in TUTORIAL.glob("[0-9][0-9]_*.py"))
 
 class TestTutorial(unittest.TestCase):
 
-    def test_ci_sono_le_lezioni(self):
+    def test_the_lessons_are_there(self):
         self.assertGreaterEqual(len(LESSONS), 13)
 
-    def test_ogni_lezione_gira(self):
+    def test_every_lesson_runs(self):
         for lesson in LESSONS:
             with self.subTest(lesson=lesson.name):
                 run = subprocess.run([sys.executable, str(lesson)], capture_output=True, text=True,
                                      encoding="utf-8", cwd=TUTORIAL, timeout=120)
                 self.assertEqual(run.returncode, 0, run.stdout[-2000:] + run.stderr[-3000:])
 
-    def test_le_lezioni_usano_solo_nomi_pubblici(self):
+    def test_the_lessons_use_only_public_names(self):
         # un tester impara la superficie pubblica: niente topo.core né import da un modulo interno
         for lesson in LESSONS:
             with self.subTest(lesson=lesson.name):

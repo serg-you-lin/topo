@@ -123,14 +123,14 @@ class TestSplinePolygon(unittest.TestCase):
         self.assertEqual((poly[0], poly[-1]), s.endpoints())
         self.assertLessEqual(_deviation_along(poly, _samples(s._evaluate, lo, hi, n)), tol)
 
-    def test_molti_intervalli_su_una_spline_corta(self):
+    def test_many_intervals_on_a_short_spline(self):
         # 191 zig-zag control points over 4.75 mm, 188 intervals: the shape of the worst
         # of the 631 (before 0.0023 from the curve at tol 0.001)
         cps = [(0.025 * i, 0.003 * (-1) ** i) for i in range(191)]
         knots = [0.0] * 4 + [i / 188 for i in range(1, 188)] + [1.0] * 4
         self._check(BSplineSeg(degree=3, control_points=cps, knots=knots), 1e-3, 20000)
 
-    def test_gradi_nodi_e_pesi(self):
+    def test_degrees_nodes_and_weights(self):
         for degree in (1, 2, 3, 5):
             for clamped in (True, False):
                 for rational in (False, True):
@@ -138,12 +138,12 @@ class TestSplinePolygon(unittest.TestCase):
                         s = _spline(degree, degree + 8, clamped, rational, seed=degree * 4 + clamped * 2 + rational)
                         self._check(s, 1e-3)
 
-    def test_nodi_multipli(self):
+    def test_multiple_nodes(self):
         cps = [(0.0, 0.0), (10.0, 20.0), (20.0, -5.0), (30.0, 15.0), (40.0, 0.0), (50.0, 30.0), (60.0, 0.0)]
         knots = [0.0] * 4 + [0.5, 0.5, 0.5] + [1.0] * 4
         self._check(BSplineSeg(degree=3, control_points=cps, knots=knots), 1e-3)
 
-    def test_un_peso_non_positivo_si_rifiuta(self):
+    def test_a_non_positive_weight_is_refused(self):
         s = BSplineSeg(degree=2, control_points=[(0.0, 0.0), (1.0, 1.0), (2.0, 0.0)],
                        knots=[0.0, 0.0, 0.0, 1.0, 1.0, 1.0], weights=[1.0, -0.5, 1.0])
         with self.assertRaises(ValueError):
@@ -237,7 +237,7 @@ class TestGridSnapUnderMotion(unittest.TestCase):
     end is skipped. A circle cut at 5e-10 mm from a vertex: `heal()` gives the
     same reading in place, rotated and far (the grid stays anchored at angle 0)."""
 
-    def test_cerchio_tagliato_vicino_a_un_vertice_della_griglia(self):
+    def test_circle_cut_near_a_grid_vertex(self):
         import topo
         from tests.invariants import rigid
         from topo.core.primitives.conics import _circle_sides

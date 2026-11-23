@@ -47,7 +47,7 @@ class TestTextAlignRoundTrip(unittest.TestCase):
     def tearDownClass(cls):
         cls.tmp.cleanup()
 
-    def test_ogni_allineamento_torna_uguale(self):
+    def test_every_alignment_comes_back_equal(self):
         for t in self.sent[:-3]:
             with self.subTest(halign=t.halign, valign=t.valign):
                 r = self.back[t.text]
@@ -55,16 +55,16 @@ class TestTextAlignRoundTrip(unittest.TestCase):
                 self.assertAlmostEqual(r.position[0], t.position[0], places=6)
                 self.assertAlmostEqual(r.position[1], t.position[1], places=6)
 
-    def test_piu_righe_tornano_piu_righe(self):
+    def test_more_lines_come_back_more_lines(self):
         r = self.back["riga 1\nriga 2"]
         self.assertEqual((r.halign, r.valign), ("center", "top"))
         self.assertEqual(r.position, (50.0, 20.0))
 
-    def test_spazi_ai_bordi_restano(self):
+    def test_edge_spaces_remain(self):
         self.assertEqual(self.back["SECTION  "].position, (60.0, 80.0))
         self.assertIn("  Materiale", self.back)
 
-    def test_allineamento_sconosciuto_rifiutato(self):
+    def test_unknown_alignment_refused(self):
         with self.assertRaises(ValueError):
             topo.Text(position=(0, 0), text="x", halign="middle")
         with self.assertRaises(ValueError):

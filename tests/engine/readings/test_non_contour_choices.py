@@ -36,7 +36,7 @@ class TestA_InteriorChainIsChord(unittest.TestCase):
     panel with stiffening crosses and a hole held by 4 lines. Without other
     information the piece is full."""
 
-    def test_pannello_pieno_otto_linee_nel_trash(self):
+    def test_full_panel_eight_lines_in_the_trash(self):
         result = _heal(_lines((0, 0), (260, 0), (260, 150), (0, 150), closed=True)
                        + _lines((95, 47), (165, 47), (165, 103), (95, 103), closed=True)
                        + _lines((0, 0), (95, 47)) + _lines((260, 0), (165, 47))
@@ -51,7 +51,7 @@ class TestB_BridgeSplitsParts(unittest.TestCase):
     """Two rectangles joined by a line: the outer border walks it back and forth. Two
     pieces, and heal() says so."""
 
-    def test_due_pezzi_e_warning(self):
+    def test_two_pieces_and_warning(self):
         result = _heal(_lines((0, 0), (110, 0), (110, 50), (110, 100), (0, 100), closed=True)
                        + _lines((166, 0), (276, 0), (276, 100), (166, 100), (166, 50), closed=True)
                        + _lines((110, 50), (166, 50)))
@@ -65,7 +65,7 @@ class TestC_GrazedChordIsChord(unittest.TestCase):
     out of 100 it borders the outside. Less than half: chord, and the notch stays
     in the contour."""
 
-    def test_corda_nel_trash_tacca_nel_contorno(self):
+    def test_chord_in_the_trash_notch_in_the_contour(self):
         outline = _lines((0, 0), (100, 0), (100, 49), (100, 50), (51, 50), (50, 48.5), (49, 50),
                          (0, 50), (0, 49), closed=True)
         result = _heal(outline + _lines((0, 49), (100, 49)))
@@ -81,27 +81,27 @@ class TestD_CrossingSidesAreReported(unittest.TestCase):
 
     NOTCH = ((0, 0), (28, 0), (30, 20), (27, 0.5), (60, 0), (60, 40), (30, 40), (0, 40))
 
-    def test_warning_con_il_punto(self):
+    def test_warning_with_the_point(self):
         result = _heal(_lines(*self.NOTCH, closed=True))
         crossing = [w for w in result.warnings if w.code == "crossing"]
         self.assertEqual(len(crossing), 1, result.warnings)
         self.assertAlmostEqual(crossing[0].at[0], 28.048, places=2)
         self.assertAlmostEqual(crossing[0].at[1], 0.484, places=2)
 
-    def test_incrocio_vero_trovato(self):
+    def test_true_crossing_found(self):
         doc = topo.load_segments(_lines(*self.NOTCH, closed=True))
         points = interior_crossings(doc.edges, TOL)
         self.assertEqual(len(points), 1)
         self.assertAlmostEqual(points[0][0], 28.048, places=2)
         self.assertAlmostEqual(points[0][1], 0.484, places=2)
 
-    def test_contatto_a_t_non_e_un_incrocio(self):
+    def test_t_contact_is_not_a_crossing(self):
         # the end of a chord at mid top side: a contact, not an overlap
         doc = topo.load_segments(_lines((0, 0), (40, 0), (40, 20), (0, 20), closed=True)
                                  + _lines((0, 0), (20, 20)))
         self.assertEqual(interior_crossings(doc.edges, TOL), [])
 
-    def test_disegno_pulito_nessun_warning(self):
+    def test_clean_drawing_no_warning(self):
         result = _heal(_lines((0, 0), (40, 0), (40, 20), (0, 20), closed=True))
         self.assertFalse(any("incroci" in w for w in result.warnings), result.warnings)
 
@@ -111,7 +111,7 @@ class TestE_ClosedChainNeverCandidate(unittest.TestCase):
     starts and returns to the same node, so it is never a chord. Today it is a
     hole; whether it should go to the trash is open in TODO."""
 
-    def test_oggi_resta_un_foro(self):
+    def test_today_it_stays_a_hole(self):
         result = _heal(_lines((0, 0), (260, 0), (260, 120), (0, 120), closed=True)
                        + _lines((0, 0), (90, 40), (50, 80), closed=True))
         self.assertEqual(result.cluster_count, 1)

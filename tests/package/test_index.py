@@ -10,7 +10,7 @@ from tests.paths import PROJECT_ROOT
 
 class TestCodeIndex(unittest.TestCase):
 
-    def test_indice_aggiornato_e_layer_puliti(self):
+    def test_index_updated_and_layers_clean(self):
         # docs/INDEX.md is not in git: on a fresh clone it is generated before the --check
         if not (PROJECT_ROOT / "docs" / "INDEX.md").exists():
             subprocess.run([sys.executable, str(PROJECT_ROOT / "scripts" / "gen_index.py")],

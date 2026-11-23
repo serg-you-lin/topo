@@ -19,7 +19,7 @@ def _network():
 
 
 @pytest.mark.parametrize("reading", ["faces", "outlines"])
-def test_una_parte_per_cluster_niente_scartato(reading):
+def test_one_part_per_cluster_nothing_discarded(reading):
     result = getattr(_network(), reading)()
     parts = topo.split(result)
     assert [len(p.clusters) for p in parts] == [1, 1]
@@ -27,7 +27,7 @@ def test_una_parte_per_cluster_niente_scartato(reading):
     assert not any("dropped" in w for w in result.warnings)
 
 
-def test_outlines_il_foro_va_alla_sua_parte():
+def test_outlines_the_hole_goes_to_its_part():
     # outlines() puts the hole in loose: split gives it to the plate
     #
     plate, small = topo.split(_network().outlines())
@@ -35,7 +35,7 @@ def test_outlines_il_foro_va_alla_sua_parte():
     assert small.loose == []
 
 
-def test_min_area_dato_scarta_con_un_avviso():
+def test_given_min_area_discards_with_a_warning():
     result = _network().faces()
     parts = topo.split(result, min_area=10)
     assert len(parts) == 1

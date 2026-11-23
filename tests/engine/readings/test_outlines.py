@@ -36,13 +36,13 @@ def _doc(edges):
 
 class TestOutlines(unittest.TestCase):
 
-    def test_due_viste_separate_due_cluster(self):
+    def test_two_separate_views_two_clusters(self):
         edges = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + _poly((50, 0), (60, 0), (60, 5), (50, 5))
         result = topo.heal(_doc(edges), max_gap=MAX_GAP).outlines()
         self.assertEqual(len(result.clusters), 2)
         self.assertEqual([round(to_shapely(c.outer).area) for c in result.clusters], [100, 50])
 
-    def test_isola_dentro_un_altra_va_in_loose(self):
+    def test_island_inside_another_goes_to_loose(self):
         # 100x100 frame and a view inside — the only contour is the frame, the view goes
         # to loose with the island that contains it; its sides close by themselves, so it
         # is a single closed piece
@@ -54,13 +54,13 @@ class TestOutlines(unittest.TestCase):
         self.assertEqual([t.cluster_ref for t in result.loose], [0])
         self.assertAlmostEqual(to_shapely(result.loose[0]).area, 400.0)
 
-    def test_due_contorni_vicinissimi_restano_due_isole(self):
+    def test_two_very_near_contours_stay_two_islands(self):
         # no distance between the views — two contours 1 mm apart are two islands
         edges = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + _poly((11, 0), (21, 0), (21, 5), (11, 5))
         result = topo.heal(_doc(edges), max_gap=MAX_GAP).outlines()
         self.assertEqual(len(result.clusters), 2)
 
-    def test_linea_aperta_dentro_una_vista_e_sua(self):
+    def test_open_line_inside_a_view_is_its_own(self):
         # an axis inside the view that does not touch the contour goes to trash with the
         # view's cluster_ref; a line outside every contour stays without an island
         view = _poly((0, 0), (100, 0), (100, 50), (0, 50))
@@ -70,7 +70,7 @@ class TestOutlines(unittest.TestCase):
         refs = {round(t.segments[0].start[0]): t.cluster_ref for t in result.loose}
         self.assertEqual(refs, {10: 0, 300: None})
 
-    def test_gruppo_di_cerchi_staccati_dentro_una_vista_in_loose(self):
+    def test_group_of_detached_circles_inside_a_view_in_loose(self):
         # three circles detached from the border inside the view go to loose, whole,
         # with the island that contains them
         edges = _poly((0, 0), (200, 0), (200, 100), (0, 100)) + [
@@ -81,7 +81,7 @@ class TestOutlines(unittest.TestCase):
         self.assertEqual(sorted(s.radius for t in result.loose for s in t.segments), [3, 3, 5.5])
         self.assertEqual({t.cluster_ref for t in result.loose}, {0})
 
-    def test_cerchio_dentro_una_vista_in_loose(self):
+    def test_circle_inside_a_view_in_loose(self):
         edges = _poly((0, 0), (20, 0), (20, 20), (0, 20)) + [_circle((10, 10), 3)]
         result = topo.heal(_doc(edges), max_gap=MAX_GAP).outlines()
         self.assertEqual(result.clusters[0].outer.role, ContourRole.OUTER)
@@ -89,7 +89,7 @@ class TestOutlines(unittest.TestCase):
         self.assertEqual([(type(s).__name__, s.radius, t.cluster_ref) for t in result.loose for s in t.segments],
                          [("CircleSeg", 3, 0)])
 
-    def test_cerchio_tagliato_dagli_assi_esce_intero(self):
+    def test_circle_cut_by_the_axes_comes_out_whole(self):
         # the axes cross the circle in the planar network: in loose the circle comes
         # out intact, not in the network's 4 arcs
         edges = _poly((0, 0), (20, 0), (20, 20), (0, 20)) + [_circle((10, 10), 3)]
@@ -98,13 +98,13 @@ class TestOutlines(unittest.TestCase):
         self.assertEqual(sorted(type(s).__name__ for t in result.loose for s in t.segments),
                          ["CircleSeg", "LineSeg", "LineSeg"])
 
-    def test_lato_tagliato_da_un_asse_torna_un_segmento(self):
+    def test_side_cut_by_an_axis_returns_a_segment(self):
         # an axis leaving the contour breaks it: the outer contour stays 4 sides
         edges = _poly((0, 0), (20, 0), (20, 20), (0, 20)) + [_line((10, -5), (10, 25))]
         outer = topo.heal(_doc(edges), max_gap=MAX_GAP).outlines().clusters[0].outer
         self.assertEqual(len(outer.segments), 4)
 
-    def test_cornice_marcata_resta_fuori(self):
+    def test_marked_frame_stays_out(self):
         # snapdraw marks the frame → outlines() does not read it, it stays in loose with
         # its role; closed by itself, it comes out as a closed curve
         frame = _poly((0, 0), (100, 0), (100, 100), (0, 100))
@@ -117,7 +117,7 @@ class TestOutlines(unittest.TestCase):
         framed = [t for t in result.loose if t.role == "frame"]
         self.assertEqual([(type(t).__name__, len(t.segments)) for t in framed], [("ClosedCurve", 4)])
 
-    def test_cerchi_concentrici_vicini_in_loose_a_ogni_max_gap(self):
+    def test_near_concentric_circles_in_loose_at_every_max_gap(self):
         # two circles 0.4 apart inside the view both come out in loose, below and above
         # the contact (max_gap 0.5 and 0.2)
         edges = _poly((0, 0), (100, 0), (100, 100), (0, 100)) + [
@@ -129,11 +129,11 @@ class TestOutlines(unittest.TestCase):
                 self.assertEqual(sorted(s.radius for t in result.loose for s in t.segments), [4.6, 5])
                 self.assertEqual({t.cluster_ref for t in result.loose}, {0})
 
-    def test_niente_di_chiuso_invalido(self):
+    def test_nothing_closed_invalid(self):
         result = topo.heal(_doc([_line((0, 0), (5, 0))]), max_gap=MAX_GAP).outlines()
         self.assertFalse(result.is_valid)
 
-    def test_richiede_un_documento(self):
+    def test_requires_a_document(self):
         with self.assertRaises(TypeError):
             topo.heal([_line((0, 0), (1, 0))], max_gap=MAX_GAP).outlines()
 
@@ -144,20 +144,20 @@ class TestRefitTessellations(unittest.TestCase):
         pts = [(10 * math.cos(math.pi * i / (2 * n)), 10 * math.sin(math.pi * i / (2 * n))) for i in range(n + 1)]
         return [_line(pts[i], pts[i + 1]) for i in range(n)]
 
-    def test_catena_corta_diventa_un_arco(self):
+    def test_short_chain_becomes_an_arc(self):
         # 40 segments of ~0.39 mm: below max_segment=0.5 → an r=10 arc
         out = refit_tessellations(self._tessellated_arc(), max_segment=0.5)
         self.assertEqual(len(out), 1)
         self.assertIsInstance(out[0].segment, CircleSeg)
         self.assertAlmostEqual(out[0].segment.radius, 10.0, places=3)
 
-    def test_estremi_tengono_i_nodi(self):
+    def test_ends_keep_the_nodes(self):
         chain = self._tessellated_arc()
         out = refit_tessellations(chain, max_segment=0.5)
         self.assertEqual(out[0].start, chain[0].start)
         self.assertEqual(out[0].end, chain[-1].end)
 
-    def test_catena_troppo_corta_non_si_tocca(self):
+    def test_chain_too_short_is_left_alone(self):
         chain = self._tessellated_arc(n=5)
         self.assertEqual(refit_tessellations(chain, max_segment=5.0), chain)
 
@@ -177,7 +177,7 @@ class TestNestedInUnderMotion(unittest.TestCase):
     MOTIONS = [(a, dx, dy) for a in (0.0, 0.8127, math.pi / 2)
                for dx, dy in ((0.0, 0.0), (13.1, -9.3), (2.5e6, -1.5e6))]
 
-    def test_il_piu_esterno_ospita_tutti(self):
+    def test_the_outermost_hosts_all(self):
         from tests.invariants import rigid
         from topo import experimental
         rectangle = topo.geometry.rectangle
@@ -220,7 +220,7 @@ class TestHostOfATinyPieceUnderMotion(unittest.TestCase):
                 LineSeg(start=(p1[0], -r - 3), end=p1),
                 CircleSeg(center=(0.0, -r + 0.0504), radius=0.0002)]
 
-    def test_il_cerchietto_nel_morso_non_e_annidato_a_nessun_moto(self):
+    def test_the_small_circle_in_the_bite_is_not_nested_at_any_motion(self):
         from tests.invariants import rigid
         for motion in self.MOTIONS:
             move, _ = rigid(*motion)
@@ -228,7 +228,7 @@ class TestHostOfATinyPieceUnderMotion(unittest.TestCase):
                 result = topo.heal(topo.load_segments([move(s) for s in self._segments()]), max_gap=0.0).outlines()
                 self.assertEqual(len(result.clusters), 2)
 
-    def test_al_posto_il_buffer_copre_il_cerchietto(self):
+    def test_in_place_the_buffer_covers_the_small_circle(self):
         # the proof is not empty: at half a step the polygon widened by 0.05 contains it
         from shapely import Polygon
         from tests.invariants import rigid

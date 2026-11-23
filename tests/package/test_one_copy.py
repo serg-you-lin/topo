@@ -27,7 +27,7 @@ SAME_NAME_DIFFERENT_CONTENT = {
 
 class TestOneCopy(unittest.TestCase):
 
-    def test_un_nome_una_copia(self):
+    def test_one_name_one_copy(self):
         by_name = collections.defaultdict(list)
         for p in DATA.rglob("*"):
             # `*healed*` are local outputs, outside git (.gitignore)

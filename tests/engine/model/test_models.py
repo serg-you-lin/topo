@@ -85,7 +85,7 @@ class TestForgeContour(unittest.TestCase):
         contour = Contour(segments=_ring(poly), role="outer")
         self.assertEqual(contour.role, "outer")
 
-    def test_006_repr_senza_il_genitore(self):
+    def test_006_repr_without_the_parent(self):
         """The parent is printed where it is: inside the child the print would grow at every level."""
         outer = Contour(segments=_ring(Polygon([(0,0), (10,0), (10,10), (0,10)])), role="outer")
         inner = Contour(segments=_ring(Polygon([(2,2), (4,2), (4,4), (2,4)])), role="inner",
@@ -280,17 +280,17 @@ class TestDiagnostic(unittest.TestCase):
         return Diagnostic("open-arc", "arc left open", points=[(1, 2)], notes=["5.68° missing"],
                           help="close_near_full_arcs(...)", param="max_missing_angle", value=0.099)
 
-    def test_il_testo_e_quello_di_rust(self):
+    def test_the_text_is_rusts(self):
         self.assertEqual(self._d(), "warning[open-arc]: arc left open\n  --> (1.000, 2.000)\n"
                                     "  = note: 5.68° missing\n  = help: close_near_full_arcs(...)")
 
-    def test_uno_per_tipo_il_testo_mostra_tre_punti_points_tutti(self):
+    def test_one_per_type_the_text_shows_three_points_points_all(self):
         from topo.model import Diagnostic
         d = Diagnostic("near-gap", "5 gaps", points=[(k, 0) for k in range(5)])
         self.assertEqual((len(d.points), d.at, str(d).count("-->")), (5, (0.0, 0.0), 3))
         self.assertIn("... and 2 more in .points", d)
 
-    def test_copia_e_pickle_tengono_i_campi(self):
+    def test_copy_and_pickle_keep_the_fields(self):
         import copy
         import pickle
         for d in (copy.deepcopy(self._d()), pickle.loads(pickle.dumps(self._d()))):

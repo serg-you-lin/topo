@@ -161,7 +161,7 @@ class TestHealerCountersink(unittest.TestCase):
         self.assertEqual(len(self.result.clusters[0].features("holes")), 0)
         self.assertGreaterEqual(len(self.result.clusters[0].inners), 2)
 
-    def test_003_area_per_parita(self):
+    def test_003_area_by_parity(self):
         # Ø30 void (depth 1), Ø10 island inside it (depth 2): the true area is
         # 200·100 − π·15² + π·5², not outer minus the union. Deviation from the polygon
         # within tol × perimeter of the two circles
@@ -212,14 +212,14 @@ class TestHealerDeduplication(unittest.TestCase):
 
 class TestValidateInput(unittest.TestCase):
 
-    def test_001_linee_aperte_nessuna_previsione(self):
+    def test_001_open_lines_no_forecast(self):
         # lines that heal() will close: no fact to state about the input, and a
         # forecast about heal() is no longer made by validate_document
         check = topo.validate_document(topo_dxf.load_dxf(load("rect_lines.dxf")))
         self.assertEqual(check.warnings, [])
         self.assertTrue(check.is_valid)
 
-    def test_001b_tratto_nullo_e_documento_vuoto(self):
+    def test_001b_null_stretch_and_void_document(self):
         g = topo.geometry
         doc = topo.load_segments(g.rectangle(10, 10) + [topo.primitives.LineSeg(start=(3, 3), end=(3, 3))])
         check = topo.validate_document(doc)

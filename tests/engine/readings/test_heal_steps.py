@@ -58,13 +58,13 @@ def _broken_square(spur=False):
 
 class TestSplitLabeled(unittest.TestCase):
 
-    def test_001_ruolo_non_strutturale_messo_da_parte(self):
+    def test_001_non_structural_role_set_aside(self):
         mark = _line((2, 2), (5, 5), role="engrave")
         kept, labeled = topo.experimental.split_labeled(_square(0, 0, 10) + [mark])
         self.assertEqual(len(kept), 4)
         self.assertEqual(labeled, [mark])
 
-    def test_002_hole_resta_col_predicato_del_chiamante(self):
+    def test_002_hole_stays_with_the_callers_predicate(self):
         # without a predicate a "hole" is not structural, with the caller's predicate
         # that recognizes it it is
         hole = _circle((5, 5), 1, role="hole")
@@ -78,19 +78,19 @@ class TestSplitLabeled(unittest.TestCase):
 
 class TestCloseFreeGaps(unittest.TestCase):
 
-    def test_001_gap_sotto_tolleranza_chiuso(self):
+    def test_001_gap_below_tolerance_closed(self):
         edges = _square(0, 0, 10)
         edges[0] = _line((0, 0), (9.95, 0))
         # before no face, after one
         self.assertEqual(topo.experimental.face_loops(edges), [])
         self.assertEqual(len(topo.experimental.face_loops(topo.experimental.close_free_gaps(edges, 0.1))), 1)
 
-    def test_002_gap_sopra_tolleranza_intatto(self):
+    def test_002_gap_above_tolerance_intact(self):
         edges = _square(0, 0, 10)
         edges[0] = _line((0, 0), (9, 0))
         self.assertEqual(topo.experimental.close_free_gaps(edges, 0.1), edges)
 
-    def test_004_capo_di_un_arco_d_ellisse_si_chiude_come_quello_di_una_spline(self):
+    def test_004_end_of_an_ellipse_arc_closes_like_a_spline_end(self):
         # half ellipse closed by a line arriving 0.003 from its end (og_04 with the
         # ellipse refit): the ellipse's end is free like the others
         half = EllipseSeg(center=(0.0, 0.0), major_axis=(4.0, 0.0), ratio=0.5, start_param=0.0, end_param=math.pi)
@@ -99,7 +99,7 @@ class TestCloseFreeGaps(unittest.TestCase):
         self.assertEqual(topo.experimental.face_loops(edges), [])
         self.assertEqual(len(topo.experimental.face_loops(topo.experimental.close_free_gaps(edges, 0.05))), 1)
 
-    def test_003_parallele_si_chiudono_col_segmento_a_ogni_angolo(self):
+    def test_003_parallels_close_with_the_segment_at_each_angle(self):
         # (drw_0015): two parallel lines with the ends at 0.004. Rotated, the exact
         # parallelism is lost in the last bit and the "meeting" fell at 1e10 mm; a
         # meeting beyond the tolerance is a segment. Far from the origin, as in the
@@ -117,7 +117,7 @@ class TestCloseFreeGaps(unittest.TestCase):
 
 class TestDanglingSplines(unittest.TestCase):
 
-    def test_001_spline_con_estremo_libero(self):
+    def test_001_spline_with_free_end(self):
         spline = Edge(role=ContourRole.UNKNOWN, start=(0.0, 0.0), end=(5.0, 5.0),
                       segment=BSplineSeg(degree=1, control_points=[(0.0, 0.0), (5.0, 5.0)],
                                         knots=[0, 0, 1, 1]))
@@ -133,7 +133,7 @@ class TestFindNonContourEdges(unittest.TestCase):
                  _line((1.0, 2.0), (0.0, 2.0)), _line((0.0, 2.0), (0.0, 0.0)), diagonal]
         self.assertEqual(topo.experimental.find_non_contour_edges(edges, 0.01), {id(diagonal)})
 
-    def test_002_linea_fra_due_quadrati_esclusa(self):
+    def test_002_line_between_two_squares_excluded(self):
         # walked back and forth by the outer border: it is nobody's contour
         joint = _line((10.0, 10.0), (20.0, 20.0))
         edges = _square(0, 0, 10) + _square(20, 20, 10) + [joint]
@@ -149,7 +149,7 @@ class TestLooseEnds(unittest.TestCase):
         self.chord = _line((0.0, 0.0), (10.0, 10.0))
         self.edges = _square(0, 0, 10) + _square(20, 20, 10) + [self.joint, self.stub]
 
-    def test_001_la_linea_che_unisce_due_forme(self):
+    def test_001_line_joining_two_shapes(self):
         candidates = topo.experimental.find_non_contour_edges(self.edges + [self.chord], 0.01)
         self.assertEqual(topo.experimental.find_joining_edges(self.edges + [self.chord], candidates), [self.joint],
                          "la diagonale di un quadrato Ã¨ una corda, non unisce niente")
@@ -159,17 +159,17 @@ class TestLooseEnds(unittest.TestCase):
         self.assertEqual([p for p, _ in ends], [(13.0, -4.0)])
         self.assertAlmostEqual(ends[0][1], 5.0)
 
-    def test_003_heal_li_dice(self):
+    def test_003_heal_says_them(self):
         result = topo.heal(Document(edges=self.edges, source_meta={"tolerance": 0.05})).faces()
         self.assertEqual(result.cluster_count, 2)
         self.assertIn("free-end", [n.code for n in result.notes])
         self.assertIn("joining-edge", [n.code for n in result.notes])
 
-    def test_004_pezzo_pulito_nessun_warning(self):
+    def test_004_clean_piece_no_warning(self):
         result = topo.heal(Document(edges=_square(0, 0, 10), source_meta={"tolerance": 0.05})).faces()
         self.assertEqual(result.warnings, [])
 
-    def test_005_estremo_fuso_dal_grafo_tollerante_non_e_libero(self):
+    def test_005_end_merged_by_the_tolerant_graph_is_not_free(self):
         # the broken corner is closed only by the tolerant graph: on its nodes the two
         # ends of the corner are one, the stub stays free
         edges = _broken_square(spur=True)
@@ -196,20 +196,20 @@ class TestShortElementsAndTolerance(unittest.TestCase):
                 LineSeg((b - g, 100), (0, 100)), LineSeg((0, 100), (0, 0))]
         return topo.heal(topo.load_segments(segs), max_gap=1.0).faces()
 
-    def test_001_raccordo_resta(self):
+    def test_001_fillet_remains(self):
         result = self._heal(CircleSeg((99.6, 99.6), 0.4, 0, math.pi / 2), 99.6, 99.6)
         self.assertEqual(result.cluster_count, 1)
         outer = result.clusters[0].outer
         self.assertIn("CircleSeg", [type(s).__name__ for s in outer.segments])
         self.assertAlmostEqual(outer.area, 10000 - (0.4 ** 2 - math.pi * 0.4 ** 2 / 4), places=3)
 
-    def test_002_smusso_resta(self):
+    def test_002_chamfer_remains(self):
         c = 0.5 / math.sqrt(2)
         result = self._heal(LineSeg((100, 100 - c), (100 - c, 100)), 100 - c, 100 - c)
         self.assertEqual(result.cluster_count, 1)
         self.assertAlmostEqual(result.clusters[0].outer.area, 10000 - c * c / 2, places=3)
 
-    def test_003_ogni_estremo_chiude_un_gap_solo(self):
+    def test_003_every_end_closes_a_single_gap(self):
         # three ends within tol: the two nearest pair up, the third stays free
         edges = [_line((0, 0), (10, 0)), _line((10.2, 0), (20, 0)), _line((10.5, 0.6), (10.5, 10))]
         healed = topo.experimental.close_free_gaps(edges, 1.0)
@@ -218,7 +218,7 @@ class TestShortElementsAndTolerance(unittest.TestCase):
 
 class TestGapAtTolerance(unittest.TestCase):
 
-    def test_gap_largo_quanto_la_tolleranza_si_chiude_a_ogni_moto(self):
+    def test_gap_as_wide_as_the_tolerance_closes_at_every_motion(self):
         # (regr_03): a hole with a 0.5 wide slot, tolerance 0.5. The comparison
         # `d <= tol` was decided by the last bit, different at every motion; within the
         # tolerance it includes it up to the noise
@@ -261,7 +261,7 @@ def _same_at_every_motion(test, doc):
 
 class TestTiedGapPartners(unittest.TestCase):
 
-    def test_capo_con_due_capi_alla_stessa_distanza_non_sceglie(self):
+    def test_end_with_two_ends_at_the_same_distance_does_not_choose(self):
         # an end pointing between two symmetric free ends, at 0.316 from both, with no
         # curve in its way: two equally good partners, none chosen, and heal() says so
         x, y = -71565.8225, -3048.0985
@@ -275,7 +275,7 @@ class TestTiedGapPartners(unittest.TestCase):
 
 class TestGapOntoCurve(unittest.TestCase):
 
-    def test_il_capo_si_chiude_sulla_curva_piu_vicina(self):
+    def test_the_end_closes_on_the_nearest_curve(self):
         # (drw_0015): the low end of the vertical stretch is 0.125 from the horizontal
         # stretch and 0.28 from its two ends: it closes on the stretch, as a T, at
         # every motion
@@ -288,7 +288,7 @@ class TestGapOntoCurve(unittest.TestCase):
         stem = next(e for e in base if abs(e[0] - x) < 1e-6 and abs(e[2] - x) < 1e-6)
         self.assertAlmostEqual(min(stem[1], stem[3]), y, places=6)
 
-    def test_due_incontri_sulla_continuazione_vince_il_primo(self):
+    def test_two_meetings_on_the_continuation_the_first_wins(self):
         # (`min` over the meetings): the continued line cuts the circle at 0.2 and 0.4,
         # the end goes to 0.2 at every motion. Proof: the line chooses between two
         # meetings (counted in place) and the choice does not change. There is no tie
@@ -322,7 +322,7 @@ class TestGapOntoCurve(unittest.TestCase):
             self.assertAlmostEqual(ends[0][0], x + 0.2, places=6, msg=name)
             self.assertAlmostEqual(ends[0][1], y, places=6, msg=name)
 
-    def test_un_angolo_rotto_si_chiude_nell_angolo(self):
+    def test_a_broken_corner_closes_at_the_corner(self):
         # the two lines meet at the true corner: the one from before, which outlines()
         # did not close, now the same in both readings
         pieces = [LineSeg(start=(0, 0), end=(99.9, 0)), LineSeg(start=(100, 0.1), end=(100, 50)),
@@ -372,14 +372,14 @@ class TestArcLineMeetUnderMotion(unittest.TestCase):
         return [(type(e.segment).__name__, *(round(v, 6) + 0.0 for p in segment_endpoints(e.segment)
                                               for v in back(p))) for e in healed]
 
-    def test_capo_della_retta_a_meta_ponte_a_ogni_moto(self):
+    def test_line_end_midway_bridge_at_every_motion(self):
         for motion in self.MOTIONS:
             closed = self._closed(motion, 0.0)
             self.assertEqual(len(closed), 3, motion)
             bridges = [{e[1:3], e[3:5]} for e in closed if e[0] == "LineSeg"]
             self.assertIn({(0.0, 0.95), (0.0, 1.0)}, bridges, motion)
 
-    def test_capo_della_retta_di_lato_l_incontro_dal_suo_lato(self):
+    def test_line_end_aside_the_meeting_from_its_side(self):
         for motion in self.MOTIONS:
             closed = self._closed(motion, -0.1)
             self.assertEqual(len(closed), 2, motion)
@@ -396,20 +396,20 @@ class TestCloseNearFullArcs(unittest.TestCase):
         edges, n = topo.experimental.close_near_full_arcs(list(doc.edges), tolerance, **kw)
         return type(edges[0].segment).__name__, n
 
-    def test_001_export_rotto_diventa_cerchio(self):
+    def test_001_broken_export_becomes_circle(self):
         self.assertEqual(self._close(_arc(3.0, 0.4), 0.05), ("CircleSeg", 1))
 
-    def test_002_gap_entro_tol_ma_non_e_un_cerchio(self):
+    def test_002_gap_within_tol_but_not_a_circle(self):
         self.assertEqual(self._close(_arc(0.4, 90), 1.0), ("CircleSeg", 0), "un tre quarti piccolo")
         self.assertEqual(self._close(_arc(10.0, 2.9), 1.0), ("CircleSeg", 0))
 
-    def test_003_quasi_cerchio_ma_gap_oltre_tol(self):
+    def test_003_near_circle_but_gap_beyond_tol(self):
         self.assertEqual(self._close(_arc(500.0, 1.5), 0.1), ("CircleSeg", 0))
 
-    def test_004_solo_angolo_a_scelta_del_chiamante(self):
+    def test_004_angle_only_at_the_callers_choice(self):
         self.assertEqual(self._close(_arc(500.0, 1.5), math.inf), ("CircleSeg", 1))
 
-    def test_005_capo_collegato_non_si_chiude(self):
+    def test_005_linked_end_does_not_close(self):
         arc = _arc(10.0, 1.0)
         end = arc._point_at(arc.end_angle)
         doc = topo.load_segments([arc, LineSeg(end, (end[0] + 5, end[1]))])
@@ -421,12 +421,12 @@ class TestCloseNearFullArcs(unittest.TestCase):
         edges, n = topo.experimental.close_near_full_arcs(list(doc.edges), tolerance)
         return [type(e.segment).__name__ for e in edges], n
 
-    def test_008_due_archi_coi_buchi_sotto_i_2_gradi_sono_un_cerchio(self):
+    def test_008_two_arcs_with_holes_below_2_degrees_are_a_circle(self):
         # every hole (1.72°, chord 0.15) is within tolerance and below 2°
         arcs = [CircleSeg((0, 0), 5, 0.015, math.pi - 0.015), CircleSeg((0, 0), 5, math.pi + 0.015, 2 * math.pi - 0.015)]
         self.assertEqual(self._close_all(arcs, 0.5), (["CircleSeg"], 1))
 
-    def test_009_buco_da_1_si_unisce_quello_da_3_resta_aperto(self):
+    def test_009_hole_of_1_joins_the_one_of_3_stays_open(self):
         # the 1° hole closes, the arcs are a single arc open by 3°
         h = lambda deg: math.radians(deg) / 2
         arcs = [CircleSeg((0, 0), 5, h(1), math.pi - h(3)), CircleSeg((0, 0), 5, math.pi + h(3), 2 * math.pi - h(1))]
@@ -436,11 +436,11 @@ class TestCloseNearFullArcs(unittest.TestCase):
         self.assertAlmostEqual(math.degrees(2 * math.pi - edges[0].segment._sweep()), 3.0)
         self.assertNotEqual(edges[0].start, edges[0].end)
 
-    def test_010_due_archi_oltre_tolleranza_non_fanno_il_cerchio(self):
+    def test_010_two_arcs_beyond_tolerance_do_not_make_the_circle(self):
         arcs = [CircleSeg((0, 0), 5, 0.015, math.pi - 0.015), CircleSeg((0, 0), 5, math.pi + 0.015, 2 * math.pi - 0.015)]
         self.assertEqual(self._close_all(arcs, 0.1), (["CircleSeg", "CircleSeg"], 0))
 
-    def test_007_punta_di_spigolo_coi_capi_fusi_non_si_chiude(self):
+    def test_007_corner_tip_with_merged_ends_does_not_close(self):
         # the two ends fall in the same node, but two sides arrive at that node
         arc = _arc(1.5, 0.01)
         a, b = arc._point_at(arc.start_angle), arc._point_at(arc.end_angle)
@@ -459,13 +459,13 @@ class TestCloseNearFullArcs(unittest.TestCase):
     _SPLIT = [CircleSeg((0, 0), 1.95, math.radians(31.64), math.radians(259.9)),
               CircleSeg((0, 0), 1.95, math.radians(265.58), math.radians(391.64))]
 
-    def test_011_due_archi_uniti_in_un_capo_si_chiudono_da_soli(self):
+    def test_011_two_arcs_joined_at_one_end_close_by_themselves(self):
         # whoever calls it by itself must not first merge the arcs that touch
         edges, n = topo.experimental.close_near_full_arcs(list(topo.load_segments(self._SPLIT).edges), 0.5,
                                                           max_missing_angle=math.radians(6))
         self.assertEqual(([type(e.segment).__name__ for e in edges], n), (["CircleSeg"], 1))
 
-    def test_012_heal_dice_quanti_gradi_mancano_e_l_help_lo_chiude(self):
+    def test_012_heal_says_how_many_degrees_are_missing_and_the_help_closes_it(self):
         doc = topo.load_segments(self._SPLIT)
         [d] = [w for w in topo.heal(doc, max_gap=0.5).warnings if isinstance(w, topo.Diagnostic)]
         self.assertEqual((d.code, d.param, d.at), ("open-arc", "max_missing_angle", (0.0, 0.0)))
@@ -476,7 +476,7 @@ class TestCloseNearFullArcs(unittest.TestCase):
         self.assertFalse([w for w in net.warnings if isinstance(w, topo.Diagnostic)])
         self.assertEqual(sum(len(c.inners) for c in net.faces().clusters) + net.faces().cluster_count, 1)
 
-    def test_014_un_gap_poco_oltre_il_limite_avvisa_e_l_help_lo_chiude(self):
+    def test_014_a_gap_just_beyond_the_limit_warns_and_the_help_closes_it(self):
         # an open rectangle of 0.055 with tolerance 0.05
         sides = [LineSeg((0.055, 0), (10, 0)), LineSeg((10, 0), (10, 5)), LineSeg((10, 5), (0, 5)), LineSeg((0, 5), (0, 0))]
         doc = topo.load_segments(sides)
@@ -488,7 +488,7 @@ class TestCloseNearFullArcs(unittest.TestCase):
         net = topo.heal(doc, max_gap=0.055)
         self.assertEqual((net.faces().cluster_count, [w for w in net.warnings if isinstance(w, topo.Diagnostic)]), (1, []))
 
-    def test_013_un_filetto_piccolo_non_avvisa(self):
+    def test_013_a_small_thread_does_not_warn(self):
         # a thread is missing ~90°; r 0.3, chord 0.42 within 0.5, open on purpose
         thread = CircleSeg((0, 0), 0.3, 0.0, math.radians(270))
         net = topo.heal(topo.load_segments([thread]), max_gap=0.5)
@@ -507,7 +507,7 @@ class TestSingleNodeGrid(unittest.TestCase):
                 LineSeg((60, -20), (20, -20)), LineSeg((20, -20), (20, -0.3)), LineSeg((20, -0.3), b),
                 arc, LineSeg(a, (20, 0.3))]
 
-    def test_001_l_arco_in_punta_resta_nell_outer(self):
+    def test_001_tip_arc_stays_in_the_outer(self):
         for tol in (0.05, 0.5):
             with self.subTest(tolerance=tol):
                 result = topo.heal(topo.load_segments(self._lollipop()), max_gap=tol).faces()
@@ -518,11 +518,11 @@ class TestSingleNodeGrid(unittest.TestCase):
                 self.assertEqual(len(arcs), 1)
                 self.assertGreater(math.degrees(arcs[0]._sweep()), 359)
 
-    def test_002_i_nodi_non_dipendono_dalla_tolleranza(self):
+    def test_002_nodes_do_not_depend_on_the_tolerance(self):
         nodes = lambda tol: [(e.start, e.end) for e in topo.load_segments(self._lollipop()).edges]
         self.assertEqual(nodes(0.005), nodes(0.5))
 
-    def test_006_heal_non_chiude_un_arco_per_sola_tolleranza(self):
+    def test_006_heal_does_not_close_an_arc_by_tolerance_alone(self):
         result = topo.heal(topo.load_segments([_arc(10.0, 2.9)]), max_gap=1.0).faces()
         self.assertEqual(result.cluster_count, 0)
 
@@ -530,22 +530,22 @@ class TestSingleNodeGrid(unittest.TestCase):
 class TestFaceLoops(unittest.TestCase):
     """The loops of the bounded faces: one per face, never chosen by an order."""
 
-    def test_001_un_quadrato_un_giro(self):
+    def test_001_one_square_one_ambit(self):
         self.assertEqual(len(topo.experimental.face_loops(_square(0, 0, 10))), 1)
 
-    def test_002_due_asole_che_si_toccano_due_giri(self):
+    def test_002_two_slots_touching_two_ambits(self):
         # two square holes touching at a corner: two loops, not the figure-eight loop
         loops = topo.experimental.face_loops(_square(0, 0, 100) + _square(20, 20, 20) + _square(40, 40, 20))
         self.assertEqual(sorted(round(to_shapely(c).area) for c in topo.experimental.loops_to_curves(loops)),
                          [400, 400, 10000])
 
-    def test_003_nessuna_faccia(self):
+    def test_003_no_facet(self):
         self.assertEqual(topo.experimental.face_loops([_line((0, 0), (10, 0)), _line((20, 0), (20, 10))]), [])
 
-    def test_004_un_cerchio_da_solo_e_un_giro(self):
+    def test_004_a_circle_alone_is_an_ambit(self):
         self.assertEqual(len(topo.experimental.face_loops([_circle((50, 5), 2)])), 1)
 
-    def test_005_non_tocca_gli_edge_in_ingresso(self):
+    def test_005_does_not_touch_the_input_edges(self):
         edges = _square(0, 0, 10)
         before = [e.segment for e in edges]
         topo.experimental.face_loops(edges)
@@ -554,7 +554,7 @@ class TestFaceLoops(unittest.TestCase):
 
 class TestLoopsToCurves(unittest.TestCase):
 
-    def test_001_loop_con_un_edge_non_strutturale_scartato(self):
+    def test_001_loop_with_a_non_structural_edge_discarded(self):
         engraved = _square(20, 0, 5, role="engrave")
         loops = topo.experimental.face_loops(_square(0, 0, 10) + engraved)
         self.assertEqual(len(loops), 2)
@@ -574,7 +574,7 @@ class TestLoopsToCurves(unittest.TestCase):
         pts = [arc._point_at(k * (math.pi / 2) / n) for k in range(n + 1)]
         return [arc] + [LineSeg(start=pts[i], end=pts[i + 1]) for i in range(n)]
 
-    def test_002_giro_senza_area_torna_come_curve_aperte(self):
+    def test_002_ambit_without_area_returns_as_open_curves(self):
         doc = topo.load_segments(self._arc_with_chords())
         loops = topo.experimental.face_loops(doc.edges)
         self.assertEqual(len(loops), 1)
@@ -582,7 +582,7 @@ class TestLoopsToCurves(unittest.TestCase):
         self.assertEqual(len(curves), 17)
         self.assertTrue(all(isinstance(c, OpenCurve) for c in curves))
 
-    def test_003_micro_cerchio_torna_come_curva_aperta(self):
+    def test_003_micro_circle_returns_as_open_curve(self):
         # average width (2·area/perimeter = radius) below SAME_POINT: it is not a contour
         loops = topo.experimental.face_loops([_circle((0.0, 0.0), 0.9 * SAME_POINT)])
         curves = topo.experimental.loops_to_curves(loops)
@@ -590,7 +590,7 @@ class TestLoopsToCurves(unittest.TestCase):
         self.assertIsInstance(curves[0], OpenCurve)
         self.assertIsInstance(curves[0].segments[0], CircleSeg)
 
-    def test_004_heal_non_perde_il_giro_senza_area(self):
+    def test_004_heal_keeps_the_ambit_without_area(self):
         # the arc and the chords are not contour, they are in loose. Eight chords: too
         # few to be a curve written as points, which heal would refit and merge with the
         # arc; the loop stays without area: sagitta of the chords 0.2·(1-cos(π/32)) < SAME_POINT
@@ -605,14 +605,14 @@ class TestLoopsToCurves(unittest.TestCase):
 
 class TestLabeledAndHierarchy(unittest.TestCase):
 
-    def test_001_loose_curves_chiuso_e_aperto(self):
+    def test_001_loose_curves_closed_and_open(self):
         # a single rule for loose: closed by itself comes out closed, role intact
         curves = topo.experimental.loose_curves([_circle((5, 5), 1, role="engrave"),
                                                  _line((0, 0), (3, 0), role="engrave")])
         self.assertEqual(sorted(type(f).__name__ for f in curves), ["ClosedCurve", "OpenCurve"])
         self.assertTrue(all(f.role == "engrave" for f in curves))
 
-    def test_002_quadrato_dentro_quadrato(self):
+    def test_002_square_within_square(self):
         loops = topo.experimental.face_loops(_square(0, 0, 10) + _square(3, 3, 4))
         clusters, trash = topo.experimental.build_hierarchy(topo.experimental.loops_to_curves(loops), label="p")
         self.assertEqual(len(clusters), 1)
@@ -636,7 +636,7 @@ class TestComposition(unittest.TestCase):
         clusters, _ = topo.experimental.build_hierarchy(topo.experimental.loops_to_curves(kept))
         return clusters
 
-    def test_001_stessi_cluster_di_heal(self):
+    def test_001_same_clusters_as_heal(self):
         for name in ("rect_with_circle_hole.dxf", "flangia con fori.DXF", "two_parts.dxf"):
             with self.subTest(name=name):
                 doc = topo_dxf.load_dxf(str(drawing(name)))

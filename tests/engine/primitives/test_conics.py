@@ -41,19 +41,19 @@ def _chord_gap(seg, pts) -> float:
 
 class TestDiscretize(unittest.TestCase):
 
-    def test_ogni_corda_entro_la_tolleranza(self):
+    def test_every_chord_within_the_tolerance(self):
         for seg in (PARABOLA, HYPERBOLA, PARABOLA.rotated(0.7).translated(1e4, -3e3), HYPERBOLA.reversed()):
             for tol in (0.01, 0.001):
                 pts = seg.discretize(tolerance=tol)
                 self.assertLessEqual(_chord_gap(seg, pts), tol * (1 + 1e-6), (seg, tol))
 
-    def test_i_vertici_stanno_sulla_curva_e_ai_capi(self):
+    def test_the_vertices_lie_on_the_curve_and_at_the_ends(self):
         for seg in (PARABOLA, HYPERBOLA):
             pts = seg.discretize(tolerance=0.001)
             self.assertEqual((pts[0], pts[-1]), seg.endpoints())
             self.assertLess(max(abs(_on_equation(seg, p)) for p in pts), 1e-12)
 
-    def test_un_pezzo_ha_i_vertici_della_curva_intera(self):
+    def test_a_piece_has_the_vertices_of_the_whole_curve(self):
         # grid anchored at parameter 0: the interior vertices of a piece are vertices of the whole
         whole = PARABOLA.discretize(tolerance=0.001)
         piece = ParabolaSeg(PARABOLA.vertex, PARABOLA.focus, -1.3, 2.7).discretize(tolerance=0.001)
@@ -62,7 +62,7 @@ class TestDiscretize(unittest.TestCase):
 
 class TestToBspline(unittest.TestCase):
 
-    def test_la_spline_e_la_stessa_curva(self):
+    def test_the_spline_is_the_same_curve(self):
         for seg in (PARABOLA, HYPERBOLA, HYPERBOLA.rotated(1.1).scaled(3.0)):
             spline = seg.to_bspline()
             self.assertEqual(spline.degree, 2)
@@ -74,7 +74,7 @@ class TestToBspline(unittest.TestCase):
 
 class TestInTheEngine(unittest.TestCase):
 
-    def test_area_chiusa_da_una_corda(self):
+    def test_area_closed_by_a_chord(self):
         # parabola y = x²/4 between x = −4 and 4 and the chord y = 4: 2·(16 − 64/12) = 64/3
         # hyperbola x² − y² = 9 up to x = 3·cosh(1.2): a·b·(sinh T·cosh T − T)
         cases = [(PARABOLA, 64 / 3), (HYPERBOLA, 9 * (math.sinh(1.2) * math.cosh(1.2) - 1.2))]
@@ -85,17 +85,17 @@ class TestInTheEngine(unittest.TestCase):
                 (cluster,) = topo.heal(topo.load_segments(ring)).faces().clusters
                 self.assertAlmostEqual(cluster.area, area, delta=delta, msg=type(seg).__name__)
 
-    def test_retta_incrocia_esatta(self):
+    def test_straight_crosses_exactly(self):
         line = LineSeg((-10.0, 1.0), (40.0, 1.0))
         got = sorted(topo.geometry.intersections(PARABOLA, line))
         self.assertEqual(got, [(-2.0, 1.0), (2.0, 1.0)])
         (p,) = topo.geometry.intersections(HYPERBOLA, line)
         self.assertAlmostEqual(p[0], 30 + 3 * math.sqrt(1 + 1 / 9), delta=1e-12)
 
-    def test_retta_tangente_al_vertice_un_punto(self):
+    def test_straight_tangent_at_the_vertex_one_point(self):
         self.assertEqual(topo.geometry.intersections(PARABOLA, LineSeg((-3.0, 0.0), (3.0, 0.0))), [(0.0, 0.0)])
 
-    def test_tratto_fra_due_punti_esatto(self):
+    def test_exact_stretch_between_two_points(self):
         for seg in (PARABOLA, HYPERBOLA.reversed()):
             t1 = seg.t_range[1]
             a, b = seg.point_at(0.3 * t1), seg.point_at(0.8 * t1)

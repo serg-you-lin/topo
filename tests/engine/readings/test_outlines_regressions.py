@@ -24,7 +24,7 @@ class TestTangentSpike(unittest.TestCase):
     x=1506.30), broken already on 091970a ("the outer face is the boundary of the
     union of the closed faces")."""
 
-    def test_la_punta_arrotondata_non_ha_una_spike(self):
+    def test_the_rounded_tip_has_no_spike(self):
         doc = topo_dxf.load_dxf(str(FIXTURES / "outline_tangent_spike.dxf"))
         reading = read_outline(doc.edges, tolerance=TOLERANCE, max_gap=MAX_GAP)
         self.assertIsNotNone(reading.outer)

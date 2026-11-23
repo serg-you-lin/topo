@@ -21,16 +21,16 @@ INVOLUTE = FormulaSeg("r*(cos(t) + t*sin(t))", "r*(sin(t) - t*cos(t))", 0.0, 1.2
 
 class TestGrammar(unittest.TestCase):
 
-    def test_fuori_dalla_grammatica_rifiutata(self):
+    def test_outside_the_grammar_refused(self):
         for text in ("__import__('os')", "t.real", "[t]", "lambda: 1", "open(t)", "t if t else 1", "q * t", "sin(t, t)"):
             with self.subTest(text=text), self.assertRaises(ValueError):
                 FormulaSeg(text, "t", 0.0, 1.0)
 
-    def test_non_definita_ai_capi_rifiutata(self):
+    def test_undefined_at_the_ends_refused(self):
         with self.assertRaises(ValueError):
             FormulaSeg("t", "log(t)", 0.0, 1.0)
 
-    def test_si_conserva_e_si_confronta(self):
+    def test_is_kept_and_compared(self):
         copy = pickle.loads(pickle.dumps(INVOLUTE))
         self.assertEqual(copy, INVOLUTE)
         self.assertEqual(copy.point_at(0.7), INVOLUTE.point_at(0.7))
@@ -38,7 +38,7 @@ class TestGrammar(unittest.TestCase):
 
 class TestDerivative(unittest.TestCase):
 
-    def test_simbolica_su_ogni_regola(self):
+    def test_symbolic_on_every_rule(self):
         # somma, prodotto, quoziente, potenza costante e variabile, composizione
         seg = FormulaSeg("t*sin(t) + 2**t", "sqrt(1 + t**2) / cosh(t) - atan(t)**3", -1.0, 2.0)
         h = 1e-6
@@ -55,21 +55,21 @@ class TestInTheEngine(unittest.TestCase):
         a, b = INVOLUTE.endpoints()
         return [INVOLUTE, LineSeg(b, (0.0, 0.0)), LineSeg((0.0, 0.0), a)]
 
-    def test_lunghezza_esatta(self):
+    def test_exact_length(self):
         self.assertAlmostEqual(topo.geometry.segment_length(INVOLUTE), 10 * 1.2 ** 2 / 2, delta=1e-12)
 
-    def test_area_esatta(self):
+    def test_exact_area(self):
         (cluster,) = topo.heal(topo.load_segments(self._tooth())).faces().clusters
         self.assertAlmostEqual(cluster.area, 10 ** 2 * 1.2 ** 3 / 6, delta=1e-12)
 
-    def test_tratto_fra_due_punti(self):
+    def test_stretch_between_two_points(self):
         a, b = INVOLUTE.point_at(0.3), INVOLUTE.point_at(0.9)
         piece = topo.primitives.sub_segment(INVOLUTE, a, b, INVOLUTE.point_at(0.6))
         self.assertIsInstance(piece, FormulaSeg)
         for p, q in zip(piece.endpoints(), (a, b)):
             self.assertLess(math.dist(p, q), 1e-9)
 
-    def test_poligono_entro_la_tolleranza(self):
+    def test_polygon_within_the_tolerance(self):
         pts = INVOLUTE.discretize(tolerance=0.001)
         nearest = topo.geometry.nearest_point
         polyline = [LineSeg(p, q) for p, q in zip(pts, pts[1:])]

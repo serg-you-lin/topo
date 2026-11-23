@@ -36,7 +36,7 @@ def _round_trip(conic):
 
 class TestConicRoundTrip(unittest.TestCase):
 
-    def test_riletta_e_la_stessa_curva(self):
+    def test_re_read_is_the_same_curve(self):
         for conic in CONICS:
             with self.subTest(conic=type(conic).__name__):
                 _, back = _round_trip(conic)
@@ -46,14 +46,14 @@ class TestConicRoundTrip(unittest.TestCase):
                     x, y = spline.point_at(spline.t_range[0] + (spline.t_range[1] - spline.t_range[0]) * u / 100)
                     self.assertLess(abs(a * x * x + b * x * y + c * y * y + d * x + e * y + f), 1e-12)
 
-    def test_riletta_chiude_la_stessa_area(self):
+    def test_re_read_closes_the_same_area(self):
         for conic in CONICS:
             with self.subTest(conic=type(conic).__name__):
                 result, back = _round_trip(conic)
                 (before,), (after,) = result.clusters, topo.heal(back).faces().clusters
                 self.assertAlmostEqual(after.area, before.area, delta=1e-9 * before.area)
 
-    def test_formula_e_clotoide_rilette_entro_same_point(self):
+    def test_formula_and_clothoid_read_back_within_same_point(self):
         curves = [FormulaSeg("r*(cos(t) + t*sin(t))", "r*(sin(t) - t*cos(t))", 0.0, 1.2, params={"r": 10.0}),
                   ClothoidSeg(origin=(0.0, 0.0), angle=0.0, a=4.0, start_param=0.0, end_param=7.0)]
         for curve in curves:
