@@ -1,9 +1,9 @@
 """
 test_mathseg.py
 ---------------
-Ogni primitiva è una curva matematica (MAP.md D285): un punto e una derivata
-per ogni parametro del suo dominio, e una conica dà la sua equazione.
-Microcasi: le primitive di test_segment_motion più due spline a più tratti.
+Every primitive is a mathematical curve: a point and a derivative for every
+parameter of its domain, and a conic gives its equation. Micro-cases: the
+primitives of test_segment_motion plus two multi-piece splines.
 """
 
 import math
@@ -48,13 +48,13 @@ class TestMathSeg(unittest.TestCase):
             self.assertLessEqual(math.dist(seg.point_at(t1), end), FLOAT_NOISE, name)
 
     def test_la_derivata_e_quella_del_punto(self):
-        # rapporto incrementale centrato: errore h² × la derivata terza, sotto 1e-6
+        # centred incremental ratio: error h² × the third derivative, below 1e-6
         h = 1e-5
         for name, seg in _all():
             t0, t1 = seg.t_range
             for t in _samples(seg)[1:-1]:
                 if isinstance(seg, BSplineSeg) and any(abs(t - k) < 2 * h for k in seg.knots):
-                    continue    # sul nodo di una spline a tratti la derivata seconda salta
+                    continue    # at the knot of a piecewise spline the second derivative jumps
                 (ax, ay), (bx, by) = seg.point_at(t - h), seg.point_at(t + h)
                 dx, dy = seg.derivative_at(t)
                 self.assertAlmostEqual(dx, (bx - ax) / (2 * h), delta=1e-6 * max(1.0, abs(dx)), msg=(name, t))
@@ -72,7 +72,7 @@ class TestMathSeg(unittest.TestCase):
 class TestConicSeg(unittest.TestCase):
 
     def test_un_cerchio_e_un_ellisse_coi_semiassi_uguali(self):
-        # D287: le formule dell'ellisse valgono sul cerchio, esatte
+        # the ellipse's formulas hold on the circle, exact
         for name, seg in _all():
             if isinstance(seg, CircleSeg):
                 self.assertIsInstance(seg, EllipseSeg, name)
@@ -95,8 +95,8 @@ class TestConicSeg(unittest.TestCase):
                 self.assertAlmostEqual(a * x * x + b * x * y + c * y * y + d * x + e * y + f, 0.0, delta=1e-9, msg=(name, t))
 
     def test_il_discriminante_dice_quale_conica(self):
-        # B² − 4AC: < 0 ellisse (e cerchio), = 0 parabola, > 0 iperbole; a meno
-        # del fattore comune, si confronta col quadrato dei coefficienti
+        # B² − 4AC: < 0 ellipse (and circle), = 0 parabola, > 0 hyperbola; up to the
+        # common factor, compared against the square of the coefficients
         for name, seg in _all():
             if isinstance(seg, ConicSeg):
                 a, b, c, *_ = seg.equation
@@ -119,7 +119,7 @@ class TestConicSeg(unittest.TestCase):
 
 
 def _ellipse_perimeter(a: float, b: float) -> float:
-    """Il perimetro esatto con la media aritmetico-geometrica (Gauss, Ivory):
+    """The exact perimeter with the arithmetic-geometric mean (Gauss, Ivory):
     P = 2π/M · (a² − Σ 2ⁿ⁻¹·cₙ²), c₀² = a² − b², cₙ₊₁ = (aₙ − bₙ)/2."""
     total, weight = (a * a - b * b) / 2, 0.5
     x, y = a, b
@@ -132,7 +132,7 @@ def _ellipse_perimeter(a: float, b: float) -> float:
 
 
 class TestAlgebra(unittest.TestCase):
-    """`algebra` dice che matematica scrive esatta la curva, letta dalla curva."""
+    """`algebra` says what mathematics writes the curve exactly, read from the curve."""
 
     def test_ogni_primitiva_ha_il_suo_gruppo(self):
         expected = {LineSeg: "polynomial", ParabolaSeg: "polynomial", CircleSeg: "rational", EllipseSeg: "rational",
@@ -148,7 +148,7 @@ class TestAlgebra(unittest.TestCase):
         self.assertEqual(BSplineSeg(2, cp, knots, weights=[1, math.sqrt(0.5), 1]).algebra, "rational")
 
     def test_spline_coi_pesi_uguali_e_la_stessa_curva_senza_pesi(self):
-        # il fattore comune si semplifica: è davvero un polinomio
+        # the common factor cancels: it really is a polynomial
         cp, knots = [(0, 0), (1, 2), (3, 1)], [0, 0, 0, 1, 1, 1]
         a, b = BSplineSeg(2, cp, knots), BSplineSeg(2, cp, knots, weights=[2.5, 2.5, 2.5])
         for t in (0.0, 0.3, 0.71, 1.0):
@@ -158,7 +158,7 @@ class TestAlgebra(unittest.TestCase):
         cases = [("t", "t**2", "polynomial"), ("t", "t / 2 + sqrt(2) * t", "polynomial"),
                  ("t", "t**n", "polynomial"), ("t", "1 / (1 + t**2)", "rational"), ("t", "t**-2", "rational"),
                  ("t", "t**0.5", "transcendental"), ("t", "2**t", "transcendental"),
-                 ("r*cos(t)", "r*sin(t)", "transcendental")]   # un cerchio, ma l'albero non lo dimostra
+                 ("r*cos(t)", "r*sin(t)", "transcendental")]   # a circle, but the tree does not prove it
         for x, y, algebra in cases:
             with self.subTest(x=x, y=y):
                 self.assertEqual(FormulaSeg(x, y, 1.0, 2.0, params={"n": 3.0, "r": 2.0}).algebra, algebra)
@@ -170,7 +170,7 @@ class TestAlgebra(unittest.TestCase):
 
 
 class TestExactLength(unittest.TestCase):
-    """D293: ogni curva misura la sua lunghezza come ∫|P'|, non la somma delle corde."""
+    """every curve measures its length as ∫|P'|, not the sum of the chords."""
 
     def test_perimetro_dell_ellisse(self):
         ellipse = EllipseSeg(center=(0.0, 0.0), major_axis=(5.0, 0.0), ratio=0.6, start_param=0.0, end_param=2 * math.pi)

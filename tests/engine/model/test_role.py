@@ -1,13 +1,13 @@
 """
 test_role.py
 ------------
-Test unitari per topo.model.role: il vocabolario ruoli aperto (MAP.md D27).
+Unit tests for topo.model.role: the open role vocabulary.
 
-Copre:
-  - normalize_role : ruolo noto → costante, ignoto → slug conservato,
-                     input sporco → slug sicuro (niente payload di injection)
-  - role_str       : valore stringa che il ruolo sia enum o str
-  - integrazione   : un ruolo custom sopravvive a load_geometry → heal
+Covers:
+  - normalize_role : known role → constant, unknown → slug kept,
+                     dirty input → safe slug (no injection payloads)
+  - role_str       : string value whether the role is enum or str
+  - integration    : a custom role survives load_geometry → heal
 """
 
 import unittest
@@ -24,15 +24,14 @@ from topo import to_shapely
 class TestNormalizeRole(unittest.TestCase):
 
     def test_ruolo_noto_diventa_costante(self):
-        # Solo outer/inner sono vocabolario del motore ora (roles out of
-        # core) — normalize_role() li promuove a ContourRole.
+        # Only outer/inner are engine vocabulary now (roles out of core) —
+        # normalize_role() promotes them to ContourRole.
         self.assertIs(normalize_role("outer"), ContourRole.OUTER)
         self.assertIs(normalize_role("  INNER "), ContourRole.INNER)
 
     def test_ruolo_manifatturiero_e_uno_slug_qualunque_qui(self):
-        # "hole"/"bending" non sono più costanti di model.role: sono
-        # vocabolario di processo, di snapbend (MAP.md D88).
-        # Qui passano come uno slug qualunque, non come un ContourRole.
+        # "hole"/"bending" are no longer constants of model.role: they are process
+        # vocabulary, snapbend's. Here they pass as any slug, not as a ContourRole.
         self.assertEqual(normalize_role("hole"), "hole")
         self.assertNotIsInstance(normalize_role("hole"), ContourRole)
 
@@ -41,7 +40,7 @@ class TestNormalizeRole(unittest.TestCase):
         self.assertEqual(normalize_role("Nesting Region"), "nesting_region")
 
     def test_input_sporco_neutralizzato(self):
-        # caratteri fuori da [a-z0-9_-] collassati: niente injection nei sink
+        # characters outside [a-z0-9_-] collapsed: no injection in the sinks
         self.assertEqual(normalize_role("</cluster><x>"), "cluster_x")
         self.assertEqual(normalize_role("a\nb\tc"), "a_b_c")
 
@@ -63,11 +62,8 @@ class TestRoleStr(unittest.TestCase):
 
 
 class TestIsStructuralRole(unittest.TestCase):
-    """
-    Predicato minimo del motore (MAP.md D30, ristretto da "roles out of
-    core"): solo outer/inner. Il predicato esteso di processo (+ hole/
-    countersink/threaded_hole) è di snapbend (MAP.md D88).
-    """
+    """Minimal predicate of the engine: only outer/inner. The extended process
+    predicate (+ hole/countersink/threaded_hole) is snapbend's."""
 
     def test_ruoli_di_contorno(self):
         for r in (ContourRole.OUTER, ContourRole.INNER):
@@ -78,7 +74,7 @@ class TestIsStructuralRole(unittest.TestCase):
             self.assertFalse(is_structural_role(r))
 
     def test_slug_di_un_consumatore_non_e_strutturale(self):
-        # `frame` non è più una costante di topo (D31): è uno slug come gli altri
+        # `frame` is no longer a topo constant: it is a slug like the others
         self.assertFalse(is_structural_role("frame"))
         self.assertFalse(is_structural_role("title_block"))
         self.assertFalse(is_structural_role("section"))
@@ -92,9 +88,9 @@ class TestIsStructuralRole(unittest.TestCase):
 class TestCustomRoleSurvivesHeal(unittest.TestCase):
 
     def test_ruolo_custom_conservato_non_schiacciato_a_unknown(self):
-        # un quadrato "outer" con dentro un quadratino marcato con un ruolo
-        # che topo non conosce: heal lo tiene come geometria non strutturale
-        # (trash), ma il ruolo resta quello del chiamante, non "unknown"
+        # an "outer" square with a small square inside marked with a role topo does not
+        # know: heal keeps it as non-structural geometry (trash), but the role stays the
+        # caller's, not "unknown"
         doc = topo.load_geometry([
             {"type": "polygon", "role": "outer",
              "points": [(0, 0), (100, 0), (100, 100), (0, 100)]},
@@ -112,14 +108,12 @@ class TestCustomRoleSurvivesHeal(unittest.TestCase):
 
 
 class TestConsumerRolesSurviveDetect(unittest.TestCase):
-    """
-    D30: un ruolo che topo non classifica (cornice, cartiglio, slug di un
-    consumatore) sopravvive la pipeline — load → heal — con geometria e ruolo
-    intatti. Lo stesso dopo la detection di snapbend: tests/flat/test_roles.py.
-    """
+    """a role topo does not classify (frame, title block, a consumer's slug) survives
+    the pipeline — load → heal — with geometry and role intact. The same after
+    snapbend's detection: tests/flat/test_roles.py."""
 
     def _framed_doc(self):
-        # cornice grande + due pezzi dentro, tutti geometricamente distinti
+        # large frame + two parts inside, all geometrically distinct
         return topo.load_geometry([
             {"type": "polygon", "role": "frame",
              "points": [(0, 0), (400, 0), (400, 300), (0, 300)]},
@@ -134,12 +128,12 @@ class TestConsumerRolesSurviveDetect(unittest.TestCase):
         self.assertEqual(len(result.clusters), 2)
         for c in result.clusters:
             self.assertEqual(c.outer.role, ContourRole.OUTER)
-            self.assertLess(to_shapely(c.outer).area, 20000)  # non è la cornice
+            self.assertLess(to_shapely(c.outer).area, 20000)  # it is not the frame
 
     def test_to_dxf_scrive_il_ruolo_di_consumatore_su_un_layer_suo(self):
-        # D31: la cornice non finisce su "Trash" insieme alla spazzatura vera,
-        # ma su un layer "frame" col suo colore. topo non sa cosa sia — porta
-        # fedele lo slug che il consumatore ha assegnato.
+        # the frame does not end on "Trash" together with the true garbage, but on a
+        # "frame" layer with its colour. topo does not know what it is — it carries
+        # faithfully the slug the consumer assigned.
         doc = self._framed_doc()
         result = topo.heal(doc).faces()
         out = topo_dxf.to_dxf(result, doc)

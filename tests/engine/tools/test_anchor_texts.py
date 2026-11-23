@@ -1,9 +1,9 @@
 """
 tests/engine/tools/test_anchor_texts.py
 -------------------------------
-`anchor_texts()`: assegna `cluster_ref` (indice della parte contenitrice)
-ai testi del modello. Fase separata e opzionale (topo/tools/). Su cosa
-cade una punta o cosa misura una quota è una lettura del consumer (D259).
+`anchor_texts()`: assigns `cluster_ref` (index of the containing part) to the
+model's texts. Separate and optional phase (topo/tools/). What a tip lands on
+or what a dimension measures is the consumer's reading.
 """
 
 import unittest
@@ -62,7 +62,7 @@ class TestAnchorTexts(unittest.TestCase):
     def test_first_covering_part_wins_on_overlap(self):
         res = _result(
             _part(0, 0, 100, 100),
-            _part(50, 50, 150, 150),   # sovrapposta alla prima
+            _part(50, 50, 150, 150),   # overlapping the first
             texts=[Text(position=(75, 75), text="nella zona comune")],
         )
         anchor_texts(res)

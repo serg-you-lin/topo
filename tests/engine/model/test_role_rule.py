@@ -1,9 +1,9 @@
 """
 test_role_rule.py
 -----------------
-Test unitari per topo.model.role_rule: le regole con cui il chiamante
-assegna un ruolo al load (MAP.md D63), valutate su segnali neutri — nome del
-gruppo sorgente e EdgeStyle — senza nessun formato di mezzo.
+Unit tests for topo.model.role_rule: the rules with which the caller assigns a
+role at load, evaluated on neutral signals — source group name and EdgeStyle —
+with no format in between.
 """
 
 import unittest
@@ -17,7 +17,7 @@ CONTINUA    = EdgeStyle()
 TRATTEGGIATA = EdgeStyle(linetype="DASHED", dash=(0.5, -0.25))
 PUNTINATA   = EdgeStyle(linetype="DOT", dash=(0.0, -4.0))
 CIANO       = EdgeStyle(color=(0, 255, 255))
-# catene: segni diversi alternati (tratto lungo + tratto corto / punto)
+# chains: different marks alternating (long stroke + short stroke / dot)
 TRATTO_PUNTO = EdgeStyle(linetype="Qualunque", dash=(0.5, -0.25, 0.0, -0.25))
 DUE_TRATTI   = EdgeStyle(linetype="Qualunque", dash=(1.25, -0.25, 0.25, -0.25))
 
@@ -33,14 +33,14 @@ class TestIsDashed(unittest.TestCase):
         self.assertFalse(EdgeStyle(dash=(1.0, 0.0)).is_dashed)
 
     def test_conta_il_pattern_non_il_nome(self):
-        # D63: "tratteggiata" è un fatto del pattern; il nome non dice nulla
+        # "dashed" is a fact of the pattern; the name says nothing
         self.assertFalse(EdgeStyle(linetype="DASHED").is_dashed)
         self.assertTrue(EdgeStyle(linetype="Qualunque",
                                   dash=(1.0, -1.0)).is_dashed)
 
 
 class TestDashKind(unittest.TestCase):
-    # D64: la forma del tratto si legge dai segni del pattern, non dal nome
+    # the stroke shape is read from the pattern's marks, not from the name
 
     def test_continua(self):
         self.assertEqual(CONTINUA.dash_kind, "continuous")
@@ -48,24 +48,24 @@ class TestDashKind(unittest.TestCase):
 
     def test_tratteggio_uniforme(self):
         self.assertEqual(TRATTEGGIATA.dash_kind, "uniform")
-        self.assertEqual(PUNTINATA.dash_kind, "uniform")      # solo punti
-        # stesso tratto ripetuto più volte nel pattern: resta uniforme
+        self.assertEqual(PUNTINATA.dash_kind, "uniform")      # dots only
+        # the same stroke repeated several times in the pattern: it stays uniform
         self.assertEqual(EdgeStyle(dash=(0.5, -0.25, 0.5, -0.25)).dash_kind,
                          "uniform")
 
     def test_catena(self):
         self.assertEqual(TRATTO_PUNTO.dash_kind, "chain")
         self.assertEqual(DUE_TRATTI.dash_kind, "chain")
-        # tratto lungo + due corti
+        # long stroke + two short
         self.assertEqual(EdgeStyle(dash=(0.45, -0.05, 0.1, -0.05, 0.1, -0.05))
                          .dash_kind, "chain")
 
     def test_tolleranza_relativa_alla_scala(self):
-        # stessi rapporti a scale diverse → stessa forma
+        # same ratios at different scales → same shape
         for k in (0.01, 1.0, 100.0):
             dash = tuple(x * k for x in (1.25, -0.25, 0.25, -0.25))
             self.assertEqual(EdgeStyle(dash=dash).dash_kind, "chain", msg=k)
-        # tratti diversi per un arrotondamento non fanno una catena
+        # strokes that differ by a rounding do not make a chain
         self.assertEqual(EdgeStyle(dash=(0.5, -0.25, 0.501, -0.25)).dash_kind,
                          "uniform")
 
@@ -84,7 +84,7 @@ class TestRoleRule(unittest.TestCase):
         self.assertFalse(rule.matches("Taglio", style=CONTINUA))
 
     def test_condizioni_tutte_vere_insieme(self):
-        # il caso del snapdraw: tratteggiata E nome "construction"
+        # snapdraw's case: dashed AND name "construction"
         rule = topo.RoleRule("construction", name_contains="construction", dashed=True)
         self.assertTrue(rule.matches("construction", style=TRATTEGGIATA))
         self.assertFalse(rule.matches("construction", style=CONTINUA))
@@ -96,7 +96,7 @@ class TestRoleRule(unittest.TestCase):
         self.assertFalse(rule.matches("", style=TRATTEGGIATA))
 
     def test_forma_del_tratto(self):
-        # la regola ISO 128 del snapdraw: catena → costruzione, il tratteggio no
+        # snapdraw's ISO 128 rule: chain → construction, the dashing not
         rule = topo.RoleRule("construction", dash="chain")
         self.assertTrue(rule.matches("", style=TRATTO_PUNTO))
         self.assertTrue(rule.matches("", style=DUE_TRATTI))
@@ -105,7 +105,7 @@ class TestRoleRule(unittest.TestCase):
         self.assertTrue(topo.RoleRule("x", dash="UNIFORM").matches("", style=PUNTINATA))
 
     def test_dashed_include_le_catene(self):
-        # dashed resta "ha almeno un vuoto": vale per le due famiglie
+        # dashed stays "has at least one gap": it holds for the two families
         self.assertTrue(topo.RoleRule("x", dashed=True).matches("", style=TRATTO_PUNTO))
 
     def test_dash_sconosciuto_solleva(self):
@@ -121,7 +121,7 @@ class TestRoleRule(unittest.TestCase):
         with self.assertRaises(ValueError):
             topo.RoleRule("engrave", color="viola")
         with self.assertRaises(ValueError):
-            topo.RoleRule("engrave", color=4)     # un indice ACI è del DXF (D126)
+            topo.RoleRule("engrave", color=4)     # an ACI index belongs to DXF
 
     def test_regola_senza_condizioni_solleva(self):
         with self.assertRaises(ValueError):
@@ -134,7 +134,7 @@ class TestRoleRule(unittest.TestCase):
 class TestResolveRole(unittest.TestCase):
 
     def test_piega_a_catena_presa_prima_dal_nome(self):
-        # una piega disegnata a catena resta bending se la regola per nome viene prima
+        # a bend drawn as a chain stays bending if the rule by name comes first
         rules = [
             topo.RoleRule("bending", name="piega"),
             topo.RoleRule("construction", dash="chain"),
@@ -162,7 +162,7 @@ class TestResolveRole(unittest.TestCase):
 
 
 class TestSenzaAspetto(unittest.TestCase):
-    # D127: un'annotazione non ha un aspetto da confrontare (style=None)
+    # an annotation has no appearance to compare (style=None)
 
     def test_regola_sul_nome_matcha(self):
         self.assertTrue(topo.RoleRule("note", name="testo").matches("TESTO"))

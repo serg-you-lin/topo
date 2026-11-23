@@ -9,17 +9,17 @@ from topo.core.primitives.line import LineSeg
 
 
 def _make_edge(p1, p2):
-    # Ruolo irrilevante per il criterio (solo topologia: branching + faccia esterna) —
-    # stesso pattern di tests/engine/topology/test_non_contour_edges.py.
+    # Role irrelevant to the criterion (topology only: branching + outer face) —
+    # same pattern as tests/engine/topology/test_non_contour_edges.py.
     return Edge(role="unknown", start=p1, end=p2, segment=LineSeg(start=p1, end=p2))
 
 
 class TestNonContourCandidates(unittest.TestCase):
 
     def test_diagonale_interna_e_candidata(self):
-        # rettangolo con diagonale interna — stesso schema di
-        # test_non_contour_edges.test_linea_interna_confermata, ma passando
-        # per l'API pubblica su un Document.
+        # rectangle with an inner diagonal — same scheme as
+        # test_non_contour_edges.test_linea_interna_confermata, but through the public
+        # API on a Document.
         rect = [
             _make_edge((0.0, 0.0), (1.0, 0.0)),
             _make_edge((1.0, 0.0), (1.0, 2.0)),
@@ -34,7 +34,7 @@ class TestNonContourCandidates(unittest.TestCase):
         self.assertEqual([id(e) for e in candidates], [id(diagonal)])
 
     def test_contorno_semplice_nessun_candidato(self):
-        # triangolo — nessun nodo branching, niente da segnalare
+        # triangle — no branching node, nothing to report
         tri = [
             _make_edge((0.0, 0.0), (1.0, 0.0)),
             _make_edge((1.0, 0.0), (0.5, 1.0)),
@@ -45,9 +45,9 @@ class TestNonContourCandidates(unittest.TestCase):
         self.assertEqual(topo.non_contour_candidates(doc), [])
 
     def test_lato_concavo_fra_due_pieghe_non_e_candidato(self):
-        # una U: le due pieghe vanno da (0,10)/(30,10) ai vertici del fondo
-        # della tacca, (10,10)/(20,10); il fondo (10,10)-(20,10) sta dentro il
-        # convex hull ma confina con l'esterno: è contorno (D111)
+        # a U: the two bends go from (0,10)/(30,10) to the vertices of the notch's
+        # bottom, (10,10)/(20,10); the bottom (10,10)-(20,10) lies inside the convex hull
+        # but borders the outside: it is contour
         u = [_make_edge(a, b) for a, b in [
             ((0.0, 0.0), (30.0, 0.0)), ((30.0, 0.0), (30.0, 20.0)), ((30.0, 20.0), (20.0, 20.0)),
             ((20.0, 20.0), (20.0, 10.0)), ((20.0, 10.0), (10.0, 10.0)), ((10.0, 10.0), (10.0, 20.0)),
@@ -58,9 +58,9 @@ class TestNonContourCandidates(unittest.TestCase):
         self.assertEqual({id(e) for e in topo.non_contour_candidates(doc)}, {id(e) for e in bends})
 
     def test_edge_restituiti_sono_mutabili_in_place(self):
-        # Il punto della funzione: il chiamante deve poter settare .role sugli
-        # oggetti restituiti e vederlo riflesso su doc.edges, per passarli a
-        # heal() già etichettati (MAP.md D55).
+        # The point of the function: the caller must be able to set .role on the
+        # returned objects and see it reflected on doc.edges, to pass them to heal()
+        # already labelled.
         rect = [
             _make_edge((0.0, 0.0), (1.0, 0.0)),
             _make_edge((1.0, 0.0), (1.0, 2.0)),

@@ -1,10 +1,9 @@
 """
 tests/engine/primitives/test_conics.py
 --------------------------------------
-Parabola e iperbole (MAP.md D288): la discretizzazione sta entro la
-tolleranza per dimostrazione, la spline razionale quadratica è la stessa
-curva, e il motore le legge come le altre primitive. Microcasi con la
-risposta in forma chiusa.
+Parabola and hyperbola: the discretization is within the tolerance by proof,
+the rational quadratic spline is the same curve, and the engine reads them like
+the other primitives. Micro-cases with the answer in closed form.
 """
 
 import math
@@ -26,8 +25,8 @@ def _on_equation(seg, p) -> float:
 
 
 def _chord_gap(seg, pts) -> float:
-    """Lo scarto più grande fra la curva vera e il poligono: fra due vertici
-    consecutivi, la curva campionata fitta sul suo parametro."""
+    """The largest deviation between the true curve and the polygon: between two
+    consecutive vertices, the curve sampled densely on its parameter."""
     worst = 0.0
     t0, t1 = seg.t_range
     n = 4000
@@ -55,7 +54,7 @@ class TestDiscretize(unittest.TestCase):
             self.assertLess(max(abs(_on_equation(seg, p)) for p in pts), 1e-12)
 
     def test_un_pezzo_ha_i_vertici_della_curva_intera(self):
-        # griglia ancorata al parametro 0: i vertici interni di un pezzo sono vertici dell'intera
+        # grid anchored at parameter 0: the interior vertices of a piece are vertices of the whole
         whole = PARABOLA.discretize(tolerance=0.001)
         piece = ParabolaSeg(PARABOLA.vertex, PARABOLA.focus, -1.3, 2.7).discretize(tolerance=0.001)
         self.assertTrue(set(piece[1:-1]) <= set(whole))
@@ -76,11 +75,11 @@ class TestToBspline(unittest.TestCase):
 class TestInTheEngine(unittest.TestCase):
 
     def test_area_chiusa_da_una_corda(self):
-        # parabola y = x²/4 fra x = −4 e 4 e la corda y = 4: 2·(16 − 64/12) = 64/3
-        # iperbole x² − y² = 9 fino a x = 3·cosh(1.2): a·b·(sinh T·cosh T − T)
+        # parabola y = x²/4 between x = −4 and 4 and the chord y = 4: 2·(16 − 64/12) = 64/3
+        # hyperbola x² − y² = 9 up to x = 3·cosh(1.2): a·b·(sinh T·cosh T − T)
         cases = [(PARABOLA, 64 / 3), (HYPERBOLA, 9 * (math.sinh(1.2) * math.cosh(1.2) - 1.2))]
         for seg, area in cases:
-            # lontano dall'origine Green moltiplica coordinate di 1e5: restano ~1e-8 mm²
+            # far from the origin Green multiplies coordinates of 1e5: ~1e-8 mm² remain
             for moved, delta in ((seg, 1e-9 * area), (seg.rotated(0.7).translated(1e5, -3e4), FLOAT_NOISE)):
                 ring = [moved, LineSeg(*reversed(moved.endpoints()))]
                 (cluster,) = topo.heal(topo.load_segments(ring)).faces().clusters

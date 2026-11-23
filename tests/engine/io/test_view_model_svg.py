@@ -1,12 +1,11 @@
-"""
-test_view_model_svg.py — to_view_model() + to_svg()
+"""test_view_model_svg.py — to_view_model() + to_svg()
 
-Fixture tracciati nel repo:
-    golden_faces/example_4_polylines.dxf  — 4 parti, un cerchio interno ciascuna
+Fixtures tracked in the repo:
+    golden_faces/example_4_polylines.dxf  — 4 parts, an inner circle each
 
-L'overlay (MAP.md D90) si prova con un elemento di prova attaccato a mano:
-topo lo disegna dal suo ruolo e dalla sua geometria, senza sapere cos'è.
-Fori, pieghe, incisioni veri: snapbend tests/flat/test_view_model_svg.py.
+The overlay is tested with a test element attached by hand: topo draws it from
+its role and its geometry, without knowing what it is. Real holes, bends,
+engravings: snapbend tests/flat/test_view_model_svg.py.
 """
 
 import json
@@ -25,7 +24,7 @@ MULTI_PART   = EXAMPLES / "golden_faces" / "example_4_polylines.dxf"
 
 
 class _Mark:
-    """Elemento di prova dell'overlay: un cerchio interno riletto da un consumatore."""
+    """Test overlay element: an inner circle re-read by a consumer."""
     role = "my_circle"
 
     def __init__(self, contour, center, diameter):

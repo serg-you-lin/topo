@@ -1,8 +1,8 @@
 """
 tests/engine/io/test_inspect.py
 --------------------------
-Smoke test dei tre livelli di topo.inspect: non devono sollevare e devono
-stampare qualcosa di sensato.
+Smoke test of the three levels of topo.inspect: they must not raise and must
+print something sensible.
 """
 
 import io
@@ -43,7 +43,7 @@ class TestInspectLevels(unittest.TestCase):
         self.assertIn("role=outer", out)
 
     def test_inspect_functions_exported(self):
-        # i livelli di topo in topo, quello del file nell'adapter (D129)
+        # topo's levels in topo, the file's in the adapter
         for module, names in ((topo, ("inspect_document", "inspect_result")),
                               (topo_dxf, ("inspect_dxf", "inspect_file"))):
             for name in names:

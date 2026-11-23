@@ -1,10 +1,10 @@
 """
 tests/engine/primitives/test_formula.py
 ---------------------------------------
-`FormulaSeg` (MAP.md D289): la curva data da x(t), y(t) in una grammatica
-chiusa. Fuori dalla grammatica si rifiuta; la derivata è simbolica; area e
-lunghezza sono esatte sulla formula; il motore la legge come le altre.
-Microcasi con la risposta in forma chiusa: l'evolvente del cerchio.
+`FormulaSeg`: the curve given by x(t), y(t) in a closed grammar. Outside the
+grammar it is rejected; the derivative is symbolic; area and length are exact
+on the formula; the engine reads it like the others. Micro-cases with the
+answer in closed form: the circle's involute.
 """
 
 import math
@@ -15,7 +15,7 @@ import topo
 from topo.core.primitives.formula import FormulaSeg
 from topo.core.primitives.line import LineSeg
 
-# evolvente del cerchio di raggio 10: lunghezza r·T²/2, area spazzata dal centro r²·T³/6
+# involute of the circle of radius 10: length r·T²/2, area swept from the centre r²·T³/6
 INVOLUTE = FormulaSeg("r*(cos(t) + t*sin(t))", "r*(sin(t) - t*cos(t))", 0.0, 1.2, params={"r": 10.0})
 
 

@@ -1,9 +1,8 @@
 """
 tests/engine/io/test_json.py
 
-`topo.to_json` / `save_json` (D230, D231): solo geometria, la sorgente e la
-lettura dichiarate, i campi del consumatore aggiunti senza mai sostituire
-quelli di topo.
+`topo.to_json` / `save_json`: geometry only, the declared source and reading,
+the consumer's fields added without ever replacing topo's.
 """
 
 import json
@@ -17,7 +16,7 @@ g = topo.geometry
 
 
 def _result(reading="faces"):
-    # piastra 100×60 con un foro Ø20
+    # 100×60 plate with a Ø20 hole
     net = topo.heal(topo.load_segments(g.rectangle(100, 60) + g.circle(10)), label="piastra")
     return net.faces() if reading == "faces" else net.outlines()
 
@@ -26,7 +25,7 @@ def test_dice_da_dove_arriva_e_come_e_letto():
     data = json.loads(topo.to_json(_result()))
     assert data["source_format"] == "geometry"
     assert data["reading"] == "faces"
-    assert (data["tolerance"], data["max_gap"]) == (topo.precision.SAME_POINT, 0.0)   # senza max_gap nessun gap si chiude (D267)
+    assert (data["tolerance"], data["max_gap"]) == (topo.precision.SAME_POINT, 0.0)   # without max_gap no gap closes
     assert json.loads(topo.to_json(_result("outlines")))["reading"] == "outlines"
 
 

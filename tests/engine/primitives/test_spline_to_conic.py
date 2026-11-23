@@ -1,10 +1,10 @@
 """
 tests/engine/primitives/test_spline_to_conic.py
 -----------------------------------------------
-Una spline che sta entro SAME_POINT da un arco o da un'ellisse è quell'arco
-o quell'ellisse (MAP.md D296): stessi capi esatti, stesso verso, una volta
-sola. Microcasi: spline cubiche che approssimano entro 1e-5 archi ed ellissi
-noti; una spline vera (un'onda) e una deformata di 3e-3 restano spline.
+A spline within SAME_POINT of an arc or an ellipse is that arc or that
+ellipse: same exact ends, same direction, walked once. Micro-cases: cubic
+splines approximating known arcs and ellipses within 1e-5; a true spline (a
+wave) and one deformed by 3e-3 stay splines.
 """
 
 import math
@@ -24,7 +24,7 @@ from topo.precision import FLOAT_NOISE, SAME_POINT
 
 
 def _spline_of(seg, tolerance=1e-5) -> BSplineSeg:
-    """La spline cubica entro `tolerance` dalla curva `seg`, coi suoi capi."""
+    """The cubic spline within `tolerance` of the curve `seg`, with its ends."""
     t0, t1 = seg.t_range
     pts = [seg.point_at(t0 + (t1 - t0) * k / 400) for k in range(401)]
     control, knots = approximate_bspline(pts, 3, tolerance)
@@ -74,7 +74,7 @@ class TestConicOfSpline(unittest.TestCase):
         self.assertIsNone(conic_of_spline(wave, SAME_POINT))
 
     def test_fuori_da_same_point_resta(self):
-        # metà ellisse, un punto di controllo spostato di 3e-3: più di SAME_POINT dalla conica
+        # half ellipse, a control point moved by 3e-3: more than SAME_POINT from the conic
         spline = _spline_of(EllipseSeg(center=(0.0, 0.0), major_axis=(8.0, 0.0), ratio=0.4, start_param=0.0,
                                        end_param=math.pi))
         k = len(spline.control_points) // 2
@@ -124,7 +124,7 @@ class TestRefitNativeSplines(unittest.TestCase):
 
 
 class TestFullTurn(unittest.TestCase):
-    """Un giro intero da un angolo qualunque resta intero: (a + 2π) − a cade a un ulp da 2π."""
+    """A full turn from any angle stays full: (a + 2π) − a lands one ulp from 2π."""
 
     def test_cerchio_da_ogni_angolo_e_intero(self):
         rng = random.Random(7)

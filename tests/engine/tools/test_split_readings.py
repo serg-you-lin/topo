@@ -1,8 +1,8 @@
 """
 tests/engine/tools/test_split_readings.py
 
-`topo.split` (D232): per default non scarta niente, e lavora uguale sulle due
-letture — `faces()` e `outlines()` danno un `Result`, split non sa quale.
+`topo.split`: by default it discards nothing, and works the same on the two
+readings — `faces()` and `outlines()` give a `Result`, split does not know which.
 """
 
 import pytest
@@ -13,7 +13,7 @@ g = topo.geometry
 
 
 def _network():
-    # una piastra 100×60 con un foro Ø20, e a parte un quadratino 2×2 (area 4)
+    # a 100×60 plate with a Ø20 hole, and separately a small 2×2 square (area 4)
     return topo.heal(topo.load_segments(
         g.rectangle(100, 60) + g.circle(10) + g.rectangle(2, 2, center=(200, 0))))
 
@@ -28,7 +28,8 @@ def test_una_parte_per_cluster_niente_scartato(reading):
 
 
 def test_outlines_il_foro_va_alla_sua_parte():
-    # outlines() mette il foro in loose (D161): split lo dà alla piastra
+    # outlines() puts the hole in loose: split gives it to the plate
+    #
     plate, small = topo.split(_network().outlines())
     assert [c.cluster_ref for c in plate.loose] == [0]
     assert small.loose == []

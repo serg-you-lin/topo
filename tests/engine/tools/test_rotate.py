@@ -1,17 +1,17 @@
 """
 test_rotate.py
 ---------------
-Test unitari per topo.tools.rotate (sperimentale, non ancora in __all__):
-    structural_segments      Result -> list[segment], filtrato per ruolo
-    longest_structural_segment  idem, ma solo il più lungo + il suo angolo
-    rotate_cluster / rotate_result   ruotano un Cluster/Result GIÀ
-                                      sano — nessun heal() richiamato
-    rotate_document           ruota un Document grezzo (pre-heal)
-    rotate_to_longest         orchestratore: allinea il più lungo, un solo
-                               heal() (quello che il chiamante ha già fatto)
+Unit tests for topo.tools.rotate (experimental, not yet in __all__):
+    structural_segments      Result -> list[segment], filtered by role
+    longest_structural_segment  same, but only the longest + its angle
+    rotate_cluster / rotate_result   rotate an ALREADY sound Cluster/Result —
+                                      no heal() called again
+    rotate_document           rotates a raw Document (pre-heal)
+    rotate_to_longest         orchestrator: aligns the longest, a single
+                               heal() (the one the caller already did)
 
-Usa topo.load_geometry (dict puri Python -> Document) invece di un
-file DXF: stesso pattern di test_geometry_loader.py, nessun I/O.
+It uses topo.load_geometry (pure Python dicts -> Document) instead of a DXF
+file: same pattern as test_geometry_loader.py, no I/O.
 """
 
 import math
@@ -27,11 +27,9 @@ from topo import to_shapely
 
 
 def _tall_rect_with_diagonal():
-    """
-    Rettangolo 100x400 (outer verticale, lati lunghi = 400) più una linea
-    interna diagonale (più corta e non outer) — stessa forma di
-    tests/data/try_for_rotation.dxf, costruita in memoria.
-    """
+    """Rectangle 100x400 (vertical outer, long sides = 400) plus an inner diagonal
+    line (shorter and not outer) — the same shape as tests/data/try_for_rotation.dxf,
+    built in memory."""
     return topo.load_geometry([
         {"type": "polygon", "points": [(0, 0), (100, 0), (100, 400), (0, 400)]},
         {"type": "line", "start": (0.3, 50), "end": (99.7, 350)},
@@ -39,13 +37,11 @@ def _tall_rect_with_diagonal():
 
 
 def _rect_with_hole():
-    """
-    Rettangolo 100x50 con un foro (cerchio) — outer + un inner. Nessun
-    `role` esplicito sul rettangolo di proposito: heal() assegna comunque
-    `ContourRole.OUTER` al vero outer, e lasciare l'input senza ruolo evita
-    che il foro interno erediti "outer" dal padre (vedi il commento in
-    topo/tools/rotate.py su `hierarchy._make_inner`).
-    """
+    """Rectangle 100x50 with a hole (circle) — outer + an inner. No explicit `role`
+    on the rectangle on purpose: heal() assigns `ContourRole.OUTER` to the true
+    outer anyway, and leaving the input without a role avoids the inner hole
+    inheriting "outer" from the parent (see the comment in topo/tools/rotate.py
+    on `hierarchy._make_inner`)."""
     return topo.load_geometry([
         {"type": "polygon", "points": [(0, 0), (100, 0), (100, 50), (0, 50)]},
         {"type": "circle", "center": (50, 25), "radius": 5},
@@ -84,7 +80,7 @@ class TestRotateCluster(unittest.TestCase):
         rotated = rotate_cluster(cluster, math.pi / 2, origin=(0, 0))
 
         self.assertAlmostEqual(to_shapely(rotated.outer).bounds[0], -50.0, places=3)
-        # l'inner ruotato deve ancora avere come parent il NUOVO outer, non il vecchio
+        # the rotated inner must still have the NEW outer as parent, not the old one
         self.assertIs(rotated.inners[0].parent, rotated.outer)
         self.assertIsNot(rotated.inners[0].parent, cluster.outer)
 

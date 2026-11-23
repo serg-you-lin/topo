@@ -1,12 +1,11 @@
 """
 tests/engine/primitives/test_segment_motion.py
 ----------------------------------------
-`.translated(dx, dy)`, `.mirrored(origin, angle)` e `.scaled(factor, origin)`
-su ogni primitiva nativa: la curva trasformata è la curva di prima
-trasformata. Si controlla sui punti di
-`discretize()` — gli stessi che legge ogni lettura — su una griglia di casi:
-coordinate negative, vicine a zero, lontane dall'origine, archi nei due versi
-e a cavallo dell'angolo 0. Ogni caso è un `subTest` (MAP.md D158).
+`.translated(dx, dy)`, `.mirrored(origin, angle)` and `.scaled(factor, origin)`
+on every native primitive: the transformed curve is the previous curve
+transformed. It is checked on the points of `discretize()` — the same ones
+every reading reads — on a grid of cases: negative coordinates, near zero, far
+from the origin, arcs both ways and straddling angle 0. Every case is a `subTest`.
 """
 
 import math
@@ -19,14 +18,14 @@ from topo.core.primitives.conics import CircleSeg, EllipseSeg, HyperbolaSeg, Par
 from topo.core.primitives.clothoid import ClothoidSeg
 from topo.core.primitives.formula import FormulaSeg
 
-# spostamenti: nullo, quasi nullo, negativo, lontano dall'origine nei due sensi
+# shifts: null, almost null, negative, far from the origin both ways
 OFFSETS = [(0.0, 0.0), (1e-9, -1e-9), (-37.25, 12.5), (1e5, -1e5), (-3e6, 2.5e6)]
-# precisione relativa alla grandezza delle coordinate: un double ha ~16 cifre
+# precision relative to the size of the coordinates: a double has ~16 digits
 RELATIVE = 1e-12
 
 
 def _segments() -> list:
-    """(nome, segmento): ogni primitiva, in posizioni e versi diversi."""
+    """(name, segment): every primitive, in different positions and directions."""
     return [
         ("line", LineSeg(start=(-3.0, 4.0), end=(7.5, -2.25))),
         ("line near zero", LineSeg(start=(1e-12, -1e-12), end=(0.5, 0.0))),
@@ -61,17 +60,17 @@ def _close(a, b, scale: float) -> bool:
     return math.hypot(a[0] - b[0], a[1] - b[1]) <= RELATIVE * max(1.0, scale)
 
 
-# assi di specchio (punto, angolo in radianti): obliquo, lontano, l'asse y, la bisettrice
+# mirror axes (point, angle in radians): oblique, far, the y axis, the bisector
 AXES = [((3.0, -2.0), 0.7), ((-1e4, 5e3), -1.2), ((0.0, 0.0), math.pi / 2), ((5.0, 5.0), math.pi / 4)]
-# fattori di scala (attorno a un centro): piccolo, grande, vicino a 1
+# scale factors (about a centre): small, large, near 1
 FACTORS = [(0.5, (0.0, 0.0)), (2.0, (3.0, -1.0)), (1e-3, (-50.0, 20.0)), (1e3, (1e4, -1e4)),
            (1.25, (7.0, 7.0))]
-# passo fine della curva di riferimento: un punto della curva vi dista al più la sua freccia
+# fine step of the reference curve: a point of the curve is at most its sagitta from it
 FINE = 1e-4
 
 
 def _mirror(p, origin, angle):
-    """`p` specchiato sulla retta per `origin` ad `angle`, scritto qui a parte."""
+    """`p` mirrored on the line through `origin` at `angle`, written separately here."""
     d = (math.cos(angle), math.sin(angle))
     v = (p[0] - origin[0], p[1] - origin[1])
     along = v[0] * d[0] + v[1] * d[1]
@@ -93,8 +92,8 @@ def _distance_to_polyline(p, points) -> float:
 
 
 class _OnCurve:
-    """Ogni vertice del segmento trasformato, riportato indietro, sta sulla
-    curva di partenza; gli estremi sono gli estremi trasformati (verso incluso)."""
+    """Every vertex of the transformed segment, brought back, lies on the starting
+    curve; the ends are the transformed ends (direction included)."""
 
     def assert_on_curve(self, seg, moved, back, scale: float):
         reference = seg.discretize(tolerance=FINE)
@@ -104,8 +103,8 @@ class _OnCurve:
 
     def assert_ends(self, seg, moved, forward, scale: float):
         if (isinstance(seg, CircleSeg) and seg.full):
-            # un cerchio non ha un punto di partenza suo: il suo "estremo" è
-            # sempre il punto all'angolo 0, non l'immagine di quello di prima
+            # a circle has no starting point of its own: its "end" is always the point at
+            # angle 0, not the image of the previous one
             return
         for p, q in zip(segment_endpoints(seg), segment_endpoints(moved)):
             self.assertTrue(_close(forward(p), q, scale), f"{forward(p)} ≠ {q}")
@@ -139,7 +138,7 @@ class TestMirrored(unittest.TestCase):
     def test_punti_specchiati_sull_asse_x(self):
         for name, seg in _segments():
             with self.subTest(segment=name):
-                # anche il cerchio intero: uno specchio inverte il verso (D286)
+                # also the full circle: a mirror reverses the direction
                 before = seg.discretize(tolerance=0.01)
                 after = seg.mirrored().discretize(tolerance=0.01)
                 self.assertEqual(len(after), len(before))
@@ -184,7 +183,7 @@ class TestMirroredOnAxis(unittest.TestCase, _OnCurve):
                     self.assert_on_curve(seg, again, lambda q: q, scale)
 
     def test_asse_x_di_default(self):
-        # il default è lo specchio di sempre, campo per campo
+        # the default is the usual mirror, field by field
         for name, seg in _segments():
             with self.subTest(segment=name):
                 self.assertEqual(seg.mirrored(), seg.mirrored(origin=(0.0, 0.0), angle=0.0))

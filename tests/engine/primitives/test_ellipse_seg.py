@@ -1,11 +1,10 @@
 """
 tests/engine/primitives/test_ellipse_seg.py
 ------------------------------------
-`EllipseSeg` (core/primitives/conics.py): parametrizzazione, chiusura,
-`.reversed()`, discretizzazione adattiva. Stessa parametrizzazione del
-gruppo DXF ELLIPSE, verificata contro `ezdxf.math.ellipse` (vedi docstring
-della classe) — questi test verificano solo la matematica pura di topo,
-zero ezdxf.
+`EllipseSeg` (core/primitives/conics.py): parametrization, closure,
+`.reversed()`, adaptive discretization. Same parametrization as the DXF
+ELLIPSE group, verified against `ezdxf.math.ellipse` (see the class docstring)
+— these tests verify only topo's pure maths, no ezdxf.
 """
 
 import math
@@ -16,9 +15,9 @@ from topo.core.primitives.conics import EllipseSeg, CircleSeg
 
 
 def _max_deviation_from_ellipse(seg: EllipseSeg, pts) -> float:
-    """Scostamento massimo dei punti discretizzati dalla curva vera — la
-    curva è nota in forma chiusa (parametrica), quindi per ogni punto basta
-    verificare che soddisfi l'equazione dell'ellisse ruotata/traslata."""
+    """Maximum deviation of the discretized points from the true curve — the curve
+    is known in closed form (parametric), so for each point it is enough to check
+    that it satisfies the equation of the rotated/translated ellipse."""
     mx, my = seg.major_axis
     a = math.hypot(mx, my)
     b = a * seg.ratio
@@ -26,11 +25,11 @@ def _max_deviation_from_ellipse(seg: EllipseSeg, pts) -> float:
     max_dev = 0.0
     for x, y in pts:
         dx, dy = x - seg.center[0], y - seg.center[1]
-        # coordinate nel sistema locale dell'ellisse (asse maggiore = u)
+        # coordinates in the ellipse's local frame (major axis = u)
         u = dx * ux + dy * uy
         v = -dx * uy + dy * ux
         val = (u / a) ** 2 + (v / b) ** 2
-        # val == 1 esatto sulla curva; la deviazione radiale approssimata
+        # val == 1 exact on the curve; the approximated radial deviation
         max_dev = max(max_dev, abs(math.sqrt(val) - 1.0) * a)
     return max_dev
 
@@ -58,8 +57,8 @@ class TestEllipseSegClosed(unittest.TestCase):
 class TestEllipseSegPointAt(unittest.TestCase):
 
     def test_axis_aligned_endpoints(self):
-        """major_axis=(10,0), ratio=0.5: a t=0 estremo asse maggiore,
-        a t=pi/2 estremo asse minore (rotate90 CCW del maggiore)."""
+        """major_axis=(10,0), ratio=0.5: at t=0 end of the major axis, at t=pi/2 end of
+        the minor axis (rotate90 CCW of the major)."""
         seg = EllipseSeg(center=(0, 0), major_axis=(10, 0), ratio=0.5,
                           start_param=0.0, end_param=math.pi / 2)
         start, end = segment_endpoints(seg)
@@ -69,8 +68,8 @@ class TestEllipseSegPointAt(unittest.TestCase):
         self.assertAlmostEqual(end[1], 5.0, places=6)
 
     def test_rotated_major_axis(self):
-        """major_axis=(0,10) (ruotato 90°), ratio=0.5: l'asse minore ruota
-        con lui — rotate90((0,10)) = (-10,0) scalato per ratio = (-5,0)."""
+        """major_axis=(0,10) (rotated 90°), ratio=0.5: the minor axis rotates with it —
+        rotate90((0,10)) = (-10,0) scaled by ratio = (-5,0)."""
         seg = EllipseSeg(center=(1, 1), major_axis=(0, 10), ratio=0.5,
                           start_param=0.0, end_param=math.pi / 2)
         start, end = segment_endpoints(seg)
@@ -80,8 +79,8 @@ class TestEllipseSegPointAt(unittest.TestCase):
         self.assertAlmostEqual(end[1], 1.0, places=6)
 
     def test_degenerates_to_circle_when_ratio_one(self):
-        """ratio=1.0: ogni punto dell'ellisse discretizzata sta sul cerchio
-        dello stesso raggio — la formula generale deve ridursi a un cerchio."""
+        """ratio=1.0: every point of the discretized ellipse lies on the circle of the
+        same radius — the general formula must reduce to a circle."""
         radius = 7.0
         ellipse = EllipseSeg(center=(2, -3), major_axis=(radius, 0), ratio=1.0,
                               start_param=0.0, end_param=2 * math.pi)
@@ -94,15 +93,14 @@ class TestEllipseSegPointAt(unittest.TestCase):
 class TestEllipseSegDiscretize(unittest.TestCase):
 
     def test_deviation_within_tolerance_eccentric(self):
-        """Ellisse eccentrica (ratio basso, curvatura molto variabile):
-        ogni punto campionato deve stare sulla curva vera entro una
-        tolleranza ragionevole rispetto a quella richiesta."""
+        """Eccentric ellipse (low ratio, strongly varying curvature): every sampled
+        point must lie on the true curve within a reasonable tolerance relative to the requested one."""
         seg = EllipseSeg(center=(0, 0), major_axis=(50, 0), ratio=0.1,
                           start_param=0.0, end_param=2 * math.pi)
         tolerance = 0.05
         pts = seg.discretize(tolerance=tolerance)
         max_dev = _max_deviation_from_ellipse(seg, pts)
-        self.assertLess(max_dev, tolerance * 5)  # i punti VALUTATI stanno sulla curva
+        self.assertLess(max_dev, tolerance * 5)  # the EVALUATED points lie on the curve
 
     def test_zero_sweep_returns_degenerate_point(self):
         seg = EllipseSeg(center=(0, 0), major_axis=(10, 0), ratio=0.5,

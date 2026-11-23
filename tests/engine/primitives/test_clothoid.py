@@ -1,10 +1,9 @@
 """
 tests/engine/primitives/test_clothoid.py
 ----------------------------------------
-`ClothoidSeg` (MAP.md D290): la spirale di Eulero, κ(s) = s/A². Gli integrali
-di Fresnel alla precisione della macchina, la curvatura che cresce come la
-lunghezza d'arco, la lunghezza esatta, il poligono entro la tolleranza.
-Microcasi con la risposta in forma chiusa.
+`ClothoidSeg`: the Euler spiral, κ(s) = s/A². The Fresnel integrals to machine
+precision, the curvature that grows like the arc length, the exact length, the
+polygon within the tolerance. Micro-cases with the answer in closed form.
 """
 
 import math
@@ -20,7 +19,7 @@ CLOTHOID = ClothoidSeg(origin=(0.0, 0.0), angle=0.0, a=4.0, start_param=0.0, end
 class TestFresnel(unittest.TestCase):
 
     def test_valori_noti(self):
-        # C(1), S(1) e i limiti C, S → 1/2 per x → ∞ (tabelle di Abramowitz & Stegun 7.3)
+        # C(1), S(1) and the limits C, S → 1/2 for x → ∞ (Abramowitz & Stegun 7.3 tables)
         c, s = fresnel(1.0)
         self.assertAlmostEqual(c, 0.7798934003768228, delta=1e-15)
         self.assertAlmostEqual(s, 0.4382591473903548, delta=1e-15)
@@ -37,7 +36,7 @@ class TestFresnel(unittest.TestCase):
 class TestCurve(unittest.TestCase):
 
     def test_curvatura_cresce_come_la_lunghezza(self):
-        # κ(s) = s/a²; curvatura dalla derivata seconda numerica, |P'| = 1
+        # κ(s) = s/a²; curvature from the numerical second derivative, |P'| = 1
         h = 1e-4
         for t in (1.0, 3.5, 6.0):
             (ax, ay), (bx, by) = CLOTHOID.derivative_at(t - h), CLOTHOID.derivative_at(t + h)
@@ -51,7 +50,7 @@ class TestCurve(unittest.TestCase):
         self.assertEqual(topo.geometry.segment_length(CLOTHOID), 7.0)
 
     def test_tangente_finale(self):
-        # θ(s) = s²/(2a²): a s = 7 la tangente è a 49/32 rad
+        # θ(s) = s²/(2a²): at s = 7 the tangent is at 49/32 rad
         dx, dy = CLOTHOID.derivative_at(7.0)
         self.assertAlmostEqual(math.atan2(dy, dx), 49 / 32, delta=1e-15)
 

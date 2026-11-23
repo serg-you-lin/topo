@@ -1,9 +1,7 @@
 # tests/engine/primitives/test_trim.py
 
-"""
-`sub_segment`: il tratto di una primitiva fra due suoi punti è la stessa
-curva accorciata — stessi capi, ogni punto sulla curva originale.
-"""
+"""`sub_segment`: the stretch of a primitive between two of its points is the
+same curve shortened — same ends, every point on the original curve."""
 
 import math
 import unittest
@@ -25,7 +23,7 @@ def _close(p, q, tol=1e-6):
 class TestSubSegment(unittest.TestCase):
 
     def _assert_on(self, piece, curve_distance, tol=1e-6):
-        # ogni punto del tratto sta sulla curva originale
+        # every point of the stretch lies on the original curve
         for pt in piece.discretize(tolerance=0.001):
             self.assertLess(curve_distance(pt), tol)
 
@@ -81,7 +79,7 @@ class TestSubSegment(unittest.TestCase):
             piece = sub_segment(spline, x, y, None)
             s, e = segment_endpoints(piece)
             self.assertTrue(_close(s, x, 1e-6) and _close(e, y, 1e-6))
-        # stessa curva: ogni punto del tratto coincide con la spline originale
+        # same curve: every point of the stretch coincides with the original spline
         piece = sub_segment(spline, a, b, None)
         lo, hi = piece.knots[0], piece.knots[-1]
         for k in range(11):
@@ -98,8 +96,8 @@ class TestSubSegment(unittest.TestCase):
             self.assertTrue(_close(piece._evaluate(t), spline._evaluate(t), 1e-9))
 
     def test_spline_periodica_non_si_taglia(self):
-        # cubica uniforme coi primi tre punti ripetuti in coda: si richiude
-        # senza un punto di controllo sul giunto (periodic si ricava, D135)
+        # uniform cubic with the first three points repeated at the end: it closes
+        # without a control point on the joint (periodic is derived)
         cps = [(0, 0), (4, 0), (4, 4), (0, 4)]
         spline = BSplineSeg(degree=3, control_points=cps + cps[:3], knots=list(range(11)))
         self.assertTrue(spline.periodic)
@@ -107,15 +105,15 @@ class TestSubSegment(unittest.TestCase):
 
 
 class TestClosedSplineSeamUnderMotion(unittest.TestCase):
-    """G6e, gruppo D, `trim.py:150` (`_spline_param`, il campione più vicino):
-    su una spline chiusa il capo che sta sulla giunzione ha due parametri, lo e
-    hi, alla stessa distanza; vinceva sempre hi (il `<=` sui capi) e il tratto
-    usciva rovesciato, il complemento. Ora decide `via`, come sul cerchio.
-    Prova: il pari merito c'è al posto (le due distanze, controllate), il tratto
-    è quello giusto in tutti e due i versi e a sette moti; dentro `outlines()` una
-    retta che taglia la spline chiusa dà lo stesso outer della spline aperta di
-    1e-9 (prima metà forma). Non prova una spline che si incrocia da sé (due
-    parametri anche lì, `via` non sempre li separa: in coda)."""
+    """(`_spline_param`, the nearest sample): on a closed spline the end lying on the
+    seam has two parameters, lo and hi, at the same distance; hi always won (the
+    `<=` on the ends) and the stretch came out reversed, the complement. Now `via`
+    decides, like on the circle. Proof: the tie is there in place (the two
+    distances, checked), the stretch is the right one in both directions and at
+    seven motions; inside `outlines()` a line cutting the closed spline gives the
+    same outer as the open spline to 1e-9 (before, half shape). It does not prove
+    a spline crossing itself (two parameters there too, `via` does not always
+    separate them: later)."""
 
     MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0), (0.7, 3.1, -2.2),
                (math.pi / 2, 0.0, 0.0), (2.1, -1e5, 3e4), (2.4, -0.37, 0.61)]
@@ -169,9 +167,9 @@ if __name__ == "__main__":
 
 
 class TestHairpinBranch(unittest.TestCase):
-    """Una forcina: andata e ritorno a 0,01 l'una dall'altra, nodi non
-    uniformi. Il ramo del taglio si sceglie per certificato sui pezzi di
-    Bézier (D300): con 64 campioni metà dei tagli finiva sull'altro ramo."""
+    """A hairpin: out and back 0.01 apart, non-uniform knots. The cut's branch is
+    chosen by certificate on the Bézier pieces: with 64 samples half the cuts
+    ended on the other branch."""
 
     SPLINE = BSplineSeg(degree=3,
                         control_points=[(0, 0), (25, 0), (50, 0), (50.5, 0.005), (50, 0.01), (25, 0.01), (0, 0.01)],
@@ -186,11 +184,11 @@ class TestHairpinBranch(unittest.TestCase):
                 piece = sub_segment(s, a, b, via)
                 pa, pb = segment_endpoints(piece)
                 self.assertTrue(_close(pa, a) and _close(pb, b))
-                # il tratto è corto quanto la curva fra i due punti, non il giro della forcina
+                # the stretch is as short as the curve between the two points, not the hairpin's loop
                 self.assertLess(segment_length(piece), 1.5 * math.dist(a, b) + 1e-6)
 
     def test_reach_vede_la_punta(self):
-        # la punta della forcina sta oltre x = 50: la portata la trova, esatta
+        # the hairpin's tip lies beyond x = 50: the extent finds it, exact
         lo, hi = Reach(self.SPLINE)((1.0, 0.0))
         tip = max(self.SPLINE._evaluate(i / 20000)[0] for i in range(20001))
         self.assertEqual(lo, 0.0)
@@ -199,10 +197,10 @@ class TestHairpinBranch(unittest.TestCase):
 
 
 class TestCurveBranch(unittest.TestCase):
-    """Clotoide e formula non hanno punti di controllo: il ramo del taglio si
-    sceglie per certificato (velocità 1 della clotoide, aritmetica degli
-    intervalli della formula). Con 64 campioni la spirale finiva su un'altra
-    spira in 180 tagli su 199, l'evolvente fino a 144 mm lontano."""
+    """Clothoid and formula have no control points: the cut's branch is chosen by
+    certificate (unit speed of the clothoid, interval arithmetic of the formula).
+    With 64 samples the spiral ended on another turn in 180 cuts out of 199, the
+    involute up to 144 mm away."""
 
     CURVES = {
         "clotoide a spirale": ClothoidSeg(origin=(0, 0), angle=0, a=1.0, start_param=0, end_param=30),

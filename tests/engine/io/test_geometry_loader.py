@@ -1,12 +1,12 @@
 """
 test_geometry_loader.py
 ------------------------
-Test unitari per core/geometry_input.py (topo.load_geometry).
+Unit tests for core/geometry_input.py (topo.load_geometry).
 
-Verifica il contratto: dict puri Python → Document → heal() →
-to_dxf(), esattamente come load_dxf, ma senza file sorgente. Copre i due casi
-d'uso reali: un rettangolo con foro (polyline + circle) e un settore anulare
-tipo sviluppo di cono (arc + line, con conversione gradi→radianti).
+It verifies the contract: pure Python dicts → Document → heal() → to_dxf(),
+exactly like load_dxf, but without a source file. It covers the two real use
+cases: a rectangle with a hole (polyline + circle) and an annular sector like
+a cone development (arc + line, with degrees→radians conversion).
 """
 
 import math
@@ -34,7 +34,7 @@ class TestGeometryReader(unittest.TestCase):
             {"center": (0, 0), "radius": 10, "start_angle": 0, "end_angle": 90},
             ContourRole.OUTER,
         )
-        # end point a 90 gradi da un cerchio di raggio 10 -> (0, 10)
+        # end point 90 degrees from a circle of radius 10 -> (0, 10)
         self.assertAlmostEqual(edge.end[0], 0.0, places=3)
         self.assertAlmostEqual(edge.end[1], 10.0, places=3)
 
@@ -43,7 +43,7 @@ class TestGeometryReader(unittest.TestCase):
             GeometryReader([{"type": "hexagon"}]).to_edges()
 
     def test_spline_edge_endpoints_from_control_points(self):
-        # spline clamped: primo e ultimo control point sono gli estremi.
+        # clamped spline: the first and last control points are the ends.
         edge = GeometryReader([])._spline_edge(
             {
                 "control_points": [(0, 0), (5, 10), (10, 0)],
@@ -59,7 +59,7 @@ class TestGeometryReader(unittest.TestCase):
 
 
 class TestLoadGeometryRectangleWithHole(unittest.TestCase):
-    """Rettangolo (polyline chiusa) con un cerchio interno — caso semplice."""
+    """Rectangle (closed polyline) with an inner circle — the simple case."""
 
     def setUp(self):
         self.doc = load_geometry([
@@ -90,7 +90,7 @@ class TestLoadGeometryRectangleWithHole(unittest.TestCase):
 
 
 class TestLoadGeometryConeSector(unittest.TestCase):
-    """Settore anulare (2 arc + 2 line) — stessa forma di uno sviluppo di cono."""
+    """Annular sector (2 arcs + 2 lines) — the same shape as a cone development."""
 
     def setUp(self):
         r_int, r_est = 10.0, 20.0
@@ -126,26 +126,23 @@ class TestLoadGeometryConeSector(unittest.TestCase):
         result = topo.heal(self.doc, label="cono_sector_test").faces()
         doc_out = topo_dxf.to_dxf(result)
         msp = doc_out.modelspace()
-        # write_segments emette LWPOLYLINE con bulge per un contorno misto
-        # linea/arco (rappresentazione esatta, non una discretizzazione) —
-        # verifichiamo solo che il giro d'uscita non esploda e produca
-        # geometria, la fedeltà del bulge è già coperta altrove.
+        # write_segments emits an LWPOLYLINE with bulge for a mixed line/arc contour
+        # (exact representation, not a discretization) — we only check that the output
+        # round does not blow up and produces geometry, the bulge's fidelity is covered elsewhere.
         polylines = list(msp.query("LWPOLYLINE"))
         self.assertEqual(len(polylines), 1)
         self.assertTrue(any(abs(b) > 1e-9 for _, _, _, _, b in polylines[0].get_points()))
 
 
 class TestLoadGeometrySplineFromSimplifyPoints(unittest.TestCase):
-    """
-    Il caso reale che ha aperto il tipo "spline": un contorno ricostruito da
-    topo.experimental.simplify_points() (Smoother) — la BSplineSeg risultante deve poter
-    tornare in load_geometry() senza reinventare i suoi campi a mano.
-    """
+    """The real case that opened the "spline" type: a contour rebuilt by
+    topo.experimental.simplify_points() (Smoother) — the resulting BSplineSeg must
+    be able to go back into load_geometry() without reinventing its fields by hand."""
 
     def setUp(self):
-        # poligono regolare a 16 lati: su una scala di 25 svolta di ~29°, sotto
-        # i 35° di uno spigolo; lati più corti della scala -> nessuna linea;
-        # senza archi -> l'intero contorno rifitta in un'unica BSplineSeg.
+        # regular 16-gon: over a scale of 25 it turns ~29°, below the 35° of a corner;
+        # sides shorter than the scale -> no line; without arcs -> the whole contour
+        # refitted into a single BSplineSeg.
         n, r = 16, 50.0
         points = [
             (r * math.cos(2 * math.pi * i / n), r * math.sin(2 * math.pi * i / n))
@@ -164,7 +161,7 @@ class TestLoadGeometrySplineFromSimplifyPoints(unittest.TestCase):
                 "role": "outer",
             },
         ])
-        # area del 16-gono che i punti approssimano — riferimento per il test
+        # area of the 16-gon the points approximate — reference for the test
         self.polygon_area = 0.5 * n * r * r * math.sin(2 * math.pi / n)
 
     def test_heal_finds_one_closed_part(self):

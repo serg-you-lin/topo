@@ -1,10 +1,10 @@
 """
 tests/engine/primitives/test_primitives_reversed.py
 -------------------------------------------
-Fase 4:
-  - `.reversed()` su LineSeg / CircleSeg / CircleSeg (D6)
-  - regressione: CircleSeg.from_ends con archi maggiori (oltre mezzo giro) — D7 ha
-    esposto un bug dove la costruzione sceglieva sempre l'arco minore.
+Phase 4:
+  - `.reversed()` on LineSeg / CircleSeg / CircleSeg
+  - regression: CircleSeg.from_ends with major arcs (beyond half a turn) — it
+    exposed a bug where the construction always chose the minor arc.
 """
 
 import math
@@ -16,7 +16,7 @@ from topo.core.geometry.measure import segment_length
 
 
 def _arc_len(seg):
-    # la lunghezza vera (D293): le corde del poligono la accorciano
+    # the true length: the polygon's chords shorten it
     return segment_length(seg)
 
 
@@ -54,12 +54,12 @@ class TestFromChordMajorArc(unittest.TestCase):
         self.assertAlmostEqual(_arc_len(arc), 6.25 * 4 * math.atan(0.5), places=2)
 
     def test_major_arc_bulge_above_one(self):
-        # bulge=2 → sweep = 4*atan(2) ≈ 254° — arco MAGGIORE.
+        # bulge=2 → sweep = 4*atan(2) ≈ 254° — MAJOR arc.
         arc = CircleSeg.from_ends((0, 0), (10, 0), 4 * math.atan(2.0))
         self.assertAlmostEqual(arc.radius, 6.25, places=6)
-        # il centro deve stare SOTTO la corda (y < 0), non sopra
+        # the centre must be BELOW the chord (y < 0), not above
         self.assertLess(arc.center[1], 0)
-        # lunghezza = arco maggiore, non minore
+        # length = major arc, not minor
         expected = 6.25 * 4 * math.atan(2.0)
         self.assertAlmostEqual(_arc_len(arc), expected, delta=0.05)
 

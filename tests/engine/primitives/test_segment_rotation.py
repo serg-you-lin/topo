@@ -1,9 +1,9 @@
 """
 tests/engine/primitives/test_segment_rotation.py
 ------------------------------------------
-`.rotated(angle, origin)` su ogni primitiva nativa (core/primitives/)
-— stesso pattern di `.reversed()`: stessa geometria, trasformata. Verifica la
-matematica pura di topo, zero ezdxf.
+`.rotated(angle, origin)` on every native primitive (core/primitives/) — same
+pattern as `.reversed()`: same geometry, transformed. It verifies topo's pure
+maths, no ezdxf.
 """
 
 import math
@@ -28,7 +28,7 @@ class TestLineSegRotated(unittest.TestCase):
     def test_around_non_zero_origin_keeps_length(self):
         seg = LineSeg(start=(10, 5), end=(20, 5))
         rotated = seg.rotated(math.radians(37), origin=(10, 5))
-        # l'origine coincide con lo start: quel punto resta fermo
+        # the origin coincides with the start: that point stays fixed
         self.assertAlmostEqual(rotated.start[0], 10.0, places=9)
         self.assertAlmostEqual(rotated.start[1], 5.0, places=9)
         length = math.hypot(rotated.end[0] - rotated.start[0], rotated.end[1] - rotated.start[1])
@@ -48,8 +48,8 @@ class TestArcRotated(unittest.TestCase):
         self.assertEqual(rotated.ccw, seg.ccw)
 
     def test_discretized_points_lie_on_the_rotated_arc(self):
-        # D145: i vertici stanno sulla griglia del cerchio (angolo 0), quindi
-        # non ruotano col pezzo; ruotano gli estremi, e ogni punto sta sull'arco
+        # the vertices lie on the circle's grid (angle 0), so they do not rotate with
+        # the piece; the ends rotate, and every point lies on the arc
         seg = CircleSeg(center=(0, 0), radius=4, start_angle=0.0, end_angle=math.pi, ccw=True)
         angle = math.radians(30)
         rotated = seg.rotated(angle, origin=(0, 0))

@@ -1,10 +1,10 @@
 
 """
-Test Suite per topo_dxf.models
+Test Suite for topo_dxf.models
 
-Test puri sui modelli dati — non richiedono file DXF.
+Pure tests on the data models — they do not require DXF files.
 
-Lancia:
+Run:
     python -m unittest tests/test_models.py -v
 """
 
@@ -34,7 +34,7 @@ def _ring(polygon):
 
 
 class _Void:
-    """Un elemento dell'overlay che un consumatore dichiara vuoto del pezzo (D90)."""
+    """An overlay element a consumer declares a void of the part."""
     is_void = True
     role = "my_void"
 
@@ -43,7 +43,7 @@ class _Void:
 
 
 class _FakeEntity:
-    """Entità ezdxf minimale per test che richiedono un riferimento entity."""
+    """Minimal ezdxf entity for tests that require an entity reference."""
     pass
 
 
@@ -68,7 +68,7 @@ class TestForgeContour(unittest.TestCase):
         self.assertEqual(contour.bbox, (0, 0, 10, 10))
 
     def test_003_role_unknown_preserved(self):
-        """role UNKNOWN è un valore valido e viene preservato."""
+        """role UNKNOWN is a valid value and is preserved."""
         poly = Polygon([(0,0), (10,0), (10,10), (0,10)])
         contour = Contour(role=ContourRole.UNKNOWN, segments=_ring(poly))
         self.assertEqual(contour.role, ContourRole.UNKNOWN)
@@ -86,7 +86,7 @@ class TestForgeContour(unittest.TestCase):
         self.assertEqual(contour.role, "outer")
 
     def test_006_repr_senza_il_genitore(self):
-        """Il genitore si stampa dove sta: dentro il figlio la stampa crescerebbe a ogni livello."""
+        """The parent is printed where it is: inside the child the print would grow at every level."""
         outer = Contour(segments=_ring(Polygon([(0,0), (10,0), (10,10), (0,10)])), role="outer")
         inner = Contour(segments=_ring(Polygon([(2,2), (4,2), (4,4), (2,4)])), role="inner",
                         depth=1, parent=outer)
@@ -99,16 +99,14 @@ class TestForgeContour(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestEdge(unittest.TestCase):
-    """
-    Dopo il refactoring Edge è dati puri: role + start/end + segment
-    (primitiva nativa) + style. Nessun source_ref, layer o geometry.
-    """
+    """After the refactoring Edge is pure data: role + start/end + segment (native
+    primitive) + style. No source_ref, layer or geometry."""
 
     def _seg(self, start=(0.0, 0.0), end=(100.0, 0.0)):
         return LineSeg(start=start, end=end)
 
     def test_001_construction(self):
-        """Edge costruito correttamente con campi minimi."""
+        """Edge correctly built with minimal fields."""
         seg = self._seg()
         edge = Edge(
             role=ContourRole.OUTER,
@@ -122,19 +120,19 @@ class TestEdge(unittest.TestCase):
         self.assertEqual(edge.role, ContourRole.OUTER)
 
     def test_002_segment_reference_preserved(self):
-        """La primitiva geometrica passata non viene sostituita."""
+        """The geometric primitive passed is not replaced."""
         seg = self._seg()
         edge = Edge(role=ContourRole.UNKNOWN, start=(0, 0), end=(1, 1), segment=seg)
         self.assertIs(edge.segment, seg)
 
     def test_005_role_preserved(self):
-        """role cached sull'Edge — assegnato dall'adapter, mai dal layer DXF."""
+        """role cached on the Edge — assigned by the adapter, never from the DXF layer."""
         edge = Edge(role="bending", start=(0, 0), end=(1, 0),
                     segment=self._seg((0, 0), (1, 0)))
         self.assertEqual(edge.role, "bending")
 
     def test_006_start_end_are_tuples(self):
-        """start e end sono tuple (x, y)."""
+        """start and end are (x, y) tuples."""
         edge = Edge(role=ContourRole.UNKNOWN, start=(5.0, 10.0), end=(15.0, 20.0),
                     segment=self._seg((5.0, 10.0), (15.0, 20.0)))
         self.assertEqual(len(edge.start), 2)
@@ -153,18 +151,18 @@ class TestForgeCluster(unittest.TestCase):
         return Contour(role=ContourRole.OUTER, segments=_ring(Polygon(coords)))
 
     def test_001_no_holes_area(self):
-        """Area corretta senza fori."""
+        """Correct area without holes."""
         cluster = Cluster(outer=self._make_outer(), label="test")
         print(f"\n[Cluster] area={cluster.area}, holes={len(cluster.features('holes'))}")
         self.assertEqual(cluster.area, 10000.0)
 
     def test_002_no_holes_count(self):
-        """Lista fori vuota di default."""
+        """Empty hole list by default."""
         cluster = Cluster(outer=self._make_outer(), label="test")
         self.assertEqual(len(cluster.features("holes")), 0)
 
     def test_003_with_hole_net_area(self):
-        """Area netta = outer - un vuoto dell'overlay (is_void, D90)."""
+        """Area netta = outer - un vuoto dell'overlay (is_void)."""
         import math
         outer = self._make_outer()
         cluster = Cluster(outer=outer, overlay=Overlay())
@@ -174,7 +172,7 @@ class TestForgeCluster(unittest.TestCase):
         self.assertAlmostEqual(cluster.area, expected, delta=0.01)
 
     def test_004_to_shapely_with_void(self):
-        """to_shapely toglie dal materiale il vuoto dell'overlay."""
+        """to_shapely removes the overlay's void from the material."""
         outer = self._make_outer()
         cluster = Cluster(outer=outer, overlay=Overlay())
         cluster.overlay.attach("holes", [_Void(topo.geometry.circle(5.0, center=(50, 50)))])
@@ -189,19 +187,19 @@ class TestForgeCluster(unittest.TestCase):
         self.assertEqual(cluster.bbox, (0, 0, 100, 100))
 
     def test_006_bending_lines_default_empty(self):
-        """bending_lines è lista vuota di default."""
+        """bending_lines is an empty list by default."""
         cluster = Cluster(outer=self._make_outer())
         self.assertIsInstance(cluster.features("bending_lines"), list)
         self.assertEqual(len(cluster.features("bending_lines")), 0)
 
     def test_007_engrave_lines_default_empty(self):
-        """engrave_lines è lista vuota di default."""
+        """engrave_lines is an empty list by default."""
         cluster = Cluster(outer=self._make_outer())
         self.assertIsInstance(cluster.features("engrave_lines"), list)
         self.assertEqual(len(cluster.features("engrave_lines")), 0)
 
     def test_008_to_dict_geometry_only(self):
-        """to_dict dà i fatti geometrici, nessuna coordinata né campo di processo (D230)."""
+        """to_dict gives the geometric facts, no coordinates nor process fields."""
         cluster = Cluster(outer=self._make_outer())
         d = cluster.to_dict()
         self.assertEqual(set(d), {"label", "area", "outer_perimeter", "inner_perimeter",
@@ -209,7 +207,7 @@ class TestForgeCluster(unittest.TestCase):
         self.assertEqual(d["overlay"], {})
 
     def test_009_inners_independent(self):
-        """Due Cluster non condividono la stessa lista inners."""
+        """Two Clusters do not share the same inners list."""
         p1 = Cluster(outer=self._make_outer())
         p2 = Cluster(outer=self._make_outer())
         inner_poly = Polygon([(10,10), (20,10), (20,20), (10,20)])
@@ -237,17 +235,17 @@ class TestForgeResult(unittest.TestCase):
         self.assertEqual(result.cluster_count, 1)
 
     def test_002_is_valid_default(self):
-        """is_valid è True di default."""
+        """is_valid is True by default."""
         result = self._make_result()
         self.assertTrue(result.is_valid)
 
     def test_003_has_issues_false(self):
-        """has_issues è False senza warning né errori."""
+        """has_issues is False without warnings or errors."""
         result = self._make_result()
         self.assertFalse(result.has_issues)
 
     def test_004_has_issues_true(self):
-        """has_issues è True se ci sono warning."""
+        """has_issues is True if there are warnings."""
         result = self._make_result()
         result.warnings.append("qualcosa non va")
         print(f"[Result] has_issues={result.has_issues}")
@@ -275,7 +273,7 @@ class TestForgeResult(unittest.TestCase):
 
 
 class TestDiagnostic(unittest.TestCase):
-    """D227: un avviso è una str nel formato Rust, coi campi per chi programma."""
+    """A warning is a str in the Rust format, with the fields for whoever programs."""
 
     def _d(self):
         from topo.model import Diagnostic

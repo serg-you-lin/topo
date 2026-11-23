@@ -1,9 +1,9 @@
 """
 tests/engine/io/test_to_shapely.py
 
-`topo.to_shapely` (D166): la conversione esplicita. Un contorno è il poligono
-della lettura (o rifatto a una tolleranza), una curva aperta una LineString,
-un cluster il suo materiale per pari-dispari come `area` (D89).
+`topo.to_shapely`: the explicit conversion. A contour is the reading's polygon
+(or rebuilt at a tolerance), an open curve a LineString, a cluster its material
+by even-odd like `area`.
 """
 
 import math
@@ -17,7 +17,7 @@ g = topo.geometry
 
 
 def _nested():
-    # piastra 100×60, foro Ø40 con dentro un'isola Ø20 forata Ø8, e un foro Ø6 a parte
+    # 100×60 plate, Ø40 hole with a Ø20 island inside it holed Ø8, and a separate Ø6 hole
     doc = topo.load_segments(g.rectangle(100, 60) + g.circle(20) + g.circle(10) + g.circle(4)
                              + g.circle(3, center=(40, 0)))
     return topo.heal(doc).faces().clusters[0]
@@ -38,11 +38,11 @@ def test_cluster_pari_dispari_come_l_area():
     material = topo.to_shapely(cluster, tolerance=0.001)
     assert isinstance(material, MultiPolygon) and len(material.geoms) == 2
     assert material.is_valid
-    # il poligono sta entro tol × perimetro dall'area esatta (D165)
+    # the polygon is within tol × perimeter of the exact area
     perimeter = sum(topo.to_shapely(c).exterior.length for c in [cluster.outer, *cluster.inners])
     assert material.area == pytest.approx(cluster.area, abs=0.001 * perimeter)
-    assert material.contains(Polygon([(5, -1), (7, -1), (7, 1), (5, 1)]))       # l'isola è materiale
-    assert not material.intersects(Polygon([(12, -1), (18, -1), (18, 1), (12, 1)]))  # il foro attorno no
+    assert material.contains(Polygon([(5, -1), (7, -1), (7, 1), (5, 1)]))       # the island is material
+    assert not material.intersects(Polygon([(12, -1), (18, -1), (18, 1), (12, 1)]))  # the hole around it is not
 
 
 def test_senza_isole_un_solo_poligono():

@@ -1,8 +1,8 @@
 """
 tests/engine/model/test_cluster_area.py
 -------------------------------
-`Cluster.area` sui contorni annidati (MAP.md D89): depth dispari è vuoto,
-depth pari è materiale, i segni alternano col livello.
+`Cluster.area` on nested contours: odd depth is void, even depth is material,
+the signs alternate with the level.
 """
 
 import math
@@ -10,12 +10,12 @@ import unittest
 
 import topo
 
-# i cerchi diventano poligoni: ~1.3 mm² di scarto su r=30
+# circles become polygons: ~1.3 mm² of difference at r=30
 DELTA = 3.0
 
 
 def _nested_circles(*radii):
-    """Quadrato 100x100 con cerchi concentrici al centro, dal più grande."""
+    """100x100 square with concentric circles at the centre, from the largest."""
     square = [((0, 0), (100, 0)), ((100, 0), (100, 100)),
               ((100, 100), (0, 100)), ((0, 100), (0, 0))]
     entities = [{"type": "line", "start": a, "end": b} for a, b in square]
@@ -26,13 +26,13 @@ def _nested_circles(*radii):
 class TestClusterAreaNested(unittest.TestCase):
 
     def test_001_one_level_is_removed(self):
-        # un vuoto solo: l'area è outer meno il vuoto
+        # a single void: the area is outer minus the void
         cluster = _nested_circles(30).clusters[0]
         self.assertAlmostEqual(cluster.area, 10000 - math.pi * 900, delta=DELTA)
 
     def test_002_island_in_a_void_is_added_back(self):
-        # cerchio dentro cerchio: il più piccolo è materiale nel vuoto, non un
-        # secondo vuoto sottratto due volte
+        # circle inside circle: the smaller is material in the void, not a second void
+        # subtracted twice
         cluster = _nested_circles(30, 10).clusters[0]
         self.assertEqual(sorted(i.depth for i in cluster.inners), [1, 2])
         self.assertAlmostEqual(cluster.area, 10000 - math.pi * (900 - 100), delta=DELTA)

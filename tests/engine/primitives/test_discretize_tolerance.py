@@ -1,15 +1,15 @@
 """
 tests/engine/primitives/test_discretize_tolerance.py
 --------------------------------------------
-La promessa geometrica della 1.0 (D143) parte da qui: `discretize(tol)` di
-cerchio, arco ed ellisse resta entro `tol` dalla curva vera a ogni scala.
-La freccia è assoluta, quindi i lati devono crescere con il raggio: un tetto
-fisso sul numero di lati la viola oltre una certa dimensione (il vecchio
-tetto di 128 lati del cerchio sforava da r ≈ 33 a tol 0.01).
+The geometric promise of 1.0 starts here: `discretize(tol)` of circle, arc and
+ellipse stays within `tol` of the true curve at every scale. The sagitta is
+absolute, so the sides must grow with the radius: a fixed cap on the number of
+sides violates it beyond a certain size (the old 128-side cap of the circle
+overshot from r ≈ 33 at tol 0.01).
 
-Misura: la curva campionata fitta, per ogni campione la distanza dal tratto
-della polilinea più vicino; i vertici stanno sulla curva, quindi il massimo
-è lo scostamento vero.
+Measure: the curve sampled densely, for each sample the distance from the
+nearest stretch of the polyline; the vertices lie on the curve, so the maximum
+is the true deviation.
 """
 
 import math
@@ -24,10 +24,10 @@ RADII = (0.005, 1.0, 10.0, 33.0, 100.0, 500.0, 2000.0)
 
 
 def _deviation(poly, curve_pts) -> float:
-    """Scostamento massimo dei campioni della curva dalla polilinea."""
+    """Maximum deviation of the curve's samples from the polyline."""
     worst = 0.0
     for p in curve_pts:
-        # vertice più vicino, poi i due tratti che lo toccano
+        # nearest vertex, then the two stretches that touch it
         j = min(range(len(poly)), key=lambda i: (poly[i][0] - p[0]) ** 2 + (poly[i][1] - p[1]) ** 2)
         d = min(
             _point_to_segment_distance(p, poly[k], poly[k + 1])
@@ -51,7 +51,7 @@ class TestDiscretizeWithinTolerance(unittest.TestCase):
                 self.assertLessEqual(_deviation(poly, curve), TOL)
 
     def test_circle_sides_grow_with_radius(self):
-        # nessun tetto: a r 2000 servono ~π·√(r/2·tol) ≈ 994 lati
+        # no cap: at r 2000 about π·√(r/2·tol) ≈ 994 sides are needed
         self.assertGreater(len(CircleSeg((0.0, 0.0), 2000.0).discretize(tolerance=TOL)) - 1, 900)
 
     def test_arc_every_radius(self):
@@ -69,8 +69,8 @@ class TestDiscretizeWithinTolerance(unittest.TestCase):
                 self.assertLessEqual(_deviation(e.discretize(tolerance=TOL), curve), TOL)
 
     def test_flat_ellipse(self):
-        # D153: una suddivisione che guarda solo il punto medio usciva di 0.0113
-        # (a 139, ratio 0.0027), lo spigolo vivo agli estremi dell'asse maggiore
+        # a subdivision looking only at the midpoint came out by 0.0113 (at 139, ratio
+        # 0.0027), the sharp corner at the ends of the major axis
         e = EllipseSeg((0.0, 0.0), (139.0, 0.0), 0.0027, 0.0, 2 * math.pi)
         curve = _samples(e._point_at, 0.0, 2 * math.pi, 40000)
         self.assertLessEqual(_deviation(e.discretize(tolerance=TOL), curve), TOL)
@@ -85,10 +85,10 @@ class TestDiscretizeWithinTolerance(unittest.TestCase):
 
 
 def _deviation_along(poly, curve_pts, window: int = 64) -> float:
-    """Come `_deviation`, ma i campioni e il poligono vanno nello stesso verso:
-    ogni campione guarda i lati da quello dell'ultimo campione in avanti. Un
-    sottoinsieme dei lati dà una distanza mai più piccola: il test non passa
-    per errore. Serve dove i lati sono lunghi (spline, D299)."""
+    """Like `_deviation`, but the samples and the polygon go the same way: every
+    sample looks at the sides from that of the last sample onwards. A subset of
+    the sides gives a distance never smaller: the test does not pass by mistake.
+    It serves where the sides are long (spline)."""
     worst, j = 0.0, 0
     for p in curve_pts:
         ks = range(max(j - 1, 0), min(j + window, len(poly) - 1))
@@ -112,11 +112,10 @@ def _spline(degree, n, clamped, rational, seed):
 
 
 class TestSplinePolygon(unittest.TestCase):
-    """Il poligono della spline sta entro `tol` per dimostrazione (D299): pezzi
-    di Bézier, dimezzati finché i punti di controllo stanno entro `tol` dalla
-    corda. Il controllo sul solo punto di mezzo (0.40.2) usciva di 2,5·tol
-    su una spline corta con molti intervalli di nodi (236 delle 9612 spline
-    dei 631 DXF di tests/)."""
+    """The spline's polygon is within `tol` by proof: Bézier pieces, halved until the
+    control points are within `tol` of the chord. The check on the midpoint alone
+    came out by 2.5·tol on a short spline with many knot intervals (236 of the 9612
+    splines of the 631 DXFs of tests/)."""
 
     def _check(self, s, tol, n=4000):
         lo, hi = s.knots[s.degree], s.knots[-(s.degree + 1)]
@@ -125,8 +124,8 @@ class TestSplinePolygon(unittest.TestCase):
         self.assertLessEqual(_deviation_along(poly, _samples(s._evaluate, lo, hi, n)), tol)
 
     def test_molti_intervalli_su_una_spline_corta(self):
-        # 191 punti di controllo a zig-zag su 4,75 mm, 188 intervalli: la forma
-        # della peggiore dei 631 (prima 0,0023 dalla curva a tol 0,001)
+        # 191 zig-zag control points over 4.75 mm, 188 intervals: the shape of the worst
+        # of the 631 (before 0.0023 from the curve at tol 0.001)
         cps = [(0.025 * i, 0.003 * (-1) ** i) for i in range(191)]
         knots = [0.0] * 4 + [i / 188 for i in range(1, 188)] + [1.0] * 4
         self._check(BSplineSeg(degree=3, control_points=cps, knots=knots), 1e-3, 20000)
@@ -151,10 +150,8 @@ class TestSplinePolygon(unittest.TestCase):
             s.discretize(tolerance=1e-3)
 
 class TestEllipseOnParameterGrid(unittest.TestCase):
-    """
-    D153: un'ellisse usa la griglia del suo parametro, così la stessa ellisse
-    dà lo stesso poligono comunque il file l'abbia tagliata.
-    """
+    """an ellipse uses the grid of its parameter, so the same ellipse gives the same
+    polygon however the file cut it."""
 
     def _ellipse(self, t0, t1, ccw=True):
         return EllipseSeg((3.0, -2.0), (40.0, 30.0), 0.4, t0, t1, ccw)
@@ -178,10 +175,8 @@ class TestEllipseOnParameterGrid(unittest.TestCase):
 
 
 class TestArcOnCircleGrid(unittest.TestCase):
-    """
-    D145: un arco usa la griglia del suo cerchio (ancorata all'angolo 0), così
-    lo stesso cerchio dà lo stesso poligono comunque il file lo abbia tagliato.
-    """
+    """an arc uses the grid of its circle (anchored at angle 0), so the same circle
+    gives the same polygon however the file cut it."""
 
     R = 50.0
 
@@ -207,8 +202,8 @@ class TestArcOnCircleGrid(unittest.TestCase):
         self._same(joined, circle)
 
     def test_off_grid_arc_is_a_piece_of_the_circle(self):
-        # estremi fuori griglia: i vertici interni sono quelli del cerchio,
-        # i due tratti di testa più corti del passo
+        # ends off the grid: the interior vertices are those of the circle, the two
+        # head stretches shorter than the step
         circle = self._circle()
         step = 2 * math.pi / (len(circle) - 1)
         a0, a1 = 0.3 * step, 10.7 * step
@@ -238,10 +233,9 @@ if __name__ == "__main__":
 
 
 class TestGridSnapUnderMotion(unittest.TestCase):
-    """G6e, `segments.py:46` (`_GRID_SNAP`): un vertice della griglia del
-    cerchio a meno di 1e-9 mm da un capo dell'arco si salta. Un cerchio
-    tagliato a 5e-10 mm da un vertice: `heal()` dà la stessa lettura al
-    posto, ruotato e lontano (la griglia resta ancorata all'angolo 0, D145)."""
+    """(`_GRID_SNAP`): a vertex of the circle's grid less than 1e-9 mm from an arc
+    end is skipped. A circle cut at 5e-10 mm from a vertex: `heal()` gives the
+    same reading in place, rotated and far (the grid stays anchored at angle 0)."""
 
     def test_cerchio_tagliato_vicino_a_un_vertice_della_griglia(self):
         import topo

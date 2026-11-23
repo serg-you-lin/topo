@@ -1,14 +1,14 @@
 """
 test_simplify_points.py
 ------------------------
-Test unitari per topo.core.geometry.fitting.simplify_points (MAP.md D141).
+Unit tests for topo.core.geometry.fitting.simplify_points.
 
-Le tre garanzie, su casi che vengono da un contorno tracciato (smoother D21):
-  - ogni punto dato sta entro `tolerance` dalle primitive;
-  - le primitive sono una catena testa-coda: un tratto aperto parte e
-    finisce esattamente nei suoi estremi, un contorno chiuso si richiude;
-  - linea dove è dritto, arco dove è a raggio costante, spigolo vivo dove
-    svolta, anche se il campionamento ha smussato l'angolo.
+The three guarantees, on cases that come from a traced contour:
+  - every given point is within `tolerance` of the primitives;
+  - the primitives are a head-to-tail chain: an open stretch starts and ends
+    exactly at its ends, a closed contour closes;
+  - line where it is straight, arc where the radius is constant, sharp corner
+    where it turns, even if the sampling blunted the angle.
 """
 
 import math
@@ -24,12 +24,12 @@ from topo.core.geometry.fitting import simplify_points
 
 
 def _side(a, b, n):
-    """`n` punti da `a` verso `b`, `b` escluso."""
+    """`n` points from `a` towards `b`, `b` excluded."""
     return [(a[0] + (b[0] - a[0]) * t / n, a[1] + (b[1] - a[1]) * t / n) for t in range(n)]
 
 
 def _rounded_square(size=10.0, n=20):
-    """Quadrato campionato come da un raster: il vertice manca, l'angolo è smussato su due campioni."""
+    """Square sampled as from a raster: the vertex is missing, the angle is blunted over two samples."""
     corners = [(0, 0), (size, 0), (size, size), (0, size)]
     pts = []
     for k in range(4):
@@ -55,7 +55,7 @@ class TestGuarantees(unittest.TestCase):
         out = simplify_points(pts, tolerance=0.1, scale=2.0, corner_turn_deg=35)
         self.assertEqual([type(s) for s in out], [LineSeg] * 4)
         self.assertTrue(_is_chain(out, closed=True))
-        # lo spigolo torna vivo: nell'incrocio dei due lati, non sul campione
+        # the corner comes back sharp: at the crossing of the two sides, not on the sample
         vertices = sorted((round(s.start[0], 6), round(s.start[1], 6)) for s in out)
         self.assertEqual(vertices, [(0, 0), (0, 10), (10, 0), (10, 10)])
 
@@ -67,7 +67,7 @@ class TestGuarantees(unittest.TestCase):
         self.assertAlmostEqual(out[0].radius, 10.0, places=6)
 
     def test_003_stadium_lines_and_arcs_chained(self):
-        # due lati dritti e due semicerchi, raccordati senza spigolo
+        # two straight sides and two semicircles, joined without a corner
         pts = _side((0, 0), (20, 0), 40)
         pts += [(20 + 5 * math.sin(math.pi * i / 30), 5 - 5 * math.cos(math.pi * i / 30)) for i in range(30)]
         pts += _side((20, 10), (0, 10), 40)
@@ -78,11 +78,11 @@ class TestGuarantees(unittest.TestCase):
         self.assertLessEqual(_max_distance(out, pts), 0.01 + 1e-6)
 
     def test_004_open_stretch_keeps_its_ends(self):
-        # un tratto aperto fra due tagli: linea e poi quarto d'arco
+        # an open stretch between two cuts: line and then quarter arc
         pts = _side((0, 0), (10, 0), 20) + [(10 + 5 * math.sin(a), 5 - 5 * math.cos(a))
                                            for a in (math.pi / 2 * i / 20 for i in range(21))]
         out = simplify_points(pts, tolerance=0.01, scale=2.0, closed=False, corner_turn_deg=35)
-        # un arco ricava i capi dagli angoli: esatti a meno della virgola mobile
+        # an arc gets its ends from the angles: exact up to floating point
         self.assertLess(math.dist(segment_endpoints(out[0])[0], pts[0]), 1e-9)
         self.assertLess(math.dist(segment_endpoints(out[-1])[1], pts[-1]), 1e-9)
         self.assertTrue(_is_chain(out, closed=False))
@@ -95,7 +95,7 @@ class TestGuarantees(unittest.TestCase):
         self.assertTrue(_is_chain(out, closed=False))
         self.assertLessEqual(_max_distance(out, pts), 0.1 + 1e-6)
         spline = next(s for s in out if isinstance(s, BSplineSeg))
-        self.assertLess(len(spline.control_points), 40)   # non interpola tutti i 200 punti
+        self.assertLess(len(spline.control_points), 40)   # does not interpolate all 200 points
 
     def test_006_without_arcs_no_arc(self):
         pts = [(10 * math.cos(2 * math.pi * i / 90), 10 * math.sin(2 * math.pi * i / 90)) for i in range(90)]
@@ -104,7 +104,7 @@ class TestGuarantees(unittest.TestCase):
         self.assertTrue(_is_chain(out, closed=True))
 
     def test_007_lower_turn_more_corners(self):
-        # ottagono: svolta di 45° a ogni vertice
+        # octagon: turn of 45° at every vertex
         pts = []
         verts = [(10 * math.cos(math.pi / 4 * k), 10 * math.sin(math.pi / 4 * k)) for k in range(8)]
         for k in range(8):
@@ -121,20 +121,19 @@ class TestGuarantees(unittest.TestCase):
 
 
 class TestFlatTopUnderMotion(unittest.TestCase):
-    """G6e, gruppo C, `fitting.py:94`: un lato DP sta dentro una curva se i
-    giri ai suoi capi vanno tutti nello stesso verso. Una cima piatta
-    parallela alla corda tiene tutti i suoi punti (pari merito in
-    Douglas-Peucker): fra due lati della cima il giro è 0 esatto a riposo e
-    rumore di segno qualunque sotto moto, e un lato della cima diventava
-    faccetta di curva o no secondo il moto (7 primitive o 8). Ora un vertice
-    sulla retta dei vicini entro FLOAT_NOISE non gira."""
+    """a DP side is inside a curve if the turns at its ends all go the same way. A
+    flat top parallel to the chord keeps all its points (tie in Douglas-Peucker):
+    between two sides of the top the turn is exactly 0 at rest and noise of any
+    sign under motion, and a side of the top became a curve facet or not
+    depending on the motion (7 primitives or 8). Now a vertex on the line of its
+    neighbours within FLOAT_NOISE does not turn."""
 
     MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
                (0.7, 3.1, -2.2), (2.4, -0.37, 0.61), (math.pi / 2, 0.0, 0.0)]
 
     @staticmethod
     def _bump():
-        # un dosso a faccette (svolte di 8°) con la cima piatta di 6 lati da 1
+        # a faceted bump (turns of 8°) with a flat top of 6 sides of 1
         pts, x, y, heading = [(0.0, 0.0)], 0.0, 0.0, 40.0
         for _ in range(5):
             x += math.cos(math.radians(heading))
@@ -164,10 +163,10 @@ class TestFlatTopUnderMotion(unittest.TestCase):
 
 
 class TestOnePass(unittest.TestCase):
-    """D320: una curva scritta a punti con un uncino in fondo, l'ultimo lato che
-    torna indietro di 0,02. Prima la retta e la conica si giudicavano sulla
-    curva intera: a 0,02 una retta lasciava il punto dell'uncino a 0,021, a
-    0,005 un'ellisse faceva il giro dall'altra parte e passava a 0,15 dai punti."""
+    """a curve written as points with a hook at the end, the last side going back by
+    0.02. Before, the line and the conic were judged on the whole curve: at 0.02 a
+    line left the hook's point at 0.021, at 0.005 an ellipse went round the other
+    way and passed 0.15 from the points."""
 
     HOOK = [(0.0076, 0.0906), (0.0196, 0.0569), (0.0351, 0.0331), (0.0518, 0.0229), (0.0672, 0.0276), (0.0463, 0.0246)]
 
