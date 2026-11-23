@@ -266,7 +266,7 @@ class FormulaSeg(MathSeg):
         """A cubic B-spline within `tolerance` of the curve, through its two
         ends: an approximation (a formula has no exact spline in general), for a
         format that cannot hold a formula."""
-        from ..geometry.points import approximate_bspline   # geometry sta sopra primitives
+        from ..geometry.spline_fit import approximate_bspline   # geometry sta sopra primitives
         from .spline import BSplineSeg
         control, knots = approximate_bspline(self.discretize(tolerance=tolerance / 2), 3, tolerance / 2)
         return BSplineSeg(degree=3, control_points=[tuple(p) for p in control], knots=list(knots))

@@ -22,9 +22,10 @@ from topo.core.geometry.measure import (
     chord_angle_deg, length_inside,
 )
 from topo.core.geometry.points import (
-    drop_duplicate_points, fit_circle_kasa, douglas_peucker, turn_corners, circle_through,
-    approximate_bspline, even_spacing,
+    drop_duplicate_points, fit_circle_kasa, douglas_peucker, circle_through, even_spacing,
 )
+from topo.core.geometry.corners import turn_corners
+from topo.core.geometry.spline_fit import approximate_bspline
 from topo.core.primitives.spline import BSplineSeg
 from topo.core.primitives.conics import CircleSeg
 
@@ -445,7 +446,7 @@ class TestInterpolateBspline(unittest.TestCase):
     """La B-spline di fit è matematica di topo, non di una libreria di formato."""
 
     def _check_passes_through(self, pts, degree):
-        from topo.core.geometry.points import interpolate_bspline
+        from topo.core.geometry.spline_fit import interpolate_bspline
         from topo.core.primitives.spline import BSplineSeg
         ctrl, knots = interpolate_bspline(pts, degree)
         self.assertEqual(len(ctrl), len(pts))
@@ -466,7 +467,7 @@ class TestInterpolateBspline(unittest.TestCase):
         self._check_passes_through(pts, 2)
 
     def test_troppo_pochi_punti(self):
-        from topo.core.geometry.points import interpolate_bspline
+        from topo.core.geometry.spline_fit import interpolate_bspline
         with self.assertRaises(ValueError):
             interpolate_bspline([(0, 0), (1, 1), (2, 0)], 3)
 

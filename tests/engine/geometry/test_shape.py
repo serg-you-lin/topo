@@ -198,7 +198,7 @@ class TestMisureSullePrimitive(unittest.TestCase):
 
     def test_spline_misurata_sulla_curva(self):
         from topo.core.geometry.measure import segment_reach
-        from topo.core.geometry.points import interpolate_bspline
+        from topo.core.geometry.spline_fit import interpolate_bspline
         pts = [(50 * math.cos(t), 50 * math.sin(t)) for t in (i * 2 * math.pi / 12 for i in range(13))]
         cp, kn = interpolate_bspline(pts, 3)
         spline = BSplineSeg(degree=3, control_points=cp, knots=kn)

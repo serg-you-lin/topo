@@ -15,7 +15,8 @@ primitiva è una linea o un arco solo se i suoi punti lo sono entro
 `tolerance`. Le soglie sono sempre del chiamante.
 
 La matematica sui punti (Douglas-Peucker, spigoli per svolta, cerchio per tre
-punti, b-spline approssimante) vive in `core/geometry/points.py`; qui c'è
+punti, b-spline approssimante) vive in `points.py`, `corners.py`,
+`curve_tests.py` e `spline_fit.py` accanto; qui c'è
 l'orchestrazione: spezzare sugli spigoli, decidere linea, arco o spline.
 Nata in smoother (`smoother/fitting.py`, smoother D21), provata sulle lettere
 di un'insegna tracciata, portata qui perché è ricostruzione geometrica
@@ -34,10 +35,12 @@ from ..primitives.mathseg import MathSeg, Point
 from ..primitives.conics import CircleSeg, EllipseSeg, HyperbolaSeg, is_arc
 from .measure import FLOAT_NOISE, track_length
 from .points import (
-    DEFAULT_DUPLICATE_TOLERANCE, approximate_bspline, circle_through, douglas_peucker, drop_duplicate_points,
-    even_spacing, fit_circle_kasa, offset_from_line, turn_corners, within_chord, within_circle_through,
-    within_conic_through, within_smooth_curve,
+    DEFAULT_DUPLICATE_TOLERANCE, circle_through, douglas_peucker, drop_duplicate_points,
+    even_spacing, fit_circle_kasa, offset_from_line,
 )
+from .spline_fit import approximate_bspline
+from .curve_tests import within_chord, within_circle_through, within_conic_through, within_smooth_curve
+from .corners import turn_corners
 
 Primitive = MathSeg
 

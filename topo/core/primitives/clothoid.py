@@ -167,7 +167,7 @@ class ClothoidSeg(MathSeg):
         """A cubic B-spline within `tolerance` of the curve, through its two
         ends: an approximation (a clothoid has no exact spline), for a format
         that cannot hold one."""
-        from ..geometry.points import approximate_bspline   # geometry sta sopra primitives
+        from ..geometry.spline_fit import approximate_bspline   # geometry sta sopra primitives
         from .spline import BSplineSeg
         control, knots = approximate_bspline(self.discretize(tolerance=tolerance / 2), 3, tolerance / 2)
         return BSplineSeg(degree=3, control_points=[tuple(p) for p in control], knots=list(knots))

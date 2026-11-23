@@ -23,7 +23,10 @@ Building blocks (imported from the submodule, internal):
     measure.py        "is it circular?" (bounding box: for a measure use contour_shape)
     numeric.py        golden-section search (maximum, minimum)
     shapely_polygons.py  the bridge to shapely: a contour as a Polygon (D169)
-    points.py         point sequences: corners, duplicates, circle fit, b-spline
+    points.py         point sequences: duplicates, spacing, Douglas-Peucker, circle fit
+    spline_fit.py     b-spline through points / within a tolerance of them
+    curve_tests.py    do the points lie on a chord, a circle, a conic, a smooth curve?
+    corners.py        corners of a sampled sequence
     strips.py         a strip between two contours, an open contour where the strips cover it
                       (D142; the facts on the hierarchy are in topo.tools.strips)
     intersections.py  line/line, circle/line, circle/circle

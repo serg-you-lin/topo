@@ -12,7 +12,8 @@ import random
 import unittest
 
 from topo.core.base.refit import refit_native_curves
-from topo.core.geometry.points import _ellipse_distance, approximate_bspline
+from topo.core.geometry.curve_tests import _ellipse_distance
+from topo.core.geometry.spline_fit import approximate_bspline
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
 from topo.core.geometry.fitting import conic_of_spline
 from topo.core.primitives.spline import BSplineSeg
