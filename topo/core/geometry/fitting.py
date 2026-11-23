@@ -76,7 +76,7 @@ def _split_stretch(points: List[Point], tolerance: float, scale: float, corner_t
     `corner_turn_deg`, o con `None` il lato, con `scale` di qua e di là, entro
     `tolerance` da una curva liscia (D283).
     """
-    if within_chord(points, tolerance):
+    if within_chord(points, tolerance) and _chord_in_order(points, tolerance):
         return [_Part("line", points)]
     if arcs and len(points) >= 4 and (_arc_through_ends(points, tolerance) is not None
                                       or _ellipse_fits(points, tolerance)):
@@ -137,10 +137,18 @@ def _arc_through_ends(points: List[Point], tolerance: float) -> Optional[CircleS
         return None
     center, radius = circle
     # da a a b passando per m: antiorario se m sta a destra della corda a->b
-    return CircleSeg(center=center, radius=radius,
-                  start_angle=math.atan2(a[1] - center[1], a[0] - center[0]),
-                  end_angle=math.atan2(b[1] - center[1], b[0] - center[0]),
-                  ccw=offset_from_line(m, a, b) < 0)
+    ccw = offset_from_line(m, a, b) < 0
+    sign, start = (1.0 if ccw else -1.0), math.atan2(a[1] - center[1], a[0] - center[0])
+    walked = [(sign * (math.atan2(p[1] - center[1], p[0] - center[0]) - start)) % (2 * math.pi) for p in points]
+    walked[0] = 0.0
+
+    def foot(w: float) -> Point:
+        return center[0] + radius * math.cos(start + sign * w), center[1] + radius * math.sin(start + sign * w)
+
+    if not _one_pass(points, walked, foot, walked[-1], tolerance):
+        return None
+    return CircleSeg(center=center, radius=radius, start_angle=start,
+                  end_angle=math.atan2(b[1] - center[1], b[0] - center[0]), ccw=ccw)
 
 
 def _ellipse_fits(points: List[Point], tolerance: float) -> bool:
@@ -148,8 +156,7 @@ def _ellipse_fits(points: List[Point], tolerance: float) -> bool:
     stanno vicini ai loro asintoti, e una stretta passa entro `tolerance` da due
     rette che si incontrano. I lati dritti si separano prima; l'iperbole si prova
     poi sul pezzo curvo che resta (`_fit_curve`)."""
-    fit = within_conic_through(points, tolerance)
-    return fit is not None and fit[0] == "ellipse"
+    return isinstance(_conic_through_ends(points, tolerance), EllipseSeg)
 
 
 def _conic_through_ends(points: List[Point], tolerance: float):
@@ -165,9 +172,54 @@ def _conic_through_ends(points: List[Point], tolerance: float):
         # su un ramo il parametro va dritto da un capo all'altro: il punto di mezzo sta fra loro
         if not min(ta, tb) < tm < max(ta, tb):
             return None
-        return HyperbolaSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=ta, end_param=tb)
-    ccw = (tm - ta) % (2 * math.pi) < (tb - ta) % (2 * math.pi)
-    return EllipseSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=ta, end_param=tb, ccw=ccw)
+        seg = HyperbolaSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=ta, end_param=tb)
+        sign = 1.0 if tb > ta else -1.0
+        walked = [sign * (t - ta) for t in params]
+        at = seg._point
+    else:
+        ccw = (tm - ta) % (2 * math.pi) < (tb - ta) % (2 * math.pi)
+        seg = EllipseSeg(center=center, major_axis=major_axis, ratio=ratio, start_param=ta, end_param=tb, ccw=ccw)
+        sign = 1.0 if ccw else -1.0
+        walked = [(sign * (t - ta)) % (2 * math.pi) for t in params]
+        walked[0] = 0.0
+        at = seg._point_at
+    if not _one_pass(points, walked, lambda w: at(ta + sign * w), walked[-1], tolerance):
+        return None
+    return seg
+
+
+def _one_pass(points: List[Point], walked: List[float], foot, total: float, tolerance: float) -> bool:
+    """I punti percorrono il pezzo una volta sola, in ordine, come la sequenza
+    che lo ha dato. `walked[k]`: il parametro del piede del punto k contato dal
+    primo nel verso del pezzo, `total` quello dell'ultimo, `foot(w)` il punto
+    del pezzo lì. Un piede fuori dal pezzo è un punto oltre un capo: va bene
+    entro `tolerance` da quel capo. Un passo indietro è rumore solo se i due
+    piedi stanno entro `tolerance`; più lungo, il pezzo ripasserebbe dove è
+    già stato, o farebbe il giro dall'altra parte (D320). Come `_walked`, ma
+    per punti noti entro `tolerance` invece che esatti."""
+    start, end = foot(0.0), foot(total)
+    reached = 0.0
+    for p, w in zip(points, walked):
+        if not 0.0 <= w <= total:
+            near_start, near_end = math.dist(p, start), math.dist(p, end)
+            if min(near_start, near_end) > tolerance:
+                return False
+            w = 0.0 if near_start <= near_end else total
+        if w < reached and math.dist(foot(w), foot(reached)) > tolerance:
+            return False
+        reached = max(reached, w)
+    return True
+
+
+def _chord_in_order(points: List[Point], tolerance: float) -> bool:
+    """La corda primo-ultimo percorsa una volta sola dai punti (`_one_pass`)."""
+    a, b = points[0], points[-1]
+    length = math.dist(a, b)
+    if length == 0:
+        return True
+    ux, uy = (b[0] - a[0]) / length, (b[1] - a[1]) / length
+    walked = [(p[0] - a[0]) * ux + (p[1] - a[1]) * uy for p in points]
+    return _one_pass(points, walked, lambda w: (a[0] + w * ux, a[1] + w * uy), length, tolerance)
 
 
 def _chords_within(pts: List[Point], feet: List[Point], radius_between, polygon: float, tolerance: float) -> bool:

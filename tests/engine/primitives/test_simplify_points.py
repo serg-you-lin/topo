@@ -162,5 +162,23 @@ class TestFlatTopUnderMotion(unittest.TestCase):
         self.assertEqual(kinds, {("CircleSeg",) + ("LineSeg",) * 6 + ("CircleSeg",)})
 
 
+
+class TestOnePass(unittest.TestCase):
+    """D320: una curva scritta a punti con un uncino in fondo, l'ultimo lato che
+    torna indietro di 0,02. Prima la retta e la conica si giudicavano sulla
+    curva intera: a 0,02 una retta lasciava il punto dell'uncino a 0,021, a
+    0,005 un'ellisse faceva il giro dall'altra parte e passava a 0,15 dai punti."""
+
+    HOOK = [(0.0076, 0.0906), (0.0196, 0.0569), (0.0351, 0.0331), (0.0518, 0.0229), (0.0672, 0.0276), (0.0463, 0.0246)]
+
+    def test_entro_la_tolleranza_nei_due_sensi(self):
+        grey = LineString(self.HOOK)
+        for tol in (0.02, 0.005, 0.001):
+            prims = simplify_points(self.HOOK, tolerance=tol, scale=0.1, closed=False, corner_turn_deg=None)
+            with self.subTest(tolerance=tol):
+                self.assertLessEqual(_max_distance(prims, self.HOOK), tol + 1e-9)
+                curve = [q for s_ in prims for q in s_.discretize(tolerance=1e-5)]
+                self.assertLessEqual(max(grey.distance(SPoint(q)) for q in curve), tol + 1e-9)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
