@@ -1,10 +1,8 @@
 # tests/engine/readings/test_parity_faces.py
 
-"""
-La lettura per parità, `topo.experimental.parity_faces` (D250): cosa è
-garantito (nodi tutti pari: una lettura sola), cosa è scelto (nodi dispari:
-il minimo), e il limite dichiarato (nei pareggi dipende dal riferimento).
-"""
+"""The parity reading, `topo.experimental.parity_faces`: what is guaranteed (all
+nodes even: a single reading), what is chosen (odd nodes: the minimum), and the
+declared limit (in ties it depends on the frame)."""
 
 import unittest
 
@@ -29,10 +27,10 @@ def _read(segments: list):
 
 
 class TestEvenNodes(unittest.TestCase):
-    """Ogni nodo pari: ogni linea è contorno, e la lettura è una sola."""
+    """Every node even: every line is contour, and the reading is a single one."""
 
     def test_rettangolo_che_tocca_il_bordo_e_un_inner(self):
-        # un rettangolo interno con un lato sul bordo del pezzo, toccato in un punto
+        # an inner rectangle with a side on the part's border, touched at a point
         result = _read(_lines((0, 0), (100, 0), (100, 60), (0, 60), closed=True)
                        + _lines((50, 0), (80, 20), (50, 40), (20, 20), closed=True))
         self.assertTrue(result.is_valid)
@@ -43,11 +41,11 @@ class TestEvenNodes(unittest.TestCase):
 
 
 class TestOddNodes(unittest.TestCase):
-    """Nodi dispari: via capi liberi e ponti, poi il meno di sagoma, poi il più corto."""
+    """Odd nodes: free ends and bridges away, then the least silhouette, then the shortest."""
 
     def test_diagonali_via_il_quadrato_resta(self):
-        # gli 8 angoli hanno grado 3; i lati del rettangolo sono sagoma:
-        # l'insieme più corto che rende pari ogni nodo sono le 4 diagonali
+        # the 8 corners have degree 3; the rectangle's sides are silhouette: the
+        # shortest set that makes every node even is the 4 diagonals
         result = _read(_lines((0, 0), (260, 0), (260, 150), (0, 150), closed=True)
                        + _lines((95, 47), (165, 47), (165, 103), (95, 103), closed=True)
                        + _lines((0, 0), (95, 47)) + _lines((260, 0), (165, 47))
@@ -58,7 +56,7 @@ class TestOddNodes(unittest.TestCase):
         self.assertEqual(message_problems(result), [])
 
     def test_lati_che_si_incrociano_li_taglia(self):
-        # un lato sfora l'angolo: l'incrocio si taglia e la coda è un capo libero
+        # a side overshoots the corner: the crossing is cut and the tail is a free end
         result = _read([LineSeg((0, 0), (100, 0)), LineSeg((100, 0), (100, 50.1)),
                         LineSeg((100.1, 50), (0, 50)), LineSeg((0, 50), (0, 0))])
         self.assertTrue(result.is_valid)
@@ -66,7 +64,7 @@ class TestOddNodes(unittest.TestCase):
         self.assertIn("crossing", [w.code for w in result.warnings])
 
     def test_ruolo_non_strutturale_non_entra(self):
-        # una linea con un ruolo deciso non strutturale non conta nei gradi
+        # a line with a decided non-structural role does not count in the degrees
         doc = topo.load_segments(_lines((0, 0), (100, 0), (100, 60), (0, 60), closed=True))
         doc.edges.append(doc.edges[0].__class__(role="engrave", start=(50, 0), end=(50, 60),
                                                 segment=LineSeg((50, 0), (50, 60))))
@@ -76,11 +74,10 @@ class TestOddNodes(unittest.TestCase):
 
 
 class TestDeclaredLimit(unittest.TestCase):
-    """Il limite dichiarato: dove due insiemi da togliere hanno la stessa
-    lunghezza, quale si toglie dipende dalle coordinate. L'asola con la
-    croce di Multifeature, specchiata, si legge con gli altri due spicchi.
-    Se un giorno la lettura diventa invariante, questo test cade: si cambia
-    apposta, con la decisione che lo dice."""
+    """The declared limit: where two sets to remove have the same length, which one
+    is removed depends on the coordinates. The slot with the cross of Multifeature,
+    mirrored, reads with the other two wedges. If one day the reading becomes
+    invariant, this test falls: it is changed on purpose, with the decision that says so."""
 
     def test_multifeature_specchiato_cambia_i_fori(self):
         doc = topo_dxf.load_dxf(str(DATA / "Multifeature.dxf"))

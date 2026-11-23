@@ -29,14 +29,14 @@ def _face(edges):
 class TestOuterFace(unittest.TestCase):
 
     def test_quadrato_con_diagonale(self):
-        # la diagonale divide il quadrato in due facce: il contorno esterno è il quadrato
+        # the diagonal divides the square into two faces: the outer contour is the square
         edges = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + [_line((0, 0), (10, 10))]
         face = _face(edges)
         self.assertAlmostEqual(to_shapely(face).area, 100.0)
         self.assertEqual(len(face.edges), 4)
 
     def test_asse_che_sporge_e_una_sporgenza(self):
-        # un asse che attraversa il quadrato ed esce dai due lati
+        # an axis crossing the square and leaving by the two sides
         edges = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + [_line((-3, 5), (13, 5))]
         face = _face(edges)
         self.assertAlmostEqual(to_shapely(face).area, 100.0)
@@ -47,14 +47,14 @@ class TestOuterFace(unittest.TestCase):
         self.assertAlmostEqual(to_shapely(_face(edges)).area, 64.0)
 
     def test_punto_piu_a_sinistra_a_meta_di_un_arco(self):
-        # vista stretta dentro un cerchio che la attraversa: il nodo più a
-        # sinistra è dentro il cerchio, il punto più a sinistra è sul cerchio
+        # narrow view inside a circle that crosses it: the leftmost node is inside the
+        # circle, the leftmost point is on the circle
         view = _poly((-1, -3), (1, -3), (1, 20), (-1, 20))
         circle = Edge(role="unknown", start=(8, 0), end=(8, 0),
                       segment=CircleSeg(center=(0, 0), radius=8))
         face = _face(view + [circle])
         self.assertGreater(to_shapely(face).area, 3.14 * 64)
-        # la parte di vista che esce sopra il cerchio è contorno
+        # the part of the view that leaves above the circle is contour
         self.assertGreater(to_shapely(face).bounds[3], 19.9)
 
     def test_nessun_giro(self):
@@ -62,11 +62,11 @@ class TestOuterFace(unittest.TestCase):
 
 
 class TestContattiPerDistanza(unittest.TestCase):
-    """Un quadrato col lato di base fatto da una spline e i lati verticali che
-    finiscono 0.0004 sopra di essa (sotto SAME_POINT, D268): il noding non spezza la spline, la faccia
-    si chiude solo nell'unione delle facce (D100). Il contatto vale per
-    distanza, dovunque stia il disegno: una griglia fissa agli assi lo
-    cuciva solo se i due punti cadevano nella stessa cella (G6c)."""
+    """A square with the base side made of a spline and the vertical sides ending
+    0.0004 above it (below SAME_POINT): the noding does not split the spline, the
+    face closes only in the union of the faces. The contact holds by distance,
+    wherever the drawing sits: a grid fixed to the axes sewed it only if the two
+    points fell in the same cell."""
 
     def _square(self, move):
         base = BSplineSeg(2, [(-5.0, 0.0), (5.0, 0.0), (15.0, 0.0)], [0, 0, 0, 1, 1, 1])
@@ -91,10 +91,10 @@ class TestContattiPerDistanza(unittest.TestCase):
                 self.assertAlmostEqual(to_shapely(face).area, 100.0, delta=0.1)
 
     def test_retta_che_sfiora_un_cerchio(self):
-        # una V col cerchio inscritto, i lati lo mancano di 0.0004 (sotto SAME_POINT, D268): la punta
-        # fra la V e il cerchio è una faccia chiusa della rete. Si guarda la
-        # rete e non il contorno: qui nessun edge sta per intero sul bordo
-        # dell'unione e il ripiego D100 non ne fa un giro (TODO, 1.x)
+        # a V with the inscribed circle, the sides miss it by 0.0004 (below SAME_POINT):
+        # the tip between the V and the circle is a closed face of the network. The
+        # network is looked at and not the contour: here no edge lies wholly on the
+        # border of the union and the fallback makes no loop of it (TODO, 1.x)
         r, d = 1.0, 1.0 / math.sin(math.radians(20)) + 0.0004 / math.sin(math.radians(20))
         apex = (d, 0.0)
         ends = [(d - 6 * math.cos(math.radians(a)), -6 * math.sin(math.radians(a))) for a in (20, -20)]
@@ -118,18 +118,17 @@ if __name__ == "__main__":
 
 
 class TestOverlapFromANodeUnderMotion(unittest.TestCase):
-    """G6e, `outer_face.py:218`: una svolta ~0 (un edge che riparte lungo
-    quello da cui si arriva) la deciderebbe il segno del rumore, e arriva solo
-    con due edge sovrapposti da un nodo. Qui ci sono: le due letture danno la
-    stessa risposta al posto, ruotate e lontano. Misurato il 1 novembre con un
-    tracciamento: la sovrapposizione è tolta prima delle facce, e la 218
-    scatta solo sull'edge d'arrivo (36 volte su 36), mai su un altro."""
+    """a ~0 turn (an edge that restarts along the one it arrived by) would be decided
+    by the sign of the noise, and happens only with two edges overlapping from a
+    node. Here they are: the two readings give the same answer in place, rotated
+    and far. Measured on 1 November with a trace: the overlap is removed before the
+    faces, and the line fires only on the arrival edge (36 times out of 36), never on another."""
 
     def test_faces_e_outlines_non_dipendono_dal_moto(self):
         import topo
         from tests.invariants import rigid
         from topo.core.primitives.line import LineSeg
-        # triangolo con il lato di base doppio dal nodo (0, 0): 10 mm e 20 mm sovrapposti
+        # triangle with the base side doubled from the node (0, 0): 10 mm and 20 mm overlapping
         segs = [LineSeg(start=(0.0, 0.0), end=(10.0, 0.0)), LineSeg(start=(0.0, 0.0), end=(20.0, 0.0)),
                 LineSeg(start=(20.0, 0.0), end=(10.0, 10.0)), LineSeg(start=(10.0, 10.0), end=(0.0, 0.0)),
                 LineSeg(start=(10.0, 0.0), end=(10.0, 10.0))]
@@ -149,27 +148,26 @@ class TestOverlapFromANodeUnderMotion(unittest.TestCase):
                 with self.subTest(reading=name, motion=motion):
                     moved = reading(read, motion)
                     self.assertEqual(moved[:4], at_rest[:4])
-                    self.assertAlmostEqual(moved[4], at_rest[4], delta=1e-2)   # la griglia dei nodi, lontano
+                    self.assertAlmostEqual(moved[4], at_rest[4], delta=1e-2)   # the node grid, far
 
 
 class TestFirstStepUnderMotion(unittest.TestCase):
-    """G6e, gruppo C, `_first_step`: su un lato sinistro verticale i punti più
-    a sinistra sono pari merito e il primo lo sceglie l'ultimo bit; sui
-    disegni tracciati succede 938 volte su 2964 (`probe_first_step.py`).
-    `going_down` invece non arriva al rumore (|dy| minimo 0.004 mm, 461
-    rami interni). Prova: il giro parte da nodi diversi secondo il moto
-    (controllato) e i passaggi per pezzo sono gli stessi — chi li consuma
-    (`outer_face`, `non_contour_edges`) conta, non guarda da dove si parte.
-    Non prova un pari merito fra punti di due componenti diversi."""
+    """on a vertical left side the leftmost points tie and the last bit chooses the
+    first; on the traced drawings it happens 938 times out of 2964
+    (`probe_first_step.py`). `going_down` instead does not reach the noise (minimum
+    |dy| 0.004 mm, 461 interior branches). Proof: the loop starts from different
+    nodes depending on the motion (checked) and the passes per piece are the same —
+    whoever consumes them (`outer_face`, `non_contour_edges`) counts, does not look
+    at where it starts. It does not prove a tie between points of two different components."""
 
-    # rotazioni di 1e-12: il lato sinistro pende di qua o di là, entro il rumore
+    # rotations of 1e-12: the left side leans one way or the other, within the noise
     MOTIONS = [(1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0), (1e-12, 0.3, -0.2), (-1e-12, 0.3, -0.2)]
 
     def test_partenze_diverse_stessi_passaggi(self):
         from tests.invariants import rigid
         from topo.core.topology.graph import build_node_graph
         from topo.core.topology.outer_face import _first_step, outer_face_passes
-        # quadrato con una corda da (0, 5) e una sporgenza oltre il lato destro
+        # square with a chord from (0, 5) and a protrusion beyond the right side
         base = _poly((0, 0), (10, 0), (10, 10), (0, 10)) + [_line((0, 5), (13, 5))]
         starts, readings = set(), []
         for motion in self.MOTIONS:
@@ -184,7 +182,7 @@ class TestFirstStepUnderMotion(unittest.TestCase):
             readings.append(sorted(
                 (tuple(round((a + b) / 2 - d, 6) for a, b, d in zip(p.start, p.end, motion[1:])),
                  passes.get(id(p), 0)) for p in pieces))
-        self.assertGreater(len(starts), 1)            # il pari merito c'è davvero
+        self.assertGreater(len(starts), 1)            # the tie is really there
         for r in readings[1:]:
             self.assertEqual(r, readings[0])
         self.assertIn(2, [n for _, n in readings[0]])  # la sporgenza, due volte
@@ -192,14 +190,13 @@ class TestFirstStepUnderMotion(unittest.TestCase):
 
 
 class TestUnionGridUnderMotion(unittest.TestCase):
-    """G6e, gruppo B, `outer_face.py:41` (`UNION_GRID`): la griglia della rete
-    del ripiego (D100, D179). Sui 31 disegni di `outlines()` lavora solo sui
-    doppioni a 1e-12 (qui i due cerchi di un disegno ancorato): con la griglia
-    coincidono, senza si incrociano dove dice l'ultimo bit. Prova: la griglia
-    cambia davvero la rete (valore controllato al posto), e la lettura è la
-    stessa a ogni moto e senza griglia. Non prova la finestra di 1e-6 fra due
-    curve distinte: lì decide prima `_network` coi capi sulle tuple (voce a sé
-    dell'inventario G6e)."""
+    """(`UNION_GRID`): the fallback's network grid. On the 31 `outlines()` drawings
+    it works only on the duplicates at 1e-12 (here the two circles of an anchored
+    drawing): with the grid they coincide, without they cross where the last bit
+    says. Proof: the grid really changes the network (value checked in place), and
+    the reading is the same at every motion and without the grid. It does not prove
+    the 1e-6 window between two distinct curves: there `_network` decides first
+    with the ends on the tuples (an item of its own)."""
 
     CIRCLES = [CircleSeg(center=(67.6769804197, 260.3946312001), radius=0.5325),
                CircleSeg(center=(67.67698041971678, 260.3946312001228), radius=0.5325000000015537)]
@@ -217,7 +214,7 @@ class TestUnionGridUnderMotion(unittest.TestCase):
         on_grid = len(shapely.unary_union(lines, grid_size=UNION_GRID).geoms)
         exact = len(shapely.unary_union(lines).geoms)
         self.assertEqual(on_grid, len(lines[0].coords) - 1)   # i due poligoni coincidono vertice per vertice
-        self.assertLess(exact, 10)      # senza griglia: pochi incroci all'ultimo bit
+        self.assertLess(exact, 10)      # without a grid: few crossings at the last bit
 
     def test_la_lettura_non_dipende_dalla_griglia_ne_dal_moto(self):
         from unittest import mock
@@ -231,19 +228,18 @@ class TestUnionGridUnderMotion(unittest.TestCase):
                 with self.subTest(motion=motion, grid=grid), mock.patch.object(module, "UNION_GRID", grid):
                     result = topo.heal(topo.load_segments([segment(s) for s in self.CIRCLES]), max_gap=0.0).outlines()
                     self.assertEqual(len(result.clusters), 1)
-                    self.assertEqual(len(result.loose), 0)   # i doppioni sono un cerchio solo (D217)
+                    self.assertEqual(len(result.loose), 0)   # the duplicates are a single circle
                     areas.add(round(to_shapely(result.clusters[0].outer).area, 9))
-        self.assertEqual(len(areas), 1)   # lo stesso cerchio in ogni moto, con e senza griglia
+        self.assertEqual(len(areas), 1)   # the same circle in every motion, with and without the grid
 
 
 class TestChordContactUnderMotion(unittest.TestCase):
-    """G6e, `outer_face._network` (MAP D199): il ripiego D100 rifà il noding
-    sulle discretizzazioni coi capi sulle tuple. F1 ha un morso ad arco con
-    freccia appena sotto `SAME_POINT`; lo spigolo del triangolo F2 sta
-    `SAME_POINT` + 2e-6 dall'arco vero, sopra `GRAPH_EPSILON` e oltre la
-    corda di 2e-6: il noding non li tocca, ma al posto
-    la tupla dello spigolo passava oltre la corda e l'unione saldava F1 e F2
-    solo con la griglia dei nodi; senza (D216) F2 resta in loose a ogni moto."""
+    """`outer_face._network`: the fallback redoes the noding on the discretizations
+    with the ends on the tuples. F1 has an arc bite with sagitta just below
+    `SAME_POINT`; the corner of triangle F2 is `SAME_POINT` + 2e-6 from the true
+    arc, above `GRAPH_EPSILON` and beyond the 2e-6 chord: the noding does not touch
+    them, but in place the corner's tuple went past the chord and the union welded
+    F1 and F2 only with the node grid; without it F2 stays in loose at every motion."""
 
     N = 64
     MOTIONS = [(0.0, 0.0, 0.0), (0.0, 3e-7, 0.0), (math.pi / 2, 0.0, 0.0), (0.0, 2.5e6, -1.5e6), (0.7, 0.0, 0.0)]
@@ -270,7 +266,7 @@ class TestChordContactUnderMotion(unittest.TestCase):
         readings = []
         for motion in self.MOTIONS:
             segment, _ = rigid(*motion)
-            result = topo.heal(topo.load_segments([segment(s) for s in self._segments()]), max_gap=0.05).outlines()   # la soglia di prima di D267
+            result = topo.heal(topo.load_segments([segment(s) for s in self._segments()]), max_gap=0.05).outlines()   # the threshold from before the single-threshold change
             readings.append((len(result.clusters), len(result.loose),
                              round(to_shapely(result.clusters[0].outer).area, 1)))
         self.assertEqual(set(readings), {(1, 1, 3.6)}, readings)

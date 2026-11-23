@@ -1,9 +1,9 @@
 """
 tests/engine/readings/test_cluster_order.py
 
-Ordine dei cluster (D166, G13 passo 2): dal più grande per area esatta, e
-fra copie congruenti per posizione (xmin, ymin) — mai il rumore
-dell'arrotondamento, mai l'ordine in cui il disegno le elenca.
+Order of the clusters: from the largest by exact area, and among congruent
+copies by position (xmin, ymin) — never the rounding noise, never the order in
+which the drawing lists them.
 """
 
 import pytest
@@ -14,7 +14,7 @@ g = topo.geometry
 
 
 def _drawing(order):
-    # tre copie dello stesso stadio in tre posizioni, e un rettangolo più grande
+    # three copies of the same stadium in three positions, and a larger rectangle
     copies = {"a": (300.0, 0.0), "b": (0.0, 50.0), "c": (0.0, 0.0)}
     segments = g.rectangle(80, 40, center=(150.0, 200.0))
     for key in order:

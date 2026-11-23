@@ -1,15 +1,15 @@
 """
 test_loops.py
 -------------
-Test per topo_dxf.core.topology.loops — LoopFinder e classify_loops.
+Tests for topo_dxf.core.topology.loops — LoopFinder and classify_loops.
 
-I test verificano:
-- ricerca di loop chiusi (LoopFinder.find)
-- orientamento CCW
-- gestione archi
-- classificazione outer/inner
-- potatura dead‑end (tramite Graph.pruned)
-- stub su archi concavi spezzati: recupero via pipeline completa
+The tests verify:
+- search of closed loops (LoopFinder.find)
+- CCW orientation
+- arc handling
+- outer/inner classification
+- dead-end pruning (via Graph.pruned)
+- stubs on broken concave arcs: recovery via the full pipeline
 """
 
 import unittest
@@ -17,7 +17,7 @@ import math
 
 from shapely.geometry import LinearRing, Polygon, LineString
 
-# Setup del path per import dal progetto
+# Path setup for imports from the project
 
 from topo.core.topology.outer_face import face_loops
 from topo.core.topology.edge import Edge
@@ -26,9 +26,7 @@ from topo.model.role import ContourRole
 from topo import to_shapely
 
 
-# ---------------------------------------------------------------------------
-# Helper: creazione Edge puri (nessun ezdxf)
-# ---------------------------------------------------------------------------
+# --- Helper: building pure Edges (no ezdxf) ---
 
 def _edge(start, end):
     """Crea un Edge lineare."""
@@ -40,8 +38,8 @@ def _edge(start, end):
     )
 
 def _arc_edge(start, end, arc_pts):
-    """Crea un Edge che discretizza un arco (arc_pts da start a end)."""
-    # Usiamo BSplineSeg per rappresentare la discretizzazione dell'arco
+    """Create an Edge that discretizes an arc (arc_pts from start to end)."""
+    # We use BSplineSeg to represent the arc's discretization
     from topo.core.primitives.spline import BSplineSeg
     return Edge(
         role=ContourRole.UNKNOWN,
@@ -56,9 +54,7 @@ def _arc_edge(start, end, arc_pts):
     )
 
 
-# ---------------------------------------------------------------------------
-# Factory: geometrie di test
-# ---------------------------------------------------------------------------
+# --- Factory: test geometries ---
 
 def _make_rect_edges(w=100.0, h=50.0, ccw=True):
     if ccw:
@@ -94,7 +90,7 @@ def _make_rect_with_inner_edges(outer_w=100.0, outer_h=80.0,
     ]
 
 def _make_arc_rect_edges():
-    """Rettangolo con due raccordi circolari agli angoli inferiori."""
+    """Rectangle with two circular fillets at the lower corners."""
     def _arc_pts(cx, cy, r, start_deg, end_deg, n=16):
         angles = [math.radians(start_deg + (end_deg - start_deg) * i / n)
                   for i in range(n + 1)]
@@ -137,23 +133,21 @@ def _make_stub_in_loop_edges():
 def _make_rect_with_split_arcs_and_stubs(
     w=1000.0, h=500.0, r=3.0, stub_len=5.0
 ):
-    """
-    Rettangolo con 4 angoli raccordati da archi concavi spezzati in due metà.
-    Ogni punto di spezzatura ha uno stub verso l'interno.
-    """
+    """Rectangle with 4 corners filleted by concave arcs broken into two halves.
+    Every break point has a stub towards the inside."""
     def arc_pts(cx, cy, r, start_deg, end_deg, n=8):
         angles = [math.radians(start_deg + (end_deg - start_deg) * i / (n-1))
                   for i in range(n)]
         return [(cx + r * math.cos(a), cy + r * math.sin(a)) for a in angles]
 
     edges = []
-    # lati rettilinei
+    # straight sides
     edges.append(_edge((r, 0),       (w - r, 0)))
     edges.append(_edge((w, r),       (w, h - r)))
     edges.append(_edge((w - r, h),   (r, h)))
     edges.append(_edge((0, h - r),   (0, r)))
 
-    # angolo basso-sinistra (180° -> 270°)
+    # bottom-left corner (180° -> 270°)
     split_bl = (r - r * math.cos(math.radians(45)),
                 r - r * math.sin(math.radians(45)))
     pts_bl_1 = arc_pts(r, r, r, 180, 225, 5)
@@ -164,7 +158,7 @@ def _make_rect_with_split_arcs_and_stubs(
                    split_bl[1] + stub_len * math.sin(math.radians(45)))
     edges.append(_edge(split_bl, stub_end_bl))
 
-    # angolo basso-destra (270° -> 360°)
+    # bottom-right corner (270° -> 360°)
     pts_br_1 = arc_pts(w - r, r, r, 270, 315, 5)
     pts_br_2 = arc_pts(w - r, r, r, 315, 360, 5)
     edges.append(_arc_edge(pts_br_1[0], pts_br_1[-1], pts_br_1))
@@ -174,7 +168,7 @@ def _make_rect_with_split_arcs_and_stubs(
                    split_br[1] + stub_len * math.sin(math.radians(45)))
     edges.append(_edge(split_br, stub_end_br))
 
-    # angolo alto-destra (0° -> 90°)
+    # top-right corner (0° -> 90°)
     pts_tr_1 = arc_pts(w - r, h - r, r, 0, 45, 5)
     pts_tr_2 = arc_pts(w - r, h - r, r, 45, 90, 5)
     edges.append(_arc_edge(pts_tr_1[0], pts_tr_1[-1], pts_tr_1))
@@ -184,7 +178,7 @@ def _make_rect_with_split_arcs_and_stubs(
                    split_tr[1] - stub_len * math.sin(math.radians(45)))
     edges.append(_edge(split_tr, stub_end_tr))
 
-    # angolo alto-sinistra (90° -> 180°)
+    # top-left corner (90° -> 180°)
     pts_tl_1 = arc_pts(r, h - r, r, 90, 135, 5)
     pts_tl_2 = arc_pts(r, h - r, r, 135, 180, 5)
     edges.append(_arc_edge(pts_tl_1[0], pts_tl_1[-1], pts_tl_1))
@@ -282,9 +276,7 @@ class TestLoopOrientationCW(unittest.TestCase):
         self.assertAlmostEqual(self.poly.area, 100 * 50, delta=1.0)
 
 
-# ---------------------------------------------------------------------------
-# Test: geometria con raccordi
-# ---------------------------------------------------------------------------
+# --- Test: geometry with fillets ---
 
 class TestLoopWithArcs(unittest.TestCase):
     def setUp(self):
@@ -313,14 +305,12 @@ class TestLoopWithArcs(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestSplitArcStubs(unittest.TestCase):
-    """
-    Archi concavi spezzati in due metà + LINE stub verso l'interno attaccate
-    al punto di spezzatura (nodo di grado 3).
+    """Concave arcs broken into two halves + stub LINEs towards the inside attached
+    at the break point (a node of degree 3).
 
-    Le stub entrano e escono dallo stesso nodo: il cammino delle facce le
-    percorre andata e ritorno e non ne fa un giro (D189); finiscono in
-    `loose` senza essere perse. Il test verifica l'esito del PRODOTTO.
-    """
+    The stubs enter and leave the same node: the face walk walks them back and
+    forth and makes no loop of them; they end in `loose` without being lost. The
+    test verifies the PRODUCT's outcome."""
 
     def setUp(self):
         import topo
@@ -336,7 +326,7 @@ class TestSplitArcStubs(unittest.TestCase):
         self.assertAlmostEqual(poly.area, 1000.0 * 500.0, delta=500.0)
 
     def test_stub_non_perse_finiscono_in_trash(self):
-        # una stub per angolo: fuori dal contorno, ma materializzate in trash
+        # one stub per corner: outside the contour, but materialized in trash
         self.assertGreaterEqual(len(self.result.loose), 4)
 
 

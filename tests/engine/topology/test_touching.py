@@ -29,7 +29,7 @@ class TestTouchingGroups(unittest.TestCase):
         self.assertEqual([len(i.edges) for i in groups], [4, 4])
 
     def test_gap_sotto_tolleranza_unisce(self):
-        # 3mm di distanza, tolleranza 5: stesso gruppo anche senza toccarsi
+        # 3mm apart, tolerance 5: same group even without touching
         groups = touching_groups(_square(0, 0) + _square(13, 0), gap_tolerance=5)
         self.assertEqual(len(groups), 1)
         self.assertEqual(groups[0].bbox, (0.0, 0.0, 23.0, 10.0))
@@ -50,14 +50,14 @@ class TestTouchingGroups(unittest.TestCase):
         self.assertEqual(len(groups), 1)
 
     def test_foro_lontano_dai_lati_gruppo_a_se(self):
-        # solo vicinanza: che il foro stia DENTRO lo dice il contorno esterno, dopo
+        # only nearness: that the hole is INSIDE is told by the outer contour, afterwards
         hole = Edge(role="unknown", start=(52, 50), end=(52, 50),
                     segment=CircleSeg(center=(50, 50), radius=2))
         groups = touching_groups(_square(0, 0, 100) + [hole], gap_tolerance=5)
         self.assertEqual(len(groups), 2)
 
     def test_diagonale_lunga_non_unisce_per_bbox(self):
-        # la bbox della diagonale copre il quadrato, la distanza vera no
+        # the diagonal's bbox covers the square, the true distance does not
         diag = _line((0, 0), (100, 100))
         groups = touching_groups([diag] + _square(70, 5), gap_tolerance=2)
         self.assertEqual(len(groups), 2)
@@ -71,11 +71,11 @@ class TestTouchingGroups(unittest.TestCase):
 
 
 class TestGapOnTrueCurvesUnderMotion(unittest.TestCase):
-    """G6e, D193 punto 2, `touching.py`: `dwithin` a `gap_tolerance` sulle
-    discretizzazioni. Un cerchio con freccia appena sotto `SAME_POINT` e un
-    quadratino a 0.4996 dal cerchio vero, soglia 0.5: su un vertice la
-    distanza misurata è quella vera, a metà corda ~0.001 di più; mezzo passo della griglia
-    angolare (D145) la portava oltre 0.5 e il gruppo diventava due."""
+    """`dwithin` at `gap_tolerance` on the discretizations. A circle with sagitta
+    just below `SAME_POINT` and a small square at 0.4996 from the true circle,
+    threshold 0.5: on a vertex the measured distance is the true one, at mid-chord
+    ~0.001 more; half a step of the angular grid took it beyond 0.5 and the group
+    became two."""
 
     N = 64
     MOTIONS = [(0.0, 0.0, 0.0), (math.pi / 64, 0.0, 0.0), (math.pi / 128, 0.0, 0.0), (0.7, 0.0, 0.0),
@@ -103,7 +103,8 @@ class TestGapOnTrueCurvesUnderMotion(unittest.TestCase):
                     self.assertEqual(len(touching_groups(self._pieces(distance, move), gap_tolerance=0.5)), expected)
 
     def test_al_posto_la_corda_sta_oltre_la_soglia(self):
-        # la prova non è vuota: a mezzo passo la discretizzazione misura più di 0.5
+        # the proof is not empty: at half a step the discretization measures more than 0.5
+        #
         from tests.invariants import rigid
         move, _ = rigid(math.pi / 64, 0.0, 0.0)
         edges = self._pieces(0.4996, move)

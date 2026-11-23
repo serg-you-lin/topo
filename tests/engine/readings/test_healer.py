@@ -1,12 +1,12 @@
 """
 test_healer.py
 --------------
-Unit test per topo.heal().
+Unit test for topo.heal().
 
-Verifica esclusivamente il Result — clusters, inners, holes, trash.
-NON verifica effetti sul msp (layer, colori, LWPOLYLINE scritte) → test_writeback.py
+It verifies only the Result — clusters, inners, holes, trash. It does NOT
+verify effects on the msp (layers, colours, LWPOLYLINEs written) → test_writeback.py
 
-Poi lancia:
+Then run:
     python -m pytest tests/engine/readings/test_healer.py -v
 """
 
@@ -54,9 +54,7 @@ class TestHealerRectLines(unittest.TestCase):
     
 
 
-# ---------------------------------------------------------------------------
-# Rettangolo con foro (LINE)
-# ---------------------------------------------------------------------------
+# --- Rectangle with a hole (LINE) ---
 
 class TestHealerRectWithHole(unittest.TestCase):
 
@@ -74,9 +72,7 @@ class TestHealerRectWithHole(unittest.TestCase):
         self.assertAlmostEqual(self.result.clusters[0].outer.area, 20000, delta=200)
 
 
-# ---------------------------------------------------------------------------
-# File già pulito (LWPOLYLINE)
-# ---------------------------------------------------------------------------
+# --- Already clean file (LWPOLYLINE) ---
 
 class TestHealerCleanFile(unittest.TestCase):
 
@@ -113,10 +109,7 @@ class TestHealerCircleOuter(unittest.TestCase):
         self.assertGreaterEqual(len(self.result.clusters[0].features("holes")) + len(self.result.clusters[0].inners), 1)
 
 
-# ---------------------------------------------------------------------------
-# CIRCLE piccolo → contorno interno (un foro è una lettura di processo:
-# snapbend, MAP.md D88)
-# ---------------------------------------------------------------------------
+# --- Small CIRCLE → inner contour (a hole is a process reading: snapbend) ---
 
 class TestHealerCircleHole(unittest.TestCase):
 
@@ -132,9 +125,7 @@ class TestHealerCircleHole(unittest.TestCase):
         self.assertEqual(self.result.clusters[0].overlay, None)
 
 
-# ---------------------------------------------------------------------------
-# CIRCLE grande → INNER (resta contorno interno anche dopo detect)
-# ---------------------------------------------------------------------------
+# --- Large CIRCLE → INNER (stays an inner contour even after detect) ---
 
 class TestHealerCircleInner(unittest.TestCase):
 
@@ -166,14 +157,14 @@ class TestHealerCountersink(unittest.TestCase):
         self.assertEqual(self.result.cluster_count, 1)
 
     def test_002_sees_both_circles_as_inners(self):
-        # heal() non distingue countersink — li vede entrambi come inners
+        # heal() does not tell a countersink apart — it sees both as inners
         self.assertEqual(len(self.result.clusters[0].features("holes")), 0)
         self.assertGreaterEqual(len(self.result.clusters[0].inners), 2)
 
     def test_003_area_per_parita(self):
-        # Ø30 vuoto (depth 1), Ø10 isola dentro di lui (depth 2, D89): l'area
-        # vera è 200·100 − π·15² + π·5², non outer meno l'unione. Scarto dal
-        # poligono entro tol × perimetro dei due cerchi (G5)
+        # Ø30 void (depth 1), Ø10 island inside it (depth 2): the true area is
+        # 200·100 − π·15² + π·5², not outer minus the union. Deviation from the polygon
+        # within tol × perimeter of the two circles
         c = self.result.clusters[0]
         self.assertEqual(sorted(i.depth for i in c.inners), [1, 2])
         exact = 200 * 100 - math.pi * 15 ** 2 + math.pi * 5 ** 2
@@ -197,9 +188,7 @@ class TestHealerInnerLoopInsideLwpolyline(unittest.TestCase):
         self.assertEqual(len(self.result.clusters[0].inners), 1)
 
 
-# ---------------------------------------------------------------------------
-# Deduplicazione entità duplicate
-# ---------------------------------------------------------------------------
+# --- Deduplication of duplicate entities ---
 
 class TestHealerDeduplication(unittest.TestCase):
 
@@ -224,8 +213,8 @@ class TestHealerDeduplication(unittest.TestCase):
 class TestValidateInput(unittest.TestCase):
 
     def test_001_linee_aperte_nessuna_previsione(self):
-        # rette che heal() chiuderà: nessun fatto da dire sull'input, e una
-        # previsione su heal() validate_document non la fa più (D233)
+        # lines that heal() will close: no fact to state about the input, and a
+        # forecast about heal() is no longer made by validate_document
         check = topo.validate_document(topo_dxf.load_dxf(load("rect_lines.dxf")))
         self.assertEqual(check.warnings, [])
         self.assertTrue(check.is_valid)

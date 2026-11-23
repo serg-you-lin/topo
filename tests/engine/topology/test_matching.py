@@ -9,7 +9,7 @@ from topo.core.topology.matching import (
 
 
 def _matchings(edges):
-    """Ogni accoppiamento di `edges`, come lista di indici di lati."""
+    """Every matching of `edges`, as a list of edge indices."""
     out = []
 
     def rec(k, used, chosen):
@@ -38,7 +38,7 @@ def _random_graph(rnd, n_max=8, m_max=12):
 
 
 def _mate_weight(edges, mate, pick):
-    """Peso dell'accoppiamento `mate`; fra lati paralleli sceglie `pick` (max o min)."""
+    """Weight of the matching `mate`; among parallel edges `pick` chooses (max or min)."""
     total = 0
     for v, m in enumerate(mate):
         if m > v:
@@ -86,7 +86,7 @@ class TestMinWeightPerfectMatching(unittest.TestCase):
             self.assertEqual(_mate_weight(edges, mate, min), best, (n, edges))
 
     def test_blossom_needed(self):
-        # il triangolo 0-1-2 con la coda 2-3: l'unico perfetto è {0-1, 2-3}
+        # triangle 0-1-2 with the tail 2-3: the only perfect one is {0-1, 2-3}
         edges = [(0, 1, 5), (1, 2, 1), (0, 2, 1), (2, 3, 9)]
         self.assertEqual(min_weight_perfect_matching(4, edges), [1, 0, 3, 2])
 
@@ -94,7 +94,7 @@ class TestMinWeightPerfectMatching(unittest.TestCase):
 class TestMinPerfectOnComplete(unittest.TestCase):
 
     def test_few_pairs_per_node_still_exact(self):
-        # una coppia per nodo all'inizio: le altre entrano solo coi duali
+        # one pair per node at the start: the others enter only with the duals
         rnd = random.Random(5)
         for _ in range(300):
             n = rnd.choice([2, 4, 6, 8, 10])
@@ -108,7 +108,7 @@ class TestMinPerfectOnComplete(unittest.TestCase):
 
 
 def _pairings(nodes):
-    """Ogni modo di accoppiare `nodes` (in numero pari)."""
+    """Every way of pairing `nodes` (an even number)."""
     if not nodes:
         yield []
         return

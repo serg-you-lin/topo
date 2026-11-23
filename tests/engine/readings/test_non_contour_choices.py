@@ -1,16 +1,15 @@
 # tests/engine/readings/test_non_contour_choices.py
 
-"""
-Le scelte del criterio non-contorno di heal(), una classe per scelta (MAP.md
-D131, D132). Ogni test è il disegno minimo del caso limite e dice cosa topo
-sceglie per default: se un default cambia, cambia qui, apposta e per una
-decisione scritta, mai per far passare un altro test.
+"""The choices of heal()'s non-contour criterion, one class per choice. Every
+test is the minimal drawing of the limit case and says what topo chooses by
+default: if a default changes, it changes here, on purpose and by a written
+decision, never to make another test pass.
 
-  A  catena interna (0 passaggi)      → corda: il pezzo resta pieno
-  B  ponte (2 passaggi)               → due pezzi, con un warning
-  C  sul bordo per meno di metà       → corda
-  D  lati che si accavallano          → giudicati sulla rete piana, e detti in un warning
-  E  catena chiusa su un nodo solo    → mai candidata: oggi resta un foro (aperto in TODO)
+  A  inner chain (0 passes)           → chord: the piece stays full
+  B  bridge (2 passes)                → two pieces, with a warning
+  C  on the border for less than half → chord
+  D  sides that overlap               → judged on the planar network, and told in a warning
+  E  chain closed on a single node    → never a candidate: today it stays a hole (open in TODO)
 """
 
 import unittest
@@ -33,9 +32,9 @@ def _heal(segments: list):
 
 
 class TestA_InteriorChainIsChord(unittest.TestCase):
-    """Rettangolo, quadrato interno, 4 diagonali angolo-angolo: lo stesso
-    grafo di un pannello con le crocette di irrigidimento e di un foro tenuto
-    da 4 linee. Senza altre informazioni il pezzo è pieno."""
+    """Rectangle, inner square, 4 corner-to-corner diagonals: the same graph as a
+    panel with stiffening crosses and a hole held by 4 lines. Without other
+    information the piece is full."""
 
     def test_pannello_pieno_otto_linee_nel_trash(self):
         result = _heal(_lines((0, 0), (260, 0), (260, 150), (0, 150), closed=True)
@@ -49,8 +48,8 @@ class TestA_InteriorChainIsChord(unittest.TestCase):
 
 
 class TestB_BridgeSplitsParts(unittest.TestCase):
-    """Due rettangoli uniti da una linea: il bordo esterno la percorre andata
-    e ritorno. Due pezzi, e heal() lo dice."""
+    """Two rectangles joined by a line: the outer border walks it back and forth. Two
+    pieces, and heal() says so."""
 
     def test_due_pezzi_e_warning(self):
         result = _heal(_lines((0, 0), (110, 0), (110, 50), (110, 100), (0, 100), closed=True)
@@ -62,9 +61,9 @@ class TestB_BridgeSplitsParts(unittest.TestCase):
 
 
 class TestC_GrazedChordIsChord(unittest.TestCase):
-    """Una corda a y=49 attraversa una tacca a V profonda 1,5 mm nel lato
-    alto: per 1,33 mm su 100 confina con l'esterno. Meno di metà: corda, e la
-    tacca resta nel contorno."""
+    """A chord at y=49 crosses a V notch 1.5 mm deep in the top side: for 1.33 mm
+    out of 100 it borders the outside. Less than half: chord, and the notch stays
+    in the contour."""
 
     def test_corda_nel_trash_tacca_nel_contorno(self):
         outline = _lines((0, 0), (100, 0), (100, 49), (100, 50), (51, 50), (50, 48.5), (49, 50),
@@ -76,10 +75,9 @@ class TestC_GrazedChordIsChord(unittest.TestCase):
 
 
 class TestD_CrossingSidesAreReported(unittest.TestCase):
-    """Una tacca coi fianchi accavallati: il fianco destro torna a (27, 0.5),
-    a sinistra di dove parte il sinistro, e il lato che segue incrocia il
-    fianco sinistro poco sopra il fondo. heal() non ripara: lo dice, con il
-    punto."""
+    """A notch with overlapping flanks: the right flank returns to (27, 0.5), to the
+    left of where the left one starts, and the following side crosses the left
+    flank just above the bottom. heal() does not repair: it says so, with the point."""
 
     NOTCH = ((0, 0), (28, 0), (30, 20), (27, 0.5), (60, 0), (60, 40), (30, 40), (0, 40))
 
@@ -98,8 +96,7 @@ class TestD_CrossingSidesAreReported(unittest.TestCase):
         self.assertAlmostEqual(points[0][1], 0.484, places=2)
 
     def test_contatto_a_t_non_e_un_incrocio(self):
-        # il capo di una corda a metà del lato alto: un contatto, non un
-        # accavallamento
+        # the end of a chord at mid top side: a contact, not an overlap
         doc = topo.load_segments(_lines((0, 0), (40, 0), (40, 20), (0, 20), closed=True)
                                  + _lines((0, 0), (20, 20)))
         self.assertEqual(interior_crossings(doc.edges, TOL), [])
@@ -110,9 +107,9 @@ class TestD_CrossingSidesAreReported(unittest.TestCase):
 
 
 class TestE_ClosedChainNeverCandidate(unittest.TestCase):
-    """Un foro triangolare con un vertice in comune col contorno esterno: la
-    sua catena parte e torna allo stesso nodo, quindi non è mai una corda.
-    Oggi è un foro; se debba andare nel trash è aperto in TODO (D132)."""
+    """A triangular hole with a vertex in common with the outer contour: its chain
+    starts and returns to the same node, so it is never a chord. Today it is a
+    hole; whether it should go to the trash is open in TODO."""
 
     def test_oggi_resta_un_foro(self):
         result = _heal(_lines((0, 0), (260, 0), (260, 120), (0, 120), closed=True)

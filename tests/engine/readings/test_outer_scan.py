@@ -19,7 +19,7 @@ def _poly(*pts):
 class TestOuterCandidateEdges(unittest.TestCase):
 
     def test_quadrato_tutti_i_lati(self):
-        # i lati orizzontali li vede solo il raggio verticale: servono entrambi gli assi
+        # the horizontal sides are seen only by the vertical ray: both axes are needed
         edges = _poly((0, 0), (10, 0), (10, 10), (0, 10))
         oc = outer_candidate_edges(edges)
         self.assertEqual(oc.ids, {id(e) for e in edges})
@@ -35,20 +35,20 @@ class TestOuterCandidateEdges(unittest.TestCase):
         self.assertEqual(len(oc.edges), 4)
 
     def test_rientro_a_l_tutti_i_lati(self):
-        # L: i due lati del rientro sono esterni, visti da uno dei due assi
+        # L: the two sides of the recess are outer, seen from one of the two axes
         edges = _poly((0, 0), (10, 0), (10, 4), (4, 4), (4, 10), (0, 10))
         oc = outer_candidate_edges(edges)
         self.assertEqual(oc.ids, {id(e) for e in edges})
 
     def test_binario_interno_parallelo_scartato(self):
-        # proiezione quasi coincidente, ma dentro: mai all'estremo
+        # nearly coincident projection, but inside: never at the extreme
         outer = _poly((0, 0), (10, 0), (10, 10), (0, 10))
         ghost = _line((9.9, 1), (9.9, 9))
         oc = outer_candidate_edges(outer + [ghost])
         self.assertNotIn(id(ghost), oc.ids)
 
     def test_arco_esterno(self):
-        # semicerchio in cima a un rettangolo: l'arco è il bordo superiore
+        # semicircle on top of a rectangle: the arc is the top border
         base = [_line((10, 5), (10, 0)), _line((10, 0), (0, 0)), _line((0, 0), (0, 5))]
         arc = Edge(role="unknown", start=(10, 5), end=(0, 5),
                    segment=CircleSeg(center=(5, 5), radius=5, start_angle=0.0,

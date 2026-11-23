@@ -1,9 +1,9 @@
 """
 tests/engine/readings/test_known_defect_warnings.py
 ---------------------------------------------
-I due difetti noti della lettura che `heal()` dice con un avviso (D241): una
-spline che incrocia se stessa, il nodo di una curva chiusa su un'altra curva
-chiusa. Un disegno pulito non ne dà nessuno.
+The two known defects of the reading that `heal()` reports with a warning: a
+spline that crosses itself, the node of a closed curve lying on another
+closed curve. A clean drawing gives none.
 """
 
 import math
@@ -14,7 +14,7 @@ from topo.primitives import BSplineSeg
 
 
 def _spline(points: list) -> BSplineSeg:
-    # spline di grado 1: una spezzata in una curva sola
+    # degree-1 spline: a polyline as a single curve
     n = len(points)
     return BSplineSeg(1, list(points), [0.0] + [float(i) for i in range(n)] + [float(n - 1)])
 

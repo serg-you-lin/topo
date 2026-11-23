@@ -1,10 +1,7 @@
 # tests/engine/topology/test_rim.py
 
-"""
-I segmenti di una faccia letti dal suo bordo (`face_segments`, D106). Le
-facce per giro di `outlines()` non ci sono più: outlines() non costruisce inner
-(D161).
-"""
+"""The segments of a face read from its border (`face_segments`). The faces per
+loop of `outlines()` are no longer there: outlines() builds no inner."""
 
 import math
 import unittest
@@ -29,8 +26,7 @@ def _line(p1, p2):
 class TestFaceSegments(unittest.TestCase):
 
     def test_edge_sul_bordo_solo_in_parte_da_la_sua_parte(self):
-        # la base e il lato destro sporgono oltre il quadrato: incroci che
-        # la rete non ha tagliato
+        # the base and the right side overshoot the square: crossings the network did not cut
         edges = [_line((-5, 0), (15, 0)), _line((10, -3), (10, 10)),
                  _line((10, 10), (0, 10)), _line((0, 10), (0, 0))]
         segments, styles, _ = face_segments(edges, box(0, 0, 10, 10), BAND)
@@ -42,8 +38,8 @@ class TestFaceSegments(unittest.TestCase):
         self.assertEqual(ends, {(0, 0), (10, 0), (10, 10), (0, 10)})
 
     def test_il_resto_di_un_edge_solo_in_parte_sul_bordo(self):
-        # G6b: la base sporge di 5 a sinistra e a destra, il lato destro di 3
-        # in basso; esce solo la sporgenza, mai l'edge intero
+        # the base overshoots by 5 left and right, the right side by 3 downwards; only
+        # the overshoot comes out, never the whole edge
         edges = [_line((-5, 0), (15, 0)), _line((10, -3), (10, 10)),
                  _line((10, 10), (0, 10)), _line((0, 10), (0, 0))]
         square = box(0, 0, 10, 10)
@@ -51,7 +47,7 @@ class TestFaceSegments(unittest.TestCase):
         rest = off_rim(edges[0], used[0], square.exterior, BAND)
         ends = sorted(tuple(tuple(round(c, 9) for c in p) for p in segment_endpoints(e.segment)) for e in rest)
         self.assertEqual(ends, [((-5, 0), (0, 0)), ((10, 0), (15, 0))])
-        self.assertEqual(rest[0].start, (-5, 0))   # il capo originale tiene il suo nodo
+        self.assertEqual(rest[0].start, (-5, 0))   # the original end keeps its node
         self.assertEqual(off_rim(edges[2], used[2], square.exterior, BAND), [])
 
     def test_doppione_sovrapposto_non_spezzetta(self):
@@ -61,7 +57,7 @@ class TestFaceSegments(unittest.TestCase):
         self.assertEqual(len(segments), 4)
 
     def test_arco_tangente_a_una_retta_resta_un_arco(self):
-        # mezzo disco: diametro come retta, semicerchio come arco
+        # half disc: diameter as a line, semicircle as an arc
         arc = CircleSeg(center=(0, 0), radius=5, start_angle=0, end_angle=math.pi, ccw=True)
         edges = [_line((-5, 0), (5, 0)),
                  Edge(role="unknown", start=(5, 0), end=(-5, 0), segment=arc)]
@@ -70,9 +66,8 @@ class TestFaceSegments(unittest.TestCase):
         self.assertEqual(sorted(type(s).__name__ for s in segments), ["CircleSeg", "LineSeg"])
 
     def test_due_tratti_vicini_si_chiudono_con_una_retta(self):
-        # D206/D209: il lato alto corre 0,01 sopra l'anello, i lati verticali
-        # finiscono sull'anello. Ogni tratto finisce sulla sua curva: fra i due
-        # capi vicini una retta nuova, nessuna curva spostata
+        # the top side runs 0.01 above the ring, the vertical sides end on the ring.
+        # Every stretch ends on its own curve: between the two near ends a new line, no curve moved
         edges = [_line((0, 0), (10, 0)), _line((10, 0), (10, 10)),
                  _line((10, 10.01), (0, 10.01)), _line((0, 10), (0, 0))]
         segments, styles, _ = face_segments(edges, box(0, 0, 10, 10), BAND)
@@ -86,14 +81,13 @@ class TestFaceSegments(unittest.TestCase):
 
 
 class TestOffRimCutsUnderMotion(unittest.TestCase):
-    """G6e, gruppo B, `rim.py:80`: i tagli di `off_rim` erano le ascisse
-    arrotondate a 1e-9. Due capi presi a 1e-10 l'uno dall'altro cadevano in
-    una cella o in due secondo il moto, e il capo del resto si spostava fino a
-    5e-10 dal nodo del contorno (qui l'edge parte a -5.00000000045: il taglio
-    cade a 4.5e-10 da un multiplo di 1e-9). Prova: al posto e ai moti esce la
-    sola sporgenza, con il capo interno sul capo preso (entro il rumore del moto).
-    Non prova la riga dentro `outlines()`: sui disegni tracciati il ripiego
-    `_faces_union_loop` non arriva mai a `off_rim`."""
+    """the cuts of `off_rim` were the abscissae rounded to 1e-9. Two ends taken 1e-10
+    apart fell in one cell or two depending on the motion, and the end of the
+    remainder moved up to 5e-10 from the contour's node (here the edge starts at
+    -5.00000000045: the cut falls 4.5e-10 from a multiple of 1e-9). Proof: in place
+    and at the motions only the overshoot comes out, with the inner end on the end
+    taken (within the motion's noise). It does not prove the line inside
+    `outlines()`: on the traced drawings the fallback `_faces_union_loop` never reaches `off_rim`."""
 
     MOTIONS = [(0.0, 0.0, 0.0), (0.7, 0.0, 0.0), (0.13, 3.1, -7.9), (2.4, -0.37, 0.61)]
 
@@ -113,21 +107,20 @@ class TestOffRimCutsUnderMotion(unittest.TestCase):
                 left = [e for e in rest if e.start == edge.start]
                 self.assertEqual(len(rest), 2)
                 self.assertEqual(len(left), 1)
-                # il capo interno è sul nodo del contorno, non su una cella
+                # the inner end is on the contour's node, not on a cell
                 inner = segment_endpoints(left[0].segment)[1]
                 self.assertLess(math.dist(inner, corner), 1e-12)
 
 
 class TestSenseOfAPerpendicularSpur(unittest.TestCase):
-    """G6e, gruppo C, `rim.py:152`: il verso di un edge rispetto a un lato è il
-    segno di un prodotto scalare, `>= 0`. Una sporgenza perpendicolare che
-    tocca il punto medio di un lato ha prodotto 0 a riposo e rumore (±4e-15)
-    sotto moto: il suo verso cambia col moto. Prova: il verso cambia davvero
-    (la riga è raggiunta col valore nullo) e l'uscita di `face_segments` no,
-    perché il lato lo tiene il suo edge. Non prova la riga dentro `outlines()`:
-    sui disegni tracciati `face_segments` non è mai chiamata. Non prova il caso
-    in cui la sporgenza vince il lato (sporgenza prima nell'elenco): quella è
-    la parità di `_rim_runs`, riga D dell'inventario."""
+    """the direction of an edge relative to a side is the sign of a dot product, `>=
+    0`. A perpendicular protrusion touching the midpoint of a side has product 0 at
+    rest and noise (±4e-15) under motion: its direction changes with the motion.
+    Proof: the direction really changes (the line is reached with the null value)
+    and the output of `face_segments` does not, because the side is held by its
+    edge. It does not prove the line inside `outlines()`: on the traced drawings
+    `face_segments` is never called. It does not prove the case where the
+    protrusion wins the side (protrusion first in the list): that is the parity of `_rim_runs`."""
 
     MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
                (0.7, 3.1, -2.2), (math.pi / 2, 0.0, 0.0)]
@@ -144,7 +137,7 @@ class TestSenseOfAPerpendicularSpur(unittest.TestCase):
                 edges = [Edge(role="unknown", start=move_pt(e.start), end=move_pt(e.end),
                               segment=move_seg(e.segment)) for e in edges]
                 polygon = Polygon([move_pt(p) for p in self.SQUARE])
-                # il verso della sporgenza sul lato di sotto, come lo calcola la riga
+                # the protrusion's direction on the lower side, as the line computes it
                 p, q = move_pt((0, 0)), move_pt((10, 0))
                 mid = Point((p[0] + q[0]) / 2, (p[1] + q[1]) / 2)
                 senses.add(rim._sense(rim.edge_geometry(edges[4]), mid, p, q, BAND))
@@ -157,15 +150,14 @@ class TestSenseOfAPerpendicularSpur(unittest.TestCase):
 
 
 class TestSpurDoesNotTakeTheSide(unittest.TestCase):
-    """G6e, gruppo D, `rim.py:171, 173` (`best`, `s` in `_rim_runs`): un lato era
-    coperto da ogni edge entro `band` dal suo punto medio. Una sporgenza che
-    parte dal punto medio del lato di sotto lo copriva come il lato, con la
-    stessa portata (1): prima nell'elenco, vinceva per indice e il lato usciva
-    lungo zero, (5, 0)→(5, 0). Ora copre un lato solo l'edge che gli corre
-    lungo (anche i due capi del lato entro `band`). Prova: la sporgenza è
-    davvero entro `band` dal punto medio (controllato), e i quattro lati escono
-    da 10 coi loro edge in tutti e due gli ordini e a cinque moti. Non prova le
-    letture: `face_segments` non è chiamata sui disegni tracciati."""
+    """(`best`, `s` in `_rim_runs`): a side was covered by every edge within `band`
+    of its midpoint. A protrusion starting from the midpoint of the lower side
+    covered it like the side, with the same reach (1): first in the list, it won by
+    index and the side came out of length zero, (5, 0)→(5, 0). Now only the edge
+    running along it covers a side (also the two ends of the side within `band`).
+    Proof: the protrusion really is within `band` of the midpoint (checked), and
+    the four sides come out of 10 with their edges in both orders and at five
+    motions. It does not prove the readings: `face_segments` is not called on the traced drawings."""
 
     MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0),
                (0.7, 3.1, -2.2), (math.pi / 2, 0.0, 0.0)]
@@ -191,11 +183,11 @@ class TestSpurDoesNotTakeTheSide(unittest.TestCase):
                                      [10.0] * 4)
 
     def test_il_lato_di_partenza_non_conta(self):
-        # `rim.py:173`: la copertura parte dal lato coperto da meno edge, a pari
-        # merito il primo dell'anello, e dove l'anello comincia lo decide chi lo
-        # costruisce. Due rette sovrapposte sul lato di sotto (la copertura ha
-        # una scelta): stessa uscita da ogni vertice di partenza. Non prova tre
-        # edge sovrapposti sullo stesso tratto.
+        # `rim.py:173`: the coverage starts from the side covered by fewer edges, on a
+        # tie the first of the ring, and where the ring starts is decided by whoever
+        # builds it. Two overlapping lines on the lower side (the coverage has a
+        # choice): the same output from every starting vertex. It does not prove three
+        # overlapping edges on the same stretch.
         edges = [_line((-1, 0), (6, 0)), _line((4, 0), (11, 0)), _line((10, -1), (10, 10)),
                  _line((10, 10), (0, 10)), _line((0, 10), (0, -1))]
         ring = [(0, 0), (4, 0), (5, 0), (6, 0), (10, 0), (10, 10), (0, 10)]
@@ -210,15 +202,14 @@ class TestSpurDoesNotTakeTheSide(unittest.TestCase):
 
 
 class TestOverlapCutUnderMotion(unittest.TestCase):
-    """G6e, gruppo D, `rim.py:203` (il taglio fra due edge che coprono tutti e
-    due): il taglio va dove `gap` è minimo, a pari merito vicino a dove la
-    copertura cambia. Due rette sovrapposte su (4, 6): `gap` è 0 in tre vertici
-    a riposo e rumore sotto moto, e il taglio cadeva a 4, 5 o 6 secondo il moto.
-    Ora `gap` pari entro FLOAT_NOISE. Prova: il pari merito al posto (tre
-    vertici a gap < 1e-9, controllato) e il taglio a 6 a sette moti rigidi. Non
-    prova lo specchio: rovescia il verso dell'anello e il taglio va a 4 (in
-    coda). Non prova le letture: `face_segments` non è chiamata sui disegni
-    tracciati."""
+    """(the cut between two edges that both cover): the cut goes where `gap` is
+    minimal, on a tie near where the coverage changes. Two overlapping lines on
+    (4, 6): `gap` is 0 at three vertices at rest and noise under motion, and the cut
+    fell at 4, 5 or 6 depending on the motion. Now `gap` equal within FLOAT_NOISE.
+    Proof: the tie in place (three vertices at gap < 1e-9, checked) and the cut at 6
+    at seven rigid motions. It does not prove the mirror: it reverses the ring's
+    direction and the cut goes to 4 (later). It does not prove the readings:
+    `face_segments` is not called on the traced drawings."""
 
     MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0), (0.7, 3.1, -2.2),
                (math.pi / 2, 0.0, 0.0), (2.4, -0.37, 0.61), (2.1, -1e5, 3e4)]
@@ -242,13 +233,12 @@ class TestOverlapCutUnderMotion(unittest.TestCase):
 
 
 class TestTrimmedAtTheMiddleUnderMotion(unittest.TestCase):
-    """G6e, gruppo D, `rim.py:214, 215` (`_trimmed`, l'estremo più vicino a un
-    capo): su un segmento lungo 0.03 (fra `band` e 2·`band`) il punto medio è
-    entro `band` da tutti e due gli estremi, alla stessa distanza; vinceva
-    l'ultimo bit e il tratto usciva lungo 0 o 0.03. Ora un capo equidistante
-    entro FLOAT_NOISE resta dov'è. Prova: il pari merito al posto (le due
-    distanze, controllate) e il tratto lungo 0.015 a nove moti. Non prova le
-    letture: `face_segments` non è chiamata sui disegni tracciati."""
+    """(`_trimmed`, the end nearest an end): on a segment 0.03 long (between `band`
+    and 2·`band`) the midpoint is within `band` of both ends, at the same distance;
+    the last bit won and the stretch came out 0 or 0.03 long. Now an end
+    equidistant within FLOAT_NOISE stays where it is. Proof: the tie in place (the
+    two distances, checked) and the stretch 0.015 long at nine motions. It does not
+    prove the readings: `face_segments` is not called on the traced drawings."""
 
     MOTIONS = [(0.0, 0.0, 0.0), (1e-12, 0.0, 0.0), (-1e-12, 0.0, 0.0), (0.7, 3.1, -2.2),
                (math.pi / 2, 0.0, 0.0), (2.4, -0.37, 0.61), (2.1, -1e5, 3e4), (0.3, 0.0, 0.0), (1.1, 0.0, 0.0)]

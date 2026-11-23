@@ -75,7 +75,7 @@ class TestClusterPoints(unittest.TestCase):
         self.assertEqual(set(m.values()), {(0.98, 0.0)})
 
     def test_transitive_chaining(self):
-        # caveat documentato: punti a catena entro epsilon collassano tutti
+        # documented caveat: chained points within epsilon all collapse
         pts = [(0.0, 0.0), (0.08, 0.0), (0.16, 0.0)]
         m = cluster_points(pts, 0.1)
         self.assertEqual(len(set(m.values())), 1)
@@ -84,8 +84,8 @@ class TestClusterPoints(unittest.TestCase):
 class TestBuildNodeGraphClustering(unittest.TestCase):
 
     def _open_square_split_corner(self):
-        # quadrato chiuso, ma un angolo è spezzato in due nodi a 0.06 di
-        # distanza — come un arrotondamento al confine di cella
+        # closed square, but a corner is split into two nodes 0.06 apart — like a
+        # rounding at a cell boundary
         a, b = (0.0, 0.0), (10.0, 0.0)
         c1, c2 = (10.0, 10.0), (10.06, 10.0)
         d = (0.0, 10.0)
@@ -117,9 +117,10 @@ class TestBuildNodeGraphClustering(unittest.TestCase):
 class TestCloseSelfLoop(unittest.TestCase):
 
     def test_arco_quasi_chiuso_diventa_loop_degenere(self):
-        # arc_arc_gap: un arco da 359.9 gradi, i suoi due estremi finiscono
-        # nello stesso cluster epsilon -- ma lo sviluppo reale (raggio*sweep)
-        # e' enorme, non e' rumore: deve chiudersi, non sparire.
+        # arc_arc_gap: a 359.9-degree arc, its two ends end in the same epsilon
+        # cluster -- but the real development (radius*sweep) is huge, it is not noise:
+        # it must close, not vanish.
+        #
         edge = _arc_edge((0.0, 0.0), 50.0, 0.0, 359.9)
         g = build_node_graph([edge], epsilon=0.5)
         self.assertEqual(len(g.nodes), 0)
@@ -128,17 +129,16 @@ class TestCloseSelfLoop(unittest.TestCase):
         self.assertEqual(closed.start, closed.end)
 
     def test_arco_corto_resta_scartato(self):
-        # Sviluppo reale piccolo (raggio 0.5, sweep 5 gradi): e' proprio uno
-        # sliver, il comportamento di sempre (scartato, non un loop) non deve
-        # cambiare.
+        # Small real development (radius 0.5, sweep 5 degrees): it really is a sliver,
+        # the behaviour as always (discarded, not a loop) must not change.
         edge = _arc_edge((0.0, 0.0), 0.5, 0.0, 5.0)
         g = build_node_graph([edge], epsilon=0.5)
         self.assertEqual(len(g.nodes), 0)
         self.assertEqual(len(g.degenerate_loops), 0)
 
     def test_epsilon_zero_non_tocca_larco_quasi_chiuso(self):
-        # Senza clustering (epsilon=0, comportamento storico) i due estremi
-        # restano nodi distinti: l'arco e' un edge normale, non un loop.
+        # Without clustering (epsilon=0, historical behaviour) the two ends stay
+        # distinct nodes: the arc is a normal edge, not a loop.
         edge = _arc_edge((0.0, 0.0), 50.0, 0.0, 359.9)
         g = build_node_graph([edge], epsilon=0.0)
         self.assertEqual(len(g.degenerate_loops), 0)

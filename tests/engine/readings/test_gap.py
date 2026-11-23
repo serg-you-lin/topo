@@ -1,9 +1,9 @@
 """
 tests/engine/readings/test_gap.py
 -----------
-Test TDD per la gestione dei gap e overlap negli angoli.
+TDD tests for the handling of gaps and overlaps at the corners.
 
-Lancia:
+Run:
     python -m pytest tests/engine/readings/test_gap.py -v
 """
 
@@ -55,7 +55,7 @@ class TestGapClose(unittest.TestCase):
 
 
 class TestGapNoClose(unittest.TestCase):
-    """tolerance < gap → profilo non chiuso."""
+    """tolerance < gap → profile not closed."""
 
     def setUp(self):
         doc = load("rect_gap.dxf")
@@ -71,7 +71,7 @@ class TestGapNoClose(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestOverlapClose(unittest.TestCase):
-    """tolerance > overlap → trim agli angoli, area corretta."""
+    """tolerance > overlap → trim at the corners, correct area."""
 
     def setUp(self):
         doc = load("rect_overlap.dxf")
@@ -94,8 +94,8 @@ class TestOverlapClose(unittest.TestCase):
 
 
 class TestOverlapNoClose(unittest.TestCase):
-    """tolerance < overlap → i lati si incrociano senza un nodo: faces() non
-    li ripara (D132), nessuna parte, e niente va perso (D137)."""
+    """tolerance < overlap → the sides cross without a node: faces() does not repair
+    them, no part, and nothing is lost."""
 
     def setUp(self):
         doc = load("rect_overlap.dxf")
@@ -108,15 +108,11 @@ class TestOverlapNoClose(unittest.TestCase):
         self.assertTrue(self.result.errors)
 
 
-# ---------------------------------------------------------------------------
-# LINE parallele — lato mancante
-# ---------------------------------------------------------------------------
+# --- Parallel LINEs — missing side ---
 
 class TestParallelClose(unittest.TestCase):
-    """
-    Profilo a C (7 LINE) con gap tra due linee verticali parallele.
-    tolerance > gap → aggiunge LINE di chiusura, profilo chiuso.
-    """
+    """C profile (7 LINEs) with a gap between two parallel vertical lines.
+    tolerance > gap → adds a closing LINE, closed profile."""
 
     def setUp(self):
         doc = load("gap_parallelo.dxf")
@@ -135,7 +131,7 @@ class TestParallelClose(unittest.TestCase):
 
 
 class TestParallelNoClose(unittest.TestCase):
-    """tolerance < gap → profilo non chiuso."""
+    """tolerance < gap → profile not closed."""
 
     def setUp(self):
         doc = load("gap_parallelo.dxf")
@@ -146,16 +142,11 @@ class TestParallelNoClose(unittest.TestCase):
         self.assertEqual(self.result.cluster_count, 0)
 
 
-# ---------------------------------------------------------------------------
-# ARC + LINE — gap tra arco e segmento
-# ---------------------------------------------------------------------------
+# --- ARC + LINE — gap between arc and segment ---
 
 class TestArcLineGapClose(unittest.TestCase):
-    """
-    Rettangolo con angolo arrotondato (ARC).
-    Gap di 0.1mm tra endpoint ARC e LINE adiacente.
-    tolerance > gap → profilo chiuso, 1 parte senza fori.
-    """
+    """Rectangle with a rounded corner (ARC). 0.1 mm gap between the ARC endpoint and
+    the adjacent LINE. tolerance > gap → closed profile, 1 part without holes."""
 
     def setUp(self):
         doc = load("arc_line_gap.dxf")
@@ -172,13 +163,13 @@ class TestArcLineGapClose(unittest.TestCase):
         self.assertEqual(len(self.result.clusters[0].inners), 0)
 
     def test_004_area_plausible(self):
-        """Area deve essere inferiore al rettangolo pieno W*H."""
+        """Area must be below the full rectangle W*H."""
         area = self.result.clusters[0].area
         self.assertLess(area, W * H)
         self.assertGreater(area, W * H * 0.8)
 
 class TestArcLineGapNoClose(unittest.TestCase):
-    """tolerance < gap → profilo non chiuso."""
+    """tolerance < gap → profile not closed."""
 
     def setUp(self):
         doc = load("arc_line_gap.dxf")
@@ -189,19 +180,15 @@ class TestArcLineGapNoClose(unittest.TestCase):
         self.assertEqual(self.result.cluster_count, 0)
 
 
-# ---------------------------------------------------------------------------
-# ARC + ARC stesso cerchio — due semicerchi con gap
-# ---------------------------------------------------------------------------
+# --- ARC + ARC same circle — two semicircles with a gap ---
 
 class TestArcArcSameCircleClose(unittest.TestCase):
-    """
-    Due semicerchi dello stesso cerchio (r=50) con gap angolare di ~0.11°.
-    tolerance > gap → profilo chiuso, area ≈ π*r².
-    """
+    """Two semicircles of the same circle (r=50) with an angular gap of ~0.11°.
+    tolerance > gap → closed profile, area ≈ π*r²."""
 
     RADIUS_C = 50.0
     AREA_C = math.pi * (RADIUS_C ** 2)
-    # Tolleranza numerica: include discretizzazione arco + gap-fix.
+    # Numerical tolerance: includes arc discretization + gap-fix.
     DELTA_C = 5.0
 
     def setUp(self):
@@ -225,7 +212,7 @@ class TestArcArcSameCircleClose(unittest.TestCase):
 
 
 class TestArcArcSameCircleNoClose(unittest.TestCase):
-    """tolerance < gap → profilo non chiuso."""
+    """tolerance < gap → profile not closed."""
 
     def setUp(self):
         doc = load("arc_arc_gap.dxf")
@@ -236,15 +223,11 @@ class TestArcArcSameCircleNoClose(unittest.TestCase):
         self.assertEqual(self.result.cluster_count, 0)
 
 
-# ---------------------------------------------------------------------------
-# ARC + ARC cerchi diversi — due archi con centri distinti
-# ---------------------------------------------------------------------------
+# --- ARC + ARC different circles — two arcs with distinct centres ---
 
 class TestArcArcDifferentCircleClose(unittest.TestCase):
-    """
-    Due archi di cerchi diversi con gap di ~0.2mm agli endpoint.
-    tolerance > gap → profilo chiuso, 1 parte senza fori.
-    """
+    """Two arcs of different circles with a gap of ~0.2 mm at the endpoints.
+    tolerance > gap → closed profile, 1 part without holes."""
 
     def setUp(self):
         doc = load("arc_open.dxf")
@@ -266,7 +249,7 @@ class TestArcArcDifferentCircleClose(unittest.TestCase):
 
 
 class TestArcArcDifferentCircleNoClose(unittest.TestCase):
-    """tolerance < gap → profilo non chiuso."""
+    """tolerance < gap → profile not closed."""
 
     def setUp(self):
         doc = load("arc_open.dxf")
@@ -277,16 +260,12 @@ class TestArcArcDifferentCircleNoClose(unittest.TestCase):
         self.assertEqual(self.result.cluster_count, 0)
 
 
-# ---------------------------------------------------------------------------
-# SPLINE + LINE — gap con chiusura tramite LINE aggiuntiva
-# ---------------------------------------------------------------------------
+# --- SPLINE + LINE — gap closed by an extra LINE ---
 
 class TestSplineLineGapClose(unittest.TestCase):
-    """
-    Rettangolo con lato sinistro SPLINE che termina 0.2mm prima dell'angolo.
-    tolerance > gap → aggiunge LINE di chiusura, profilo chiuso.
-    Area attesa: circa W*H (piccola differenza per la curvatura della spline).
-    """
+    """Rectangle with a SPLINE left side ending 0.2 mm before the corner.
+    tolerance > gap → adds a closing LINE, closed profile.
+    Expected area: about W*H (small difference from the spline's curvature)."""
 
     def setUp(self):
         doc = load("spline_line_gap.dxf")
@@ -303,14 +282,14 @@ class TestSplineLineGapClose(unittest.TestCase):
         self.assertEqual(len(self.result.clusters[0].inners), 0)
 
     def test_004_area_plausible(self):
-        """Area deve essere vicina a W*H — la spline è quasi verticale."""
+        """Area must be close to W*H — the spline is nearly vertical."""
         area = self.result.clusters[0].area
         self.assertAlmostEqual(area, W * H, delta=50.0,
                                msg=f"Area {area:.2f} lontana da attesa {W*H}")
 
 
 class TestSplineLineGapNoClose(unittest.TestCase):
-    """tolerance < gap → profilo non chiuso."""
+    """tolerance < gap → profile not closed."""
 
     def setUp(self):
         doc = load("spline_line_gap.dxf")

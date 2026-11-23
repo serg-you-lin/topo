@@ -29,7 +29,7 @@ def _read(edges):
 class TestEvenNetwork(unittest.TestCase):
 
     def test_every_side_is_a_contour(self):
-        # un rombo dentro un quadrato che tocca il lato in un punto: nodo di grado 4
+        # a rhombus inside a square touching the side at a point: node of degree 4
         outer = _polygon((0, 0), (10, 0), (10, 10), (0, 10))
         inner = _polygon((5, 0), (8, 3), (5, 6), (2, 3))
         rings, dropped, found = _read(outer + inner)
@@ -78,8 +78,8 @@ class TestOddNodes(unittest.TestCase):
         self.assertEqual(len(rings), 2)
 
     def test_the_lightest_set_goes(self):
-        # p e q dispari, uniti da tre strade: la diretta (2) costa meno delle
-        # due spezzate (~6.3); resta il rombo
+        # p and q odd, joined by three roads: the direct one (2) costs less than the two
+        # broken ones (~6.3); the rhombus stays
         p, q = (4, 5), (6, 5)
         direct = _line(p, q)
         rhombus = [_line(p, (5, 8)), _line((5, 8), q), _line(q, (5, 2)), _line((5, 2), p)]

@@ -1,9 +1,9 @@
 """
 tests/engine/readings/test_network.py
 
-`heal()` restituisce la rete riparata e le letture sono suoi metodi (D202):
-la superficie di `Network`, i due numeri, `source_file` e `label` portati su
-ogni lettura, `island()` sparito. Geometria costruita coi numeri.
+`heal()` returns the repaired network and the readings are its methods: the
+surface of `Network`, the two numbers, `source_file` and `label` carried onto
+every reading, `island()` gone. Geometry built with the numbers.
 """
 
 import unittest
@@ -35,7 +35,7 @@ class TestHealReturnsNetwork(unittest.TestCase):
             self.assertEqual(len(reading.clusters), 1)
 
     def test_la_stessa_rete_letta_due_volte_da_lo_stesso(self):
-        # una lettura non sporca la rete per la successiva
+        # a reading does not dirty the network for the next
         net = topo.heal(_doc(_square() + [LineSeg((2, 2), (4, 4))]), max_gap=0.01)
         first, again = net.faces(), (net.outlines(), net.faces())[1]
         self.assertEqual([c.outer.area for c in first.clusters], [c.outer.area for c in again.clusters])
@@ -46,7 +46,7 @@ class TestHealReturnsNetwork(unittest.TestCase):
         for name in ("edges", "crossings", "free_ends", "set_aside", "warnings", "errors",
                      "is_valid", "source_file", "label", "tolerance", "max_gap", "faces", "outlines"):
             self.assertTrue(hasattr(net, name), name)
-        # la rete piana con gli incroci (NodedEdges) resta interna
+        # the planar network with the crossings (NodedEdges) stays internal
         self.assertFalse(hasattr(net, "noded"))
 
     def test_island_non_esiste_piu(self):
@@ -58,7 +58,7 @@ class TestHealReturnsNetwork(unittest.TestCase):
 class TestTwoNumbers(unittest.TestCase):
 
     def test_senza_max_gap_nessun_gap_si_chiude(self):
-        # un lato interrotto di 0.03, sotto la tolleranza: senza max_gap resta aperto (D267)
+        # a side interrupted by 0.03, below the tolerance: without max_gap it stays open
         segs = [LineSeg((0.0, 0.0), (9.97, 0.0))] + _square()[1:]
         net = topo.heal(_doc(segs))
         self.assertEqual((net.tolerance, net.max_gap), (topo.precision.SAME_POINT, 0.0))
@@ -71,7 +71,7 @@ class TestTwoNumbers(unittest.TestCase):
         self.assertEqual(len(net.faces().clusters), 0)
 
     def test_un_gap_chiuso_si_dice(self):
-        # quanti, quanto lunghi e dove: mai una chiusura in silenzio (D267)
+        # how many, how long and where: never a closure in silence
         segs = [LineSeg((0.0, 0.0), (9.97, 0.0))] + _square()[1:]
         net = topo.heal(_doc(segs), max_gap=0.05)
         joined = [n for n in net.notes if n.code == "ends-joined"]
@@ -80,17 +80,17 @@ class TestTwoNumbers(unittest.TestCase):
         self.assertIn("0.0300 mm", joined[0].notes[0])
 
     def test_un_gap_si_chiude_solo_entro_max_gap(self):
-        # un lato interrotto di 0.3: chiuso con max_gap 0.5, aperto senza
+        # a side interrupted by 0.3: closed with max_gap 0.5, open without
         segs = [LineSeg((0.0, 0.0), (9.7, 0.0))] + _square()[1:]
         self.assertEqual(len(topo.heal(_doc(segs), max_gap=0.01).faces().clusters), 0)
         self.assertEqual(len(topo.heal(_doc(segs), max_gap=0.5).faces().clusters), 1)
 
 
 class TestThresholdsChecked(unittest.TestCase):
-    """`max_gap` è in mm (D245): un valore che non lo è si ferma a `heal()`."""
+    """`max_gap` is in mm: a value that is not stops at `heal()`."""
 
     def test_la_tolleranza_non_e_un_parametro(self):
-        # una soglia sola, fissa: topo.precision.SAME_POINT (D268, D269)
+        # a single fixed threshold: topo.precision.SAME_POINT
         with self.assertRaises(TypeError):
             topo.heal(_doc(_square()), **{"tolerance": 0.05})
 

@@ -1,15 +1,14 @@
 """
 tests/engine/readings/test_loose.py
 ------------------------
-`result.loose` (MAP.md D137): ogni curva che non è contorno di nessun
-cluster sa quale cluster la contiene (`cluster_ref`), un consumatore la
-sposta in `cluster.overlay` con `result.promote`, `split` la manda alla parte
-del suo `cluster_ref`.
+`result.loose`: every curve that is no cluster's contour knows which cluster
+contains it (`cluster_ref`), a consumer moves it into `cluster.overlay` with
+`result.promote`, `split` sends it to the part of its `cluster_ref`.
 
-Il disegno: una piastra 200×100 centrata nell'origine con un foro Ø20 in
-(50, 0), una linea da lato a lato, una croce di centro dentro il foro, un
-cerchietto marcato da un consumatore dentro la piastra, una linea fuori da
-tutto; più in là una piastrina 50×50 con una linea dentro.
+The drawing: a 200×100 plate centred at the origin with a Ø20 hole at (50, 0),
+a line from side to side, a cross centred inside the hole, a small circle
+marked by a consumer inside the plate, a line outside everything; further on a
+50×50 small plate with a line inside.
 """
 
 import math
@@ -25,7 +24,7 @@ fg = topo.geometry
 
 @dataclass
 class _Item:
-    """Quello che un chiamante fa di più curve: le tiene come suoi contorni."""
+    """What a caller does with several curves: it keeps them as its own contours."""
     contours: list
     role: str = "pair"
 
@@ -34,12 +33,12 @@ def _drawing():
     doc = topo.load_segments([
         fg.rectangle(200, 100),
         fg.circle(10, center=(50, 0)),
-        LineSeg(start=(0, -50), end=(0, 50)),          # da lato a lato
-        LineSeg(start=(45, 0), end=(55, 0)),           # croce nel foro
+        LineSeg(start=(0, -50), end=(0, 50)),          # from side to side
+        LineSeg(start=(45, 0), end=(55, 0)),           # cross in the hole
         LineSeg(start=(50, -5), end=(50, 5)),
-        LineSeg(start=(150, 0), end=(180, 0)),         # fuori da tutto
+        LineSeg(start=(150, 0), end=(180, 0)),         # outside everything
         fg.rectangle(50, 50, center=(400, 0)),
-        LineSeg(start=(390, 0), end=(410, 0)),         # dentro la piastrina
+        LineSeg(start=(390, 0), end=(410, 0)),         # inside the small plate
     ])
     mark = topo.load_segments(fg.circle(5, center=(-50, 0)), role="mark")
     doc.edges += mark.edges
@@ -47,7 +46,7 @@ def _drawing():
 
 
 def _at(result, x, y):
-    """La curva sciolta che passa per (x, y)."""
+    """The loose curve passing through (x, y)."""
     for curve in result.loose:
         pts = topo.geometry.track_points(curve.segments)
         if any(math.dist(p, (x, y)) < 1e-6 for p in pts):
@@ -104,7 +103,7 @@ class TestPromote(unittest.TestCase):
         self.assertEqual(plate.overlay.get("axes"), [axis])
 
     def test_item_senza_geometria_solleva_e_non_tocca(self):
-        # le curve uscirebbero da loose senza arrivare in nessun file (D244)
+        # the curves would leave loose without reaching any file
         line = _at(self.result, 0, -50)
         plate = self.result.clusters[0]
         for item in ("asse", ("asse", line), _Item([])):
@@ -135,7 +134,7 @@ class TestPromote(unittest.TestCase):
 
 
 class TestPromoteGroup(unittest.TestCase):
-    """Più curve, un solo item (D172): un foro e la sua sede."""
+    """Several curves, a single item: a hole and its seat."""
 
     def setUp(self):
         self.result = topo.heal(_drawing()).faces()

@@ -1,15 +1,14 @@
 """
 tests/engine/readings/test_non_structural_role.py
 ---------------------------------------------
-La promessa su cui un consumer toglie ciò che non è contorno (D210): gli edge
-con un ruolo non strutturale non cambiano il pezzo. `faces()` e `outlines()`
-danno gli stessi segmenti e la stessa area del disegno senza di loro, e quegli
-edge stanno tutti in `loose`.
+The promise on which a consumer removes what is not contour: edges with a
+non-structural role do not change the part. `faces()` and `outlines()` give the
+same segments and the same area as the drawing without them, and those edges
+are all in `loose`.
 
-Il caso: un contorno con angoli rientranti e un restringimento di 0,3 mm,
-attraversato da righe parallele tagliate sul bordo (`cut_by`). Le righe toccano
-i lati e tagliano la punta degli angoli: la forma che spezzava un lato in
-tanti pezzi (G16).
+The case: a contour with re-entrant corners and a 0.3 mm narrowing, crossed by
+parallel lines cut on the border (`cut_by`). The lines touch the sides and cut
+the tip of the corners: the shape that broke a side into many pieces.
 """
 
 import unittest
@@ -27,7 +26,7 @@ TOLERANCES = (0.05, 0.5)
 
 
 def _lines_across(part: list) -> list:
-    # righe a 45° ogni STEP, tenute solo dentro il pezzo
+    # lines at 45° every STEP, kept only inside the piece
     pieces = []
     for k in range(-200, 200):
         line = LineSeg(start=(k * STEP - 20, -20), end=(k * STEP + 300, 300))
@@ -36,7 +35,7 @@ def _lines_across(part: list) -> list:
 
 
 def _ring_key(contour) -> list:
-    # i segmenti di un anello come capi ordinati: due anelli uguali, stesso elenco
+    # the segments of a ring as ordered ends: two equal rings, same list
     return sorted(
         tuple(round(v, 9) for v in (*s.start, *s.end))
         for s in contour.segments
@@ -71,8 +70,8 @@ class TestNonStructuralRoleLeavesThePart(unittest.TestCase):
 
 
 class TestOnlyNonStructuralEdges(unittest.TestCase):
-    # nessun edge strutturale: nessun pezzo, ma gli edge messi da parte non
-    # spariscono — stanno in `loose` in tutte e due le letture, uguali
+    # no structural edge: no part, but the edges set aside do not vanish — they are
+    # in `loose` in both readings, equal
 
     def test_gli_edge_messi_da_parte_restano_in_loose(self):
         shapes = {
