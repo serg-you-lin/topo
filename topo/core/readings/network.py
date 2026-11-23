@@ -1,12 +1,12 @@
 """
 topo/core/readings/network.py
 -----------------------------
-La riparazione comune a ogni lettura (D202): un Document diventa una rete di
-edge riparati, una volta sola, con due numeri — `tolerance` per i nodi e
-`max_gap` per i gap. `heal()` la restituisce; le letture (`faces()`,
-`outlines()`) partono da qui e non riparano più per conto loro.
+The repair common to every reading: a Document becomes a network of repaired
+edges, once, with two numbers — `tolerance` for the nodes and `max_gap` for
+the gaps. `heal()` returns it; the readings (`faces()`, `outlines()`) start
+from here and no longer repair on their own.
 
-Puro: solo Edge, primitive e modello, nessun formato.
+Pure: Edges, primitives and model only, no format.
 """
 
 from __future__ import annotations
@@ -47,16 +47,15 @@ class Network:
     crossings:   points where two edges cross without a shared node.
     free_ends:   (point, distance to the nearest node) of every end no other
                  edge reaches.
-    tolerance:   `topo.precision.SAME_POINT`, the one threshold (D268, D269).
+    tolerance:   `topo.precision.SAME_POINT`, the one threshold.
     max_gap:     the widest gap closed; 0 (the default) closes none.
     source_file, label: copied onto every Result and Cluster read from here.
-    source_format: the document's (D231), copied onto every Result.
-    warnings:    advice about the drawing (`Diagnostic`, D233); every reading copies it.
+    source_format: the document's, copied onto every Result.
+    warnings:    advice about the drawing (`Diagnostic`); every reading copies it.
     notes:       what the repair did by itself (`Diagnostic`, level `note`).
-    errors, is_valid: with errors no reading finds anything.
-    """
+    errors, is_valid: with errors no reading finds anything."""
     edges:       List[Edge] = field(default_factory=list)   # riparati, nodi decisi
-    set_aside:   List[Edge] = field(default_factory=list)   # ruoli non strutturali (D30)
+    set_aside:   List[Edge] = field(default_factory=list)   # non-structural roles
     warnings:    List[str] = field(default_factory=list)
     notes:       List[str] = field(default_factory=list)
     errors:      List[str] = field(default_factory=list)
@@ -66,7 +65,7 @@ class Network:
     label:       str = ""
     source_format: str = ""
     _structural: Callable[[str], bool] = field(default=is_structural_role, repr=False)
-    _texts:      List[Text] = field(default_factory=list, repr=False)   # del Document, per ogni Result
+    _texts:      List[Text] = field(default_factory=list, repr=False)   # of the Document, for every Result
 
     @property
     def is_valid(self) -> bool:
@@ -75,8 +74,8 @@ class Network:
 
     @cached_property
     def _noded(self) -> NodedEdges:
-        # la rete piana senza tagliare gli incroci (D132): gli incroci restano
-        # un dato, il taglio è della lettura che lo chiede
+        # the planar network without cutting the crossings: the crossings stay a datum,
+        # the cut belongs to the reading that asks for it
         return split_at_crossings(self.edges, self.tolerance, cut_crossings=False)
 
     @property
@@ -108,7 +107,7 @@ class Network:
 
 
 def _check_length(name: str, value, *, zero_ok: bool) -> None:
-    """Una soglia in mm (D245) deve essere un numero finito, positivo (o zero se `zero_ok`)."""
+    """A threshold in mm must be a finite, positive number (or zero if `zero_ok`)."""
     if isinstance(value, bool) or not isinstance(value, numbers.Real):
         raise TypeError(f"{name} must be a number in mm, got {type(value).__name__}")
     if not math.isfinite(value) or value < 0 or (value == 0 and not zero_ok):
@@ -119,15 +118,13 @@ def _check_length(name: str, value, *, zero_ok: bool) -> None:
 def build_network(doc: Document, *, max_gap: Optional[float] = None,
                   is_structural: Optional[Callable[[str], bool]] = None,
                   source_file: str = "", label: str = "") -> Network:
-    """
-    Ripara `doc` una volta per tutte le letture (D187, D202): ruoli non
-    strutturali da parte, nodi decisi, pulizie di `normalize` con i gap fino a
-    `max_gap` (None: nessuno), tratti degeneri tolti.
-    """
-    tol = SAME_POINT   # la soglia unica, non un parametro (D268, D269)
+    """Repair `doc` once for all the readings: non-structural roles aside, nodes
+    decided, `normalize` cleanups with the gaps up to `max_gap` (None: none),
+    degenerate stretches removed."""
+    tol = SAME_POINT   # the one threshold, not a parameter
     if max_gap is not None:
         _check_length("max_gap", max_gap, zero_ok=True)
-    # un buco si chiude solo fino al max_gap del chiamante; senza, nessuno (D246)
+    # a hole closes only up to the caller's max_gap; without it, none
     gap = 0.0 if max_gap is None else max_gap
     net = Network(tolerance=tol, max_gap=gap, source_file=source_file, label=label,
                   source_format=doc.source_format,
@@ -142,13 +139,13 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
         return net
     if prepared.labeled and is_structural is None:
         net.warnings.append(_set_aside_warning(prepared.labeled))
-    # una retta quasi sopra un'altra: topo la legge com'è, il chiamante decide (D226, D227)
+    # a line nearly on top of another: topo reads it as it is, the caller decides
     copies = near_copies(prepared.edges, tol)
     if copies:
         net.warnings.append(_near_copy_warning(copies))
 
-    # un gap largo quanto la soglia si chiude a ogni riferimento, non a
-    # seconda dell'ultimo bit (D183)
+    # a gap as wide as the threshold closes in every frame, not depending on the
+    # last bit
     clean = normalize(prepared.edges, reach(gap), keep_junctions=True)
     for count, code, what in (
             (clean.merged_lines, "merged-lines", ("overlapping collinear segment", "overlapping collinear segments")),
@@ -187,19 +184,19 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
             notes=["a symmetric figure: no rule in the geometry picks one partner (D185)"],
             help="no threshold fixes it: remove one of the two partners from the drawing"))
     net.edges = _no_degenerate(clean.edges)
-    # quello che si è quasi chiuso, uno per tipo, coi punti dal più vicino (D227)
+    # what almost closed, one per type, with the points nearest first
     arcs = open_near_full_arcs(net.edges, reach(gap))
     if arcs:
         net.warnings.append(_open_arc_warning(arcs))
     gaps = near_free_gaps(net.edges, reach(gap), reach(_NEAR_GAP_REACH * max(gap, tol)))
     if gaps:
         net.warnings.append(_near_gap_warning(gaps, gap))
-    loops = self_crossings(net.edges)   # D241
+    loops = self_crossings(net.edges)
     if loops:
         net.warnings.append(Diagnostic(
             "self-crossing", f"{_plural(len(loops), 'curve crosses', 'curves cross')} itself, not cut there",
             points=loops))
-    touches = closed_touches(net.edges, tol)   # D241
+    touches = closed_touches(net.edges, tol)
     if touches:
         net.warnings.append(Diagnostic(
             "closed-touch", f"{_plural(len(touches), 'closed curve', 'closed curves')} with its node on "
@@ -214,27 +211,27 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
 
 
 def repair_edges(edges: List[Edge], tolerance: float, max_gap: float) -> List[Edge]:
-    """La stessa riparazione su edge sciolti, per chi legge senza un Document
-    (experimental): nodi decisi, `normalize`, degeneri tolti."""
+    """The same repair on loose edges, for whoever reads without a Document
+    (experimental): nodes decided, `normalize`, degenerates removed."""
     noded, _ = decide_nodes(edges)
     return _no_degenerate(normalize(noded, reach(max_gap), keep_junctions=True).edges)
 
 
 def _no_degenerate(edges: List[Edge]) -> List[Edge]:
-    """Un tratto ridotto a un punto non è una curva (un cerchio sì)."""
+    """A stretch reduced to a point is not a curve (a circle is)."""
     return [e for e in edges if e.start != e.end or segment_is_closed(e.segment)]
 
 
 def _ceil_2(x: float) -> float:
-    """`x` arrotondato per eccesso a due cifre significative: la soglia
-    suggerita deve bastare, non quasi bastare."""
+    """`x` rounded up to two significant figures: the suggested threshold must
+    suffice, not nearly suffice."""
     if x <= 0:
         return x
     step = 10 ** (math.floor(math.log10(x)) - 1)
     return math.ceil(x / step - 1e-9) * step
 
 
-_NEAR_GAP_REACH = NEAR_GAP_FACTOR   # un gap fino al doppio della soglia "c'è quasi"; oltre è geometria (D227)  # D269
+_NEAR_GAP_REACH = NEAR_GAP_FACTOR   # a gap up to twice the threshold "is nearly there"; beyond, it is geometry
 
 
 def _range_text(values, fmt: str) -> str:

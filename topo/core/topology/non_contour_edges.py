@@ -1,39 +1,37 @@
 """
 core/topology/non_contour_edges.py
 ----------------------------------
-Individua gli edge che NON fanno parte di un contorno e vanno esclusi dal
-grafo prima della ricerca dei loop.
+Finds the edges that are NOT part of a contour and must be excluded from the
+graph before the loop search.
 
-Non è classificazione di feature: qui non si decide che un edge "è una piega".
-Si decide solo, per topologia, che un edge non chiude contorno — tipicamente
-una linea che attraversa il pezzo da parte a parte (spesso una linea di piega,
-ma anche un asse, una mezzeria, una tracciatura passante). La semantica vera
-sta in un consumatore (snapbend `detect_flat`), che li ripesca da `result.loose`.
+It is not feature classification: here no edge is decided to "be a bend". It
+is decided only, topologically, that an edge does not close a contour —
+typically a line crossing the part from side to side (often a bend line, but
+also an axis, a centreline, a through trace). The true semantics lives in a
+consumer (snapbend `detect_flat`), which picks them back from `result.loose`.
 
-Si giudica la catena (`Graph.chains`, D131): gli edge di fila attraverso
-nodi di grado 2. Una catena è esclusa, tutta intera, se:
-  1. I suoi due capi sono nodi branching distinti (degree > 2)
-  2. Non confina con la faccia esterna della SUA componente connessa da un
-     lato solo: il bordo di quella faccia non la percorre, o la percorre
-     andata e ritorno (MAP.md D111, riapre D49)
+The chain is judged (`Graph.chains`): the edges in a row through nodes of
+degree 2. A chain is excluded, whole, if:
+  1. Its two ends are distinct branching nodes (degree > 2)
+  2. It does not border the outer face of ITS connected component on one
+     side only: the border of that face does not walk it, or walks it back and
+     forth
 
-Il criterio 2 è topologico: un lato vero di contorno ha il materiale da una
-parte e l'esterno dall'altra, una corda ha una faccia chiusa da tutti e due
-i lati. Vale per un pezzo concavo come per uno convesso (il convex hull di
-D49 scartava i lati della parte concava quando una piega finiva nei loro due
-vertici), e per componente: un foglio con più viste non mescola le forme.
-Da dove viene l'edge nel formato sorgente non è mai un criterio.
+Criterion 2 is topological: a true contour side has material on one side and
+the outside on the other, a chord has a face closed on both sides. It holds
+for a concave part as for a convex one, and per component: a sheet with
+several views does not mix the shapes. Where the edge comes from in the source
+format is never a criterion.
 
-La faccia esterna si percorre sulla rete piana (`split_at_crossings`, la
-stessa di outlines(), D101): due lati che nel file si incrociano senza un
-nodo — una tacca coi fianchi accavallati di un decimo — ingannerebbero il
-percorso, che passerebbe sull'incrocio. Una catena è sul bordo se lo sono
-pezzi suoi per più di metà della lunghezza. I tagli entro `tolerance` sono un contatto solo: una corda
-che arriva nel nodo arrotondato di fine raccordo non apre una faccia di
-qualche centesimo.
+The outer face is walked on the planar network (`split_at_crossings`, the same
+as outlines()): two sides that cross in the file without a node — a notch with
+flanks overlapping by a tenth — would fool the walk, which would pass over the
+crossing. A chain is on the border if pieces of it are for more than half its
+length. The cuts within `tolerance` are a single contact: a chord arriving at
+the rounded node at the end of a fillet does not open a face of a few hundredths.
 
 Input:  Graph, list[Edge]
-Output: set[int]  — id() degli Edge da escludere dal grafo dei contorni
+Output: set[int]  — id() of the Edges to exclude from the contour graph
 """
 
 from .graph import Graph, build_node_graph
@@ -48,15 +46,15 @@ class NonContourEdgeDetector:
         self.tolerance = tolerance
 
     def detect(self, graph: Graph, edges: list[Edge], planar: bool = False) -> set[int]:
-        """id(edge) delle catene che non sono contorno. `planar`: gli edge sono
-        già la rete piana di `split_at_crossings` (`outlines()`), non si rispezzano."""
+        """id(edge) of the chains that are not contours. `planar`: the edges are already
+        the planar network of `split_at_crossings` (`outlines()`), not split again."""
         branching = set(graph.branching_nodes())
         if not branching:
             return set()
         given = {id(e) for e in edges}
-        # candidata è la catena (D131), non l'edge: i suoi nodi interni hanno
-        # grado 2, quindi o sta tutta in un giro o in nessuno. Una catena
-        # chiusa su un nodo solo è già un giro, mai una corda fra due punti
+        # the candidate is the chain, not the edge: its interior nodes have degree 2, so
+        # it is wholly in one loop or in none. A chain closed on a single node is already
+        # a loop, never a chord between two points
         chains = [run for run, a, b in graph.chains()
                   if a != b and a in branching and b in branching
                   and all(id(e) in given for e in run)]
@@ -68,8 +66,8 @@ class NonContourEdgeDetector:
                  else split_at_crossings(edges, self.tolerance))
         plane = build_node_graph(noded.pieces, sliver=GRAPH_EPSILON)
         wanted = {id(e) for e in candidates}
-        outside = {}   # id(edge) -> lunghezza dei suoi pezzi che confinano con l'esterno
-        # un percorso della faccia esterna per ogni componente che ha candidati
+        outside = {}   # id(edge) -> length of its pieces bordering the outside
+        # one walk of the outer face for every component that has candidates
         for component in plane.connected_components():
             pieces = {id(p): p for node in component for p, _ in plane[node]}
             if not {id(noded.parent_of(p)) for p in pieces.values()} & wanted:
@@ -79,9 +77,9 @@ class NonContourEdgeDetector:
                 if passes.get(key, 0) == 1:
                     parent = id(noded.parent_of(piece))
                     outside[parent] = outside.get(parent, 0.0) + edge_geometry(piece).length
-        # bordo = confina con l'esterno per più di metà della sua lunghezza: un
-        # lato vero lo fa per intero, una corda al più per un tratto sfiorato
-        # (quasi tangente a un raccordo, sotto la tolleranza di spessore)
+        # border = borders the outside for more than half its length: a true side does
+        # so wholly, a chord at most for a grazed stretch (nearly tangent to a fillet,
+        # below the thickness tolerance)
         excluded: set[int] = set()
         for run in chains:
             border = sum(outside.get(id(e), 0.0) for e in run)
@@ -91,8 +89,8 @@ class NonContourEdgeDetector:
 
 
 def non_contour_pieces(noded: NodedEdges, tolerance: float) -> set:
-    """id dei pezzi della rete piana `noded` che non chiudono un contorno (D111,
-    D131), giudicati sulla rete piana: lo stesso per ogni lettura (D189)."""
+    """id of the pieces of the planar network `noded` that do not close a contour,
+    judged on the planar network: the same for every reading."""
     graph = build_node_graph(noded.pieces, sliver=GRAPH_EPSILON)
     return NonContourEdgeDetector(tolerance).detect(graph, noded.pieces, planar=noded.planar)
 

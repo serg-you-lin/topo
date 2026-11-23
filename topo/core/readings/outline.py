@@ -1,19 +1,18 @@
 """
 topo/core/readings/outline.py
 -----------------------------
-La lettura dall'esterno di una rete riparata: `Network.outlines()`.
+The reading from the outside of a repaired network: `Network.outlines()`.
 
-`faces()` ricostruisce la topologia dall'interno e trova il pezzo per
-contenimento. `outlines()` legge il disegno dall'esterno: i gruppi sono gli
-edge che si toccano entro `max_gap`, il contorno esterno di ognuno è la
-faccia esterna della sua rete piana con gli incroci tagliati, e ogni contorno
-esterno che non sta dentro un altro è un Cluster (D99). Quello che sta dentro,
-chiuso o aperto, è suo per contenimento. È la lettura giusta per un disegno di
-viste (3D proiettato, più viste su un foglio), dove il grafo di faces() è
-ambiguo. Cosa sia un contorno — vista, pezzo, cornice — lo decide il
-chiamante (D21).
+`faces()` rebuilds the topology from the inside and finds the part by
+containment. `outlines()` reads the drawing from the outside: the groups are
+the edges touching within `max_gap`, the outer contour of each is the outer
+face of its planar network with the crossings cut, and every outer contour
+that is not inside another is a Cluster. What lies inside, closed or open,
+is its own by containment. It is the right reading for a drawing of views
+(projected 3D, several views on a sheet), where the graph of faces() is
+ambiguous. What a contour is — view, part, frame — is the caller's call.
 
-Puro: solo Edge, primitive e modello, nessun formato.
+Pure: Edges, primitives and model only, no format.
 """
 
 from __future__ import annotations
@@ -48,14 +47,14 @@ if TYPE_CHECKING:
 
 @dataclass
 class OutlineReading:
-    """Cosa outlines() ha deciso su un gruppo, pezzo per pezzo."""
-    edges:          List[Edge]                               # del gruppo, come arrivano
-    outer:          Optional[OuterFace]    = None            # None: nessun giro chiuso
+    """What outlines() decided about a group, piece by piece."""
+    edges:          List[Edge]                               # of the group, as they arrive
+    outer:          Optional[OuterFace]    = None            # None: no closed loop
     spurs:          List[Edge]             = field(default_factory=list)   # percorsi andata e ritorno
-    outside:        List[Edge]             = field(default_factory=list)   # fuori dal contorno
-    non_contour:    List[Edge]             = field(default_factory=list)   # criterio D49
+    outside:        List[Edge]             = field(default_factory=list)   # outside the contour
+    non_contour:    List[Edge]             = field(default_factory=list)   # non-contour criterion
     unclassified:   List[Edge]             = field(default_factory=list)
-    nested_in:     Optional[int]          = None            # indice del gruppo che lo contiene (anche senza outer)
+    nested_in:     Optional[int]          = None            # index of the group that contains it (even without an outer)
 
 
 # ---------------------------------------------------------------------------
@@ -63,14 +62,12 @@ class OutlineReading:
 # ---------------------------------------------------------------------------
 
 def read_network_outlines(net: Network) -> Result:
-    """
-    Un Cluster per ogni contorno esterno che non sta dentro un altro, col solo
-    `outer`: nessun inner (D161). Tutto il resto — chiuso o aperto, dentro o
-    fuori dal contorno, un gruppo intero dentro un altro — va in `loose`,
-    dalla rete riparata (D203), con `cluster_ref` = il Cluster che tocca o che
-    lo contiene; `None` se sta fuori da ognuno (D99, D137). Con la cornice nel
-    disegno l'unico contorno esterno è la cornice: toglierla è del chiamante.
-    """
+    """A Cluster for every outer contour not inside another, with the `outer` only:
+    no inners. Everything else — closed or open, inside or outside the contour, a
+    whole group inside another — goes to `loose`, from the repaired network,
+    with `cluster_ref` = the Cluster it touches or that contains it; `None` if it
+    is outside every one. With the frame in the drawing the only outer contour is
+    the frame: removing it is the caller's job."""
     tol = net.tolerance
     result = Result(source_file=net.source_file, source_format=net.source_format, reading="outlines",
                     tolerance=net.tolerance, max_gap=net.max_gap, texts=list(net._texts))
@@ -86,14 +83,14 @@ def read_network_outlines(net: Network) -> Result:
     for i, r in enumerate(readings):
         if r.outer is not None and r.nested_in is None:
             clusters[i] = _cluster(r, net.source_file, net.label)
-    owned = []   # (curva, cluster che la contiene)
+    owned = []   # (curve, cluster that contains it)
     for i, r in enumerate(readings):
         host = clusters.get(r.nested_in) if r.nested_in is not None else clusters.get(i)
         if host is None or r.outer is None:
             owned += [(f, host) for f in loose_curves(r.edges)]
             continue
         if r.nested_in is not None:
-            # D161: un gruppo dentro un altro non è un suo inner, va in `loose`
+            # a group inside another is not its inner, it goes to `loose`
             owned += [(f, host) for f in loose_curves(r.edges)]
             continue
         owned += [(f, host) for f in loose_curves(r.spurs + r.outside + r.non_contour + r.unclassified)]
@@ -102,8 +99,8 @@ def read_network_outlines(net: Network) -> Result:
     for curve, host in owned:
         curve.cluster_ref = None if host is None else index[id(host)]
     result.loose += [f for f, _ in owned]
-    # D137: chi non tocca nessun contorno ha il Cluster che lo contiene, se c'è
-    # (un asse staccato dentro la vista, la cornice marcata dal chiamante)
+    # whoever touches no contour has the Cluster that contains it, if any (a
+    # detached axis inside the view, the frame marked by the caller)
     free = [c for c in result.loose if c.cluster_ref is None]
     assign_cluster_refs(free, result.clusters, tol)
     if not result.clusters:
@@ -118,22 +115,18 @@ def read_network_outlines(net: Network) -> Result:
 
 
 def read_outlines(edges: List[Edge], tolerance: float, max_gap: float) -> List[OutlineReading]:
-    """
-    Gli edge riparati come heal() (`network.repair_edges`), poi i pezzi a
-    contatto (`touching_groups` a `max_gap`) letti uno per uno, e
-    l'annidamento: un pezzo che sta dentro il contorno di un altro — col suo
-    contorno, o senza contorno con tutti i suoi edge — porta in `nested_in`
-    l'indice del più esterno che lo contiene.
-    """
+    """The edges repaired like heal() (`network.repair_edges`), then the touching
+    pieces (`touching_groups` at `max_gap`) read one by one, and the nesting: a
+    piece lying inside another's contour — with its contour, or with no contour
+    with all its edges — carries in `nested_in` the index of the outermost that
+    contains it."""
     return _read_groups(repair_edges(edges, tolerance, max_gap), tolerance, max(tolerance, max_gap))
 
 
 def read_outline(edges: List[Edge], tolerance: float, max_gap: float) -> OutlineReading:
-    """
-    Un gruppo: gli edge riparati come heal() (`network.repair_edges`), la
-    rete piana, la sua faccia esterna, poi il resto, che va tutto in `loose`
-    (D161): fuori dal contorno, non-contorno (D49), non classificati.
-    """
+    """A group: the edges repaired like heal() (`network.repair_edges`), the planar
+    network, its outer face, then the rest, which all goes to `loose`: outside
+    the contour, non-contour, unclassified."""
     return _read_group(repair_edges(edges, tolerance, max_gap), tolerance)
 
 
@@ -142,17 +135,17 @@ def read_outline(edges: List[Edge], tolerance: float, max_gap: float) -> Outline
 # ---------------------------------------------------------------------------
 
 def _read_groups(edges: List[Edge], tolerance: float, gap: float) -> List[OutlineReading]:
-    """Edge già riparati: i gruppi a contatto entro `gap`, letti, e annidati."""
+    """Already repaired edges: the groups touching within `gap`, read, and nested."""
     readings = [_read_group(g.edges, tolerance) for g in touching_groups(edges, gap)]
-    # il riquadro esatto di ogni ospite, allargato di GRAPH_EPSILON (ben oltre
-    # il bordo di ring_contains e l'errore della spline): un punto fuori non
-    # sta né dentro né sul bordo, e si salta l'avvolgimento sulle curve vere
+    # the exact box of every host, widened by GRAPH_EPSILON (well beyond the
+    # ring_contains border and the spline error): a point outside is neither inside
+    # nor on the border, and the winding on the true curves is skipped
     outers = [(j, r.outer.segments, ring_area(r.outer.segments), ring_bbox(r.outer.segments))
               for j, r in enumerate(readings) if r.outer is not None]
     e = GRAPH_EPSILON
     for i, r in enumerate(readings):
-        # due gruppi distano più della soglia sulle curve vere (D200): un
-        # punto del pezzo sta dentro un ospite solo se ci sta tutto il pezzo
+        # two groups are farther apart than the threshold on the true curves: a point
+        # of the piece lies inside a host only if the whole piece does
         if r.outer is not None:
             point, area = segment_endpoints(r.outer.segments[0])[0], ring_area(r.outer.segments)
         else:
@@ -166,8 +159,8 @@ def _read_groups(edges: List[Edge], tolerance: float, gap: float) -> List[Outlin
 
 
 def _read_group(edges: List[Edge], tolerance: float) -> OutlineReading:
-    """Un gruppo di edge già riparati: la rete piana con gli incroci tagliati
-    (D101), la faccia esterna, il resto classificato."""
+    """A group of already repaired edges: the planar network with the crossings cut,
+    the outer face, the rest classified."""
     noded = split_at_crossings(edges, tolerance)
     pieces = noded.pieces
     face = outer_face(pieces, epsilon=GRAPH_EPSILON)
@@ -183,7 +176,7 @@ def _read_group(edges: List[Edge], tolerance: float) -> OutlineReading:
         reading.outside = [e for e in rest if not probe.contains(edge_geometry(e))]
         outside_ids = {id(e) for e in reading.outside}
         rest = [e for e in rest if id(e) not in outside_ids]
-    # D161: dentro il contorno nessun inner, tutto il resto va in `loose`
+    # inside the contour no inner, everything else goes to `loose`
     non_contour_ids = non_contour_pieces(noded, tolerance)
     reading.non_contour = [e for e in rest if id(e) in non_contour_ids]
     reading.unclassified = [e for e in rest if id(e) not in non_contour_ids]
@@ -197,8 +190,8 @@ def _cluster(reading: OutlineReading, source_file: str, label: str) -> Cluster:
 
 
 def _contour(segments, styles, polygon, role, parent) -> Contour:
-    """Il poligono resta quello dei pezzi della rete piana; i segmenti sono
-    ricomposti dove il taglio li aveva spezzati (`geometry.shape.merge_runs`)."""
+    """The polygon stays that of the planar network's pieces; the segments are
+    recomposed where the cut had split them (`geometry.shape.merge_runs`)."""
     segments, styles = merge_runs(list(segments), list(styles))
     return with_polygon(Contour(role=role, segments=segments, styles=styles,
                                 depth=0 if parent is None else 1, parent=parent), polygon)

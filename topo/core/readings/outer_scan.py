@@ -1,17 +1,17 @@
 """
 topo/core/readings/outer_scan.py
 --------------------------------
-Classificazione dei bordi esterni per ray casting: quali Edge sono, ad
-almeno una quota, il primo o l'ultimo punto incontrato da un raggio che
-attraversa il disegno. Non ricostruisce il contorno — lo cuciono dopo
-gaps e loops, sugli Edge originali.
+Classification of the outer borders by ray casting: which Edges are, at some
+height at least, the first or the last point met by a ray crossing the
+drawing. It does not rebuild the contour — gaps and loops sew it afterwards,
+on the original Edges.
 
-Proprietà globale (min/max su tutta la quota), non connettività locale:
-funziona anche dove il grafo è ambiguo (edge quasi coincidenti che
-convergono sugli stessi nodi). Scansione su entrambi gli assi, perché un
-raggio orizzontale non vede mai un edge orizzontale.
+A global property (min/max over a whole height), not local connectivity: it
+works even where the graph is ambiguous (nearly coincident edges converging
+on the same nodes). Scanning on both axes, because a horizontal ray never
+sees a horizontal edge.
 
-Puro: solo Edge e primitive, nessun formato.
+Pure: Edges and primitives only, no format.
 """
 
 from __future__ import annotations
@@ -29,8 +29,8 @@ from ..primitives.conics import CircleSeg
 
 Point = Tuple[float, float]
 
-AXIS_Y = "y"   # raggio orizzontale a quota y, estremi in x
-AXIS_X = "x"   # raggio verticale a quota x, estremi in y
+AXIS_Y = "y"   # horizontal ray at height y, extremes in x
+AXIS_X = "x"   # vertical ray at height x, extremes in y
 
 SIDE_MIN = "min"
 SIDE_MAX = "max"
@@ -44,17 +44,17 @@ _EPS = FLOAT_NOISE
 
 @dataclass
 class OuterHit:
-    """Un raggio per cui l'Edge è stato l'estremo."""
+    """A ray for which the Edge was the extreme."""
     axis:   str      # AXIS_Y / AXIS_X
-    level:  float    # quota del raggio
+    level:  float    # height of the ray
     side:   str      # SIDE_MIN / SIDE_MAX
-    point:  Point    # punto d'intersezione reale
+    point:  Point    # real intersection point
 
 
 @dataclass
 class OuterCandidates:
-    """Edge candidati a bordo esterno, con i raggi che li hanno scelti."""
-    edges:   List[Edge]                  = field(default_factory=list)   # ordine di input
+    """Edges that are candidates for the outer border, with the rays that chose them."""
+    edges:   List[Edge]                  = field(default_factory=list)   # input order
     hits:    Dict[int, List[OuterHit]]   = field(default_factory=dict)   # id(edge) -> hit
     n_rays:  int                         = 0
 
@@ -71,13 +71,10 @@ class OuterCandidates:
 # ---------------------------------------------------------------------------
 
 def outer_candidate_edges(edges: Iterable[Edge]) -> OuterCandidates:
-    """
-    Per ogni asse, una quota rappresentativa (punto medio) fra ogni coppia
-    di quote-evento consecutive — estremi dei segmenti, estremi degli archi
-    lungo l'asse — e per ciascuna il primo e l'ultimo punto d'intersezione.
-    L'Edge che li produce è candidato. LineSeg/CircleSeg analitici,
-    BSplineSeg/EllipseSeg discretizzati.
-    """
+    """For each axis, a representative height (midpoint) between every pair of
+    consecutive event heights — segment ends, arc extremes along the axis — and
+    for each the first and last intersection point. The Edge producing them is a
+    candidate. Analytic LineSeg/CircleSeg, discretized BSplineSeg/EllipseSeg."""
     edges = list(edges)
     pieces = [p for edge in edges for p in _pieces(edge)]
 
@@ -90,9 +87,7 @@ def outer_candidate_edges(edges: Iterable[Edge]) -> OuterCandidates:
     return OuterCandidates(edges=candidates, hits=hits, n_rays=n_rays)
 
 
-# ---------------------------------------------------------------------------
-# Pezzi elementari: rette e archi di circonferenza
-# ---------------------------------------------------------------------------
+# --- Elementary pieces: lines and circle arcs ---
 
 @dataclass
 class _Line:
@@ -118,7 +113,7 @@ def _pieces(edge: Edge) -> list:
     if isinstance(seg, CircleSeg):
         return [_Arc(edge, seg.center, seg.radius, seg.start_angle, seg._sweep(), seg.ccw)]
     if isinstance(seg, MathSeg):
-        # spline e coniche non circolari: sul poligono
+        # splines and non-circular conics: on the polygon
         pts = seg.discretize(tolerance=DEFAULT_TOLERANCE)
         return [_Line(edge, pts[i], pts[i + 1]) for i in range(len(pts) - 1)]
     return []
@@ -133,7 +128,7 @@ def _arc_point(arc: _Arc, angle: float) -> Point:
 
 
 def _extent(piece, a: int) -> Tuple[float, float]:
-    """(min, max) del pezzo lungo la coordinata `a` (0 = x, 1 = y)."""
+    """(min, max) of the piece along coordinate `a` (0 = x, 1 = y)."""
     if isinstance(piece, _Line):
         return min(piece.p[a], piece.q[a]), max(piece.p[a], piece.q[a])
     end = piece.start + (piece.sweep if piece.ccw else -piece.sweep)
@@ -148,12 +143,12 @@ def _extent(piece, a: int) -> Tuple[float, float]:
 
 
 def _intersections(piece, a: int, level: float) -> List[Point]:
-    """Punti del pezzo con coordinata `a` == level."""
+    """Points of the piece with coordinate `a` == level."""
     b = 1 - a
     if isinstance(piece, _Line):
         p, q = piece.p, piece.q
         if abs(q[a] - p[a]) < _EPS:
-            return []   # parallelo al raggio: lo vede l'altro asse
+            return []   # parallel to the ray: the other axis sees it
         t = (level - p[a]) / (q[a] - p[a])
         slack = _EPS / abs(q[a] - p[a])
         if t < -slack or t > 1 + slack:

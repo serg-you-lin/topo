@@ -1,15 +1,15 @@
 """
 topo/core/readings/faces.py
 ---------------------------
-La lettura dall'interno di una rete riparata: `Network.faces()`.
+The reading from the inside of a repaired network: `Network.faces()`.
 
-Ricostruisce la topologia (chi tocca chi, quali giri si chiudono, come stanno
-uno dentro l'altro) e trova il pezzo per contenimento. È la lettura per un
-disegno piano — un file di taglio, un nesting di pezzi separati. I passi sono
-in `base/cleanup.py` (comuni, D187) e `readings/heal_steps.py`, pubblici: qui
-c'è solo la loro composizione di default, più i warning che la raccontano.
+It rebuilds the topology (who touches whom, which loops close, how they lie
+inside one another) and finds the part by containment. It is the reading for a
+flat drawing — a cutting file, a nesting of separate parts. The steps are in
+`base/cleanup.py` (common) and `readings/heal_steps.py`, public: here is only
+their default composition, plus the warnings that tell it.
 
-Puro: solo Edge, primitive e modello, nessun formato.
+Pure: Edges, primitives and model only, no format.
 """
 
 from __future__ import annotations
@@ -31,8 +31,8 @@ if TYPE_CHECKING:
 
 
 def read_faces(net: Network) -> Result:
-    """Un Cluster per contorno esterno chiuso della rete, con gli inners per
-    contenimento (`Network.faces()`)."""
+    """A Cluster per closed outer contour of the network, with the inners by
+    containment (`Network.faces()`)."""
     tol, structural = net.tolerance, net._structural
     label, source_file = net.label, net.source_file
     reach = threshold(tol)
@@ -48,8 +48,8 @@ def read_faces(net: Network) -> Result:
         return result
     labeled, edges = net.set_aside, net.edges
 
-    # la rete piana, i non-contorno su di lei, i giri delle facce limitate:
-    # la stessa rete, lo stesso giudizio e lo stesso cammino di outlines() (D189)
+    # the planar network, the non-contours on it, the loops of the bounded faces:
+    # the same network, the same judgment and the same walk as outlines()
     noded = net._noded
     non_contour = non_contour_pieces(noded, tol)
     excluded = {id(noded.parent_of(p)) for p in noded.pieces if id(p) in non_contour}
@@ -61,8 +61,8 @@ def read_faces(net: Network) -> Result:
             notes=["chains between two branching nodes that the outer boundary does not run once (D111, D131)"],
             level="note"))
     loops = [noded.whole(loop) for loop in face_loops([p for p in noded.pieces if id(p) not in non_contour])]
-    # un giro che non diventa un contorno (senza area, D151) non prende niente:
-    # i suoi edge vanno in loose interi, come quelli che nessun giro tocca
+    # a loop that does not become a contour (no area) takes nothing: its edges go
+    # whole to loose, like those no loop touches
     closed, used = [], set()
     for loop in structural_loops(loops, structural):
         curves = loops_to_curves([loop])
@@ -75,8 +75,8 @@ def read_faces(net: Network) -> Result:
         result.warnings += _crossing_warnings(noded.crossings)
     else:
         result.notes.append(Diagnostic("no-loop", "the edges close no loop", level="note"))
-    # in loose ciò che nessun giro prende: l'edge intero se nessun suo pezzo
-    # è contorno, altrimenti i suoi pezzi rimasti
+    # to loose whatever no loop takes: the whole edge if none of its pieces is a
+    # contour, otherwise its remaining pieces
     pieces_of: dict = {}
     for piece in noded.pieces:
         pieces_of.setdefault(id(noded.parent_of(piece)), []).append(piece)
@@ -88,7 +88,7 @@ def read_faces(net: Network) -> Result:
         rest += [p for p in pieces if id(p) not in used] if any(id(p) in used for p in pieces) else [edge]
     curves = closed + loose_curves(rest)
     if not curves:
-        # nessun pezzo, ma gli edge messi da parte restano in loose (D137)
+        # no piece, but the edges set aside stay in loose
         result.loose = loose_curves(labeled)
         result.errors.append(Diagnostic("no-closed-outer", "nothing closes after the repair", level="error"))
         result.is_valid = False
@@ -100,9 +100,9 @@ def read_faces(net: Network) -> Result:
     result.loose = loose + loose_curves(labeled)
     assign_cluster_refs(result.loose, clusters, reach)
     if not clusters:
-        # La geometria non compone nessun contorno esterno chiuso: il
-        # risultato non è un pezzo, è un file non lavorabile. `loose` resta
-        # per la diagnostica, ma un writer si rifiuta di scrivere solo quella.
+        # The geometry composes no closed outer contour: the result is not a part, it
+        # is an unworkable file. `loose` stays for diagnostics, but a writer refuses to
+        # write only that.
         result.errors.append(Diagnostic(
             "no-closed-outer", "no closed outer contour, so no part",
             points=[p for p, _ in net.free_ends],
@@ -121,9 +121,8 @@ def read_faces(net: Network) -> Result:
 # ---------------------------------------------------------------------------
 
 def _loose_ends_notes(ends: list, pieces: list, non_contour_ids: set) -> list:
-    """Quello che resta aperto anche quando qualcosa si chiude (D111): gli
-    estremi liberi della rete, e gli edge che uniscono due forme altrimenti
-    staccate."""
+    """What stays open even when something closes: the free ends of the network, and
+    the edges joining two otherwise detached shapes."""
     notes = []
     if ends:
         notes.append(Diagnostic(
@@ -141,8 +140,8 @@ def _loose_ends_notes(ends: list, pieces: list, non_contour_ids: set) -> list:
 
 
 def _crossing_warnings(points: list) -> list:
-    """Lati di contorno che si attraversano senza un nodo (D132): il disegno è
-    rotto lì; la rete piana li noda per leggere le facce, e heal() lo dice."""
+    """Contour sides crossing without a node: the drawing is broken there; the
+    planar network nodes them to read the faces, and heal() says so."""
     if not points:
         return []
     return [Diagnostic(

@@ -1,17 +1,18 @@
 """
 topo/core/readings/parity_faces.py
 ----------------------------------
-La lettura per parità di una rete riparata: `topo.experimental.parity_faces`
-(D250). Sperimentale: dove la scelta ha pareggi dipende dalle coordinate.
+The parity reading of a repaired network: `topo.experimental.parity_faces`.
+Experimental: where the choice has ties it depends on the coordinates.
 
-Le facce della rete piana (incroci tagliati) si colorano dentro/fuori in modo
-che ogni lato separi due colori diversi; i contorni sono i giri delle facce
-fuori. Dove un nodo ha grado dispari si tolgono prima capi liberi e ponti,
-poi l'insieme di lati che rende pari ogni nodo togliendo il meno possibile
-della sagoma, poi la lunghezza minima (`topology/parity.py`). Il resto —
-gerarchia, loose, warning — è quello di `faces()`.
+The faces of the planar network (crossings cut) are coloured inside/outside so
+that every side separates two different colours; the contours are the loops of
+the outside faces. Where a node has odd degree, free ends and bridges are
+removed first, then the set of sides that makes every node even removing as
+little as possible of the silhouette, then the minimum length
+(`topology/parity.py`). The rest — hierarchy, loose, warnings — is that of
+`faces()`.
 
-Puro: solo Edge, primitive e modello, nessun formato.
+Pure: Edges, primitives and model only, no format.
 """
 
 from __future__ import annotations
@@ -34,9 +35,8 @@ if TYPE_CHECKING:
 
 
 def parity_faces(net: Network) -> Result:
-    """
-    Read the network by parity: every remaining side separates an inside
-    face from an outside one. Experimental (D250).
+    """Read the network by parity: every remaining side separates an inside
+    face from an outside one. Experimental.
 
     The faces of a planar network admit an inside/outside colouring with
     every side between two colours if and only if every node has even
@@ -50,8 +50,7 @@ def parity_faces(net: Network) -> Result:
 
     Not guaranteed: where two such sets have the same length (symmetric
     drawings), which one is removed depends on the coordinates, so a moved
-    or mirrored drawing can read differently.
-    """
+    or mirrored drawing can read differently."""
     tol, structural = net.tolerance, net._structural
     label, source_file = net.label, net.source_file
     reach = threshold(tol)
@@ -67,8 +66,7 @@ def parity_faces(net: Network) -> Result:
         return result
     labeled, edges = net.set_aside, net.edges
 
-    # la rete piana tagliata anche agli incroci; un edge che il chiamante ha
-    # detto non strutturale non entra nella parità
+    # the planar network cut also at the crossings; an edge the caller declared non-structural does not enter the parity
     noded = split_at_crossings(edges, tol)
     parity = parity_rings([p for p in noded.pieces if may_be_contour(noded.parent_of(p), structural)])
     dropped = parity.dropped
@@ -103,8 +101,9 @@ def parity_faces(net: Network) -> Result:
         result.warnings += _crossing_warnings(net.crossings)
     else:
         result.notes.append(Diagnostic("no-loop", "the edges close no loop", level="note"))
-    # in loose ciò che nessun giro prende: l'edge intero se nessun suo pezzo
-    # è contorno, altrimenti i suoi pezzi rimasti
+    # to loose whatever no loop takes: the whole edge if none of its pieces is a
+    # contour, otherwise its remaining pieces
+    #
     pieces_of: dict = {}
     for piece in noded.pieces:
         pieces_of.setdefault(id(noded.parent_of(piece)), []).append(piece)

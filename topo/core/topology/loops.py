@@ -1,9 +1,9 @@
 """
 core/topology/loops.py
 ----------------------
-Da un giro [(edge, al contrario)] ai suoi segmenti, stili, punti e poligono,
-e gli Edge che nessun giro prende in curve aperte. I giri li trovano le facce
-della rete piana (`outer_face.face_loops`, D189).
+From a loop [(edge, reversed)] to its segments, styles, points and polygon,
+and the Edges no loop takes into open curves. The loops are found by the faces
+of the planar network (`outer_face.face_loops`).
 """
 
 from typing import Optional, Tuple
@@ -16,8 +16,8 @@ from .graph import _edge_coords
 
 
 def loop_points(loop: list) -> list:
-    """I punti di un giro [(edge, al contrario)], concatenati senza ripetere i
-    nodi di giunzione."""
+    """The points of a loop [(edge, reversed)], concatenated without repeating the
+    junction nodes."""
     pts = []
     for edge, rev in loop:
         coords = _edge_coords(edge, rev)
@@ -33,22 +33,20 @@ def loop_points(loop: list) -> list:
 
 
 def segments_from_loop(loop) -> list:
-    """
-    Segmenti nativi di un loop, orientati nel verso di percorrenza.
+    """Native segments of a loop, oriented in the direction of travel.
 
-    NON parsa niente: ogni Edge porta già la sua primitiva (`edge.segment`,
-    tradotta dall'adapter al load). Qui la si prende, la si inverte con
-    `.reversed()` se l'Edge è percorso al contrario nel loop, e la si
-    concatena. Logica di dominio pura (MAP.md D6).
-    """
+    It parses NOTHING: every Edge already carries its primitive (`edge.segment`,
+    translated by the adapter at load). Here it is taken, reversed with
+    `.reversed()` if the Edge is walked backwards in the loop, and concatenated.
+    Pure domain logic."""
     out = []
     for edge, rev in loop:
         seg = edge.segment
         if seg is None:
             continue
         if isinstance(seg, list):
-            # In produzione un Edge di loop non porta mai una lista (le
-            # polilinee sono già esplose in Edge singoli): ramo per i test.
+            # In production a loop Edge never carries a list (polylines are already exploded
+            # into single Edges): branch for the tests.
             out.extend(seg)
         else:
             out.append(seg.reversed() if rev else seg)
@@ -56,12 +54,10 @@ def segments_from_loop(loop) -> list:
 
 
 def edge_styles_from_loop(loop) -> list:
-    """
-    Stili grezzi (linetype/colore) di un loop, allineati 1:1 con
-    `segments_from_loop(loop)` — stesso ordine, stessa espansione per gli Edge
-    di test che portano una lista di segmenti. Lo stile non dipende dal verso
-    di percorrenza: a differenza del segmento nativo non va mai invertito.
-    """
+    """Raw styles (linetype/colour) of a loop, aligned 1:1 with
+    `segments_from_loop(loop)` — same order, same expansion for the test Edges
+    carrying a list of segments. The style does not depend on the direction of
+    travel: unlike the native segment it is never reversed."""
     out = []
     for edge, _rev in loop:
         seg = edge.segment
@@ -75,8 +71,8 @@ def edge_styles_from_loop(loop) -> list:
 
 
 def loop_geometry(loop) -> Optional[Tuple[list, list, Polygon]]:
-    """(segmenti, stili, poligono) di un loop; None se i segmenti non chiudono
-    un poligono valido."""
+    """(segments, styles, polygon) of a loop; None if the segments do not close a
+    valid polygon."""
     segments = segments_from_loop(loop)
     polygon = build_polygon(segments, DEFAULT_TOLERANCE)
     if polygon is None:
@@ -84,7 +80,5 @@ def loop_geometry(loop) -> Optional[Tuple[list, list, Polygon]]:
     return segments, edge_styles_from_loop(loop), polygon
 
 
-# ---------------------------------------------------------------------------
-# Edge → OpenCurve — tracce non consumate da loop strutturali
-# ---------------------------------------------------------------------------
+# --- Edge → OpenCurve — traces not consumed by structural loops ---
 

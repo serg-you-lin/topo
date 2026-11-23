@@ -1,11 +1,11 @@
 """
 topo/core/readings/heal_steps.py
 --------------------------------
-I passi propri di heal(), uno per funzione: la scala che chiude i giri,
-il fallback polygonize, i non-contorno, la gerarchia. Le basi comuni
-stanno in `core/base` (D187).
+The steps proper to heal(), one per function: the ladder that closes the
+loops, the polygonize fallback, the non-contours, the hierarchy. The common
+foundations are in `core/base`.
 
-Puro: solo Edge, primitive e modello, nessun formato.
+Pure: Edges, primitives and model only, no format.
 """
 
 from __future__ import annotations
@@ -29,13 +29,11 @@ from ..geometry.rings import ring_bridges
 
 
 def find_non_contour_edges(edges: List[Edge], tolerance: float) -> Set[int]:
-    """
-    id(edge) degli Edge che non chiudono un contorno (catene fra due nodi di
-    branching, e non sul bordo della faccia esterna della componente, D111,
-    D131): quelli i cui pezzi della rete piana sono tutti non-contorno, lo
-    stesso giudizio che fanno le letture (`non_contour_pieces`, D189).
-    `tolerance`: due tagli più vicini sono un contatto solo.
-    """
+    """id(edge) of the Edges that do not close a contour (chains between two
+    branching nodes, and not on the border of the component's outer face): those
+    whose pieces of the planar network are all non-contour, the same judgment the
+    readings make (`non_contour_pieces`). `tolerance`: two cuts closer than this
+    are one contact."""
     noded = split_at_crossings(edges, tolerance, cut_crossings=False)
     excluded = non_contour_pieces(noded, tolerance)
     verdict: dict = {}
@@ -46,13 +44,11 @@ def find_non_contour_edges(edges: List[Edge], tolerance: float) -> Set[int]:
 
 
 def find_joining_edges(edges: List[Edge], candidate_ids: Set[int]) -> List[Edge]:
-    """
-    Gli Edge fra `candidate_ids` (di solito i non-contorno) che uniscono due
-    forme altrimenti staccate: tolti, i loro due estremi non sono più
-    collegati. Fra due forme chiuse è il nodo ambiguo per eccellenza — un
-    pezzo con una linea attaccata, o due pezzi? heal() li legge come due e
-    lo dice in un warning (D111).
-    """
+    """The Edges among `candidate_ids` (usually the non-contours) that join two
+    otherwise detached shapes: removed, their two ends are no longer connected.
+    Between two closed shapes it is the ambiguous node par excellence — a part
+    with a line attached, or two parts? heal() reads them as two and says so in
+    a warning."""
     graph = build_node_graph(edges)
     joining = []
     for edge in edges:
@@ -74,12 +70,10 @@ def find_joining_edges(edges: List[Edge], candidate_ids: Set[int]) -> List[Edge]
 
 
 def free_ends(edges: List[Edge], epsilon: float = 0.0) -> List[Tuple[Tuple, float]]:
-    """
-    (estremo, distanza dal nodo più vicino) per ogni estremo che nessun altro
-    edge tocca, dal più vicino a un nodo: un estremo a pochi mm da un vertice
-    è un gap che la tolleranza non ha chiuso. `epsilon`: quello del grafo su
-    cui i loop sono stati chiusi, perché un estremo fuso lì non è libero.
-    """
+    """(end, distance from the nearest node) for every end no other edge touches,
+    nearest to a node first: an end a few mm from a vertex is a gap the tolerance
+    did not close. `epsilon`: that of the graph on which the loops were closed,
+    because an end merged there is not free."""
     graph = build_node_graph(edges, epsilon=epsilon)
     open_nodes = graph.open_nodes()
     if not open_nodes:
@@ -95,43 +89,35 @@ def free_ends(edges: List[Edge], epsilon: float = 0.0) -> List[Tuple[Tuple, floa
 
 def structural_loops(loops: List[list],
                      is_structural: Optional[Callable[[str], bool]] = None) -> List[list]:
-    """
-    I loop in cui ogni edge con ruolo deciso è strutturale: un solo edge non
-    strutturale (engrave, frame, ...) declassa l'intero loop.
-    """
+    """The loops in which every edge with a decided role is structural: a single
+    non-structural edge (engrave, frame, ...) demotes the whole loop."""
     return [loop for loop in loops if all(may_be_contour(e, is_structural) for e, _ in loop)]
 
 
 def may_be_contour(edge: Edge, is_structural: Optional[Callable[[str], bool]] = None) -> bool:
-    """L'edge può essere un contorno: ruolo non deciso, o strutturale."""
+    """The edge may be a contour: undecided role, or structural."""
     return edge.role == ContourRole.UNKNOWN or (is_structural or is_structural_role)(edge.role)
 
 
 def build_hierarchy(curves: list, label: str = "", source_file: str = "",
                     is_structural: Optional[Callable[[str], bool]] = None
                     ) -> Tuple[List[Cluster], list]:
-    """
-    Albero di contenimento sui ClosedCurve: ogni radice è un Cluster
-    (outer), i discendenti i suoi inners con `depth`/`parent`. Ritorna
-    (cluster, loose): loose è ciò che non è finito in un cluster e non è
-    strutturale.
-    """
+    """Containment tree on the ClosedCurves: every root is a Cluster (outer), the
+    descendants its inners with `depth`/`parent`. Returns (cluster, loose):
+    loose is what did not end up in a cluster and is not structural."""
     builder = HierarchyBuilder(label=label, source_file=source_file, is_structural=is_structural)
     return builder.build(curves)
 
 
 def close_contour_jumps(result, tolerance: float) -> None:
-    """
-    Ogni contorno consegnato chiude esatto (D206): un salto entro `tolerance`
-    fra un segmento e il successivo diventa una retta nuova fra i due capi,
-    con lo stile del segmento prima. Nessuna curva si sposta; il poligono
-    contava già il salto come la sua corda. **Muta** `result` e lo dice in
-    `notes`.
-    """
+    """Every delivered contour closes exactly: a jump within `tolerance` between a
+    segment and the next becomes a new line between the two ends, with the style
+    of the previous segment. No curve moves; the polygon already counted the jump
+    as its chord. **Mutates** `result` and says so in `notes`."""
     starts, widest = [], 0.0
     for cluster in result.clusters:
         for contour in [cluster.outer] + list(cluster.inners):
-            bridges = ring_bridges(contour.segments, reach(tolerance), FLOAT_NOISE)   # D183
+            bridges = ring_bridges(contour.segments, reach(tolerance), FLOAT_NOISE)
             for k, line in reversed(bridges):
                 contour.segments.insert(k + 1, line)
                 if len(contour.styles) > k:

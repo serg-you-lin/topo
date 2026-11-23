@@ -1,18 +1,18 @@
 """
 core/topology/matching.py
 -------------------------
-Accoppiamento perfetto di peso minimo e T-join di peso minimo su un grafo
-qualsiasi, coi pesi interi: nessuna geometria.
+Minimum-weight perfect matching and minimum-weight T-join on any graph, with
+integer weights: no geometry.
 
-Tipi pubblici:
-    max_weight_matching          — accoppiamento di peso massimo (Edmonds, blossom)
-    min_weight_perfect_matching  — accoppiamento perfetto di peso minimo
-    min_t_join                   — l'insieme di lati più leggero che rende
-                                   dispari esattamente i nodi di T
+Public types:
+    max_weight_matching          — maximum-weight matching (Edmonds, blossom)
+    min_weight_perfect_matching  — minimum-weight perfect matching
+    min_t_join                   — the lightest set of edges that makes exactly
+                                   the nodes of T odd
 
-I pesi sono interi: il confronto è esatto e il risultato non dipende dagli
-arrotondamenti. Chi ha lunghezze in mm le converte prima in multipli di
-FLOAT_NOISE. Scritto in Python puro su liste di interi, per un porting.
+The weights are integers: the comparison is exact and the result does not
+depend on rounding. Whoever has lengths in mm converts them first to multiples
+of FLOAT_NOISE. Written in pure Python on lists of integers, for a port.
 """
 
 from __future__ import annotations
@@ -27,22 +27,19 @@ WeightedEdge = Tuple[int, int, int]
 
 def max_weight_matching(n: int, edges: Sequence[WeightedEdge],
                         max_cardinality: bool = False) -> List[int]:
-    """
-    L'accoppiamento di peso massimo dei nodi 0..n-1 sui lati (i, j, peso),
-    pesi interi; con `max_cardinality` il più pesante fra quelli col maggior
-    numero di coppie. Restituisce `mate`: mate[v] è il compagno di v, -1 se
-    v è solo.
+    """The maximum-weight matching of the nodes 0..n-1 on the edges (i, j, weight),
+    integer weights; with `max_cardinality` the heaviest among those with the
+    most pairs. Returns `mate`: mate[v] is the partner of v, -1 if v is alone.
 
-    Metodo primale-duale di Edmonds coi blossom, O(n^3) (Galil 1986). Coi
-    pesi interi i duali restano interi: tutti i conti sono esatti.
-    """
+    Edmonds' primal-dual method with blossoms, O(n^3) (Galil 1986). With integer
+    weights the duals stay integer: all computations are exact."""
     return _matching(n, edges, max_cardinality)[0]
 
 
 def _matching(n: int, edges: Sequence[WeightedEdge],
               max_cardinality: bool) -> Tuple[List[int], List[int], List[int]]:
-    """(mate, duali, padre di ogni nodo e blossom): i duali dei nodi
-    0..n-1 e dei blossom n..2n-1 rimasti alla fine, per `_slack`."""
+    """(mate, duals, parent of every node and blossom): the duals of the nodes
+    0..n-1 and of the blossoms n..2n-1 left at the end, for `_slack`."""
     nedge = len(edges)
     if n == 0 or nedge == 0:
         return [-1] * n, [0] * (2 * n), [-1] * (2 * n)
@@ -53,23 +50,23 @@ def _matching(n: int, edges: Sequence[WeightedEdge],
             raise TypeError("i pesi devono essere interi")
     maxweight = max(0, max(w for _, _, w in edges))
 
-    # l'estremo p (0..2*nedge-1) è il nodo edges[p // 2][p % 2]
+    # the end p (0..2*nedge-1) is the node edges[p // 2][p % 2]
     endpoint = [edges[p // 2][p % 2] for p in range(2 * nedge)]
-    # per ogni nodo, gli estremi remoti dei suoi lati
+    # for every node, the remote ends of its edges
     neighbend: List[List[int]] = [[] for _ in range(n)]
     for k, (i, j, _) in enumerate(edges):
         neighbend[i].append(2 * k + 1)
         neighbend[j].append(2 * k)
 
-    mate = [-1] * n                       # estremo remoto del lato accoppiato
+    mate = [-1] * n                       # remote end of the matched edge
     label = [0] * (2 * n)                 # 0 libero, 1 S, 2 T (blossom esterni e nodi)
-    labelend = [-1] * (2 * n)             # estremo da cui il blossom ha preso l'etichetta
-    inblossom = list(range(n))            # blossom esterno di ogni nodo
+    labelend = [-1] * (2 * n)             # end from which the blossom took its label
+    inblossom = list(range(n))            # outer blossom of every node
     blossomparent = [-1] * (2 * n)
     blossomchilds: List = [None] * (2 * n)
     blossombase = list(range(n)) + [-1] * n
     blossomendps: List = [None] * (2 * n)
-    bestedge = [-1] * (2 * n)             # lato di slack minimo verso un blossom S
+    bestedge = [-1] * (2 * n)             # edge of minimum slack towards an S blossom
     blossombestedges: List = [None] * (2 * n)
     unusedblossoms = list(range(n, 2 * n))
     dualvar = [maxweight] * n + [0] * n
@@ -102,7 +99,7 @@ def _matching(n: int, edges: Sequence[WeightedEdge],
             assign_label(endpoint[mate[base]], 1, mate[base] ^ 1)
 
     def scan_blossom(v: int, w: int) -> int:
-        """La base del nuovo blossom fra v e w, -1 se c'è un cammino aumentante."""
+        """The base of the new blossom between v and w, -1 if there is an augmenting path."""
         path = []
         base = -1
         while v != -1 or w != -1:
@@ -192,7 +189,7 @@ def _matching(n: int, edges: Sequence[WeightedEdge],
                 for v in leaves(s):
                     inblossom[v] = s
         if not endstage and label[b] == 2:
-            # il blossom T si apre: rietichetta i figli lungo il cammino pari
+            # the T blossom opens: relabel the children along the even path
             entrychild = inblossom[endpoint[labelend[b] ^ 1]]
             childs = blossomchilds[b]
             j = childs.index(entrychild)
@@ -332,7 +329,7 @@ def _matching(n: int, edges: Sequence[WeightedEdge],
                             bestedge[w] = k
             if augmented:
                 break
-            # nessun lato ammesso porta avanti: aggiorna i duali
+            # no allowed edge moves forward: update the duals
             deltatype = -1
             delta = deltaedge = deltablossom = 0
             if not max_cardinality:
@@ -394,8 +391,8 @@ def _matching(n: int, edges: Sequence[WeightedEdge],
 
 
 def _slack(i: int, j: int, w: int, dual: List[int], parent: List[int]) -> int:
-    """Lo slack del lato (i, j, w) coi duali finali: negativo = il lato
-    migliorerebbe l'accoppiamento (verifica di ottimalità di Edmonds)."""
+    """The slack of the edge (i, j, w) with the final duals: negative = the edge
+    would improve the matching (Edmonds' optimality check)."""
     s = dual[i] + dual[j] - 2 * w
     up_i, up_j = [i], [j]
     while parent[up_i[-1]] != -1:
@@ -410,15 +407,13 @@ def _slack(i: int, j: int, w: int, dual: List[int], parent: List[int]) -> int:
 
 
 def min_weight_perfect_matching(n: int, edges: Sequence[WeightedEdge]) -> List[int]:
-    """
-    L'accoppiamento perfetto di peso minimo dei nodi 0..n-1 sui lati
-    (i, j, peso), pesi interi. Restituisce `mate` (mate[v] = compagno di v);
-    `ValueError` se nessun accoppiamento copre tutti i nodi.
+    """The minimum-weight perfect matching of the nodes 0..n-1 on the edges
+    (i, j, weight), integer weights. Returns `mate` (mate[v] = partner of v);
+    `ValueError` if no matching covers all the nodes.
 
-    Fra gli accoppiamenti col maggior numero di coppie, peso massimo di
-    (C - peso) con C maggiore di ogni peso: se ce n'è uno perfetto, è quello
-    di peso minimo.
-    """
+    Among the matchings with the most pairs, the maximum weight of (C - weight)
+    with C greater than every weight: if there is a perfect one, it is the one of
+    minimum weight."""
     if not edges:
         if n:
             raise ValueError("nessun accoppiamento perfetto")
@@ -432,20 +427,18 @@ def min_weight_perfect_matching(n: int, edges: Sequence[WeightedEdge]) -> List[i
 
 
 def _min_perfect_on_complete(dist: List[List[int]], start: int = 8) -> List[int]:
-    """
-    L'accoppiamento perfetto di peso minimo sul grafo completo dei nodi
-    0..n-1 (n pari) coi pesi interi `dist[i][j]`. Si risolve sulle coppie
-    più vicine (`start` per nodo), poi si aggiungono le coppie escluse che
-    coi duali finali hanno slack negativo, finché non ce n'è nessuna: allora
-    i duali sono ammissibili su tutto il grafo e l'accoppiamento è ottimo
-    anche lì (dualità di Edmonds). Il risultato non dipende da `start`.
-    """
+    """The minimum-weight perfect matching on the complete graph of the nodes
+    0..n-1 (n even) with integer weights `dist[i][j]`. It is solved on the nearest
+    pairs (`start` per node), then the excluded pairs that have negative slack
+    with the final duals are added, until none is left: then the duals are
+    feasible on the whole graph and the matching is optimal there too (Edmonds'
+    duality). The result does not depend on `start`."""
     n = len(dist)
     if n == 0:
         return []
     top = max(max(row) for row in dist) + 1
-    # ogni coppia in più vale più di qualunque differenza di peso: il più
-    # pesante è perfetto, se il grafo ne ha uno
+    # every extra pair is worth more than any weight difference: the heaviest is
+    # perfect, if the graph has one
     big = n * top + 1
     weight = lambda i, j: big + top - dist[i][j]
     chosen = set()
@@ -456,7 +449,7 @@ def _min_perfect_on_complete(dist: List[List[int]], start: int = 8) -> List[int]
         pairs = sorted(chosen)
         mate, dual, parent = _matching(n, [(i, j, weight(i, j)) for i, j in pairs], False)
         if any(m == -1 for m in mate):
-            # le coppie scelte non coprono tutti: a chi resta solo, tutte le sue
+            # the chosen pairs do not cover everyone: for whoever remains alone, all its
             chosen.update((min(i, j), max(i, j)) for i in range(n) if mate[i] == -1
                           for j in range(n) if j != i)
             continue
@@ -469,7 +462,7 @@ def _min_perfect_on_complete(dist: List[List[int]], start: int = 8) -> List[int]
         for i in range(n):
             row, di, oi = dist[i], dual[i], outer[i]
             for j in range(i + 1, n):
-                # fra due blossom esterni diversi lo slack è quello dei due nodi
+                # between two different outer blossoms the slack is that of the two nodes
                 s = di + dual[j] - 2 * (big + top - row[j])
                 if s < 0 and oi == outer[j]:
                     s = _slack(i, j, big + top - row[j], dual, parent)
@@ -482,7 +475,7 @@ def _min_perfect_on_complete(dist: List[List[int]], start: int = 8) -> List[int]
 
 def _shortest_paths(n: int, adj: List[List[Tuple[int, int, int]]],
                     source: int) -> Tuple[List[int], List[int]]:
-    """(distanza, lato da cui si arriva) da `source` a ogni nodo; -1 se irraggiungibile."""
+    """(distance, edge it arrives from) from `source` to every node; -1 if unreachable."""
     dist = [-1] * n
     via = [-1] * n
     dist[source] = 0
@@ -504,17 +497,15 @@ def _shortest_paths(n: int, adj: List[List[Tuple[int, int, int]]],
 
 def min_t_join(n: int, edges: Sequence[WeightedEdge],
                terminals: Iterable[int]) -> Tuple[Set[int], Set[int]]:
-    """
-    Il T-join di peso minimo: gli indici dei lati di `edges` (i, j, peso),
-    pesi interi >= 0, il cui insieme ha grado dispari esattamente nei nodi
-    di `terminals`. Restituisce (lati, terminali scoperti): un terminale è
-    scoperto quando la sua componente connessa ne ha un numero dispari, e
-    allora nessun insieme di lati lo può rendere dispari.
+    """The minimum-weight T-join: the indices of the edges of `edges` (i, j, weight),
+    integer weights >= 0, whose set has odd degree exactly at the nodes of
+    `terminals`. Returns (edges, uncovered terminals): a terminal is uncovered when
+    its connected component has an odd number of them, and then no set of edges
+    can make it odd.
 
-    Cammini minimi fra i terminali di ogni componente, accoppiamento perfetto
-    di peso minimo su quelle distanze, differenza simmetrica dei cammini
-    (Edmonds-Johnson 1973). A pari peso decide l'ordine dei lati.
-    """
+    Shortest paths between the terminals of every component, minimum-weight
+    perfect matching on those distances, symmetric difference of the paths
+    (Edmonds-Johnson 1973). On equal weight the edge order decides."""
     for _, _, w in edges:
         if w < 0:
             raise ValueError("pesi negativi")
@@ -524,7 +515,7 @@ def min_t_join(n: int, edges: Sequence[WeightedEdge],
         adj[j].append((i, w, k))
     tset = sorted(set(terminals))
     paths: Dict[int, Tuple[List[int], List[int]]] = {t: _shortest_paths(n, adj, t) for t in tset}
-    # i terminali per componente: chi si raggiunge sta nella stessa
+    # the terminals per component: whoever is reachable is in the same one
     reached = [(a, b) for a in range(len(tset)) for b in range(len(tset))
                if a < b and paths[tset[a]][0][tset[b]] != -1]
     groups = [[tset[a] for a in group] for group in connected_groups(len(tset), reached)]

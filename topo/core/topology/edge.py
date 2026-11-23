@@ -1,16 +1,15 @@
 """
 core/topology/edge.py
 ---------------------
-Rappresentazione topologica di una entità geometrica lineare — l'unità che
-graph.py / loops.py / non_contour_edges.py / gaps.py usano per
-costruire e percorrere il grafo. Non è una primitiva geometrica (quelle sono
-LineSeg/CircleSeg/BSplineSeg/EllipseSeg in core/primitives/,
-math puro senza semantica): `Edge` ne avvolge una con ruolo, provenienza e
-stile — dati di dominio, zero riferimento all'entità sorgente di alcun formato.
+Topological representation of a linear geometric entity — the unit that
+graph.py / loops.py / non_contour_edges.py / gaps.py use to build and walk the
+graph. It is not a geometric primitive (those are LineSeg/CircleSeg/
+BSplineSeg/EllipseSeg in core/primitives/, pure maths with no semantics):
+`Edge` wraps one with role, provenance and style — domain data, no reference
+to the source entity of any format.
 
-Vive in core/ (non più in adapters/bridge/, D18) perché è core il suo
-consumatore principale: ogni adapter costruisce Edge, ma è
-il core a definirne la forma, esattamente come per le primitive.
+It lives in core/ because its main consumer is core: every adapter builds
+Edges, but core defines their shape, exactly as for the primitives.
 """
 
 from __future__ import annotations
@@ -26,36 +25,32 @@ Segment = MathSeg
 
 
 def node_point(pt) -> Tuple:
-    """Il nodo di un punto: il punto vero, in float; nessuna griglia (D216)."""
+    """The node of a point: the true point, as floats; no grid."""
     return (float(pt[0]), float(pt[1]))
 
 
 @dataclass
 class Edge:
-    """
-    Layer intermedio tra l'entità sorgente grezza (di qualsiasi formato) e il
-    topology engine. Dati puri — nessun riferimento all'entità sorgente.
+    """Intermediate layer between the raw source entity (of any format) and the
+    topology engine. Pure data — no reference to the source entity.
 
-    Campi:
-        role       : ruolo semantico (stringa: costante ContourRole o slug di un
-                     consumatore) — assegnato dall'adapter prima di costruire
-                     l'Edge, mai derivato da un layer qui dentro
-        start      : endpoint arrotondato alla tolerance
-        end        : endpoint arrotondato alla tolerance
-        segment    : primitiva geometrica nativa — mai discretizzata qui,
-                     la discretizzazione avviene nel LoopFinder via .discretize()
-        style      : aspetto grezzo (linetype/colore) dell'entità sorgente —
-                     captato dall'adapter, mai interpretato qui (Cluster E).
+    Fields:
+        role       : semantic role (string: ContourRole constant or a consumer's
+                     slug) — assigned by the adapter before building the Edge,
+                     never derived from a layer in here
+        start      : endpoint rounded to the tolerance
+        end        : endpoint rounded to the tolerance
+        segment    : native geometric primitive — never discretized here,
+                     discretization happens in the LoopFinder via .discretize()
+        style      : raw appearance (linetype/colour) of the source entity —
+                     captured by the adapter, never interpreted here
 
-    Deliberatamente NIENTE campo che dica "veniva da una LWPOLYLINE chiusa"
-    o simili: se un percorso è già chiuso è un fatto che il grafo di topo
-    scopre da sé (`Graph.degenerate_loops`, un loop trovato dal
-    `LoopFinder`) — non un'informazione che l'adapter può accorciare
-    consegnandola come flag. Un flag così è la provenienza nel formato
-    sorgente travestita da proprietà topologica: un adapter PDF/SVG non
-    avrebbe modo di popolarlo, e il core non deve mai aver bisogno che lo
-    faccia (trovato e tolto: MAP.md, seguito D50).
-    """
+    Deliberately NO field saying "came from a closed LWPOLYLINE" or the like: that
+    a path is already closed is a fact the topo graph discovers by itself
+    (`Graph.degenerate_loops`, a loop found by the `LoopFinder`) — not information
+    the adapter can shorten by handing it over as a flag. Such a flag is
+    provenance in the source format dressed as a topological property: a PDF/SVG
+    adapter would have no way to fill it, and the core must never need it to."""
     role:    str
     start:   Tuple[float, float]
     end:     Tuple[float, float]
@@ -65,15 +60,13 @@ class Edge:
 
     @classmethod
     def of(cls, segment: Segment, role: str, *, style: Optional[EdgeStyle] = None) -> "Edge":
-        """
-        L'Edge di `segment`: gli estremi sono i punti veri del segmento, il
-        nodo per distanza lo decide heal (D216). Una curva chiusa (cerchio, spline o
-        ellisse con gli estremi entro la tolleranza) ha un nodo solo: è un loop
-        degenere, che il grafo riconosce da sé. Una linea o un arco cortissimi
-        restano due nodi — sono lati, non loop.
+        """The Edge of `segment`: the ends are the true points of the segment, the node
+        by distance is decided by heal. A closed curve (circle, spline or ellipse with
+        ends within the tolerance) has a single node: it is a degenerate loop, which
+        the graph recognizes by itself. A very short line or arc stays two nodes —
+        they are sides, not loops.
 
-        È il modo in cui un adapter costruisce un Edge (MAP.md D125).
-        """
+        It is how an adapter builds an Edge."""
         start, end = segment_endpoints(segment)
         start = node_point(start)
         if not isinstance(segment, LineSeg) and segment_is_closed(segment):

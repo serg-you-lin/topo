@@ -1,31 +1,31 @@
 """
 core/topology/noding.py
 -----------------------
-Rete piana: ogni edge spezzato dove incrocia o tocca un altro edge, così che
-due edge si incontrino solo nei nodi, e un nodo sia lo stesso punto per tutti
-gli edge che ci arrivano. È la premessa per percorrere la faccia esterna
-(outer_face.py): su una rete non piana un incrocio a metà di due edge non è un
-nodo e il percorso ci passa sopra.
+Planar network: every edge split where it crosses or touches another edge, so
+that two edges meet only at nodes, and a node is the same point for all the
+edges arriving there. It is the premise for walking the outer face
+(outer_face.py): on a non-planar network a crossing in the middle of two
+edges is not a node and the walk passes over it.
 
-Ogni contatto si decide una volta sola, per coppia di edge, sulle curve vere
-(D180): un incrocio, un estremo entro `GRAPH_EPSILON` dall'altra curva (un T,
-o due estremi vicini), due curve che passano entro `GRAPH_EPSILON` senza
-incrociarsi (la tangenza mancata). Gli incontri di una stessa coppia entro
-`tolerance` lungo uno dei due edge sono un contatto solo: una retta quasi
-tangente a un arco lo incrocia in due radici a pochi centesimi (D101). Un
-contatto mette una fermata su ognuno dei due edge, e le fermate di un
-contatto sono un nodo solo (union-find), come due fermate dello stesso edge
-entro `GRAPH_EPSILON`; mai i due estremi di uno stesso edge. Il nodo di un
-gruppo è un estremo d'ingresso, se ne contiene (il più piccolo, come
-`cluster_points`), altrimenti la media dei punti di contatto: tutti gli edge
-del gruppo ricevono la stessa tupla, e il grafo non rigiudica nulla.
-`tolerance` non allarga l'identità di nodo: su tutta la rete percola (D101).
+Every contact is decided once, per pair of edges, on the true curves: a
+crossing, an end within `GRAPH_EPSILON` of the other curve (a T, or two near
+ends), two curves passing within `GRAPH_EPSILON` without crossing (the missed
+tangency). The meetings of a same pair within `tolerance` along one of the
+two edges are one contact: a nearly tangent line to an arc crosses it at two
+roots a few hundredths apart. A contact puts a stop on each of the two edges,
+and the stops of a contact are a single node (union-find), like two stops of
+the same edge within `GRAPH_EPSILON`; never the two ends of the same edge.
+The node of a group is an entry end, if it contains one (the smallest, like
+`cluster_points`), otherwise the mean of the contact points: all the edges of
+the group receive the same tuple, and the graph does not rejudge anything.
+`tolerance` does not widen node identity: across the whole network it
+percolates.
 
-Rette, archi e cerchi si misurano in forma chiusa; le altre curve sulla
-loro discretizzazione a `_FINE`, e si tagliano esatte
-(`sub_segment`); una spline che non si taglia (periodica) resta intera.
+Lines, arcs and circles are measured in closed form; the other curves on
+their `_FINE` discretization, and are cut exactly (`sub_segment`); a spline
+that cannot be cut (periodic) stays whole.
 
-Puro: solo Edge e primitive, nessun formato.
+Pure: Edges and primitives only, no format.
 """
 
 from __future__ import annotations
@@ -53,41 +53,41 @@ from ..geometry.measure import FLOAT_NOISE, SAME_POINT, reach, within_diameter
 from .edge import node_point
 from .graph import cluster_points, connected_groups
 
-GRAPH_EPSILON = SAME_POINT   # mm — due nodi così vicini sono uno solo per il grafo (heal, ripiego D100)  # D268
+GRAPH_EPSILON = SAME_POINT   # mm — two nodes this close are one for the graph (heal, polygonize fallback)
 
 _EPS = _FLOAT_NOISE
-_MIN_PIECE = SAME_POINT   # mm — sotto, lo spezzone non viene creato  # D268
+_MIN_PIECE = SAME_POINT   # mm — below this, the piece is not created
 _EXACT = (LineSeg, CircleSeg)
 
 
 def _is_loop(seg) -> bool:
-    """La curva torna su se stessa: un cerchio, o un'altra curva coi capi
-    entro DEFAULT_TOLERANCE. Una retta o un arco mai: un tratto corto è un
-    tratto, con due capi da nodare (D56), non un anello (G6e)."""
+    """The curve returns on itself: a circle, or another curve with ends within
+    DEFAULT_TOLERANCE. A line or an arc never: a short stretch is a stretch, with
+    two ends to node, not a ring."""
     return is_full_circle(seg) or (not isinstance(seg, _EXACT) and segment_is_closed(seg))
-# mm — le altre curve si misurano su questa discretizzazione (il valore
-# della vecchia griglia dei nodi, D113, tenuto quando la griglia è uscita, D216)
-_FINE = SAME_POINT  # D268
+# mm — the other curves are measured on this discretization (the value of the
+# old node grid, kept when the grid went away)
+_FINE = SAME_POINT
 
 
 @dataclass
 class NodedEdges:
-    """La rete piana: i pezzi, per ognuno l'Edge da cui viene, e i nodi dove
-    due edge si attraversano senza che nessuno dei due finisca lì (D132)."""
+    """The planar network: the pieces, for each the Edge it comes from, and the
+    nodes where two edges cross with neither ending there."""
     pieces:    List[Edge]            = field(default_factory=list)
-    parent:    Dict[int, Edge]       = field(default_factory=dict)   # id(pezzo) -> Edge originale
+    parent:    Dict[int, Edge]       = field(default_factory=dict)   # id(piece) -> original Edge
     crossings: List[tuple]           = field(default_factory=list)
-    planar:    bool                  = True    # tagliata anche agli incroci (`cut_crossings`)
+    planar:    bool                  = True    # cut also at the crossings (`cut_crossings`)
     trimmed:   set                   = field(default_factory=set)    # id(Edge) accorciati fino a un incrocio
 
     def parent_of(self, piece: Edge) -> Edge:
         return self.parent[id(piece)]
 
     def whole(self, loop: list) -> list:
-        """`loop` [(pezzo, al contrario)] con l'Edge originale al posto dei suoi
-        pezzi, dove il giro li percorre tutti di fila: un lato tagliato da un
-        contatto torna il segmento del file, coefficienti compresi (D143); non
-        uno accorciato fino a un incrocio, che riporterebbe il capo che sporge."""
+        """`loop` [(piece, reversed)] with the original Edge in place of its pieces,
+        where the loop walks them all in a row: a side cut by a contact comes back as
+        the file's segment, coefficients included; not one shortened to a crossing,
+        which would bring back the overhanging end."""
         if not loop:
             return loop
         counts: Dict[int, int] = {}
@@ -115,10 +115,10 @@ class NodedEdges:
 # ---------------------------------------------------------------------------
 
 def renode(edges: List[Edge]) -> List[Edge]:
-    """Nodi di ogni Edge ricalcolati dal punto reale del segmento. Due capi
-    reali entro FLOAT_NOISE sono lo stesso punto (D183): un nodo solo, non due
-    copie a 1 ulp (G6e). Una curva chiusa ha un nodo solo, il suo inizio, come
-    in `Edge.of`, comunque l'Edge fosse scritto (D219)."""
+    """Nodes of every Edge recomputed from the segment's real point. Two real ends
+    within FLOAT_NOISE are the same point: a single node, not two copies 1 ulp
+    apart. A closed curve has a single node, its start, as in `Edge.of`, however
+    the Edge was written."""
     ends = [p for e in edges if not _is_loop(e.segment) for p in segment_endpoints(e.segment)]
     same = cluster_points(ends, FLOAT_NOISE)
     return [_loop_node(e) if _is_loop(e.segment) else _with_nodes(e, e.segment, same)
@@ -126,18 +126,16 @@ def renode(edges: List[Edge]) -> List[Edge]:
 
 
 def decide_nodes(edges: List[Edge], epsilon: float = GRAPH_EPSILON) -> Tuple[List[Edge], int]:
-    """
-    I nodi di ogni lettura, decisi una volta: dai punti reali dei segmenti
-    (`renode`), poi gli estremi entro `epsilon` l'uno dall'altro sono un nodo
-    solo, il più piccolo del gruppo (un estremo reale). Un gruppo più largo
-    di `epsilon` è una curva scritta a punti fitti: i suoi nodi restano
-    distinti, nessun ordine sceglie quali fondere (D186). Da qui in poi
-    l'uguaglianza fra nodi non dipende più da una cella di griglia (D187).
+    """The nodes of every reading, decided once: from the real points of the
+    segments (`renode`), then the ends within `epsilon` of each other are a single
+    node, the smallest of the group (a real end). A group wider than `epsilon` is
+    a curve written as dense points: its nodes stay distinct, no order chooses
+    which to merge. From here on the equality between nodes no longer depends on
+    a grid cell.
 
-    Un edge aperto i cui due capi diventano lo stesso nodo è più corto di
-    `epsilon`: è saldato (D56), cioè tolto, e i vicini si ritrovano sul nodo
-    comune. Ritorna (edge, quanti saldati così).
-    """
+    An open edge whose two ends become the same node is shorter than `epsilon`:
+    it is welded, that is removed, and the neighbours find themselves on the
+    common node. Returns (edges, how many welded this way)."""
     edges = renode(edges)
     ends = sorted({p for e in edges if not _is_loop(e.segment) for p in (e.start, e.end)})
     index = {p: k for k, p in enumerate(ends)}
@@ -162,20 +160,17 @@ def decide_nodes(edges: List[Edge], epsilon: float = GRAPH_EPSILON) -> Tuple[Lis
 
 def split_at_crossings(edges: List[Edge], tolerance: float,
                        cut_crossings: bool = True) -> NodedEdges:
-    """
-    Spezza ogni edge nei suoi contatti con gli altri (incroci, T, estremi
-    vicini, tangenze mancate entro GRAPH_EPSILON; gli incontri di una coppia
-    entro `tolerance` sono uno), decisi una volta per coppia sulle curve
-    vere; i pezzi che si toccano hanno la stessa tupla di nodo.
-    Un edge chiuso (cerchio) con meno di due contatti resta intero.
+    """Split every edge at its contacts with the others (crossings, T, near ends,
+    missed tangencies within GRAPH_EPSILON; the meetings of a pair within
+    `tolerance` are one), decided once per pair on the true curves; the touching
+    pieces have the same node tuple. A closed edge (circle) with fewer than two
+    contacts stays whole.
 
-    `cut_crossings`: un incrocio (due curve che si attraversano e proseguono)
-    taglia anche lui. Il contatto lo decide comunque questa funzione; cosa vuol
-    dire lo dice la lettura: per outlines() sì (D101), per faces() no — un
-    incrocio fra lati di contorno è un disegno rotto (D132), un'asse che
-    attraversa un foro non è un lato del foro (D189). Gli incroci sono in
-    `crossings` in tutti e due i casi.
-    """
+    `cut_crossings`: a crossing (two curves crossing and continuing) cuts too. The
+    contact is decided by this function anyway; what it means is told by the
+    reading: for outlines() yes, for faces() no — a crossing between contour sides
+    is a broken drawing, an axis crossing a hole is not a side of the hole. The
+    crossings are in `crossings` in both cases."""
     curves = [_Curve(e.segment) for e in edges]
     net = _Contacts(edges, curves, tolerance)
     for i, j in near_pairs([edge_geometry(e) for e in edges], tolerance):
@@ -196,12 +191,10 @@ def split_at_crossings(edges: List[Edge], tolerance: float,
 
 
 def interior_crossings(edges: List[Edge], tolerance: float) -> List[tuple]:
-    """
-    I punti dove due edge si attraversano senza che nessuno dei due finisca
-    lì: un taglio interno a tutti e due (D132). Un contatto a T (il capo di
-    uno sulla curva dell'altro) non conta. Fra lati di contorno è un disegno
-    con lati accavallati, che il grafo di heal non vede.
-    """
+    """The points where two edges cross with neither ending there: a cut interior to
+    both. A T contact (the end of one on the other's curve) does not count.
+    Between contour sides it is a drawing with overlapping sides, which the heal
+    graph does not see."""
     return split_at_crossings(edges, tolerance).crossings
 
 
@@ -213,14 +206,13 @@ def edge_geometry(edge: Edge):
     return LineString(pts)
 
 
-# ---------------------------------------------------------------------------
-# Una curva misurata in lunghezza d'arco
-# ---------------------------------------------------------------------------
+# --- A curve measured in arc length ---
 
 class _Curve:
-    """`seg` col parametro s = lunghezza d'arco dall'inizio, in [0, length]
-    (ciclico sui chiusi). Esatto su rette, archi e cerchi; su spline ed
-    ellissi lungo la discretizzazione fine."""
+    """`seg` with the parameter s = arc length from the start, in [0, length]
+    (cyclic on closed ones). Exact on lines, arcs and circles; on splines and
+    ellipses along the fine discretization.
+    """
 
     def __init__(self, seg):
         self.seg = seg
@@ -230,8 +222,8 @@ class _Curve:
 
     @property
     def length(self) -> float:
-        """Sulle altre curve la lunghezza della discretizzazione fine: si
-        calcola solo se serve (un edge senza contatti non la chiede)."""
+        """On the other curves the length of the fine discretization: computed only if
+        needed (an edge with no contacts does not ask for it)."""
         if self._length is None:
             seg = self.seg
             if isinstance(seg, LineSeg):
@@ -248,14 +240,14 @@ class _Curve:
 
     @property
     def fine(self) -> LineString:
-        """La curva discretizzata a _FINE, una volta sola."""
+        """The curve discretized at _FINE, once."""
         if self._fine is None:
             pts = [tuple(q[:2]) for q in self.seg.discretize(tolerance=_FINE)]
             self._fine = LineString(pts) if len(pts) > 1 else LineString([pts[0], pts[0]])
         return self._fine
 
     def locate(self, pt) -> Tuple[float, float]:
-        """(s del punto della curva più vicino a `pt`, distanza)."""
+        """(s of the curve point nearest `pt`, distance)."""
         seg = self.seg
         if isinstance(seg, LineSeg):
             if self.length < _EPS:
@@ -286,8 +278,8 @@ class _Curve:
         return self.fine.interpolate(s % self.length if self.closed else s).coords[0]
 
     def piece(self, s0: float, s1: float):
-        """Il tratto da s0 a s1 (s0 < s1; su un chiuso s1 può superare
-        length), stessa primitiva; None se non si taglia esatto."""
+        """The stretch from s0 to s1 (s0 < s1; on a closed one s1 may exceed length),
+        same primitive; None if it cannot be cut exactly."""
         seg = self.seg
         if isinstance(seg, LineSeg):
             return LineSeg(start=seg.start if s0 == 0.0 else self.at(s0),
@@ -307,10 +299,10 @@ class _Curve:
 # ---------------------------------------------------------------------------
 
 def near_pairs(geoms: list, tolerance: float) -> List[Tuple[int, int]]:
-    """Le coppie (i < j), in ordine, delle geometrie (`edge_geometry`) entro
-    `tolerance` + 2·DEFAULT_TOLERANCE: le discretizzazioni sbagliano fino a
-    DEFAULT_TOLERANCE per curva, e la fascia le copre. È solo il filtro: il
-    contatto o la distanza vera li decide il chiamante sulle curve."""
+    """The pairs (i < j), in order, of the geometries (`edge_geometry`) within
+    `tolerance` + 2·DEFAULT_TOLERANCE: the discretizations are wrong by up to
+    DEFAULT_TOLERANCE per curve, and the band covers them. It is only the filter:
+    the contact or the true distance is decided by the caller on the curves."""
     geoms = np.array(geoms, dtype=object)
     if len(geoms) < 2:
         return []
@@ -320,37 +312,35 @@ def near_pairs(geoms: list, tolerance: float) -> List[Tuple[int, int]]:
 
 
 class _Contacts:
-    """Le fermate dei contatti su ogni edge e i nodi che formano (union-find).
-    Una fermata è (edge, s, punto, tipo): "end" un estremo dell'edge, "x" un
-    incrocio, "t" un estremo d'altri sull'edge, "g" una tangenza mancata."""
+    """The contact stops on every edge and the nodes they form (union-find). A stop is
+    (edge, s, point, kind): "end" an end of the edge, "x" a crossing, "t" an end of
+    another on the edge, "g" a missed tangency."""
 
     def __init__(self, edges: List[Edge], curves: List[_Curve], tolerance: float):
         self.edges, self.curves, self.tol = edges, curves, tolerance
-        # un contatto (incrocio, T, due estremi, tangenza mancata) è entro
-        # `node`, e due fermate entro `node` sono un nodo solo: la soglia del
-        # grafo. `tolerance` fonde solo gli incontri di una stessa coppia
-        # (D101): su tutta la rete percola (D101, tentativo scartato)
+        # a contact (crossing, T, two ends, missed tangency) is within `node`, and two
+        # stops within `node` are a single node: the graph's threshold. `tolerance`
+        # merges only the meetings of a same pair: across the whole network it percolates
         self.node = min(tolerance, GRAPH_EPSILON)
         self.stops: List[tuple] = []
         self.up: List[int] = []
         self.on_edge: Dict[int, List[int]] = defaultdict(list)
         self.ends: Dict[int, Tuple[int, int]] = {}
-        self.anchor: Dict[int, int] = {}   # fermata interna -> prima fermata del suo gruppo sull'edge
-        self.trim_at: Dict[int, List[float]] = defaultdict(list)   # fermata di un capo -> s degli incroci del suo contatto
-        self.absorbed: set = set()         # fermate interne fuse con un estremo dell'edge
-        self.sides: Dict[int, Dict[int, int]] = {}   # radice -> {edge: estremi nel nodo, 1 inizio 2 fine}
-        self.group_pts: Dict[int, list] = {}          # radice -> punti del gruppo (diametro, D268)
+        self.anchor: Dict[int, int] = {}   # interior stop -> first stop of its group on the edge
+        self.trim_at: Dict[int, List[float]] = defaultdict(list)   # stop at an end -> s of the crossings of its contact
+        self.absorbed: set = set()         # interior stops merged with an end of the edge
+        self.sides: Dict[int, Dict[int, int]] = {}   # root -> {edge: ends in the node, 1 start 2 end}
+        self.group_pts: Dict[int, list] = {}          # root -> points of the group (diameter)
         by_node: Dict[tuple, int] = {}
         for i, edge in enumerate(edges):
             if self._is_open(i):
-                # la s della fine si legge quando serve (curve.length)
+                # the s of the end is read when needed (curve.length)
                 pair = (self._stop(i, 0.0, edge.start, "end"), self._stop(i, None, edge.end, "end"))
                 self.ends[i] = pair
                 self.sides[pair[0]], self.sides[pair[1]] = {i: 1}, {i: 2}
                 for k, node in zip(pair, (edge.start, edge.end)):
                     self._union(k, by_node.setdefault(node, k))
-        # un capo che coincide col capo di un'altra curva è un vertice del
-        # disegno: non si accorcia mai
+        # an end coinciding with another curve's end is a vertex of the drawing: it is never shortened
         count = Counter(node for i in self.ends for node in (edges[i].start, edges[i].end))
         self.shared = {k for i, pair in self.ends.items()
                        for k, node in zip(pair, (edges[i].start, edges[i].end)) if count[node] > 1}
@@ -377,9 +367,9 @@ class _Contacts:
         return root
 
     def _union(self, a: int, b: int) -> bool:
-        """Un nodo solo per `a` e `b`, se non mette i due estremi di uno
-        stesso edge nello stesso nodo (un lato corto non sparisce) e se il
-        gruppo resta entro `node` di diametro: mai a catena (D186, D268)."""
+        """A single node for `a` and `b`, if it does not put the two ends of the same
+        edge in the same node (a short side does not vanish) and if the group stays
+        within `node` in diameter: never chained."""
         ra, rb = self._find(a), self._find(b)
         if ra == rb:
             return True
@@ -406,14 +396,14 @@ class _Contacts:
         return True
 
     def meet(self, i: int, j: int) -> None:
-        """Decide i contatti fra gli edge `i` e `j`, una volta sola."""
+        """Decide the contacts between edges `i` and `j`, once."""
         ci, cj = self.curves[i], self.curves[j]
-        contacts = []   # [(lato su i, lato su j, tipo)]
+        contacts = []   # [(side on i, side on j, kind)]
         for p in _meetings(ci, cj):
             contacts.append(((i, ci.locate(p)[0], p, None),
                              (j, cj.locate(p)[0], p, None), "x"))
-        # un estremo dell'uno entro `node` dalla curva dell'altra: il T, o
-        # due estremi (se il punto più vicino è un estremo anche dell'altra)
+        # an end of one within `node` of the other's curve: the T, or two ends (if the
+        # nearest point is an end of the other too)
         for k, other in ((i, j), (j, i)):
             if other not in self.ends:
                 continue
@@ -427,21 +417,19 @@ class _Contacts:
                 theirs = (other, 0.0 if end == self.ends[other][0] else self.curves[other].length, pt, end)
                 contacts.append((mine, theirs, "t") if k == i else (theirs, mine, "t"))
         if not contacts:
-            # la tangenza mancata di poco è un contatto come quella
-            # incrociata di poco: nel punto medio fra le due curve
+            # a slightly missed tangency is a contact like a slightly crossed one: at the
+            # midpoint between the two curves
             near = _grazing(ci, cj)
             if near is not None and math.dist(*near) <= self.node:
                 mid = ((near[0][0] + near[1][0]) / 2, (near[0][1] + near[1][1]) / 2)
                 contacts.append(((i, ci.locate(mid)[0], mid, None),
                                  (j, cj.locate(mid)[0], mid, None), "g"))
         for group in self._same_contact(contacts):
-            # un incrocio è il punto che sta su tutte e due le curve: il
-            # contatto si taglia lì, non nella media coi piedi dei capi vicini;
-            # un capo nel contatto resta il nodo e la sua curva si accorcia
-            # lungo se stessa fino all'incrocio
+            # a crossing is the point lying on both curves: the contact is cut there, not at
+            # the mean with the feet of the near ends; an end in the contact stays the node
+            # and its curve is shortened along itself up to the crossing
             kind = "x" if any(c[2] == "x" for c in group) else group[0][2]
-            # solo un incrocio che sta su tutte e due le curve: `intersections`
-            # dà anche un punto appena oltre un capo
+            # only a crossing lying on both curves: `intersections` also gives a point just beyond an end
             crossing = [c for c in group if c[2] == "x" and all(
                 self.curves[c[m][0]].locate(c[m][2])[1] <= _MIN_PIECE for m in (0, 1))]
             stops, trims = [], []
@@ -451,27 +439,24 @@ class _Contacts:
                     stops.append(self._place([c[n] for c in crossing or group], kind))
                     continue
                 stops.append(end)
-                # si accorcia solo un capo che sporge: uno che sta già
-                # sull'altra curva è lui il punto d'incontro (un raccordo
-                # tangente ha l'incrocio instabile, il capo no)
+                # only an overhanging end is shortened: one already on the other curve is itself
+                # the meeting point (a tangent fillet has an unstable crossing, the end does not)
                 edge = group[0][n][0]
                 other = self.curves[group[0][1 - n][0]]
                 end_pt = segment_endpoints(self.edges[edge].segment)[0 if end == self.ends[edge][0] else 1]
                 if crossing and end not in self.shared and other.locate(end_pt)[1] > FLOAT_NOISE:
                     trims.append((end, sum(c[n][1] for c in crossing) / len(crossing)))
             if not self._union(*stops):
-                # un contatto che chiuderebbe un lato su se stesso: le sue
-                # fermate nuove non tagliano nulla
+                # a contact that would close a side on itself: its new stops cut nothing
                 self._drop(stops)
                 continue
             for end, s in trims:
                 self.trim_at[end].append(s)
 
     def _same_contact(self, contacts: list) -> List[list]:
-        """I contatti di una coppia entro tolerance lungo uno dei due edge sono
-        uno solo (D101: le due radici di una retta quasi tangente a un arco),
-        mai però due estremi dello stesso edge: un lato corto non sparisce.
-        I più vicini si uniscono per primi."""
+        """The contacts of a pair within tolerance along one of the two edges are a
+        single one (the two roots of a line nearly tangent to an arc), never however
+        two ends of the same edge: a short side does not vanish. The nearest merge first."""
         n = len(contacts)
         if n < 2:
             return [contacts] if contacts else []
@@ -499,8 +484,8 @@ class _Contacts:
             ra, rb = find(a), find(b)
             if ra == rb:
                 continue
-            # due contatti con capi diversi sono due punti del file: un capo
-            # non si fonde con un altro capo perché la coppia si tocca due volte
+            # two contacts with different ends are two points of the file: an end does not
+            # merge with another end because the pair touches twice
             if ends[ra] and ends[rb] and not ends[ra] & ends[rb]:
                 continue
             both = ends[ra] | ends[rb]
@@ -518,8 +503,8 @@ class _Contacts:
                 self.on_edge[self.stops[k][0]].remove(k)
 
     def _place(self, sides: list, kind: str) -> int:
-        """La fermata di un contatto su un edge: il suo estremo, se il
-        contatto lo tocca, altrimenti una nuova al centro dei suoi lati."""
+        """The stop of a contact on an edge: its end, if the contact touches it,
+        otherwise a new one at the centre of its sides."""
         for _, _, _, end in sides:
             if end is not None:
                 return end
@@ -532,10 +517,9 @@ class _Contacts:
         return self._stop(k, mean % curve.length if curve.closed else mean, pt, kind)
 
     def merge_along_edges(self) -> None:
-        """Due fermate dello stesso edge entro `node` lungo l'edge sono un
-        nodo solo, e una entro `node` da un estremo dell'edge è quell'estremo:
-        la stessa soglia con cui il grafo fonde due estremi vicini. Il gruppo
-        si misura dalla sua prima fermata."""
+        """Two stops of the same edge within `node` along the edge are a single node, and
+        one within `node` of an end of the edge is that end: the same threshold with
+        which the graph merges two near ends. The group is measured from its first stop."""
         r = self.node
         for i, ks in self.on_edge.items():
             curve = self.curves[i]
@@ -544,8 +528,8 @@ class _Contacts:
             for k in ks:
                 s = self.stops[k][1]
                 side = 0 if s <= curve.length - s else 1
-                # entro `node` anche sul piano: il punto del contatto può stare
-                # di lato alla curva, e allora è più lontano dal capo che lungo l'edge
+                # within `node` in the plane too: the contact point may be beside the curve, and
+                # then it is farther from the end than along the edge
                 if i in self.ends and min(s, curve.length - s) <= r and \
                         math.dist(self.stops[k][2], segment_endpoints(self.edges[i].segment)[side]) <= r and \
                         self._union(k, self.ends[i][side]):
@@ -566,10 +550,9 @@ class _Contacts:
                             self.anchor[k] = self.anchor[head]
 
     def nodes(self) -> Dict[int, tuple]:
-        """{radice: tupla del nodo}: l'estremo d'ingresso del gruppo, se ne ha
-        uno solo; la media dei suoi estremi distinti, se ne ha più d'uno (fra
-        due capi nessuno vale più dell'altro, G6e); altrimenti la media dei
-        punti di contatto."""
+        """{root: node tuple}: the entry end of the group, if it has a single one; the
+        mean of its distinct ends, if it has more (between two ends neither is better
+        than the other); otherwise the mean of the contact points."""
         ends: Dict[int, list] = defaultdict(list)
         points: Dict[int, list] = defaultdict(list)
         for k, (i, _, pt, kind) in enumerate(self.stops):
@@ -587,10 +570,9 @@ class _Contacts:
         return out
 
     def _span_to_crossings(self, i: int) -> Tuple[float, float]:
-        """(s0, s1) dell'edge `i` accorciato lungo se stesso: un capo che
-        sporge oltre un incrocio del suo contatto finisce sull'incrocio più
-        vicino a lui, il punto che sta su tutte e due le curve; l'avanzo oltre
-        non è un lato. Senza incroci, (0, length)."""
+        """(s0, s1) of the edge `i` shortened along itself: an end overhanging a crossing
+        of its contact ends at the crossing nearest to it, the point lying on both
+        curves; the remainder beyond is not a side. With no crossings, (0, length)."""
         curve = self.curves[i]
         near = {0: list(self.trim_at.get(self.ends[i][0], ())), 1: list(self.trim_at.get(self.ends[i][1], ()))}
         s0 = min(near[0]) if near[0] else 0.0
@@ -598,8 +580,8 @@ class _Contacts:
         return (s0, s1) if s1 - s0 > _MIN_PIECE else (0.0, curve.length)
 
     def crossing_roots(self) -> set:
-        """I nodi senza estremi con almeno un incrocio fra due edge diversi:
-        due curve che si attraversano e proseguono tutte e due."""
+        """The nodes with no ends and at least one crossing between different edges: two
+        curves that cross and both continue."""
         groups: Dict[int, list] = defaultdict(list)
         for k, stop in enumerate(self.stops):
             groups[self._find(k)].append(stop)
@@ -612,8 +594,7 @@ class _Contacts:
         return [nodes[root] for root in self.crossing_roots()]
 
     def pieces(self, i: int, nodes: Dict[int, tuple], skip: frozenset = frozenset()) -> List[Edge]:
-        """L'edge `i` tagliato ai suoi gruppi di fermate, coi nodi condivisi;
-        non ai nodi di `skip`."""
+        """The edge `i` cut at its groups of stops, with the shared nodes; not at the nodes of `skip`."""
         edge, curve = self.edges[i], self.curves[i]
         groups: Dict[int, list] = {}
         for k in self.on_edge.get(i, []):
@@ -621,14 +602,14 @@ class _Contacts:
                 groups.setdefault(self.anchor[k], []).append(k)
         cuts = []
         for ks in groups.values():
-            # il taglio di un gruppo con un incrocio sta sull'incrocio
+            # the cut of a group with a crossing lies on the crossing
             s = [self.stops[k][1] for k in ks if self.stops[k][3] == "x"] or [self.stops[k][1] for k in ks]
             if curve.closed and max(s) - min(s) > curve.length / 2:   # gruppo a cavallo dell'inizio
                 s = [x if x >= curve.length / 2 else x + curve.length for x in s]
             cuts.append(((sum(s) / len(s)) % curve.length if curve.closed else sum(s) / len(s),
                          nodes[self._find(ks[0])]))
         cuts.sort()
-        if i not in self.ends and not curve.closed:   # un capo solo: nessun tratto da tagliare
+        if i not in self.ends and not curve.closed:   # a single end: no stretch to cut
             return [edge]
         if i in self.ends:
             start, end = (nodes[self._find(k)] for k in self.ends[i])
@@ -639,7 +620,7 @@ class _Contacts:
                     bounds.append((s, node))
             bounds.append((s1, end))
             if (s0, s1) != (0.0, curve.length):
-                # accorciato fino all'incrocio: il pezzo è un tratto nuovo
+                # shortened up to the crossing: the piece is a new stretch
                 segs = [curve.piece(a, b) for (a, _), (b, _) in zip(bounds, bounds[1:])]
                 if all(seg is not None for seg in segs):
                     return [replace(edge, segment=seg, start=n0, end=n1)
@@ -657,8 +638,7 @@ class _Contacts:
             if len(bounds) < 2:
                 return [edge]
             if not curve.exact:
-                # una spline o un'ellisse chiusa si taglia anche all'inizio:
-                # un tratto non scavalca la sua cucitura
+                # a closed spline or ellipse is cut at the start too: a stretch does not cross its seam
                 seam = (0.0, edge.start)
                 if bounds[0][0] > _MIN_PIECE and curve.length - bounds[-1][0] > _MIN_PIECE:
                     bounds.insert(0, seam)
@@ -678,9 +658,9 @@ class _Contacts:
 
 
 def _meetings(a: _Curve, b: _Curve) -> list:
-    """Dove `a` e `b` si incrociano o si toccano: in forma chiusa fra rette,
-    archi e cerchi, sulle discretizzazioni fini se c'è una spline o
-    un'ellisse. Un tratto in comune non è un punto: non conta."""
+    """Where `a` and `b` cross or touch: in closed form between lines, arcs and
+    circles, on the fine discretizations if there is a spline or an ellipse. A
+    shared stretch is not a point: it does not count."""
     if a.exact and b.exact:
         return intersections(a.seg, b.seg)
     hit = a.fine.intersection(b.fine)
@@ -688,9 +668,9 @@ def _meetings(a: _Curve, b: _Curve) -> list:
 
 
 def _grazing(a: _Curve, b: _Curve) -> Optional[tuple]:
-    """(punto di `a`, punto di `b`) più vicini fra due curve che non si
-    incontrano, presi a metà di tutte e due; None se il più vicino è un
-    estremo (lo giudica il T) o fra due rette (sempre un estremo)."""
+    """(point of `a`, point of `b`) nearest between two curves that do not meet,
+    taken midway between both; None if the nearest is an end (judged by the T) or
+    between two lines (always an end)."""
     sa, sb = a.seg, b.seg
     if isinstance(sa, LineSeg) and isinstance(sb, LineSeg):
         return None
@@ -713,7 +693,7 @@ def _inside(curve: _Curve, pt) -> bool:
 
 
 def _line_circle_near(line: LineSeg, arc) -> Optional[tuple]:
-    """(piede sulla retta, punto dell'arco) della perpendicolare dal centro."""
+    """(foot on the line, arc point) of the perpendicular from the centre."""
     dx, dy = line.end[0] - line.start[0], line.end[1] - line.start[1]
     l2 = dx * dx + dy * dy
     if l2 < _EPS * _EPS:
@@ -730,13 +710,13 @@ def _line_circle_near(line: LineSeg, arc) -> Optional[tuple]:
 
 
 def _circle_circle_near(a: _Curve, b: _Curve) -> Optional[tuple]:
-    """I due punti più vicini fra due archi, sulla retta dei centri."""
+    """The two nearest points between two arcs, on the line of the centres."""
     ca, cb = a.seg, b.seg
     d = math.dist(ca.center, cb.center)
     if d < _EPS:
         return None
     best = None
-    for sign in (1.0, -1.0):   # i due punti di b sulla retta dei centri
+    for sign in (1.0, -1.0):   # the two points of b on the line of the centres
         q = (cb.center[0] + sign * (ca.center[0] - cb.center[0]) * cb.radius / d,
              cb.center[1] + sign * (ca.center[1] - cb.center[1]) * cb.radius / d)
         p = _radial(ca.center, ca.radius, q)
@@ -748,7 +728,7 @@ def _circle_circle_near(a: _Curve, b: _Curve) -> Optional[tuple]:
 
 
 def _radial(center, radius, pt):
-    """Il punto del cerchio più vicino a `pt`; None se `pt` è il centro."""
+    """The circle point nearest `pt`; None if `pt` is the centre."""
     d = math.dist(center, pt)
     if d < _EPS:
         return None
@@ -756,7 +736,7 @@ def _radial(center, radius, pt):
 
 
 def _inside_arc(seg, pt) -> bool:
-    """`pt` (sul cerchio) cade dentro l'arco, lontano dagli estremi."""
+    """`pt` (on the circle) falls inside the arc, away from the ends."""
     if is_full_circle(seg):
         return True
     s = angle_from_start(seg.center, seg.start_angle, seg.ccw, pt)
@@ -775,6 +755,6 @@ def _with_nodes(edge, seg, same=None):
 
 
 def _loop_node(edge):
-    """L'edge di una curva chiusa col nodo unico del suo inizio."""
+    """The Edge of a closed curve with the single node of its start."""
     node = node_point(segment_endpoints(edge.segment)[0])
     return edge if edge.start == edge.end == node else replace(edge, start=node, end=node)

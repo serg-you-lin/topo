@@ -1,21 +1,21 @@
 """
 core/topology/outer_face.py
 ---------------------------
-Contorno esterno di una rete piana (noding.py) come bordo della sua faccia
-esterna: una definizione esatta, deterministica, senza scelte greedy.
+Outer contour of a planar network (noding.py) as the border of its outer
+face: an exact, deterministic definition, with no greedy choices.
 
-Per ogni componente connesso: si parte dal punto più a sinistra della
-geometria — sul bordo esterno per forza, anche a metà di un edge — e si
-percorre l'edge verso il basso, così l'esterno sta a destra; a ogni nodo si
-prende l'edge che gira meno in senso antiorario rispetto a quello da cui si
-arriva. Un edge percorso andata e ritorno è una sporgenza (asse, segno, quota
-attaccata): non è contorno. Il contorno della rete è la faccia esterna di
-area massima fra i componenti (e i loop chiusi da soli, come un cerchio).
-Se il giro racchiude meno dell'unione delle facce chiuse del componente
-(nodi che non coincidono al millesimo, archi tangenti a linee), il contorno
-è il bordo di quell'unione (D100).
+For each connected component: start from the leftmost point of the geometry —
+necessarily on the outer border, even in the middle of an edge — and walk the
+edge downwards, so that the outside is on the right; at every node take the
+edge that turns least counter-clockwise with respect to the one it arrived
+from. An edge walked back and forth is a protrusion (axis, mark, attached
+dimension): it is not contour. The network's contour is the outer face of
+maximum area among the components (and the loops closed by themselves, like a
+circle). If the loop encloses less than the union of the component's closed
+faces (nodes not coinciding to the thousandth, arcs tangent to lines), the
+contour is the border of that union.
 
-Puro: solo Edge, grafo e primitive, nessun formato.
+Pure: Edges, graph and primitives only, no format.
 """
 
 from __future__ import annotations
@@ -40,20 +40,20 @@ from .rim import face_segments, off_rim
 from ..primitives.mathseg import DEFAULT_TOLERANCE
 
 
-UNION_GRID = SAME_POINT        # mm — griglia dell'unione delle facce (D100): sotto quella dei nodi, decide solo l'aritmetica  # D268
+UNION_GRID = SAME_POINT        # mm — grid of the union of faces: below that of the nodes, only the arithmetic decides
 
 
 @dataclass
 class OuterFace:
-    """Il contorno esterno trovato, e cosa il percorso ha scartato."""
-    loop:      list                         # [(Edge, reversed)] come dal LoopFinder
-    segments:  list                         # primitive orientate del contorno
+    """The outer contour found, and what the walk discarded."""
+    loop:      list                         # [(Edge, reversed)] as from the LoopFinder
+    segments:  list                         # oriented primitives of the contour
     styles:    list
     spurs:     List[Edge] = field(default_factory=list)   # percorsi andata e ritorno
-    # i tratti fuori dal bordo degli edge del giro che ci corrono sopra solo
-    # in parte (ripiego D100): Edge nuovi, il resto esatto di quegli edge (G6b)
+    # the stretches off the border of the loop's edges that run over it only in
+    # part (fallback): new Edges, the rest exact from those edges
     rest:      List[Edge] = field(default_factory=list)
-    # il poligono della faccia, per le domande fra più curve (curve_polygon, D166)
+    # the face polygon, for questions between several curves (curve_polygon)
     _polygon:  Optional[Polygon] = field(default=None, repr=False, compare=False)
 
     @property
@@ -66,12 +66,10 @@ class OuterFace:
 # ---------------------------------------------------------------------------
 
 def outer_face(edges: List[Edge], epsilon: float = 0.0) -> Optional[OuterFace]:
-    """
-    Contorno esterno della rete `edges` (già piana: split_at_crossings). I
-    nodi sono le tuple dei pezzi, decisi dal noding sulle curve vere (D194);
-    `epsilon` è la soglia degli sliver e la fascia del bordo dell'unione
-    (D100). None se non c'è nessun giro chiuso.
-    """
+    """Outer contour of the network `edges` (already planar: split_at_crossings). The
+    nodes are the pieces' tuples, decided by the noding on the true curves;
+    `epsilon` is the threshold of slivers and the band of the union's border.
+    None if there is no closed loop."""
     graph = build_node_graph(edges, sliver=epsilon)
     best, spurs = None, []
     for component in graph.connected_components():
@@ -84,9 +82,9 @@ def outer_face(edges: List[Edge], epsilon: float = 0.0) -> Optional[OuterFace]:
     alone = _largest_loop(graph.degenerate_loops, epsilon)
     if alone is not None and (best is None or _area(alone) > _area(best)):
         best = alone
-    # D100: la faccia esterna è il bordo dell'unione delle facce chiuse di
-    # tutta la rete, anche se il grafo la vede in più componenti scollegati;
-    # se il giro ne racchiude meno, vale l'unione
+    # the outer face is the border of the union of the closed faces of the whole
+    # network, even if the graph sees it in several disconnected components; if the
+    # loop encloses less, the union holds
     united = _faces_union_loop(edges, epsilon)
     if united is not None and (best is None or _area(united) > _area(best) * (1 + 1e-6)):
         best = united
@@ -94,8 +92,8 @@ def outer_face(edges: List[Edge], epsilon: float = 0.0) -> Optional[OuterFace]:
         return None
     loop, segments, styles, polygon = best[:4]
     rest = best[4] if len(best) > 4 else []
-    # il percorso conta due volte anche un edge che il giro scelto (D100) usa:
-    # chi sta nel contorno è contorno, non sporgenza
+    # the walk counts twice also an edge that the chosen loop uses: whoever is in
+    # the contour is contour, not a protrusion
     in_loop = {id(e) for e, _ in loop}
     spurs = [e for e in spurs if id(e) not in in_loop]
     return OuterFace(loop=loop, segments=segments, styles=styles, spurs=spurs, rest=rest,
@@ -103,10 +101,10 @@ def outer_face(edges: List[Edge], epsilon: float = 0.0) -> Optional[OuterFace]:
 
 
 def outer_face_passes(graph: Graph, component, n_edges: int) -> dict:
-    """{id(edge): quante volte il bordo della faccia esterna di `component`
-    lo percorre}. 1 = l'edge confina con l'esterno da un lato solo: è bordo;
-    2 = sporgenza o ponte, esterno da tutti e due i lati; assente = l'edge
-    ha una faccia chiusa da tutti e due i lati (una corda)."""
+    """{id(edge): how many times the border of the outer face of `component` walks
+    it}. 1 = the edge borders the outside on one side only: it is border; 2 =
+    protrusion or bridge, outside on both sides; absent = the edge has a face
+    closed on both sides (a chord)."""
     count: dict = {}
     for edge, _, _ in _outer_face_walk(graph, component, n_edges):
         count[id(edge)] = count.get(id(edge), 0) + 1
@@ -118,7 +116,7 @@ def outer_face_passes(graph: Graph, component, n_edges: int) -> dict:
 # ---------------------------------------------------------------------------
 
 def _outer_face_walk(graph: Graph, component, n_edges: int) -> list:
-    """[(edge, dal nodo, al nodo)] lungo il bordo della faccia esterna."""
+    """[(edge, from node, to node)] along the border of the outer face."""
     step = _stepper(graph)
     first = _first_step(graph, component)
     walk = [first]
@@ -131,13 +129,11 @@ def _outer_face_walk(graph: Graph, component, n_edges: int) -> list:
 
 
 def face_walks(graph: Graph) -> List[tuple]:
-    """
-    Ogni faccia della rete piana `graph`, come (giro, esterna): il giro è
-    [(edge, dal nodo, al nodo)], ogni lato di ogni edge percorso una volta,
-    con la stessa svolta del bordo esterno (`_stepper`); `esterna` dice se è
-    la faccia esterna di un componente (quella che parte dal suo punto più a
-    sinistra, `_first_step`). Nessuna scelta dipende dall'ordine degli edge (D189).
-    """
+    """Every face of the planar network `graph`, as (loop, outer): the loop is
+    [(edge, from node, to node)], every side of every edge walked once, with the
+    same turn as the outer border (`_stepper`); `outer` says whether it is the
+    outer face of a component (the one starting from its leftmost point,
+    `_first_step`). No choice depends on the order of the edges."""
     step = _stepper(graph)
     outer = {(id(e), frm) for e, frm, _ in (_first_step(graph, c) for c in graph.connected_components())}
     used, walks = set(), []
@@ -157,10 +153,11 @@ def face_walks(graph: Graph) -> List[tuple]:
 
 
 def face_loops(edges: List[Edge], epsilon: float = GRAPH_EPSILON) -> List[list]:
-    """I giri delle facce limitate della rete piana `edges` (split_at_crossings;
-    i nodi sono le tuple dei pezzi, D194; `epsilon` la soglia degli sliver), divisi in giri semplici, ognuno una volta,
-    come [(edge, percorso al contrario)] in senso antiorario; più i pezzi
-    chiusi da soli (un cerchio). Quello che heal() chiama contorni (D189)."""
+    """The loops of the bounded faces of the planar network `edges`
+    (split_at_crossings; nodes are the pieces' tuples; `epsilon` the sliver
+    threshold), divided into simple loops, each once, as [(edge, path_reversed)]
+    counter-clockwise; plus the pieces closed by themselves (a circle). What
+    heal() calls contours."""
     graph = build_node_graph(edges, sliver=epsilon)
     loops, seen = [], set()
     for walk, is_outer in face_walks(graph):
@@ -172,7 +169,7 @@ def face_loops(edges: List[Edge], epsilon: float = GRAPH_EPSILON) -> List[list]:
                 continue
             seen.add(key)
             loop = [(e, graph.canonical(e.start) != frm) for e, frm, _ in ring]
-            # verso antiorario dall'area con segno sulle primitive (D166)
+            # counter-clockwise direction from the signed area on the primitives
             if ring_moments(segments_from_loop(loop)).area < 0:
                 loop = [(e, not rev) for e, rev in reversed(loop)]
             loops.append(loop)
@@ -180,10 +177,9 @@ def face_loops(edges: List[Edge], epsilon: float = GRAPH_EPSILON) -> List[list]:
 
 
 def simple_rings(walk: list) -> List[list]:
-    """I giri semplici di una faccia: dove il giro ripassa da un nodo si
-    stacca un giro (due asole che si toccano in un punto sono due giri). Un
-    andata e ritorno sullo stesso edge non è un giro. Ogni giro come
-    [(edge, dal nodo, al nodo)]."""
+    """The simple loops of a face: where the loop passes again through a node a loop
+    is detached (two loops touching at a point are two loops). A back and forth on
+    the same edge is not a loop. Each loop as [(edge, from node, to node)]."""
     rings, stack, at = [], [], {}
     for item in walk:
         node = item[1]
@@ -202,10 +198,9 @@ def simple_rings(walk: list) -> List[list]:
 
 
 def _stepper(graph: Graph):
-    """Il passo del percorso: arrivati in un nodo per un edge, si prende l'edge
-    che gira meno in senso antiorario rispetto a quello da cui si arriva;
-    tornare indietro solo se non c'è altro. Una funzione sola per la faccia
-    esterna e per tutte le facce."""
+    """The step of the walk: arriving at a node by an edge, take the edge that turns
+    least counter-clockwise with respect to the one arrived from; go back only if
+    there is no other. One function for the outer face and for all the faces."""
     angles: dict = {}
 
     def angle(edge, node):
@@ -220,7 +215,7 @@ def _stepper(graph: Graph):
         for nxt, other in graph[node]:
             turn = (angle(nxt, node) - back_angle) % (2 * math.pi)
             if nxt is edge or turn < 1e-9:
-                turn = 2 * math.pi       # tornare indietro: solo se non c'è altro
+                turn = 2 * math.pi       # go back: only if there is no other
             if best_turn is None or turn < best_turn:
                 best, best_turn = (nxt, node, other), turn
         return best
@@ -229,10 +224,9 @@ def _stepper(graph: Graph):
 
 
 def _first_step(graph: Graph, component):
-    """L'edge che contiene il punto più a sinistra del componente, percorso
-    verso il basso; se quel punto è un nodo, il primo edge in senso
-    antiorario a partire da ovest."""
-    best = None   # (punto più a sinistra, edge, suoi punti, indice)
+    """The edge containing the component's leftmost point, walked downwards; if that
+    point is a node, the first edge counter-clockwise starting from west."""
+    best = None   # (leftmost point, edge, its points, index)
     for node in component:
         for edge, _ in graph[node]:
             pts = edge.segment.discretize(tolerance=DEFAULT_TOLERANCE)
@@ -251,13 +245,12 @@ def _first_step(graph: Graph, component):
 
 
 def _leaving_angle(edge: Edge, node, graph: Graph) -> float:
-    """Direzione con cui `edge` lascia `node`, letta dove la curva si è
-    scostata di SAME_POINT dalla sua tangente (o a metà edge, una linea):
-    un raccordo tangente a una retta parte come lei e se ne distingue solo
-    lì (D279). Si misura dal nodo, non dal primo punto della curva: un
-    contatto entro tolerance (D180) mette il nodo fino a tanto dalla curva,
-    e due pezzi paralleli a quella distanza lo lasciano con direzioni
-    diverse."""
+    """Direction in which `edge` leaves `node`, read where the curve has deviated by
+    SAME_POINT from its tangent (or at mid-edge, a line): a fillet tangent to a
+    line starts like it and differs only there. It is measured from the node, not
+    from the curve's first point: a contact within tolerance puts the node that
+    far from the curve, and two pieces parallel at that distance leave it with
+    different directions."""
     pts = edge.segment.discretize(tolerance=DEFAULT_TOLERANCE)
     backwards = graph.canonical(edge.start) != node
     if backwards:
@@ -286,14 +279,13 @@ def _leaving_angle(edge: Edge, node, graph: Graph) -> float:
 
 
 def _faces_union_loop(edges: List[Edge], epsilon: float):
-    """(loop, segments, styles, polygon) sul bordo dell'unione delle facce
-    chiuse della rete, coi contatti entro `epsilon` (D100, `_network`); None se la
-    rete non chiude nessuna faccia. Se gli edge del bordo non si chiudono in
-    un giro del grafo, il poligono è l'unione, il giro sono gli edge che ci
-    stanno sopra per intero, e i segmenti si leggono percorrendo l'anello
-    dell'unione (`rim.face_segments`, D106); un edge che ci corre sopra
-    solo in parte è del giro, e il suo resto (`rim.off_rim`) è il quinto
-    elemento."""
+    """(loop, segments, styles, polygon) on the border of the union of the closed
+    faces of the network, with the contacts within `epsilon` (`_network`); None if
+    the network closes no face. If the border edges do not close in a graph loop,
+    the polygon is the union, the loop is the edges lying wholly on it, and the
+    segments are read walking the union's ring (`rim.face_segments`); an edge
+    running over it only in part belongs to the loop, and its remainder
+    (`rim.off_rim`) is the fifth element."""
     faces = list(polygonize(_network(edges, epsilon)))
     if not faces:
         return None
@@ -317,18 +309,17 @@ def _faces_union_loop(edges: List[Edge], epsilon: float):
 
 
 def _network(edges: List[Edge], epsilon: float):
-    """La rete di `edges` come linee shapely, con gli estremi sui nodi del
-    grafo. I contatti li ha già decisi il noding, una volta sola sulle curve
-    (D180): qui nessun collegamento per distanza fra discretizzazioni."""
+    """The network of `edges` as shapely lines, with the ends on the graph's nodes.
+    The contacts are already decided by the noding, once on the curves: here no
+    connection by distance between discretizations."""
     graph = build_node_graph(edges, sliver=epsilon)
     return shapely.unary_union(_on_nodes(edges, graph), grid_size=UNION_GRID)
 
 
 def _on_nodes(edges: List[Edge], graph: Graph) -> list:
-    """Le geometrie di `edges` con gli estremi sui nodi del grafo: due estremi
-    entro `epsilon` si toccano per distanza, come nella camminata, non perché
-    cadono nella stessa cella di una griglia fissa agli assi (G6c). Un pezzo
-    chiuso da sé (cerchio) resta com'è."""
+    """The geometries of `edges` with the ends on the graph's nodes: two ends within
+    `epsilon` touch by distance, as in the walk, not because they fall in the
+    same cell of a grid fixed to the axes. A piece closed by itself (circle) stays as it is."""
     geometries = [edge_geometry(e) for e in edges]
     lines = [k for k, g in enumerate(geometries) if g.geom_type == "LineString"]
     coords, owner = shapely.get_coordinates([geometries[k] for k in lines], return_index=True)
@@ -343,7 +334,7 @@ def _on_nodes(edges: List[Edge], graph: Graph) -> list:
 
 
 def _largest_loop(edges: List[Edge], epsilon: float):
-    """(loop, segments, styles, polygon) del giro di area massima."""
+    """(loop, segments, styles, polygon) of the loop of maximum area."""
     best = None
     for loop in face_loops(edges, epsilon):
         geometry = loop_geometry(loop)
@@ -353,5 +344,5 @@ def _largest_loop(edges: List[Edge], epsilon: float):
 
 
 def _area(found) -> float:
-    """Area esatta del giro di un candidato (loop, segments, ...), sulle primitive (D166)."""
+    """Exact area of a candidate's loop (loop, segments, ...), on the primitives."""
     return ring_area(found[1])

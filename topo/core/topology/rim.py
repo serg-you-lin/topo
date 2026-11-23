@@ -1,14 +1,14 @@
 """
 topo/core/topology/rim.py
 --------------------------
-I segmenti di una faccia letti dal suo bordo: quando il poligono di una
-faccia è noto (l'unione delle facce di D100, un lobo di un giro che tocca se
-stesso) ma gli edge della rete non si chiudono in un giro che lo segua, si
-percorre l'anello del poligono e ogni suo tratto diventa l'edge su cui
-giace, tagliato fra i due capi (D106). L'ordine viene dall'anello, la forma
-dagli edge: archi restano archi, spline restano spline.
+The segments of a face read from its border: when a face's polygon is known
+(the union of faces, a lobe of a loop touching itself) but the network's
+edges do not close in a loop that follows it, the polygon's ring is walked and
+each of its stretches becomes the edge it lies on, cut between the two ends.
+The order comes from the ring, the shape from the edges: arcs stay arcs,
+splines stay splines.
 
-Puro: solo Edge, primitive e shapely.
+Pure: Edges, primitives and shapely only.
 """
 
 from __future__ import annotations
@@ -32,16 +32,14 @@ from ..primitives.trim import sub_segment
 
 
 def face_segments(edges: List[Edge], polygon: Polygon, band: float):
-    """
-    (segments, styles, used) lungo il bordo esterno di `polygon`, in senso
-    antiorario. Un lato del bordo sta su un edge se dista meno di `band` da
-    lui; il bordo si divide fra gli edge col minor numero di cambi
-    (`_rim_runs`), e ogni tratto è il suo edge tagliato fra i due capi
-    (`sub_segment`) — intero se lo copre tutto. Un edge che corre sul bordo
-    solo in parte (un incrocio che shapely nodifica e la rete piana no) dà
-    così proprio la sua parte. `used`: {indice dell'edge: [(a, b)]}, i capi
-    dei tratti che il bordo ha preso da ognuno (`off_rim`).
-    """
+    """(segments, styles, used) along the outer border of `polygon`, counter-clockwise.
+    A border side lies on an edge if it is less than `band` from it; the border is
+    divided among the edges with the fewest changes (`_rim_runs`), and each stretch
+    is its edge cut between the two ends (`sub_segment`) — whole if it covers it
+    all. An edge running on the border only in part (a crossing that shapely nodes
+    and the planar network does not) thus gives just its part. `used`: {edge
+    index: [(a, b)]}, the ends of the stretches the border took from each
+    (`off_rim`)."""
     pts = list(orient(polygon, 1.0).exterior.coords)[:-1]
     n = len(pts)
     geoms = [edge_geometry(e) for e in edges]
@@ -54,16 +52,16 @@ def face_segments(edges: List[Edge], polygon: Polygon, band: float):
         via = pts[(first + 1) % n] if last - first > 1 else ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
         piece = _trimmed(edge.segment, a, b, via, band)
         if piece is None:
-            # spline senza taglio esatto (periodica): il tratto resta quello
-            # dell'anello, entro la tolleranza di discretizzazione
+            # spline with no exact cut (periodic): the stretch stays the ring's, within the
+            # discretization tolerance
             chain = [LineSeg(start=pts[i % n], end=pts[(i + 1) % n]) for i in range(first, last)]
         else:
             chain = [piece]
         segments += chain
         styles += [edge.style] * len(chain)
-    # due tratti vicini finiscono ognuno sulla sua curva, entro `band` dallo
-    # stesso vertice dell'anello: fino a 2 * band l'uno dall'altro. Il salto
-    # diventa una retta nuova, nessuna curva si sposta (D206, D209)
+    # two neighbouring stretches each end on its own curve, within `band` of the
+    # same ring vertex: up to 2 * band from each other. The jump becomes a new
+    # line, no curve moves
     for k, line in reversed(ring_bridges(segments, reach(2 * band), FLOAT_NOISE)):
         segments.insert(k + 1, line)
         styles.insert(k + 1, styles[k])
@@ -71,23 +69,20 @@ def face_segments(edges: List[Edge], polygon: Polygon, band: float):
 
 
 def off_rim(edge: Edge, taken: list, ring, band: float) -> List[Edge]:
-    """
-    I tratti di `edge` che il bordo non ha preso: `taken` sono i capi (a, b)
-    dei tratti usati (`face_segments`), `ring` l'anello del bordo. L'edge si
-    taglia in quei capi e resta ogni pezzo che si allontana dall'anello più
-    di `band` (la sua distanza massima, non quella del punto medio: una
-    sporgenza corta parte dal bordo); un capo originale dell'edge tiene il
-    suo nodo. Vuoto
-    se il bordo prende l'edge intero (G6b: ogni pezzo d'ingresso esce una
-    volta, o nel contorno o in `loose`).
-    """
+    """The stretches of `edge` that the border did not take: `taken` are the ends
+    (a, b) of the stretches used (`face_segments`), `ring` the border ring. The
+    edge is cut at those ends and every piece that moves away from the ring by
+    more than `band` stays (its maximum distance, not that of the midpoint: a
+    short protrusion starts from the border); an original end of the edge keeps
+    its node. Empty if the border takes the whole edge (every input piece comes
+    out once, either in the contour or in `loose`)."""
     geom = edge_geometry(edge)
     if geom.geom_type != "LineString" or geom.length <= band:
         return []
     length = geom.length
     closed = segment_is_closed(edge.segment)
-    # ascisse esatte: due tagli quasi uguali danno un tratto sull'anello, che
-    # `_farthest` scarta; una griglia spostava il capo secondo il moto (G6e)
+    # exact abscissae: two nearly equal cuts give a stretch on the ring, which
+    # `_farthest` discards; a grid moved the end with the motion
     cuts = sorted({geom.project(ShapelyPoint(q)) for a, b in taken for q in (a, b)})
     if closed:
         spans = list(zip(cuts, cuts[1:] + [cuts[0] + length])) if cuts else []
@@ -106,7 +101,7 @@ def off_rim(edge: Edge, taken: list, ring, band: float) -> List[Edge]:
             b = edge.end if d1 == length else b
         piece = sub_segment(edge.segment, a, b, (mid.x, mid.y))
         if piece is None:
-            # spline senza taglio esatto: il tratto della sua discretizzazione
+            # spline with no exact cut: the stretch of its discretization
             coords = _stretch(geom, d0, d1)
             chain = [LineSeg(start=coords[i], end=coords[i + 1]) for i in range(len(coords) - 1)]
         else:
@@ -120,8 +115,8 @@ def off_rim(edge: Edge, taken: list, ring, band: float) -> List[Edge]:
 
 
 def _stretch(geom, d0: float, d1: float) -> list:
-    """I vertici di `geom` da `d0` a `d1` (ascisse curvilinee; `d1` oltre la
-    lunghezza gira sull'anello di una curva chiusa)."""
+    """The vertices of `geom` from `d0` to `d1` (arc lengths; `d1` beyond the length
+    wraps around the ring of a closed curve)."""
     length = geom.length
     if d1 <= length:
         return list(substring(geom, d0, d1).coords)
@@ -129,19 +124,19 @@ def _stretch(geom, d0: float, d1: float) -> list:
 
 
 def _farthest(geom, d0: float, d1: float, ring) -> float:
-    """La distanza massima da `ring` del tratto di `geom` da `d0` a `d1`, sui
-    vertici della sua discretizzazione."""
+    """The maximum distance from `ring` of the stretch of `geom` from `d0` to `d1`,
+    on the vertices of its discretization."""
     return max(ring.distance(ShapelyPoint(q)) for q in _stretch(geom, d0, d1))
 
 
 def _side_cover(pts: list, geoms: list, band: float) -> List[set]:
-    """Per ogni lato dell'anello, gli (edge, verso) che gli corrono lungo: il
-    punto medio e i due capi del lato entro `band` (almeno il più vicino al
-    punto medio). Un edge che tocca solo il punto medio (una sporgenza) non
-    copre il lato (G6e). Il verso dice se il lato
-    percorre l'edge come lui (+1) o al contrario (-1). Un tratto tiene un
-    verso solo — dove l'anello torna indietro lungo lo stesso edge (la
-    punta di una faccia fra due curve quasi tangenti) il tratto finisce."""
+    """For every side of the ring, the (edge, direction) pairs running along it: the
+    midpoint and the two ends of the side within `band` (at least the nearest to
+    the midpoint). An edge touching only the midpoint (a protrusion) does not
+    cover the side. The direction says whether the side walks the edge like it
+    (+1) or backwards (-1). A stretch keeps a single direction — where the ring
+    goes back along the same edge (the tip of a face between two nearly tangent
+    curves) the stretch ends."""
     tree = STRtree(geoms)
     cover = []
     for i in range(len(pts)):
@@ -156,7 +151,7 @@ def _side_cover(pts: list, geoms: list, band: float) -> List[set]:
 
 
 def _sense(geom, mid, p, q, step: float) -> int:
-    """+1 se il lato p→q va nel verso di `geom` vicino a `mid`, -1 se contro."""
+    """+1 if the side p→q goes the direction of `geom` near `mid`, -1 if against."""
     if geom.length == 0:
         return 1
     d = geom.project(mid)
@@ -166,14 +161,12 @@ def _sense(geom, mid, p, q, step: float) -> int:
 
 
 def _rim_runs(pts: list, geoms: list, cover: List[set]) -> list:
-    """
-    [((edge, verso), primo vertice, ultimo vertice)] lungo l'anello: copertura greedy
-    a portata massima — si tiene l'edge finché copre, poi si passa a quello
-    che copre più avanti — che dà il minor numero di tratti; dove due edge
-    coprono entrambi (sovrapposti, o quasi tangenti) il taglio cade sul
-    vertice più vicino a tutti e due, il loro punto di contatto. Indici dei
-    vertici non ridotti modulo n: crescenti, ultimo = primo + n.
-    """
+    """[((edge, direction), first vertex, last vertex)] along the ring: greedy
+    cover at maximum reach — an edge is kept while it covers, then pass to the one
+    that covers farthest — which gives the fewest stretches; where two edges both
+    cover (overlapping, or nearly tangent) the cut falls on the vertex nearest to
+    both, their contact point. Vertex indices not reduced modulo n: increasing,
+    last = first + n."""
     n = len(cover)
 
     def reach(j: tuple, k: int) -> int:
@@ -215,9 +208,8 @@ def _rim_runs(pts: list, geoms: list, cover: List[set]) -> list:
             at = ShapelyPoint(pts[v % n])
             return geoms[before[0]].distance(at) + geoms[after[0]].distance(at)
 
-        # sovrapposti, `gap` è 0 su tutto il tratto comune e il moto lo fa
-        # rumore: pari entro FLOAT_NOISE, decide il vertice dove la copertura
-        # cambia (G6e)
+        # overlapping, `gap` is 0 along the whole common stretch and the motion makes it
+        # noise: equal within FLOAT_NOISE, the vertex where the coverage changes decides
         gaps = {v: gap(v) for v in range(lo, hi + 1)}
         least = min(gaps.values())
         cuts.append(min((v for v, g in gaps.items() if g <= least + FLOAT_NOISE),
@@ -227,11 +219,10 @@ def _rim_runs(pts: list, geoms: list, cover: List[set]) -> list:
 
 
 def _trimmed(seg, a, b, via, band: float):
-    """`seg` da `a` a `b`: un capo entro `band` da un estremo di `seg` è
-    quell'estremo (il nodo vero, non la sua proiezione); se tutti e due lo
-    sono, il segmento intero. Un capo alla stessa distanza dai due estremi
-    (entro FLOAT_NOISE: il mezzo di un segmento corto) non è il nodo di
-    nessuno dei due e resta dov'è (G6e)."""
+    """`seg` from `a` to `b`: an end within `band` of an end of `seg` is that end
+    (the true node, not its projection); if both are, the whole segment. An end at
+    the same distance from both ends (within FLOAT_NOISE: the middle of a short
+    segment) is the node of neither and stays where it is."""
     s0, s1 = segment_endpoints(seg)
 
     def node(p):

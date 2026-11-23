@@ -1,39 +1,38 @@
 """
 core/topology/graph.py
 ----------------------
-Costruisce il grafo topologico.
+Builds the topological graph.
 
-Tutta la geometria viene letta da edge.geometry (LineString shapely).
+All geometry is read from edge.geometry (shapely LineString).
 
-Tipi pubblici:
-    Graph              — grafo tipizzato con metodi di interrogazione
-    build_node_graph   — costruisce Graph da list[Edge]
-                         separa automaticamente i loop degeneri (start == end)
-                         con epsilon > 0 fonde gli endpoint vicini in un solo nodo
-    cluster_points     — clustering di punti 2D entro epsilon (union-find)
+Public types:
+    Graph              — typed graph with query methods
+    build_node_graph   — builds a Graph from list[Edge]
+                         automatically separates degenerate loops (start == end)
+                         with epsilon > 0 merges nearby endpoints into one node
+    cluster_points     — clustering of 2D points within epsilon (union-find)
 
-Utility geometriche interne:
-    _edge_coords       — punti dell'edge come lista (x, y)   [loops.py]
-    _arrival_direction — vettore di arrivo                   [loops.py]
-    _angular_deviation — deviazione angolare tra direzioni   [loops.py]
-    _first_coord       — primo punto della geometry (helper generico)
+Internal geometric utilities:
+    _edge_coords       — the edge's points as a list (x, y)     [loops.py]
+    _arrival_direction — arrival vector                         [loops.py]
+    _angular_deviation — angular deviation between directions   [loops.py]
+    _first_coord       — first point of the geometry (generic helper)
 
-Identità dei nodi
------------------
-Ogni endpoint è il punto vero (`node_point`, nessuna griglia: D216): due
-nodi sono lo stesso solo se le tuple sono uguali.
+Node identity
+-------------
+Every endpoint is the true point (`node_point`, no grid): two nodes are the
+same only if the tuples are equal.
 
-`build_node_graph(edges, epsilon)` con `epsilon > 0` aggiunge un vero
-clustering: raggruppa gli endpoint entro `epsilon`
-(componenti connesse via union-find) e assegna a ciascun cluster un unico nodo
-canonico. `epsilon = 0.0` (default) mantiene il comportamento storico —
-uguaglianza esatta della tupla — così i test e i chiamanti
-esistenti non cambiano.
+`build_node_graph(edges, epsilon)` with `epsilon > 0` adds a real clustering:
+it groups the endpoints within `epsilon` (connected components via union-find)
+and gives each cluster a single canonical node. `epsilon = 0.0` (default)
+keeps the historical behaviour — exact tuple equality — so existing tests and
+callers do not change.
 
-Cautela: il clustering è transitivo. Con `epsilon` grande e nodi reali vicini
-si rischia la percolazione (una fila di punti a `0.9*epsilon` l'uno dall'altro
-collassa in un nodo solo). In pratica `epsilon` va tenuto <= tolleranza di
-healing: i nodi topologici reali (angoli, diramazioni) distano molto di più.
+Caution: the clustering is transitive. With a large `epsilon` and real nodes
+nearby there is a risk of percolation (a row of points at `0.9*epsilon` from
+each other collapses into one node). In practice `epsilon` must stay <= the
+healing tolerance: real topological nodes (corners, branches) are much farther apart.
 """
 
 import math
@@ -53,25 +52,21 @@ from .edge import Edge
 
 @dataclass
 class Graph:
-    """
-    Grafo topologico interrogabile.
+    """Queryable topological graph.
 
-    nodes:            dict[punto, list[(Edge, punto_opposto)]]
-    degenerate_loops: list[Edge] — edge con start == end (CIRCLE, SPLINE chiusa)
-                      non entrano nel grafo: sono già loop completi per definizione.
-    """
+    nodes:            dict[point, list[(Edge, opposite_point)]]
+    degenerate_loops: list[Edge] — edges with start == end (CIRCLE, closed SPLINE)
+                      do not enter the graph: they are already complete loops by definition."""
     nodes:            dict       = field(default_factory=dict)
     degenerate_loops: List[Edge] = field(default_factory=list)
     node_map:         Dict[Tuple, Tuple] = field(default_factory=dict)
 
     def canonical(self, pt: Tuple) -> Tuple:
-        """
-        Nodo canonico per un endpoint arrotondato.
+        """Canonical node for a rounded endpoint.
 
-        Identità se `node_map` è vuoto (grafo non clusterizzato). Altrimenti
-        traduce il punto arrotondato dell'edge nel rappresentante del suo
-        cluster — è così che loops confronta gli edge con i nodi.
-        """
+        Identity if `node_map` is empty (unclustered graph). Otherwise it translates
+        the edge's rounded point into the representative of its cluster — it is how
+        loops compares edges with nodes."""
         return self.node_map.get(pt, pt)
 
     def degree(self, node: Tuple) -> int:
@@ -81,13 +76,11 @@ class Graph:
         return [n for n, conn in self.nodes.items() if len(conn) > 2]
 
     def chains(self) -> List[Tuple[List[Edge], Tuple, Tuple]]:
-        """
-        Le catene massimali del grafo: edge consecutivi attraverso nodi di
-        grado 2, con i due nodi dove finiscono (diramazione o capo libero).
-        Un nodo di grado 2 non è un bivio: per la topologia la catena è un
-        arco solo, spezzato in tratti. Un anello di soli nodi di grado 2 ha i
-        due capi uguali. Ogni edge del grafo sta in una catena sola.
-        """
+        """The maximal chains of the graph: consecutive edges through nodes of degree 2,
+        with the two nodes where they end (branch or free end). A node of degree 2 is
+        not a fork: for the topology the chain is a single arc, broken into stretches.
+        A ring of degree-2 nodes only has the two ends equal. Every edge of the graph
+        is in exactly one chain."""
         seen: set = set()
         chains: List[Tuple[List[Edge], Tuple, Tuple]] = []
 
@@ -103,7 +96,7 @@ class Graph:
                 node = nxt[1]
             chains.append((run, start, node))
 
-        # prima dai nodi che non sono di grado 2, poi gli anelli rimasti
+        # first from the nodes that are not of degree 2, then the remaining rings
         for wanted_inner in (False, True):
             for node, conn in self.nodes.items():
                 if (len(conn) == 2) != wanted_inner:
@@ -114,15 +107,12 @@ class Graph:
         return chains
 
     def connected_components(self) -> List[set]:
-        """
-        Componenti connesse del grafo (BFS sui nodi).
+        """Connected components of the graph (BFS on the nodes).
 
-        Un foglio con più viste/pezzi indipendenti produce più componenti —
-        nodi mai raggiungibili l'uno dall'altro perché non condividono nessun
-        edge. Serve a chi deve ragionare per forma (es. `NonContourEdgeDetector`
-        e `outer_face`, che percorrono la faccia esterna di ogni vista per
-        conto suo).
-        """
+        A sheet with several independent views/parts produces several components —
+        nodes never reachable from one another because they share no edge. It serves
+        whoever must reason by shape (`NonContourEdgeDetector` and `outer_face`, which
+        walk the outer face of each view on its own)."""
         seen: set = set()
         components: List[set] = []
         for start in self.nodes:
@@ -143,11 +133,9 @@ class Graph:
         return components
 
     def bridges(self) -> set:
-        """
-        id degli edge ponte: tolti, i loro due nodi non sono più collegati.
-        Un ponte ha la stessa faccia dai due lati. Tarjan iterativo; due edge
-        paralleli fra gli stessi nodi non sono ponti.
-        """
+        """id of the bridge edges: removed, their two nodes are no longer connected. A
+        bridge has the same face on both sides. Iterative Tarjan; two parallel edges
+        between the same nodes are not bridges."""
         disc: dict = {}
         low: dict = {}
         out: set = set()
@@ -179,29 +167,24 @@ class Graph:
         return out
 
     def without(self, ids: set) -> 'Graph':
-        """Un nuovo Graph senza gli edge `ids` (i nodi rimasti senza edge spariscono)."""
+        """A new Graph without the edges `ids` (nodes left without edges disappear)."""
         nodes = {n: [(e, o) for e, o in conn if id(e) not in ids] for n, conn in self.nodes.items()}
         return Graph(nodes={n: conn for n, conn in nodes.items() if conn},
                      degenerate_loops=self.degenerate_loops, node_map=self.node_map)
 
     def open_nodes(self) -> list:
-        """
-        Nodi con un solo edge incidente — gli estremi liberi del grafo.
+        """Nodes with a single incident edge — the free ends of the graph.
 
-        Un contorno che dovrebbe essere chiuso ha 0 nodi aperti; 2 nodi aperti
-        = un solo gap residuo; molti nodi aperti = geometria a matassa
-        (marcature, tracce aperte) più che un contorno. `pruned()` li elimina
-        in silenzio, quindi va interrogato prima della potatura per avere una
-        diagnostica localizzata.
-        """
+        A contour that should be closed has 0 open nodes; 2 open nodes = a single
+        residual gap; many open nodes = tangled geometry (markings, open traces)
+        rather than a contour. `pruned()` removes them silently, so it must be queried
+        before pruning to get a localized diagnostic."""
         return [n for n, conn in self.nodes.items() if len(conn) == 1]
 
     def pruned(self) -> 'Graph':
-        """
-        Restituisce un nuovo Graph senza nodi dead-end (degree <= 1).
-        I degenerate_loops vengono preservati invariati — non hanno
-        nodi nel grafo e non sono soggetti a potatura.
-        """
+        """Return a new Graph without dead-end nodes (degree <= 1). The degenerate_loops
+        are preserved unchanged — they have no nodes in the graph and are not subject
+        to pruning."""
         g = {node: list(neighbors) for node, neighbors in self.nodes.items()}
 
         changed = True
@@ -242,20 +225,18 @@ class Graph:
 # ---------------------------------------------------------------------------
 
 def cluster_points(points: list, epsilon: float) -> Dict[Tuple, Tuple]:
-    """
-    Raggruppa punti 2D entro `epsilon` e restituisce {punto -> rappresentante}.
+    """Group 2D points within `epsilon` and return {point -> representative}.
 
-    Componenti connesse via union-find: due punti finiscono nello stesso
-    cluster se distano <= epsilon, e la relazione è transitiva. Il
-    rappresentante di un cluster è il suo punto lessicograficamente minimo —
-    deterministico e sempre un endpoint reale (non un centroide fittizio).
+    Connected components via union-find: two points end up in the same cluster if
+    they are <= epsilon apart, and the relation is transitive. The representative
+    of a cluster is its lexicographically smallest point — deterministic and
+    always a real endpoint (not a fictitious centroid).
 
-    `epsilon <= 0` o meno di due punti → mappa identità.
+    `epsilon <= 0` or fewer than two points → identity map.
 
-    Il confronto è limitato alle celle adiacenti di una griglia di lato
-    `epsilon`, quindi il costo è lineare nel numero di punti per input
-    tipici (nessun blow-up O(n²) su file da migliaia di edge).
-    """
+    The comparison is limited to the adjacent cells of a grid of side `epsilon`,
+    so the cost is linear in the number of points for typical inputs (no O(n²)
+    blow-up on files with thousands of edges)."""
     pts = list(dict.fromkeys(points))
     if epsilon <= 0 or len(pts) < 2:
         return {p: p for p in pts}
@@ -301,11 +282,9 @@ def cluster_points(points: list, epsilon: float) -> Dict[Tuple, Tuple]:
 
 
 def connected_groups(n: int, pairs: Iterable[Tuple[int, int]]) -> List[List[int]]:
-    """
-    Gruppi connessi degli indici 0..n-1 uniti dalle coppie `pairs`
-    (union-find). Ogni gruppo in ordine crescente, i gruppi per il loro
-    indice più piccolo: l'ordine non dipende da quello delle coppie.
-    """
+    """Connected groups of the indices 0..n-1 joined by the pairs `pairs`
+    (union-find). Each group in increasing order, the groups by their smallest
+    index: the order does not depend on that of the pairs."""
     parent = list(range(n))
 
     def find(i: int) -> int:
@@ -329,35 +308,34 @@ def connected_groups(n: int, pairs: Iterable[Tuple[int, int]]) -> List[List[int]
 # ---------------------------------------------------------------------------
 
 def _close_self_loop(edge: Edge, epsilon: float):
-    """Un arco che torna sul suo nodo, se il suo sviluppo (raggio*sweep) supera epsilon -> il cerchio intero (loop degenere vero). Altrimenti `None` (sliver, v. MAP.md D52)."""
+    """An arc that returns to its node, if its development (radius*sweep) exceeds epsilon -> the full circle (a true degenerate loop). Otherwise `None` (sliver)."""
     seg = edge.segment
     if not is_arc(seg):
         return None
     if seg.radius * seg._sweep() <= epsilon:
         return None
 
-    # Un giro intero è un cerchio, non "un CircleSeg che riparte da dove
-    # capitava il suo estremo originale" — stesso primitivo di un CIRCLE
-    # nativo, stesso punto canonico (`segment_endpoints`).
+    # A full turn is a circle, not "a CircleSeg restarting wherever its original end
+    # happened to be" — the same primitive as a native CIRCLE, the same canonical
+    # point (`segment_endpoints`).
     closed_segment = CircleSeg(center=seg.center, radius=seg.radius)
     anchor = segment_endpoints(closed_segment)[0]
     return replace(edge, start=anchor, end=anchor, segment=closed_segment)
 
 
 def build_node_graph(edges: list, epsilon: float = 0.0, *, sliver: Optional[float] = None) -> Graph:
-    """
-    Costruisce il Graph da list[Edge].
+    """Build the Graph from list[Edge].
 
-    Edge con start == end (CIRCLE, SPLINE chiusa) vengono separati
-    in degenerate_loops — non hanno senso come nodi del grafo perché
-    il loro unico nodo sarebbe vicino di se stesso.
+    Edges with start == end (CIRCLE, closed SPLINE) are separated into
+    degenerate_loops — they make no sense as graph nodes because their single
+    node would be its own neighbour.
 
-    `epsilon > 0` fonde gli endpoint entro `epsilon` in un unico nodo canonico
-    (vedi cluster_points e la nota in testa al modulo). Con `epsilon = 0.0` i
-    nodi restano le tuple arrotondate esatte, come da comportamento storico.
-    `sliver`: la soglia di `_close_self_loop` (di default `epsilon`); su una
-    rete già piana i nodi sono le tuple (epsilon 0) e la soglia resta (D194).
-    """
+    `epsilon > 0` merges the endpoints within `epsilon` into a single canonical
+    node (see cluster_points and the note at the top of the module). With
+    `epsilon = 0.0` the nodes stay the exact rounded tuples, as in the historical
+    behaviour. `sliver`: the threshold of `_close_self_loop` (by default
+    `epsilon`); on an already planar network the nodes are the tuples (epsilon 0)
+    and the threshold stays."""
     raw        = defaultdict(list)
     degenerate = []
 
@@ -376,15 +354,15 @@ def build_node_graph(edges: list, epsilon: float = 0.0, *, sliver: Optional[floa
 
     for edge in edges:
         if edge.start == edge.end:
-            # Loop degenere: non entra nel grafo, va diretto al loop finder
+            # Degenerate loop: it does not enter the graph, it goes straight to the loop finder
             degenerate.append(edge)
             continue
 
         s = canon(edge.start)
         e = canon(edge.end)
         if s == e:
-            # Endpoint collassati dal clustering: sliver, salvo che l'edge
-            # abbia sviluppo reale non trascurabile (v. MAP.md D52).
+            # Endpoints collapsed by the clustering: sliver, unless the edge has a real,
+            # non-negligible development.
             closed = _close_self_loop(edge, epsilon if sliver is None else sliver)
             if closed is not None:
                 degenerate.append(closed)

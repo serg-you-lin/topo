@@ -1,24 +1,25 @@
 """
 core/topology/parity.py
 -----------------------
-I contorni di una rete piana per parità: le facce si colorano dentro/fuori
-in modo che ogni lato separi due colori diversi.
+The contours of a planar network by parity: the faces are coloured
+inside/outside so that every side separates two different colours.
 
-Teorema: le facce di un grafo piano ammettono questa colorazione, con ogni
-lato fra due colori diversi, se e solo se ogni nodo ha grado pari; e allora
-è unica, fissato fuori l'esterno. Ogni lato è contorno, ognuno compare una
-volta sola fra i giri delle facce *fuori*.
+Theorem: the faces of a planar graph admit this colouring, with every side
+between two different colours, if and only if every node has even degree; and
+then it is unique, once the outside is fixed. Every side is contour, each
+appears exactly once among the loops of the *outside* faces.
 
-Dove un nodo ha grado dispari la rete non ammette colorazione: si tolgono
-i lati che non possono essere contorno, e poi il meno possibile.
-  1. un capo libero o un ponte ha la stessa faccia dai due lati: via;
-  2. dei lati rimasti, l'insieme che rende pari ogni nodo togliendo prima
-     il meno possibile della sagoma (i lati sul bordo della faccia esterna
-     del loro componente, con l'esterno da un lato solo), poi la lunghezza
-     totale minima: il T-join di peso minimo sul grafo (`matching.min_t_join`),
-     coi due criteri in un peso intero esatto (multipli di FLOAT_NOISE).
+Where a node has odd degree the network admits no colouring: the sides that
+cannot be contour are removed, and then as little as possible.
+  1. a free end or a bridge has the same face on both sides: removed;
+  2. of the remaining sides, the set that makes every node even removing first
+     as little as possible of the silhouette (the sides on the border of
+     their component's outer face, with the outside on one side only), then
+     the minimum total length: the minimum-weight T-join on the graph
+     (`matching.min_t_join`), with the two criteria in one exact integer
+     weight (multiples of FLOAT_NOISE).
 
-Puro: solo Edge, grafo e primitive, nessun formato.
+Pure: Edges, graph and primitives only, no format.
 """
 
 from __future__ import annotations
@@ -39,20 +40,18 @@ from ..geometry.rings import ring_bbox, ring_contains
 
 @dataclass
 class ParityRings:
-    """I giri dei contorni, e cosa la lettura ha tolto per arrivarci."""
-    loops:     List[list]                                  # [(pezzo, al contrario)] antiorari
-    dropped:   Set[int] = field(default_factory=set)       # id dei pezzi che non sono contorno
-    conflicts: List[tuple] = field(default_factory=list)   # nodi dove la colorazione non torna
-    rim_used:  bool = False                                # il T-join toglie anche sagoma
-    joining:   Set[int] = field(default_factory=set)       # id dei ponti fra due parti chiuse
+    """The loops of the contours, and what the reading removed to get there."""
+    loops:     List[list]                                  # [(piece, reversed)] counter-clockwise
+    dropped:   Set[int] = field(default_factory=set)       # id of the pieces that are not contour
+    conflicts: List[tuple] = field(default_factory=list)   # nodes where the colouring does not work out
+    rim_used:  bool = False                                # the T-join removes silhouette too
+    joining:   Set[int] = field(default_factory=set)       # id of the bridges between two closed parts
 
 
 def parity_rings(pieces: List[Edge]) -> ParityRings:
-    """
-    I giri delle facce *fuori* della rete piana `pieces` (split_at_crossings,
-    incroci tagliati), dopo aver tolto i lati che rendono dispari un nodo
-    (vedi il modulo). Nessuna scelta dipende dall'ordine dei pezzi.
-    """
+    """The loops of the *outside* faces of the planar network `pieces`
+    (split_at_crossings, crossings cut), after removing the sides that make a
+    node odd (see the module). No choice depends on the order of the pieces."""
     graph = build_node_graph(pieces, sliver=GRAPH_EPSILON)
     pruned = graph.pruned()
     joining = pruned.bridges()
@@ -75,10 +74,10 @@ def _without_bridges(graph: Graph) -> Graph:
 
 
 def _t_join(graph: Graph) -> Tuple[Set[int], bool]:
-    """(id dei lati del T-join sui nodi dispari di `graph`, se toglie sagoma).
-    Il peso di un lato mette prima la sua lunghezza se sta sul bordo
-    esterno, poi la lunghezza: la sagoma si tocca solo dove nessun insieme
-    di soli lati interni rende pari i nodi, e il meno possibile."""
+    """(id of the T-join sides on the odd nodes of `graph`, if it removes silhouette).
+    The weight of a side puts first its length if it is on the outer border, then
+    the length: the silhouette is touched only where no set of interior sides
+    alone makes the nodes even, and as little as possible."""
     odd = {n for n, conn in graph.nodes.items() if len(conn) % 2}
     if not odd:
         return set(), False
@@ -88,13 +87,13 @@ def _t_join(graph: Graph) -> Tuple[Set[int], bool]:
         on_rim |= {k for k, passes in outer_face_passes(graph, component, len(pieces)).items()
                    if passes == 1}
     units = {k: round(segment_length(p.segment) / FLOAT_NOISE) for k, p in pieces.items()}
-    # più di quanto possa pesare la lunghezza di qualunque accoppiamento
+    # more than the length of any matching can weigh
     scale = len(odd) * (sum(units.values()) + 1)
     sides = []
     for k, p in pieces.items():
         a, b = sorted((graph.canonical(p.start), graph.canonical(p.end)))
         weight = (scale if k in on_rim else 0) * units[k] + units[k]
-        # i pareggi li decide la geometria: i capi, il peso, il punto a metà
+        # ties are decided by the geometry: the ends, the weight, the midpoint
         mid = edge_geometry(p).interpolate(0.5, normalized=True)
         sides.append(((a, b, weight, (mid.x, mid.y)), k))
     sides.sort()
@@ -107,14 +106,14 @@ def _t_join(graph: Graph) -> Tuple[Set[int], bool]:
 
 
 def _outside_rings(graph: Graph) -> Tuple[List[list], List[tuple]]:
-    """I giri semplici delle facce fuori, antiorari, ognuno una volta; e i
-    nodi dove due facce vicine hanno avuto lo stesso colore."""
+    """The simple loops of the outside faces, counter-clockwise, each once; and the
+    nodes where two neighbouring faces got the same colour."""
     walks = face_walks(graph)
     side: Dict[tuple, int] = {}
     for w, (walk, _) in enumerate(walks):
         for e, frm, _ in walk:
             side[(id(e), frm)] = w
-    # colore relativo all'esterno del proprio componente: ogni lato cambia colore
+    # colour relative to the outside of its own component: every side changes colour
     colour: Dict[int, int] = {w: 0 for w, (_, outer) in enumerate(walks) if outer}
     queue = list(colour)
     conflicts: List[tuple] = []
@@ -134,8 +133,8 @@ def _outside_rings(graph: Graph) -> Tuple[List[list], List[tuple]]:
     rings = {w: [_ccw(graph, r) for r in simple_rings(walk)] for w, (walk, _) in enumerate(walks)}
     components = graph.connected_components()
     component_of = {n: k for k, comp in enumerate(components) for n in comp}
-    # ogni componente (e ogni giro chiuso da solo) è dentro i giri fuori degli
-    # altri un numero di volte: la parità è il colore della sua faccia esterna
+    # every component (and every loop closed by itself) is inside the outside loops
+    # of the others a number of times: the parity is the colour of its outer face
     fences: List[Tuple[object, list, tuple]] = []
     for w, (walk, _) in enumerate(walks):
         if colour.get(w, 0) == 0:
