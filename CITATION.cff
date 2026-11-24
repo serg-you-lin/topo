@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use topo in your work, please cite it as below."
-title: "topo — deterministic 2D-geometry engine for technical drawings"
+title: "topo — deterministic 2D geometry engine: repairs vector geometry and reads its structure"
 authors:
   - family-names: Sidraschi
     given-names: Federico
