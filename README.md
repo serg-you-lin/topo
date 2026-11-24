@@ -120,6 +120,10 @@ returns a `Network`; a reading of it gives a `Result`.
   contour of each group is the outer face of its planar network, and every outer
   contour not inside another is a cluster with only its `outer` (what lies inside
   goes to `loose`). Each cluster is the silhouette of one connected figure.
+  Tuned today on drawings that show several views of one object.
+
+These are the two readings built so far; others can be composed from the same
+healed network (below).
 
 ```python
 result = topo.heal(doc, max_gap=0.5).outlines()
