@@ -33,7 +33,7 @@ def to_json(result: Result, *, indent: int = 2,
     """
     The result as a JSON string, geometry only.
 
-    Top level: `source_file`, `source_format`, `reading`, `tolerance`,
+    Top level: `source_file`, `source_format`, `reading`,
     `max_gap`, `is_valid`, `warnings`, `errors`, `loose_count`, `text_count`,
     `clusters`. Each cluster: `label`, `area`, `outer_perimeter`,
     `inner_perimeter`, `inner_count`, `bbox`, `overlay` (items per

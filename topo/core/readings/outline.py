@@ -81,7 +81,7 @@ def read_network_outlines(net: Network) -> Result:
     clusters = {}
     for i, r in enumerate(readings):
         if r.outer is not None and r.nested_in is None:
-            clusters[i] = _cluster(r, net.source_file, net.label)
+            clusters[i] = _cluster(r, net.label)
     owned = []   # (curve, cluster that contains it)
     for i, r in enumerate(readings):
         host = clusters.get(r.nested_in) if r.nested_in is not None else clusters.get(i)
@@ -182,10 +182,10 @@ def _read_group(edges: List[Edge], tolerance: float) -> OutlineReading:
     return reading
 
 
-def _cluster(reading: OutlineReading, source_file: str, label: str) -> Cluster:
+def _cluster(reading: OutlineReading, label: str) -> Cluster:
     face = reading.outer
     outer = _contour(face.segments, face.styles, curve_polygon(face), ContourRole.OUTER, None)
-    return Cluster(outer=outer, source_file=source_file, label=label)
+    return Cluster(outer=outer, label=label)
 
 
 def _contour(segments, styles, polygon, role, parent) -> Contour:

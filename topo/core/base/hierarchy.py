@@ -111,9 +111,8 @@ def _collect_inners(
 # ---------------------------------------------------------------------------
 
 class HierarchyBuilder:
-    def __init__(self, label: str, source_file: str, is_structural=None):
+    def __init__(self, label: str, is_structural=None):
         self.label       = label
-        self.source_file = source_file
         # Same predicate as split_labeled / structural_loops — injected by the caller
         # (snapbend: a hole is a part contour) or, by default, only outer/inner
         # (model.role.is_structural_role).
@@ -157,7 +156,6 @@ class HierarchyBuilder:
                 outer=outer,
                 inners=inners,
                 label=self.label,
-                source_file=self.source_file,
             )
             clusters.append(cluster)
 

@@ -318,7 +318,7 @@ The readings do not modify it.
 | `crossings` | `list` | the points where two edges cross without a node |
 | `free_ends` | `list[(point, mm)]` | the endpoints that no other edge touches, with the distance from the nearest node |
 | `max_gap` | `float` | the widest gap closed; 0 when `heal()` had none |
-| `source_file`, `label` | `str` | copied onto every `Result` and `Cluster` read from here |
+| `source_file`, `label` | `str` | `source_file` copied onto every `Result`, `label` onto every `Cluster` read from here |
 | `warnings`, `errors` | `list[str]` | what the repair did; with `errors` no reading finds anything |
 | `is_valid` | `bool` | `True` if the repair gave no errors |
 | method | returns | what it does |
@@ -363,7 +363,7 @@ topo.experimental.face_loops(edges, epsilon=GRAPH_EPSILON) -> list[loop]   # GRA
 topo.experimental.structural_loops(loops, is_structural=None) -> list[loop]
 topo.experimental.loops_to_curves(loops) -> list[ClosedCurve | OpenCurve]
 topo.experimental.loose_curves(edges) -> list[ClosedCurve | OpenCurve]
-topo.experimental.build_hierarchy(features, label="", source_file="", is_structural=None)
+topo.experimental.build_hierarchy(features, label="", is_structural=None)
     -> tuple[list[Cluster], list]
 ```
 

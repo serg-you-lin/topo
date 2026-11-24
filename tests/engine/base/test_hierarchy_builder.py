@@ -56,7 +56,6 @@ def _rect_proxy(x0, y0, x1, y1):
 def _make_builder():
     return HierarchyBuilder(
         label="",
-        source_file="",
     )
 
 

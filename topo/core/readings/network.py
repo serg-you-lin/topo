@@ -48,7 +48,7 @@ class Network:
     free_ends:   (point, distance to the nearest node) of every end no other
                  edge reaches.
     max_gap:     the widest gap closed; 0 (the default) closes none.
-    source_file, label: copied onto every Result and Cluster read from here.
+    source_file: copied onto every Result read from here; label: onto every Cluster.
     source_format: the document's, copied onto every Result.
     warnings:    advice about the drawing (`Diagnostic`); every reading copies it.
     notes:       what the repair did by itself (`Diagnostic`, level `note`).

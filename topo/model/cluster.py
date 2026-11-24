@@ -17,15 +17,14 @@ from topo.model.contour import Contour
 @dataclass
 class Cluster:
     """
-    A part: one outer contour (`outer`), its inner contours (`inners`), a
-    `label` and the `source_file` it comes from. `overlay` is the open
+    One outer contour (`outer`) and its inner contours (`inners`), with a
+    `label`; the file it comes from is the `Result`'s. `overlay` is the open
     overlay of a consumer's reading, `None` until a consumer writes to it.
     """
     outer:         Contour
     _: KW_ONLY
     inners:        List[Contour]                      = field(default_factory=list)
     label:         str                                     = ""
-    source_file:   str                                     = ""
     # A consumer's overlay (snapbend, snapdraw, a custom tool), normally a
     # `model.overlay.Overlay`. `None` until someone has written to it: it tells
     # "nobody has read the cluster yet" from "read and no element", which the old

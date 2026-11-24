@@ -121,7 +121,7 @@ def parity_faces(net: Network) -> Result:
         result.is_valid = False
         return result
 
-    clusters, loose = build_hierarchy(curves, label=label, source_file=source_file,
+    clusters, loose = build_hierarchy(curves, label=label,
                                       is_structural=structural)
     result.clusters = clusters
     result.loose = loose + loose_curves(labeled)

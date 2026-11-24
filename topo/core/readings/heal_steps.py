@@ -99,13 +99,13 @@ def may_be_contour(edge: Edge, is_structural: Optional[Callable[[str], bool]] = 
     return edge.role == ContourRole.UNKNOWN or (is_structural or is_structural_role)(edge.role)
 
 
-def build_hierarchy(curves: list, label: str = "", source_file: str = "",
+def build_hierarchy(curves: list, label: str = "",
                     is_structural: Optional[Callable[[str], bool]] = None
                     ) -> Tuple[List[Cluster], list]:
     """Containment tree on the ClosedCurves: every root is a Cluster (outer), the
     descendants its inners with `depth`/`parent`. Returns (cluster, loose):
     loose is what did not end up in a cluster and is not structural."""
-    builder = HierarchyBuilder(label=label, source_file=source_file, is_structural=is_structural)
+    builder = HierarchyBuilder(label=label, is_structural=is_structural)
     return builder.build(curves)
 
 

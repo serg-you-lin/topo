@@ -48,10 +48,6 @@ class Result:
     loose:               List[OpenCurve | ClosedCurve] = field(default_factory=list)
     texts:               List[Text]             = field(default_factory=list)
 
-    @property
-    def has_issues(self) -> bool:
-        return bool(self.warnings or self.errors)
-
     def promote(self, curves: OpenCurve | ClosedCurve | Sequence[OpenCurve | ClosedCurve],
                 cluster: Cluster, name: str, *, item: Optional[Any] = None) -> None:
         """Remove `curves` (one curve or more) from `loose` and put a single `item` in

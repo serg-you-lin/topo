@@ -116,7 +116,6 @@ class TestProvenance(unittest.TestCase):
         self.assertEqual(net.source_file, "parte.dxf")
         for reading in (net.faces(), net.outlines()):
             self.assertEqual(reading.source_file, "parte.dxf")
-            self.assertEqual([c.source_file for c in reading.clusters], ["parte.dxf"])
 
     def test_callers_source_file_wins(self):
         net = topo.heal(_doc(_square(), source_path="parte.dxf"), source_file="altro.dxf", max_gap=0.01)

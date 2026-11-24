@@ -223,25 +223,13 @@ class TestForgeResult(unittest.TestCase):
     def _make_result(self):
         outer_poly = Polygon([(0,0), (50,0), (50,50), (0,50)])
         outer = Contour(role=ContourRole.OUTER, segments=_ring(outer_poly))
-        cluster  = Cluster(outer=outer, label="piece_1", source_file="test.dxf")
+        cluster  = Cluster(outer=outer, label="piece_1")
         return Result(clusters=[cluster], source_file="test.dxf")
 
     def test_002_is_valid_default(self):
         """is_valid is True by default."""
         result = self._make_result()
         self.assertTrue(result.is_valid)
-
-    def test_003_has_issues_false(self):
-        """has_issues is False without warnings or errors."""
-        result = self._make_result()
-        self.assertFalse(result.has_issues)
-
-    def test_004_has_issues_true(self):
-        """has_issues is True if there are warnings."""
-        result = self._make_result()
-        result.warnings.append("something is wrong")
-        print(f"[Result] has_issues={result.has_issues}")
-        self.assertTrue(result.has_issues)
 
     def test_005_to_dict_keys(self):
         """to_dict has the right keys."""
