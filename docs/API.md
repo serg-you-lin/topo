@@ -559,9 +559,9 @@ The geometric facts all live in `topo.geometry` (the package
 `topo/core/geometry/`) and are called in full,
 `topo.geometry.<name>(...)`, without importing the name on its own. Geometric
 names: "circle", never "hole". The basic measures (length of a
-segment, open traces, strokes on axes, intervals) have been public; what remains in the submodules of `topo.core.geometry` (node rounding,
-point sequences, `circular_geometry`, …) is internal, with no
-guarantees. `python scripts/gen_index.py` writes the list with `file:line`
+segment, the vertices of an open trace, strokes on axes) are public; what
+remains in the submodules of `topo.core.geometry` (point sequences, fitting,
+intervals, …) is internal, with no guarantees. `python scripts/gen_index.py` writes the list with `file:line`
 to `docs/INDEX.md` (generated locally, not in git).
 
 ### `contour_shape`
@@ -898,32 +898,6 @@ axis: x for a horizontal one), `at` (the constant coordinate, mean of the two en
 
 ---
 
-### `items_inside`
-
-```python
-topo.geometry.items_inside(bounds, items, *, margin=0.0) -> list
-```
-
-The strokes with both ends inside `bounds` = `(xmin, ymin, xmax, ymax)`
-enlarged by `margin`, in the order given.
-
-**Mutates** nothing.
-
----
-
-### `merge_intervals`
-
-```python
-topo.geometry.merge_intervals(intervals, *, tolerance=0.0) -> list[tuple[float, float]]
-```
-
-The intervals `(a, b)` joined where they overlap or are at most `tolerance`
-apart, in increasing order.
-
-**Mutates** nothing.
-
----
-
 ### `group_collinear_lines`
 
 ```python
@@ -938,12 +912,11 @@ strokes touch (for rows across gaps: `bridged_runs`).
 
 ---
 
-### `segment_length`, `length_inside`, `chord_angle_deg`
+### `segment_length`, `length_inside`
 
 ```python
 topo.geometry.segment_length(segment) -> float
 topo.geometry.length_inside(segment, bounds) -> float
-topo.geometry.chord_angle_deg(a, b) -> float
 ```
 
 - `segment_length`: the length of a native primitive. A closed formula for
@@ -952,25 +925,22 @@ topo.geometry.chord_angle_deg(a, b) -> float
 - `length_inside`: how much of `segment` lies inside the rectangle
   `bounds` = `(xmin, ymin, xmax, ymax)`, border included (curves on the
   polyline of `discretize()`).
-- `chord_angle_deg`: the angle in degrees, in `[0, 180)`, of the chord from `a` to
-  `b`; modulo 180 because a line has no direction.
 
 **Mutate** nothing.
 
 ---
 
-### `track_points`, `track_length`
+### `track_points`
 
 ```python
 topo.geometry.track_points(segments, *, tolerance=None) -> list[Point]
-topo.geometry.track_length(pts) -> float
 ```
 
-An open trace (bend, engraving, unclosed fragment) is a chain of native
-segments. `track_points` gives its vertices (the `discretize()` of each
-segment, without repeating the junction point); `track_length` the length
-of the polyline. A single straight stroke is `len(track_points(segments)) == 2`
-(`track_shape_type`, which said it as a string, is removed).
+An open trace (an unclosed chain of curves) is a chain of native segments.
+`track_points` gives its vertices (the `discretize()` of each segment, without
+repeating the junction point). A single straight stroke is
+`len(track_points(segments)) == 2`. Its exact length is the sum of
+`segment_length` over its segments.
 
 **Mutate** nothing.
 

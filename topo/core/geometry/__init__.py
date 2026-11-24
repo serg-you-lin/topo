@@ -14,13 +14,13 @@ Public (below):
     regions.py        point on a contour (vertex, fillet, side); stroke cut by a region; contour minus region
     strips.py         distance between two boundaries and the closest pair (`gap`, `Gap`)
     axis.py           rectangles covered by strokes, lines that cross them, sides on another's edge, dimension on the axes;
-                      strokes on the axes, strokes inside a box, merged intervals
-    measure.py        length of a segment and how much of it lies in a box, angle of a chord,
-                      open traces (vertices, length, "is it a straight stroke?")
+                      strokes on the axes
+    measure.py        length of a segment and how much of it lies in a box,
+                      the vertices of an open trace
     lines.py          also: strokes grouped by line
 
 Building blocks (imported from the submodule, internal):
-    measure.py        "is it circular?" (bounding box: for a measure use contour_shape)
+    measure.py        a segment's reach in a direction, the longest segment, a threshold with its float margin (reach)
     numeric.py        golden-section search (maximum, minimum)
     shapely_polygons.py  the bridge to shapely: a contour as a Polygon
     points.py         point sequences: duplicates, spacing, Douglas-Peucker, circle fit
@@ -32,6 +32,7 @@ Building blocks (imported from the submodule, internal):
     intersections.py  line/line, circle/line, circle/circle
                       (public: `intersections(a, b)` between any two primitives)
     lines.py, axis.py also: distance from a line, collinearity, intervals, strokes inside a box
+    measure.py        also: angle of a chord, length of a polyline
 """
 
 from .build import (polygon, rectangle, regular_polygon, circle, ellipse, stadium, triangle, right_triangle,
@@ -44,15 +45,15 @@ from .concentric import (
 )
 from .lines import splits_contour, bridged_runs, CollinearRun, dash_line, group_collinear_lines
 from .measure import (
-    segment_length, length_inside, chord_angle_deg,
-    track_points, track_length,
+    segment_length, length_inside,
+    track_points,
 )
 from .regions import point_on_contour, ContourPoint, nearest_point, cut_by, contour_minus, contour_union
 from .intersections import intersections
 from .strips import gap, Gap
 from .axis import (
     covered_rectangles, CoveredRectangle, spanning_lines, sides_on_border, axis_aligned_share,
-    axis_lines, AxisLine, items_inside, merge_intervals,
+    axis_lines, AxisLine,
 )
 
 __all__ = [
@@ -62,10 +63,10 @@ __all__ = [
     "concentric_groups", "ConcentricGroup",
     "arcs_around", "ArcAround",
     "splits_contour", "bridged_runs", "CollinearRun", "dash_line", "group_collinear_lines",
-    "segment_length", "length_inside", "chord_angle_deg",
-    "track_points", "track_length",
+    "segment_length", "length_inside",
+    "track_points",
     "point_on_contour", "ContourPoint", "nearest_point", "cut_by", "contour_minus", "contour_union", "intersections",
     "gap", "Gap",
     "covered_rectangles", "CoveredRectangle", "spanning_lines", "sides_on_border", "axis_aligned_share",
-    "axis_lines", "AxisLine", "items_inside", "merge_intervals",
+    "axis_lines", "AxisLine",
 ]
