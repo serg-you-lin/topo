@@ -1,5 +1,5 @@
 """
-06_close_the_gaps.py — tolerance and max_gap, two numbers
+06_close_the_gaps.py — max_gap, the one number you choose
 =========================================================
 
 What you learn
@@ -12,8 +12,8 @@ gaps.dxf holds a rectangle whose four corners are open by 0.3 mm, a circle cut
 in four arcs with 0.2 mm between them, and one whole circle. The lesson reads
 it twice, once per value in MAX_GAPS, and writes one DXF for each.
 
-`tolerance` decides when two ends are the same point; `max_gap` decides how
-wide a hole in the drawing topo may close. The notes say what topo did by
+Two ends closer than `topo.precision.SAME_POINT` (0.001 mm) are the same point,
+always; `max_gap` decides how wide a hole in the drawing topo may close. The notes say what topo did by
 itself; compare them with what you see in the two files.
 
 Open afterwards
@@ -40,7 +40,7 @@ doc = topo_dxf.load_dxf(INPUT)
 for max_gap in MAX_GAPS:
     network = topo.heal(doc, max_gap=max_gap)
     result = network.faces()
-    print(f"max_gap={network.max_gap}  (tolerance {network.tolerance})")
+    print(f"max_gap={network.max_gap}")
     print(f"  {len(network.free_ends)} free end(s) left")
     print(f"  valid={result.is_valid}, {len(result.clusters)} part(s), "
           f"inners per part {[len(c.inners) for c in result.clusters]}, {len(result.loose)} loose curve(s)")

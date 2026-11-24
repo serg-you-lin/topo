@@ -17,7 +17,7 @@ results are meant to be judged by eye. The drawings the lessons read are in
 | 03 | `03_open_a_dxf.py` | open a DXF, what the loader understood, `is_valid` before writing |
 | 04 | `04_z_levels.py` | a drawing with heights brought onto the plane, one layer per case |
 | 05 | `05_when_a_file_does_not_add_up.py` | the three-level inspector and topo's messages (warnings, notes, errors) |
-| 06 | `06_close_the_gaps.py` | `tolerance` and `max_gap`: which gaps topo closes |
+| 06 | `06_close_the_gaps.py` | `max_gap`: which gaps topo closes |
 | 07 | `07_circles_from_segments.py` | when many short lines are rebuilt as a circle |
 | 08 | `08_split_into_parts.py` | one file per part, named by the text inside it; JSON facts |
 | 09 | `09_roles.py` | tell topo what is not the part: by name, by dashed line, by colour |

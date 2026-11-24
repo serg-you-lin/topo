@@ -206,7 +206,7 @@ warnings live on the network. A consumer (snapdraw) composes the
 same steps as it needs.
 
 The repair is **one for every reading** (`readings/network.py`):
-two numbers, `tolerance` for nodes and `max_gap` for gaps (default none closed),
+one fixed threshold, `SAME_POINT` for nodes, and one parameter, `max_gap` for gaps (default none closed),
 and `Network` carries them together with `source_file` and `label`. The foundations are
 **the same for every reading** (`core/base/`): `faces()`,
 `outlines()` and any recipe go through the same functions, with the same
@@ -226,12 +226,12 @@ cut is made by the reading that asks for it.
 1. **normalize** (`normalize`): curves written as points refitted into primitives,
 lines and arcs drawn in pieces merged, `LineSeg`
    under `SAME_POINT` welded, nearly complete arcs closed into a circle
-   (gap within `tolerance` and at most 2° missing), then the gaps: every
-   free endpoint closes on the nearest point of the network within `tolerance` — another
+   (gap within `max_gap` and at most 2° missing), then the gaps: every
+   free endpoint closes on the nearest point of the network within `max_gap` — another
    endpoint (meeting or segment, each endpoint at most one gap) or the point
    where its curve, extended, meets another edge; never with a cross
-   bridge; on a tie, none. Every comparison with a
-   tolerance includes it up to noise (`reach`)
+   bridge; on a tie, none. Every comparison with
+   `max_gap` includes it up to noise (`reach`)
 2. **planar network** (`split_at_crossings`): every contact decided once on the
    true curves; for `faces()` the contacts where an end touches
    something cut, not the crossings
@@ -336,7 +336,7 @@ role, or on the adapter's default (see the table in the README and
 ### 6. JSON export
 
 `to_json` / `save_json` write `Result.to_dict()`: where the
-geometry comes from (`source_format`), how it was read (`reading`, `tolerance`,
+geometry comes from (`source_format`), how it was read (`reading`, `tolerance` = `SAME_POINT`,
 `max_gap`), the warnings, and for each part the exact facts on the primitives (area,
 perimeters, bbox, counts of `overlay`). No coordinates, nothing of a
 process: material, thickness or a part code are added by the
@@ -350,15 +350,14 @@ consumer with `extra(cluster)`, which cannot replace a topo field.
 
 `topo.precision.SAME_POINT` (0.001) is the distance under which two ends are one
 node — fixed, not a parameter; gaps are closed only by `max_gap`. It does **not** round nodes: an endpoint is its true point, no
-grid; two ends become the same node by distance. It serves in two ways:
+grid; two ends become the same node by distance. Gap closing is `max_gap`'s job,
+not this threshold's. It serves as:
 
-1. **gap closing**: a free endpoint closes within `tolerance` on another
-   endpoint or where its curve, extended, meets the network
-2. **node by contact** (`split_at_crossings`): an endpoint that lies
-   within `tolerance` on another edge's curve is a node — not only
+1. **node by contact** (`split_at_crossings`): an endpoint that lies
+   within `SAME_POINT` on another edge's curve is a node — not only
    endpoint-on-endpoint, also endpoint-on-curve (a true T contact), format-
    agnostic, independent of how the file was drawn. And two cuts
-   within `tolerance` of each other are the same node, not two: a line
+   within `SAME_POINT` of each other are the same node, not two: a line
    nearly tangent to an arc crosses in two mathematically distinct but very close
    roots (a near-tangency is numerically unstable: a
    minimal perturbation of the source data moves the crossing point a lot
@@ -367,12 +366,12 @@ grid; two ends become the same node by distance. It serves in two ways:
    one (the cause isolated and fixed at the root).
    Now the contact is decided once per pair and gives one
    shared node: node identity (T, two endpoints, missed tangency) is within
-   `GRAPH_EPSILON` (= `SAME_POINT`), as the graph already did; `tolerance` merges only the
-   meetings of one same pair, because over the whole network it percolates.
+   `GRAPH_EPSILON` (= `SAME_POINT`), as the graph already did; merging meetings within it
+   is done only for one same pair, because over the whole network it percolates.
 
-A gap 4× the tolerance is **not** closed — it is a choice, not a bug: if the
-file has big holes, either they are intended or the unit of measure is wrong. Workaround:
-raise `tolerance`.
+A gap wider than `max_gap` is **not** closed — it is a choice, not a bug: if the
+file has big holes, either they are intended or the unit of measure is wrong. To close
+them, pass a larger `max_gap`.
 
 ### The double track of features (role_rules / inference)
 

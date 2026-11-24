@@ -223,7 +223,9 @@ own for the raw file (`docs/API.md`).
 - **Millimetres**: every length, threshold and area is in mm. topo does not read the unit a file
   declares (it is often wrong): scale geometry in other units to mm before reading it.
 - **Faithful**: every contour lies within `SAME_POINT` (0.001 mm) of the source
-  geometry, both ways; where a gap was closed, within `max_gap`.
+  geometry, both ways; where a gap was closed, within `max_gap`. A curve written
+  as points (ten or more short lines in a row) comes back within `POINTS_NOISE`
+  (0.02 mm) of its points: see the known defects below.
 - **Complete**: every curve is a cluster's contour or in `result.loose`; nothing is
   silently dropped.
 - **Deterministic**: the same input gives the same result, every run. The same

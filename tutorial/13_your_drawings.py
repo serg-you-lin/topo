@@ -27,7 +27,7 @@ import topo_dxf
 # --- CONFIG ------------------------------------------------------------------
 FOLDER = r"tutorial/files"
 READING = "faces"          # "faces" or "outlines" (lesson 10)
-MAX_GAP = None             # None = the tolerance; e.g. 0.5 closes gaps up to 0.5 mm (lesson 06)
+MAX_GAP = None             # None = no gap closed; e.g. 0.5 closes gaps up to 0.5 mm (lesson 06)
 # -----------------------------------------------------------------------------
 
 out = _paths.out("13_your_drawings")

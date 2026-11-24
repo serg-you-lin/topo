@@ -31,7 +31,7 @@ except those of `topo.experimental`, which are meant to be used but may change i
 minor. From 1.0 on, a stable name that changes shape arrives under the new name, the
 old one stays with a `FutureWarning` for two minors and then goes away. In every
 signature the **data** are positional and the **options** are passed by name only
-(the `*` in the signature): `topo.heal(doc, tolerance=0.5)`, never `topo.heal(doc, 0.5)`.
+(the `*` in the signature): `topo.heal(doc, max_gap=0.5)`, never `topo.heal(doc, 0.5)`.
 A function that modifies its argument returns `None`.
 
 ---
@@ -298,12 +298,11 @@ assigns the roles to the `Edge`s.
 **Returns** a `Network`. An empty drawing does not raise: `net.errors` is
 populated and `net.is_valid` is `False`.
 
-**Raises** `TypeError` if you do not pass a `Document`, or if `tolerance`/`max_gap`
-is not a number; `ValueError` if `tolerance` (given, or the loader's) is not a finite
-number greater than zero, or `max_gap` is negative or not finite.
+**Raises** `TypeError` if you do not pass a `Document`, or if `max_gap` is not a
+number; `ValueError` if `max_gap` is negative or not finite.
 
 ```python
-net = topo.heal(doc, tolerance=0.5, label="P-1024")
+net = topo.heal(doc, max_gap=0.5, label="P-1024")
 result = net.faces()
 ```
 
@@ -318,7 +317,7 @@ The readings do not modify it.
 | `set_aside` | `list[Edge]` | the edges with a non-structural role: each reading puts them in `loose` with their role |
 | `crossings` | `list` | the points where two edges cross without a node |
 | `free_ends` | `list[(point, mm)]` | the endpoints that no other edge touches, with the distance from the nearest node |
-| `tolerance` | `float` | the node tolerance used |
+| `tolerance` | `float` | always `SAME_POINT` (0.001 mm), the one node threshold: not a parameter |
 | `max_gap` | `float` | the widest gap closed; 0 when `heal()` had none |
 | `source_file`, `label` | `str` | copied onto every `Result` and `Cluster` read from here |
 | `warnings`, `errors` | `list[str]` | what the repair did; with `errors` no reading finds anything |
@@ -447,7 +446,7 @@ the frame in the drawing, therefore, the only cluster is the frame: removing it 
 a role to frame, title block, magnification circles) is the caller's
 job. What a cluster is — view, part — is decided by whoever uses it.
 
-The numbers are those of `heal()` (`net.tolerance`, `net.max_gap`); `max_gap`
+The numbers are those of `heal()` (`SAME_POINT` for nodes, `net.max_gap`); `max_gap`
 is also the distance at which two edges belong to the same group.
 
 **Returns** a `Result` with one `Cluster` per outline, sorted by the area of the
