@@ -352,7 +352,7 @@ topo.experimental.merge_near_copies(edges, *, distance) -> list[Edge]
 topo.experimental.weld_degenerate_linesegs(edges) -> list[Edge]
 topo.experimental.refit_tessellations(edges, ...) -> list[Edge]
 topo.experimental.split_labeled(edges, is_structural=None) -> tuple[list[Edge], list[Edge]]
-topo.experimental.close_near_full_arcs(edges, tolerance, max_missing_angle=NEAR_FULL_ARC_MISSING)
+topo.experimental.close_near_full_arcs(edges, tolerance, max_missing_angle=math.radians(topo.precision.NEAR_FULL_ARC_MISSING_DEG))
     -> tuple[list[Edge], int]
 topo.experimental.close_free_gaps(edges, tolerance) -> list[Edge]
 topo.experimental.dangling_splines(edges) -> list[Edge]
@@ -382,7 +382,7 @@ a recipe composed by a caller go through the same functions.
 | `merge_cocircular_overlaps` | `list[Edge]` → `list[Edge]` | the same on co-circular arcs. |
 | `weld_degenerate_linesegs` | `list[Edge]` → `list[Edge]` | welds `LineSeg`s under `SAME_POINT` into a single node; a wider group is a piecewise curve and stays. |
 | `split_labeled` | `list[Edge]` → `(kept, labelled)` | sets aside the edges with an already decided, non-structural role. Without `is_structural`, only `outer`/`inner` are structural. |
-| `close_near_full_arcs` | `list[Edge]` → `(edges, n_closed)` | the arcs (`CircleSeg`) with free ends on the same circle are joined across every gap within `tolerance` **and** within `max_missing_angle` (`NEAR_FULL_ARC_MISSING` = 2°): all closed gives a `CircleSeg`, otherwise an `CircleSeg` open on the remaining gaps; `n` = edges rebuilt. `tolerance=math.inf` leaves only the angle. |
+| `close_near_full_arcs` | `list[Edge]` → `(edges, n_closed)` | the arcs (`CircleSeg`) with free ends on the same circle are joined across every gap within `tolerance` **and** within `max_missing_angle` (default `topo.precision.NEAR_FULL_ARC_MISSING_DEG` = 2°, in radians): all closed gives a `CircleSeg`, otherwise an `CircleSeg` open on the remaining gaps; `n` = edges rebuilt. `tolerance=math.inf` leaves only the angle. |
 | `close_free_gaps` | `list[Edge]` → `list[Edge]` | every free endpoint closes onto the nearest point of the network within `tolerance`: another free endpoint (meeting or segment, each endpoint at most one gap) or the point where its curve, continued, meets another edge — never with a bridge across. An endpoint whose two nearest points tie does not choose. |
 | `dangling_splines` | `list[Edge]` → `list[Edge]` | the open `BSplineSeg`s with one unconnected endpoint — diagnostics only. |
 | `split_at_crossings` | `list[Edge]` → `NodedEdges` | the planar network: every contact decided once on the true curves. `cut_crossings`: a crossing cuts too — yes for `outlines()`, no for the network of `heal()` (the cut is made by the reading); the crossings are in `crossings` anyway. `NodedEdges.whole(loop)` gives back the original edge where a loop runs along all its pieces. |

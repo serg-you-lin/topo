@@ -34,7 +34,7 @@ from .core.base.prepare import prepare, Prepared, normalize, Normalized
 from .core.topology.non_contour_edges import non_contour_pieces
 from .core.base.merge import (merge_collinear_overlaps, merge_cocircular_overlaps, weld_degenerate_linesegs,
                                    merge_near_copies, near_copies, NearCopy)
-from .core.base.cleanup import (split_labeled, close_free_gaps, dangling_splines, close_near_full_arcs, NEAR_FULL_ARC_MISSING)
+from .core.base.cleanup import (split_labeled, close_free_gaps, dangling_splines, close_near_full_arcs)
 from .core.readings.heal_steps import (find_non_contour_edges, find_joining_edges, free_ends, structural_loops, build_hierarchy)
 from .core.base.curves import loops_to_curves, loose_curves
 from .core.readings.outline import read_outlines, read_outline, OutlineReading
@@ -58,7 +58,7 @@ __all__ = [
     "merge_near_copies", "near_copies", "NearCopy",
     "split_labeled", "close_free_gaps", "dangling_splines",
     "find_non_contour_edges", "find_joining_edges", "free_ends",
-    "close_near_full_arcs", "NEAR_FULL_ARC_MISSING",
+    "close_near_full_arcs",
     "structural_loops", "loops_to_curves",
     "loose_curves", "build_hierarchy",
     "read_outlines", "read_outline", "OutlineReading",
