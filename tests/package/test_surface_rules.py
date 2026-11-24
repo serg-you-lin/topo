@@ -169,7 +169,6 @@ DATA = {
     'topo.primitives.EllipseSeg.translated': ('dx', 'dy'),
     'topo.primitives.EllipseSeg.scaled': ('factor',),
     'topo.primitives.sub_segment': ('seg', 'a', 'b', 'via'),
-    'topo.primitives.segment_endpoints': ('segment',),
     'topo.model.RenderedText': ('content', 'position'),
     'topo.model.Curve': ('role',),
     'topo.model.ClosedCurve': ('role', 'segments'),

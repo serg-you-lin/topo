@@ -11,8 +11,7 @@ from topo.precision import FLOAT_NOISE
 import math
 from typing import List, Optional, Tuple
 
-from topo.primitives import (LineSeg, BSplineSeg, CircleSeg, ClothoidSeg, EllipseSeg, FormulaSeg, HyperbolaSeg, ParabolaSeg,
-                             segment_endpoints)
+from topo.primitives import (LineSeg, BSplineSeg, CircleSeg, ClothoidSeg, EllipseSeg, FormulaSeg, HyperbolaSeg, ParabolaSeg)
 from topo.model import EdgeStyle
 
 _STANDARD_LINETYPES = frozenset({"BYLAYER", "BYBLOCK", "CONTINUOUS"})
@@ -95,7 +94,7 @@ def _seg_end_point(seg) -> Optional[tuple]:
     if isinstance(seg, LineSeg):
         return (seg.end[0], seg.end[1])
     if (isinstance(seg, CircleSeg) and not seg.full):
-        return segment_endpoints(seg)[1]
+        return seg.endpoints()[1]
     return None
 
 
@@ -112,7 +111,7 @@ def _head_to_tail_runs(segments: list) -> List[list]:
     every run is a chain with no jumps."""
     runs: List[list] = []
     for seg in segments:
-        if runs and _joined(segment_endpoints(runs[-1][-1])[1], segment_endpoints(seg)[0]):
+        if runs and _joined(runs[-1][-1].endpoints()[1], seg.endpoints()[0]):
             runs[-1].append(seg)
         else:
             runs.append([seg])
@@ -125,7 +124,7 @@ def segments_to_pts_with_bulge(segments: list) -> list:
         if isinstance(seg, LineSeg):
             pts.append((seg.start[0], seg.start[1], 0.0, 0.0, 0.0))
         elif (isinstance(seg, CircleSeg) and not seg.full):
-            start = segment_endpoints(seg)[0]
+            start = seg.endpoints()[0]
             pts.append((start[0], start[1], 0.0, 0.0, arc_seg_to_bulge(seg)))
     return pts
 
@@ -239,7 +238,7 @@ def write_segments(segments: List, msp, layer: str, styles: Optional[List] = Non
         return created or None
 
     runs = _head_to_tail_runs(segments)
-    if len(runs) > 1 or not _joined(segment_endpoints(segments[-1])[1], segment_endpoints(segments[0])[0]):
+    if len(runs) > 1 or not _joined(segments[-1].endpoints()[1], segments[0].endpoints()[0]):
         # a jump: closed, the polyline would draw a side over the hole and the DXF would
         # show a contour the Result does not have
         return [_add_open_run(run, msp, layer, style) for run in runs]
@@ -390,7 +389,7 @@ def write_open_segments(segments: List, msp, layer: str, styles: Optional[List] 
     for i, seg in enumerate(segments):
         style = styles[i] if i < len(styles) else None
         if isinstance(seg, LineSeg) or (isinstance(seg, CircleSeg) and not seg.full):
-            if poly_run and not _joined(_seg_end_point(poly_run[-1]), segment_endpoints(seg)[0]):
+            if poly_run and not _joined(_seg_end_point(poly_run[-1]), seg.endpoints()[0]):
                 _flush_poly_run()   # a jump is not covered by a vertex
             if not poly_run:
                 poly_run_style = style

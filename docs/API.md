@@ -198,7 +198,7 @@ they do not import `topo.core`/`tools`/`io`/`rules`. What it needs:
 | `topo.model.Document` | the adapter's result; two endpoints closer than `topo.precision.SAME_POINT` are one node |
 | `topo.model.Text`, `RenderedGeometry`, `RenderedText`, `MeasuredDistance`/`Radius`/`Diameter`/`Angle` (also `topo.*`) | the texts read from the source, each with its `role` (the source group does not stay in the model) |
 
-To write out in a format: `topo.primitives.segment_endpoints(segment)` gives the
+To write out in a format: `segment.endpoints()` gives the
 two endpoints of a segment, `topo.model.feature_role(contour, item_role)` the
 role with which a contour of an overlay item is drawn,
 `topo.model.role_style(role, *, role_styles=None)` how it is drawn: topo's
