@@ -160,7 +160,7 @@ class TestLooseEnds(unittest.TestCase):
 
     def test_003_heal_says_them(self):
         result = topo.heal(Document(edges=self.edges, source_meta={"tolerance": 0.05})).faces()
-        self.assertEqual(result.cluster_count, 2)
+        self.assertEqual(len(result.clusters), 2)
         self.assertIn("free-end", [n.code for n in result.notes])
         self.assertIn("joining-edge", [n.code for n in result.notes])
 
@@ -197,7 +197,7 @@ class TestShortElementsAndTolerance(unittest.TestCase):
 
     def test_001_fillet_remains(self):
         result = self._heal(CircleSeg((99.6, 99.6), 0.4, 0, math.pi / 2), 99.6, 99.6)
-        self.assertEqual(result.cluster_count, 1)
+        self.assertEqual(len(result.clusters), 1)
         outer = result.clusters[0].outer
         self.assertIn("CircleSeg", [type(s).__name__ for s in outer.segments])
         self.assertAlmostEqual(outer.area, 10000 - (0.4 ** 2 - math.pi * 0.4 ** 2 / 4), places=3)
@@ -205,7 +205,7 @@ class TestShortElementsAndTolerance(unittest.TestCase):
     def test_002_chamfer_remains(self):
         c = 0.5 / math.sqrt(2)
         result = self._heal(LineSeg((100, 100 - c), (100 - c, 100)), 100 - c, 100 - c)
-        self.assertEqual(result.cluster_count, 1)
+        self.assertEqual(len(result.clusters), 1)
         self.assertAlmostEqual(result.clusters[0].outer.area, 10000 - c * c / 2, places=3)
 
     def test_003_every_end_closes_a_single_gap(self):
@@ -474,7 +474,7 @@ class TestCloseNearFullArcs(unittest.TestCase):
         doc.edges, _ = topo.experimental.close_near_full_arcs(doc.edges, 0.5, max_missing_angle=math.radians(5.7))
         net = topo.heal(doc, max_gap=0.5)
         self.assertFalse([w for w in net.warnings if isinstance(w, topo.Diagnostic)])
-        self.assertEqual(sum(len(c.inners) for c in net.faces().clusters) + net.faces().cluster_count, 1)
+        self.assertEqual(sum(len(c.inners) for c in net.faces().clusters) + len(net.faces().clusters), 1)
 
     def test_014_a_gap_just_beyond_the_limit_warns_and_the_help_closes_it(self):
         # an open rectangle of 0.055 with tolerance 0.05
@@ -483,10 +483,10 @@ class TestCloseNearFullArcs(unittest.TestCase):
         net = topo.heal(doc, max_gap=0.05)
         [d] = [w for w in net.warnings if isinstance(w, topo.Diagnostic)]
         self.assertEqual((d.code, d.param, round(d.value, 4)), ("near-gap", "max_gap", 0.055))
-        self.assertEqual(net.faces().cluster_count, 0)
+        self.assertEqual(len(net.faces().clusters), 0)
         self.assertIn("max_gap=0.055)", d.help)
         net = topo.heal(doc, max_gap=0.055)
-        self.assertEqual((net.faces().cluster_count, [w for w in net.warnings if isinstance(w, topo.Diagnostic)]), (1, []))
+        self.assertEqual((len(net.faces().clusters), [w for w in net.warnings if isinstance(w, topo.Diagnostic)]), (1, []))
 
     def test_013_a_small_thread_does_not_warn(self):
         # a thread is missing ~90°; r 0.3, chord 0.42 within 0.5, open on purpose
@@ -519,7 +519,7 @@ class TestSingleNodeGrid(unittest.TestCase):
         for tol in (0.05, 0.5):
             with self.subTest(tolerance=tol):
                 result = topo.heal(topo.load_segments(self._lollipop()), max_gap=tol).faces()
-                self.assertEqual(result.cluster_count, 1)
+                self.assertEqual(len(result.clusters), 1)
                 cluster = result.clusters[0]
                 self.assertEqual(cluster.inners, [], "the arc is not a hole")
                 arcs = [s for s in cluster.outer.segments if (isinstance(s, CircleSeg) and not s.full)]
@@ -532,7 +532,7 @@ class TestSingleNodeGrid(unittest.TestCase):
 
     def test_006_heal_does_not_close_an_arc_by_tolerance_alone(self):
         result = topo.heal(topo.load_segments([_arc(10.0, 2.9)]), max_gap=1.0).faces()
-        self.assertEqual(result.cluster_count, 0)
+        self.assertEqual(len(result.clusters), 0)
 
 
 class TestFaceLoops(unittest.TestCase):
@@ -605,7 +605,7 @@ class TestLoopsToCurves(unittest.TestCase):
         square = [LineSeg(start=a, end=b) for a, b in
                   [((0, 0), (10, 0)), ((10, 0), (10, 10)), ((10, 10), (0, 10)), ((0, 10), (0, 0))]]
         result = topo.heal(topo.load_segments(square + self._arc_with_chords(radius=0.2, n=8))).faces()
-        self.assertEqual(result.cluster_count, 1)
+        self.assertEqual(len(result.clusters), 1)
         loose = [s for curve in result.loose for s in curve.segments]
         self.assertEqual(sum((isinstance(s, CircleSeg) and not s.full) for s in loose), 1)
         self.assertEqual(sum(isinstance(s, LineSeg) for s in loose), 8)

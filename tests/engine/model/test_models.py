@@ -226,12 +226,6 @@ class TestForgeResult(unittest.TestCase):
         cluster  = Cluster(outer=outer, label="piece_1", source_file="test.dxf")
         return Result(clusters=[cluster], source_file="test.dxf")
 
-    def test_001_part_count(self):
-        """cluster_count correct."""
-        result = self._make_result()
-        print(f"\n[Result] cluster_count={result.cluster_count}")
-        self.assertEqual(result.cluster_count, 1)
-
     def test_002_is_valid_default(self):
         """is_valid is True by default."""
         result = self._make_result()

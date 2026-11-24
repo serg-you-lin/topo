@@ -295,7 +295,7 @@ class TestMergeNearCopies(unittest.TestCase):
         [d] = [w for w in net.warnings if isinstance(w, topo.Diagnostic)]
         self.assertEqual((d.code, d.param, round(d.value, 4)), ("near-copy", "distance", 0.0005))
         self.assertIn("distance=0.0005)", d.help)
-        self.assertEqual(net.faces().cluster_count, 0)
+        self.assertEqual(len(net.faces().clusters), 0)
         doc.edges = merge_near_copies(doc.edges, distance=0.0005)
         result = topo.heal(doc, max_gap=0.5).faces()
         self.assertEqual([round(to_shapely(c.outer).area) for c in result.clusters], [5000])

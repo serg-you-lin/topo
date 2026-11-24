@@ -163,7 +163,7 @@ class TestWritebackTrash(unittest.TestCase):
         doc = topo_dxf.load_dxf(drawing("arc_open.dxf"))
         result = topo.heal(doc).faces()
         self.assertFalse(result.is_valid)
-        self.assertEqual(result.cluster_count, 0)
+        self.assertEqual(len(result.clusters), 0)
         self.assertTrue(result.errors)
 
         msp = topo_dxf.to_dxf(result, doc).modelspace()
@@ -367,7 +367,7 @@ class TestWritebackInsertExplodedByDefault(unittest.TestCase):
         doc = topo_dxf.load_dxf(drawing("scritta.dxf"))
         self.assertGreater(len(doc.edges), 50)
         result = topo.heal(doc).faces()
-        self.assertEqual(result.cluster_count, 1)
+        self.assertEqual(len(result.clusters), 1)
         self.assertGreater(len(result.clusters[0].inners), 6)
 
 

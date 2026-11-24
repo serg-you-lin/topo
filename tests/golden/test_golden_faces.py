@@ -121,7 +121,7 @@ def _make_test(path):
 
         # --- cluster count ---
         self.assertEqual(
-            result.cluster_count,
+            len(result.clusters),
             golden["cluster_count"],
         )
 
@@ -289,7 +289,7 @@ def _make_roundtrip_test(path):
 
         src = golden["source_file"]
         self.assertEqual(
-            rt_result.cluster_count, result.cluster_count,
+            len(rt_result.clusters), len(result.clusters),
             msg=f"{src} round-trip cluster_count "
                 f"(the exporter lost or invented a part)",
         )

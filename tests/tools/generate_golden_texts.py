@@ -80,7 +80,7 @@ def generate(force: bool = False, only: str = None) -> None:
             golden = {
                 "source_file": dxf_path.name,
                 "text_count": len(entries),
-                "cluster_count": result.cluster_count,
+                "cluster_count": len(result.clusters),
                 "texts": entries,
             }
             golden_path.write_text(

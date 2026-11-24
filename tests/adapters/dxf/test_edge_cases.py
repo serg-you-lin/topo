@@ -41,7 +41,7 @@ def _make_test(dxf_path):
         doc_out = topo_dxf.to_dxf(result, topo_doc)
 
         # every drawing of edge_cases/ has at least one part
-        self.assertGreater(result.cluster_count, 0)
+        self.assertGreater(len(result.clusters), 0)
 
         healed_vertices = _extract_pline_vertices(doc_out.modelspace())
         self.assertGreater(len(healed_vertices), 0)

@@ -76,14 +76,14 @@ class TestSplitIsModel(unittest.TestCase):
     def setUp(self):
         self.doc = _two_squares_doc()
         self.result = topo.heal(self.doc).faces()
-        self.assertEqual(self.result.cluster_count, 2)
+        self.assertEqual(len(self.result.clusters), 2)
 
     def test_one_result_per_part(self):
         parts = topo.split(self.result, namer=lambda i, c: f"P{i}")
         self.assertEqual([p.clusters[0].label for p in parts], ["P0", "P1"])
         for part in parts:
             self.assertIsInstance(part, topo.Result)
-            self.assertEqual(part.cluster_count, 1)
+            self.assertEqual(len(part.clusters), 1)
 
     def test_trash_and_annotations_go_to_one_part(self):
         # every text to the part that contains it or the nearest, the trash to the

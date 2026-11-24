@@ -277,8 +277,8 @@ def _make_chords_test(dxf: Path):
                 continue
             tried += 1
             again = topo.heal(topo.load_segments(list(cluster.outer.segments) + chords)).faces()
-            if again.cluster_count != 1 or _shape_differences([to_shapely(cluster.outer)], _outers(again)):
-                broken.append(f"cluster[{ci}] (+{len(chords)} chords): {again.cluster_count} cluster")
+            if len(again.clusters) != 1 or _shape_differences([to_shapely(cluster.outer)], _outers(again)):
+                broken.append(f"cluster[{ci}] (+{len(chords)} chords): {len(again.clusters)} cluster")
         if not tried:
             self.skipTest("no chord between two vertices of an outer")
         check = lambda: self.assertEqual(broken, [], f"{dxf.stem}: the chords change the outer")
@@ -322,7 +322,7 @@ def _make_roles_test(dxf: Path):
         blind = Document(edges=[replace(e, role="unknown") if id(e) in ids else e for e in doc.edges],
                               source_path=doc.source_path, source_meta=doc.source_meta)
         again = topo.heal(blind).faces()
-        self.assertEqual(again.cluster_count, result.cluster_count,
+        self.assertEqual(len(again.clusters), len(result.clusters),
                          f"{dxf.stem}: {len(ids)} edges without role change the number of pieces")
         self.assertEqual(_shape_differences(_outers(result), _outers(again)), [],
                          f"{dxf.stem}: {len(ids)} edges without role change the outers")
@@ -350,7 +350,7 @@ def _make_motion_test(dxf: Path):
                     self.skipTest("gap exactly as wide as the tolerance: on the threshold edge")
                 again = topo.heal(moved(doc, move)).faces()
                 outers_again, inners_again = ([back(p) for p in ps] for ps in contours(again))
-                self.assertEqual(again.cluster_count, result.cluster_count, f"{dxf.stem}, {name}: changes the pieces")
+                self.assertEqual(len(again.clusters), len(result.clusters), f"{dxf.stem}, {name}: changes the pieces")
                 self.assertEqual(_shape_differences(outers, outers_again), [], f"{dxf.stem}, {name}: changes the outers")
                 self.assertEqual(_shape_differences(inners, inners_again), [], f"{dxf.stem}, {name}: changes the holes")
     return test
@@ -372,7 +372,7 @@ def _make_order_test(dxf: Path):
             with self.subTest(order=name):
                 again = topo.heal(Document(edges=edges, source_path=doc.source_path,
                                            source_meta=doc.source_meta)).faces()
-                self.assertEqual(again.cluster_count, result.cluster_count,
+                self.assertEqual(len(again.clusters), len(result.clusters),
                                  f"{dxf.stem}, {name}: the order changes the pieces")
                 self.assertEqual(_shape_differences(_outers(result), _outers(again)), [],
                                  f"{dxf.stem}, {name}: the order changes the outers")

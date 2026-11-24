@@ -159,7 +159,7 @@ def inspect_result(result, *, coords: bool = False) -> None:
 
     print(f"\nsource_file : {result.source_file}")
     print(f"is_valid    : {result.is_valid}")
-    print(f"cluster_count  : {result.cluster_count}")
+    print(f"cluster_count  : {len(result.clusters)}")
 
     if result.errors:
         print(f"\nerrors ({len(result.errors)}):")

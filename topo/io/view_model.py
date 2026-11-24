@@ -170,7 +170,7 @@ def to_view_model(
     vm = {
         "source_file": result.source_file,
         "is_valid":    result.is_valid,
-        "cluster_count":  result.cluster_count,
+        "cluster_count":  len(result.clusters),
         "bbox":        _bbox_of(result.clusters),
         "warnings":    list(result.warnings),
         "errors":      list(result.errors),

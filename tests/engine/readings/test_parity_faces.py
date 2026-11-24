@@ -50,7 +50,7 @@ class TestOddNodes(unittest.TestCase):
                        + _lines((95, 47), (165, 47), (165, 103), (95, 103), closed=True)
                        + _lines((0, 0), (95, 47)) + _lines((260, 0), (165, 47))
                        + _lines((0, 150), (95, 103)) + _lines((260, 150), (165, 103)))
-        self.assertEqual(result.cluster_count, 1)
+        self.assertEqual(len(result.clusters), 1)
         self.assertAlmostEqual(result.clusters[0].area, 260 * 150 - 70 * 56)
         self.assertEqual(len(result.loose), 4)
         self.assertEqual(message_problems(result), [])
@@ -69,7 +69,7 @@ class TestOddNodes(unittest.TestCase):
         doc.edges.append(doc.edges[0].__class__(role="engrave", start=(50, 0), end=(50, 60),
                                                 segment=LineSeg((50, 0), (50, 60))))
         result = topo.experimental.parity_faces(topo.heal(doc))
-        self.assertEqual(result.cluster_count, 1)
+        self.assertEqual(len(result.clusters), 1)
         self.assertAlmostEqual(result.clusters[0].area, 100 * 60)
 
 

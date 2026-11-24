@@ -369,12 +369,12 @@ class TestIntegrationPipeline(unittest.TestCase):
     def test_003_result_ha_parts(self):
         """split_to_files() returns a Result with clusters filled."""
         result, _ = self._run("two_parts.dxf", "two_parts")
-        self.assertGreater(result.cluster_count, 0)
+        self.assertGreater(len(result.clusters), 0)
 
     def test_004_part_with_aperture(self):
         """pline_with_hole.dxf → the cluster has at least one inner/hole."""
         result, _ = self._run("pline_with_hole.dxf", "pline_with_hole")
-        self.assertEqual(result.cluster_count, 1)
+        self.assertEqual(len(result.clusters), 1)
         self.assertGreater(len(result.clusters[0].inners), 0,
                            "No inner/hole found")
 

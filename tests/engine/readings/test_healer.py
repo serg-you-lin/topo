@@ -34,7 +34,7 @@ class TestHealerRectLines(unittest.TestCase):
         self.result = topo.heal(doc).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_no_errors(self):
         self.assertEqual(len(self.result.errors), 0)
@@ -61,7 +61,7 @@ class TestHealerRectWithHole(unittest.TestCase):
         self.result = topo.heal(doc).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_has_hole(self):
         self.assertGreaterEqual(len(self.result.clusters[0].inners), 1)
@@ -82,7 +82,7 @@ class TestHealerCleanFile(unittest.TestCase):
     def test_002_finds_one_part(self):
         doc = topo_dxf.load_dxf(load("pline_with_hole.dxf"))
         result = topo.heal(doc).faces()
-        self.assertEqual(result.cluster_count, 1)
+        self.assertEqual(len(result.clusters), 1)
 
     def test_003_has_one_inner(self):
         doc = topo_dxf.load_dxf(load("pline_with_hole.dxf"))
@@ -99,7 +99,7 @@ class TestHealerCircleOuter(unittest.TestCase):
         self.result = topo.heal(doc).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_inner_classified(self):
         self.assertGreaterEqual(len(self.result.clusters[0].features("holes")) + len(self.result.clusters[0].inners), 1)
@@ -114,7 +114,7 @@ class TestHealerCircleHole(unittest.TestCase):
         self.result = topo.heal(doc).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_circle_is_an_inner(self):
         self.assertEqual(len(self.result.clusters[0].inners), 1)
@@ -148,7 +148,7 @@ class TestHealerCountersink(unittest.TestCase):
         self.result = topo.heal(doc).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_sees_both_circles_as_inners(self):
         # heal() does not tell a countersink apart — it sees both as inners
@@ -174,7 +174,7 @@ class TestHealerInnerLoopInsideLwpolyline(unittest.TestCase):
         self.result = topo.heal(doc).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_inner_loop_classified_as_inner(self):
         self.assertEqual(len(self.result.clusters[0].inners), 1)
@@ -189,7 +189,7 @@ class TestHealerDeduplication(unittest.TestCase):
         self.result = topo.heal(doc).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_no_errors(self):
         self.assertEqual(len(self.result.errors), 0)

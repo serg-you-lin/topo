@@ -99,7 +99,7 @@ def _make_test(path: Path):
 
         if "cluster_count" in golden:
             self.assertEqual(
-                result.cluster_count, golden["cluster_count"],
+                len(result.clusters), golden["cluster_count"],
                 msg=f"{golden['source_file']}: number of parts",
             )
         self.assertEqual(len(actual), golden["text_count"],

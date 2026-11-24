@@ -1378,7 +1378,6 @@ Produced by `Network.faces()` or `Network.outlines()`, enriched by a consumer.
 | `warnings` / `errors` | `list[str]` | diagnostics |
 | `loose` | `list[OpenCurve \| ClosedCurve]` | every curve that is the contour of no cluster: chains that close nothing, open traces, closed curves with a non-structural role. `curve.cluster_ref` = index of the cluster whose outer contour contains all of it, border and holes included (a line from side to side, a cross inside a hole); `None` otherwise. With `outlines()` also the cluster that the curve touches. A consumer moves it into `cluster.overlay` with `result.promote` |
 | `texts` | `list[Text]` | copied from the `Network` (from the `Document`) |
-| `cluster_count` | property | `len(clusters)` |
 
 Method `to_dict()` → JSON-ready dictionary (used internally by the exports).
 

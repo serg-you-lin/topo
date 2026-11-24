@@ -31,7 +31,7 @@ class TestFullEllipseOuter(unittest.TestCase):
 
     def test_001_one_valid_cluster(self):
         self.assertTrue(self.result.is_valid)
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_area_matches_ellipse_formula(self):
         # area = pi * a * b, a=10 (semi-major axis), b=5 (ratio 0.5)
@@ -60,7 +60,7 @@ class TestFullEllipseOuter(unittest.TestCase):
         """Reloading the output with topo itself finds the same area."""
         doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
         reloaded = topo.heal(topo_dxf.document_from_msp(doc_out.modelspace())).faces()
-        self.assertEqual(reloaded.cluster_count, 1)
+        self.assertEqual(len(reloaded.clusters), 1)
         self.assertAlmostEqual(
             reloaded.clusters[0].outer.area,
             self.result.clusters[0].outer.area,
@@ -84,7 +84,7 @@ class TestEllipticalArcMixedWithLines(unittest.TestCase):
 
     def test_001_closes_into_one_valid_cluster(self):
         self.assertTrue(self.result.is_valid, self.result.errors)
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_area_matches_quarter_ellipse(self):
         # sector bounded by the two semi-axes and the arc = a quarter of the ellipse's
@@ -102,7 +102,7 @@ class TestEllipticalArcMixedWithLines(unittest.TestCase):
     def test_004_roundtrip_area_stable(self):
         doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
         reloaded = topo.heal(topo_dxf.document_from_msp(doc_out.modelspace())).faces()
-        self.assertEqual(reloaded.cluster_count, 1)
+        self.assertEqual(len(reloaded.clusters), 1)
         self.assertAlmostEqual(
             reloaded.clusters[0].outer.area,
             self.result.clusters[0].outer.area,

@@ -193,7 +193,7 @@ all show the same picture.
 Result      clusters: list[Cluster]   loose: list (curves that are no cluster's contour)
             texts   is_valid   errors   warnings   notes
             reading ("faces" / "outlines")   max_gap
-            source_file   source_format   cluster_count
+            source_file   source_format
 Cluster     outer: Contour   inners: list[Contour]   label   overlay (a consumer's reading)
             area   bbox
 Contour     segments (LineSeg / CircleSeg / EllipseSeg / BSplineSeg)   role

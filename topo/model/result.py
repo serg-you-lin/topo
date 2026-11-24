@@ -49,10 +49,6 @@ class Result:
     texts:               List[Text]             = field(default_factory=list)
 
     @property
-    def cluster_count(self) -> int:
-        return len(self.clusters)
-
-    @property
     def has_issues(self) -> bool:
         return bool(self.warnings or self.errors)
 

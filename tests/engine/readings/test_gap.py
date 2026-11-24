@@ -38,7 +38,7 @@ class TestGapClose(unittest.TestCase):
                                  max_gap=0.2).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_no_errors(self):
         self.assertEqual(len(self.result.errors), 0)
@@ -61,7 +61,7 @@ class TestGapNoClose(unittest.TestCase):
                                  max_gap=0.05).faces()
 
     def test_001_no_parts(self):
-        self.assertEqual(self.result.cluster_count, 0)
+        self.assertEqual(len(self.result.clusters), 0)
 
 
 # --- OVERLAP — LINEs too long ---
@@ -75,7 +75,7 @@ class TestOverlapClose(unittest.TestCase):
                                  max_gap=0.2).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_no_errors(self):
         self.assertEqual(len(self.result.errors), 0)
@@ -99,7 +99,7 @@ class TestOverlapNoClose(unittest.TestCase):
                                  max_gap=0.05).faces()
 
     def test_001_no_parts_nothing_lost(self):
-        self.assertEqual(self.result.cluster_count, 0)
+        self.assertEqual(len(self.result.clusters), 0)
         self.assertEqual(len(self.result.loose), 4)
         self.assertTrue(self.result.errors)
 
@@ -116,7 +116,7 @@ class TestParallelClose(unittest.TestCase):
                                  max_gap=0.3).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_no_errors(self):
         print("ERRORS:", self.result.errors)
@@ -135,7 +135,7 @@ class TestParallelNoClose(unittest.TestCase):
                                  max_gap=0.05).faces()
 
     def test_001_no_parts(self):
-        self.assertEqual(self.result.cluster_count, 0)
+        self.assertEqual(len(self.result.clusters), 0)
 
 
 # --- ARC + LINE — gap between arc and segment ---
@@ -150,7 +150,7 @@ class TestArcLineGapClose(unittest.TestCase):
                                  max_gap=0.2).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_no_errors(self):
         self.assertEqual(len(self.result.errors), 0)
@@ -173,7 +173,7 @@ class TestArcLineGapNoClose(unittest.TestCase):
                                  max_gap=0.05).faces()
 
     def test_001_no_parts(self):
-        self.assertEqual(self.result.cluster_count, 0)
+        self.assertEqual(len(self.result.clusters), 0)
 
 
 # --- ARC + ARC same circle — two semicircles with a gap ---
@@ -193,7 +193,7 @@ class TestArcArcSameCircleClose(unittest.TestCase):
                                  max_gap=0.2).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_no_errors(self):
         self.assertEqual(len(self.result.errors), 0)
@@ -216,7 +216,7 @@ class TestArcArcSameCircleNoClose(unittest.TestCase):
                                  max_gap=0.05).faces()
 
     def test_001_no_parts(self):
-        self.assertEqual(self.result.cluster_count, 0)
+        self.assertEqual(len(self.result.clusters), 0)
 
 
 # --- ARC + ARC different circles — two arcs with distinct centres ---
@@ -231,7 +231,7 @@ class TestArcArcDifferentCircleClose(unittest.TestCase):
                                  max_gap=0.5).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_no_errors(self):
         self.assertEqual(len(self.result.errors), 0)
@@ -253,7 +253,7 @@ class TestArcArcDifferentCircleNoClose(unittest.TestCase):
                                  max_gap=0.05).faces()
 
     def test_001_no_parts(self):
-        self.assertEqual(self.result.cluster_count, 0)
+        self.assertEqual(len(self.result.clusters), 0)
 
 
 # --- SPLINE + LINE — gap closed by an extra LINE ---
@@ -269,7 +269,7 @@ class TestSplineLineGapClose(unittest.TestCase):
                                  max_gap=0.3).faces()
 
     def test_001_finds_one_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_002_no_errors(self):
         self.assertEqual(len(self.result.errors), 0)
@@ -293,7 +293,7 @@ class TestSplineLineGapNoClose(unittest.TestCase):
                                  max_gap=0.05).faces()
 
     def test_001_no_parts(self):
-        self.assertEqual(self.result.cluster_count, 0)
+        self.assertEqual(len(self.result.clusters), 0)
 
 
 if __name__ == "__main__":

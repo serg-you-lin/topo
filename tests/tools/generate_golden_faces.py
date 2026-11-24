@@ -57,7 +57,7 @@ def _load_config(dxf_path: Path) -> dict:
 
 def _geometry(result, source_file: str) -> dict:
     """topo half: outer, perimeters, inner contours."""
-    golden = {"source_file": source_file, "cluster_count": result.cluster_count, "clusters": []}
+    golden = {"source_file": source_file, "cluster_count": len(result.clusters), "clusters": []}
     for cluster in result.clusters:
         inners = sorted(cluster.inners, key=lambda x: x.area, reverse=True)
         outer_p = to_shapely(cluster.outer).exterior.length
@@ -127,7 +127,7 @@ def generate(force: bool = False, only: str = None):
             geom_path.write_text(json.dumps(_geometry(geom, dxf_path.name), indent=2,
                                             ensure_ascii=False), encoding="utf-8")
 
-            print(f"  OK: {dxf_path.name} ({geom.cluster_count} parti)")
+            print(f"  OK: {dxf_path.name} ({len(geom.clusters)} parti)")
             generated += 1
 
         except Exception as ex:

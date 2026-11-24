@@ -311,7 +311,7 @@ class TestSplitArcStubs(unittest.TestCase):
         self.result = topo.heal(Document(edges=edges)).faces()
 
     def test_a_single_part(self):
-        self.assertEqual(self.result.cluster_count, 1)
+        self.assertEqual(len(self.result.clusters), 1)
 
     def test_area_rectified(self):
         poly = to_shapely(self.result.clusters[0].outer)

@@ -41,7 +41,7 @@ class TestA_InteriorChainIsChord(unittest.TestCase):
                        + _lines((95, 47), (165, 47), (165, 103), (95, 103), closed=True)
                        + _lines((0, 0), (95, 47)) + _lines((260, 0), (165, 47))
                        + _lines((0, 150), (95, 103)) + _lines((260, 150), (165, 103)))
-        self.assertEqual(result.cluster_count, 1)
+        self.assertEqual(len(result.clusters), 1)
         self.assertEqual(len(result.clusters[0].inners), 0)
         self.assertAlmostEqual(to_shapely(result.clusters[0].outer).area, 260 * 150)
         self.assertEqual(len(result.loose), 8)
@@ -55,7 +55,7 @@ class TestB_BridgeSplitsParts(unittest.TestCase):
         result = _heal(_lines((0, 0), (110, 0), (110, 50), (110, 100), (0, 100), closed=True)
                        + _lines((166, 0), (276, 0), (276, 100), (166, 100), (166, 50), closed=True)
                        + _lines((110, 50), (166, 50)))
-        self.assertEqual(result.cluster_count, 2)
+        self.assertEqual(len(result.clusters), 2)
         self.assertEqual(len(result.loose), 1)
         self.assertIn("joining-edge", [n.code for n in result.notes], result.notes)
 
@@ -69,7 +69,7 @@ class TestC_GrazedChordIsChord(unittest.TestCase):
         outline = _lines((0, 0), (100, 0), (100, 49), (100, 50), (51, 50), (50, 48.5), (49, 50),
                          (0, 50), (0, 49), closed=True)
         result = _heal(outline + _lines((0, 49), (100, 49)))
-        self.assertEqual(result.cluster_count, 1)
+        self.assertEqual(len(result.clusters), 1)
         self.assertAlmostEqual(to_shapely(result.clusters[0].outer).area, 100 * 50 - 1.5)
         self.assertEqual(len(result.loose), 1)
 
@@ -114,7 +114,7 @@ class TestE_ClosedChainNeverCandidate(unittest.TestCase):
     def test_today_it_stays_a_hole(self):
         result = _heal(_lines((0, 0), (260, 0), (260, 120), (0, 120), closed=True)
                        + _lines((0, 0), (90, 40), (50, 80), closed=True))
-        self.assertEqual(result.cluster_count, 1)
+        self.assertEqual(len(result.clusters), 1)
         self.assertEqual(len(result.clusters[0].inners), 1)
         self.assertEqual(len(result.loose), 0)
 
