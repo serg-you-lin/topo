@@ -347,6 +347,8 @@ topo.experimental.prepare(edges, is_structural=None) -> Prepared
 topo.experimental.normalize(edges, gap, *, keep_junctions) -> Normalized
 topo.experimental.merge_collinear_overlaps(edges, keep_junctions=False) -> list[Edge]
 topo.experimental.merge_cocircular_overlaps(edges) -> list[Edge]
+topo.experimental.near_copies(edges, distance) -> list[NearCopy]
+topo.experimental.merge_near_copies(edges, *, distance) -> list[Edge]
 topo.experimental.weld_degenerate_linesegs(edges) -> list[Edge]
 topo.experimental.refit_tessellations(edges, ...) -> list[Edge]
 topo.experimental.split_labeled(edges, is_structural=None) -> tuple[list[Edge], list[Edge]]
@@ -375,6 +377,8 @@ a recipe composed by a caller go through the same functions.
 | `prepare` | `list[Edge]` → `Prepared` (`edges`, `labeled`, `welded`) | non-structural roles set aside (`split_labeled`), then the nodes decided once: from the real points, endpoints within `GRAPH_EPSILON` (= `SAME_POINT`) are one node. |
 | `normalize` | `list[Edge]`, `gap` → `Normalized` (`edges` and the counts of each step) | tessellations refitted, duplicates merged, degenerate strokes welded, near-full arcs closed, gaps closed: the same cleanups for everyone. `gap` already with the margin (`reach(tolerance)`). `keep_junctions`: two collinear pieces that touch only at a junction are not merged. |
 | `merge_collinear_overlaps` | `list[Edge]` → `list[Edge]` | merges lines drawn as overlapping pieces, judging "same line" on the true segments. |
+| `near_copies` | `list[Edge]`, `distance` → `list[NearCopy]` | the pairs of lines with the same role where the shorter lies wholly over the longer (both ends project inside it) within `distance`, not already the same line; each copy once, with its nearest line, nearest first. `NearCopy`: `kept` (the longer), `copy`, `offset` (mm), `at` (the copy's midpoint). What the `near-copy` warning reports; nothing is changed. |
+| `merge_near_copies` | `list[Edge]`, `distance` → `list[Edge]` | drops the `copy` of every pair `near_copies` finds, keeping the longer line. |
 | `merge_cocircular_overlaps` | `list[Edge]` → `list[Edge]` | the same on co-circular arcs. |
 | `weld_degenerate_linesegs` | `list[Edge]` → `list[Edge]` | welds `LineSeg`s under `SAME_POINT` into a single node; a wider group is a piecewise curve and stays. |
 | `split_labeled` | `list[Edge]` → `(kept, labelled)` | sets aside the edges with an already decided, non-structural role. Without `is_structural`, only `outer`/`inner` are structural. |

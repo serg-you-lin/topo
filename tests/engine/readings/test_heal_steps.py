@@ -470,7 +470,7 @@ class TestCloseNearFullArcs(unittest.TestCase):
         [d] = [w for w in topo.heal(doc, max_gap=0.5).warnings if isinstance(w, topo.Diagnostic)]
         self.assertEqual((d.code, d.param, d.at), ("open-arc", "max_missing_angle", (0.0, 0.0)))
         self.assertAlmostEqual(math.degrees(d.value), 3.5, places=2)
-        self.assertIn("math.radians(3.5)", d.help)
+        self.assertIn("close_near_full_arcs(doc.edges, 0.5, max_missing_angle=math.radians(3.5))", d.help)
         doc.edges, _ = topo.experimental.close_near_full_arcs(doc.edges, 0.5, max_missing_angle=math.radians(5.7))
         net = topo.heal(doc, max_gap=0.5)
         self.assertFalse([w for w in net.warnings if isinstance(w, topo.Diagnostic)])

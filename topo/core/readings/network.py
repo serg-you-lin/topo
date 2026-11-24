@@ -185,7 +185,7 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
     # what almost closed, one per type, with the points nearest first
     arcs = open_near_full_arcs(net.edges, reach(gap))
     if arcs:
-        net.warnings.append(_open_arc_warning(arcs))
+        net.warnings.append(_open_arc_warning(arcs, gap))
     gaps = near_free_gaps(net.edges, reach(gap), reach(_NEAR_GAP_REACH * max(gap, tol)))
     if gaps:
         net.warnings.append(_near_gap_warning(gaps, gap))
@@ -250,7 +250,7 @@ def _near_copy_warning(pairs: list) -> Diagnostic:
         param="distance", value=offset)
 
 
-def _open_arc_warning(arcs: list) -> Diagnostic:
+def _open_arc_warning(arcs: list, gap: float) -> Diagnostic:
     arcs = sorted(arcs, key=lambda a: a[1])
     deg = math.degrees(arcs[-1][1])
     return Diagnostic(
@@ -259,7 +259,7 @@ def _open_arc_warning(arcs: list) -> Diagnostic:
         notes=[f"{_range_text([math.degrees(m) for _, m, _ in arcs], '.2f')}° missing "
                f"({_range_text([c for _, _, c in arcs], '.3f')} mm), over the "
                f"{math.degrees(NEAR_FULL_ARC_MISSING):.0f}° that close an arc"],
-        help=f"doc.edges, _ = topo.experimental.close_near_full_arcs(doc.edges, tolerance, "
+        help=f"doc.edges, _ = topo.experimental.close_near_full_arcs(doc.edges, {gap:g}, "
              f"max_missing_angle=math.radians({_ceil_2(deg):g})) before heal() closes them",
         param="max_missing_angle", value=arcs[-1][1])
 
