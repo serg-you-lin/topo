@@ -68,7 +68,7 @@ def split(
     if dropped:
         result.warnings.append(Diagnostic(
             "dropped-part", f"{plural(len(dropped), 'part', 'parts')} dropped, area under min_area {min_area:g} mm²",
-            points=[c.outer.segments[0].start for c in dropped],
+            points=[c.outer.segments[0].endpoints()[0] for c in dropped],
             notes=[f"smallest {min(c.outer.area for c in dropped):.4g} mm², largest {max(c.outer.area for c in dropped):.4g} mm²"],
             help="topo.split(result) keeps every part (min_area=0.0, the default)"))
     parts: List[Result] = []

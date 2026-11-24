@@ -24,8 +24,12 @@ from ..core.primitives.line import LineSeg
 from ..core.geometry.shapely_polygons import curve_polygon
 from ..core.geometry.measure import FLOAT_NOISE
 from ..core.geometry.rings import ring_jumps
+from shapely.geometry import LineString
+
 from ..core.geometry.intersections import intersections
 from ..precision import SAME_POINT
+from ..core.primitives.mathseg import DEFAULT_TOLERANCE
+from ..core.topology.noding import near_pairs
 
 
 # INPUT — before heal()
@@ -104,34 +108,40 @@ def validate_result(result: Result) -> None:
         if poly is None or poly.is_empty or poly.area <= 0:
             result.errors.append(Diagnostic(
                 "no-area", f"{label}: the outer encloses no area",
-                points=[cluster.outer.segments[0].start] if cluster.outer.segments else [], level="error"))
+                points=[cluster.outer.segments[0].endpoints()[0]] if cluster.outer.segments else [], level="error"))
             continue
 
-        if not poly.is_valid:
-            result.warnings.append(Diagnostic(
-                "self-intersecting", f"{label}: the outer contour crosses itself",
-                points=_ring_crossings(cluster.outer.segments) or [cluster.outer.segments[0].start],
-                help="in the drawing, remove the crossing of the outer contour"))
+        # the cached polygon is already repaired: the ring's polygon only filters, the
+        # crossing is decided on the primitives (two near-tangent curves' polygons
+        # can cross where the curves do not)
+        ring = cluster.outer.points()
+        if len(ring) > 2 and not LineString(ring + ring[:1]).is_simple:
+            crossings = _ring_crossings(cluster.outer.segments)
+            if crossings:
+                result.warnings.append(Diagnostic(
+                    "self-intersecting", f"{label}: the outer contour crosses itself",
+                    points=crossings, help="in the drawing, remove the crossing of the outer contour"))
 
         outside = [inner for inner in cluster.inners if not poly.contains(curve_polygon(inner))]
         if outside:
             result.warnings.append(Diagnostic(
                 "inner-outside", f"{label}: {plural(len(outside), 'inner is', 'inners are')} not wholly "
                                  f"inside the outer",
-                points=[inner.segments[0].start for inner in outside]))
+                points=[inner.segments[0].endpoints()[0] for inner in outside]))
 
 
 def _ring_crossings(segments: list) -> list:
-    """Where a ring meets itself away from the joint of two consecutive sides."""
+    """Where a ring meets itself away from the joint of two consecutive sides,
+    on the primitives; only near pairs are compared."""
     n, found = len(segments), []
-    for i in range(n):
-        for j in range(i + 1, n):
-            for p in intersections(segments[i], segments[j]):
-                joints = []
-                if j == i + 1:
-                    joints.append(segments[i].endpoints()[1])
-                if i == 0 and j == n - 1:
-                    joints.append(segments[0].endpoints()[0])
-                if all(math.dist(p, q) > SAME_POINT for q in joints) and                         all(math.dist(p, q) > SAME_POINT for q in found):
-                    found.append(p)
+    lines = [LineString(s.discretize(tolerance=DEFAULT_TOLERANCE)) for s in segments]
+    for i, j in near_pairs(lines, SAME_POINT):
+        joints = []
+        if j == i + 1:
+            joints.append(segments[i].endpoints()[1])
+        if i == 0 and j == n - 1:
+            joints.append(segments[0].endpoints()[0])
+        for p in intersections(segments[i], segments[j]):
+            if all(math.dist(p, q) > SAME_POINT for q in joints + found):
+                found.append(p)
     return found
