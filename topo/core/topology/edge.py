@@ -38,16 +38,16 @@ class Edge:
         role       : semantic role (string: ContourRole constant or a consumer's
                      slug) — assigned by the adapter before building the Edge,
                      never derived from a layer in here
-        start      : endpoint rounded to the tolerance
-        end        : endpoint rounded to the tolerance
-        segment    : native geometric primitive — never discretized here,
-                     discretization happens in the LoopFinder via .discretize()
+        start      : the segment's first end, its true point (no rounding)
+        end        : the segment's last end, its true point (no rounding)
+        segment    : native geometric primitive — never discretized here; a
+                     reading discretizes it only where it needs a polygon
         style      : raw appearance (linetype/colour) of the source entity —
                      captured by the adapter, never interpreted here
 
     Deliberately NO field saying "came from a closed LWPOLYLINE" or the like: that
     a path is already closed is a fact the topo graph discovers by itself
-    (`Graph.degenerate_loops`, a loop found by the `LoopFinder`) — not information
+    (`Graph.degenerate_loops`, a loop found by `face_loops`) — not information
     the adapter can shorten by handing it over as a flag. Such a flag is
     provenance in the source format dressed as a topological property: a PDF/SVG
     adapter would have no way to fill it, and the core must never need it to."""

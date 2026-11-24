@@ -71,7 +71,7 @@ def find_joining_edges(edges: List[Edge], candidate_ids: Set[int]) -> List[Edge]
 
 def free_ends(edges: List[Edge], epsilon: float = 0.0) -> List[Tuple[Tuple, float]]:
     """(end, distance from the nearest node) for every end no other edge touches,
-    nearest to a node first: an end a few mm from a vertex is a gap the tolerance
+    nearest to a node first: an end a few mm from a vertex is a gap `max_gap`
     did not close. `epsilon`: that of the graph on which the loops were closed,
     because an end merged there is not free."""
     graph = build_node_graph(edges, epsilon=epsilon)

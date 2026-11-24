@@ -46,7 +46,7 @@ UNION_GRID = SAME_POINT        # mm — grid of the union of faces: below that o
 @dataclass
 class OuterFace:
     """The outer contour found, and what the walk discarded."""
-    loop:      list                         # [(Edge, reversed)] as from the LoopFinder
+    loop:      list                         # [(Edge, reversed)], as face_loops gives them
     segments:  list                         # oriented primitives of the contour
     styles:    list
     spurs:     List[Edge] = field(default_factory=list)   # back-and-forth walks
