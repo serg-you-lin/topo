@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ...precision import SAME_POINT
 from ..geometry.measure import reach as threshold
 from ...model.curve import ClosedCurve
 from ...model.diagnostic import Diagnostic, plural as _plural
@@ -51,12 +52,12 @@ def parity_faces(net: Network) -> Result:
     Not guaranteed: where two such sets have the same length (symmetric
     drawings), which one is removed depends on the coordinates, so a moved
     or mirrored drawing can read differently."""
-    tol, structural = net.tolerance, net._structural
+    tol, structural = SAME_POINT, net._structural
     label, source_file = net.label, net.source_file
     reach = threshold(tol)
 
     result = Result(source_file=source_file, source_format=net.source_format, reading="parity",
-                    tolerance=net.tolerance, max_gap=net.max_gap)
+                    max_gap=net.max_gap)
     result.texts = list(net._texts)
     result.warnings += net.warnings
     result.notes += net.notes

@@ -2,8 +2,8 @@
 topo/core/readings/network.py
 -----------------------------
 The repair common to every reading: a Document becomes a network of repaired
-edges, once, with two numbers — `tolerance` for the nodes and `max_gap` for
-the gaps. `heal()` returns it; the readings (`faces()`, `outlines()`) start
+edges, once: nodes at `SAME_POINT`, gaps closed up to `max_gap`.
+`heal()` returns it; the readings (`faces()`, `outlines()`) start
 from here and no longer repair on their own.
 
 Pure: Edges, primitives and model only, no format.
@@ -47,7 +47,6 @@ class Network:
     crossings:   points where two edges cross without a shared node.
     free_ends:   (point, distance to the nearest node) of every end no other
                  edge reaches.
-    tolerance:   `topo.precision.SAME_POINT`, the one threshold.
     max_gap:     the widest gap closed; 0 (the default) closes none.
     source_file, label: copied onto every Result and Cluster read from here.
     source_format: the document's, copied onto every Result.
@@ -59,7 +58,6 @@ class Network:
     warnings:    List[str] = field(default_factory=list)
     notes:       List[str] = field(default_factory=list)
     errors:      List[str] = field(default_factory=list)
-    tolerance:   float = 0.0
     max_gap:     float = 0.0
     source_file: str = ""
     label:       str = ""
@@ -76,7 +74,7 @@ class Network:
     def _noded(self) -> NodedEdges:
         # the planar network without cutting the crossings: the crossings stay a datum,
         # the cut belongs to the reading that asks for it
-        return split_at_crossings(self.edges, self.tolerance, cut_crossings=False)
+        return split_at_crossings(self.edges, SAME_POINT, cut_crossings=False)
 
     @property
     def crossings(self) -> list:
@@ -126,7 +124,7 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
         _check_length("max_gap", max_gap, zero_ok=True)
     # a hole closes only up to the caller's max_gap; without it, none
     gap = 0.0 if max_gap is None else max_gap
-    net = Network(tolerance=tol, max_gap=gap, source_file=source_file, label=label,
+    net = Network(max_gap=gap, source_file=source_file, label=label,
                   source_format=doc.source_format,
                   _structural=is_structural or is_structural_role, _texts=list(doc.texts))
     if not doc.edges:

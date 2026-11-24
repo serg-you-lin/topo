@@ -23,7 +23,7 @@ class Result:
     Fields:
         warnings  : advice about the drawing; notes : what topo did on its
                     own; errors : nothing to read — all `Diagnostic`.
-        source_format, reading, tolerance, max_gap : where the geometry comes
+        source_format, reading, max_gap : where the geometry comes
                     from and how it was read, copied from the network.
         texts     : the source's texts (list[Text]), copied here by
                     heal() from the Document. They are format-independent
@@ -40,7 +40,6 @@ class Result:
     source_file:         str                    = ""
     source_format:       str                    = ""
     reading:             str                    = ""
-    tolerance:           float                  = 0.0
     max_gap:             float                  = 0.0
     is_valid:            bool                   = True
     warnings:            List[str]              = field(default_factory=list)
@@ -102,7 +101,6 @@ class Result:
             "source_file":   self.source_file,
             "source_format": self.source_format,
             "reading":       self.reading,
-            "tolerance":     self.tolerance,
             "max_gap":       self.max_gap,
             "is_valid":      self.is_valid,
             "warnings":      [str(w) for w in self.warnings],

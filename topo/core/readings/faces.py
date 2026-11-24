@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ...precision import SAME_POINT
 from ..geometry.measure import reach as threshold
 from ...model.curve import ClosedCurve
 from ...model.diagnostic import Diagnostic, plural as _plural
@@ -33,12 +34,12 @@ if TYPE_CHECKING:
 def read_faces(net: Network) -> Result:
     """A Cluster per closed outer contour of the network, with the inners by
     containment (`Network.faces()`)."""
-    tol, structural = net.tolerance, net._structural
+    tol, structural = SAME_POINT, net._structural
     label, source_file = net.label, net.source_file
     reach = threshold(tol)
 
     result = Result(source_file=source_file, source_format=net.source_format, reading="faces",
-                    tolerance=net.tolerance, max_gap=net.max_gap)
+                    max_gap=net.max_gap)
     result.texts = list(net._texts)
     result.warnings += net.warnings
     result.notes += net.notes

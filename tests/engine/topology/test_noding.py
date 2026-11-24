@@ -3,6 +3,7 @@
 import math
 from collections import Counter
 import unittest
+from topo.precision import SAME_POINT
 from topo.core.topology.noding import split_at_crossings, renode
 from topo.core.topology.edge import Edge
 from topo.core.primitives.line import LineSeg
@@ -290,7 +291,7 @@ class TestCrossingNodesUnderMotion(unittest.TestCase):
             with self.subTest(motion=motion):
                 segment, _ = rigid(*motion)
                 net = topo.heal(topo.load_segments([segment(s) for s in self.SEGMENTS]), max_gap=0.0)
-                ends = Counter(q for e in split_at_crossings(net.edges, net.tolerance).pieces for q in (e.start, e.end))
+                ends = Counter(q for e in split_at_crossings(net.edges, SAME_POINT).pieces for q in (e.start, e.end))
                 # the two crossings are two nodes, each with the four half-sides arriving there;
                 # the third end, at 0.0086 from the second line, no longer touches it
                 self.assertEqual(sorted(n for n in ends.values() if n >= 3), [4, 4])

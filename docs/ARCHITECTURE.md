@@ -336,7 +336,7 @@ role, or on the adapter's default (see the table in the README and
 ### 6. JSON export
 
 `to_json` / `save_json` write `Result.to_dict()`: where the
-geometry comes from (`source_format`), how it was read (`reading`, `tolerance` = `SAME_POINT`,
+geometry comes from (`source_format`), how it was read (`reading`,
 `max_gap`), the warnings, and for each part the exact facts on the primitives (area,
 perimeters, bbox, counts of `overlay`). No coordinates, nothing of a
 process: material, thickness or a part code are added by the

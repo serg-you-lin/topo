@@ -44,7 +44,7 @@ class TestHealReturnsNetwork(unittest.TestCase):
     def test_surface(self):
         net = topo.heal(_doc(_square()), max_gap=0.01)
         for name in ("edges", "crossings", "free_ends", "set_aside", "warnings", "errors",
-                     "is_valid", "source_file", "label", "tolerance", "max_gap", "faces", "outlines"):
+                     "is_valid", "source_file", "label", "max_gap", "faces", "outlines"):
             self.assertTrue(hasattr(net, name), name)
         # the planar network with the crossings (NodedEdges) stays internal
         self.assertFalse(hasattr(net, "noded"))
@@ -61,7 +61,8 @@ class TestTwoNumbers(unittest.TestCase):
         # a side interrupted by 0.03, below the tolerance: without max_gap it stays open
         segs = [LineSeg((0.0, 0.0), (9.97, 0.0))] + _square()[1:]
         net = topo.heal(_doc(segs))
-        self.assertEqual((net.tolerance, net.max_gap), (topo.precision.SAME_POINT, 0.0))
+        self.assertEqual(net.max_gap, 0.0)
+        self.assertFalse(hasattr(net, "tolerance"))
         self.assertEqual(len(net.faces().clusters), 0)
 
     def test_max_gap_below_the_tolerance_stays_its_own(self):

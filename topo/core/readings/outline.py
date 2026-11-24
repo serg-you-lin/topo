@@ -32,6 +32,7 @@ from ..topology.edge import Edge
 from ..geometry.integrals import ring_area
 from ..geometry.rings import ring_bbox, ring_contains
 from ..geometry.shape import merge_runs
+from ...precision import SAME_POINT
 from ..topology.noding import GRAPH_EPSILON, edge_geometry, split_at_crossings
 from ..topology.outer_face import OuterFace, outer_face
 from ..base.hierarchy import assign_cluster_refs, sort_clusters
@@ -66,9 +67,9 @@ def read_network_outlines(net: Network) -> Result:
     with `cluster_ref` = the Cluster it touches or that contains it; `None` if it
     is outside every one. With the frame in the drawing the only outer contour is
     the frame: removing it is the caller's job."""
-    tol = net.tolerance
+    tol = SAME_POINT
     result = Result(source_file=net.source_file, source_format=net.source_format, reading="outlines",
-                    tolerance=net.tolerance, max_gap=net.max_gap, texts=list(net._texts))
+                    max_gap=net.max_gap, texts=list(net._texts))
     result.warnings += net.warnings
     result.notes += net.notes
     if not net.is_valid:

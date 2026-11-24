@@ -317,7 +317,6 @@ The readings do not modify it.
 | `set_aside` | `list[Edge]` | the edges with a non-structural role: each reading puts them in `loose` with their role |
 | `crossings` | `list` | the points where two edges cross without a node |
 | `free_ends` | `list[(point, mm)]` | the endpoints that no other edge touches, with the distance from the nearest node |
-| `tolerance` | `float` | always `SAME_POINT` (0.001 mm), the one node threshold: not a parameter |
 | `max_gap` | `float` | the widest gap closed; 0 when `heal()` had none |
 | `source_file`, `label` | `str` | copied onto every `Result` and `Cluster` read from here |
 | `warnings`, `errors` | `list[str]` | what the repair did; with `errors` no reading finds anything |
@@ -1097,7 +1096,7 @@ topo.to_json(result: Result, *, indent=2,
 
 `result.to_dict()` as JSON, **geometry only**: where it comes from
 (`source_format`, told by the adapter), how it was read (`reading`,
-`tolerance`, `max_gap`), whether it is valid, the warnings, and the facts of each part.
+`max_gap`), whether it is valid, the warnings, and the facts of each part.
 No coordinates (the exact curves are carried by `topo_dxf.to_dxf`), nothing of a
 process, lengths in mm. `extra(cluster) -> dict`, called once per
 cluster, adds the caller's fields (material, part code, what
@@ -1311,7 +1310,7 @@ core: after it, `ezdxf` is never touched again.
 |---|---|---|
 | `edges` | `list[Edge]` | geometry translated into pure primitives — input of `heal()` |
 | `texts` | `list[Text]` | the texts of the source |
-| `source_meta` | `dict` | `$INSUNITS`, `$MEASUREMENT`, `tolerance` |
+| `source_meta` | `dict` | `$INSUNITS`, `$MEASUREMENT` |
 | `source_path` | `str` | path of the file |
 | `warnings` | `list[str]` | loader diagnostics on the raw file |
 
@@ -1596,7 +1595,6 @@ function the source `ezdxf` document disappears.
 | `upgrade` | forces the upgrade to R2010 even if not necessary. |
 | `explode_inserts` | `True` (default): explodes the blocks into primitives. **Set `False` only if you want to ignore the blocks on purpose** — an unexploded `INSERT` is discarded and its geometry disappears. |
 | `flatten_z` | brings entities with Z ≠ 0 back onto the plane. |
-| `tolerance` | rounding tolerance of the topological nodes. It is saved in `source_meta` and read again by `heal()` if you do not pass it again. |
 | `role_rules` | list of `RoleRule` — they assign the **role** to the `Edge`s already during translation. Evaluated in order, the first that matches wins, none → `unknown`. The name evaluated by `name`/`name_contains` is the layer; `dashed` and `color` look at the **effective** look (a `ByLayer` entity is resolved to the linetype/colour of its layer). The layer does not leave the adapter: the `Edge` carries only the role. See **`RoleRule`** below. |
 | `skip_layers` | the layers whose geometry is skipped. A sequence matches by **exact name** (case ignored); a function `name -> bool` decides by itself, with the name as it is in the file: part of the name, a regex, an algorithm of your own (`skip_layers=lambda n: "quote" in n.lower()`). By default `()`: every layer is read. To read back a file written by topo without its `loose` and text layers, pass `skip_layers=topo_dxf.SKIP_LAYERS` (`Trash_old` is still read). The curves skipped are counted per layer in one `dxf-layer-skipped` warning in `doc.warnings`. |
 

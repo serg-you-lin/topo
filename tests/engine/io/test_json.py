@@ -25,7 +25,7 @@ def test_says_where_it_comes_from_and_how_it_is_read():
     data = json.loads(topo.to_json(_result()))
     assert data["source_format"] == "geometry"
     assert data["reading"] == "faces"
-    assert (data["tolerance"], data["max_gap"]) == (topo.precision.SAME_POINT, 0.0)   # without max_gap no gap closes
+    assert data["max_gap"] == 0.0 and "tolerance" not in data   # without max_gap no gap closes; the node threshold is a constant
     assert json.loads(topo.to_json(_result("outlines")))["reading"] == "outlines"
 
 
