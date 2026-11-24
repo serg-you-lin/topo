@@ -161,7 +161,7 @@ def _explode_hatches(msp, sink: list = None, tolerance: float = FLOAT_NOISE) -> 
     if open_left and sink is not None:
         sink.append(Diagnostic(
             "dxf-hatch-open-boundary",
-            f"{len(open_left)} HATCH with a boundary that does not close, each piece closed on its own chord",
+            f"HATCH whose boundary does not close, each piece closed on its own chord: {len(open_left)}",
             notes=[f"pattern {name}" for name in open_left[:5]]))
     return len(hatches)
 
@@ -417,7 +417,7 @@ def _explode_failed(sink, dxftype: str, failed: list) -> None:
     """One `Diagnostic` per type with all the failed explosions; without `sink` it prints it."""
     if not failed:
         return
-    msg = Diagnostic("dxf-explode-failed", f"{len(failed)} {dxftype} could not be exploded, left out",
+    msg = Diagnostic("dxf-explode-failed", f"{dxftype} that could not be exploded, left out: {len(failed)}",
                      notes=failed[:5])
     if sink is not None:
         sink.append(msg)

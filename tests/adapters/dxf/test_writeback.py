@@ -318,7 +318,7 @@ class TestWritebackTexts(unittest.TestCase):
                 and (a.halign, a.valign) == ("center", "center")]
         self.assertEqual(len(dims), 16)
         # and a warning counts them: their drawing is not in the file
-        self.assertEqual([str(w).split(":")[1].split()[0] for w in doc.warnings
+        self.assertEqual([w.message.rsplit(":", 1)[1].strip() for w in doc.warnings
                           if w.code == "dxf-dimension-no-block"], ["16"])
         self.assertEqual([a for a in doc.texts if not a.text], [])
         # what they measure, with the file's points, the number not: open `<>`
@@ -347,7 +347,7 @@ class TestWritebackTexts(unittest.TestCase):
         # nothing vanishes in silence: a warning counts the curves per layer
         skipped = [w for w in doc.warnings if w.code == "dxf-layer-skipped"]
         self.assertEqual(len(skipped), 1)
-        self.assertIn("2 curves", skipped[0].message)
+        self.assertTrue(skipped[0].message.endswith(": 2"))
         self.assertEqual(len(skipped[0].notes), 2)
         full = topo_dxf.document_from_msp(msp)
         self.assertEqual(len(full.edges), 4)

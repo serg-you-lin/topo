@@ -322,12 +322,12 @@ class DxfAdapter:
 
         if degenerate:
             self.warnings.append(Diagnostic(
-                "dxf-no-curve", f"{sum(degenerate.values())} entities with no curve left out",
+                "dxf-no-curve", f"entities with no curve left out: {sum(degenerate.values())}",
                 notes=[f"{n} {dtype}" for dtype, n in sorted(degenerate.items())]
                       + ["zero radius or axis, or a coordinate that is not finite: a point or no position"]))
         if skipped:
             self.warnings.append(Diagnostic(
-                "dxf-layer-skipped", f"{sum(skipped.values())} curves on skipped layers left out",
+                "dxf-layer-skipped", f"curves on skipped layers left out: {sum(skipped.values())}",
                 notes=[f"{n} on layer {layer!r}" for layer, n in sorted(skipped.items())],
                 help="topo_dxf.load_dxf(path, skip_layers=()) reads every layer"))
         return edges

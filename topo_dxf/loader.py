@@ -98,13 +98,13 @@ def _warn_bare_dimensions(msp, sink: list, verbose: bool = False) -> None:
     if n:
         _emit(sink, Diagnostic(
             "dxf-dimension-no-block",
-            f"{n} DIMENSION carry no drawing of their own in the file: only their string is read",
+            f"DIMENSION with no drawing stored in the file, only its string read: {n}",
             notes=["their lines, arrows and text style are drawn by whoever opens the file, not stored in it"]), verbose)
     n = hand_written_dimensions(msp)
     if n:
         _emit(sink, Diagnostic(
             "dxf-dimension-written-number",
-            f"{n} DIMENSION write their number by hand: it is kept as written, not checked against their points",
+            f"DIMENSION whose number is written by hand, kept as written, not checked against its points: {n}",
             notes=["their measures carry no decimals nor drawn_to_real"]), verbose)
 
 
@@ -209,7 +209,7 @@ def _upgrade_to_r2010(doc, sink: list = None, verbose: bool = False, notes: list
         except Exception as ex:
             failed.append(f"POLYLINE: {ex}")
     if failed:
-        _emit(sink, Diagnostic("dxf-explode-failed", f"{len(failed)} entities could not be exploded in the upgrade",
+        _emit(sink, Diagnostic("dxf-explode-failed", f"entities that could not be exploded in the upgrade: {len(failed)}",
                                notes=failed[:5]), verbose)
 
     for entity in old_msp:
@@ -310,22 +310,22 @@ def load_dxf(
         if explode_inserts:
             n = _explode_inserts(msp, sink=warnings)
             if n:
-                _emit(notes, Diagnostic("dxf-inserts-exploded", f"{n} INSERT exploded into their entities",
+                _emit(notes, Diagnostic("dxf-inserts-exploded", f"INSERT exploded into the entities of its block: {n}",
                                         level="note"), verbose)
         else:
             _emit(warnings, Diagnostic(
-                "dxf-inserts-ignored", f"{len(inserts_found)} INSERT not exploded, their geometry ignored",
+                "dxf-inserts-ignored", f"INSERT not exploded, its geometry ignored: {len(inserts_found)}",
                 points=[tuple(i.dxf.insert)[:2] for i in inserts_found],
                 help="topo_dxf.load_dxf(path, explode_inserts=True) reads them"), verbose)
 
     n = _explode_leaders(msp, sink=warnings)
     if n:
-        _emit(notes, Diagnostic("dxf-leaders-exploded", f"{n} LEADER with no string of their own exploded into curves",
+        _emit(notes, Diagnostic("dxf-leaders-exploded", f"LEADER with no string of its own exploded into curves: {n}",
                                 level="note"), verbose)
 
     n = _explode_hatches(msp, sink=warnings)
     if n:
-        _emit(notes, Diagnostic("dxf-hatches-exploded", f"{n} HATCH exploded into their pattern lines",
+        _emit(notes, Diagnostic("dxf-hatches-exploded", f"HATCH exploded into its pattern lines: {n}",
                                 level="note"), verbose)
 
     # duplicates are decided by topo (normalize), with the single threshold
@@ -334,12 +334,12 @@ def load_dxf(
     # the line, which stays without the mark
     filled = _explode_fills(msp, sink=warnings)
     if filled:
-        _emit(notes, Diagnostic("dxf-fills-exploded", f"{len(filled)} filled-area sides read as filled curves",
+        _emit(notes, Diagnostic("dxf-fills-exploded", f"sides of filled areas read as filled curves: {len(filled)}",
                                 level="note"), verbose)
 
     flattened = sanitize(msp, flatten_z_flag=flatten_z, verbose=verbose)
     if flattened:
-        _emit(notes, Diagnostic("dxf-flattened", f"{flattened} entities with Z != 0 brought onto the plane",
+        _emit(notes, Diagnostic("dxf-flattened", f"entities with Z != 0 brought onto the plane: {flattened}",
                                 level="note"), verbose)
 
     adapter = DxfAdapter(msp, role_rules=role_rules, skip_layers=skip_layers, filled_handles=filled)
@@ -400,7 +400,7 @@ def document_from_msp(
     bare = [e for e in msp.query("LEADER MULTILEADER") if not carries_string(e)]
     if bare:
         warnings.append(Diagnostic(
-            "dxf-not-modeled", f"{len(bare)} LEADER with no string of their own not read: not exploded here",
+            "dxf-not-modeled", f"LEADER with no string of its own not read (not exploded here): {len(bare)}",
             help="topo_dxf.load_dxf reads them as curves"))
     return Document(
         edges=edges, texts=texts,
