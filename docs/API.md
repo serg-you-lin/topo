@@ -1452,7 +1452,9 @@ polygon: exact `area` and `centroid` (Green; `centroid` raises
 at their true extremes, not on the chords), `contains(point, tolerance=1e-6)`
 (closed region: the border within `tolerance` is inside), `points(tolerance=0.001)`
 (the discretised loop as `(x, y)` tuples, the first point not repeated at the
-end). The same on every `ClosedCurve` of `result.loose`.
+end). The same on every `ClosedCurve` of `result.loose`. A `Contour` is not a
+`ClosedCurve` and has no `cluster_ref`: that is a loose curve's fact; a contour
+is reached through its cluster, and `parent`/`depth` say what contains it.
 
 ```python
 topo.Contour.from_segments(segments, role, *, depth=0, parent=None, tolerance=0.001) -> Contour
