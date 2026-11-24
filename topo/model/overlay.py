@@ -65,11 +65,11 @@ class Overlay:
 
 def feature_closed(contour, item) -> bool:
     """True if a contour of an overlay item is drawn as a closed ring: it is a
-    `ClosedCurve`, its item declares itself a void of the part (`is_void`),
+    closed curve (`ClosedCurve` or `Contour`), its item declares itself a void of the part (`is_void`),
     or its `segments` close a ring head to tail.
     Otherwise they are drawn as they are, one primitive each (a bend)."""
-    from .curve import ClosedCurve
-    if isinstance(contour, ClosedCurve) or getattr(item, "is_void", False):
+    from .curve import _Ring
+    if isinstance(contour, _Ring) or getattr(item, "is_void", False):
         return True
     return ring_closes(getattr(contour, "segments", None) or [])
 

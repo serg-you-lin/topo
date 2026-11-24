@@ -5,12 +5,10 @@ Base hierarchy of the topo domain: a curve is a sequence of segments, closed
 or open. A geometric name, not a process one.
 
 Curve
-├── ClosedCurve   — closed contour (loop): the segments close a loop
-└── OpenCurve     — open trace
-
-All model entities inherit from here:
-    Hole(ClosedCurve), Contour(ClosedCurve)
-    BendingLine(OpenCurve), Engraving(OpenCurve)
+├── _Ring         — the segments close a loop (private base)
+│   ├── ClosedCurve — a closed curve in `result.loose`, with `cluster_ref`
+│   └── Contour     — a cluster's contour, with `depth` / `parent` (model/contour.py)
+└── OpenCurve     — open trace, in `result.loose`, with `cluster_ref`
 
 Notes:
     - segments is List[MathSeg] — pure primitives
@@ -44,16 +42,16 @@ class Curve:
 
 
 @dataclass
-class ClosedCurve(Curve):
-    """Closed curve: a list of segments that closes a loop. Its facts (area, bbox,
-    centroid, contains) are computed on the segments.
+class _Ring(Curve):
+    """What every closed curve has, a loose `ClosedCurve` or a cluster's `Contour`:
+    segments that close a loop, and the facts (area, bbox, centroid, contains)
+    computed on them.
 
     It carries no `diameter` / `center`: shape and measures of a contour are read
     from `topo.geometry.contour_shape`."""
     segments: List[MathSeg] = field(default_factory=list)
     _: KW_ONLY
     styles:   List[EdgeStyle]                  = field(default_factory=list)
-    cluster_ref: Optional[int]                 = None   # in result.loose: index of the cluster that contains it
     # the reading's polygon, only for questions between several curves (curve_polygon)
     _polygon:    Any = field(default=None, init=False, repr=False, compare=False)
 
@@ -84,6 +82,14 @@ class ClosedCurve(Curve):
         """The ring discretized within `tolerance`, as plain (x, y) tuples in
         order; the first point is not repeated at the end."""
         return ring_points(self.segments, tolerance)
+
+
+@dataclass
+class ClosedCurve(_Ring):
+    """A closed curve in `result.loose`: it closes a loop but is no cluster's
+    contour. `cluster_ref` is the index of the cluster that contains it, or `None`."""
+    _: KW_ONLY
+    cluster_ref: Optional[int] = None
 
 
 @dataclass

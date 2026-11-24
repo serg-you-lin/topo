@@ -28,11 +28,11 @@ from typing import Optional, Sequence
 
 from topo.core.geometry.shapely_polygons import build_polygon, with_polygon
 from topo.core.primitives.mathseg import DEFAULT_TOLERANCE, segment_endpoints
-from topo.model.curve import ClosedCurve
+from topo.model.curve import _Ring
 
 
 @dataclass
-class Contour(ClosedCurve):
+class Contour(_Ring):
     """
     A closed contour: a closed curve with its depth in the containment
     hierarchy (`depth`, 0 = outermost) and its parent contour (`parent`,

@@ -50,6 +50,7 @@ DATA = {
     'topo.Cluster.features': ('name',),
     'topo.Contour': ('role', 'segments'),
     'topo.Contour.from_segments': ('segments', 'role'),
+    'topo.Contour.contains': ('point',),
     'topo.Document': ('edges',),
     'topo.Text': ('position', 'text'),
     'topo.MeasuredDistance': ('first', 'second', 'line_at', 'direction'),
@@ -223,7 +224,12 @@ def public_callables():
                 if issubclass(obj, enum.Enum):
                     continue
                 yield key, obj
-                for attr, value in vars(obj).items():
+                # what a public class takes from a private base is part of its own surface
+                own = {}
+                for base in reversed(obj.__mro__):
+                    if base is obj or base.__name__.startswith("_"):
+                        own.update(vars(base))
+                for attr, value in own.items():
                     if attr.startswith("_"):
                         continue
                     fn = value.__func__ if isinstance(value, (staticmethod, classmethod)) else value

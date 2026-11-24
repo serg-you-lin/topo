@@ -64,9 +64,9 @@ def curve_polygon(item) -> Optional[Polygon]:
     polygon = getattr(item, "_polygon", None)
     if polygon is not None:
         return polygon
-    from ...model.curve import ClosedCurve
+    from ...model.curve import _Ring
     # a closed curve, or an empty of the overlay: the segments close a loop
-    closed = isinstance(item, ClosedCurve) or getattr(item, "is_void", False)
+    closed = isinstance(item, _Ring) or getattr(item, "is_void", False)
     if not closed or not getattr(item, "segments", None):
         return None
     polygon = build_polygon(list(item.segments), DEFAULT_TOLERANCE)
