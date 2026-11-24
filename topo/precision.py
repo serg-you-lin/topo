@@ -48,12 +48,11 @@ ANGLE_BRACKET_DEG = 1.0
 MARK_FRACTION = 0.05           # of the length of a stretch of dashed line
 NEAR_GAP_FACTOR = 2.0          # a hole up to this multiple of its threshold "is nearly there": max_gap, the missing angle of an arc
 
-# How a CAD writes a curve as points, and the PDF adapter
+# How a CAD writes a curve as points
 
 POINTS_NOISE = 0.02            # mm: how much the points of a curve written as points can be off (refit and rings): an assumption about the files, measured on regr_01, not derived
 TESSELLATION_SIDE = 0.1        # mm: shorter sides may be points of a curve written as points (refit_tessellations)
 TESSELLATION_RUN = 10          # short sides in a row: from this many up they are a curve written as points; below, the refit rounds corners
-PDF_SNAP = 0.15                # mm: experimental PDF adapter, frozen
 
 
 class _Frozen(types.ModuleType):

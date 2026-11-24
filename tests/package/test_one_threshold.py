@@ -26,7 +26,7 @@ COUNT_NAME = ("samples", "steps", "depth", "terms", "pieces", "segments", "sides
 PRECISION_NAMES = {
     "ANGLE_BRACKET_DEG", "FLOAT_NOISE", "MARK_FRACTION",
     "NEAR_FULL_ARC_MISSING_DEG", "NEAR_GAP_FACTOR",
-    "PDF_SNAP", "POINTS_NOISE", "SAME_POINT", "TESSELLATION_RUN", "TESSELLATION_SIDE",
+    "POINTS_NOISE", "SAME_POINT", "TESSELLATION_RUN", "TESSELLATION_SIDE",
 }
 
 # (file, name): numbers that are not thresholds, with the why
@@ -37,6 +37,7 @@ NOT_THRESHOLDS = {
     ("topo/core/topology/matching.py", "start"):
         "near pairs the matching starts from: the excluded ones are added after, the result is exact, only the speed changes",
     ("topo_pdf/geometry_adapter.py", "num_segments"): "experimental PDF adapter, frozen",
+    ("topo_pdf/sanitize.py", "PDF_SNAP"): "experimental PDF adapter, frozen: a format's threshold stays in its adapter",
     ("topo/core/primitives/formula.py", "_INITIAL_PIECES"): "FormulaSeg's adaptive polygon, not by proof",
 }
 

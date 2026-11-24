@@ -8,7 +8,7 @@ Public functions:
                geometric snap and returns a list of Edges for the core.
 """
 
-from topo.precision import PDF_SNAP
+from .sanitize import PDF_SNAP
 import os
 try:
     import fitz

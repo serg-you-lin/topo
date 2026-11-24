@@ -10,7 +10,7 @@ Public functions:
 
 
 
-from topo.precision import PDF_SNAP
+PDF_SNAP = 0.15   # mm: nodes this close are snapped together; experimental PDF adapter, frozen
 
 
 def sanitize_pdf_geometries(raw_items: list, page_height: float, snap_tolerance: float = PDF_SNAP) -> list:
