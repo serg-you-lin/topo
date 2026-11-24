@@ -11,7 +11,7 @@ number.
 
 To repair a drawing topo has to decide, again and again, yes or no:
 
-- is this gap small enough to close? (gap ≤ tolerance)
+- is this gap small enough to close? (gap ≤ `max_gap`)
 - are these two ends the same point? (distance ≤ a threshold)
 - is this arc almost a full circle? (missing angle ≤ 2°)
 

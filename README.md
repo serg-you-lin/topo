@@ -220,9 +220,10 @@ own for the raw file (`docs/API.md`).
 
 ## What topo promises, and its limits
 
-- **Millimetres**: every length, tolerance and area is in mm. topo does not read the unit a file
+- **Millimetres**: every length, threshold and area is in mm. topo does not read the unit a file
   declares (it is often wrong): scale geometry in other units to mm before reading it.
-- **Faithful**: every contour lies within `tolerance` of the source geometry, both ways.
+- **Faithful**: every contour lies within `SAME_POINT` (0.001 mm) of the source
+  geometry, both ways; where a gap was closed, within `max_gap`.
 - **Complete**: every curve is a cluster's contour or in `result.loose`; nothing is
   silently dropped.
 - **Deterministic**: the same input gives the same result, every run. The same
@@ -263,7 +264,7 @@ fixed in 1.x. Each was reproduced on the current code.
   all (no cluster, nothing in `loose`) — an exception to *complete* above. The
   warning `non-contour` counts them; `outlines()` delivers them.
 - *Near-copy advice on real corners.* A short line with both ends within
-  `tolerance` of a longer one is reported as a near-copy even where the two meet
+  `SAME_POINT` of a longer one is reported as a near-copy even where the two meet
   at a real corner (45–90°), and its advice suggests a merge that would open the
   contour. The geometry is read right; only the advice is wrong.
 
@@ -281,7 +282,7 @@ fixed in 1.x. Each was reproduced on the current code.
   crossing, is planned for 1.x.
 - *`outlines()` joins pieces that continue each other* (collinear or on one
   circle, within 1e-3) into one curve; `faces()` keeps every piece as drawn.
-  Both stay within `tolerance` of the source.
+  Both stay within `SAME_POINT` of the source.
 - *Two closed curves that cross* (the same circle drawn twice, 0.05 apart) are
   two clusters and the result stays valid, with the warning `crossing`.
   Whether crossing contours should make a result invalid is not decided yet.
