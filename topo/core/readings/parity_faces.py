@@ -63,7 +63,6 @@ def parity_faces(net: Network) -> Result:
     result.notes += net.notes
     if not net.is_valid:
         result.errors += net.errors
-        result.is_valid = False
         return result
     labeled, edges = net.set_aside, net.edges
 
@@ -118,7 +117,6 @@ def parity_faces(net: Network) -> Result:
     if not curves:
         result.loose = loose_curves(labeled)
         result.errors.append(Diagnostic("no-closed-outer", "nothing closes after the repair", level="error"))
-        result.is_valid = False
         return result
 
     clusters, loose = build_hierarchy(curves, label=label,
@@ -131,7 +129,6 @@ def parity_faces(net: Network) -> Result:
             "no-closed-outer", "no closed outer contour, so no part",
             points=[p for p, _ in net.free_ends],
             notes=["the free ends meet nothing within max_gap"], level="error"))
-        result.is_valid = False
         return result
 
     close_contour_jumps(result, tol)

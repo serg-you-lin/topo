@@ -55,7 +55,6 @@ def validate_document(doc: Document) -> Result:
         result.errors.append(Diagnostic(
             "empty", "the document has only texts, no edges" if doc.texts else "the document has no edges",
             level="error"))
-        result.is_valid = False
         return result
 
     zero_len = [e for e in edges
@@ -63,7 +62,6 @@ def validate_document(doc: Document) -> Result:
     if zero_len and len(zero_len) == len(edges):
         result.errors.append(Diagnostic(
             "empty", "every edge has zero length", points=[e.start for e in zero_len], level="error"))
-        result.is_valid = False
         return result
     if zero_len:
         result.warnings.append(Diagnostic(
@@ -78,7 +76,7 @@ def validate_document(doc: Document) -> Result:
 def validate_result(result: Result) -> None:
     """
     Check the clusters of a `Result` a reading produced. **Mutates** `result`:
-    adds `topo.Diagnostic` warnings and errors and lowers `is_valid`; returns
+    adds `topo.Diagnostic` warnings and errors (an error makes it invalid); returns
     `None`. Called by `Network.faces()` and `Network.outlines()`.
 
     - error `open-contour`: an outer or inner that does not close head to tail
@@ -99,14 +97,12 @@ def validate_result(result: Result) -> None:
                     "open-contour", f"{label}: {name} does not close, {plural(len(jumps), 'jump', 'jumps')}",
                     points=[p for p, _ in jumps], notes=[f"widest {max(d for _, d in jumps):.6g}"],
                     level="error"))
-                result.is_valid = False
 
         poly = curve_polygon(cluster.outer)
         if poly is None or poly.is_empty or poly.area <= 0:
             result.errors.append(Diagnostic(
                 "no-area", f"{label}: the outer encloses no area",
                 points=[cluster.outer.segments[0].start] if cluster.outer.segments else [], level="error"))
-            result.is_valid = False
             continue
 
         if not poly.is_valid:

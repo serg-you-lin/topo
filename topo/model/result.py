@@ -41,12 +41,16 @@ class Result:
     source_format:       str                    = ""
     reading:             str                    = ""
     max_gap:             float                  = 0.0
-    is_valid:            bool                   = True
     warnings:            List[str]              = field(default_factory=list)
     notes:               List[str]              = field(default_factory=list)
     errors:              List[str]              = field(default_factory=list)
     loose:               List[OpenCurve | ClosedCurve] = field(default_factory=list)
     texts:               List[Text]             = field(default_factory=list)
+
+    @property
+    def is_valid(self) -> bool:
+        """True when the reading raised no error: computed, never set."""
+        return not self.errors
 
     def promote(self, curves: OpenCurve | ClosedCurve | Sequence[OpenCurve | ClosedCurve],
                 cluster: Cluster, name: str, *, item: Optional[Any] = None) -> None:

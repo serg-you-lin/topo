@@ -248,7 +248,7 @@ topo.validate_result(result: Result) -> None
 ```
 
 Validates the **output** after `Network.faces()`. **Mutates** the `result` passed and returns
-`None`: it adds `warnings` / `errors` and may set `is_valid = False`. For each cluster it checks:
+`None`: it adds `warnings` / `errors` (any error makes `is_valid` `False`). For each cluster it checks:
 outer polygon valid and non-empty, area > 0, every inner contained in the outer.
 
 It is **already called automatically by `Network.faces()`** — you call it by hand only if
@@ -1374,7 +1374,7 @@ Produced by `Network.faces()` or `Network.outlines()`, enriched by a consumer.
 | field | type | content |
 |---|---|---|
 | `clusters` | `list[Cluster]` | one element per closed outer contour |
-| `is_valid` | `bool` | **check it before `split` or before writing (`topo_dxf.to_dxf`)** |
+| `is_valid` | property, `bool` | `not errors`, computed, never set. **Check it before `split` or before writing (`topo_dxf.to_dxf`)** |
 | `warnings` / `errors` | `list[str]` | diagnostics |
 | `loose` | `list[OpenCurve \| ClosedCurve]` | every curve that is the contour of no cluster: chains that close nothing, open traces, closed curves with a non-structural role. `curve.cluster_ref` = index of the cluster whose outer contour contains all of it, border and holes included (a line from side to side, a cross inside a hole); `None` otherwise. With `outlines()` also the cluster that the curve touches. A consumer moves it into `cluster.overlay` with `result.promote` |
 | `texts` | `list[Text]` | copied from the `Network` (from the `Document`) |

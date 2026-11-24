@@ -95,7 +95,7 @@ class TestViewModel(unittest.TestCase):
         self.assertNotIn("annotations", vm)
 
     def test_invalid_result_does_not_raise(self):
-        empty = topo.Result(clusters=[], is_valid=False, errors=["boom"])
+        empty = topo.Result(clusters=[], errors=["boom"])
         vm = topo.experimental.to_view_model(empty)
         self.assertFalse(vm["is_valid"])
         self.assertEqual(vm["clusters"], [])
@@ -131,7 +131,7 @@ class TestToSvg(unittest.TestCase):
         self.assertNotIn("<rect", svg.split("<g")[0])
 
     def test_empty_result_returns_valid_svg(self):
-        empty = topo.Result(clusters=[], is_valid=False)
+        empty = topo.Result(clusters=[], errors=["boom"])
         ET.fromstring(topo.experimental.to_svg(empty))
 
 

@@ -74,7 +74,6 @@ def read_network_outlines(net: Network) -> Result:
     result.notes += net.notes
     if not net.is_valid:
         result.errors += net.errors
-        result.is_valid = False
         return result
     readings = _read_groups(net.edges, tol, net.max_gap)
     result.loose += loose_curves(net.set_aside)
@@ -103,7 +102,6 @@ def read_network_outlines(net: Network) -> Result:
     free = [c for c in result.loose if c.cluster_ref is None]
     assign_cluster_refs(free, result.clusters, tol)
     if not result.clusters:
-        result.is_valid = False
         result.errors.append(Diagnostic("no-closed-outer", "no group of edges has a closed outer contour",
                                         level="error"))
         return result
