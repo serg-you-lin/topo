@@ -156,7 +156,7 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
                                         else f"{count} {what[count > 1]}", level="note"))
     if clean.full_arcs:
         net.notes.append(Diagnostic(
-            "arc-joined", f"{_plural(clean.full_arcs, 'arc', 'arcs')} on one circle joined across their holes",
+            "arc-joined", f"{_plural(clean.full_arcs, 'curve', 'curves')} rebuilt from arcs of one circle joined across their holes",
             notes=[f"holes within max_gap and at most {math.degrees(NEAR_FULL_ARC_MISSING):.0f}°"],
             level="note"))
     closed = [(pt, d) for pt, d in clean.gaps if d > FLOAT_NOISE]

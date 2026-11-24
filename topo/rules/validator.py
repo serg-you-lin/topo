@@ -24,6 +24,8 @@ from ..core.primitives.line import LineSeg
 from ..core.geometry.shapely_polygons import curve_polygon
 from ..core.geometry.measure import FLOAT_NOISE
 from ..core.geometry.rings import ring_jumps
+from ..core.geometry.intersections import intersections
+from ..precision import SAME_POINT
 
 
 # INPUT — before heal()
@@ -95,7 +97,7 @@ def validate_result(result: Result) -> None:
             if jumps:
                 result.errors.append(Diagnostic(
                     "open-contour", f"{label}: {name} does not close, {plural(len(jumps), 'jump', 'jumps')}",
-                    points=[p for p, _ in jumps], notes=[f"widest {max(d for _, d in jumps):.6g}"],
+                    points=[p for p, _ in jumps], notes=[f"widest {max(d for _, d in jumps):.6g} mm"],
                     level="error"))
 
         poly = curve_polygon(cluster.outer)
@@ -107,8 +109,8 @@ def validate_result(result: Result) -> None:
 
         if not poly.is_valid:
             result.warnings.append(Diagnostic(
-                "self-intersecting", f"{label}: the outer polygon crosses itself",
-                points=[cluster.outer.segments[0].start],
+                "self-intersecting", f"{label}: the outer contour crosses itself",
+                points=_ring_crossings(cluster.outer.segments) or [cluster.outer.segments[0].start],
                 help="in the drawing, remove the crossing of the outer contour"))
 
         outside = [inner for inner in cluster.inners if not poly.contains(curve_polygon(inner))]
@@ -117,3 +119,19 @@ def validate_result(result: Result) -> None:
                 "inner-outside", f"{label}: {plural(len(outside), 'inner is', 'inners are')} not wholly "
                                  f"inside the outer",
                 points=[inner.segments[0].start for inner in outside]))
+
+
+def _ring_crossings(segments: list) -> list:
+    """Where a ring meets itself away from the joint of two consecutive sides."""
+    n, found = len(segments), []
+    for i in range(n):
+        for j in range(i + 1, n):
+            for p in intersections(segments[i], segments[j]):
+                joints = []
+                if j == i + 1:
+                    joints.append(segments[i].endpoints()[1])
+                if i == 0 and j == n - 1:
+                    joints.append(segments[0].endpoints()[0])
+                if all(math.dist(p, q) > SAME_POINT for q in joints) and                         all(math.dist(p, q) > SAME_POINT for q in found):
+                    found.append(p)
+    return found

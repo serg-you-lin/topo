@@ -368,8 +368,8 @@ clusters are decided by outer contours and containment, not by spacing.
   - `set-aside`: edges with a role other than outer/inner/unknown left out of the contours → `topo.heal(doc, is_structural=...)`.
   - `tie`: a free end with two partners at the same distance, left open; no threshold fixes it, the drawing does.
   - `crossing`: contour sides crossing with no shared node; fix the drawing.
-  - `self-crossing`: a spline that crosses itself, not cut there: a reading takes the whole ring as one contour (known defect); the points are the crossings.
-  - `closed-touch`: the node of a closed curve lies on another closed curve: `outlines()` may keep one and put the other in `loose` (known defect).
+  - `self-crossing`: a spline that crosses itself, not cut there: a reading takes the whole ring as one contour with its signed area (known defect); a figure eight, whose lobes cancel, gives no contour in `faces()` and a valid zero-area contour in `outlines()`. The points are the crossings.
+  - `closed-touch`: the node of a closed curve lies on another closed curve: `outlines()` may keep one and put the other in `loose` (known defect). Raised only when both are one closed piece each (circles, closed splines); a polygon of separate sides touching another curve the same way gets no warning.
   - `rim-cut` / `face-colour` (from `experimental.parity_faces`): part of the outer boundary had to go to make every node even; two neighbouring faces read the same side (tangent branches).
   - `self-intersecting` / `inner-outside` (from `validate_result`): an outer polygon that crosses itself, an inner not wholly inside its outer.
   - `zero-length` (from `validate_document`): edges whose two ends are one point; `heal()` drops them.

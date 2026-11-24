@@ -28,7 +28,7 @@ from ..base.curves import loops_to_curves, loose_curves
 from ..base.hierarchy import assign_cluster_refs
 from ..topology.noding import split_at_crossings
 from ..topology.parity import parity_rings
-from .faces import _crossing_warnings, _loose_ends_notes
+from .faces import _crossing_warnings, _loose_ends_notes, _no_outer_notes
 from .heal_steps import build_hierarchy, close_contour_jumps, may_be_contour
 
 if TYPE_CHECKING:
@@ -100,7 +100,7 @@ def parity_faces(net: Network) -> Result:
         result.notes += _loose_ends_notes(net.free_ends, noded.pieces, parity.joining)
         result.warnings += _crossing_warnings(net.crossings)
     else:
-        result.notes.append(Diagnostic("no-loop", "the edges close no loop", level="note"))
+        result.notes.append(Diagnostic("no-loop", "no loop of the edges bounds a face", level="note"))
     # to loose whatever no loop takes: the whole edge if none of its pieces is a
     # contour, otherwise its remaining pieces
     #
@@ -128,7 +128,7 @@ def parity_faces(net: Network) -> Result:
         result.errors.append(Diagnostic(
             "no-closed-outer", "no closed outer contour, so no part",
             points=[p for p, _ in net.free_ends],
-            notes=["the free ends meet nothing within max_gap"], level="error"))
+            notes=_no_outer_notes(net, []), level="error"))
         return result
 
     close_contour_jumps(result, tol)

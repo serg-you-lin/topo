@@ -74,7 +74,7 @@ def read_faces(net: Network) -> Result:
         result.notes += _loose_ends_notes(net.free_ends, noded.pieces, non_contour)
         result.warnings += _crossing_warnings(noded.crossings)
     else:
-        result.notes.append(Diagnostic("no-loop", "the edges close no loop", level="note"))
+        result.notes.append(Diagnostic("no-loop", "no loop of the edges bounds a face", level="note"))
     # to loose whatever no loop takes: the whole edge if none of its pieces is a
     # contour, otherwise its remaining pieces
     pieces_of: dict = {}
@@ -104,8 +104,8 @@ def read_faces(net: Network) -> Result:
         # write only that.
         result.errors.append(Diagnostic(
             "no-closed-outer", "no closed outer contour, so no part",
-            points=[p for p, _ in net.free_ends],
-            notes=["the free ends meet nothing within max_gap"], level="error"))
+            points=[p for p, _ in net.free_ends] + list(noded.crossings),
+            notes=_no_outer_notes(net, noded.crossings), level="error"))
         return result
 
     close_contour_jumps(result, tol)
@@ -124,9 +124,9 @@ def _loose_ends_notes(ends: list, pieces: list, non_contour_ids: set) -> list:
     notes = []
     if ends:
         notes.append(Diagnostic(
-            "free-end", f"{_plural(len(ends), 'free end', 'free ends')} that close nothing, in loose",
+            "free-end", f"{_plural(len(ends), 'free end that closes', 'free ends that close')} nothing, in loose",
             points=[p for p, _ in ends],
-            notes=[f"{min(d for _, d in ends):.3g} to {max(d for _, d in ends):.3g} from the nearest node"],
+            notes=[f"{_span([d for _, d in ends])} mm from the nearest node"],
             level="note"))
     joining = find_joining_edges(pieces, non_contour_ids)
     if joining:
@@ -137,12 +137,31 @@ def _loose_ends_notes(ends: list, pieces: list, non_contour_ids: set) -> list:
     return notes
 
 
+def _span(values: list) -> str:
+    """`a to b` of the values, or one number when they agree to three figures."""
+    lo, hi = format(min(values), ".3g"), format(max(values), ".3g")
+    return lo if lo == hi else f"{lo} to {hi}"
+
+
+def _no_outer_notes(net, crossings: list) -> list:
+    """Why nothing closed, from what the network holds: free ends, crossings not cut."""
+    notes = []
+    if net.free_ends:
+        notes.append(f"{_plural(len(net.free_ends), 'free end meets', 'free ends meet')} nothing within max_gap")
+    if crossings:
+        notes.append(f"{_plural(len(crossings), 'crossing', 'crossings')} with no shared node: this reading "
+                     f"does not cut a side where another crosses it; outlines() does")
+    if any(w.code == "self-crossing" for w in net.warnings):
+        notes.append("a curve crosses itself and is not cut there (warning self-crossing)")
+    return notes
+
+
 def _crossing_warnings(points: list) -> list:
-    """Contour sides crossing without a node: the drawing is broken there; the
-    planar network nodes them to read the faces, and heal() says so."""
+    """Contour sides crossing without a node: each side stays as drawn, the
+    reading does not cut it there."""
     if not points:
         return []
     return [Diagnostic(
         "crossing", f"{_plural(len(points), 'crossing', 'crossings')} between contour sides with no shared node",
-        points=points, notes=["the sides overlap in the drawing"],
-        help="in the drawing, split the sides at the crossing or shorten them until they touch")]
+        points=points, notes=["the sides cross in the drawing; each contour is read as drawn"],
+        help="if the sides are meant to meet there, split them at the crossing in the drawing")]
