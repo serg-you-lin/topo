@@ -9,10 +9,10 @@ names. topo does not know it exists.
 
     doc    = topo_dxf.load_dxf("part.dxf")           # DXF/DWG -> Document
     result = topo.heal(doc).faces()
-    topo_dxf.to_dxf(result, doc).saveas("out.dxf")   # Result -> Drawing
+    topo_dxf.to_dxf(result).saveas("out.dxf")   # Result -> Drawing
 
     for part in topo.split(result):                  # one Result per part
-        topo_dxf.to_dxf(part, doc).saveas(f"{part.clusters[0].label}.dxf")
+        topo_dxf.to_dxf(part).saveas(f"{part.clusters[0].label}.dxf")
 
 Layers and colors are the caller's choice (`layers=`, `role_styles=`);
 what the caller leaves unsaid is this adapter's default (`layers.py`).

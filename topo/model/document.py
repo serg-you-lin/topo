@@ -7,7 +7,6 @@ Fields:
 
     edges      : parsed geometry (pure Edges) — input for heal()
     texts       : the source's texts — pure data, input for write()
-    source_meta : relevant headers of the source file ($INSUNITS, $MEASUREMENT, …)
     source_path : path of the opened file
     source_format: what the geometry comes from, told by the adapter
                   (the name the adapter chooses, e.g. `pdf` or `geometry`; open string)
@@ -18,13 +17,13 @@ Fields:
                   plane, duplicates removed. topo.validate_document(doc) re-raises them.
 
 No field carries an object of a format library: edges and texts are pure data
-produced by the adapter, source_meta is a dictionary of primitives.
+produced by the adapter.
 """
 
 from __future__ import annotations
 
 from dataclasses import KW_ONLY, dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, List
 
 from .text import Text
 
@@ -45,7 +44,6 @@ class Document:
     edges:       List["Edge"]        = field(default_factory=list)
     _: KW_ONLY
     texts:       List[Text]           = field(default_factory=list)
-    source_meta: Dict[str, Any]      = field(default_factory=dict)
     source_path: str                 = ""
     source_format: str               = ""
     warnings:    List[str]           = field(default_factory=list)

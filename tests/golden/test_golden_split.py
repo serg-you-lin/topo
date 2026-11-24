@@ -130,7 +130,7 @@ def _get_parent_split_cache(parent_path: Path, max_gap: float) -> dict:
         )
         output_folder.mkdir(parents=True, exist_ok=True)
         for part in parts:
-            topo_dxf.to_dxf(part, doc).saveas(
+            topo_dxf.to_dxf(part).saveas(
                 str(output_folder / f"{part.clusters[0].label}.dxf"))
 
     part_payloads = []

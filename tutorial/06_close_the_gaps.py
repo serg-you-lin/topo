@@ -51,5 +51,5 @@ for max_gap in MAX_GAPS:
 
     name = "default" if max_gap is None else str(max_gap)
     path = _paths.out("06_close_the_gaps") / f"{Path(INPUT).stem}_max_gap_{name}.dxf"
-    topo_dxf.to_dxf(result, doc).saveas(path)
+    topo_dxf.to_dxf(result).saveas(path)
     print(f"  written {path}\n")

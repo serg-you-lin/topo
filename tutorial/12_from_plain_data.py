@@ -45,5 +45,5 @@ for message in result.warnings:
     print(f"  {message.level} {message.code}: {message.message}")
 
 path = _paths.out("12_from_plain_data") / "from_dicts.dxf"
-topo_dxf.to_dxf(result, doc).saveas(path)
+topo_dxf.to_dxf(result).saveas(path)
 print(f"written {path}")

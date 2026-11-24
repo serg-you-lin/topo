@@ -27,7 +27,7 @@ class TestNonContourCandidates(unittest.TestCase):
             _make_edge((0.0, 2.0), (0.0, 0.0)),
         ]
         diagonal = _make_edge((0.0, 0.0), (1.0, 2.0))
-        doc = Document(edges=rect + [diagonal], source_meta={"tolerance": 0.01})
+        doc = Document(edges=rect + [diagonal])
 
         candidates = topo.non_contour_candidates(doc)
 
@@ -40,7 +40,7 @@ class TestNonContourCandidates(unittest.TestCase):
             _make_edge((1.0, 0.0), (0.5, 1.0)),
             _make_edge((0.5, 1.0), (0.0, 0.0)),
         ]
-        doc = Document(edges=tri, source_meta={"tolerance": 0.01})
+        doc = Document(edges=tri)
 
         self.assertEqual(topo.non_contour_candidates(doc), [])
 
@@ -68,7 +68,7 @@ class TestNonContourCandidates(unittest.TestCase):
             _make_edge((0.0, 2.0), (0.0, 0.0)),
         ]
         diagonal = _make_edge((0.0, 0.0), (1.0, 2.0))
-        doc = Document(edges=rect + [diagonal], source_meta={"tolerance": 0.01})
+        doc = Document(edges=rect + [diagonal])
 
         for edge in topo.non_contour_candidates(doc):
             edge.role = topo.normalize_role("flange_up")

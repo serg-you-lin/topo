@@ -267,7 +267,7 @@ def load_dxf(
                          layer in a `dxf-layer-skipped` warning
 
     Returns:
-        Document (edges + texts + source_meta + warnings) — ready for
+        Document (edges + texts + warnings) — ready for
         heal(). What should be looked at on the raw file (audit, unexploded
         INSERTs, unmodeled types) ends up in `doc.warnings`, what the adapter
         did on its own (exploded INSERTs, duplicates removed, Z flattened) in
@@ -362,15 +362,9 @@ def load_dxf(
             f"{path}: nothing topo can read, only entity types it does not model: {', '.join(lost)}"
         )
 
-    meta = {
-        "$INSUNITS":     doc.header.get("$INSUNITS", 4),
-        "$MEASUREMENT":  doc.header.get("$MEASUREMENT", 1),
-    }
-
     return Document(
         edges=edges,
         texts=texts,
-        source_meta=meta,
         source_path=str(path),
         source_format="dwg" if str(path).lower().endswith(".dwg") else "dxf",
         warnings=warnings,
@@ -398,11 +392,6 @@ def document_from_msp(
     edges = adapter.to_edges()
     texts = DxfTextExtractor(msp, role_rules).extract()
 
-    header = getattr(getattr(msp, "doc", None), "header", None)
-    meta = {
-        "$INSUNITS":     header.get("$INSUNITS", 4) if header else 4,
-        "$MEASUREMENT":  header.get("$MEASUREMENT", 1) if header else 1,
-    }
     # no explosions here: what stays unread is told by a warning, never by silence —
     # the unmodelled types and the callouts with no string
     warnings = list(adapter.warnings)
@@ -415,7 +404,7 @@ def document_from_msp(
             help="topo_dxf.load_dxf reads them as curves"))
     return Document(
         edges=edges, texts=texts,
-        source_meta=meta, source_path=source_path, source_format="dxf",
+        source_path=source_path, source_format="dxf",
         warnings=warnings,
     )
 

@@ -39,7 +39,7 @@ class TestTextAlignRoundTrip(unittest.TestCase):
         texts.append(topo.Text(position=(60.0, 85.0), text="  Materiale"))
         doc = _square_doc(texts)
         path = os.path.join(cls.tmp.name, "align.dxf")
-        topo_dxf.to_dxf(topo.heal(doc).faces(), doc).saveas(path)
+        topo_dxf.to_dxf(topo.heal(doc).faces()).saveas(path)
         cls.sent = texts
         cls.back = {t.text: t for t in topo_dxf.load_dxf(path).texts}
 

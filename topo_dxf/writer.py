@@ -17,7 +17,7 @@ import ezdxf
 from ezdxf.enums import TextEntityAlignment
 
 from topo.model import (
-    Cluster, ContourRole, Document, Result, Text,
+    Cluster, ContourRole, Result, Text,
     RoleStyle, feature_closed, feature_role, role_str, role_style,
 )
 from .exporter import (
@@ -32,7 +32,6 @@ from .layers import (
 
 def to_dxf(
     result: Result,
-    source_doc: Optional[Document] = None,
     *, filter_cluster: Optional[Callable[[Cluster], bool]] = None,
     include_texts: bool = True,
     include_loose: bool = True,
@@ -46,9 +45,9 @@ def to_dxf(
     Creates a new DXF document (R2010) and materializes the Result in it.
 
     Iterates the model's clusters and writes the pure segments of every
-    contour/hole. It reads no existing DXF entities — if passed, `source_doc`
-    is only used to carry over the headers ($INSUNITS, $MEASUREMENT). Texts
-    and dimensions come from `result.texts` (the model), not from the source.
+    contour/hole. It reads no existing DXF entities: the header says mm, the
+    unit topo works in. Texts and dimensions come from `result.texts` (the
+    model), not from the source.
 
     With `include_loose=True` (default) the entities the pipeline did not
     classify (`result.loose`) are materialized on the `Trash` layer: a CAM
@@ -92,15 +91,11 @@ def to_dxf(
             + " ".join(result.errors)
         )
     doc_out = ezdxf.new(dxfversion="R2010")
-    # ezdxf.new() declares $INSUNITS=6 (metres) by default: topo always works in
-    # millimetres, so the default must be forced to 4 even without source_doc (e.g.
-    # generated geometry, not loaded from an existing DXF) — otherwise an importer
-    # that respects $INSUNITS scales the part by 1000x.
+    # topo works in millimetres, so the output says mm whatever the source declared
+    # (a source's declared unit is often wrong): an importer that respects $INSUNITS
+    # would otherwise scale the geometry by 1000x.
     doc_out.header["$INSUNITS"]    = 4
     doc_out.header["$MEASUREMENT"] = 1
-    if source_doc is not None:
-        doc_out.header["$INSUNITS"]    = source_doc.source_meta.get("$INSUNITS", 4)
-        doc_out.header["$MEASUREMENT"] = source_doc.source_meta.get("$MEASUREMENT", 1)
 
     msp = doc_out.modelspace()
     book = _Layers(doc_out, layers, role_styles)

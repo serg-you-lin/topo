@@ -94,7 +94,7 @@ def _read_children(out_dir: str) -> dict[str, object]:
 
 
 
-def _split_files(result, source_doc, out_dir, *, min_area=0.0,
+def _split_files(result, out_dir, *, min_area=0.0,
                  namer=None, **write_kwargs):
     """Pure topo.split(), then to_dxf + saveas per part: the write options
     (`include_texts`, `exclude_types`, ...) go to to_dxf."""
@@ -102,7 +102,7 @@ def _split_files(result, source_doc, out_dir, *, min_area=0.0,
     paths = []
     for part in topo.split(result, namer=namer, min_area=min_area):
         path = os.path.join(out_dir, f"{part.clusters[0].label}.dxf")
-        topo_dxf.to_dxf(part, source_doc, **write_kwargs).saveas(path)
+        topo_dxf.to_dxf(part, **write_kwargs).saveas(path)
         paths.append(path)
     return paths
 
@@ -116,7 +116,7 @@ def _split_to_files(doc, output_folder, label="", source_file="", tolerance=None
     result = topo.heal(doc,  label=label, source_file=source_file,
                        is_structural=is_structural).faces()
     if result.is_valid and result.clusters:
-        _split_files(result, doc, output_folder, min_area=min_area, namer=namer, **write_kwargs)
+        _split_files(result, output_folder, min_area=min_area, namer=namer, **write_kwargs)
     return result
 
 
@@ -138,7 +138,7 @@ class TestUnitSplitOutput(unittest.TestCase):
     def test_001_writes_a_file(self):
         """split() generates at least one .dxf file."""
         self._assert_heal_found_parts()
-        generated = _split_files(self.result, self.doc, self.out_dir)
+        generated = _split_files(self.result, self.out_dir)
         files = list(Path(self.out_dir).glob("*.dxf"))
         self.assertGreater(len(files), 0, "No .dxf file generated")
         self.assertEqual(len(generated), len(files),
@@ -147,7 +147,7 @@ class TestUnitSplitOutput(unittest.TestCase):
     def test_002_file_leggibile(self):
         """The generated files are valid DXFs readable by ezdxf."""
         self._assert_heal_found_parts()
-        generated = _split_files(self.result, self.doc, self.out_dir)
+        generated = _split_files(self.result, self.out_dir)
         for path in generated:
             try:
                 ezdxf.readfile(path)
@@ -157,7 +157,7 @@ class TestUnitSplitOutput(unittest.TestCase):
     def test_003_namer_default_formato(self):
             """The default namer produces a name of the type 'label_P1'."""
             self._assert_heal_found_parts()
-            generated = _split_files(self.result, self.doc, self.out_dir)
+            generated = _split_files(self.result, self.out_dir)
             
             self.assertTrue(len(generated) > 0)
             nome = Path(generated[0]).stem
@@ -169,7 +169,7 @@ class TestUnitSplitOutput(unittest.TestCase):
         """A custom namer is respected."""
         self._assert_heal_found_parts()
         namer = lambda i, cluster: f"piece_{i + 1}"
-        generated = _split_files(self.result, self.doc, self.out_dir,
+        generated = _split_files(self.result, self.out_dir,
                           namer=namer)
         self.assertTrue(len(generated) > 0)
         self.assertEqual(Path(generated[0]).stem, "piece_1")
@@ -178,7 +178,7 @@ class TestUnitSplitOutput(unittest.TestCase):
         """The part's label gives the file name; the original cluster does not change."""
         self._assert_heal_found_parts()
         before = self.result.clusters[0].label
-        generated = _split_files(self.result, self.doc, self.out_dir)
+        generated = _split_files(self.result, self.out_dir)
         self.assertEqual(Path(generated[0]).stem, f"{before}_P1")
         self.assertEqual(self.result.clusters[0].label, before)
 
@@ -186,7 +186,7 @@ class TestUnitSplitOutput(unittest.TestCase):
         """Parts with area below min_area are discarded and produce a warning."""
         self._assert_heal_found_parts()
         # 200x100 = 20_000 mm²; very high threshold → discarded
-        generated = _split_files(self.result, self.doc, self.out_dir,
+        generated = _split_files(self.result, self.out_dir,
                           min_area=999_999)
         self.assertEqual(len(generated), 0, "Part below threshold not discarded")
         self.assertTrue(len(self.result.warnings) > 0,
@@ -196,7 +196,7 @@ class TestUnitSplitOutput(unittest.TestCase):
         """split() creates the output folder if it does not exist."""
         self._assert_heal_found_parts()
         new_dir = os.path.join(self.out_dir, "sub", "new")
-        _split_files(self.result, self.doc, new_dir)
+        _split_files(self.result, new_dir)
         self.assertTrue(os.path.isdir(new_dir))
 
 
@@ -228,7 +228,7 @@ class TestUnitSplitFilters(unittest.TestCase):
     def _child_msp(self, **split_kwargs):
         """Run split() and return the modelspace of the first child."""
         out_dir = tempfile.mkdtemp()
-        generated = _split_files(self.result, self.doc, out_dir, **split_kwargs)
+        generated = _split_files(self.result, out_dir, **split_kwargs)
         self.assertTrue(len(generated) > 0, "No file generated")
         return ezdxf.readfile(generated[0]).modelspace()
 
@@ -259,7 +259,7 @@ class TestUnitSplitFilters(unittest.TestCase):
             _rect(), extra_entities=[_add_mtext]
         )
         out_dir = tempfile.mkdtemp()
-        generated = _split_files(result, doc, out_dir,
+        generated = _split_files(result, out_dir,
                                  include_texts=False)
         self.assertTrue(len(generated) > 0)
         out_msp = ezdxf.readfile(generated[0]).modelspace()
@@ -282,8 +282,8 @@ class TestUnitSplitFilters(unittest.TestCase):
         self.assertEqual(len(list(out_msp.query("TEXT"))), 0)
         self.assertEqual(len(list(out_msp.query("CIRCLE"))), 0)
 
-    def test_006_split_without_source_doc(self):
-        """A part is written even without source_doc (pure model)."""
+    def test_006_split_writes_every_part(self):
+        """Every part of split() is written from the model alone."""
         drawings = [topo_dxf.to_dxf(part) for part in topo.split(self.result)]
         self.assertGreater(len(drawings), 0)
 
@@ -301,7 +301,7 @@ class TestUnitSplitLayers(unittest.TestCase):
             len(self.result.clusters) > 0,
             "heal() found no parts — check the fixture"
         )
-        self.generated = _split_files(self.result, self.doc,
+        self.generated = _split_files(self.result,
                                       self.out_dir)
         self.assertTrue(len(self.generated) > 0,
                         "split() generated no file")

@@ -48,7 +48,7 @@ print(f"faces(): valid={result.is_valid}, {len(result.clusters)} part(s), {len(r
 
 path = _paths.out("03_open_a_dxf") / f"{Path(INPUT).stem}_read.dxf"
 if result.is_valid:
-    topo_dxf.to_dxf(result, doc, allow_invalid=False).saveas(path)
+    topo_dxf.to_dxf(result, allow_invalid=False).saveas(path)
     print(f"written {path}")
 else:
     print("not written: the result is not valid, read the errors above")

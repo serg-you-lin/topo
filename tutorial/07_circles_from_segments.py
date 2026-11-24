@@ -49,5 +49,5 @@ for n in (24, 72, 180):
     print(f"  n={n:3d}: {10 * (1 - math.cos(math.pi / n)):.4f} mm")
 
 path = _paths.out("07_circles_from_segments") / f"{Path(INPUT).stem}_read.dxf"
-topo_dxf.to_dxf(result, doc).saveas(path)
+topo_dxf.to_dxf(result).saveas(path)
 print(f"\nwritten {path}")

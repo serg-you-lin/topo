@@ -1009,7 +1009,7 @@ makes no sense without parts.
 ```python
 for part in topo.split(result, min_area=100.0):
     name = part.clusters[0].label
-    topo_dxf.to_dxf(part, doc).saveas(f"{name}.dxf")
+    topo_dxf.to_dxf(part).saveas(f"{name}.dxf")
     topo.experimental.save_svg(part, f"{name}.svg")
 ```
 
@@ -1058,7 +1058,7 @@ be in the document or among the standard ones, otherwise `ValueError`;
 `lineweight` → hundredths of a mm.
 
 ```python
-topo_dxf.to_dxf(result, doc, role_styles={
+topo_dxf.to_dxf(result, role_styles={
     "frame":   topo.RoleStyle(color=(0, 0, 0)),          # frame: black
     "unknown": topo.RoleStyle(lineweight=0.05),          # loose curves: hairline
     "bending": topo.RoleStyle(dash=(5.0, -2.0)),         # bends: dash 5, gap 2
@@ -1255,7 +1255,7 @@ which prints all three in a row, §9). All print to stdout.
 ```python
 topo.inspect_document(doc, *, graph=True, limit=60) -> None
 ```
-**Level 2** — a `Document`: `source_meta`, loader warnings,
+**Level 2** — a `Document`: loader warnings,
 the `Edge`s (role, primitive, endpoints), the texts, and the
 node graph (total nodes, degenerate loops, branching nodes, free ends).
 "What the adapter understood."
@@ -1310,7 +1310,6 @@ core: after it, `ezdxf` is never touched again.
 |---|---|---|
 | `edges` | `list[Edge]` | geometry translated into pure primitives — input of `heal()` |
 | `texts` | `list[Text]` | the texts of the source |
-| `source_meta` | `dict` | `$INSUNITS`, `$MEASUREMENT` |
 | `source_path` | `str` | path of the file |
 | `warnings` | `list[str]` | loader diagnostics on the raw file |
 
@@ -1543,11 +1542,11 @@ if not result.is_valid:
     raise SystemExit(result.errors)
 
 # 6a. render — one document with all the parts
-topo_dxf.to_dxf(result, doc).saveas("pezzo_healed.dxf")
+topo_dxf.to_dxf(result).saveas("pezzo_healed.dxf")
 
 # 6b. or render — one file per part
 for part in topo.split(result):
-    topo_dxf.to_dxf(part, doc).saveas(f"output/{part.clusters[0].label}.dxf")
+    topo_dxf.to_dxf(part).saveas(f"output/{part.clusters[0].label}.dxf")
 
 # 7. the facts as JSON
 topo.save_json(result, "pezzo.json")
@@ -1701,7 +1700,6 @@ document = topo_dxf.document_from_msp(msp, tolerance=0.5)
 ```python
 topo_dxf.to_dxf(
     result: Result,
-    source_doc: Document = None,
     *, filter_cluster=None,
     include_texts=True,
     include_loose=True,
@@ -1714,8 +1712,8 @@ topo_dxf.to_dxf(
 ```
 
 Materialises the model into a **new DXF document** (R2010). It never re-reads
-entities from the source: `source_doc` serves only to carry over the headers
-(`$INSUNITS`, `$MEASUREMENT`). The texts come from `result.texts`.
+entities from the source; the header says millimetres (`$INSUNITS` 4,
+`$MEASUREMENT` 1), the unit topo works in. The texts come from `result.texts`.
 
 | parameter | meaning |
 |---|---|
@@ -1733,12 +1731,12 @@ The maps are the caller's and hold for its call: topo keeps none of them
 
 ```python
 # the frame (role "frame", assigned by a consumer such as snapdraw) in black, on "Cornice"
-topo_dxf.to_dxf(result, doc,
+topo_dxf.to_dxf(result,
             layers={"frame": "Cornice"},
             role_styles={"frame": topo.RoleStyle(color=(0, 0, 0))})
 
 # the bends on two layers, according to direction (information carried by the element)
-topo_dxf.to_dxf(result, doc, layers={"bending": lambda bend: "BendUp" if is_up(bend) else "BendDown"})   # is_up: the caller's
+topo_dxf.to_dxf(result, layers={"bending": lambda bend: "BendUp" if is_up(bend) else "BendDown"})   # is_up: the caller's
 ```
 
 **The overlay**: it writes every collection of `cluster.overlay`,
@@ -1759,8 +1757,8 @@ Without a role or without geometry it is skipped.
 that caller asks for it explicitly.
 
 ```python
-topo_dxf.to_dxf(result, doc).saveas("guarda.dxf")                         # always
-topo_dxf.to_dxf(result, doc, allow_invalid=False).saveas("macchina.dxf")  # only if valid
+topo_dxf.to_dxf(result).saveas("guarda.dxf")                         # always
+topo_dxf.to_dxf(result, allow_invalid=False).saveas("macchina.dxf")  # only if valid
 ```
 
 ---

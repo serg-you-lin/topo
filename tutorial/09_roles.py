@@ -74,5 +74,5 @@ for step, step_rules in STEPS:
         print(f"           {message.level} {message.code}")
 
     path = _paths.out("09_roles") / f"{Path(INPUT).stem}_{step}.dxf"
-    topo_dxf.to_dxf(result, doc, role_styles=styles, layers=layers).saveas(path)
+    topo_dxf.to_dxf(result, role_styles=styles, layers=layers).saveas(path)
 print(f"\nwritten {_paths.out('09_roles')}")

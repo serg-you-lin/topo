@@ -48,7 +48,7 @@ folder = _paths.out("08_split_into_parts")
 for part in topo.split(result, namer=namer):
     cluster = part.clusters[0]
     path = folder / f"{cluster.label}.dxf"
-    topo_dxf.to_dxf(part, doc).saveas(path)
+    topo_dxf.to_dxf(part).saveas(path)
     print(f"  {cluster.label}: area {cluster.outer.area:8.1f} mm², {len(cluster.inners)} inner(s) -> {path.name}")
 
 topo.save_json(result, folder / "parts.json", extra=lambda cluster: {"checked_by": "me"})

@@ -101,7 +101,7 @@ class TestSplitIsModel(unittest.TestCase):
 
     def test_each_part_writes_to_dxf(self):
         for part in topo.split(self.result):
-            msp = topo_dxf.to_dxf(part, self.doc, exclude_types={"TEXT"}).modelspace()
+            msp = topo_dxf.to_dxf(part, exclude_types={"TEXT"}).modelspace()
             self.assertEqual(len(msp.query("TEXT")), 0)
             self.assertEqual(len(msp.query("LWPOLYLINE[layer=='OuterContour']")), 1)
 

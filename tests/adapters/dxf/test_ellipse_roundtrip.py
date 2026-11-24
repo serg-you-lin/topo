@@ -40,7 +40,7 @@ class TestFullEllipseOuter(unittest.TestCase):
         self.assertAlmostEqual(area, expected, delta=1.0)
 
     def test_003_writes_native_ellipse(self):
-        doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
+        doc_out = topo_dxf.to_dxf(self.result)
         ellipses = list(doc_out.modelspace().query("ELLIPSE"))
         self.assertEqual(len(ellipses), 1)
         e = ellipses[0]
@@ -53,12 +53,12 @@ class TestFullEllipseOuter(unittest.TestCase):
     def test_004_no_spline_written(self):
         """An ellipse must never come out as a SPLINE — it is an exact conic, not an
         approximation (the same principle as splines never discretized)."""
-        doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
+        doc_out = topo_dxf.to_dxf(self.result)
         self.assertEqual(len(list(doc_out.modelspace().query("SPLINE"))), 0)
 
     def test_005_roundtrip_area_stable(self):
         """Reloading the output with topo itself finds the same area."""
-        doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
+        doc_out = topo_dxf.to_dxf(self.result)
         reloaded = topo.heal(topo_dxf.document_from_msp(doc_out.modelspace())).faces()
         self.assertEqual(len(reloaded.clusters), 1)
         self.assertAlmostEqual(
@@ -94,13 +94,13 @@ class TestEllipticalArcMixedWithLines(unittest.TestCase):
         self.assertAlmostEqual(area, expected, delta=1.0)
 
     def test_003_writes_native_ellipse_not_spline(self):
-        doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
+        doc_out = topo_dxf.to_dxf(self.result)
         msp_out = doc_out.modelspace()
         self.assertEqual(len(list(msp_out.query("ELLIPSE"))), 1)
         self.assertEqual(len(list(msp_out.query("SPLINE"))), 0)
 
     def test_004_roundtrip_area_stable(self):
-        doc_out = topo_dxf.to_dxf(self.result, self.fdoc)
+        doc_out = topo_dxf.to_dxf(self.result)
         reloaded = topo.heal(topo_dxf.document_from_msp(doc_out.modelspace())).faces()
         self.assertEqual(len(reloaded.clusters), 1)
         self.assertAlmostEqual(

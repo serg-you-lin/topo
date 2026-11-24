@@ -51,5 +51,5 @@ for cluster in result.clusters:
               f"{sorted({type(s).__name__ for s in inner.segments})}")
 
 path = _paths.out("01_build_a_part") / "part.dxf"
-topo_dxf.to_dxf(result, doc).saveas(path)
+topo_dxf.to_dxf(result).saveas(path)
 print(f"\nwritten {path}")

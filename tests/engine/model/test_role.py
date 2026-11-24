@@ -136,7 +136,7 @@ class TestConsumerRolesSurviveDetect(unittest.TestCase):
         # faithfully the slug the consumer assigned.
         doc = self._framed_doc()
         result = topo.heal(doc).faces()
-        out = topo_dxf.to_dxf(result, doc)
+        out = topo_dxf.to_dxf(result)
 
         layers = {e.dxf.layer for e in out.modelspace()}
         self.assertIn("frame", layers)

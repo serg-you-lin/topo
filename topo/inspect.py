@@ -61,7 +61,6 @@ def inspect_document(doc, *, graph: bool = True, limit: Optional[int] = 60) -> N
     _h("LEVEL 2 — Document (adapter → domain)")
 
     print(f"\nsource_path : {doc.source_path}")
-    print(f"source_meta : {doc.source_meta}")
     if getattr(doc, "warnings", None):
         print(f"\nloader warnings ({len(doc.warnings)}):")
         for w in doc.warnings:

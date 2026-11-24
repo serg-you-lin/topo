@@ -88,7 +88,7 @@ import topo, topo_dxf
 
 doc = topo_dxf.load_dxf("input.dxf")                 # .dxf or .dwg -> Document
 result = topo.heal(doc, max_gap=0.5).faces()      # close gaps up to 0.5 mm
-topo_dxf.to_dxf(result, doc).saveas("input_healed.dxf")
+topo_dxf.to_dxf(result).saveas("input_healed.dxf")
 ```
 
 After `load_dxf` everything works on the format-free `Document`; the adapter is

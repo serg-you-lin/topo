@@ -181,14 +181,13 @@ def load_geometry(
                      used for diagnostics/traceability
 
     Returns:
-        Document (edges + source_meta), ready for heal().
+        Document (edges), ready for heal().
     """
     edges = GeometryReader(entities).to_edges()
     return Document(
         edges=edges,
         source_path=source_path or "<load_geometry>",
         source_format="geometry",
-        source_meta={},
     )
 
 
@@ -216,5 +215,4 @@ def load_segments(
         edges=edges,
         source_path=source_path or "<load_segments>",
         source_format="geometry",
-        source_meta={},
     )

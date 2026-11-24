@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "g-topo"
 # The one source of the version: topo.__version__ reads it from here through
 # importlib.metadata; never repeat it in the code.
-version = "0.40.24"
+version = "0.41.0"
 description = "Deterministic 2D geometry engine: it repairs vector geometry and reads its structure"
 readme = "README.md"
 requires-python = ">=3.10"

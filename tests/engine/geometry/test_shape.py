@@ -243,7 +243,7 @@ class TestContourShapeOnIslands(unittest.TestCase):
                 + [CircleSeg(center=(15, 25), radius=4)]
                 + _stadium((40, 25), (70, 25), 5))
         return Document(edges=[_edge(s) for s in segs], texts=[],
-                             source_meta={"tolerance": 0.05}, source_path="")
+                             source_path="")
 
     def _kinds(self, cluster):
         return sorted(contour_shape(c).kind for c in cluster.inners)

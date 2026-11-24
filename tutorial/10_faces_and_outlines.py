@@ -47,6 +47,6 @@ for path in INPUTS:
         print(f"  {reading:9s} valid={result.is_valid}  {len(result.clusters):3d} part(s)  "
               f"{inners:3d} inner(s)  {len(result.loose):4d} loose curve(s)")
         out = _paths.out("10_faces_and_outlines") / f"{Path(path).stem}_{reading}.dxf"
-        topo_dxf.to_dxf(result, doc).saveas(out)
+        topo_dxf.to_dxf(result).saveas(out)
     print()
 print(f"written {_paths.out('10_faces_and_outlines')}")

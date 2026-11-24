@@ -163,7 +163,7 @@ def _round_trip(rel: str, reading: str):
         doc = topo_dxf.load_dxf(str(path))
         result = topo.heal(doc).faces()
         bound = topo.precision.SAME_POINT
-    drawing = topo_dxf.to_dxf(result, doc, include_texts=False)
+    drawing = topo_dxf.to_dxf(result, include_texts=False)
     # the `loose` layer is re-read (default): it is part of the result
     back = topo_dxf.document_from_msp(drawing.modelspace())
     return doc, result, back, bound

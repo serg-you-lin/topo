@@ -183,7 +183,7 @@ DATA = {
     'topo.model.Edge.of': ('segment', 'role'),
     'topo_dxf.load_dxf': ('path',),
     'topo_dxf.document_from_msp': ('msp',),
-    'topo_dxf.to_dxf': ('result', 'source_doc'),
+    'topo_dxf.to_dxf': ('result',),
     'topo_dxf.inspect_dxf': ('path',),
     'topo_dxf.inspect_file': ('path',),
     'topo_dxf.role_to_dxf_layer': ('role', 'element'),

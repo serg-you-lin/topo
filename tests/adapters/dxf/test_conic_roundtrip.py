@@ -29,7 +29,7 @@ def _round_trip(conic):
     result = topo.heal(doc).faces()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        drawing = topo_dxf.to_dxf(result, doc, include_texts=False)
+        drawing = topo_dxf.to_dxf(result, include_texts=False)
     back = topo_dxf.document_from_msp(drawing.modelspace())
     return result, back
 

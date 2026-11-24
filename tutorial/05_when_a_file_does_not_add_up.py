@@ -55,5 +55,5 @@ for message in doc.notes + doc.warnings + result.errors + result.warnings:
 print(f"\n{len(result.notes)} note(s) on what topo did by itself: {sorted({n.code for n in result.notes})}")
 
 path = _paths.out("05_when_a_file_does_not_add_up") / f"{Path(INPUT).stem}_read.dxf"
-topo_dxf.to_dxf(result, doc).saveas(path)
+topo_dxf.to_dxf(result).saveas(path)
 print(f"written {path}")

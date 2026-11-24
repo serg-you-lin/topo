@@ -159,13 +159,13 @@ class TestLooseEnds(unittest.TestCase):
         self.assertAlmostEqual(ends[0][1], 5.0)
 
     def test_003_heal_says_them(self):
-        result = topo.heal(Document(edges=self.edges, source_meta={"tolerance": 0.05})).faces()
+        result = topo.heal(Document(edges=self.edges)).faces()
         self.assertEqual(len(result.clusters), 2)
         self.assertIn("free-end", [n.code for n in result.notes])
         self.assertIn("joining-edge", [n.code for n in result.notes])
 
     def test_004_clean_piece_no_warning(self):
-        result = topo.heal(Document(edges=_square(0, 0, 10), source_meta={"tolerance": 0.05})).faces()
+        result = topo.heal(Document(edges=_square(0, 0, 10))).faces()
         self.assertEqual(result.warnings, [])
 
     def test_005_end_merged_by_the_tolerant_graph_is_not_free(self):
@@ -649,7 +649,7 @@ class TestComposition(unittest.TestCase):
             with self.subTest(name=name):
                 doc = topo_dxf.load_dxf(str(drawing(name)))
                 expected = topo.heal(doc).faces().clusters
-                got = self._compose(doc, doc.source_meta.get("tolerance", 0.05))
+                got = self._compose(doc, 0.05)
                 self.assertEqual([to_shapely(c.outer).wkt for c in got],
                                  [to_shapely(c.outer).wkt for c in expected])
                 self.assertEqual([len(c.inners) for c in got], [len(c.inners) for c in expected])

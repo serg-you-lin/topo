@@ -36,7 +36,7 @@ for path in sorted(Path(FOLDER).glob("*.dxf")):
     try:
         doc = topo_dxf.load_dxf(path)
         result = getattr(topo.heal(doc, max_gap=MAX_GAP), READING)()
-        topo_dxf.to_dxf(result, doc).saveas(out / f"{path.stem}_read.dxf")
+        topo_dxf.to_dxf(result).saveas(out / f"{path.stem}_read.dxf")
         topo.experimental.save_svg(result, str(out / f"{path.stem}.svg"))
         inners = sum(len(c.inners) for c in result.clusters)
         summary = (f"{path.name}: valid={result.is_valid}, {len(result.clusters)} part(s), "

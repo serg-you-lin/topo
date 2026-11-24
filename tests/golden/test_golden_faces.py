@@ -275,11 +275,7 @@ def _make_roundtrip_test(path):
                 flatten_z=True, role_rules=topo.name_rules(name_roles),
             )
         )
-        source_doc = topo_dxf.load_dxf(
-            str(dxf_path), upgrade=True, explode_inserts=True,
-            flatten_z=True, role_rules=topo.name_rules(name_roles),
-        )
-        doc_out = topo_dxf.to_dxf(result, source_doc)
+        doc_out = topo_dxf.to_dxf(result)
         rt_result = _pipeline(
             topo_dxf.document_from_msp(
                 doc_out.modelspace(), role_rules=topo.name_rules(_roundtrip_name_roles(name_roles)),

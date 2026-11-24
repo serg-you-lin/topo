@@ -121,7 +121,7 @@ class TestRoundtripStable(unittest.TestCase):
 
 def _roundtrip(self, dxf: Path):
     doc, before = outline_reading(dxf, MAX_GAP)
-    exported = topo_dxf.to_dxf(before, source_doc=doc, allow_invalid=True)
+    exported = topo_dxf.to_dxf(before, allow_invalid=True)
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp) / f"{dxf.stem}.dxf"
         exported.saveas(str(tmp_path))

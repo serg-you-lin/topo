@@ -52,5 +52,5 @@ for name in LAYERS or ["unknown"]:
 
 result = topo.heal(doc).faces()
 path = _paths.out("04_z_levels") / f"{Path(INPUT).stem}_read.dxf"
-topo_dxf.to_dxf(result, doc).saveas(path)
+topo_dxf.to_dxf(result).saveas(path)
 print(f"\nwritten {path}")

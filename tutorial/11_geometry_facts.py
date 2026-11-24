@@ -51,5 +51,5 @@ for role, segments in (("cut_by_outside", outside), ("plate_minus_circle", minus
 
 result = topo.heal(doc).faces()
 path = _paths.out("11_geometry_facts") / "facts.dxf"
-topo_dxf.to_dxf(result, doc).saveas(path)
+topo_dxf.to_dxf(result).saveas(path)
 print(f"\nwritten {path}")

@@ -34,7 +34,7 @@ def _pipeline(name, *, name_roles=None):
     """heal → to_dxf. Ritorna (result, msp_out)."""
     doc = topo_dxf.load_dxf(drawing(name), role_rules=topo.name_rules(name_roles or {}))
     result = topo.heal(doc).faces()
-    doc_out = topo_dxf.to_dxf(result, doc)
+    doc_out = topo_dxf.to_dxf(result)
     return result, doc_out.modelspace()
 
 
@@ -138,7 +138,7 @@ class TestWritebackTrash(unittest.TestCase):
     def test_003_include_trash_false_omits_trash(self):
         doc = topo_dxf.load_dxf(drawing("rect_with_trash.dxf"))
         result = topo.heal(doc).faces()
-        msp = topo_dxf.to_dxf(result, doc, include_loose=False).modelspace()
+        msp = topo_dxf.to_dxf(result, include_loose=False).modelspace()
         trash = [e for e in msp
                  if e.dxf.hasattr("layer") and e.dxf.layer == TRASH_LAYER]
         self.assertEqual(len(trash), 0)
@@ -166,13 +166,13 @@ class TestWritebackTrash(unittest.TestCase):
         self.assertEqual(len(result.clusters), 0)
         self.assertTrue(result.errors)
 
-        msp = topo_dxf.to_dxf(result, doc).modelspace()
+        msp = topo_dxf.to_dxf(result).modelspace()
         trash = [e for e in msp if e.dxf.layer == TRASH_LAYER]
         self.assertEqual(len(trash), len(result.loose))
         self.assertGreater(len(trash), 0)
 
         with self.assertRaises(ValueError):
-            topo_dxf.to_dxf(result, doc, allow_invalid=False)
+            topo_dxf.to_dxf(result, allow_invalid=False)
         with self.assertRaises(ValueError):
             topo.experimental.to_svg(result, allow_invalid=False)
         self.assertIn("<svg", topo.experimental.to_svg(result))
@@ -185,7 +185,7 @@ class TestWritebackSourceLayerNotKept(unittest.TestCase):
     def setUp(self):
         doc = topo_dxf.load_dxf(drawing("la_104.DXF"))
         self.result = topo.heal(doc).faces()
-        self.msp = topo_dxf.to_dxf(self.result, doc).modelspace()
+        self.msp = topo_dxf.to_dxf(self.result).modelspace()
 
     def test_001_mark_goes_to_trash_without_detect(self):
         self.assertEqual(sum(1 for e in self.msp if e.dxf.layer == "MARK"), 0)
@@ -292,7 +292,7 @@ class TestWritebackTexts(unittest.TestCase):
         doc = topo_dxf.load_dxf(drawing("rect_with_trash.dxf"),
                             role_rules=topo.name_rules({"TESTO": "note"}))
         result = topo.heal(doc).faces()
-        msp = topo_dxf.to_dxf(result, doc).modelspace()
+        msp = topo_dxf.to_dxf(result).modelspace()
         texts = list(msp.query("TEXT"))
         self.assertEqual(len(texts), 1)
         self.assertEqual(texts[0].dxf.layer, "note")
@@ -300,7 +300,7 @@ class TestWritebackTexts(unittest.TestCase):
     def test_006_text_layer_custom_routes_there(self):
         doc = topo_dxf.load_dxf(drawing("rect_with_trash.dxf"))
         result = topo.heal(doc).faces()
-        msp = topo_dxf.to_dxf(result, doc, text_layer=TRASH_LAYER).modelspace()
+        msp = topo_dxf.to_dxf(result, text_layer=TRASH_LAYER).modelspace()
         texts = list(msp.query("TEXT"))
         self.assertEqual(texts[0].dxf.layer, TRASH_LAYER)
 
@@ -329,7 +329,7 @@ class TestWritebackTexts(unittest.TestCase):
         self.assertAlmostEqual(math.dist(m.center, m.on_circle), 6.0, places=6)
         self.assertEqual(sum(1 for e in doc.edges if e.style.filled), 12)
         result = topo.heal(doc).faces()
-        msp = topo_dxf.to_dxf(result, doc).modelspace()
+        msp = topo_dxf.to_dxf(result).modelspace()
         ann = Counter(e.dxftype() for e in msp if e.dxf.layer == LAYER_ANNOTATION)
         self.assertEqual(ann, Counter({"TEXT": len(doc.texts)}))
 

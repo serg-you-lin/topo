@@ -99,7 +99,7 @@ class TestFilledAreas(unittest.TestCase):
 
     def test_to_dxf_rewrites_the_filled_areas(self):
         result = topo.heal(self.doc).outlines()
-        out = topo_dxf.to_dxf(result, self.doc)
+        out = topo_dxf.to_dxf(result)
         hatches = list(out.modelspace().query("HATCH"))
         # A, B, C and the leader's tip
         self.assertEqual(len(hatches), 4)

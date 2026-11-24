@@ -320,7 +320,7 @@ def _make_roles_test(dxf: Path):
         if not ids:
             self.skipTest("no non-structural edge from border to border")
         blind = Document(edges=[replace(e, role="unknown") if id(e) in ids else e for e in doc.edges],
-                              source_path=doc.source_path, source_meta=doc.source_meta)
+                              source_path=doc.source_path)
         again = topo.heal(blind).faces()
         self.assertEqual(len(again.clusters), len(result.clusters),
                          f"{dxf.stem}: {len(ids)} edges without role change the number of pieces")
@@ -370,8 +370,7 @@ def _make_order_test(dxf: Path):
         tol = _tolerance(dxf)
         for name, edges in orders(doc.edges):
             with self.subTest(order=name):
-                again = topo.heal(Document(edges=edges, source_path=doc.source_path,
-                                           source_meta=doc.source_meta)).faces()
+                again = topo.heal(Document(edges=edges, source_path=doc.source_path)).faces()
                 self.assertEqual(len(again.clusters), len(result.clusters),
                                  f"{dxf.stem}, {name}: the order changes the pieces")
                 self.assertEqual(_shape_differences(_outers(result), _outers(again)), [],
