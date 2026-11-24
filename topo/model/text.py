@@ -170,7 +170,6 @@ class Text:
     rotation:         float            = 0.0
     width_factor:     float            = 1.0
     role:             str              = ContourRole.UNKNOWN.value
-    origin:           Optional[str]    = None   # provenance in the source — diagnostics
     cluster_ref:      Optional[int]    = None   # index in result.clusters of the part that contains it
 
     halign:           str              = "left"
