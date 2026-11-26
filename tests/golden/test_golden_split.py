@@ -124,14 +124,9 @@ def _get_parent_split_cache(parent_path: Path, max_gap: float) -> dict:
     result = topo.heal(doc, max_gap=max_gap).faces()
 
     if result.is_valid and result.clusters:
-        parts = topo.split(
-            result,
-            namer=lambda i, cluster: f"{cluster.label}_P{i + 1:03d}",
-        )
         output_folder.mkdir(parents=True, exist_ok=True)
-        for part in parts:
-            topo_dxf.to_dxf(part).saveas(
-                str(output_folder / f"{part.clusters[0].label}.dxf"))
+        for i, part in enumerate(topo.split(result).parts):
+            topo_dxf.to_dxf(part).saveas(str(output_folder / f"{i:03d}.dxf"))
 
     part_payloads = []
     for cluster in result.clusters if result.is_valid and result.clusters else []:

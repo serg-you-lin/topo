@@ -7,7 +7,7 @@ Structure
 _Fixtures        — helpers that build geometry in memory and go through
                    the real heal() (no mock Result)
 
-TestUnitSplitOutput        — unit: generated files, namer, min_area
+TestUnitSplitOutput        — unit: generated files, names, output folder
 TestUnitSplitFilters       — unit: include_texts, exclude_types, keep_trash
 TestUnitSplitLayers        — unit: layers present and canonical colours in the children
 
@@ -94,13 +94,12 @@ def _read_children(out_dir: str) -> dict[str, object]:
 
 
 
-def _split_files(result, out_dir, *, min_area=0.0,
-                 namer=None, **write_kwargs):
+def _split_files(result, out_dir, **write_kwargs):
     """Pure topo.split(), then to_dxf + saveas per part: the write options
     (`include_texts`, `exclude_types`, ...) go to to_dxf."""
     os.makedirs(out_dir, exist_ok=True)
     paths = []
-    for part in topo.split(result, namer=namer, min_area=min_area):
+    for part in topo.split(result).parts:
         path = os.path.join(out_dir, f"{part.clusters[0].label}.dxf")
         topo_dxf.to_dxf(part, **write_kwargs).saveas(path)
         paths.append(path)
@@ -108,7 +107,7 @@ def _split_files(result, out_dir, *, min_area=0.0,
 
 
 def _split_to_files(doc, output_folder, label="", source_file="", tolerance=None,
-                    namer=None, min_area=0.0, is_structural=None,
+                    is_structural=None,
                     **write_kwargs):
     """heal → split → to_dxf + saveas per part: the recipe that was
     `topo_dxf.split_to_files`, removed from the surface and kept here as a black
@@ -116,14 +115,14 @@ def _split_to_files(doc, output_folder, label="", source_file="", tolerance=None
     result = topo.heal(doc,  label=label, source_file=source_file,
                        is_structural=is_structural).faces()
     if result.is_valid and result.clusters:
-        _split_files(result, output_folder, min_area=min_area, namer=namer, **write_kwargs)
+        _split_files(result, output_folder, **write_kwargs)
     return result
 
 
 # --- UNIT TEST — writeback.split() ---
 
 class TestUnitSplitOutput(unittest.TestCase):
-    """Test the output invariants of split(): generated files, namer, min_area, output folder."""
+    """Test the output invariants of split(): generated files, names, output folder."""
 
     def setUp(self):
         self.out_dir = tempfile.mkdtemp()
@@ -154,8 +153,8 @@ class TestUnitSplitOutput(unittest.TestCase):
             except Exception as e:
                 self.fail(f"File not readable: {path} — {e}")
 
-    def test_003_namer_default_formato(self):
-            """The default namer produces a name of the type 'label_P1'."""
+    def test_003_default_part_name(self):
+            """The default part name is a name of the type 'label_P1'."""
             self._assert_heal_found_parts()
             generated = _split_files(self.result, self.out_dir)
             
@@ -165,15 +164,6 @@ class TestUnitSplitOutput(unittest.TestCase):
             self.assertRegex(nome, r".+_P\d+$",
                              f"Name '{nome}' does not follow the format 'label_P1'")
 
-    def test_004_namer_custom(self):
-        """A custom namer is respected."""
-        self._assert_heal_found_parts()
-        namer = lambda i, cluster: f"piece_{i + 1}"
-        generated = _split_files(self.result, self.out_dir,
-                          namer=namer)
-        self.assertTrue(len(generated) > 0)
-        self.assertEqual(Path(generated[0]).stem, "piece_1")
-
     def test_005_cluster_label_of_the_original_part_intact(self):
         """The part's label gives the file name; the original cluster does not change."""
         self._assert_heal_found_parts()
@@ -181,16 +171,6 @@ class TestUnitSplitOutput(unittest.TestCase):
         generated = _split_files(self.result, self.out_dir)
         self.assertEqual(Path(generated[0]).stem, f"{before}_P1")
         self.assertEqual(self.result.clusters[0].label, before)
-
-    def test_006_min_area_discards_part_below_threshold(self):
-        """Parts with area below min_area are discarded and produce a warning."""
-        self._assert_heal_found_parts()
-        # 200x100 = 20_000 mm²; very high threshold → discarded
-        generated = _split_files(self.result, self.out_dir,
-                          min_area=999_999)
-        self.assertEqual(len(generated), 0, "Part below threshold not discarded")
-        self.assertTrue(len(self.result.warnings) > 0,
-                        "No warning emitted for a discarded cluster")
 
     def test_007_output_folder_creata_se_assente(self):
         """split() creates the output folder if it does not exist."""
@@ -284,7 +264,7 @@ class TestUnitSplitFilters(unittest.TestCase):
 
     def test_006_split_writes_every_part(self):
         """Every part of split() is written from the model alone."""
-        drawings = [topo_dxf.to_dxf(part) for part in topo.split(self.result)]
+        drawings = [topo_dxf.to_dxf(part) for part in topo.split(self.result).parts]
         self.assertGreater(len(drawings), 0)
 
 
@@ -393,16 +373,6 @@ class TestIntegrationPipeline(unittest.TestCase):
             out_msp = ezdxf.readfile(str(f)).modelspace()
             self.assertEqual(len(list(out_msp.query("TEXT"))), 0,
                              f"{f.name}: TEXT present with include_texts=False")
-
-    def test_006_namer_custom_propagato(self):
-        """A custom namer passed to split_to_files() is used."""
-        out_dir = tempfile.mkdtemp()
-        namer = lambda i, cluster: f"custom_{i + 1:02d}"
-        _split_to_files(topo_dxf.load_dxf(str(drawing("two_parts.dxf"))), output_folder=out_dir,
-                             label="two_parts", namer=namer)
-        names = {f.stem for f in Path(out_dir).glob("*.dxf")}
-        self.assertIn("custom_01", names,
-                      f"Custom name not found among: {names}")
 
     def test_007_empty_msp_generates_no_file(self):
         """empty msp → no file generated."""

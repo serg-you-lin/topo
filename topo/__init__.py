@@ -20,7 +20,7 @@ You do not have to import the internal modules directly.
     # holes, bends, engravings: a process reading, in snapbend
 
     topo.save_json(result, "part.json")
-    parts = topo.split(result)                # one Result per part, no format
+    parts = topo.split(result).parts          # one Result per part, no format
 """
 
 from .core.geometry_input import load_geometry, load_segments

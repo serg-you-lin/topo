@@ -44,13 +44,6 @@ class TestSelfIntersectingPoint(unittest.TestCase):
 
 class TestPointsOnAnyPrimitive(unittest.TestCase):
 
-    def test_a_dropped_circle_part_is_reported_at_its_start(self):
-        segs = topo.geometry.rectangle(100, 50) + topo.geometry.circle(1, center=(200, 0))
-        result = topo.heal(topo.load_segments(segs)).faces()
-        topo.split(result, min_area=10)
-        [warning] = [w for w in result.warnings if w.code == "dropped-part"]
-        self.assertEqual(warning.points, ((201.0, 0.0),))
-
     def test_polygons_of_near_tangent_curves_are_no_crossing(self):
         # a circle inside a square, tangent to two sides: the outer is the square,
         # its ring does not cross itself

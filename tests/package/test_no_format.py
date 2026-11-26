@@ -59,7 +59,7 @@ class TestTopoWithoutFormats(unittest.TestCase):
                 topo.primitives.LineSeg((0, 10), (0, 0)),
             ])
             result = topo.heal(doc).faces()
-            parts = topo.split(result, min_area=0)
+            parts = topo.split(result).parts
             print(len(parts), "ezdxf" in sys.modules)
         """)
         self.assertEqual(out.returncode, 0, out.stderr)
@@ -79,28 +79,25 @@ class TestSplitIsModel(unittest.TestCase):
         self.assertEqual(len(self.result.clusters), 2)
 
     def test_one_result_per_part(self):
-        parts = topo.split(self.result, namer=lambda i, c: f"P{i}")
-        self.assertEqual([p.clusters[0].label for p in parts], ["P0", "P1"])
+        parts = topo.split(self.result).parts
+        self.assertEqual([p.clusters[0].label for p in parts],
+                         [f"{c.label}_P{i + 1}" for i, c in enumerate(self.result.clusters)])
         for part in parts:
             self.assertIsInstance(part, topo.Result)
             self.assertEqual(len(part.clusters), 1)
 
-    def test_trash_and_annotations_go_to_one_part(self):
-        # every text to the part that contains it or the nearest, the trash to the
-        # nearest: nothing duplicated, nothing lost
-        parts = topo.split(self.result)
-        texts = [[a.text for a in p.texts] for p in parts]
-        self.assertEqual(texts, [["A"], ["B"]])
-        self.assertEqual([len(p.loose) for p in parts],
-                         [0, len(self.result.loose)])
-
-    def test_min_area_drops_with_warning(self):
-        parts = topo.split(self.result, min_area=20000)
-        self.assertEqual(parts, [])
-        self.assertTrue(any("under min_area" in w for w in self.result.warnings))
+    def test_trash_and_annotations_are_in_one_place(self):
+        # a text goes to the part that contains it, the trash outside every part
+        # comes back apart: nothing duplicated, nothing lost
+        outcome = topo.split(self.result)
+        texts = [[a.text for a in p.texts] for p in outcome.parts]
+        self.assertEqual(texts, [["A"], []])
+        self.assertEqual([a.text for a in outcome.texts], ["B"])      # at x=420, beside the second square
+        self.assertEqual([len(p.loose) for p in outcome.parts], [0, 0])
+        self.assertEqual(len(outcome.loose), len(self.result.loose))
 
     def test_each_part_writes_to_dxf(self):
-        for part in topo.split(self.result):
+        for part in topo.split(self.result).parts:
             msp = topo_dxf.to_dxf(part, exclude_types={"TEXT"}).modelspace()
             self.assertEqual(len(msp.query("TEXT")), 0)
             self.assertEqual(len(msp.query("LWPOLYLINE[layer=='OuterContour']")), 1)

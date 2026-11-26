@@ -129,7 +129,7 @@ topo/
 │   │                     as heal(), exposed to decide `edge.role`
 │   │                     BEFORE heal() — works on Document
 │   ├── rotate.py         rotate_*() (experimental)
-│   ├── split.py          split() — one Result per part, no format
+│   ├── split.py          split() — one Result per part, plus what no part contains; no format
 │   └── strips.py         facing_boundaries(), link(), unconnected_regions(), open_boundaries()
 │
 ├── io/           RENDERERS of the model with no format dependencies
@@ -307,12 +307,13 @@ net area removes the elements that declare themselves voids of the part (`is_voi
 
 ### 4. one Result per part — `split`
 
-`topo.split(result)` chooses the parts on the model (`min_area`, `namer`) and gives
-one `Result` per part, with the loose curves and the texts that
-belong to it: a curve goes to the cluster of its `cluster_ref`, a text
-to the part that contains it; if none, to the nearest among all — no
-duplicate, nothing lost. No format: every renderer takes a
-`Result`, so a part goes to DXF, SVG or text in the same way.
+`topo.split(result)` decides nothing: it gives one `Result` per cluster, with the loose
+curves and the texts that belong to it — a curve goes to the cluster of its `cluster_ref`,
+a text to its `cluster_ref` or to the part whose outer contains it, on the primitives.
+What no part contains comes back apart (`Split.loose`, `Split.texts`): assigning it to the
+nearest part, to every part or to none is an interpretation, the caller's. No duplicate,
+nothing lost. No format: every renderer takes a `Result`, so a part goes to DXF, SVG or
+text in the same way.
 
 ### 5. render — `topo_dxf.to_dxf`
 

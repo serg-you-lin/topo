@@ -950,38 +950,40 @@ repeating the junction point). A single straight stroke is
 ### `split`
 
 ```python
-topo.split(
-    result: Result,
-    *, namer=None,
-    min_area=0.0,                # no discard
-) -> list[Result]
+topo.split(result: Result) -> Split
 ```
 
-**One `Result` per part**, with no format: choosing the parts is
-a decision about the model, writing them is an adapter's. Each part is a
-`Result` with a single cluster, plus the loose curves and the texts that
-belong to it. A `loose` curve goes to the cluster of its `cluster_ref`,
-a text to the part that contains it; those that no part contains
-go to the part nearest to its outer contour among **all** the parts (even
-those discarded by `min_area`). Nothing is duplicated, nothing lost: each
-element is copied with `cluster_ref` referring to the part (`0` if its
-cluster contains it, `None` otherwise). A promoted curve (`Result.promote`) is
-already in `cluster.overlay` and travels with its cluster. The other fields
-(source, warnings) are copied. Every writer takes a `Result`, so a
-part goes to DXF, SVG or text in the same way.
+**One `Result` per cluster**, with no format, and **what no part contains, apart**:
+`split` decides nothing, the caller does. Each part is a `Result` with a single
+cluster (labelled `f"{label}_P{i+1}"`), plus the loose curves and the texts that
+belong to it. A `loose` curve goes to the cluster of its `cluster_ref`. A text goes
+to its `cluster_ref` (`anchor_texts(result, snap_distance=)` sets it), else to the
+first part whose outer contour contains its position, border included (computed on
+the primitives). A loose curve with no `cluster_ref`, and a text that no part owns,
+are not given to the nearest part: no distance is computed. They come back in
+`Split.loose` and `Split.texts`. Nothing is duplicated, nothing lost: each element is
+copied with `cluster_ref` referring to the part (`0` if it was the part's, `None`
+otherwise). A promoted curve (`Result.promote`) is already in `cluster.overlay` and
+travels with its cluster. The other fields (source, warnings) are copied. Every
+writer takes a `Result`, so a part goes to DXF, SVG or text in the same way.
 
-| parameter | meaning |
+| `Split` field | meaning |
 |---|---|
-| `namer` | `callable(i, cluster) -> str` — gives the `label` of the part's cluster, so the name of a file can still be derived (`f"{cluster.label}.dxf"`). Without it, `f"{label}_P{i+1}"`. |
-| `min_area` | by default `0.0`, no discard: a size threshold belongs to a process. With a value, the parts with area below it (mm²) are discarded with a warning in `result.warnings` and in those of every part. |
+| `parts` | `list[Result]`, one per cluster, in the order of `result.clusters` |
+| `loose` | the loose curves with no `cluster_ref` |
+| `texts` | the texts with no `cluster_ref` that no outer contour contains |
 
-**Mutates** only `result.warnings` (the discard warnings: even if it discards them all, the discard can be read). The cluster of each part is a copy with its `label`; the original does not change.
-**Returns** the parts in the order of the kept clusters.
+**Mutates** nothing: the cluster of each part is a copy with its `label`; the original does not change.
 **Raises `ValueError`** if `result.is_valid` is `False`: a file per part
 makes no sense without parts.
 
 ```python
-for part in topo.split(result, min_area=100.0):
+outcome = topo.split(result)
+for text in outcome.texts:         # your call: here, the nearest part
+    near = min(outcome.parts, key=lambda p: math.dist(
+        text.position, topo.geometry.nearest_point(p.clusters[0].outer.segments, text.position)))
+    near.texts.append(text)
+for part in outcome.parts:
     name = part.clusters[0].label
     topo_dxf.to_dxf(part).saveas(f"{name}.dxf")
     topo.experimental.save_svg(part, f"{name}.svg")
@@ -1521,7 +1523,7 @@ if not result.is_valid:
 topo_dxf.to_dxf(result).saveas("pezzo_healed.dxf")
 
 # 6b. or render — one file per part
-for part in topo.split(result):
+for part in topo.split(result).parts:
     topo_dxf.to_dxf(part).saveas(f"output/{part.clusters[0].label}.dxf")
 
 # 7. the facts as JSON
