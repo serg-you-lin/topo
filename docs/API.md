@@ -1342,6 +1342,18 @@ says, not how it looks: height and rotation are the consumer's. topo
 computes no measure from them: the number, if the source writes none, is the
 consumer's (`<>` in `Text.text`).
 
+### `Split`
+
+What `topo.split(result)` returns: the parts, and what no part contains.
+
+| field | type | content |
+|---|---|---|
+| `parts` | `list[Result]` | one `Result` per cluster, in the order of `result.clusters`, each with its one cluster (labelled `f"{label}_P{i+1}"`), the loose curves and the texts that belong to it |
+| `loose` | `list[OpenCurve \| ClosedCurve]` | the loose curves with no `cluster_ref`: no part owns them |
+| `texts` | `list[Text]` | the texts with no `cluster_ref` that no part's outer contour contains |
+
+A plain dataclass (`Split(parts, loose, texts)`), no methods. Nothing in `loose` or `texts` is also in a part. What to do with them (nearest part, every part, none) is the caller's: see `split` in §3.
+
 ### `Result`
 
 Produced by `Network.faces()` or `Network.outlines()`, enriched by a consumer.
