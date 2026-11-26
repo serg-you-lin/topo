@@ -5,7 +5,7 @@ Materializes a Result into a NEW DXF document, working exclusively on the
 model's segments. No access to source_ref, entity_ids, source msp.
 
 `to_dxf(result, ...)` → a Drawing with everything the Result contains. One
-file per part: `topo.split(result)` gives a Result per part, and each goes
+file per part: `topo.split(result).parts` gives a Result per part, and each goes
 through `to_dxf`; the loop is the caller's.
 """
 
@@ -70,7 +70,7 @@ def to_dxf(
       - `text_layer` → the layer of texts and dimensions without a role; one
         with a role goes on its role's layer, like an edge.
     No text is discarded: those not covered by any part are written anyway
-    (`topo.split()` assigns them to the nearest part, like loose curves).
+    (`topo.split()` returns them apart, like the loose curves no part owns).
 
     `filter_cluster(cluster)` chooses which clusters to write; `loose` and
     texts are all written anyway (for a file per part, the part comes from

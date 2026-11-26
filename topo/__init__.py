@@ -20,7 +20,7 @@ You do not have to import the internal modules directly.
     # holes, bends, engravings: a process reading, in snapbend
 
     topo.save_json(result, "part.json")
-    parts = topo.split(result)                # one Result per part, no format
+    parts = topo.split(result).parts          # one Result per part, no format
 """
 
 from .core.geometry_input import load_geometry, load_segments
@@ -28,7 +28,7 @@ from .core.readings.heal import heal
 from .core.readings.network import Network
 from .tools.anchor       import anchor_texts
 # One Result per part, no format: every exporter writes one.
-from .tools.split        import split
+from .tools.split        import split, Split
 from .rules.validator     import validate_document, validate_result
 from .io.json_export      import to_json, save_json
 # Explicit conversion to shapely for overlay, buffer, WKT: the model does not
@@ -109,6 +109,7 @@ __all__ = [
     "inspect_result",
     # Modelli
     "Result",
+    "Split",
     "Cluster",
     "Contour",
     "Document",

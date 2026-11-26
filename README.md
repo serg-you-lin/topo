@@ -100,14 +100,17 @@ A cluster is one outer contour with everything inside it. `split` gives each
 cluster a `Result` of its own:
 
 ```python
-for piece in topo.split(result):                # one Result per cluster, no format
-    name = piece.clusters[0].label              # _P1, _P2, ... (heal(doc, label="x") gives x_P1; or namer=)
+outcome = topo.split(result)                    # the parts, and what no part contains
+for piece in outcome.parts:                     # one Result per cluster, no format
+    name = piece.clusters[0].label              # x_P1, x_P2, ... (heal(doc, label="x"))
     topo.experimental.save_svg(piece, f"output/{name}.svg")
 ```
 
-`split` is a decision on the model: which clusters (`min_area`), their names
-(`namer`), which loose curves and texts travel with each (the cluster that
-contains them, or the nearest). An adapter then writes each one in its format.
+`split` decides nothing: every cluster is a part, a loose curve and a text go to
+the cluster they name (`cluster_ref`, which `anchor_texts` sets for texts) or, for
+a text, to the cluster that contains it. What no cluster contains comes back apart
+in `outcome.loose` and `outcome.texts`, and the caller assigns it: to the nearest
+part, to every part, to none. An adapter then writes each part in its format.
 
 ## Two readings of one healed network
 
@@ -177,7 +180,7 @@ topo.heal(doc)  ──►  Network     repaired once: nodes, doubles, gaps
   (a consumer's reading)          written to cluster.overlay
                           │
                           ▼
-   topo.split(result)                       ──►  list[Result] one per cluster, no format
+   topo.split(result)                       ──►  Split: one Result per cluster + what no cluster contains
    topo.save_json(result, path)                  the model's facts as JSON
    topo.experimental.to_svg(result)         ──►  SVG string   for a UI / report (outside the 1.0 stable API)
    topo.experimental.to_view_model(result)  ──►  dict (full geometry) for an external renderer (outside the 1.0 stable API)

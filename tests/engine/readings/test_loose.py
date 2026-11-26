@@ -181,17 +181,23 @@ class TestSplit(unittest.TestCase):
 
     def setUp(self):
         self.result = topo.heal(_drawing()).faces()
-        self.plate, self.small = topo.split(self.result, min_area=0)
+        self.outcome = topo.split(self.result)
+        self.plate, self.small = self.outcome.parts
 
     def test_every_curve_goes_to_its_cluster(self):
-        self.assertEqual(len(self.plate.loose) + len(self.small.loose), len(self.result.loose))
+        self.assertEqual(len(self.plate.loose) + len(self.small.loose) + len(self.outcome.loose),
+                         len(self.result.loose))
         refs = [c.cluster_ref for c in self.plate.loose]
         self.assertIn(0, refs)
         self.assertEqual([c.cluster_ref for c in self.small.loose], [0])
 
-    def test_the_outside_one_goes_to_the_nearest_part_without_cluster_ref(self):
-        outside = _at(self.plate, 150, 0)
+    def test_the_outside_one_comes_back_apart_without_cluster_ref(self):
+        outside = _at(self.outcome, 150, 0)
         self.assertIsNone(outside.cluster_ref)
+        self.assertEqual(len(self.plate.loose) + len(self.small.loose) + len(self.outcome.loose),
+                         len(self.result.loose))
+        with self.assertRaises(AssertionError):
+            _at(self.plate, 150, 0)
 
     def test_the_original_does_not_change(self):
         self.assertEqual(_at(self.result, 390, 0).cluster_ref, 1)
@@ -200,9 +206,11 @@ class TestSplit(unittest.TestCase):
         result = topo.heal(_drawing()).faces()
         guide = _at(result, 150, 0)
         result.promote(guide, result.clusters[1], "guides")
-        plate, small = topo.split(result, min_area=0)
+        outcome = topo.split(result)
+        plate, small = outcome.parts
         self.assertEqual(small.clusters[0].overlay.get("guides"), [guide])
         self.assertFalse(any(c.cluster_ref is None for c in plate.loose))
+        self.assertEqual(outcome.loose, [])
 
 
 class TestRotate(unittest.TestCase):

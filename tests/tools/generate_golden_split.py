@@ -82,11 +82,6 @@ def generate(force: bool = False, only: str = None):
                 skipped += 1
                 continue
 
-            topo.split(
-                result,
-                namer=lambda i, cluster: f"{cluster.label}_P{i + 1:03d}",
-            )
-
             print(f"  {parent_path.name} → {len(result.clusters)} parti")
 
             for part_index, cluster in enumerate(result.clusters):
