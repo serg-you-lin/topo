@@ -15,11 +15,10 @@ reading.
 
 from __future__ import annotations
 
+import math
 from typing import Optional
 
-from shapely.geometry import Point
-
-from ..core.geometry.shapely_polygons import curve_polygon
+from ..core.geometry.regions import nearest_point
 from ..model.result import Result
 
 
@@ -28,45 +27,33 @@ def anchor_texts(result: Result, *, snap_distance: float = 0.0) -> None:
     Set ``cluster_ref`` on every text of ``result.texts``.
 
     ``cluster_ref`` is the index in ``result.clusters`` of the part whose
-    outer contour covers the text's position; a text outside every part (a
-    title block) keeps ``None``. With ``snap_distance`` > 0 a text covered by
-    no part goes to the nearest one within that distance of its outer.
+    outer contour contains the text's position (border included); a text
+    outside every part (a title block) keeps ``None``. With ``snap_distance``
+    > 0 a text contained by no part goes to the nearest one within that
+    distance of its outer. Computed on the primitives.
 
     **Mutates** the texts of ``result`` and returns ``None``.
     """
-    refs = _outer_polygons(result)
-    if not refs:
+    outers = [(i, c.outer) for i, c in enumerate(result.clusters) if c.outer is not None]
+    if not outers:
         return
     for text in result.texts:
-        text.cluster_ref = _assign(text.position, refs, snap_distance)
+        text.cluster_ref = _assign(text.position, outers, snap_distance)
 
 
-def _outer_polygons(result: Result) -> list:
-    """(index, polygon of the outer) for every part that has one."""
-    return [
-        (i, poly)
-        for i, p in enumerate(result.clusters)
-        if p.outer is not None
-        for poly in [curve_polygon(p.outer)]
-        if poly is not None and not poly.is_empty
-    ]
+def _assign(position, outers, snap_distance: float) -> Optional[int]:
+    for i, outer in outers:
+        if outer.contains(position):
+            return i
+    return _nearest_within(position, outers, snap_distance)
 
 
-def _assign(position, refs, snap_distance: float) -> Optional[int]:
-    probe = Point(position)
-
-    covering = [i for i, poly in refs if poly.covers(probe)]
-    if covering:
-        return covering[0]
-    return _nearest_within(probe, refs, snap_distance)
-
-
-def _nearest_within(probe: Point, refs, snap_distance: float) -> Optional[int]:
-    """The index of the part nearest ``probe``, if within ``snap_distance`` (> 0)."""
-    if snap_distance <= 0.0 or not refs:
+def _nearest_within(position, outers, snap_distance: float) -> Optional[int]:
+    """The index of the part nearest ``position``, if within ``snap_distance`` (> 0)."""
+    if snap_distance <= 0.0:
         return None
     idx, dist = min(
-        ((i, poly.distance(probe)) for i, poly in refs),
+        ((i, math.dist(position, nearest_point(outer.segments, position))) for i, outer in outers),
         key=lambda pair: pair[1],
     )
     return idx if dist <= snap_distance else None
