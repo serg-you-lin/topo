@@ -98,9 +98,8 @@ cluster a `Result` of its own:
 
 ```python
 outcome = topo.split(result)                    # the pieces, and what no piece contains
-for piece in outcome.pieces:                     # one Result per cluster, no format
-    name = piece.clusters[0].label              # x_P1, x_P2, ... (heal(doc, label="x"))
-    topo.experimental.save_svg(piece, f"output/{name}.svg")
+for index, piece in enumerate(outcome.pieces):   # one Result per cluster, no format
+    topo.experimental.save_svg(piece, f"output/piece_{index + 1}.svg")   # naming is yours
 ```
 
 `split` decides nothing: every cluster is a piece, a loose curve and a text go to

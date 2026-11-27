@@ -38,7 +38,7 @@ def split(result: Result) -> Split:
     The pieces of `result`, and what belongs to none.
 
     Each piece is a `Result` with a single cluster, the loose curves and the
-    texts that belong to it, the cluster labelled `f"{label}_P{i + 1}"`. A loose
+    texts that belong to it, the cluster with its own `label`. A loose
     curve goes to the piece of its `cluster_ref`. A text goes to the piece of its
     `cluster_ref` (`anchor_texts` sets it, with the caller's `snap_distance`),
     else to the first piece whose outer contour contains its position, border
@@ -49,7 +49,8 @@ def split(result: Result) -> Split:
     (`result.promote`) is already in its cluster. The other `Result` fields
     (source, warnings) are copied into every piece.
 
-    **Mutates** nothing: a piece's cluster is a copy with its own `label`.
+    **Mutates** nothing: a piece's cluster is a copy. The index of a piece in `pieces` is the
+    index of its cluster in `result.clusters`: what to call each piece is the caller's.
 
     Raises `ValueError` if `result` is not valid: one file per piece makes no
     sense without pieces.
@@ -66,7 +67,7 @@ def split(result: Result) -> Split:
     pieces = [
         replace(
             result,
-            clusters=[replace(cluster, label=f"{cluster.label}_P{i + 1}")],
+            clusters=[replace(cluster)],
             loose=_local(loose_of.get(i, []), i),
             texts=_local(texts_of.get(i, []), i),
             warnings=list(result.warnings),

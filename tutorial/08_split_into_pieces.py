@@ -46,17 +46,17 @@ for text in result.texts:
 
 outcome = topo.split(result)
 for text in outcome.texts:
-    nearest = min(outcome.pieces, key=lambda p: math.dist(
-        text.position, topo.geometry.nearest_point(p.clusters[0].outer.segments, text.position)))
-    print(f"  text {text.text!r} is in no cluster: given to {nearest.clusters[0].label}")
-    nearest.texts.append(text)
+    nearest = min(range(len(outcome.pieces)), key=lambda i: math.dist(
+        text.position, topo.geometry.nearest_point(outcome.pieces[i].clusters[0].outer.segments, text.position)))
+    print(f"  text {text.text!r} is in no cluster: given to piece {nearest}")
+    outcome.pieces[nearest].texts.append(text)
 
 folder = _paths.out("08_split_into_pieces")
 for index, piece in enumerate(outcome.pieces):
     cluster = piece.clusters[0]
     path = folder / f"{names.get(index, 'piece_' + str(index + 1))}.dxf"
     topo_dxf.to_dxf(piece).saveas(path)
-    print(f"  {cluster.label}: area {cluster.outer.area:8.1f} mm², {len(cluster.inners)} inner(s) -> {path.name}")
+    print(f"  piece {index}: area {cluster.outer.area:8.1f} mm², {len(cluster.inners)} inner(s) -> {path.name}")
 
 topo.save_json(result, folder / "pieces.json", extra=lambda cluster: {"checked_by": "me"})
 print(f"written {folder}")

@@ -955,7 +955,7 @@ topo.split(result: Result) -> Split
 
 **One `Result` per cluster**, with no format, and **what no part contains, apart**:
 `split` decides nothing, the caller does. Each part is a `Result` with a single
-cluster (labelled `f"{label}_P{i+1}"`), plus the loose curves and the texts that
+cluster (a copy, its `label` unchanged), plus the loose curves and the texts that
 belong to it. A `loose` curve goes to the cluster of its `cluster_ref`. A text goes
 to its `cluster_ref` (`anchor_texts(result, snap_distance=)` sets it), else to the
 first part whose outer contour contains its position, border included (computed on
@@ -973,7 +973,7 @@ writer takes a `Result`, so a part goes to DXF, SVG or text in the same way.
 | `loose` | the loose curves with no `cluster_ref` |
 | `texts` | the texts with no `cluster_ref` that no outer contour contains |
 
-**Mutates** nothing: the cluster of each piece is a copy with its `label`; the original does not change.
+**Mutates** nothing: the cluster of each piece is a copy; the original does not change.
 **Raises `ValueError`** if `result.is_valid` is `False`: a file per piece
 makes no sense without pieces.
 
@@ -983,8 +983,8 @@ for text in outcome.texts:         # your call: here, the nearest part
     near = min(outcome.pieces, key=lambda p: math.dist(
         text.position, topo.geometry.nearest_point(p.clusters[0].outer.segments, text.position)))
     near.texts.append(text)
-for part in outcome.pieces:
-    name = part.clusters[0].label
+for index, part in enumerate(outcome.pieces):    # the index is the cluster's index in result.clusters
+    name = f"piece_{index + 1}"                   # naming is the caller's
     topo_dxf.to_dxf(part).saveas(f"{name}.dxf")
     topo.experimental.save_svg(part, f"{name}.svg")
 ```
@@ -1332,7 +1332,7 @@ What `topo.split(result)` returns: the pieces, and what no piece contains.
 
 | field | type | content |
 |---|---|---|
-| `pieces` | `list[Result]` | one `Result` per cluster, in the order of `result.clusters`, each with its one cluster (labelled `f"{label}_P{i+1}"`), the loose curves and the texts that belong to it |
+| `pieces` | `list[Result]` | one `Result` per cluster, in the order of `result.clusters`, each with its one cluster (a copy, `label` unchanged), the loose curves and the texts that belong to it |
 | `loose` | `list[OpenCurve \| ClosedCurve]` | the loose curves with no `cluster_ref`: no piece owns them |
 | `texts` | `list[Text]` | the texts with no `cluster_ref` that no piece's outer contour contains |
 
@@ -1517,8 +1517,8 @@ if not result.is_valid:
 topo_dxf.to_dxf(result).saveas("healed.dxf")
 
 # 6b. or render — one file per part
-for part in topo.split(result).pieces:
-    topo_dxf.to_dxf(part).saveas(f"output/{part.clusters[0].label}.dxf")
+for index, part in enumerate(topo.split(result).pieces):
+    topo_dxf.to_dxf(part).saveas(f"output/piece_{index + 1}.dxf")
 
 # 7. the facts as JSON
 topo.save_json(result, "result.json")

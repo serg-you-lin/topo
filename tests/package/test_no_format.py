@@ -80,8 +80,8 @@ class TestSplitIsModel(unittest.TestCase):
 
     def test_one_result_per_part(self):
         parts = topo.split(self.result).pieces
-        self.assertEqual([p.clusters[0].label for p in parts],
-                         [f"{c.label}_P{i + 1}" for i, c in enumerate(self.result.clusters)])
+        self.assertEqual([p.clusters[0].label for p in parts], [c.label for c in self.result.clusters])
+        self.assertEqual([p.clusters[0].outer.bbox for p in parts], [c.outer.bbox for c in self.result.clusters])
         for part in parts:
             self.assertIsInstance(part, topo.Result)
             self.assertEqual(len(part.clusters), 1)

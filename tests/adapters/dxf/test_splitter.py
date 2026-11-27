@@ -99,8 +99,8 @@ def _split_files(result, out_dir, **write_kwargs):
     (`include_texts`, `exclude_types`, ...) go to to_dxf."""
     os.makedirs(out_dir, exist_ok=True)
     paths = []
-    for part in topo.split(result).pieces:
-        path = os.path.join(out_dir, f"{part.clusters[0].label}.dxf")
+    for index, part in enumerate(topo.split(result).pieces):
+        path = os.path.join(out_dir, f"piece_{index + 1}.dxf")
         topo_dxf.to_dxf(part, **write_kwargs).saveas(path)
         paths.append(path)
     return paths
@@ -153,23 +153,18 @@ class TestUnitSplitOutput(unittest.TestCase):
             except Exception as e:
                 self.fail(f"File not readable: {path} — {e}")
 
-    def test_003_default_part_name(self):
-            """The default part name is a name of the type 'label_P1'."""
+    def test_003_pieces_keep_the_label_of_their_cluster(self):
+            """split names nothing: every piece keeps the label of its cluster, the caller names the files."""
             self._assert_heal_found_parts()
-            generated = _split_files(self.result, self.out_dir)
-            
-            self.assertTrue(len(generated) > 0)
-            nome = Path(generated[0]).stem
-            
-            self.assertRegex(nome, r".+_P\d+$",
-                             f"Name '{nome}' does not follow the format 'label_P1'")
+            pieces = topo.split(self.result).pieces
+            self.assertEqual([p.clusters[0].label for p in pieces], [c.label for c in self.result.clusters])
 
     def test_005_cluster_label_of_the_original_part_intact(self):
-        """The part's label gives the file name; the original cluster does not change."""
+        """The caller's index gives the file name; the original cluster does not change."""
         self._assert_heal_found_parts()
         before = self.result.clusters[0].label
         generated = _split_files(self.result, self.out_dir)
-        self.assertEqual(Path(generated[0]).stem, f"{before}_P1")
+        self.assertEqual(Path(generated[0]).stem, "piece_1")
         self.assertEqual(self.result.clusters[0].label, before)
 
     def test_007_output_folder_creata_se_assente(self):
