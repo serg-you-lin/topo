@@ -969,21 +969,21 @@ writer takes a `Result`, so a part goes to DXF, SVG or text in the same way.
 
 | `Split` field | meaning |
 |---|---|
-| `parts` | `list[Result]`, one per cluster, in the order of `result.clusters` |
+| `pieces` | `list[Result]`, one per cluster, in the order of `result.clusters` |
 | `loose` | the loose curves with no `cluster_ref` |
 | `texts` | the texts with no `cluster_ref` that no outer contour contains |
 
-**Mutates** nothing: the cluster of each part is a copy with its `label`; the original does not change.
-**Raises `ValueError`** if `result.is_valid` is `False`: a file per part
-makes no sense without parts.
+**Mutates** nothing: the cluster of each piece is a copy with its `label`; the original does not change.
+**Raises `ValueError`** if `result.is_valid` is `False`: a file per piece
+makes no sense without pieces.
 
 ```python
 outcome = topo.split(result)
 for text in outcome.texts:         # your call: here, the nearest part
-    near = min(outcome.parts, key=lambda p: math.dist(
+    near = min(outcome.pieces, key=lambda p: math.dist(
         text.position, topo.geometry.nearest_point(p.clusters[0].outer.segments, text.position)))
     near.texts.append(text)
-for part in outcome.parts:
+for part in outcome.pieces:
     name = part.clusters[0].label
     topo_dxf.to_dxf(part).saveas(f"{name}.dxf")
     topo.experimental.save_svg(part, f"{name}.svg")
@@ -1328,15 +1328,15 @@ consumer's (`<>` in `Text.text`).
 
 ### `Split`
 
-What `topo.split(result)` returns: the parts, and what no part contains.
+What `topo.split(result)` returns: the pieces, and what no piece contains.
 
 | field | type | content |
 |---|---|---|
-| `parts` | `list[Result]` | one `Result` per cluster, in the order of `result.clusters`, each with its one cluster (labelled `f"{label}_P{i+1}"`), the loose curves and the texts that belong to it |
-| `loose` | `list[OpenCurve \| ClosedCurve]` | the loose curves with no `cluster_ref`: no part owns them |
-| `texts` | `list[Text]` | the texts with no `cluster_ref` that no part's outer contour contains |
+| `pieces` | `list[Result]` | one `Result` per cluster, in the order of `result.clusters`, each with its one cluster (labelled `f"{label}_P{i+1}"`), the loose curves and the texts that belong to it |
+| `loose` | `list[OpenCurve \| ClosedCurve]` | the loose curves with no `cluster_ref`: no piece owns them |
+| `texts` | `list[Text]` | the texts with no `cluster_ref` that no piece's outer contour contains |
 
-A plain dataclass (`Split(parts, loose, texts)`), no methods. Nothing in `loose` or `texts` is also in a part. What to do with them (nearest part, every part, none) is the caller's: see `split` in §3.
+A plain dataclass (`Split(pieces, loose, texts)`), no methods. Nothing in `loose` or `texts` is also in a piece. What to do with them (nearest piece, every piece, none) is the caller's: see `split` in §3.
 
 ### `Result`
 
@@ -1513,11 +1513,11 @@ result = topo.heal(doc, label="P-1024").faces()
 if not result.is_valid:
     raise SystemExit(result.errors)
 
-# 6a. render — one document with all the parts
+# 6a. render — one document with all the pieces
 topo_dxf.to_dxf(result).saveas("healed.dxf")
 
 # 6b. or render — one file per part
-for part in topo.split(result).parts:
+for part in topo.split(result).pieces:
     topo_dxf.to_dxf(part).saveas(f"output/{part.clusters[0].label}.dxf")
 
 # 7. the facts as JSON

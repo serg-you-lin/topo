@@ -46,7 +46,7 @@ DATA = {
     'topo.inspect_result': ('result',),
     'topo.Result': ('clusters',),
     'topo.Result.promote': ('curves', 'cluster', 'name'),
-    'topo.Split': ('parts', 'loose', 'texts'),
+    'topo.Split': ('pieces', 'loose', 'texts'),
     'topo.Cluster': ('outer',),
     'topo.Cluster.features': ('name',),
     'topo.Contour': ('role', 'segments'),

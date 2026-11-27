@@ -99,7 +99,7 @@ def _split_files(result, out_dir, **write_kwargs):
     (`include_texts`, `exclude_types`, ...) go to to_dxf."""
     os.makedirs(out_dir, exist_ok=True)
     paths = []
-    for part in topo.split(result).parts:
+    for part in topo.split(result).pieces:
         path = os.path.join(out_dir, f"{part.clusters[0].label}.dxf")
         topo_dxf.to_dxf(part, **write_kwargs).saveas(path)
         paths.append(path)
@@ -264,7 +264,7 @@ class TestUnitSplitFilters(unittest.TestCase):
 
     def test_006_split_writes_every_part(self):
         """Every part of split() is written from the model alone."""
-        drawings = [topo_dxf.to_dxf(part) for part in topo.split(self.result).parts]
+        drawings = [topo_dxf.to_dxf(part) for part in topo.split(self.result).pieces]
         self.assertGreater(len(drawings), 0)
 
 

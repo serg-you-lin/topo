@@ -46,13 +46,13 @@ for text in result.texts:
 
 outcome = topo.split(result)
 for text in outcome.texts:
-    nearest = min(outcome.parts, key=lambda p: math.dist(
+    nearest = min(outcome.pieces, key=lambda p: math.dist(
         text.position, topo.geometry.nearest_point(p.clusters[0].outer.segments, text.position)))
     print(f"  text {text.text!r} is in no cluster: given to {nearest.clusters[0].label}")
     nearest.texts.append(text)
 
 folder = _paths.out("08_split_into_pieces")
-for index, piece in enumerate(outcome.parts):
+for index, piece in enumerate(outcome.pieces):
     cluster = piece.clusters[0]
     path = folder / f"{names.get(index, 'piece_' + str(index + 1))}.dxf"
     topo_dxf.to_dxf(piece).saveas(path)

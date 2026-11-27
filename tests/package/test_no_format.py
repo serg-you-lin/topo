@@ -59,7 +59,7 @@ class TestTopoWithoutFormats(unittest.TestCase):
                 topo.primitives.LineSeg((0, 10), (0, 0)),
             ])
             result = topo.heal(doc).faces()
-            parts = topo.split(result).parts
+            parts = topo.split(result).pieces
             print(len(parts), "ezdxf" in sys.modules)
         """)
         self.assertEqual(out.returncode, 0, out.stderr)
@@ -79,7 +79,7 @@ class TestSplitIsModel(unittest.TestCase):
         self.assertEqual(len(self.result.clusters), 2)
 
     def test_one_result_per_part(self):
-        parts = topo.split(self.result).parts
+        parts = topo.split(self.result).pieces
         self.assertEqual([p.clusters[0].label for p in parts],
                          [f"{c.label}_P{i + 1}" for i, c in enumerate(self.result.clusters)])
         for part in parts:
@@ -90,14 +90,14 @@ class TestSplitIsModel(unittest.TestCase):
         # a text goes to the part that contains it, the trash outside every part
         # comes back apart: nothing duplicated, nothing lost
         outcome = topo.split(self.result)
-        texts = [[a.text for a in p.texts] for p in outcome.parts]
+        texts = [[a.text for a in p.texts] for p in outcome.pieces]
         self.assertEqual(texts, [["A"], []])
         self.assertEqual([a.text for a in outcome.texts], ["B"])      # at x=420, beside the second square
-        self.assertEqual([len(p.loose) for p in outcome.parts], [0, 0])
+        self.assertEqual([len(p.loose) for p in outcome.pieces], [0, 0])
         self.assertEqual(len(outcome.loose), len(self.result.loose))
 
     def test_each_part_writes_to_dxf(self):
-        for part in topo.split(self.result).parts:
+        for part in topo.split(self.result).pieces:
             msp = topo_dxf.to_dxf(part, exclude_types={"TEXT"}).modelspace()
             self.assertEqual(len(msp.query("TEXT")), 0)
             self.assertEqual(len(msp.query("LWPOLYLINE[layer=='OuterContour']")), 1)

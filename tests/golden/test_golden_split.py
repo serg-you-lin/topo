@@ -125,7 +125,7 @@ def _get_parent_split_cache(parent_path: Path, max_gap: float) -> dict:
 
     if result.is_valid and result.clusters:
         output_folder.mkdir(parents=True, exist_ok=True)
-        for i, part in enumerate(topo.split(result).parts):
+        for i, part in enumerate(topo.split(result).pieces):
             topo_dxf.to_dxf(part).saveas(str(output_folder / f"{i:03d}.dxf"))
 
     part_payloads = []

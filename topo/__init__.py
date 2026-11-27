@@ -20,7 +20,7 @@ You do not have to import the internal modules directly.
     # what a contour means is a consumer's reading, written to cluster.overlay
 
     topo.save_json(result, "shape.json")
-    parts = topo.split(result).parts          # one Result per cluster, no format
+    parts = topo.split(result).pieces          # one Result per cluster, no format
 """
 
 from .core.geometry_input import load_geometry, load_segments

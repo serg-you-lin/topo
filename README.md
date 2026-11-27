@@ -97,8 +97,8 @@ A cluster is one outer contour with everything inside it. `split` gives each
 cluster a `Result` of its own:
 
 ```python
-outcome = topo.split(result)                    # the parts, and what no part contains
-for piece in outcome.parts:                     # one Result per cluster, no format
+outcome = topo.split(result)                    # the pieces, and what no piece contains
+for piece in outcome.pieces:                     # one Result per cluster, no format
     name = piece.clusters[0].label              # x_P1, x_P2, ... (heal(doc, label="x"))
     topo.experimental.save_svg(piece, f"output/{name}.svg")
 ```

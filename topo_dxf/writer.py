@@ -5,7 +5,7 @@ Materializes a Result into a NEW DXF document, working exclusively on the
 model's segments. No access to source_ref, entity_ids, source msp.
 
 `to_dxf(result, ...)` → a Drawing with everything the Result contains. One
-file per part: `topo.split(result).parts` gives a Result per part, and each goes
+file per piece: `topo.split(result).pieces` gives a Result per piece, and each goes
 through `to_dxf`; the loop is the caller's.
 """
 

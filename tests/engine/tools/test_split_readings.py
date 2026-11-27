@@ -22,7 +22,7 @@ def _network():
 @pytest.mark.parametrize("reading", ["faces", "outlines"])
 def test_one_part_per_cluster_nothing_discarded(reading):
     result = getattr(_network(), reading)()
-    parts = topo.split(result).parts
+    parts = topo.split(result).pieces
     assert [len(p.clusters) for p in parts] == [1, 1]
     assert sorted(round(p.clusters[0].outer.area) for p in parts) == [4, 6000]
     assert result.warnings == []
@@ -31,7 +31,7 @@ def test_one_part_per_cluster_nothing_discarded(reading):
 def test_outlines_the_hole_goes_to_its_part():
     # outlines() puts the hole in loose: split gives it to the plate
     #
-    plate, small = topo.split(_network().outlines()).parts
+    plate, small = topo.split(_network().outlines()).pieces
     assert [c.cluster_ref for c in plate.loose] == [0]
     assert small.loose == []
 
@@ -51,9 +51,9 @@ def _with_strays():
 def test_what_no_part_contains_comes_back_apart():
     result = _with_strays()
     outcome = topo.split(result)
-    assert [[t.text for t in p.texts] for p in outcome.parts] == [["A"], ["B"]]
+    assert [[t.text for t in p.texts] for p in outcome.pieces] == [["A"], ["B"]]
     assert sorted(t.text for t in outcome.texts) == ["between", "far"]
-    assert len(outcome.loose) == len(result.loose) - sum(len(p.loose) for p in outcome.parts)
+    assert len(outcome.loose) == len(result.loose) - sum(len(p.loose) for p in outcome.pieces)
     assert [c.cluster_ref for c in outcome.loose] == [None] * len(outcome.loose)
     assert len(outcome.loose) >= 1
 
@@ -61,9 +61,9 @@ def test_what_no_part_contains_comes_back_apart():
 def test_nothing_is_lost_or_duplicated():
     result = _with_strays()
     outcome = topo.split(result)
-    texts = [t.text for p in outcome.parts for t in p.texts] + [t.text for t in outcome.texts]
+    texts = [t.text for p in outcome.pieces for t in p.texts] + [t.text for t in outcome.texts]
     assert sorted(texts) == sorted(t.text for t in result.texts)
-    n_loose = sum(len(p.loose) for p in outcome.parts) + len(outcome.loose)
+    n_loose = sum(len(p.loose) for p in outcome.pieces) + len(outcome.loose)
     assert n_loose == len(result.loose)
 
 
@@ -72,7 +72,7 @@ def test_a_text_follows_the_cluster_ref_anchor_texts_gave_it():
     topo.anchor_texts(result, snap_distance=120)
     outcome = topo.split(result)
     assert sorted(t.text for t in outcome.texts) == ["far"]
-    assert [t.text for t in outcome.parts[0].texts] == ["A", "between"]
+    assert [t.text for t in outcome.pieces[0].texts] == ["A", "between"]
 
 
 def test_split_does_not_change_the_result():

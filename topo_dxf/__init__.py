@@ -11,8 +11,8 @@ names. topo does not know it exists.
     result = topo.heal(doc).faces()
     topo_dxf.to_dxf(result).saveas("out.dxf")   # Result -> Drawing
 
-    for part in topo.split(result).parts:            # one Result per part
-        topo_dxf.to_dxf(part).saveas(f"{part.clusters[0].label}.dxf")
+    for piece in topo.split(result).pieces:          # one Result per piece
+        topo_dxf.to_dxf(piece).saveas(f"{piece.clusters[0].label}.dxf")
 
 Layers and colors are the caller's choice (`layers=`, `role_styles=`);
 what the caller leaves unsaid is this adapter's default (`layers.py`).

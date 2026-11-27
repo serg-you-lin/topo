@@ -21,14 +21,14 @@ from ..model.text import Text
 
 @dataclass
 class Split:
-    """What `split` returns: the parts, and what no part contains.
+    """What `split` returns: the pieces, and what no piece contains.
 
     Fields:
-        parts : one `Result` per cluster, in the order of `result.clusters`.
+        pieces: one `Result` per cluster, in the order of `result.clusters`.
         loose : the loose curves with no `cluster_ref`.
-        texts : the texts no part owns: no `cluster_ref`, and no outer contour
+        texts : the texts no piece owns: no `cluster_ref`, and no outer contour
                 contains their position."""
-    parts: List[Result]                  = field(default_factory=list)
+    pieces: List[Result]                 = field(default_factory=list)
     loose: List[OpenCurve | ClosedCurve] = field(default_factory=list)
     texts: List[Text]                    = field(default_factory=list)
 
@@ -52,7 +52,7 @@ def split(result: Result) -> Split:
     **Mutates** nothing: a part's cluster is a copy with its own `label`.
 
     Raises `ValueError` if `result` is not valid: one file per part makes no
-    sense without parts.
+    sense without pieces.
     """
     if not result.is_valid:
         raise ValueError(
@@ -63,7 +63,7 @@ def split(result: Result) -> Split:
     loose_of, loose_out = _owners(result.loose, lambda c: c.cluster_ref)
     texts_of, texts_out = _owners(result.texts, lambda t: _text_owner(t, result.clusters))
 
-    parts = [
+    pieces = [
         replace(
             result,
             clusters=[replace(cluster, label=f"{cluster.label}_P{i + 1}")],
@@ -74,7 +74,7 @@ def split(result: Result) -> Split:
         )
         for i, cluster in enumerate(result.clusters)
     ]
-    return Split(parts, [copy.copy(c) for c in loose_out], [copy.copy(t) for t in texts_out])
+    return Split(pieces, [copy.copy(c) for c in loose_out], [copy.copy(t) for t in texts_out])
 
 
 def _owners(items: list, owner_of) -> tuple[dict[int, list], list]:
