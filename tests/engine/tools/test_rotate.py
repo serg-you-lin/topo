@@ -112,13 +112,17 @@ class TestRotateResult(unittest.TestCase):
         result = topo.heal(_tall_rect_with_diagonal()).faces()
         result.texts.append(Text(position=(0, 0), text="X"))
         rotated = rotate_result(result, 0.1)
-        self.assertTrue(any(w.code == "not-rotated" and "text" in w.message for w in rotated.warnings))
+        [warning] = [w for w in rotated.warnings if w.code == "not-rotated"]
+        self.assertEqual(warning.message, "rotate_result(): 1 text not rotated (not supported yet)")
+        self.assertEqual(warning.points, ((0.0, 0.0),))
 
     def test_004_warns_when_overlay_present(self):
         result = topo.heal(_tall_rect_with_diagonal()).faces()
         result.clusters[0].overlay = {"bending_lines": []}
         rotated = rotate_result(result, 0.1)
-        self.assertTrue(any(w.code == "not-rotated" and "overlay" in w.message for w in rotated.warnings))
+        [warning] = [w for w in rotated.warnings if w.code == "not-rotated"]
+        self.assertEqual(warning.message, "rotate_result(): cluster.overlay is not rotated")
+        self.assertIn("run the consumer's reading again", warning.help)
 
 
 class TestRotateDocument(unittest.TestCase):
@@ -129,6 +133,13 @@ class TestRotateDocument(unittest.TestCase):
         seg = rotated.edges[0].segment
         self.assertAlmostEqual(seg.start[0], 0.0, places=6)
         self.assertAlmostEqual(seg.start[1], 1.0, places=6)
+
+    def test_002_warns_instead_of_silently_dropping_texts(self):
+        doc = topo.load_geometry([{"type": "line", "start": (1, 0), "end": (2, 0)}])
+        doc.texts.append(Text(position=(3, 4), text="X"))
+        [warning] = [w for w in rotate_document(doc, 0.1).warnings if w.code == "not-rotated"]
+        self.assertEqual(warning.message, "rotate_document(): 1 text not rotated (not supported yet)")
+        self.assertEqual(warning.points, ((3.0, 4.0),))
 
 
 class TestRotateToLongest(unittest.TestCase):

@@ -61,9 +61,9 @@ class TestNonFiniteEntitiesInADrawing(unittest.TestCase):
         msp.add_line((math.nan, 0), (5, 5))
         msp.add_circle((math.inf, 1), 2)
         doc = topo_dxf.document_from_msp(msp)
-        text = " ".join(doc.warnings)
-        self.assertIn("LINE", text)
-        self.assertIn("CIRCLE", text)
+        [warning] = [w for w in doc.warnings if w.code == "dxf-no-curve"]
+        self.assertEqual(warning.message, "entities with no curve left out: 2")
+        self.assertEqual(warning.notes[:2], ("1 CIRCLE", "1 LINE"))
         result = topo.heal(doc).faces()
         self.assertTrue(result.is_valid)
         self.assertEqual(len(result.clusters), 1)
@@ -81,9 +81,9 @@ class TestDegenerateEntitiesInADrawing(unittest.TestCase):
         self.doc = topo_dxf.document_from_msp(msp)
 
     def test_001_drawing_loads_and_warns(self):
-        text = " ".join(self.doc.warnings)
-        self.assertIn("ARC", text)
-        self.assertIn("CIRCLE", text)
+        [warning] = [w for w in self.doc.warnings if w.code == "dxf-no-curve"]
+        self.assertEqual(warning.message, "entities with no curve left out: 2")
+        self.assertEqual(warning.notes[:2], ("1 ARC", "1 CIRCLE"))
 
     def test_002_only_the_true_geometry_remains(self):
         result = topo.heal(self.doc).faces()

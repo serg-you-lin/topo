@@ -134,7 +134,10 @@ class TestHatchBoundaryInPieces(unittest.TestCase):
         doc.saveas(path)
         read = topo_dxf.load_dxf(path)
         self.assertTrue(read.edges)
-        self.assertTrue(any(w.code == "dxf-hatch-open-boundary" for w in read.warnings))
+        [warning] = [w for w in read.warnings if w.code == "dxf-hatch-open-boundary"]
+        self.assertEqual(warning.message,
+                         "HATCH whose boundary does not close, each piece closed on its own chord: 1")
+        self.assertEqual(warning.notes, ("pattern B",))
 
 
 if __name__ == "__main__":

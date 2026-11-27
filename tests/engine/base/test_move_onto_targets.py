@@ -142,7 +142,9 @@ class TestNailedArc(unittest.TestCase):
 
     def test_the_arc_passes_through_the_end(self):
         net = topo.heal(topo.load_segments(_pinned()), max_gap=0.05)
-        self.assertEqual(len([d for d in net.notes if d.code == "arc-bent"]), 1)
+        [bent] = [d for d in net.notes if d.code == "arc-bent"]
+        self.assertEqual(bent.points, ((0.0, 5.0),))
+        self.assertEqual(bent.notes, ("0.0170 mm, max_gap 0.05 mm",))
         faces, outlines = net.faces(), net.outlines()
         for result in (faces, outlines):
             self.assertTrue(result.is_valid)
