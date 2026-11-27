@@ -4,8 +4,8 @@ One distribution (`g-topo`), three packages:
 `topo`, the engine, which knows no file format; `topo_dxf`, the DXF adapter
 (`pip install g-topo[dxf]`); `topo_pdf`, the experimental PDF adapter
 (`g-topo[pdf]`). Internal modules are not imported directly. This
-document covers every name exported in `topo.__all__` (§1–§8),
-`topo_dxf.__all__` (§9) and `topo_pdf.__all__` (§10).
+document covers every name exported in `topo.__all__` (§1–§7),
+`topo_dxf.__all__` (§8) and `topo_pdf.__all__` (§9).
 
 Conventions of this document:
 
@@ -42,19 +42,18 @@ A function that modifies its argument returns `None`.
 2. [Validation](#2-validation) — `validate_document`, `validate_result`
 3. [Processing](#3-processing) — `heal` → `Network` (`faces()` / `outlines()`) and their building blocks (core), experimental `parity_faces` (a third reading), `split`, `anchor_texts` (tools)
 4. [Export](#4-export) — `save_json`, `to_json`, `to_shapely`; experimental `to_view_model`, `to_svg`, `save_svg`
-5. [Removed before 1.0](#5-removed-before-10-d230) — metadata, `inject`, `custom`
-6. [Inspection / debug](#6-inspection--debug) — `inspect_document`, `inspect_result`
-7. [Domain types](#7-domain-types)
-8. [The complete flow, in order](#8-the-complete-flow-in-order)
-9. [`topo_dxf` — the DXF adapter](#9-topo_dxf--the-dxf-adapter) — `load_dxf`, `document_from_msp`, `to_dxf`, `inspect_dxf` / `inspect_file`, the default layers
-10. [`topo_pdf` — the PDF adapter](#10-topo_pdf--the-pdf-adapter) — `load_pdf` (experimental)
+5. [Inspection / debug](#5-inspection--debug) — `inspect_document`, `inspect_result`
+6. [Domain types](#6-domain-types)
+7. [The complete flow, in order](#7-the-complete-flow-in-order)
+8. [`topo_dxf` — the DXF adapter](#8-topo_dxf--the-dxf-adapter) — `load_dxf`, `document_from_msp`, `to_dxf`, `inspect_dxf` / `inspect_file`, the default layers
+9. [`topo_pdf` — the PDF adapter](#9-topo_pdf--the-pdf-adapter) — `load_pdf` (experimental)
 
 ---
 
 ## 1. Input geometry
 
-topo opens no files: a file enters through an adapter (`topo_dxf.load_dxf`, §9;
-`topo_pdf.load_pdf`, §10), the geometry you already hold comes in from here. The
+topo opens no files: a file enters through an adapter (`topo_dxf.load_dxf`, §8;
+`topo_pdf.load_pdf`, §9), the geometry you already hold comes in from here. The
 role rules (`RoleRule`, `name_rules`) belong to topo and every adapter
 applies them.
 
@@ -70,7 +69,7 @@ role) is written by the caller.
 
 | field | meaning |
 |---|---|
-| `role` | assigned role, cleaned by `normalize_role`. Open vocabulary: topo knows only `outer`, `inner`, `unknown`; `hole`, `bending`, `engrave`, … belong to snapbend; any other slug (`frame`, `title_block`, …) is preserved, treated as non-structural and written to the output on a layer of its own name. |
+| `role` | assigned role, cleaned by `normalize_role`. Open vocabulary: topo knows only `outer`, `inner`, `unknown`; any other slug (`frame`, `guide`, `mark`, …) is preserved, treated as non-structural and written to the output on a layer of its own name. |
 | `name` | name of the source group, equal (case ignored). |
 | `name_contains` | substring of the group name (case ignored). |
 | `dashed` | `True` only dashed lines, `False` only continuous ones. Dashed = the linetype pattern has at least one gap (`EdgeStyle.is_dashed`), not the name of the linetype. Chains count too. |
@@ -86,7 +85,7 @@ the colour name is not recognised or if `dash` is not one of the three shapes.
 
 ```python
 rules = [
-    topo.RoleRule("bending", name="Piega"),         # a chain-dashed bend stays a bend
+    topo.RoleRule("guide", name="Guide"),           # a chain-dashed line named "Guide" stays a guide
     topo.RoleRule("construction", dash="chain"),    # axes and construction lines
 ]
 ```
@@ -101,8 +100,8 @@ Shortcut: `{name: role}` → one `RoleRule(role, name=name)` per entry, in the
 same order.
 
 ```python
-rules = topo.name_rules({"Piega": "bending", "MARK": "engrave"})
-rules.append(topo.RoleRule("bending", dashed=True))   # after the names
+rules = topo.name_rules({"Guide": "guide", "MARK": "mark"})
+rules.append(topo.RoleRule("guide", dashed=True))   # after the names
 ```
 
 ### `load_segments`
@@ -258,14 +257,14 @@ you build a `Result` by other means.
 
 ## 3. Processing
 
-`heal` repairs the drawing once and returns a `Network`; `faces()` and
+`heal` repairs the geometry once and returns a `Network`; `faces()` and
 `outlines()` are its two readings (`topo/core/`), one from the inside and one
-from the outside — the caller picks the one that suits the drawing;
+from the outside — the caller picks the one that suits the input;
 `split`, `anchor_texts` are optional stages on a
 `Result` (`topo/tools/`, the caller chooses which and in what order). Writing
-in a format belongs to an adapter: `topo_dxf.to_dxf` (§9); `to_svg`/`to_view_model`
-are in §4, experimental. Holes, bends, engravings are
-a process reading, in snapbend (`snapbend.flat`).
+in a format belongs to an adapter: `topo_dxf.to_dxf` (§8); `to_svg`/`to_view_model`
+are in §4, experimental. What a contour or a line *means* is
+a consumer's reading, written to `cluster.overlay`.
 
 ### `heal`
 
@@ -295,7 +294,7 @@ smoothed away.
 `role_rules` is **not a parameter of `heal`** — it is passed to `topo_dxf.load_dxf()`, which
 assigns the roles to the `Edge`s.
 
-**Returns** a `Network`. An empty drawing does not raise: `net.errors` is
+**Returns** a `Network`. An empty document does not raise: `net.errors` is
 populated and `net.is_valid` is `False`.
 
 **Raises** `TypeError` if you do not pass a `Document`, or if `max_gap` is not a
@@ -419,7 +418,7 @@ topo.heal(doc, max_gap=g).outlines() -> Result
 
 The second reading of a repaired network, beside `faces()`: **by outlines**.
 `faces()` rebuilds the topology from the inside (which loops close, what
-lies inside what) and finds the part by containment. `outlines()` reads the drawing
+lies inside what) and finds the figure by containment. `outlines()` reads the geometry
 from the outside. The repair is already done by `heal()` (gaps up to `max_gap`,
 tessellations refitted, duplicates merged); `outlines()`:
 
@@ -437,17 +436,17 @@ tessellations refitted, duplicates merged); `outlines()`:
    nobody decided one) and with `cluster_ref`, the index of the cluster that
    contains or touches it (`None` outside all of them).
 
-**When to use it instead of `faces()`**: drawings of views — several views on a
-sheet, projected isometric/3D views, silhouettes with nearly coincident lines
-where the graph of `faces()` is ambiguous. For a drawing of flat silhouettes (one or more
-separate parts, exact geometry to be stitched) `faces()` remains.
+**When to use it instead of `faces()`**: figures made of several projections side by
+side, a projected 3D figure, silhouettes with nearly coincident lines
+where the graph of `faces()` is ambiguous. For flat silhouettes (one or more
+separate figures, exact geometry to be stitched) `faces()` remains.
 
 **No `inner`**: the closed loops inside an outline go into `loose`
-as `ClosedCurve`, without saying hole or face. Two outer outlines are two
-clusters however close they are: there is no distance between views. With
-the frame in the drawing, therefore, the only cluster is the frame: removing it (or giving
-a role to frame, title block, magnification circles) is the caller's
-job. What a cluster is — view, part — is decided by whoever uses it.
+as `ClosedCurve`, without saying what they are. Two outer outlines are two
+clusters however close they are: there is no distance between figures. With
+a border around everything, therefore, the only cluster is the border: removing it (or giving
+a role to it, or to any other enclosing curve) is the caller's
+job. What a cluster is is decided by whoever uses it.
 
 The numbers are those of `heal()` (`SAME_POINT` for nodes, `net.max_gap`); `max_gap`
 is also the distance at which two edges belong to the same group.
@@ -457,7 +456,7 @@ outer contour. Invalid network (`net.errors`) or no closed outline →
 `is_valid=False`, `errors` populated.
 
 ```python
-doc = topo_dxf.load_dxf("tavola.dxf")
+doc = topo_dxf.load_dxf("input.dxf")
 result = topo.heal(doc, max_gap=0.5).outlines()
 for cluster in result.clusters:          # one view / one part per cluster
     print(cluster.outer.area)
@@ -519,9 +518,9 @@ non-structural role take no part.
 - **Chosen — a node of odd degree.** No reading keeps every line. Free ends and bridges go first (the same face on both
   sides, never a contour). Then the set of lines that leaves every node even, removing first the least length of the
   outer boundary, then the least length overall: a minimum T-join, exact on integer lengths. This minimum is a choice
-  ("change the drawing as little as possible"), not a theorem.
-- **Declared limit — ties.** Where two such sets have the same length (symmetric drawings: a slot crossed by two axes),
-  the coordinates decide which one goes, so a moved or mirrored drawing can read differently: 108 of the 631 drawings
+  ("change the geometry as little as possible"), not a theorem.
+- **Declared limit — ties.** Where two such sets have the same length (symmetric figures: a stadium crossed by two axes),
+  the coordinates decide which one goes, so a moved or mirrored figure can read differently: 108 of the 631 files
   in `tests/` do. This is why it is not `faces()`.
 
 New diagnostics: `rim-cut` (warning: part of the outer boundary had to go), `face-colour` (warning: two neighbouring
@@ -575,8 +574,8 @@ The shape of a closed contour (`Contour`, an object with `.segments`
 the list of segments, or a raw `Edge`: its one segment): `circle`, `ellipse`, `stadium` (two
 equal semicircles and two parallel lines — a geometric name, not "slot"),
 `rectangle`, `polygon` (lines only), `other`. A geometric
-fact, not a feature: `circle` does not mean hole, that is decided by whoever reads the
-drawing or the process. It holds equally on `faces()` and on `outlines()`. Consecutive
+fact, not a feature: `circle` does not mean anything beyond a circle: any meaning is decided by whoever reads
+the geometry. It holds equally on `faces()` and on `outlines()`. Consecutive
 segments on the same line or circumference are recomposed first.
 Every measure of the shape agrees within `SAME_POINT` (0.001 mm); there is
 no tolerance to pass: a rectangle off by more is a `polygon`.
@@ -607,8 +606,8 @@ topo.geometry.concentric_groups(items, *, tolerance) -> list[ConcentricGroup]
 
 The circular contours of `items` (as for `contour_shape`; a raw `Edge` counts as
 its one segment, so this works before `heal()`) grouped by centre: each circle is in exactly one group, even alone; non-circular ones do not
-appear. `tolerance` is the maximum distance between centres, in drawing
-units; among several groups within `tolerance` a circle joins the nearest.
+appear. `tolerance` is the maximum distance between centres, in the
+units of the input; among several groups within `tolerance` a circle joins the nearest.
 At equal diameter the reference of the group is the first given; groups sorted
 by centre (x, y), ties within noise: the partition does not depend on the
 reference. A geometric fact: two concentric circles are not a countersink,
@@ -629,8 +628,7 @@ topo.geometry.arcs_around(center, radius, arcs, *, tolerance) -> list[ArcAround]
 
 The arcs (`CircleSeg`) of `arcs` concentric to the circle (`center`, `radius`) within
 `tolerance` and larger than it, from nearest to farthest. No threshold
-on the angle: "~270°, slightly larger" is how a thread crest is drawn,
-the consumer applies it.
+on the angle: any angular criterion on those arcs is the consumer's.
 
 `ArcAround`: `arc`, `sweep` (degrees, in the direction of the arc), `radius_ratio`
 (radius of the arc / `radius`).
@@ -649,8 +647,8 @@ The chord `start`-`end`, extended by `reach` at both ends, divides the region
 of the contour into two or more parts: a stretch of it runs from edge to edge passing
 through the inside; a touch or a stretch along the edge does not divide. `contour` is a `Contour`,
 anything that carries a closed loop of `segments`, or the list of segments.
-Computed on the primitives: an arc is the true arc, not chords. A geometric fact: whether that chord is a bend
-is decided by the consumer (snapbend extends it by 1 mm).
+Computed on the primitives: an arc is the true arc, not chords. A geometric fact: what that chord means
+is decided by the consumer.
 
 **Mutates** nothing.
 
@@ -817,8 +815,8 @@ The segment `start`→`end` reduced to strokes: one of length `head` attached to
 `start`, one of length `tail` attached to `end`, and `n_middle` strokes of length
 `middle` between the two, with all the gaps equal. Each stroke is `(start, end)` in the
 direction of the segment; a zero-length stroke does not appear. If the strokes cover all of
-the segment, `[(start, end)]` comes back, whole. A geometric fact: whether that segment
-is a bend is decided by the consumer.
+the segment, `[(start, end)]` comes back, whole. A geometric fact: what that segment
+means is decided by the consumer.
 
 **Mutates** nothing. **Raises** `ValueError` on negative lengths or `n_middle`.
 
@@ -1006,7 +1004,7 @@ class RoleStyle:                                          # topo.RoleStyle, topo
 How the caller wants a role drawn in the output, in the same vocabulary
 as `EdgeStyle` and with no format. It holds for an engine role
 (`"outer"`, `"inner"`, `"unknown"`) as for a consumer's — snapbend
-(`"hole"`, ...), snapdraw (`"frame"`, `"title_block"`, ...) — none is
+(its own roles), snapdraw (`"frame"`, `"title_block"`, ...) — none is
 privileged. The dictionary `{role: RoleStyle}` is the caller's and is passed to
 every exporter: `topo_dxf.to_dxf` and, experimental, `to_svg` and `to_view_model`.
 Underneath there is always topo's palette; a `None` field
@@ -1024,7 +1022,7 @@ DXF, hex in SVG): whoever writes an adapter does not choose colours.
 
 ```python
 topo.model.role_style("outer")                                   # green
-topo.model.role_style("hole", role_styles=snapbend.flat.ROLE_STYLES)   # snapbend's magenta
+topo.model.role_style("mark", role_styles=consumer.ROLE_STYLES)   # the consumer's colour
 topo.model.role_style("outer", role_styles={"outer": topo.RoleStyle(lineweight=0.3)})   # green, 0.3 mm
 ```
 
@@ -1038,7 +1036,7 @@ be in the document or among the standard ones, otherwise `ValueError`;
 topo_dxf.to_dxf(result, role_styles={
     "frame":   topo.RoleStyle(color=(0, 0, 0)),          # frame: black
     "unknown": topo.RoleStyle(lineweight=0.05),          # loose curves: hairline
-    "bending": topo.RoleStyle(dash=(5.0, -2.0)),         # bends: dash 5, gap 2
+    "guide":   topo.RoleStyle(dash=(5.0, -2.0)),         # guides: dash 5, gap 2
 })
 ```
 
@@ -1053,8 +1051,8 @@ topo.anchor_texts(result: Result, *, snap_distance=0.0) -> None
 Links every text to the part that contains it: `cluster_ref` = index of the
 cluster whose outer contour contains its position (with
 `snap_distance` > 0, also the nearest within that distance). What a
-dimension measures or where an arrow lands is a reading of whoever uses the
-drawing, not topo's.
+text measures or where a pointer lands is a reading of whoever uses the
+geometry, not topo's.
 
 **Mutates** the texts of `result` and returns `None`.
 
@@ -1091,7 +1089,7 @@ replacement. Structure:
       "label": "P-1", "area": 12345.67,
       "outer_perimeter": 480.0, "inner_perimeter": 60.0, "inner_count": 1,
       "bbox": {"minx": 0, "miny": 0, "maxx": 200, "maxy": 100},
-      "overlay": {"holes": 3}
+      "overlay": {"marks": 3}
     }
   ]
 }
@@ -1156,7 +1154,7 @@ drawn as a true circle. Coordinates in the source's system (Y up).
 ```python
 vm = topo.experimental.to_view_model(result, role_styles=None)   # the caller's {role: RoleStyle}: its colour is read
 vm["clusters"][0]["outer"]        # {"role": "outer", "color": "#00ff00", "points": [...], "closed": true}
-vm["clusters"][0]["features"]     # {"holes": [{"role": "hole", "points": [...], "diameter": ..., ...}], ...}
+vm["clusters"][0]["features"]     # {"marks": [{"role": "mark", "points": [...], "diameter": ..., ...}], ...}
 vm["palette"]                  # {"outer": "#00ff00", ...} + the roles that role_styles colours
 ```
 
@@ -1202,32 +1200,16 @@ An invalid `result` is drawn all the same. `allow_invalid=False` →
 `ValueError`, same contract as `topo_dxf.to_dxf`.
 
 ```python
-topo.experimental.save_svg(result, "pezzo.svg")
+topo.experimental.save_svg(result, "result.svg")
 ```
 
 ---
 
-## 5. Removed before 1.0
-
-The JSON of topo is geometry only. These no longer exist:
-
-| removed | in its place |
-|---|---|
-| `build_metadata(cluster)` | `cluster.to_dict()` |
-| `save_xml`, `to_json(schema=)`, `topo/rules/metadata_schema.py` | `to_json`; renaming the fields or writing XML is the consumer's job |
-| `to_json(extra_metadata=)` | `to_json(extra=)` |
-| `inject(result, data_injector=)` | `anchor_texts(result)`, then the texts with `text.cluster_ref == i` passed to the consumer's function |
-| `Cluster.custom` | `cluster.overlay` (the overlay), or the consumer's own structures |
-| `experimental.to_nester_input` | `to_view_model`, or the primitives of `cluster.outer.segments` |
-| `topo_dxf.write_metadata_to_dxf` / `read_metadata_from_dxf` | none: the XDATA gave a wrong DXF |
-
----
-
-## 6. Inspection / debug
+## 5. Inspection / debug
 
 The two levels of topo, in processing order; the first, the raw entities
 of a file, belongs to the adapter (`topo_dxf.inspect_dxf`, and `topo_dxf.inspect_file`
-which prints all three in a row, §9). All print to stdout.
+which prints all three in a row, §8). All print to stdout.
 
 ```python
 topo.inspect_document(doc, *, graph=True, limit=60) -> None
@@ -1246,11 +1228,11 @@ attached), custom, plus `loose` and texts. "What topo produced."
 
 ---
 
-## 7. Domain types
+## 6. Domain types
 
 Besides the top level there are three public namespaces; what
 lies under `topo.core`, `topo.tools`, `topo.io`, `topo.rules` is internal, with no
-guarantees. The adapters are separate packages (§9, §10):
+guarantees. The adapters are separate packages (§8, §9):
 
 - **`topo.primitives`** — the native segments `LineSeg`, `CircleSeg`,
   `BSplineSeg`, `EllipseSeg` (pure math, no role) and
@@ -1275,7 +1257,7 @@ import topo
 
 side = topo.primitives.LineSeg(start=(0, 0), end=(100, 0))
 
-class Hole(topo.model.ClosedCurve): ...
+class Ring(topo.model.ClosedCurve): ...
 ```
 
 ### `Document`
@@ -1385,7 +1367,7 @@ result.promote(
 in the collection `name` of `cluster.overlay`, creating it if missing. `item` is
 what the caller made of the curves (an object of its own with `role` and
 geometry); with a single curve it may be absent, and then it is the curve itself.
-Several curves read as one thing — a hole and its seat — are one item.
+Several curves read as one thing — two concentric circles — are one item.
 
 What the curves are is decided by the caller, and it does not matter where they are: a line
 inside the part that a consumer reads as an axis, a guide outside the part
@@ -1403,8 +1385,8 @@ for curve in list(result.loose):
     if curve.cluster_ref is not None and is_axis(curve):   # the reading is yours
         result.promote(curve, result.clusters[curve.cluster_ref], "axes")
 
-# a hole with its seat: two curves, one item
-result.promote([hole, seat], view, "features", item=my_counterbore)
+# two concentric circles: two curves, one item
+result.promote([inner_circle, outer_circle], view, "features", item=my_ring)
 ```
 
 ### `Cluster`
@@ -1453,8 +1435,8 @@ polygon.
 
 ### `ContourRole` (engine roles — open vocabulary)
 
-The engine knows only three roles: `unknown`, `outer`, `inner` ("roles out of core"; process roles belong to snapbend).
-**It is not a closed universe**: anyone can assign a role the engine does not know (`hole`,
+The engine knows only three roles: `unknown`, `outer`, `inner` (any other meaning belongs to a consumer).
+**It is not a closed universe**: anyone can assign a role the engine does not know (`mark`,
 `frame`, `title_block`, `section`, …). It goes through `normalize_role()` — cleaned
 into a slug `[a-z0-9_-]` ≤ 64 chars — and topo preserves it without raising; in
 the output the DXF adapter writes it by default on a layer **named after the slug**,
@@ -1482,34 +1464,33 @@ Edges of `doc.edges` that the topological criterion of `heal()` would exclude fr
 contour graph (chains between two distinct branching nodes, and not on the border
 of the outer face of their connected component) — **without saying what they are**. `heal()` by itself
 assigns no meaning to these edges: it just excludes them, they stay in
-`loose` with the role they had. A consumer interprets them (snapbend
-`detect_flat`: straight, endpoints on the outer contour → `"bending"`).
+`loose` with the role they had. A consumer interprets them (a consumer
+may read, for instance, a straight edge with both endpoints on the outer contour as a line of its own kind).
 
 A consumer that wants
-an interpretation of its own (the border of a raised feature seen in plan is not
-a bend) calls `non_contour_candidates(doc)` to get the same list
+an interpretation of its own (an edge that merely looks like such a candidate) calls `non_contour_candidates(doc)` to get the same list
 of candidates that `heal()` would use, without duplicating the criterion, and decides
 for itself how to mark them — then assigns `edge.role` on the returned `Edge`s (they are
 references into `doc.edges`, mutating them is reflected there) **before** calling
 `heal()` (see `ContourRole` above).
 
 It works on `doc.edges` as they are, **before** `heal()` merges overlapping/co-circular
-segments and closes tiny gaps (its first internal steps): on a drawing with duplicates or gaps below tolerance the result may
+segments and closes tiny gaps (its first internal steps): on an input with duplicates or gaps below tolerance the result may
 differ slightly from what `heal()` would exclude in the end. This is not a
 problem for the intended use — deciding `edge.role` before `heal()` — because
 the final word on what stays in the graph is said by `heal()` itself anyway.
 
 ```python
 for edge in topo.non_contour_candidates(doc):
-    if <your logic decides it is the border of a raised feature>:
-        edge.role = topo.normalize_role("flange_up")
+    if <your logic decides it is not part of a contour>:
+        edge.role = topo.normalize_role("guide")
 
-result = topo.heal(doc).faces()   # "flange_up" is already out of the graph, "bending" never guessed
+result = topo.heal(doc).faces()   # "guide" is already out of the graph, no meaning is ever guessed
 ```
 
 ---
 
-## 8. The complete flow, in order
+## 7. The complete flow, in order
 
 ```python
 import topo, topo_dxf
@@ -1524,30 +1505,29 @@ if not check.is_valid:
 
 # 3. topology
 result = topo.heal(doc, label="P-1024").faces()
-# 4. (optional) a process reading, outside topo — e.g. snapbend:
-#   from snapbend.flat import detect_flat
-#   detect_flat(result, "all")
+# 4. (optional) a reading of the result, outside topo: a consumer decides
+#    what the contours and the loose curves mean and writes it to cluster.overlay
 
 # 5. ALWAYS check before rendering
 if not result.is_valid:
     raise SystemExit(result.errors)
 
 # 6a. render — one document with all the parts
-topo_dxf.to_dxf(result).saveas("pezzo_healed.dxf")
+topo_dxf.to_dxf(result).saveas("healed.dxf")
 
 # 6b. or render — one file per part
 for part in topo.split(result).parts:
     topo_dxf.to_dxf(part).saveas(f"output/{part.clusters[0].label}.dxf")
 
 # 7. the facts as JSON
-topo.save_json(result, "pezzo.json")
+topo.save_json(result, "result.json")
 ```
 
-If something does not add up on a real file: `topo_dxf.inspect_file("pezzo.dxf")`.
+If something does not add up on a real file: `topo_dxf.inspect_file("input.dxf")`.
 
 ---
 
-## 9. `topo_dxf` — the DXF adapter
+## 8. `topo_dxf` — the DXF adapter
 
 ```python
 import topo, topo_dxf          # pip install g-topo[dxf]
@@ -1607,7 +1587,7 @@ read exceptions of `ezdxf`.
 
 ```python
 doc = topo_dxf.load_dxf("part.dxf",
-                     role_rules=topo.name_rules({"Piega": "bending", "MARK": "engrave"}))
+                     role_rules=topo.name_rules({"Guide": "guide", "MARK": "mark"}))
 for w in doc.warnings:
     print("loader:", w)
 ```
@@ -1616,10 +1596,10 @@ When the intent lies in the line style, or in a combination of
 name and style:
 
 ```python
-doc = topo_dxf.load_dxf("pezzo.dxf", role_rules=[
+doc = topo_dxf.load_dxf("input.dxf", role_rules=[
     topo.RoleRule("construction", name_contains="constr", dashed=True),
-    topo.RoleRule("bending", dashed=True),
-    topo.RoleRule("engrave", color="cyan"),
+    topo.RoleRule("guide", dashed=True),
+    topo.RoleRule("mark", color="cyan"),
 ])
 ```
 
@@ -1721,13 +1701,13 @@ The maps are the caller's and hold for its call: topo keeps none of them
 `snapbend.flat.LAYERS`) and whoever exports passes them, or composes them:
 
 ```python
-# the frame (role "frame", assigned by a consumer such as snapdraw) in black, on "Cornice"
+# the frame (role "frame", assigned by a consumer such as snapdraw) in black, on "Frame"
 topo_dxf.to_dxf(result,
-            layers={"frame": "Cornice"},
+            layers={"frame": "Frame"},
             role_styles={"frame": topo.RoleStyle(color=(0, 0, 0))})
 
-# the bends on two layers, according to direction (information carried by the element)
-topo_dxf.to_dxf(result, layers={"bending": lambda bend: "BendUp" if is_up(bend) else "BendDown"})   # is_up: the caller's
+# guides on two layers, according to direction (information carried by the element)
+topo_dxf.to_dxf(result, layers={"guide": lambda g: "GuideUp" if is_up(g) else "GuideDown"})   # is_up: the caller's
 ```
 
 **The overlay**: it writes every collection of `cluster.overlay`,
@@ -1748,8 +1728,8 @@ Without a role or without geometry it is skipped.
 that caller asks for it explicitly.
 
 ```python
-topo_dxf.to_dxf(result).saveas("guarda.dxf")                         # always
-topo_dxf.to_dxf(result, allow_invalid=False).saveas("macchina.dxf")  # only if valid
+topo_dxf.to_dxf(result).saveas("to_look_at.dxf")                         # always
+topo_dxf.to_dxf(result, allow_invalid=False).saveas("to_machine.dxf")  # only if valid
 ```
 
 ---
@@ -1771,8 +1751,8 @@ stop at the `Document`. `role_rules` as in
 `load_dxf()`.
 
 ```python
-topo_dxf.inspect_file("pezzo.dxf", role_rules=topo.name_rules({"Piega": "bending"}))
-topo_dxf.inspect_file("pezzo.dxf", role_rules=[topo.RoleRule("bending", dashed=True)])
+topo_dxf.inspect_file("input.dxf", role_rules=topo.name_rules({"Guide": "guide"}))
+topo_dxf.inspect_file("input.dxf", role_rules=[topo.RoleRule("guide", dashed=True)])
 ```
 
 ### The default layers
@@ -1799,13 +1779,13 @@ the slug of the role. `LayerMap` is the type of that map:
 `Mapping[str, str | Callable[[object], str]]`.
 
 ```python
-topo_dxf.role_to_dxf_layer("hole", layers=snapbend.flat.LAYERS)   # "Hole"
+topo_dxf.role_to_dxf_layer("mark", layers={"mark": "Mark"})      # "Mark"
 topo_dxf.role_to_dxf_layer("frame")                               # "frame"
 ```
 
 ---
 
-## 10. `topo_pdf` — the PDF adapter
+## 9. `topo_pdf` — the PDF adapter
 
 ```python
 topo_pdf.load_pdf(path, snap_tolerance=0.15) -> list[Edge]     # pip install g-topo[pdf]

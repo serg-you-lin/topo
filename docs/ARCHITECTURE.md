@@ -320,7 +320,7 @@ text in the same way.
 It builds a **new** `ezdxf` document (never the source) and writes into it the pure
 segments of the model, each on the layer the caller chooses for its
 role, or on the adapter's default (see the table in the README and
-`API.md` §9). Fidelity rules:
+`API.md` §8). Fidelity rules:
 
 - **splines** are re-emitted as native `SPLINE`s, rebuilt from control points
   / knots / weights / degree — **never discretized to a polyline**

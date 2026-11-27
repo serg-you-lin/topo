@@ -55,7 +55,7 @@ One distribution (`g-topo`), three importable packages:
 
 `topo` never imports an adapter, and an adapter uses only topo's public names —
 a boundary the index check enforces (`scripts/gen_index.py --check`). What an
-adapter reads and writes, and its options, are in `docs/API.md` (§9, §10).
+adapter reads and writes, and its options, are in `docs/API.md` (§8, §9).
 
 ---
 
