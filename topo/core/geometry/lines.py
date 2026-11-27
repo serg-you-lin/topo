@@ -68,6 +68,86 @@ def group_collinear_lines(lines: list, *, tolerance: float) -> list:
     return groups
 
 
+@dataclass(frozen=True)
+class ParallelRow:
+    """
+    Strokes of a family that lie on one line.
+
+    offset:    distance of the line from the family's first row, along the
+               normal of the family (the direction turned 90° counter-clockwise)
+    members:   indices of the strokes in the input, in order along the line
+    intervals: for each member, (low, high) of the stretch it covers along
+               the family's direction, in the input's coordinates
+    """
+    offset: float
+    members: Tuple[int, ...]
+    intervals: Tuple[Tuple[float, float], ...]
+
+
+@dataclass(frozen=True)
+class ParallelFamily:
+    """
+    Strokes that run in one direction.
+
+    direction: unit vector, the first stroke's, turned so that x > 0 (or x = 0
+               and y > 0): a line has no sense of its own
+    rows:      the lines of the family, from the lowest offset up
+    """
+    direction: Point
+    rows: Tuple[ParallelRow, ...]
+
+
+def parallel_families(strokes: Sequence, *, tolerance: float) -> list[ParallelFamily]:
+    """
+    Strokes split by direction and, inside each family, by line. A stroke
+    joins the family of the first stroke it is parallel to, in the given
+    order: its two ends are at distances from that stroke's line that differ
+    by at most `tolerance` (mm), so a long stroke is judged by what it drifts
+    across its own length. Two strokes of a family are on the same line when
+    their offsets differ by at most `tolerance` from the first of the row.
+    Null strokes are left out. The caller chooses `tolerance`; the step of a
+    hatching, the missing rows, what a family means are the caller's.
+    """
+    ends = [_stroke_ends(s) for s in strokes]
+    todo = [i for i, (a, b) in enumerate(ends) if a != b]
+    families: list[ParallelFamily] = []
+    while todo:
+        first = todo[0]
+        (ax, ay), (bx, by) = ends[first]
+        length = math.hypot(bx - ax, by - ay)
+        ux, uy = (bx - ax) / length, (by - ay) / length
+        if ux < 0 or (ux == 0 and uy < 0):
+            ux, uy = -ux, -uy
+        nx, ny = -uy, ux
+
+        def dist(p):
+            return (p[0] - ax) * nx + (p[1] - ay) * ny
+
+        def along(p):
+            return p[0] * ux + p[1] * uy
+
+        members, rest = [], []
+        for i in todo:
+            d0, d1 = dist(ends[i][0]), dist(ends[i][1])
+            (members if abs(d0 - d1) <= tolerance else rest).append((i, (d0 + d1) / 2))
+        members.sort(key=lambda m: m[1])
+        rows: list[list] = []
+        for i, d in members:
+            if rows and d - rows[-1][0] <= tolerance:
+                rows[-1][1].append(i)
+            else:
+                rows.append([d, [i]])
+        base = rows[0][0]
+        out = []
+        for d, idx in rows:
+            spans = {i: tuple(sorted((along(ends[i][0]), along(ends[i][1])))) for i in idx}
+            idx.sort(key=lambda i: spans[i])
+            out.append(ParallelRow(d - base, tuple(idx), tuple(spans[i] for i in idx)))
+        families.append(ParallelFamily((ux, uy), tuple(out)))
+        todo = [i for i, _ in rest]
+    return families
+
+
 def splits_contour(contour, start: Point, end: Point, *, reach: float = 0.0) -> bool:
     """
     True if the chord `start`-`end`, extended by `reach` at both ends, cuts

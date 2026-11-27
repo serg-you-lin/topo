@@ -1,6 +1,7 @@
 # tests/engine/geometry/test_lines.py
 """`splits_contour`, `bridged_runs`, `point_line_distance`: facts between lines and contours."""
 
+import math
 import unittest
 
 import topo
@@ -72,3 +73,47 @@ class TestLineFacts(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestParallelFamilies(unittest.TestCase):
+
+    def _hatching(self):
+        # ten lines at 45 degrees, step 3 along the normal, one split in two, one missing
+        u = (math.sqrt(0.5), math.sqrt(0.5))
+        n = (-u[1], u[0])
+        strokes = []
+        for k in (0, 1, 2, 4, 5, 6, 7, 8, 9):
+            o = 3 * k
+            a, b = (o * n[0], o * n[1]), (o * n[0] + 10 * u[0], o * n[1] + 10 * u[1])
+            if k == 5:
+                m = (a[0] + 4 * u[0], a[1] + 4 * u[1])
+                strokes += [(a, m), (m, b)]
+            else:
+                strokes.append((a, b))
+        return strokes
+
+    def test_rows_and_their_distances(self):
+        (family,) = topo.experimental.parallel_families(self._hatching(), tolerance=0.01)
+        self.assertEqual(len(family.rows), 9)
+        for row, k in zip(family.rows, (0, 1, 2, 4, 5, 6, 7, 8, 9)):
+            self.assertAlmostEqual(row.offset, 3 * k, places=9)
+
+    def test_a_split_line_is_one_row(self):
+        (family,) = topo.experimental.parallel_families(self._hatching(), tolerance=0.01)
+        split = [r for r in family.rows if len(r.members) == 2]
+        self.assertEqual(len(split), 1)
+        (lo1, hi1), (lo2, hi2) = split[0].intervals
+        self.assertAlmostEqual(hi1, lo2, places=9)
+
+    def test_a_stroke_and_its_reverse_are_the_same_family(self):
+        fams = topo.experimental.parallel_families([((0, 0), (5, 2)), ((5, 5), (0, 3))], tolerance=0.01)
+        self.assertEqual(len(fams), 1)
+        self.assertEqual(len(fams[0].rows), 2)
+
+    def test_other_directions_make_other_families(self):
+        fams = topo.experimental.parallel_families([((0, 0), (5, 0)), ((0, 0), (0, 5)), ((0, 2), (5, 2))], tolerance=0.01)
+        self.assertEqual([len(f.rows) for f in fams], [2, 1])
+
+    def test_nearly_parallel_beyond_tolerance_is_not_the_family(self):
+        fams = topo.experimental.parallel_families([((0, 0), (100, 0)), ((0, 5), (100, 6))], tolerance=0.5)
+        self.assertEqual(len(fams), 2)

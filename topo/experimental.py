@@ -18,6 +18,8 @@ stays as an alias with a warning for two minors.
 - the strips between facing boundaries: `facing_boundaries`, `link`,
   `unconnected_regions`, `open_boundaries` (the distance between two boundaries
   is public, `topo.geometry.gap`);
+- `parallel_families`: strokes split by direction and, in each, by line with its
+  distance from the first row and the stretch each stroke covers;
 - `parity_faces`: a third reading of the network, by parity. The limit is
   declared: where the choice has ties it depends on the coordinates.
 
@@ -43,6 +45,7 @@ from .tools.rotate import rotate_result, rotate_cluster, rotate_document, rotate
 from .io.view_model import to_view_model
 from .io.svg import to_svg, save_svg
 from .core.readings.parity_faces import parity_faces
+from .core.geometry.lines import parallel_families, ParallelFamily, ParallelRow
 from .tools.strips import (
     facing_boundaries, Facing, link, Link, Strip,
     unconnected_regions, open_boundaries, Opened,
@@ -68,4 +71,5 @@ __all__ = [
     "facing_boundaries", "Facing", "link", "Link", "Strip",
     "unconnected_regions", "open_boundaries", "Opened",
     "parity_faces",
+    "parallel_families", "ParallelFamily", "ParallelRow",
 ]
