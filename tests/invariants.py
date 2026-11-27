@@ -281,6 +281,38 @@ DIAGNOSTIC_CODES = {
     "error": {"empty", "no-closed-outer", "open-contour", "no-area"},
 }
 
+# The codes of the DXF adapter: its warnings and notes travel in `Document.warnings` / `Document.notes`.
+DXF_DIAGNOSTIC_CODES = {
+    "warning": {"dxf-audit", "dxf-dimension-no-block", "dxf-dimension-written-number", "dxf-explode-failed",
+                "dxf-hatch-open-boundary", "dxf-inserts-ignored", "dxf-layer-skipped", "dxf-no-curve",
+                "dxf-not-modeled", "dxf-oda-path"},
+    "note": {"dxf-dwg-converted", "dxf-fills-exploded", "dxf-flattened", "dxf-hatches-exploded",
+             "dxf-inserts-exploded", "dxf-leaders-exploded", "dxf-upgraded"},
+}
+
+# Codes built in a loop, so the scan of the sources does not see them as literals.
+DYNAMIC_CODES = {"merged-lines", "merged-arcs", "welded"}
+
+# Codes no input has made fire. Each one waits for a decision (an input that fires it, or its removal):
+# the suite fails when one of them fires, so it leaves this set, and when any other code never fires.
+UNREACHED_CODES = {"rim-cut", "face-colour"}
+
+
+def all_codes() -> set:
+    return {c for table in (DIAGNOSTIC_CODES, DXF_DIAGNOSTIC_CODES) for codes in table.values() for c in codes}
+
+
+def source_codes(root) -> set:
+    """The codes written as a literal in `Diagnostic("code", ...)` calls of the packages under `root`."""
+    import ast
+    found = set()
+    for package in ("topo", "topo_dxf", "topo_pdf"):
+        for path in (root / package).rglob("*.py"):
+            for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+                if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "Diagnostic" and node.args                         and isinstance(node.args[0], ast.Constant):
+                    found.add(node.args[0].value)
+    return found
+
 
 def message_problems(result) -> list:
     """The messages of `result` that do not respect the rule: not a Diagnostic, in

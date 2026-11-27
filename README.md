@@ -277,6 +277,16 @@ fixed in 1.x. Each was reproduced on the current code.
   at a real corner (45–90°), and its advice suggests a merge that would open the
   contour. The geometry is read right; only the advice is wrong.
 
+**Known defects of the DXF reading** — seen once each, not investigated further.
+
+- *An INSERT that fails to explode is counted as exploded.* When the explosion of
+  an INSERT raises, the warning `dxf-explode-failed` is given, and the note
+  `dxf-inserts-exploded` still counts that INSERT among the exploded ones.
+- *An INSERT of a block the file does not define is not reported.* The file's
+  entity is no longer in the modelspace when topo looks for INSERTs, so neither
+  `dxf-inserts-ignored` (with `explode_inserts=False`) nor any other diagnostic
+  mentions it.
+
 **Behaviour by design**, worth knowing:
 
 - *One threshold.* Two points closer than `topo.precision.SAME_POINT` (0.001 mm)

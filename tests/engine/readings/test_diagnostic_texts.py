@@ -6,6 +6,7 @@ are those the network holds, `self-intersecting` points at the crossing, a count
 of one reads in the singular and a length carries its unit.
 """
 
+import dataclasses
 import unittest
 
 import topo
@@ -72,3 +73,59 @@ class TestCountsAndUnits(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _validated(outer: list, inners: tuple = ()) -> Result:
+    cluster = Cluster(outer=Contour(ContourRole.OUTER, segments=outer),
+                      inners=[Contour(ContourRole.INNER, segments=i) for i in inners])
+    result = Result(clusters=[cluster])
+    topo.validate_result(result)
+    return result
+
+
+class TestValidatorFindings(unittest.TestCase):
+
+    def test_open_contour_points_at_each_jump_and_makes_the_result_invalid(self):
+        # the last side stops 5 mm short of the start: two jumps, the widest 5 mm
+        ring = [LineSeg((0, 0), (10, 0)), LineSeg((10, 0), (10, 10)),
+                LineSeg((10, 10), (0, 10)), LineSeg((0, 5), (0, 2))]
+        result = _validated(ring)
+        [error] = [e for e in result.errors if e.code == "open-contour"]
+        self.assertEqual(error.points, ((0.0, 10.0), (0.0, 2.0)))
+        self.assertEqual(error.message, "cluster 0: outer does not close, 2 jumps")
+        self.assertEqual(error.notes, ("widest 5 mm",))
+        self.assertFalse(result.is_valid)
+
+    def test_no_area_points_at_the_first_end_and_makes_the_result_invalid(self):
+        result = _validated([LineSeg((0, 0), (10, 0)), LineSeg((10, 0), (0, 0))])
+        [error] = [e for e in result.errors if e.code == "no-area"]
+        self.assertEqual((error.points, error.level), (((0.0, 0.0),), "error"))
+        self.assertFalse(result.is_valid)
+
+    def test_an_inner_outside_the_outer_is_a_warning_at_its_first_end(self):
+        result = _validated(topo.geometry.rectangle(10, 10),
+                            (topo.geometry.rectangle(2, 2, center=(20, 0)),))
+        [warning] = [w for w in result.warnings if w.code == "inner-outside"]
+        self.assertEqual(warning.points, ((19.0, -1.0),))
+        self.assertEqual(warning.message, "cluster 0: 1 inner is not wholly inside the outer")
+        self.assertTrue(result.is_valid)
+
+    def test_an_inner_inside_the_outer_says_nothing(self):
+        result = _validated(topo.geometry.rectangle(10, 10), (topo.geometry.rectangle(2, 2),))
+        self.assertEqual((result.warnings, result.errors), ([], []))
+
+
+class TestSetAside(unittest.TestCase):
+
+    def test_a_role_that_is_no_contour_is_set_aside_and_the_help_reads_it(self):
+        doc = topo.load_segments(topo.geometry.rectangle(10, 10))
+        doc.edges = [dataclasses.replace(e, role="annotation") if i == 0 else e
+                     for i, e in enumerate(doc.edges)]
+        net = topo.heal(doc)
+        [warning] = [w for w in net.warnings if w.code == "set-aside"]
+        self.assertEqual(warning.points, ((-5.0, -5.0),))
+        self.assertEqual(len(net.faces().clusters), 0)
+        # the help: a predicate that accepts the role, and the warning is gone
+        net = topo.heal(doc, is_structural=lambda role: True)
+        self.assertEqual([w.code for w in net.warnings], [])
+        self.assertEqual(len(net.faces().clusters), 1)
