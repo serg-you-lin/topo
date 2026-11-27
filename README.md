@@ -15,12 +15,9 @@ input, same answer, every run.
 The result is a clean, lossless model: healed contours, their containment
 hierarchy, the texts that came with the geometry, and an open overlay where your
 code attaches its own meaning. It renders out to JSON or SVG, and back to the
-source format through an adapter. **topo knows no file format and no trade**: it
+source format through an adapter. **topo knows no file format and assigns no meaning**: it
 works on curves, whatever produced them — a file, another library, your own
 code. Adapters for files ship in the same distribution; today DXF/DWG in, DXF out.
-
-topo was born reading technical drawings, and CAD files are still its largest
-test corpus; the engine itself knows only curves, contours and containment.
 
 > **Status: pre-1.0.** The public API is being frozen for 1.0. From 1.0 on,
 > public names do not break: a change arrives as a new form, the old one keeps
@@ -106,7 +103,7 @@ for piece in outcome.parts:                     # one Result per cluster, no for
     topo.experimental.save_svg(piece, f"output/{name}.svg")
 ```
 
-`split` decides nothing: every cluster is a part, a loose curve and a text go to
+`split` decides nothing: every cluster is a piece, a loose curve and a text go to
 the cluster they name (`cluster_ref`, which `anchor_texts` sets for texts) or, for
 a text, to the cluster that contains it. What no cluster contains comes back apart
 in `outcome.loose` and `outcome.texts`, and the caller assigns it: to the nearest
@@ -123,7 +120,7 @@ returns a `Network`; a reading of it gives a `Result`.
   contour of each group is the outer face of its planar network, and every outer
   contour not inside another is a cluster with only its `outer` (what lies inside
   goes to `loose`). Each cluster is the silhouette of one connected figure.
-  Tuned today on drawings that show several views of one object.
+  Tuned today on several projections of one object side by side.
 
 These are the two readings built so far; others can be composed from the same
 healed network (below).
@@ -308,7 +305,7 @@ fixed in 1.x. Each was reproduced on the current code.
 
 **Cost and experimental parts**
 
-- Drawings made of long chains of very short strokes cost about twice as much
+- Inputs made of long chains of very short strokes cost about twice as much
   to heal; spline discretization is the largest single cost of `outlines()`;
   two of the largest files in the test corpus measured over 300 s.
 - Texts linked to geometry (`topo.experimental`) miss some links a reader would draw.
