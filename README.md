@@ -19,9 +19,9 @@ source format through an adapter. **topo knows no file format and assigns no mea
 works on curves, whatever produced them — a file, another library, your own
 code. Adapters for files ship in the same distribution; today DXF/DWG in, DXF out.
 
-> **Status: pre-1.0.** The public API is being frozen for 1.0. From 1.0 on,
-> public names do not break: a change arrives as a new form, the old one keeps
-> working with a `FutureWarning` for two minor versions, then goes.
+> **Status: 1.0.** The public API is stable: public names do not break. A change
+> arrives as a new form, the old one keeps working with a `FutureWarning` for
+> two minor versions, then goes.
 > `topo.experimental` and the PDF adapter carry no such promise.
 
 > **Writing code against topo with an AI assistant?** Give it
