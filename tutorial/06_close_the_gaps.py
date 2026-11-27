@@ -3,23 +3,23 @@
 =========================================================
 
 What you learn
-    heal(doc)                  closes no gap: without max_gap the drawing is read as it is
+    heal(doc)                  closes no gap: without max_gap the input is read as it is
     heal(doc, max_gap=0.5)     ends closer than 0.5 mm are joined, the gaps between them closed
     network.free_ends          the ends that found no partner
-    result.loose               every curve that is no part's contour: nothing is dropped silently
+    result.loose               every curve that is no cluster's contour: nothing is dropped silently
 
 gaps.dxf holds a rectangle whose four corners are open by 0.3 mm, a circle cut
 in four arcs with 0.2 mm between them, and one whole circle. The lesson reads
 it twice, once per value in MAX_GAPS, and writes one DXF for each.
 
 Two ends closer than `topo.precision.SAME_POINT` (0.001 mm) are the same point,
-always; `max_gap` decides how wide a hole in the drawing topo may close. The notes say what topo did by
+always; `max_gap` decides how wide a gap in the input topo may close. The notes say what topo did by
 itself; compare them with what you see in the two files.
 
 Open afterwards
     tutorial/files/gaps.dxf, then tutorial_output/06_close_the_gaps/gaps_max_gap_*.dxf.
     With the default only the whole circle is a contour, the rest is on Trash;
-    with 0.5 the rectangle is the part and both circles are inside it.
+    with 0.5 the rectangle is the outer and both circles are inside it.
 
 Your own file
     set INPUT, and try your own values in MAX_GAPS.
@@ -42,8 +42,8 @@ for max_gap in MAX_GAPS:
     result = network.faces()
     print(f"max_gap={network.max_gap}")
     print(f"  {len(network.free_ends)} free end(s) left")
-    print(f"  valid={result.is_valid}, {len(result.clusters)} part(s), "
-          f"inners per part {[len(c.inners) for c in result.clusters]}, {len(result.loose)} loose curve(s)")
+    print(f"  valid={result.is_valid}, {len(result.clusters)} cluster(s), "
+          f"inners per cluster {[len(c.inners) for c in result.clusters]}, {len(result.loose)} loose curve(s)")
     for message in result.warnings + result.errors:
         print(f"  {message.level} {message.code}: {message.message}")
     notes = sorted({n.code for n in result.notes})

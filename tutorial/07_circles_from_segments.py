@@ -16,10 +16,10 @@ strays from its circle is r * (1 - cos(pi / n)):
 
 Open afterwards
     tutorial_output/07_circles_from_segments/<name>_read.dxf: click each inner
-    contour in your CAD and see whether it is one CIRCLE or many LINEs.
+    contour in a viewer and see whether it is one CIRCLE or many LINEs.
 
 Your own file
-    set INPUT to a drawing exported with circles turned into lines.
+    set INPUT to a file exported with circles turned into lines.
 """
 import _paths  # noqa: F401
 

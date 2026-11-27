@@ -1,5 +1,5 @@
 """
-04_z_levels.py — a drawing with heights: topo reads it on the plane
+04_z_levels.py — a file with heights: topo reads it on the plane
 ===================================================================
 
 What you learn
@@ -16,7 +16,7 @@ comes out on a layer with the same name.
 
 Open afterwards
     tutorial/files/z_levels.dxf next to tutorial_output/04_z_levels/z_levels_read.dxf,
-    both seen from above (plan view). Turn on one layer at a time and compare: the
+    both seen from above (from above). Turn on one layer at a time and compare: the
     projection of each original entity should lie on what topo read.
 
 Your own file

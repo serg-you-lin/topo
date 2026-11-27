@@ -489,7 +489,7 @@ $SKPOLY
   9
 $TDCREATE
  40
-2461355.791539352
+2461372.493703704
   9
 $TDUCREATE
  40
@@ -497,7 +497,7 @@ $TDUCREATE
   9
 $TDUPDATE
  40
-2461355.791539352
+2461372.493703704
   9
 $TDUUPDATE
  40
@@ -929,11 +929,11 @@ $PSTYLEMODE
   9
 $FINGERPRINTGUID
   2
-{6CCF6037-1142-470F-BBC0-D777A6D8A4DF}
+{54E98B77-D8DE-4000-9D77-2DB3B3F26AA2}
   9
 $VERSIONGUID
   2
-{0B152BBF-6058-47D9-A822-9A2A60DB70FF}
+{F5FC63BD-D225-48D4-9175-9D02AAEE6BBC}
   9
 $EXTNAMES
 290
@@ -1323,9 +1323,9 @@ ISM
   0
 CLASS
   1
-LAYOUT
+ACDBPLACEHOLDER
   2
-AcDbLayout
+AcDbPlaceHolder
   3
 ObjectDBX Classes
  90
@@ -1339,9 +1339,9 @@ ObjectDBX Classes
   0
 CLASS
   1
-ACDBPLACEHOLDER
+LAYOUT
   2
-AcDbPlaceHolder
+AcDbLayout
   3
 ObjectDBX Classes
  90
@@ -2295,7 +2295,7 @@ AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
-Part
+Shape
  70
 0
  62
@@ -5313,7 +5313,7 @@ LINE
 100
 AcDbEntity
   8
-Part
+Shape
 100
 AcDbLine
  10
@@ -5337,7 +5337,7 @@ LINE
 100
 AcDbEntity
   8
-Part
+Shape
 100
 AcDbLine
  10
@@ -5361,7 +5361,7 @@ LINE
 100
 AcDbEntity
   8
-Part
+Shape
 100
 AcDbLine
  10
@@ -5385,7 +5385,7 @@ LINE
 100
 AcDbEntity
   8
-Part
+Shape
 100
 AcDbLine
  10
@@ -5409,7 +5409,7 @@ CIRCLE
 100
 AcDbEntity
   8
-Part
+Shape
 100
 AcDbCircle
  10
@@ -5429,7 +5429,7 @@ CIRCLE
 100
 AcDbEntity
   8
-Part
+Shape
 100
 AcDbCircle
  10
@@ -5677,7 +5677,7 @@ AcDbText
  40
 3.0
   1
-NOTE: frame and axes are not the part
+NOTE: frame and axes are not the shape
 100
 AcDbText
   0
@@ -6783,7 +6783,7 @@ DictionaryVariables
 280
 0
   1
-1.4.3 @ 2026-11-10T17:59:49.403663+00:00
+1.4.3 @ 2026-11-27T10:50:56.030598+00:00
   0
 VISUALSTYLE
   5
@@ -7495,7 +7495,7 @@ DictionaryVariables
 280
 0
   1
-1.4.3 @ 2026-11-10T17:59:49.406665+00:00
+1.4.3 @ 2026-11-27T10:50:56.033100+00:00
   0
 ENDSEC
   0

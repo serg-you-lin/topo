@@ -1,5 +1,5 @@
 """
-09_roles.py — tell topo what is not the part
+09_roles.py — tell topo what is not a figure
 ============================================
 
 What you learn
@@ -10,9 +10,9 @@ What you learn
 
 topo knows three roles: unknown, outer, inner. Any other word is yours: an edge
 with your role stays out of the contours and comes back in `loose` with that
-role, on its own layer. Here roles.dxf has a part, a frame around it, dashed
+role, on its own layer. Here roles.dxf has a shape, a frame around it, dashed
 axes and cyan marks. Read with no rules, the frame is the outer of the only
-part and the real part is a hole inside it. The first rule that matches wins,
+cluster and the real shape is a contour inside it. The first rule that matches wins,
 in the order you write them.
 
 Open afterwards
@@ -65,7 +65,7 @@ for step, step_rules in STEPS:
     roles = sorted({e.role for e in doc.edges})
     print(f"{step:10s} roles {roles}")
     for cluster in result.clusters:
-        print(f"           part: outer {cluster.outer.bbox}, {len(cluster.inners)} inner(s)")
+        print(f"           cluster: outer {cluster.outer.bbox}, {len(cluster.inners)} inner(s)")
     by_role = {}
     for curve in result.loose:
         by_role[curve.role] = by_role.get(curve.role, 0) + 1

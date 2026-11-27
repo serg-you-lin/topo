@@ -7,9 +7,9 @@ What you learn
     topo.Diagnostic          every message: level, code, message, points (where), help (a suggestion)
     warnings / notes / errors   look at it / what topo did by itself / nothing to read
 
-doubles_and_crossings.dxf is a rectangle drawn carelessly: one side twice, a
+doubles_and_crossings.dxf is a rectangle written carelessly: one side twice, a
 short copy 0.02 mm above it, two sides running 5 mm past the corners, and a
-cross drawn over the hole. Read what topo says before you change anything.
+cross over the circle. Read what topo says before you change anything.
 The `help` of a message is a suggestion (experimental): judge it before you use it.
 
 Open afterwards
@@ -42,7 +42,7 @@ result = network.faces()
 
 print(f"\n{INPUT}")
 print(f"  network: {len(network.edges)} edges, {len(network.free_ends)} free end(s), {len(network.crossings)} crossing(s)")
-print(f"  faces(): valid={result.is_valid}, {len(result.clusters)} part(s), {len(result.loose)} loose curve(s)\n")
+print(f"  faces(): valid={result.is_valid}, {len(result.clusters)} cluster(s), {len(result.loose)} loose curve(s)\n")
 
 for message in doc.notes + doc.warnings + result.errors + result.warnings:
     print(f"[{message.level}] {message.code}")

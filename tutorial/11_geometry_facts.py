@@ -24,29 +24,29 @@ import topo_dxf
 from topo.primitives import LineSeg
 
 g = topo.geometry
-plate = g.rectangle(80, 40)
-hole = g.circle(12, center=(40, 0))                     # sits across the right side of the plate
+box = g.rectangle(80, 40)
+disc = g.circle(12, center=(40, 0))                     # sits across the right side of the rectangle
 line = LineSeg((-60, 0), (60, 0))
 
-print("intersections of the line with the circle:", g.intersections(line, hole[0]))
-print("point of the plate closest to (70, 35):   ", g.nearest_point(plate, (70, 35)))
+print("intersections of the line with the circle:", g.intersections(line, disc[0]))
+print("point of the rectangle closest to (70, 35):", g.nearest_point(box, (70, 35)))
 
-outside = g.cut_by(line, hole, keep="outside")
+outside = g.cut_by(line, disc, keep="outside")
 print(f"the line outside the circle: {len(outside)} piece(s)")
 
-minus = g.contour_minus(plate, hole)
-union = g.contour_union(plate, hole)
-print(f"plate minus circle: {len(minus)} ring(s) of {[type(s).__name__ for s in minus[0]]}")
-print(f"plate plus circle:  {len(union)} ring(s) of {len(union[0])} segment(s)")
+minus = g.contour_minus(box, disc)
+union = g.contour_union(box, disc)
+print(f"rectangle minus circle: {len(minus)} ring(s) of {[type(s).__name__ for s in minus[0]]}")
+print(f"rectangle plus circle: {len(union)} ring(s) of {len(union[0])} segment(s)")
 
 rings = [g.circle(5), g.circle(9), g.circle(4, center=(-25, 10)), g.circle(7, center=(-25, 10))]
 for group in g.concentric_groups(rings, tolerance=topo.precision.SAME_POINT):
     print(f"concentric group at {group.center}: radii {[s.length / 2 for s in group.shapes]}")
 
 # one layer per fact: roles are only layer names here
-doc = topo.load_segments(plate + hole + [line], role="shapes")
-for role, segments in (("cut_by_outside", outside), ("plate_minus_circle", minus[0]),
-                       ("plate_plus_circle", union[0]), ("concentric", [s for r in rings for s in r])):
+doc = topo.load_segments(box + disc + [line], role="shapes")
+for role, segments in (("cut_by_outside", outside), ("rectangle_minus_circle", minus[0]),
+                       ("rectangle_plus_circle", union[0]), ("concentric", [s for r in rings for s in r])):
     doc.edges += topo.load_segments(segments, role=role).edges
 
 result = topo.heal(doc).faces()

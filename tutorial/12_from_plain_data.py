@@ -6,7 +6,7 @@ What you learn
     topo.load_geometry(entities)   a list of dicts -> Document, no file and no DXF
 
 When the geometry comes from somewhere that is not a DXF (a database, a web
-form, another program), describe it as dicts and topo reads it like any drawing.
+form, another program), describe it as dicts and topo reads it like any other input.
 Types: line, arc, circle, polygon, spline, ellipse. Arc angles are in degrees.
 An optional `role` per entity works as in lesson 09.
 
@@ -35,7 +35,7 @@ ENTITIES = [
 doc = topo.load_geometry(ENTITIES)
 print(f"{len(doc.edges)} edges, format {doc.source_format}")
 result = topo.heal(doc).faces()
-print(f"valid={result.is_valid}, {len(result.clusters)} part(s)")
+print(f"valid={result.is_valid}, {len(result.clusters)} cluster(s)")
 for cluster in result.clusters:
     for contour in [cluster.outer] + cluster.inners:
         shape = topo.geometry.contour_shape(contour)

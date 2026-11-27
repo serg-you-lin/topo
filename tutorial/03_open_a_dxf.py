@@ -1,6 +1,6 @@
 """
-03_open_a_dxf.py — open a drawing, see what topo understood, write what it read
-===============================================================================
+03_open_a_dxf.py — open a file, see what topo understood, write what it read
+============================================================================
 
 What you learn
     topo_dxf.load_dxf          DXF -> Document: edges (topo's own segments) and texts
@@ -14,7 +14,7 @@ CircleSeg, EllipseSeg, BSplineSeg). A source layer is not kept; lesson 09
 shows how to turn a layer name into a role.
 
 Input
-    INPUT = a drawing in tutorial/files; put the path of your own DXF here.
+    INPUT = a file in tutorial/files; put the path of your own DXF here.
 
 Open afterwards
     the original next to tutorial_output/03_open_a_dxf/<name>_read.dxf
@@ -28,7 +28,7 @@ import topo
 import topo_dxf
 
 # --- CONFIG ------------------------------------------------------------------
-INPUT = r"tutorial/files/plate.dxf"
+INPUT = r"tutorial/files/shapes.dxf"
 # -----------------------------------------------------------------------------
 
 doc = topo_dxf.load_dxf(INPUT)
@@ -44,7 +44,7 @@ check = topo.validate_document(doc)
 print(f"\nvalidate_document: {len(check.warnings)} warning(s), {len(check.errors)} error(s)")
 
 result = topo.heal(doc).faces()
-print(f"faces(): valid={result.is_valid}, {len(result.clusters)} part(s), {len(result.loose)} loose curve(s)")
+print(f"faces(): valid={result.is_valid}, {len(result.clusters)} cluster(s), {len(result.loose)} loose curve(s)")
 
 path = _paths.out("03_open_a_dxf") / f"{Path(INPUT).stem}_read.dxf"
 if result.is_valid:

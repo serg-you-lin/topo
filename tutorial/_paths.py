@@ -9,8 +9,8 @@ From then on the working directory is the repository root, wherever the lesson
 was started from (VS Code's Run button, a terminal in another folder). So in the
 CONFIG block you write the plain path:
 
-    INPUT = r"tutorial/files/plate.dxf"      # relative -> from the repository
-    INPUT = r"C:\\my_drawings\\part.dxf"       # absolute -> used as it is
+    INPUT = r"tutorial/files/shapes.dxf"     # relative -> from the repository
+    INPUT = r"C:\\my_files\\input.dxf"         # absolute -> used as it is
 
 `out(lesson)` is the folder a lesson writes into: tutorial_output/<lesson>/.
 """

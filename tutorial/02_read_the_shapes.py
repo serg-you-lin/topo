@@ -8,11 +8,11 @@ What you learn
     topo.to_shapely                             the explicit door to shapely, when you need it
 
 contour_shape reports the same numbers the builders of lesson 01 take, so a
-shape you build is a shape you read back. `depth` counts nesting: 0 is a part's
+shape you build is a shape you read back. `depth` counts nesting: 0 is a cluster's
 outer, 1 a contour inside it, 2 a contour inside that one, and so on.
 
 Input
-    INPUT = the plate drawing in tutorial/files; put the path of your own DXF here.
+    INPUT = shapes.dxf in tutorial/files; put the path of your own DXF here.
 """
 import _paths  # noqa: F401
 
@@ -20,15 +20,15 @@ import topo
 import topo_dxf
 
 # --- CONFIG ------------------------------------------------------------------
-INPUT = r"tutorial/files/plate.dxf"
+INPUT = r"tutorial/files/shapes.dxf"
 # -----------------------------------------------------------------------------
 
 doc = topo_dxf.load_dxf(INPUT)
 result = topo.heal(doc).faces()
-print(f"{INPUT}: valid={result.is_valid}, {len(result.clusters)} part(s)\n")
+print(f"{INPUT}: valid={result.is_valid}, {len(result.clusters)} cluster(s)\n")
 
 for i, cluster in enumerate(result.clusters):
-    print(f"part {i}")
+    print(f"cluster {i}")
     for contour in [cluster.outer] + cluster.inners:
         shape = topo.geometry.contour_shape(contour)
         kind = shape.kind.value if shape else "free form"
