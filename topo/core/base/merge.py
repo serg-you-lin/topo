@@ -345,15 +345,15 @@ def near_copies(edges: Iterable[Edge], distance: float) -> List[NearCopy]:
     """The pairs of LineSegs with the same role in which the shorter lies wholly on
     top of the longer (both ends project inside it) and within `distance` of it: a
     segment is convex, so the two ends of the short one are enough. The piece
-    beyond the long one's end continues the contour and is not a copy. Pairs that
-    are already the same line (`_same_line`) are merged by
-    `merge_collinear_overlaps` and do not appear here; nor do those overlapping
-    only in part. Each copy once, with the nearest line; nearest first."""
+    beyond the long one's end continues the contour and is not a copy. Pairs of
+    UNKNOWN role already on the same line (`_same_line`) are merged by
+    `merge_collinear_overlaps` and do not appear here (it never takes an assigned
+    role, so there they do); nor do those overlapping only in part. Each copy once, with the nearest line; nearest first."""
     lines = [e for e in edges if isinstance(e.segment, LineSeg) and e.start != e.end]
     nearest = {}
     for i, j in near_pairs([edge_geometry(e) for e in lines], distance):
         a, b = lines[i], lines[j]
-        if a.role != b.role or _same_line(a.segment, b.segment):
+        if a.role != b.role or (a.role == ContourRole.UNKNOWN and _same_line(a.segment, b.segment)):
             continue
         kept, copy = (b, a) if _line_length(b) > _line_length(a) + FLOAT_NOISE else (a, b)
         # on top of the long one, not beyond its end: the piece continuing the contour is not a copy

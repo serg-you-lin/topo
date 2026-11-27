@@ -259,6 +259,16 @@ class TestMergeNearCopies(unittest.TestCase):
         long, copy = _line((0, 0), (0, 50)), _line((0, 0), (0.0005, 17.7))
         self.assertEqual(merge_near_copies([copy, long], distance=0.001), [long])
 
+    def test_a_stroke_drawn_twice_with_a_role_is_one(self):
+        # merge_collinear_overlaps never takes an assigned role: the exact copy falls to this one
+        for second in (_line((0, 0), (8.4, 0), "engrave"), _line((8.4, 0), (0, 0), "engrave")):
+            first = _line((0, 0), (8.4, 0), "engrave")
+            self.assertEqual(len(merge_near_copies([first, second], distance=0.001)), 1)
+
+    def test_the_same_line_with_other_roles_stays_two(self):
+        edges = [_line((0, 0), (8.4, 0), "engrave"), _line((0, 0), (8.4, 0), "cut")]
+        self.assertEqual(merge_near_copies(edges, distance=0.001), edges)
+
     def test_at_equal_length_the_median(self):
         out = merge_near_copies([_line((0, 0), (50, 0)), _line((50, 0.004), (0, 0.002))], distance=0.01)
         self.assertEqual(len(out), 1)
