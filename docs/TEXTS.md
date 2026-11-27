@@ -1,6 +1,6 @@
 # Texts in topo
 
-What topo keeps of a drawing's texts, what it leaves to the consumer, and how
+What topo keeps of the texts of a source, what it leaves to the consumer, and how
 the DXF adapter fills the model. The field-by-field card is in `API.md`
 (`Text`).
 
@@ -8,7 +8,7 @@ the DXF adapter fills the model. The field-by-field card is in `API.md`
 
 A string laid in the plane, and nothing more. One type for every text
 : whether it is a note, a dimension, a callout or a title is a reading of
-whoever uses the drawing, even when the source format says so. The source's
+whoever uses the geometry, even when the source format says so. The source's
 entity type is not in the model.
 
 | field | meaning |
@@ -18,19 +18,19 @@ entity type is not in the model.
 | `text` | the string as drawn, edge spaces included: the anchor counts them. A string of spaces alone is no text |
 | `height`, `rotation`, `width_factor` | how the string is written |
 | `role` | what it is for the consumer; topo never decides it |
-| `cluster_ref` | the part that contains `position`, set by `anchor_texts` |
+| `cluster_ref` | the figure that contains `position`, set by `anchor_texts` |
 | `rendered` | the strokes, fills and strings the source draws together with the string (below) |
 
 What topo does **not** keep:
 
-- what a source claims its drawing means: the measured points of a dimension,
+- what a source claims its strokes mean: the measured points of a dimension,
   its measure, the polyline a callout points to, where an arrow lands;
 - the text box: its size depends on a font topo does not have.
 
 Those are readings. A consumer rebuilds them from the geometry, the same way
 from every format: "how far is this vertex from that one" is topo's geometry
-(`topo.geometry`), "this line is a dimension line" is drawing convention
-(snapdraw's).
+(`topo.geometry`), "this line is a dimension line" is a notation convention
+(a consumer's).
 
 ## 2. `rendered`
 
@@ -58,7 +58,7 @@ with deprecation: grouping strokes with a string is a reading too.
 - A callout's string is often a separate `Text` beside the curves: joining them
   is a reading.
 
-## 4. Linking texts to parts
+## 4. Linking texts to figures
 
 ```python
 result = topo.heal(doc).faces()
@@ -67,7 +67,7 @@ topo.anchor_texts(result)          # sets cluster_ref on result.texts
 
 `cluster_ref` is the index of the cluster whose outer contour contains
 `position` (with `snap_distance` > 0, also the nearest within that distance).
-`split` gives each part the texts it contains, and a text no part contains to
+`split` gives each piece the texts it contains, and a text no piece contains to
 the nearest one: none duplicated, none lost.
 
 ## 5. The DXF adapter (`topo_dxf`)
@@ -101,4 +101,4 @@ Still open (homologation between adapters):
   source's own value needs font metrics topo does not have.
 - Dimension arrowheads in `rendered.fills` are written back as hollow closed
   polylines.
-- An angular dimension of drw_0024 reads `90~`.
+- An angular dimension can read `90~` instead of `90°`.

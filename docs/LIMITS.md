@@ -9,7 +9,7 @@ number.
 
 ## 1. A yes/no rule has an edge
 
-To repair a drawing topo has to decide, again and again, yes or no:
+To repair geometry topo has to decide, again and again, yes or no:
 
 - is this gap small enough to close? (gap ≤ `max_gap`)
 - are these two ends the same point? (distance ≤ a threshold)
@@ -19,12 +19,12 @@ Every rule like this has an edge: a number just below it says yes, a number
 just above it says no. With the edge at 0.5 mm, a gap of 0.49999999999999 mm
 closes and one of 0.50000000000001 mm does not.
 
-## 2. Moving a drawing changes its numbers by a tiny amount
+## 2. Moving a figure changes its numbers by a tiny amount
 
 A computer keeps a coordinate with about 16 significant digits. It writes 0.5
 exactly; but a gap is not read, it is computed from the coordinates (cosines,
 sines, square roots), and every step rounds to the nearest number the computer
-can write: sometimes a hair above, sometimes a hair below. On a part around
+can write: sometimes a hair above, sometimes a hair below. On a figure around
 1000 mm from the origin the error is about 0.00000000000008 mm.
 
 A gap of 0.5 mm, 1000 mm from the origin, rotated and measured again:
@@ -35,7 +35,7 @@ A gap of 0.5 mm, 1000 mm from the origin, rotated and measured again:
 | 20° | 0.49999999999992 | closes |
 | 45° | 0.50000000000008 | does not close |
 
-The drawing is the same; the answer is not. (topo puts the edge a millionth of a
+The figure is the same; the answer is not. (topo puts the edge a millionth of a
 mm further, at 0.500001, so all three above close; but a gap that measures
 exactly 0.500001 has the same problem: see section 3.)
 
@@ -57,13 +57,13 @@ How often this happens depends on how many edges there are.
 
 - **A rounding grid has an edge everywhere.** Rounding every point to 0.001 mm
   puts an edge every thousandth of a millimetre: two ends 0.0004 mm apart fall
-  in the same cell or in two neighbouring cells depending on where the drawing
-  sits. This happens on ordinary drawings, all the time.
+  in the same cell or in two neighbouring cells depending on where the figure
+  sits. This happens on ordinary inputs, all the time.
 - **A distance rule has one edge per threshold.** Two ends are the same point
   when they are closer than the threshold, measured as a distance, which a
   motion does not change. The answer flips only for a value within about
   0.00000000000001 mm of the threshold. How often that happens in real
-  drawings is not measured; it is never zero.
+  inputs is not measured; it is never zero.
 
 This is why topo left the grid for distance: a node is the true
 point, and two ends are one node when they are close enough.
@@ -73,7 +73,7 @@ point, and two ends are one node when they are close enough.
 - Same file, same result: this is how topo is built (no randomness, no
   dependence on hash order) and what its tests check. A file where it fails is
   a bug to report.
-- Same geometry anywhere, same result: not promised. Any drawing can have a
+- Same geometry anywhere, same result: not promised. Any input can have a
   value at an edge, and no program can promise otherwise.
 - When a decision falls at an edge the difference can be visible: a gap closed
   in one position stays open in the other, and a contour that exists in one
