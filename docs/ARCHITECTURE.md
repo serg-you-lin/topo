@@ -7,18 +7,17 @@ the API see [`API.md`](API.md).
 
 ## The idea in one sentence
 
-`topo` is not a DXF library. It is a **topological reconstruction engine**
-that knows no file format: geometry and roles, never layers. Formats come in and go out through adapters, sibling packages in the same
+`topo` is a **topological reconstruction engine** that knows no file
+format: geometry and roles, never layers. Formats come in and go out through adapters, sibling packages in the same
 distribution (`topo_dxf`, `topo_pdf`). It takes noisy 2D geometry and produces a
 consistent, lossless geometric model: closed contours, containment hierarchy,
 texts, and an open overlay where a consumer writes its own reading. It
-knows no trade: saying what a contour or a line means is an
+assigns no meaning: saying what a contour or a line means is an
 interpretation, and it belongs to the consumers.
 
 DXF is only the first implemented format, and it lives outside topo: `topo`
 imports neither `ezdxf` nor an adapter, and installs without them (`pip install g-topo`;
-`g-topo[dxf]` brings `topo_dxf` with `ezdxf`). The core does not know what an arc or a
-spline is as a CAD entity — it works on pure geometric primitives.
+`g-topo[dxf]` brings `topo_dxf` with `ezdxf`). The core works on pure geometric primitives, never on the entity types of a source.
 
 ---
 
@@ -39,18 +38,18 @@ The `Result` is **the product**. Every `to_*` is a renderer of the model.
 why `to_svg` produces the exact same image without a line of
 new code in the core.
 
-Practical consequence: **nothing is lost**. Everything is imported — dimensions, centerlines, garbage.
+Practical consequence: **nothing is lost**. Everything is imported — annotations, auxiliary lines, garbage.
 So that `topo` loses
 nothing, the model is rich enough to hold even what it has not classified:
 
-- reconstructed closed geometry → parts / inner contours / features (if a reading adds them)
+- reconstructed closed geometry → outer and inner contours, and the features a reading adds
 - every curve that is no cluster's contour → `result.loose`
   (pure segments, format-independent; `cluster_ref` says which cluster
   contains it). What it is, a consumer decides, and moves it into
   `cluster.overlay` with `result.promote`
 - texts → `result.texts` (`Text`, a single type: the string laid in the
   plane and, when the source groups one, the picture drawn with it as
-  primitives; what a dimension measures is a reading). See `TEXTS.md`
+  primitives; what a text measures is a reading). See `TEXTS.md`
 
 The entity types that `topo` does not model (`HATCH`, `IMAGE`, `TABLE`, `3DFACE`,
 `XLINE`…) stay out, but `load_dxf` emits a warning listing them — no
@@ -145,11 +144,10 @@ topo/
                   strips
 ```
 
-`pipeline/` no longer exists: it put together three different things —
+`pipeline/` does not exist: the three different things it would hold are kept apart —
 `heal` (now in `core/`), the optional stages (`tools/`) and the renderers
-(`to_dxf`, later in `io/` and today in `topo_dxf`; `split`, today in `tools/`). The earlier design also said
-that `heal` is "the engine's single act": that is no longer true — `heal()` repairs the
-drawing once and returns a `Network`; the two readings,
+(`to_dxf`, in `topo_dxf`; `split`, in `tools/`). `heal` is not the engine's single act: `heal()` repairs the
+geometry once and returns a `Network`; the two readings,
 `faces()` and `outlines()`, compose the same core ingredients in different
 ways and fill the same model. The product is the model, not one of the
 two readings.
@@ -213,7 +211,7 @@ and `Network` carries them together with `source_file` and `label`. The foundati
 rules; a reading chooses only how it looks for the contour. The only point where
 the two readings read the same fact differently is a named parameter:
 `split_at_crossings(cut_crossings=...)`, because a crossing between two curves that
-continue is a broken drawing or a mark for `faces()` and a contact for
+continue is a broken input or a mark for `faces()` and a contact for
 `outlines()`: the network keeps the crossings as data (`crossings`), the
 cut is made by the reading that asks for it.
 
@@ -265,19 +263,19 @@ topo understood; refusing it is the choice of a caller that delivers to a machin
 
 ### 2b. `outlines()` → `Result` (reading by outlines)
 
-The alternative to `faces()` for a drawing of **views** (several views on a sheet,
-isometrics, projected 3D). `faces()` looks for the part from the inside, by
-connectivity: on a projected view several nearly coincident edges converge
+The alternative to `faces()` for **projections** (several projections side by side,
+projected 3D). `faces()` looks for the figure from the inside, by
+connectivity: on a projection several nearly coincident edges converge
 on the same nodes and there is no local signal to choose which one continues
 as the contour. `outlines()` starts from a global fact, what lies outside. The
 network is that of `heal()`:
 
 1. **set aside** the `Edge`s with a decided, non-structural role, already done by
-   `heal()`: this is how a consumer removes frame, title block, magnification
+   `heal()`: this is how a consumer removes a border, a label box, enclosing
    circles; they go into `loose` with their role
 2. **groups**: the edges that touch within `max_gap` (`touching_groups`):
    no notion of closure, hence no graph ambiguity. No distance
-   between views: that depended on how the drawing is laid out,
+   between figures: that depended on how the input is laid out,
    which topo does not know
 3. the nodes, the refitted tessellated chains and the gaps up to `max_gap` (never
    moving an endpoint more than that) are already those of the network: `outlines()`
@@ -294,7 +292,7 @@ network is that of `heal()`:
 
 Same contract as `faces()`: a `Result`, a `Cluster` per contour, and
 `split` and the renderers do not know which reading produced it. What a
-contour is (view, part, frame) is decided by the caller.
+contour is (a projection, a figure, a border) is decided by the caller.
 
 ### 3. a consumer's reading (outside topo)
 
@@ -303,7 +301,7 @@ What a contour or a curve means is a consumer's reading
 no name in the overlay: `cluster.features(name)` reads a collection by
 name, `[]` if `overlay` is `None` or that name was not written. The renderers
 draw each element from its `role` and its geometry, and the
-net area removes the elements that declare themselves voids of the part (`is_void`).
+net area removes the elements that declare themselves voids of the figure (`is_void`).
 
 ### 4. one Result per part — `split`
 
@@ -340,7 +338,7 @@ role, or on the adapter's default (see the table in the README and
 geometry comes from (`source_format`), how it was read (`reading`,
 `max_gap`), the warnings, and for each part the exact facts on the primitives (area,
 perimeters, bbox, counts of `overlay`). No coordinates, nothing of a
-process: material, thickness or a part code are added by the
+process: any extra field, such as a material or a code, is added by the
 consumer with `extra(cluster)`, which cannot replace a topo field.
 
 ---
@@ -371,7 +369,7 @@ not this threshold's. It serves as:
    is done only for one same pair, because over the whole network it percolates.
 
 A gap wider than `max_gap` is **not** closed — it is a choice, not a bug: if the
-file has big holes, either they are intended or the unit of measure is wrong. To close
+file has big gaps, either they are intended or the unit of measure is wrong. To close
 them, pass a larger `max_gap`.
 
 ### The double track of features (role_rules / inference)
@@ -387,7 +385,7 @@ second is the consumer's):
   does not know it. What happens in `heal` depends on `is_structural=...`
 : without it, any consumer role stays out of the graph; with
   the consumer's predicate, the roles it declares structural stay
-  INSIDE the graph (they close the part's contours), the others stay out.
+  INSIDE the graph (they close the contours), the others stay out.
   The output writes it on a DXF layer named after the slug (not
   `Trash` — it is not garbage), geometry intact.
   A rule combines neutral signals — source group name, dashing,
@@ -422,7 +420,7 @@ carries part of the computation; this is where, and with what guarantee:
 
 The direction: the missing intersection pairs in closed form or certified by the
 control-point hulls, an intersection that carries its parameters, then the
-polygon only for drawing and noding (TODO, "Dopo la 1.0").
+polygon only for drawing and noding (planned after 1.0).
 
 ---
 
@@ -431,11 +429,6 @@ polygon only for drawing and noding (TODO, "Dopo la 1.0").
 Honesty about the state — the details and reasons are not repeated here:
 
 - **`topo_pdf.load_pdf`** returns `list[Edge]` instead of a `Document` → it does not
-  hook into `heal()`. Frozen; the work parked in the
-  `forge-pdf-adapter` worktree is resumed here (TODO, "PDF da riprendere").
+  hook into `heal()`. Frozen.
 - **DWG** goes through ODA File Converter, an external executable: `topo_dxf`
   calls it via `ezdxf`'s `odafc` addon.
-
-The whole history of the refactors already closed (bridge/shape removed, entity→primitive
-dispatcher unified, `Edge` moved from `adapters/` to
-`core/topology/`, etc.) is not repeated here.
