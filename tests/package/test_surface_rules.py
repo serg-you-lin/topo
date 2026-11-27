@@ -71,7 +71,7 @@ DATA = {
     'topo.non_contour_candidates': ('doc',),
     'topo.geometry.polygon': ('points',),
     'topo.geometry.rectangle': ('length', 'width'),
-    'topo.geometry.clothoid_corner': ('corner', 'direction_in', 'direction_out', 'a'),
+    'topo.geometry.clothoid_corner': ('corner', 'direction_in', 'direction_out', 'radius'),
     'topo.geometry.regular_polygon': ('sides', 'radius'),
     'topo.geometry.circle': ('radius',),
     'topo.geometry.ellipse': ('length', 'width'),

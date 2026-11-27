@@ -96,9 +96,9 @@ class TestInvoluteAndClothoid(unittest.TestCase):
 
 class TestClothoidCorner(unittest.TestCase):
 
-    def _corner(self, deflection_deg: float, a: float = 40.0):
+    def _corner(self, deflection_deg: float, radius: float = 40.0):
         d = math.radians(deflection_deg)
-        return g.clothoid_corner((0.0, 0.0), (1.0, 0.0), (math.cos(d), math.sin(d)), a), d
+        return g.clothoid_corner((0.0, 0.0), (1.0, 0.0), (math.cos(d), math.sin(d)), radius), d
 
     def test_two_pieces_head_to_tail_and_symmetric(self):
         for deflection in (60.0, -60.0, 20.0, 150.0):
@@ -122,12 +122,12 @@ class TestClothoidCorner(unittest.TestCase):
         self.assertAlmostEqual(q[0] * math.sin(d) - q[1] * math.cos(d), 0.0, delta=1e-12)
 
     def test_curvature_zero_at_the_ends_and_linear(self):
-        (first, second), d = self._corner(60.0, a=40.0)
-        length = 40.0 * math.sqrt(d)
+        (first, second), d = self._corner(60.0, radius=40.0)
+        length = 40.0 * d
         self.assertAlmostEqual(first.curvature_at(0.0), 0.0, delta=1e-15)
-        self.assertAlmostEqual(first.curvature_at(length), length / 40.0 ** 2, delta=1e-12)
-        self.assertAlmostEqual(first.curvature_at(length / 2), length / 2 / 40.0 ** 2, delta=1e-12)
-        self.assertAlmostEqual(abs(second.curvature_at(0.0)), length / 40.0 ** 2, delta=1e-12)
+        self.assertAlmostEqual(first.curvature_at(length), 1 / 40.0, delta=1e-12)      # the smallest radius is the one asked
+        self.assertAlmostEqual(first.curvature_at(length / 2), 1 / 80.0, delta=1e-12)
+        self.assertAlmostEqual(abs(second.curvature_at(0.0)), 1 / 40.0, delta=1e-12)
 
     def test_turns_the_way_the_corner_does(self):
         (left, _), _ = self._corner(60.0)

@@ -5,7 +5,7 @@
 What you learn
     topo.geometry.blend(..., continuity=1)    a cubic that leaves one line and arrives on another, tangent to both
     topo.geometry.blend(..., continuity=2)    a quintic that also starts and ends with zero curvature
-    topo.geometry.clothoid_corner(corner, in, out, a)   two clothoids that round a corner, curvature 0 at both ends
+    topo.geometry.clothoid_corner(corner, in, out, radius)   two clothoids that round a corner, curvature 0 at both ends
     topo.geometry.clothoid(a, length, ...)    the Euler spiral: curvature grows in step with the arc length
     topo.geometry.polynomial(coefficients, x_from, x_to)   the graph of y = c0 + c1·x + c2·x² + ...
     topo.geometry.involute(base_radius, end)  the path of the end of a string unwound from a circle
@@ -19,12 +19,13 @@ all joining the same two points P and Q:
     quintic blend    curvature is 0 at P and at Q too (G2)
     two clothoids    curvature 0 at P, grows linearly with the length, falls back to 0 at Q
 
-clothoid_corner(corner, direction_in, direction_out, a) gives the two clothoids
-at once. One clothoid of parameter `a` and length L turns by L² / (2a²); two of
-them back to back turn by L² / a², so for a deflection D each piece is
-L = a·sqrt(D) long. The chain starts on the first line and ends on the second,
+clothoid_corner(corner, direction_in, direction_out, radius) gives the two
+clothoids at once. `radius` is the smallest radius of the chain, reached at the
+joint: the curvature never exceeds 1/radius, whatever the corner. One clothoid of
+parameter `a` and length L turns by L² / (2a²); two of them back to back turn by
+L² / a², so for a deflection D each piece is L = radius·D long, with
+a = radius·sqrt(D). The chain starts on the first line and ends on the second,
 both at the same distance T from the corner: T is where the lines must be cut.
-`a` is your choice: a larger `a` is a gentler, longer transition.
 
 The same lesson draws a cubic from its coefficients and an involute of a circle.
 
@@ -34,7 +35,7 @@ Open afterwards
     each as a cubic spline within 0.001 mm.
 
 Try this
-    change DEFLECTION_DEG and SPIRAL_A (try a negative deflection: the corner
+    change DEFLECTION_DEG and MIN_RADIUS (try a negative deflection: the corner
     turns right), run again, and read how T and the curvature change.
 """
 import _paths  # noqa: F401
@@ -47,7 +48,7 @@ from topo.primitives import LineSeg
 
 # --- CONFIG ------------------------------------------------------------------
 DEFLECTION_DEG = 60.0        # how much the second line turns left of the first
-SPIRAL_A = 40.0              # clothoid parameter: a² = radius · arc length
+MIN_RADIUS = 40.0             # the smallest radius of the transition, at its joint
 LEG = 120.0                  # length of each straight line from the corner
 # -----------------------------------------------------------------------------
 
@@ -69,14 +70,14 @@ def curvature(segment, t: float) -> float:
 
 # 1. the two clothoids, head to tail: they start at P on the first line and end at Q on the second
 corner = (0.0, 0.0)
-spiral_in, spiral_out = g.clothoid_corner(corner, u1, u2, SPIRAL_A)
+spiral_in, spiral_out = g.clothoid_corner(corner, u1, u2, MIN_RADIUS)
 P, Q = spiral_in.endpoints()[0], spiral_out.endpoints()[1]
 tangent = math.dist(P, corner)                            # the same from the corner to Q
-length = SPIRAL_A * math.sqrt(deflection)
-print(f"clothoids: a={SPIRAL_A}, length {length:.2f} each, tangent distance T={tangent:.2f}")
+length = MIN_RADIUS * deflection
+print(f"clothoids: min radius {MIN_RADIUS}, length {length:.2f} each, tangent distance T={tangent:.2f}")
 print(f"  the two pieces meet within {math.dist(spiral_in.endpoints()[1], spiral_out.endpoints()[0]):.1e}")
 print(f"  curvature at P {curvature(spiral_in, 0.0):.5f}, at the join {curvature(spiral_in, length):.5f} "
-      f"(= length / a² = {length / SPIRAL_A ** 2:.5f})")
+      f"(= 1 / radius = {1 / MIN_RADIUS:.5f})")
 
 # 2. the same points P, Q joined by a cubic and by a quintic
 cubic = g.blend(P, u1, Q, u2, continuity=1)[0]

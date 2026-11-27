@@ -550,7 +550,7 @@ angle=20))` gives back 80, 30, 20:
 | `polynomial(coefficients, x_from, x_to)` | the graph of y = c0 + c1·x + … as an exact Bézier `BSplineSeg` (a `LineSeg` up to degree 1) |
 | `involute(base_radius, end, *, start=0, center=(0, 0), angle=0)` | the involute of a circle, unwinding angle `start`..`end` in radians, a `FormulaSeg` |
 | `clothoid(a, length, *, start=(0, 0), angle=0, left=True)` | the Euler spiral from zero curvature, `length` along the curve, a `ClothoidSeg` |
-| `clothoid_corner(corner, direction_in, direction_out, a)` | the two equal clothoids, head to tail, that round the corner of a line arriving along `direction_in` and one leaving along `direction_out`: curvature 0 at both ends (G2 with both lines), each piece `a·sqrt(deflection)` long. The ends lie on the two lines at the same distance from `corner`; `ValueError` for parallel directions or `a <= 0`. Returns `list[ClothoidSeg]` |
+| `clothoid_corner(corner, direction_in, direction_out, radius)` | the two equal clothoids, head to tail, that round the corner of a line arriving along `direction_in` and one leaving along `direction_out`: curvature 0 at both ends (G2 with both lines), smallest radius `radius` at the joint, each piece `radius·deflection` long. The ends lie on the two lines at the same distance from `corner`; `ValueError` for parallel directions or `radius <= 0`. Returns `list[ClothoidSeg]` |
 
 Rhombi, trapezoids and every other shape with straight sides are a `polygon`.
 
