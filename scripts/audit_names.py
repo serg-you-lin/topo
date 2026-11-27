@@ -176,6 +176,13 @@ ALLOWED: frozenset[str] = frozenset({
     "0123456789",
     # nome della codifica del tokenizer `tiktoken` (`o200k_base`), in MAP.md
     "o200k",
+    # gradi di acciaio e AISI scritti con lo spazio, codice flake8 `# noqa: E402`
+    "S235", "S275", "I304", "E402",
+    # prefissi numerici dei nomi dei file di esperimento (`000_...`, `101___...`)
+    "000", "001", "002", "101",
+    # frammenti dentro messaggi di commit: un hash corto (`0432826^`) e due
+    # pezzi citati mentre si descrive un falso positivo dell'audit stesso
+    "0432826", "06T13", "F0864738",
 })
 """Token che somigliano a un codice pezzo ma non lo sono."""
 
