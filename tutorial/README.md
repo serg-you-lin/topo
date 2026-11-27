@@ -25,7 +25,7 @@ results are meant to be judged by eye. The files the lessons read are in
 | 11 | `11_geometry_facts.py` | intersections, cuts, union and difference of contours, concentric circles |
 | 12 | `12_from_plain_data.py` | geometry from plain dicts, no file |
 | 13 | `13_your_files.py` | a whole folder of your files, with a report |
-| 14 | `14_curves_by_formula.py` | join two lines smoothly (cubic, quintic, two clothoids), a cubic from its coefficients, an involute |
+| 14 | `14_curves_by_formula.py` | round a corner of two lines (cubic, quintic, `clothoid_corner`), a cubic from its coefficients, an involute |
 
 Needs: `pip install g-topo[dxf]` (or the repository installed with its `dxf` extra).
 

@@ -94,6 +94,58 @@ class TestInvoluteAndClothoid(unittest.TestCase):
         self.assertAlmostEqual(math.degrees(math.atan2(dy, dx)), 45.0, delta=1e-12)
 
 
+class TestClothoidCorner(unittest.TestCase):
+
+    def _corner(self, deflection_deg: float, a: float = 40.0):
+        d = math.radians(deflection_deg)
+        return g.clothoid_corner((0.0, 0.0), (1.0, 0.0), (math.cos(d), math.sin(d)), a), d
+
+    def test_two_pieces_head_to_tail_and_symmetric(self):
+        for deflection in (60.0, -60.0, 20.0, 150.0):
+            with self.subTest(deflection=deflection):
+                (first, second), d = self._corner(deflection)
+                self.assertTrue(all(isinstance(s, ClothoidSeg) for s in (first, second)))
+                self.assertAlmostEqual(math.dist(first.endpoints()[1], second.endpoints()[0]), 0.0, delta=1e-12)
+                t_in = math.dist(first.endpoints()[0], (0.0, 0.0))
+                t_out = math.dist(second.endpoints()[1], (0.0, 0.0))
+                self.assertAlmostEqual(t_in, t_out, delta=1e-12)
+
+    def test_leaves_and_joins_the_lines_tangent(self):
+        (first, second), d = self._corner(60.0)
+        x0, y0 = first.derivative_at(first.t_range[0])
+        self.assertAlmostEqual(math.atan2(y0, x0), 0.0, delta=1e-12)
+        x1, y1 = second.derivative_at(second.t_range[1])
+        self.assertAlmostEqual(math.atan2(y1, x1), d, delta=1e-12)
+        # the ends lie on the two lines: on the x axis, and on the ray at angle d
+        self.assertAlmostEqual(first.endpoints()[0][1], 0.0, delta=1e-12)
+        q = second.endpoints()[1]
+        self.assertAlmostEqual(q[0] * math.sin(d) - q[1] * math.cos(d), 0.0, delta=1e-12)
+
+    def test_curvature_zero_at_the_ends_and_linear(self):
+        (first, second), d = self._corner(60.0, a=40.0)
+        length = 40.0 * math.sqrt(d)
+        self.assertAlmostEqual(first.curvature_at(0.0), 0.0, delta=1e-15)
+        self.assertAlmostEqual(first.curvature_at(length), length / 40.0 ** 2, delta=1e-12)
+        self.assertAlmostEqual(first.curvature_at(length / 2), length / 2 / 40.0 ** 2, delta=1e-12)
+        self.assertAlmostEqual(abs(second.curvature_at(0.0)), length / 40.0 ** 2, delta=1e-12)
+
+    def test_turns_the_way_the_corner_does(self):
+        (left, _), _ = self._corner(60.0)
+        (right, _), _ = self._corner(-60.0)
+        self.assertGreater(left.curvature_at(10.0), 0)
+        self.assertLess(right.curvature_at(10.0), 0)
+
+    def test_parallel_directions_and_bad_arguments_raise(self):
+        with self.assertRaises(ValueError):
+            g.clothoid_corner((0.0, 0.0), (1.0, 0.0), (2.0, 0.0), 40.0)
+        with self.assertRaises(ValueError):
+            g.clothoid_corner((0.0, 0.0), (1.0, 0.0), (-1.0, 0.0), 40.0)
+        with self.assertRaises(ValueError):
+            g.clothoid_corner((0.0, 0.0), (0.0, 0.0), (0.0, 1.0), 40.0)
+        with self.assertRaises(ValueError):
+            g.clothoid_corner((0.0, 0.0), (1.0, 0.0), (0.0, 1.0), 0.0)
+
+
 class TestTriangle(unittest.TestCase):
 
     def test_given_sides(self):

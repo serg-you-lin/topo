@@ -11,16 +11,16 @@ You do not have to import the internal modules directly.
 
     import topo
 
-    plate = topo.geometry.rectangle(100, 60)
-    hole = topo.geometry.circle(8, center=(20, 15))
-    doc = topo.load_segments(plate + hole)    # or a Document from an adapter
+    box = topo.geometry.rectangle(100, 60)
+    disc = topo.geometry.circle(8, center=(20, 15))
+    doc = topo.load_segments(box + disc)      # or a Document from an adapter
 
-    network = topo.heal(doc, label="part")    # the repair, once
-    result = network.faces()                  # or network.outlines() for a sheet of views
-    # holes, bends, engravings: a process reading, in snapbend
+    network = topo.heal(doc, label="shape")   # the repair, once
+    result = network.faces()                  # or network.outlines() for projections side by side
+    # what a contour means is a consumer's reading, written to cluster.overlay
 
-    topo.save_json(result, "part.json")
-    parts = topo.split(result).parts          # one Result per part, no format
+    topo.save_json(result, "shape.json")
+    parts = topo.split(result).parts          # one Result per cluster, no format
 """
 
 from .core.geometry_input import load_geometry, load_segments
@@ -43,10 +43,10 @@ from .model         import (
     # a warning as in Rust: text + fields, with the threshold that fixes it
     Diagnostic,
 )
-# A consumer that marks the geometry before heal() (snapdraw: frame / title
-# block) sets `edge.role` on the Edges of `doc.edges` with a slug cleaned by
-# normalize_role, and is_structural_role says whether that role is a part
-# contour or furniture that heal keeps out of the graph.
+# A consumer that marks the geometry before heal() (a border, a label box)
+# sets `edge.role` on the Edges of `doc.edges` with a slug cleaned by
+# normalize_role, and is_structural_role says whether that role is part of a
+# contour or something that heal keeps out of the graph.
 from .model.role      import normalize_role, is_structural_role
 # The caller's rules that assign the role at load.
 from .model.role_rule import RoleRule, name_rules

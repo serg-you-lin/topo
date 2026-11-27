@@ -119,10 +119,10 @@ def right_triangle(leg_a: float, leg_b: float, *, start: Point = (0.0, 0.0), ang
     return polygon([tuple(start)] + _place([(leg_a, 0.0), (0.0, leg_b)], start, angle))
 
 
-def _direction_argument(v: Point, name: str) -> Point:
+def _direction_argument(v: Point, name: str, function: str = "blend") -> Point:
     u = unit_vector(v)
     if u is None:
-        raise ValueError(f"blend(): {name} must be a non-zero vector")
+        raise ValueError(f"{function}(): {name} must be a non-zero vector")
     return u
 
 
@@ -203,3 +203,39 @@ def clothoid(a: float, length: float, *, start: Point = (0.0, 0.0), angle: float
         raise ValueError(f"clothoid(): length must be positive, got {length}")
     return [ClothoidSeg(origin=tuple(start), angle=math.radians(angle), a=a, start_param=0.0, end_param=length,
                         left=left)]
+
+
+def clothoid_corner(corner: Point, direction_in: Point, direction_out: Point, a: float) -> List[ClothoidSeg]:
+    """
+    The transition that rounds the corner where a straight line arriving at
+    `corner` along `direction_in` meets the one leaving it along `direction_out`
+    (vectors, any length): two equal clothoids of parameter `a`, head to tail.
+    The curvature is 0 where the chain leaves the first line and where it joins
+    the second (G2 with both), and grows linearly with the arc length up to
+    the joint. For a deflection D, each piece has length a·sqrt(D) and the chain
+    starts on the incoming line, and ends on the outgoing one, at the same
+    distance T from `corner`: trim the lines there (`chain[0].endpoints()[0]`,
+    `chain[-1].endpoints()[1]`). It turns left or right as the corner does.
+    """
+    u_in = _direction_argument(direction_in, "direction_in", "clothoid_corner")
+    u_out = _direction_argument(direction_out, "direction_out", "clothoid_corner")
+    if not a > 0:
+        raise ValueError(f"clothoid_corner(): a must be positive, got {a}")
+    deflection = math.atan2(u_in[0] * u_out[1] - u_in[1] * u_out[0], u_in[0] * u_out[0] + u_in[1] * u_out[1])
+    if deflection == 0 or abs(deflection) == math.pi:
+        raise ValueError("clothoid_corner(): the two directions are parallel, there is no corner to round")
+    left = deflection > 0
+    sweep = abs(deflection)
+    length = a * math.sqrt(sweep)
+    # one piece from the origin along +x: its end (xe, ye); the corner lies on the axis of symmetry of the chain
+    piece = ClothoidSeg(origin=(0.0, 0.0), angle=0.0, a=a, start_param=0.0, end_param=length, left=True)
+    (_, _), (xe, ye) = piece.endpoints()
+    tangent = xe + ye * math.tan(sweep / 2)
+    p_in = (corner[0] - tangent * u_in[0], corner[1] - tangent * u_in[1])
+    p_out = (corner[0] + tangent * u_out[0], corner[1] + tangent * u_out[1])
+    heading_in, heading_out = math.atan2(u_in[1], u_in[0]), math.atan2(u_out[1], u_out[0])
+    first = ClothoidSeg(origin=p_in, angle=heading_in, a=a, start_param=0.0, end_param=length, left=left)
+    # the second piece is the first seen from the outgoing line: from `p_out` backwards, turning the other way
+    second = ClothoidSeg(origin=p_out, angle=heading_out + math.pi, a=a, start_param=0.0, end_param=length,
+                         left=not left)
+    return [first, second.reversed()]

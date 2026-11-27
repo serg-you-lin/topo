@@ -7,7 +7,7 @@ decided by the consumer.
 
 Public (below):
     build.py          build shapes and curves as segments: polygon, rectangle, regular_polygon, circle, ellipse,
-                      stadium, triangle, right_triangle; blend, polynomial, involute, clothoid
+                      stadium, triangle, right_triangle; blend, polynomial, involute, clothoid, clothoid_corner
     shape.py          shape of a closed contour
     concentric.py     concentric circles; arcs around a circle
     lines.py          a chord that splits a contour; runs of collinear strokes joined across contours; hatching of a segment
@@ -37,7 +37,7 @@ Building blocks (imported from the submodule, internal):
 
 from .build import (polygon, rectangle, regular_polygon, circle, ellipse, stadium, triangle, right_triangle,
                     blend, polynomial,
-                    involute, clothoid)
+                    involute, clothoid, clothoid_corner)
 from .shape import contour_shape, ContourShape, ShapeKind
 from .concentric import (
     concentric_groups, ConcentricGroup,
@@ -58,7 +58,7 @@ from .axis import (
 
 __all__ = [
     "polygon", "rectangle", "regular_polygon", "circle", "ellipse", "stadium", "triangle", "right_triangle",
-    "blend", "polynomial", "involute", "clothoid",
+    "blend", "polynomial", "involute", "clothoid", "clothoid_corner",
     "contour_shape", "ContourShape", "ShapeKind",
     "concentric_groups", "ConcentricGroup",
     "arcs_around", "ArcAround",
