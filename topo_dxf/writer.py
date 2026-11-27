@@ -287,7 +287,7 @@ def _write_fills(msp, result: Result, book: "_Layers", include_loose: bool) -> N
                 pts = [tuple(p[:2]) for p in edge.segment.discretize()]
                 points.extend(reversed(pts) if backwards else pts)
             if len(points) >= 3:
-                hatch = msp.add_hatch(dxfattribs={"layer": layer, "color": 256})
+                hatch = msp.add_hatch(color=256, dxfattribs={"layer": layer})
                 hatch.paths.add_polyline_path(points, is_closed=True)
 
 

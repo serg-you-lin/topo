@@ -105,6 +105,11 @@ class TestFilledAreas(unittest.TestCase):
         self.assertEqual(len(hatches), 4)
         self.assertTrue(all(h.dxf.solid_fill for h in hatches))
 
+    def test_written_hatches_take_the_color_of_their_layer(self):
+        out = topo_dxf.to_dxf(topo.heal(self.doc).outlines())
+        colors = {h.dxf.color for h in out.modelspace().query("HATCH")}
+        self.assertEqual(colors, {256})
+
 
 class TestDocumentFromMsp(unittest.TestCase):
     """`document_from_msp` explodes nothing: a LEADER with no string and an unread
