@@ -571,7 +571,7 @@ topo.geometry.contour_shape(item) -> ContourShape | None
 ```
 
 The shape of a closed contour (`Contour`, an object with `.segments`
-or the list of segments): `circle`, `ellipse`, `stadium` (two
+the list of segments, or a raw `Edge`: its one segment): `circle`, `ellipse`, `stadium` (two
 equal semicircles and two parallel lines — a geometric name, not "slot"),
 `rectangle`, `polygon` (lines only), `other`. A geometric
 fact, not a feature: `circle` does not mean hole, that is decided by whoever reads the
@@ -604,8 +604,8 @@ recomposition), `diameter` (circle only), `.to_dict()`.
 topo.geometry.concentric_groups(items, *, tolerance) -> list[ConcentricGroup]
 ```
 
-The circular contours of `items` (as for `contour_shape`) grouped by
-centre: each circle is in exactly one group, even alone; non-circular ones do not
+The circular contours of `items` (as for `contour_shape`; a raw `Edge` counts as
+its one segment, so this works before `heal()`) grouped by centre: each circle is in exactly one group, even alone; non-circular ones do not
 appear. `tolerance` is the maximum distance between centres, in drawing
 units; among several groups within `tolerance` a circle joins the nearest.
 At equal diameter the reference of the group is the first given; groups sorted

@@ -91,12 +91,14 @@ class ContourShape:
 def contour_shape(item) -> Optional[ContourShape]:
     """
     Shape of a closed contour (`Contour`, or any object with `.segments`, or
-    the list of segments). None if there are no segments or if, in sequence,
-    they do not close into a ring.
+    the list of segments, or an `Edge`: its one segment). None if there are no
+    segments or if, in sequence, they do not close into a ring.
     Consecutive segments on the same line or circle are first recomposed, so
     a side split by a node stays one side. Every measure of the shape agrees
     within `SAME_POINT`: a rectangle off by more is a polygon.
     """
+    if hasattr(item, "segment"):
+        item = [item.segment]
     segments = list(getattr(item, "segments", item) or [])
     if not segments or not _closes(segments):
         return None

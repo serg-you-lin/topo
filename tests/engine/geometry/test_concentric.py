@@ -40,6 +40,15 @@ class TestConcentricGroups(unittest.TestCase):
         groups = concentric_groups([_square((0, 0), 5), _circle((0, 0), 2)], tolerance=0.1)
         self.assertEqual([len(g.items) for g in groups], [1])
 
+    def test_raw_edges_before_heal(self):
+        edges = [topo.model.Edge.of(CircleSeg(center=(0.01, 0), radius=9), "unknown"),
+                 topo.model.Edge.of(CircleSeg(center=(0, 0), radius=5), "unknown"),
+                 topo.model.Edge.of(CircleSeg(center=(0, 0), radius=8, start_angle=0, end_angle=1.5 * math.pi), "unknown"),
+                 topo.model.Edge.of(LineSeg(start=(0, 0), end=(3, 0)), "unknown")]
+        (group,) = concentric_groups(edges, tolerance=0.1)
+        self.assertEqual(group.diameters, (10, 18))
+        self.assertEqual(group.items, (edges[1], edges[0]))
+
     def test_three_circles_from_the_smaller_to_the_larger(self):
         rings = [_circle((0, 0), r) for r in (6, 2, 4)]
         (group,) = concentric_groups(rings, tolerance=0.1)
