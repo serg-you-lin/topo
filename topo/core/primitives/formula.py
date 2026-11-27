@@ -18,7 +18,7 @@ from typing import Callable, Dict, List, Tuple
 
 from .mathseg import DEFAULT_TOLERANCE, Algebra, MathSeg, Point, _real
 from .motion import _check_factor
-from .polyline import _point_to_segment_distance
+from .line import distance_to_segment
 
 # function -> derivative (a formula in the same grammar, in `u`)
 _FUNCTIONS: Dict[str, Tuple[Callable[[float], float], str]] = {
@@ -393,7 +393,7 @@ class FormulaSeg(MathSeg):
 
         def split(a: float, b: float, pa: Point, pb: Point, depth: int):
             inner = [self.point_at(a + (b - a) * k / 4) for k in (1, 2, 3)]
-            if depth < _MAX_DEPTH and max(_point_to_segment_distance(q, pa, pb) for q in inner) > tolerance:
+            if depth < _MAX_DEPTH and max(distance_to_segment(q, pa, pb) for q in inner) > tolerance:
                 m = (a + b) / 2
                 split(a, m, pa, inner[1], depth + 1)
                 split(m, b, inner[1], pb, depth + 1)

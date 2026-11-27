@@ -29,7 +29,7 @@ from dataclasses import dataclass, replace
 from typing import Any, Callable, Iterable, List, Tuple
 
 from ..geometry.measure import FLOAT_NOISE, within_diameter, SAME_POINT, unit_vector
-from ..primitives.line import LineSeg
+from ..primitives.line import LineSeg, distance_to_segment
 from ..primitives.mathseg import Point, segment_endpoints
 from ..primitives.conics import CircleSeg, is_full_circle
 from ..topology.graph import connected_groups
@@ -320,14 +320,6 @@ class NearCopy:
         return ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
 
 
-def _off_segment(p, seg: LineSeg) -> float:
-    """Distance of `p` from the segment (not from the infinite line)."""
-    (ax, ay), (bx, by) = seg.start[:2], seg.end[:2]
-    dx, dy = bx - ax, by - ay
-    t = max(0.0, min(1.0, ((p[0] - ax) * dx + (p[1] - ay) * dy) / (dx * dx + dy * dy)))
-    return math.hypot(p[0] - ax - t * dx, p[1] - ay - t * dy)
-
-
 def _over(p, seg: LineSeg) -> bool:
     """The projection of `p` on the line of `seg` falls inside `seg` (within FLOAT_NOISE)."""
     (ax, ay), (bx, by) = seg.start[:2], seg.end[:2]
@@ -359,7 +351,7 @@ def near_copies(edges: Iterable[Edge], distance: float) -> List[NearCopy]:
         # on top of the long one, not beyond its end: the piece continuing the contour is not a copy
         if not all(_over(p, kept.segment) for p in (copy.segment.start, copy.segment.end)):
             continue
-        offset = max(_off_segment(p, kept.segment) for p in (copy.segment.start, copy.segment.end))
+        offset = max(distance_to_segment(p, kept.segment.start, kept.segment.end) for p in (copy.segment.start, copy.segment.end))
         # a copy is a copy of the nearest line, not of every line within the threshold
         if offset <= distance and (id(copy) not in nearest or offset < nearest[id(copy)].offset):
             nearest[id(copy)] = NearCopy(kept, copy, offset)

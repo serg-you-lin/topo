@@ -15,7 +15,7 @@ is the true deviation.
 import math
 import unittest
 
-from topo.core.primitives.polyline import _point_to_segment_distance
+from topo.core.primitives.line import distance_to_segment
 from topo.core.primitives.conics import CircleSeg, EllipseSeg
 from topo.core.primitives.spline import BSplineSeg
 
@@ -30,7 +30,7 @@ def _deviation(poly, curve_pts) -> float:
         # nearest vertex, then the two stretches that touch it
         j = min(range(len(poly)), key=lambda i: (poly[i][0] - p[0]) ** 2 + (poly[i][1] - p[1]) ** 2)
         d = min(
-            _point_to_segment_distance(p, poly[k], poly[k + 1])
+            distance_to_segment(p, poly[k], poly[k + 1])
             for k in (j - 1, j) if 0 <= k < len(poly) - 1
         )
         worst = max(worst, d)
@@ -92,7 +92,7 @@ def _deviation_along(poly, curve_pts, window: int = 64) -> float:
     worst, j = 0.0, 0
     for p in curve_pts:
         ks = range(max(j - 1, 0), min(j + window, len(poly) - 1))
-        d, j = min((_point_to_segment_distance(p, poly[k], poly[k + 1]), k) for k in ks)
+        d, j = min((distance_to_segment(p, poly[k], poly[k + 1]), k) for k in ks)
         worst = max(worst, d)
     return worst
 

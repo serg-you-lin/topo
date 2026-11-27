@@ -83,7 +83,7 @@ topo/
 │   │                 mathseg.py (MathSeg, the mother), line.py, spline.py,
 │   │                 conics.py (Conic, Ellipse, Circle, Parabola, Hyperbola + the
 │   │                 arc grid), formula.py, clothoid.py; motion.py (moving a point),
-│   │                 polyline.py (the chord check), trim.py (sub_segment)
+│   │                 trim.py (sub_segment)
 │   ├── topology/     edge.py, node graph, loop search;
 │   │                 noding.py (planar network), outer_face.py (outer face),
 │   │                 touching.py (groups of edges that touch)

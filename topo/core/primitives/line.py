@@ -1,16 +1,30 @@
 """
 topo/core/primitives/line.py
 ----------------------------
-`LineSeg`: the straight piece from `start` to `end`.
+`LineSeg`: the straight piece from `start` to `end`, and the distance of a point from such a piece.
 """
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import List, Tuple
 
 from .mathseg import Algebra, DEFAULT_TOLERANCE, MathSeg, Point, _plain
 from .motion import _check_factor, _mirror_point, _rotate_point, _scale_point, _translate_point
+
+
+def distance_to_segment(p: Point, a: Point, b: Point) -> float:
+    """Distance of `p` from the segment `a`-`b` (point distance if `a == b`)."""
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    length_sq = dx * dx + dy * dy
+    if length_sq == 0:
+        return math.hypot(p[0] - a[0], p[1] - a[1])
+    t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / length_sq
+    t = max(0.0, min(1.0, t))
+    cx, cy = a[0] + t * dx, a[1] + t * dy
+    return math.hypot(p[0] - cx, p[1] - cy)
+
 
 @dataclass
 class LineSeg(MathSeg):

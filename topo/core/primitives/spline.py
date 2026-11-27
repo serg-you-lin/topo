@@ -15,7 +15,7 @@ from typing import Callable, List, Optional, Tuple
 from .minimize import certified_min
 from .mathseg import Algebra, DEFAULT_TOLERANCE, MathSeg, Point, _plain, _real
 from .motion import _check_factor, _mirror_point, _rotate_point, _scale_point, _translate_point
-from .polyline import _point_to_segment_distance
+from .line import distance_to_segment
 
 
 def _bspline_find_span(t: float, degree: int, knots: List[float], n: int) -> int:
@@ -90,7 +90,7 @@ def _flat_polygon(piece: list, tolerance: float, out: List[Point]) -> None:
         c = stack.pop()
         pts = [(x / w, y / w) for x, y, w in c]
         a, b = pts[0], pts[-1]
-        if all(_point_to_segment_distance(q, a, b) <= tolerance for q in pts[1:-1]):
+        if all(distance_to_segment(q, a, b) <= tolerance for q in pts[1:-1]):
             out.append(b)
         else:
             left, right = _halves(c)
