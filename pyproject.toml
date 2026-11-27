@@ -17,7 +17,7 @@ authors = [
 ]
 keywords = ["geometry", "computational-geometry", "vector", "topology", "cad", "dxf"]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python :: 3",
