@@ -21,13 +21,13 @@ import types
 # changes the readings: larger, ends and curves up to that far apart become a
 # single point (contours that close, short sides that vanish); smaller, ends
 # written with few decimals stay detached (open contours without max_gap) and
-# splines are cut finer (slower). Measured on the 631 drawings of tests/: below
+# splines are cut finer (slower). Measured on the 631 files of tests/: below
 # 0.001 the contacts on splines, today computed on their discretization, break
 # the contours.
 SAME_POINT = 1e-3
-# It is also the sagitta of every curve's polygon: computation, drawing, texts.
+# It is also the sagitta of every curve's polygon: computation, rendering, texts.
 
-# Arithmetic: the noise of the computations, not the drawing
+# Arithmetic: the noise of the computations, not the input
 
 # double noise: the margin of every threshold ("within" includes it); above that
 # of a motion (~1e-11), below every contact threshold
@@ -46,9 +46,9 @@ ANGLE_BRACKET_DEG = 1.0
 # Fractions and ratios: not lengths
 
 MARK_FRACTION = 0.05           # of the length of a stretch of dashed line
-NEAR_GAP_FACTOR = 2.0          # a hole up to this multiple of its threshold "is nearly there": max_gap, the missing angle of an arc
+NEAR_GAP_FACTOR = 2.0          # a gap up to this multiple of its threshold "is nearly there": max_gap, the missing angle of an arc
 
-# How a CAD writes a curve as points
+# How a source writes a curve as points
 
 POINTS_NOISE = 0.02            # mm: how much the points of a curve written as points can be off (refit and rings): an assumption about the files, measured on regr_01, not derived
 TESSELLATION_SIDE = 0.1        # mm: shorter sides may be points of a curve written as points (refit_tessellations)

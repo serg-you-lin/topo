@@ -4,9 +4,9 @@ model/contour.py
 Generic closed contour — a loop with a role, with no feature semantics.
 
 It is the type `heal()` produces for the cluster's outer and for its inner
-loops not yet classified (`cluster.inners`). `detect_flat()` promotes a
-circular `Contour` below a threshold to `Hole`; what remains is a contour cut.
-Sibling of `Hole` / `Engraving`: it lives in a file of its own, not nested in
+loops not yet classified (`cluster.inners`). A consumer may promote a
+circular `Contour` to an element of its own; what remains is a contour cut.
+It lives in a file of its own, not nested in
 `cluster.py`, which defines only the container.
 
 `depth` and `parent` carry the containment tree that `HierarchyBuilder` builds
@@ -14,8 +14,8 @@ internally (parent → children → grandchildren, at arbitrary depth) and that
 would otherwise be lost by flattening everything into `cluster.inners`: the
 outer has `depth=0`/`parent=None`, a direct child `depth=1`, a grandchild
 `depth=2`, and so on. Purely geometric (containment between polygons,
-computed in `heal()`), not semantic — `detect_flat()` can rebuild whatever
-role it wants, these two fields do not change.
+computed in `heal()`), not semantic — a consumer can give the contours whatever
+meaning it wants, these two fields do not change.
 
 `Contour.from_segments()` builds a contour from a ring of primitives written
 by a caller: it checks that the ring closes and encloses an area.

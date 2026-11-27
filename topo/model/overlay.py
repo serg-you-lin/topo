@@ -2,8 +2,8 @@
 topo/model/overlay.py
 -----------------------
 The open overlay of a cluster: `Cluster.overlay` is an `Overlay`, a container
-written by name. topo writes nothing into it: a consumer fills it (snapbend:
-holes, bends, engravings; snapdraw; a custom recognizer), all with the same
+written by name. topo writes nothing into it: a consumer fills it (any
+recognizer of its own), all with the same
 mechanism. `cluster.overlay is None` until someone has written to it.
 
 No contract on the elements, not even at runtime ("convention, not
@@ -65,9 +65,9 @@ class Overlay:
 
 def feature_closed(contour, item) -> bool:
     """True if a contour of an overlay item is drawn as a closed ring: it is a
-    closed curve (`ClosedCurve` or `Contour`), its item declares itself a void of the part (`is_void`),
+    closed curve (`ClosedCurve` or `Contour`), its item declares itself a void of the figure (`is_void`),
     or its `segments` close a ring head to tail.
-    Otherwise they are drawn as they are, one primitive each (a bend)."""
+    Otherwise they are drawn as they are, one primitive each."""
     from .curve import _Ring
     if isinstance(contour, _Ring) or getattr(item, "is_void", False):
         return True

@@ -3,7 +3,7 @@ topo/core/readings/outer_scan.py
 --------------------------------
 Classification of the outer borders by ray casting: which Edges are, at some
 height at least, the first or the last point met by a ray crossing the
-drawing. It does not rebuild the contour — gaps and loops sew it afterwards,
+input. It does not rebuild the contour — gaps and loops sew it afterwards,
 on the original Edges.
 
 A global property (min/max over a whole height), not local connectivity: it

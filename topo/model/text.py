@@ -2,7 +2,7 @@
 topo/model/text.py
 ------------------
 The source's texts as domain data: a single type, `Text`. A string laid on the
-plane; with, if the source gives it, the drawing the source traces around it
+plane; with, if the source gives it, the strokes the source traces around it
 (`rendered`) and what it measures with the points the source writes
 (`measures`). Whether it is a note, a dimension or a callout and where it
 points is a consumer's reading; the source's entity type does not enter the
@@ -12,7 +12,7 @@ same meaning for every format.
 Division of tasks:
     - adapter → read/write format ↔ model, format knowledge only (where the
       text is, how a dimension's block is flattened).
-    - ``anchor_texts()`` → ``cluster_ref`` (index of the part that contains it).
+    - ``anchor_texts()`` → ``cluster_ref`` (index of the cluster that contains it).
     - agent → reads and edits these objects; a writer re-emits them.
 
 ``cluster_ref`` is the index in ``result.clusters``, not an ``id()`` — so it
@@ -81,7 +81,7 @@ class MeasuredDistance:
     measure's direction in degrees, ``None`` = along ``first`` → ``second``.
     ``decimals``: how many decimals the source writes the number with.
     ``drawn_to_real``: drawn length → real length; the number is the
-    distance between the points times it (a view drawn at 1:4 has 4, a
+    distance between the points times it (a scale of 1:4 gives 4, a
     detail at 4:1 has 0.25). ``None`` if the source does not say, or writes the
     number by hand: then the number is `Text.text` as written.
     """
@@ -138,7 +138,7 @@ Measure = Union[MeasuredDistance, MeasuredRadius, MeasuredDiameter, MeasuredAngl
 class Text:
     """A text of the source. ``position`` is the anchor point — where a writer
     places the string and on which containment works. ``text`` is the string
-    as it reads on the drawing.
+    as it reads in the source.
 
     ``width_factor``: the horizontal stretch relative to the height (1.0 =
     none). Without it, whoever rewrites the text on a generic style loses the
@@ -170,7 +170,7 @@ class Text:
     rotation:         float            = 0.0
     width_factor:     float            = 1.0
     role:             str              = ContourRole.UNKNOWN.value
-    cluster_ref:      Optional[int]    = None   # index in result.clusters of the part that contains it
+    cluster_ref:      Optional[int]    = None   # index in result.clusters of the cluster that contains it
 
     halign:           str              = "left"
     valign:           str              = "baseline"

@@ -3,7 +3,7 @@ topo/core/base/prepare.py
 -------------------------
 The common foundations of every reading: `faces()`, `outlines()` and any
 recipe a caller composes start from here, with the same rules. A reading
-chooses only how it looks for the contour; everything before is the drawing's
+chooses only how it looks for the contour; everything before is the input's
 geometry and is decided once, in one place.
 
     prepare    — non-structural roles set aside, nodes decided once
@@ -89,12 +89,12 @@ def normalize(edges: List[Edge], gap: float, *, keep_junctions: bool) -> Normali
     edges = bend_arcs_through_free_ends(edges, gap, out.bent)
     out.ambiguous = ambiguous_free_ends(edges, gap)
     closed = close_free_gaps(edges, gap, out.gaps)
-    # a side in two pieces with ends already bound: the hole along its line
+    # a side in two pieces with ends already bound: the gap along its line
     closed = join_tied_facing_ends(closed, gap, out.tied)
     # closing a gap lengthens the two halves towards each other: they overlap on the
     # gap's stretch, and that stretch stays double in the network
     merged = merge_collinear_overlaps(closed, keep_junctions=keep_junctions)
     out.merged_lines += len(closed) - len(merged)
-    # only now is the ring of a hole written as points closed: it becomes its circle
+    # only now is the ring of a circle written as points closed: it becomes its circle
     out.edges = refit_circle_rings(merged)
     return out

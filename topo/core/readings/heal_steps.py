@@ -46,8 +46,8 @@ def find_non_contour_edges(edges: List[Edge], tolerance: float) -> Set[int]:
 def find_joining_edges(edges: List[Edge], candidate_ids: Set[int]) -> List[Edge]:
     """The Edges among `candidate_ids` (usually the non-contours) that join two
     otherwise detached shapes: removed, their two ends are no longer connected.
-    Between two closed shapes it is the ambiguous node par excellence — a part
-    with a line attached, or two parts? heal() reads them as two and says so in
+    Between two closed shapes it is the ambiguous node par excellence — a figure
+    with a line attached, or two figures? heal() reads them as two and says so in
     a warning."""
     graph = build_node_graph(edges)
     joining = []
@@ -90,7 +90,7 @@ def free_ends(edges: List[Edge], epsilon: float = 0.0) -> List[Tuple[Tuple, floa
 def structural_loops(loops: List[list],
                      is_structural: Optional[Callable[[str], bool]] = None) -> List[list]:
     """The loops in which every edge with a decided role is structural: a single
-    non-structural edge (engrave, frame, ...) demotes the whole loop."""
+    non-structural edge (a mark, a frame, ...) demotes the whole loop."""
     return [loop for loop in loops if all(may_be_contour(e, is_structural) for e, _ in loop)]
 
 

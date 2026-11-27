@@ -47,11 +47,11 @@ def parity_faces(net: Network) -> Result:
     then the set of sides that makes every node even removing first the
     least length of the outer boundary, then the least length overall
     (a minimum T-join, exact). Crossings are cut. Edges with a decided
-    non-structural role take no part.
+    non-structural role are left out.
 
     Not guaranteed: where two such sets have the same length (symmetric
-    drawings), which one is removed depends on the coordinates, so a moved
-    or mirrored drawing can read differently."""
+    figures), which one is removed depends on the coordinates, so a moved
+    or mirrored figure can read differently."""
     tol, structural = SAME_POINT, net._structural
     label, source_file = net.label, net.source_file
     reach = threshold(tol)
@@ -82,7 +82,7 @@ def parity_faces(net: Network) -> Result:
     if parity.rim_used:
         result.warnings.append(Diagnostic(
             "rim-cut", "no set of inner edges leaves every node of even degree: "
-                       "part of the outer boundary is read as no contour",
+                       "a stretch of the outer boundary is read as no contour",
             notes=["the least outer boundary that does it, then the shortest"]))
     if parity.conflicts:
         result.warnings.append(Diagnostic(
@@ -126,7 +126,7 @@ def parity_faces(net: Network) -> Result:
     assign_cluster_refs(result.loose, clusters, reach)
     if not clusters:
         result.errors.append(Diagnostic(
-            "no-closed-outer", "no closed outer contour, so no part",
+            "no-closed-outer", "no closed outer contour, so no figure",
             points=[p for p, _ in net.free_ends],
             notes=_no_outer_notes(net, []), level="error"))
         return result

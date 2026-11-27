@@ -3,8 +3,8 @@ topo/core/geometry/axis.py
 ---------------------------
 Facts about horizontal and vertical segments: intervals and their coverage,
 rectangles whose four sides are covered by segments, lines crossing a
-rectangle, how much of a drawing is axis-aligned. Pure geometry: whether a
-rectangle is a frame or a title block, or a view is orthogonal, is the
+rectangle, how much of a figure is axis-aligned. Pure geometry: whether a
+rectangle is a frame or a title block, or a figure is orthogonal, is the
 consumer's call.
 
 A "stroke" is any object with `start` and `end` (an `Edge`, a `LineSeg`):

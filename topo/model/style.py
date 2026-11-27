@@ -95,7 +95,7 @@ class RoleStyle:
         linetype   : name of the line type, for formats that name them;
                      alone it means a standard type of the format ("DASHED")
         dash       : the stroke, signed marks as in `EdgeStyle.dash`
-        lineweight : thickness in mm"""
+        lineweight : width in mm"""
     _: KW_ONLY
     color:      Optional[Tuple[int, int, int]] = None
     linetype:   Optional[str]                  = None

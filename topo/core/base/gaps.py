@@ -284,7 +284,7 @@ def _continuation(ep: GapEndpoint, reach: float):
     """The curve of end `ep` continued past its end by `reach`: a line with its
     direction, an arc on its circle, a spline or ellipse with the tangent at the
     end. An end closes on a curve only where it meets it: never with a bridge
-    across, which the drawing does not suggest. None if it has no direction
+    across, which the input does not suggest. None if it has no direction
     (null stretch)."""
     seg = ep.ref.segment if isinstance(ep.ref, Edge) else None
     if is_arc(seg) and seg.radius > 0:
@@ -314,7 +314,7 @@ def tied_facing_ends(edges: Sequence[Edge], graph, tolerance: float) -> List[Tup
     """The pairs of already bound ends (degree >= 2) of different edges facing each
     other: each on the extension of the other's curve within GRAPH_EPSILON, more
     than GRAPH_EPSILON and within `tolerance` apart. A side drawn in two pieces
-    with a hole between. Each end in its shortest pair; on a tie, none."""
+    with a gap between. Each end in its shortest pair; on a tie, none."""
     ends = _gap_endpoints(list(edges), lambda node: graph.degree(node) >= 2)
     if len(ends) < 2:
         return []

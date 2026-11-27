@@ -45,7 +45,7 @@ class ParityRings:
     dropped:   Set[int] = field(default_factory=set)       # id of the pieces that are not contour
     conflicts: List[tuple] = field(default_factory=list)   # nodes where the colouring does not work out
     rim_used:  bool = False                                # the T-join removes silhouette too
-    joining:   Set[int] = field(default_factory=set)       # id of the bridges between two closed parts
+    joining:   Set[int] = field(default_factory=set)       # id of the bridges between two closed figures
 
 
 def parity_rings(pieces: List[Edge]) -> ParityRings:

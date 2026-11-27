@@ -21,7 +21,7 @@ class Result:
     caller: the pieces found + validation info.
 
     Fields:
-        warnings  : advice about the drawing; notes : what topo did on its
+        warnings  : advice about the input; notes : what topo did on its
                     own; errors : nothing to read — all `Diagnostic`.
         source_format, reading, max_gap : where the geometry comes
                     from and how it was read, copied from the network.

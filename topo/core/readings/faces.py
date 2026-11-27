@@ -4,8 +4,8 @@ topo/core/readings/faces.py
 The reading from the inside of a repaired network: `Network.faces()`.
 
 It rebuilds the topology (who touches whom, which loops close, how they lie
-inside one another) and finds the part by containment. It is the reading for a
-flat drawing — a cutting file, a nesting of separate parts. The steps are in
+inside one another) and finds the figure by containment. It is the reading for
+flat figures, a nesting of separate ones. The steps are in
 `base/cleanup.py` (common) and `readings/heal_steps.py`, public: here is only
 their default composition, plus the warnings that tell it.
 
@@ -99,11 +99,11 @@ def read_faces(net: Network) -> Result:
     result.loose = loose + loose_curves(labeled)
     assign_cluster_refs(result.loose, clusters, reach)
     if not clusters:
-        # The geometry composes no closed outer contour: the result is not a part, it
+        # The geometry composes no closed outer contour: the result is not a figure, it
         # is an unworkable file. `loose` stays for diagnostics, but a writer refuses to
         # write only that.
         result.errors.append(Diagnostic(
-            "no-closed-outer", "no closed outer contour, so no part",
+            "no-closed-outer", "no closed outer contour, so no figure",
             points=[p for p, _ in net.free_ends] + list(noded.crossings),
             notes=_no_outer_notes(net, noded.crossings), level="error"))
         return result
@@ -163,5 +163,5 @@ def _crossing_warnings(points: list) -> list:
         return []
     return [Diagnostic(
         "crossing", f"{_plural(len(points), 'crossing', 'crossings')} between contour sides with no shared node",
-        points=points, notes=["the sides cross in the drawing; each contour is read as drawn"],
-        help="if the sides are meant to meet there, split them at the crossing in the drawing")]
+        points=points, notes=["the sides cross in the input; each contour is read as drawn"],
+        help="if the sides are meant to meet there, split them at the crossing in the input")]

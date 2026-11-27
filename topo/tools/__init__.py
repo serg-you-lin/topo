@@ -7,7 +7,7 @@ which to run and in what order.
 
 - ``anchor_texts`` — anchors every text to the cluster that contains it
 
-It is the pattern that a drawing interpreter (a separate project)
+It is the pattern that an interpreter of its own (a separate project)
 generalizes and orchestrates from above.
 """
 

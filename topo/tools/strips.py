@@ -7,8 +7,8 @@ with which):
 
 1. `facing_boundaries`: for every empty region of a cluster, its boundary and
    those of the solid regions directly inside. A strip passes only between
-   these: two regions inside different empty regions have material in
-   between, and are excluded by construction.
+   these: two regions inside different empty regions have filled
+   area in between, and are excluded by construction.
 2. the distance between two boundaries is `topo.geometry.gap`.
 3. `link`: the strip between two facing boundaries (parent–child and
    sibling–sibling) at a point and with a width; rejected if it crosses

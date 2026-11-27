@@ -5,9 +5,8 @@ Shape facts of a closed contour: circle, ellipse, stadium, rectangle,
 polygon. A closed list: a shape has a name only if centre, length, width and
 angle determine it; the rest is `polygon` or `other`. The rules read the
 primitives as they are: a circle made of splines stays `other`. Pure
-geometry, equally valid on `faces()` and `outlines()`. "circle" does not mean
-hole: what that circle is is said by whoever reads the drawing or the
-process. Facts between several contours (concentric circles, arcs around a
+geometry, equally valid on `faces()` and `outlines()`. "circle" means
+nothing beyond a circle: what it is is said by whoever reads the geometry. Facts between several contours (concentric circles, arcs around a
 circle) are in `concentric.py`.
 """
 

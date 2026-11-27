@@ -3,7 +3,7 @@ topo/model/diagnostic.py
 ------------------------
 A topo warning written like the Rust compiler's: what, where, why it did not
 fix it, and the call with the threshold that would fix it. Three levels:
-`warning` (advice about the drawing), `note` (what topo did by itself, in
+`warning` (advice about the input), `note` (what topo did by itself, in
 `notes`), `error` (nothing to read). It is a `str` (the text for whoever reads,
 human or LLM) with the fields for whoever programs: the `warnings` lists stay
 lists of strings. One per type: the text shows the first points, `points` has
@@ -43,7 +43,7 @@ class Diagnostic(str):
     them), `param` and `value` (the threshold `help` sets and the smallest
     value that fixes all of them, or None).
 
-    A `warning` is advice about the drawing (in `warnings`), a `note` says what
+    A `warning` is advice about the input (in `warnings`), a `note` says what
     topo did by itself (in `notes`), an `error` means there is nothing to read
     (in `errors`).
     """

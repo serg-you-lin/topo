@@ -1,14 +1,14 @@
 """
 topo/tools/anchor.py
 ---------------------------
-Text anchoring: links every text of the model to the part that contains it.
+Text anchoring: links every text of the model to the cluster that contains it.
 Pure geometric reconstruction, no judgment, nothing to do with the meaning of
-the drawing.
+the geometry.
 
 A separate, optional phase — NOT called by heal(): the caller turns it on when
-needed (e.g. before split(), to know which text goes with which part).
+needed (e.g. before split(), to know which text goes with which cluster).
 
-``anchor_texts`` fills ``Text.cluster_ref`` (index of the containing part).
+``anchor_texts`` fills ``Text.cluster_ref`` (index of the containing cluster).
 What a callout's tip lands on or what a dimension measures is the consumer's
 reading.
 """
@@ -26,10 +26,10 @@ def anchor_texts(result: Result, *, snap_distance: float = 0.0) -> None:
     """
     Set ``cluster_ref`` on every text of ``result.texts``.
 
-    ``cluster_ref`` is the index in ``result.clusters`` of the part whose
+    ``cluster_ref`` is the index in ``result.clusters`` of the cluster whose
     outer contour contains the text's position (border included); a text
-    outside every part (a title block) keeps ``None``. With ``snap_distance``
-    > 0 a text contained by no part goes to the nearest one within that
+    outside every cluster (a title block) keeps ``None``. With ``snap_distance``
+    > 0 a text contained by no cluster goes to the nearest one within that
     distance of its outer. Computed on the primitives.
 
     **Mutates** the texts of ``result`` and returns ``None``.
@@ -49,7 +49,7 @@ def _assign(position, outers, snap_distance: float) -> Optional[int]:
 
 
 def _nearest_within(position, outers, snap_distance: float) -> Optional[int]:
-    """The index of the part nearest ``position``, if within ``snap_distance`` (> 0)."""
+    """The index of the cluster nearest ``position``, if within ``snap_distance`` (> 0)."""
     if snap_distance <= 0.0:
         return None
     idx, dist = min(

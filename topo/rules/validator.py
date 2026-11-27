@@ -73,7 +73,7 @@ def validate_document(doc: Document) -> Result:
         result.warnings.append(Diagnostic(
             "zero-length", f"{plural(len(zero_len), 'edge', 'edges')} of zero length, dropped by heal()",
             points=[e.start for e in zero_len],
-            help="remove them from the drawing, or leave them: they change nothing"))
+            help="remove them from the input, or leave them: they change nothing"))
     return result
 
 
@@ -120,7 +120,7 @@ def validate_result(result: Result) -> None:
             if crossings:
                 result.warnings.append(Diagnostic(
                     "self-intersecting", f"{label}: the outer contour crosses itself",
-                    points=crossings, help="in the drawing, remove the crossing of the outer contour"))
+                    points=crossings, help="in the input, remove the crossing of the outer contour"))
 
         outside = [inner for inner in cluster.inners if not poly.contains(curve_polygon(inner))]
         if outside:

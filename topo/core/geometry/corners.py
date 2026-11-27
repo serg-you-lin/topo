@@ -50,7 +50,7 @@ def turn_corners(points: List[Point], closed: bool, turn_deg: Optional[float], s
     `turn_deg=None` a corner is where no smooth curve passes within `tolerance`
     of the polyline between those two points: valid for dense points, whose
     chord deviates from the curve by less than `tolerance` (a curve written as
-    points by a CAD). Measured on a scale and not between two close samples, a
+    points by a source). Measured on a scale and not between two close samples, a
     sharp angle blunted by sampling counts for its whole turn. Among corners
     closer than `scale` the one that turns most is kept. On an open sequence the
     ends are never corners."""

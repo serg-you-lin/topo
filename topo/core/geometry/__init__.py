@@ -2,7 +2,7 @@
 topo/core/geometry/__init__.py
 -------------------------------
 topo's geometry, in one place: `topo.geometry.<name>`.
-Facts with geometric names - "circle", never "hole": what they mean is
+Facts with geometric names - "circle", nothing more: what they mean is
 decided by the consumer.
 
 Public (below):

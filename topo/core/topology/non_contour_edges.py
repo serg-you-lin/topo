@@ -4,11 +4,11 @@ core/topology/non_contour_edges.py
 Finds the edges that are NOT part of a contour and must be excluded from the
 graph before the loop search.
 
-It is not feature classification: here no edge is decided to "be a bend". It
+It is not feature classification: here no edge is decided to "be" anything. It
 is decided only, topologically, that an edge does not close a contour —
-typically a line crossing the part from side to side (often a bend line, but
-also an axis, a centreline, a through trace). The true semantics lives in a
-consumer (snapbend `detect_flat`), which picks them back from `result.loose`.
+typically a line crossing a figure from side to side (an axis, a centreline,
+a through trace). The meaning lives in a consumer, which picks them back from
+`result.loose`.
 
 The chain is judged (`Graph.chains`): the edges in a row through nodes of
 degree 2. A chain is excluded, whole, if:
@@ -17,10 +17,10 @@ degree 2. A chain is excluded, whole, if:
      side only: the border of that face does not walk it, or walks it back and
      forth
 
-Criterion 2 is topological: a true contour side has material on one side and
+Criterion 2 is topological: a true contour side has the inside on one side and
 the outside on the other, a chord has a face closed on both sides. It holds
-for a concave part as for a convex one, and per component: a sheet with
-several views does not mix the shapes. Where the edge comes from in the source
+for a concave figure as for a convex one, and per component: an input with
+several figures does not mix the shapes. Where the edge comes from in the source
 format is never a criterion.
 
 The outer face is walked on the planar network (`split_at_crossings`, the same
@@ -79,7 +79,7 @@ class NonContourEdgeDetector:
                     outside[parent] = outside.get(parent, 0.0) + edge_geometry(piece).length
         # border = borders the outside for more than half its length: a true side does
         # so wholly, a chord at most for a grazed stretch (nearly tangent to a fillet,
-        # below the thickness tolerance)
+        # below the tolerance)
         excluded: set[int] = set()
         for run in chains:
             border = sum(outside.get(id(e), 0.0) for e in run)

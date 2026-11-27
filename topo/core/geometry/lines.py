@@ -3,7 +3,7 @@ topo/core/geometry/lines.py
 ----------------------------
 Facts between lines and contours: distance from a line, strokes on the same
 line, rows of strokes joined across contours, a chord that divides a
-contour, the hatching of a segment. Pure geometry: whether a chord is a bend
+contour, the hatching of a segment. Pure geometry: what a chord means
 is the consumer's call. Questions about a contour are asked on its
 primitives (`rings`).
 

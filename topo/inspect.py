@@ -191,7 +191,7 @@ def inspect_result(result, *, coords: bool = False) -> None:
 
 def _text_kind(text) -> str:
     """What a text carries, from the model's fields: the string alone or also the
-    source's drawing."""
+    source's strokes."""
     return "drawn" if not text.rendered.is_empty() else "string"
 
 

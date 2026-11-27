@@ -107,10 +107,10 @@ class Graph:
     def connected_components(self) -> List[set]:
         """Connected components of the graph (BFS on the nodes).
 
-        A sheet with several independent views/parts produces several components —
+        An input with several independent figures produces several components —
         nodes never reachable from one another because they share no edge. It serves
         whoever must reason by shape (`NonContourEdgeDetector` and `outer_face`, which
-        walk the outer face of each view on its own)."""
+        walk the outer face of each figure on its own)."""
         seen: set = set()
         components: List[set] = []
         for start in self.nodes:

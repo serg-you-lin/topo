@@ -51,7 +51,7 @@ def fit_circle_kasa(points: List[Point]) -> Optional[Tuple[Point, float, float]]
 
     pts = np.asarray(points, dtype=float)[:, :2]
     # in the frame of the points: x²+y² on large coordinates cancels digits, and
-    # the circle would depend on where the drawing sits
+    # the circle would depend on where the figure sits
     origin = pts.mean(axis=0)
     x, y = pts[:, 0] - origin[0], pts[:, 1] - origin[1]
     a_matrix = np.column_stack([x, y, np.ones_like(x)])

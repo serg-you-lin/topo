@@ -3,14 +3,14 @@ topo/core/readings/outline.py
 -----------------------------
 The reading from the outside of a repaired network: `Network.outlines()`.
 
-`faces()` rebuilds the topology from the inside and finds the part by
-containment. `outlines()` reads the drawing from the outside: the groups are
+`faces()` rebuilds the topology from the inside and finds the figure by
+containment. `outlines()` reads the geometry from the outside: the groups are
 the edges touching within `max_gap`, the outer contour of each is the outer
 face of its planar network with the crossings cut, and every outer contour
 that is not inside another is a Cluster. What lies inside, closed or open,
-is its own by containment. It is the right reading for a drawing of views
-(projected 3D, several views on a sheet), where the graph of faces() is
-ambiguous. What a contour is — view, part, frame — is the caller's call.
+is its own by containment. It is the right reading for projections
+(projected 3D, several projections side by side), where the graph of faces() is
+ambiguous. What a contour is — a projection, a figure, a border — is the caller's call.
 
 Pure: Edges, primitives and model only, no format.
 """
@@ -65,7 +65,7 @@ def read_network_outlines(net: Network) -> Result:
     no inners. Everything else — closed or open, inside or outside the contour, a
     whole group inside another — goes to `loose`, from the repaired network,
     with `cluster_ref` = the Cluster it touches or that contains it; `None` if it
-    is outside every one. With the frame in the drawing the only outer contour is
+    is outside every one. With the frame in the input the only outer contour is
     the frame: removing it is the caller's job."""
     tol = SAME_POINT
     result = Result(source_file=net.source_file, source_format=net.source_format, reading="outlines",
@@ -98,7 +98,7 @@ def read_network_outlines(net: Network) -> Result:
         curve.cluster_ref = None if host is None else index[id(host)]
     result.loose += [f for f, _ in owned]
     # whoever touches no contour has the Cluster that contains it, if any (a
-    # detached axis inside the view, the frame marked by the caller)
+    # detached axis inside the figure, the frame marked by the caller)
     free = [c for c in result.loose if c.cluster_ref is None]
     assign_cluster_refs(free, result.clusters, tol)
     if not result.clusters:

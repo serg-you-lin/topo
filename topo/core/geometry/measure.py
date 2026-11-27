@@ -38,7 +38,7 @@ def noise_runs(items: list, together) -> list:
 
 
 # Open traces — vertices / length / type from native segments.
-# An open trace (bending line, engraving, unclosed fragment) in the model is a
+# An open trace (a line, an unclosed fragment) in the model is a
 # list of native segments (LineSeg / CircleSeg / BSplineSeg / EllipseSeg).
 # `pts`, `length`, `shape_type` are values DERIVED from those segments: here,
 # not stored on the model.

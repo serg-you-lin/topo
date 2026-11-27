@@ -11,14 +11,13 @@ change), so there is no need to rebuild the containment tree after rotating.
 already produced (polygons, segments) — they do not go back to the raw
 pre-heal geometry and do not call `heal()` again. For the same reason
 `rotate_cluster` is cheap and repeatable: a future nester can call it in a loop
-to try many angles on a single part, without paying the cost of a `heal()` at
+to try many angles on a single figure, without paying the cost of a `heal()` at
 each attempt.
 
 What is NOT rotated, on purpose, not by oversight:
 - `cluster.overlay` — free-schema overlay, topo does not know what it
-  contains; if you already did `detect_flat()`, that data (bend lines, typed
-  holes, ...) stays in the old coordinates after a rotation. Do
-  `detect_flat()` AFTER rotating, not before.
+  contains; whatever a consumer already wrote there stays in the old
+  coordinates after a rotation: read AFTER rotating, not before.
 - `result.texts` — same limit as `rotate_document`: no real case has asked
   for them yet. If present, a warning is added instead of silently leaving
   them in the wrong place.
@@ -55,7 +54,7 @@ Point = Tuple[float, float]
 # `role` does not reliably tell outer from inner. `cluster.outer` is always
 # unambiguously the outer, but an `inner` with no role of its own INHERITS the
 # parent's role if the parent had an explicit one: an outer labelled "outer"
-# produces inner holes also "outer" if they have none of their own. Filtering by
+# produces inner loops also "outer" if they have none of their own. Filtering by
 # string would be ambiguous in the common case.
 #
 # For a finer criterion than "outer" / "outer+inner" compose the list yourself:
@@ -64,8 +63,8 @@ Point = Tuple[float, float]
 
 def structural_segments(result: Result, include_inners: bool = False) -> list:
     """Native segments of the structural contours of every cluster: always
-    `cluster.outer`; also `cluster.inners` (inner holes/loops not yet typed — the
-    hole/countersink/... typing lives in `detect_flat()`, a separate overlay) if
+    `cluster.outer`; also `cluster.inners` (inner loops not yet read — what they are
+    is a consumer's reading, in a separate overlay) if
     `include_inners=True`."""
     segments = []
     for cluster in result.clusters:
@@ -109,7 +108,7 @@ def rotate_cluster(cluster: Cluster, angle_rad: float, origin: Point = (0.0, 0.0
     rotated objects, not the old ones).
 
     Meant for a loop: cheap (geometric transformations only, no topology
-    rebuilding), so suited to trying many angles on the same part (nester)."""
+    rebuilding), so suited to trying many angles on the same figure (nester)."""
     new_outer = _rotate_contour(cluster.outer, angle_rad, origin)
     id_map = {id(cluster.outer): new_outer}
 
@@ -133,7 +132,7 @@ def rotate_result(result: Result, angle_rad: float, origin: Point = (0.0, 0.0)) 
 
     `result.texts` are not rotated — if present, a warning is added instead of
     leaving them still without notice. `cluster.overlay` is not touched — if
-    present on some cluster, a warning reminds to redo `detect_flat()` after the
+    present on some cluster, a warning reminds to redo the reading after the
     rotation."""
     new_clusters = [rotate_cluster(c, angle_rad, origin) for c in result.clusters]
     new_loose = [

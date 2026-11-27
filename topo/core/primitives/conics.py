@@ -612,12 +612,12 @@ class HyperbolaSeg(ConicSeg):
         a = math.hypot(*self.major_axis)
         b = a * self.ratio
 
-        def bend(s: float) -> float:
+        def speed(s: float) -> float:
             return math.sqrt(a * a * math.cosh(s) ** 2 + b * b * math.sinh(s) ** 2)
 
         def step_at(s: float) -> float:
-            first = math.sqrt(8 * tolerance / bend(s))
-            return math.sqrt(8 * tolerance / bend(s + first))
+            first = math.sqrt(8 * tolerance / speed(s))
+            return math.sqrt(8 * tolerance / speed(s + first))
 
         lo, hi = sorted((self.start_param, self.end_param))
         params = _grid(lo, hi, step_at)

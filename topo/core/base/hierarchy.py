@@ -92,9 +92,8 @@ def _collect_inners(
     recomputing it — it is the data `topo.tools.strips` reads to know which
     borders face each other.
 
-    heal() stops here — it no longer decides hole vs inner nor recognizes
-    countersinks from the nesting. detect_flat(features="holes") re-derives the
-    nesting by containment between polygons and promotes the holes."""
+    heal() stops here — it decides nothing beyond outer and inner. A consumer
+    that wants a meaning for the nesting derives it from containment."""
     for child_proxy, grandchildren in children:
         classified_proxies.add(id(child_proxy))
         contour = _make_inner(child_proxy, parent_role=parent_role, depth=depth, parent=parent)
@@ -114,7 +113,7 @@ class HierarchyBuilder:
     def __init__(self, label: str, is_structural=None):
         self.label       = label
         # Same predicate as split_labeled / structural_loops — injected by the caller
-        # (snapbend: a hole is a part contour) or, by default, only outer/inner
+        # (a consumer's own roles that close a contour) or, by default, only outer/inner
         # (model.role.is_structural_role).
         self._is_structural = is_structural or is_structural_role
 

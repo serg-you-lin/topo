@@ -3,18 +3,17 @@ model/role.py
 
 Topological role of a shape — the minimum the engine (core/) must know to
 build the containment tree: is it an outer contour, an inner contour, or has it
-no role decided yet. Full stop. **No manufacturing taxonomy lives here** (hole,
-threaded hole, countersink, bend, engraving, marking, ...) — that is a
-consumer's vocabulary (snapbend): topo does not know what a hole is, it only
+no role decided yet. Full stop. **No taxonomy of meanings lives here** — that is a
+consumer's vocabulary: topo does not know what a contour is for, it only
 distinguishes one contour from another.
 
 ``ContourRole`` is NOT a closed universe: a consumer (a library above topo,
-snapbend, snapdraw, an agent — none is privileged) can assign a role core does
-not know — ``"hole"``, ``"frame"``, ``"title_block"``, any slug — and topo
+an agent — none is privileged) can assign a role core does
+not know — ``"mark"``, ``"frame"``, ``"title_block"``, any slug — and topo
 keeps it and treats it as non-structural by default. How it is drawn on output
 is decided by an exporter from the role, with the caller's map — not as
 garbage: that geometry is not trash. Whoever wants a role core does not know to
-be treated as structural (a hole is a true part contour, not decoration)
+be treated as structural (a contour that closes a figure, not decoration)
 passes their own predicate to ``heal(doc, is_structural=...)``.
 
 ``normalize_role()`` is the only point where a role string coming from the
@@ -48,18 +47,17 @@ class ContourRole(str, Enum):
     ``"outer"`` instead of ``<ContourRole.OUTER: 'outer'>`` and comparisons with
     strings work without ``.value``."""
     UNKNOWN = "unknown"   # default — no role decided
-    OUTER   = "outer"     # outer profile of the part, found by heal()
+    OUTER   = "outer"     # outer profile of a figure, found by heal()
     INNER   = "inner"     # inner loop, found by heal()
-    # Nothing else here. `hole`/`bending`/`engrave`/... are process vocabulary
-    # (snapbend), `frame`/`title_block`/... snapdraw's: a consumer's slugs, outside
-    # this enum, same treatment.
+    # Nothing else here. `mark`/`frame`/`title_block`/... are a consumer's slugs,
+    # outside this enum, same treatment.
 
 
 # --- Taxonomy: which roles are contour topology (pure engine) ---
 # The single point of truth for the question "is this edge/loop/proxy OUTER or
 # INNER by how heal() built it, regardless of any manufacturing meaning?".
 # Whoever wants heal() to treat as structural also a role core does not know (a
-# hole assigned by role_rules, say) passes their own predicate to
+# edge assigned by role_rules, say) passes their own predicate to
 # `heal(doc, is_structural=...)`. Without that predicate, heal() treats any role
 # outside here as non-structural by default (it leaves the graph, stays in
 # `loose` with its role intact).
@@ -72,8 +70,8 @@ STRUCTURAL_ROLES = frozenset({
 def is_structural_role(role) -> bool:
     """True if ``role`` is OUTER or INNER for the engine (see ``STRUCTURAL_ROLES``).
 
-    The engine's minimal predicate — it knows nothing about holes, bends or
-    engravings. A pure membership test — it accepts both a ``ContourRole``
+    The engine's minimal predicate — it knows nothing about any meaning a
+    consumer gives a contour. A pure membership test — it accepts both a ``ContourRole``
     constant and the equivalent string slug (``ContourRole`` inherits from
     ``str``). No reverse lookup on the enum."""
     return role in STRUCTURAL_ROLES

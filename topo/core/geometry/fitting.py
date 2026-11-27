@@ -2,7 +2,7 @@
 topo/core/geometry/fitting.py
 ------------------------------
 From an ordered, dense sequence of points (a contour traced from a raster, a
-curve written as points by a CAD) to clean primitives: lines where it is
+curve written as points by a source) to clean primitives: lines where it is
 straight, arcs where the radius is constant, splines only for the rest,
 sharp corners where it turns — the inverse of discretization.
 

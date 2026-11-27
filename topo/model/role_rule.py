@@ -19,8 +19,8 @@ from .style import VALID_DASH_KINDS, EdgeStyle
 
 RGB = Tuple[int, int, int]
 
-# The basic colours by name, with the RGB values a CAD gives its indexed
-# colours. Black is black: a "white or black depending on the background" colour
+# The basic colours by name, with the RGB values of the indexed colours
+# of the common formats. Black is black: a "white or black depending on the background" colour
 # of a format is translated by its adapter.
 _COLOR_NAMES: Dict[str, RGB] = {
     "red": (255, 0, 0), "yellow": (255, 255, 0), "green": (0, 255, 0),

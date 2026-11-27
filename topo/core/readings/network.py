@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class Network:
-    """The repaired drawing, built once by `heal()` and read by `faces()` or
+    """The repaired geometry, built once by `heal()` and read by `faces()` or
     `outlines()`.
 
     edges:       the repaired edges (doubles merged, gaps closed, nodes decided).
@@ -50,7 +50,7 @@ class Network:
     max_gap:     the widest gap closed; 0 (the default) closes none.
     source_file: copied onto every Result read from here; label: onto every Cluster.
     source_format: the document's, copied onto every Result.
-    warnings:    advice about the drawing (`Diagnostic`); every reading copies it.
+    warnings:    advice about the input (`Diagnostic`); every reading copies it.
     notes:       what the repair did by itself (`Diagnostic`, level `note`).
     errors, is_valid: with errors no reading finds anything."""
     edges:       List[Edge] = field(default_factory=list)   # repaired, nodes decided
@@ -89,7 +89,7 @@ class Network:
     def faces(self) -> Result:
         """Read the network from the inside: one Cluster per closed outer
         contour, with its inners by containment. The reading for a flat
-        drawing (a cutting file, a nesting of separate parts)."""
+        geometry (flat figures, a nesting of separate figures)."""
         # import here: the readings import the repair (repair_edges)
         from .faces import read_faces
         return read_faces(self)
@@ -99,7 +99,7 @@ class Network:
         `max_gap` are a group, the outer face of each group is its outline,
         and every outline not inside another is a Cluster with only its
         `outer`. Everything else goes to `loose` with the Cluster it touches
-        or lies in. The reading for a sheet of views."""
+        or lies in. The reading for projections side by side."""
         from .outline import read_network_outlines
         return read_network_outlines(self)
 
@@ -122,7 +122,7 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
     tol = SAME_POINT   # the one threshold, not a parameter
     if max_gap is not None:
         _check_length("max_gap", max_gap, zero_ok=True)
-    # a hole closes only up to the caller's max_gap; without it, none
+    # a gap closes only up to the caller's max_gap; without it, none
     gap = 0.0 if max_gap is None else max_gap
     net = Network(max_gap=gap, source_file=source_file, label=label,
                   source_format=doc.source_format,
@@ -156,8 +156,8 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
                                         else f"{count} {what[count > 1]}", level="note"))
     if clean.full_arcs:
         net.notes.append(Diagnostic(
-            "arc-joined", f"{_plural(clean.full_arcs, 'curve', 'curves')} rebuilt from arcs of one circle joined across their holes",
-            notes=[f"holes within max_gap and at most {math.degrees(NEAR_FULL_ARC_MISSING):.0f}°"],
+            "arc-joined", f"{_plural(clean.full_arcs, 'curve', 'curves')} rebuilt from arcs of one circle joined across their gaps",
+            notes=[f"gaps within max_gap and at most {math.degrees(NEAR_FULL_ARC_MISSING):.0f}°"],
             level="note"))
     closed = [(pt, d) for pt, d in clean.gaps if d > FLOAT_NOISE]
     if closed:
@@ -180,7 +180,7 @@ def build_network(doc: Document, *, max_gap: Optional[float] = None,
                    f"distance, left open",
             points=clean.ambiguous,
             notes=["a symmetric figure: no rule in the geometry picks one partner"],
-            help="no threshold fixes it: remove one of the two partners from the drawing"))
+            help="no threshold fixes it: remove one of the two partners from the input"))
     net.edges = _no_degenerate(clean.edges)
     # what almost closed, one per type, with the points nearest first
     arcs = open_near_full_arcs(net.edges, reach(gap))

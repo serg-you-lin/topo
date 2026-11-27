@@ -40,8 +40,8 @@ def to_json(result: Result, *, indent: int = 2,
     collection). In mm, exact on the primitives, no coordinates
     (an adapter's writer carries the curves).
 
-    `extra(cluster) -> dict` adds a consumer's fields (material, a part code,
-    anything topo cannot know) to each cluster. A key topo already writes
+    `extra(cluster) -> dict` adds a consumer's fields (anything topo cannot
+    know) to each cluster. A key topo already writes
     raises `ValueError`.
     """
     return json.dumps(_with_extra(result, extra), indent=indent, ensure_ascii=False)

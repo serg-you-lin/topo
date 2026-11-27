@@ -167,7 +167,7 @@ def split_at_crossings(edges: List[Edge], tolerance: float,
     `cut_crossings`: a crossing (two curves crossing and continuing) cuts too. The
     contact is decided by this function anyway; what it means is told by the
     reading: for outlines() yes, for faces() no — a crossing between contour sides
-    is a broken drawing, an axis crossing a hole is not a side of the hole. The
+    is a broken input, an axis crossing a circle is not a side of the circle. The
     crossings are in `crossings` in both cases."""
     curves = [_Curve(e.segment) for e in edges]
     net = _Contacts(edges, curves, tolerance)
@@ -191,7 +191,7 @@ def split_at_crossings(edges: List[Edge], tolerance: float,
 def interior_crossings(edges: List[Edge], tolerance: float) -> List[tuple]:
     """The points where two edges cross with neither ending there: a cut interior to
     both. A T contact (the end of one on the other's curve) does not count.
-    Between contour sides it is a drawing with overlapping sides, which the heal
+    Between contour sides it is an input with overlapping sides, which the heal
     graph does not see."""
     return split_at_crossings(edges, tolerance).crossings
 
@@ -336,7 +336,7 @@ class _Contacts:
                 self.sides[pair[0]], self.sides[pair[1]] = {i: 1}, {i: 2}
                 for k, node in zip(pair, (edge.start, edge.end)):
                     self._union(k, by_node.setdefault(node, k))
-        # an end coinciding with another curve's end is a vertex of the drawing: it is never shortened
+        # an end coinciding with another curve's end is a vertex of the input: it is never shortened
         count = Counter(node for i in self.ends for node in (edges[i].start, edges[i].end))
         self.shared = {k for i, pair in self.ends.items()
                        for k, node in zip(pair, (edges[i].start, edges[i].end)) if count[node] > 1}

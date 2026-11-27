@@ -27,7 +27,7 @@ from .core.geometry_input import load_geometry, load_segments
 from .core.readings.heal import heal
 from .core.readings.network import Network
 from .tools.anchor       import anchor_texts
-# One Result per part, no format: every exporter writes one.
+# One Result per piece, no format: every exporter writes one.
 from .tools.split        import split, Split
 from .rules.validator     import validate_document, validate_result
 from .io.json_export      import to_json, save_json
@@ -56,7 +56,7 @@ from .model.style     import RoleStyle
 # The same criterion heal() uses internally to exclude an edge from the contour
 # graph (chains between two branching nodes, not on the outer border) — without
 # saying what that edge is. A consumer that wants to decide `edge.role` before
-# heal() with an interpretation of its own (not "bending" as detect_flat() does)
+# heal() with an interpretation of its own 
 # calls it on doc.edges.
 from .tools.non_contour import non_contour_candidates
 # The geometry: facts with geometric names (shape of a contour, concentric

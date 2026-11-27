@@ -26,7 +26,7 @@ def to_shapely(item, *, tolerance: Optional[float] = None):
     - a closed curve (`Contour`, a `ClosedCurve` in `loose`, or anything
       with a closed ring of `segments`) → `Polygon`;
     - an `OpenCurve` → `LineString`;
-    - a `Cluster` → its material by the even-odd rule of `area`: the
+    - a `Cluster` → its filled region by the even-odd rule of `area`: the
       outer with its depth-1 holes, every depth-2 island with its depth-3
       holes, and so on, minus the overlay voids → `Polygon`, or
       `MultiPolygon` when islands sit inside holes.
@@ -68,10 +68,10 @@ def _cluster(cluster: Cluster, tolerance: Optional[float]):
         outline = _ring(shell, tolerance)
         pieces.append(Polygon(outline.exterior.coords,
                               [_ring(h, tolerance).exterior.coords for h in holes]))
-    material = unary_union(pieces)
+    filled = unary_union(pieces)
     voids = [_ring(v, tolerance) for v in cluster.overlay_voids]
     if voids:
-        material = material.difference(unary_union(voids))
-    if isinstance(material, (Polygon, MultiPolygon)):
-        return material
-    return MultiPolygon([g for g in getattr(material, "geoms", []) if isinstance(g, Polygon)])
+        filled = filled.difference(unary_union(voids))
+    if isinstance(filled, (Polygon, MultiPolygon)):
+        return filled
+    return MultiPolygon([g for g in getattr(filled, "geoms", []) if isinstance(g, Polygon)])

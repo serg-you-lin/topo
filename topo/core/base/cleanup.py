@@ -56,12 +56,12 @@ NEAR_FULL_ARC_MISSING = math.radians(NEAR_FULL_ARC_MISSING_DEG)   # missing angl
 
 def close_near_full_arcs(edges: List[Edge], tolerance: float,
                          max_missing_angle: float = NEAR_FULL_ARC_MISSING) -> Tuple[List[Edge], int]:
-    """The arcs with both ends free on the same circle (`_same_circle`): a hole
+    """The arcs with both ends free on the same circle (`_same_circle`): a gap
     between an arc and the next within `tolerance` AND with its angle within
     `max_missing_angle` is closed — the tolerance says whether it is a gap, the
-    angle whether the arc continues. With all holes closed it is a CircleSeg;
-    otherwise the joined arcs are one arc, open on the remaining holes (the two
-    ends of the same arc are never a gap). A single arc has a single hole.
+    angle whether the arc continues. With all gaps closed it is a CircleSeg;
+    otherwise the joined arcs are one arc, open on the remaining gaps (the two
+    ends of the same arc are never a gap). A single arc has a single gap.
     `tolerance=math.inf` leaves only the angle. It first merges the arcs of the
     same circle that touch (`merge_cocircular_overlaps`): two arcs joined at one
     end have one end bound each, and whoever calls it need not know.
@@ -85,7 +85,7 @@ def close_near_full_arcs(edges: List[Edge], tolerance: float,
 def open_near_full_arcs(edges: List[Edge], tolerance: float,
                         max_missing_angle: float = NEAR_FULL_ARC_MISSING) -> List[Tuple[Edge, float, float]]:
     """The arcs with both ends free that `close_near_full_arcs` leaves open only
-    for the angle: the chord of the hole is within `tolerance`, the missing angle
+    for the angle: the chord of the gap is within `tolerance`, the missing angle
     exceeds `max_missing_angle` but not `NEAR_GAP_FACTOR` times it — the same
     "nearly" as a gap; beyond, the arc is open on purpose. Returns (edges,
     missing angle, chord) — what the warning tells the caller."""
@@ -123,7 +123,7 @@ def _joined_runs(group: List[int], edges: List[Edge], tolerance: float, max_miss
         joins.append(missing <= max_missing_angle and math.dist(hi_pt, nxt_pt) <= tolerance)
     if all(joins):
         return [spans + [None]]
-    # start after a hole that stays open: every chain is a continuous stretch
+    # start after a gap that stays open: every chain is a continuous stretch
     start = joins.index(False) + 1
     order = spans[start:] + spans[:start]
     opened = joins[start:] + joins[:start]
@@ -152,7 +152,7 @@ def _joined_edge(edge: Edge, chain: list) -> Edge:
 
 
 def _both_ends_free(edge: Edge, graph) -> bool:
-    # an end touching other geometry is not free: the arc is part of a loop. Ends
+    # an end touching other geometry is not free: the arc belongs to a loop. Ends
     # merged in the same node: the self-loop is among the degenerate ones, so the
     # node must stay without other edges (the tip of a corner is not a circle)
     if edge.start == edge.end:
@@ -176,7 +176,7 @@ def close_free_gaps(edges: List[Edge], tolerance: float, closed: Optional[list] 
 
 def join_tied_facing_ends(edges: List[Edge], gap: float, joined: Optional[list] = None) -> List[Edge]:
     """Two already bound ends facing each other along their own extension, within
-    `gap`, are joined by a new stretch: the side drawn in two pieces with a hole
+    `gap`, are joined by a new stretch: the side drawn in two pieces with a gap
     between. No curve moves. `joined`, if given, receives (end, distance) of every
     join."""
     out = list(edges)
@@ -192,7 +192,7 @@ def bend_arcs_through_free_ends(edges: List[Edge], gap: float, bent: Optional[li
     """An arc with fixed ends and, beside its belly within `gap`, the free end of a
     curve bound at the other end that arrives tangent: the arc is redrawn through
     its two ends and that end. No line moves. Not if the new arc deviates from
-    the old by more than `gap`, not towards a thread nor on an axis. `bent`, if
+    the old by more than `gap`, not towards a concentric pair nor on an axis. `bent`, if
     given, receives (end, distance) of every redrawn arc."""
     edges = list(edges)
     geoms = [edge_geometry(e) for e in edges]
@@ -249,7 +249,7 @@ def move_onto_targets(edges: List[Edge], gap: float, moved: Optional[list] = Non
     free end of another curve within `gap` of the fillet falls on the moved
     fillet. It moves by the unique translation satisfying them, if it does not
     exceed `gap` and if at least one constraint was detached. A line never moves,
-    it lengthens or shortens. Not towards a thread (arc or circle with another
+    it lengthens or shortens. Not towards a concentric pair (arc or circle with another
     concentric one), not on an axis (line through the centre). `moved`, if given,
     receives (point, displacement) of every moved fillet."""
     edges = list(edges)
@@ -339,7 +339,7 @@ def _fillet_constraints(k: int, edges: List[Edge], geoms: list, tree, graph, at_
     """(constraints, bound lines to lengthen, target lines, whether there is a
     detached constraint) of the ends of fillet `k`; None if an end is bound to
     something that is not a single line, or if a detached end would fall on a
-    thread or an axis."""
+    concentric pair or an axis."""
     seg = edges[k].segment
     constraints, stretch, reach, detached = [], [], [], False
     for p, node in zip(segment_endpoints(seg), (edges[k].start, edges[k].end)):
@@ -395,7 +395,7 @@ def _target(p, k: int, edges: List[Edge], geoms: list, tree, gap: float):
 
 def _may_land(seg, target, rounds: list, gap: float) -> bool:
     """A detached end can fall on `target`: no if it is an arc or circle with
-    another concentric one (thread), no if `seg` is a line through its centre (axis)."""
+    another concentric one, no if `seg` is a line through its centre (axis)."""
     if not isinstance(target, CircleSeg):
         return True
     if any(r is not target and math.dist(r.center, target.center) <= gap for r in rounds):

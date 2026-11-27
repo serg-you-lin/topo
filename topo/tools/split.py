@@ -1,10 +1,10 @@
 """
 topo/tools/split.py
 -------------------
-One Result per part. A part is a cluster with the loose curves and the texts
-that belong to it; what no part contains comes back apart, and the caller
-decides where it goes. Every exporter then writes a part in its format (an
-adapter's writer, `topo.experimental.to_svg`): the same split exports parts in
+One Result per piece. A piece is a cluster with the loose curves and the texts
+that belong to it; what no piece contains comes back apart, and the caller
+decides where it goes. Every exporter then writes a piece in its format (an
+adapter's writer, `topo.experimental.to_svg`): the same split exports pieces in
 every format.
 """
 
@@ -35,23 +35,23 @@ class Split:
 
 def split(result: Result) -> Split:
     """
-    The parts of `result`, and what belongs to none.
+    The pieces of `result`, and what belongs to none.
 
-    Each part is a `Result` with a single cluster, the loose curves and the
+    Each piece is a `Result` with a single cluster, the loose curves and the
     texts that belong to it, the cluster labelled `f"{label}_P{i + 1}"`. A loose
-    curve goes to the part of its `cluster_ref`. A text goes to the part of its
+    curve goes to the piece of its `cluster_ref`. A text goes to the piece of its
     `cluster_ref` (`anchor_texts` sets it, with the caller's `snap_distance`),
-    else to the first part whose outer contour contains its position, border
-    included. What no part owns lands in `Split.loose` and `Split.texts`:
+    else to the first piece whose outer contour contains its position, border
+    included. What no piece owns lands in `Split.loose` and `Split.texts`:
     nothing is assigned by distance. Nothing is duplicated and nothing is lost:
     every element is in one place only, copied with `cluster_ref` referring to
-    the part (0 if it was the part's, `None` otherwise). A promoted curve
+    the piece (0 if it was the cluster's, `None` otherwise). A promoted curve
     (`result.promote`) is already in its cluster. The other `Result` fields
-    (source, warnings) are copied into every part.
+    (source, warnings) are copied into every piece.
 
-    **Mutates** nothing: a part's cluster is a copy with its own `label`.
+    **Mutates** nothing: a piece's cluster is a copy with its own `label`.
 
-    Raises `ValueError` if `result` is not valid: one file per part makes no
+    Raises `ValueError` if `result` is not valid: one file per piece makes no
     sense without pieces.
     """
     if not result.is_valid:
@@ -101,7 +101,7 @@ def _text_owner(text: Text, clusters) -> int | None:
 
 
 def _local(items: list, i: int) -> list:
-    """Copies of `items` with `cluster_ref` referring to the Result of a single part."""
+    """Copies of `items` with `cluster_ref` referring to the Result of a single piece."""
     out = []
     for item in items:
         local = copy.copy(item)

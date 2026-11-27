@@ -64,11 +64,11 @@ def to_svg(
         tolerance:           discretization of arcs/splines in open traces.
         include_loose:       also draw `result.loose` (red).
         include_texts: draw the source's texts.
-        padding:             margin around the drawing, fraction of the bbox side.
+        padding:             margin around the image, fraction of the bbox side.
         background:          background colour (`None` = transparent).
         true_circles:        draw as a real `<circle>` an overlay entry that
                              carries Ø/centre, instead of the N-sided polygon.
-        stroke_width:        line thickness in drawing units; `None` = auto
+        stroke_width:        line width in the units of the input; `None` = auto
                              (bbox diagonal / 400).
         size:                `width`/`height` attributes of the `<svg>`. `None`
                              (default) OMITS them: the SVG scales to fill the

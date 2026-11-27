@@ -543,8 +543,8 @@ def contour_union(contour: Sequence, other: Sequence) -> List[list]:
 def enclosing(tracks: Sequence[Sequence[Point]], outers: Sequence, tolerance: float) -> List[Optional[int]]:
     """For each trace (a sequence of points), the index in `outers` of the smallest
     polygon that wholly contains it, `None` if none. Only the outer border
-    counts: a trace inside a hole is inside the part (a cross in the middle of a
-    hole). The border is inside, within `tolerance`: a line from side to side
+    counts: a trace inside a void is inside the figure (a cross in the middle of a
+    ring). The border is inside, within `tolerance`: a line from side to side
     belongs to the piece it crosses."""
     regions = []
     for i, outer in enumerate(outers):

@@ -48,7 +48,7 @@ class GeometryReader:
         arc:      {"type": "arc", "center": (x,y), "radius": r,
                    "start_angle": degrees, "end_angle": degrees,
                    "ccw": True, "role": "outer"}
-        circle:   {"type": "circle", "center": (x,y), "radius": r, "role": "hole"}
+        circle:   {"type": "circle", "center": (x,y), "radius": r, "role": "mark"}
         polygon:  {"type": "polygon", "points": [(x,y), ...], "role": "outer"}
                   — always closed: the last side returns to the first point
         spline:   {"type": "spline", "control_points": [(x,y), ...], "knots": [...],
@@ -57,11 +57,11 @@ class GeometryReader:
                    "ratio": 0.5, "start_param": 0.0, "end_param": 2*pi,
                    "ccw": True, "role": "outer"}
 
-    "role" is optional — same vocabulary as RoleRule.role (a work_type string:
-    "outer", "hole", "inner", "bending", "engrave", ...). If omitted it stays
-    "unknown": no problem for a part's outermost contour, which HierarchyBuilder
+    "role" is optional — same vocabulary as RoleRule.role (a string:
+    "outer", "inner", "guide", "mark", ...). If omitted it stays
+    "unknown": no problem for an outermost contour, which HierarchyBuilder
     makes OUTER anyway by its position in the containment tree; it only serves to
-    have explicit holes/inners recognized before a consumer reclassifies them.
+    have explicit inners recognized before a consumer reclassifies them.
 
     The angles of "arc" are in DEGREES, not the radians of CircleSeg: more
     natural for whoever hands over numbers computed by hand, like the builders
